@@ -1,0 +1,197 @@
+import { Course } from '@/types/course';
+import { transactionService } from '../transactionService';
+import { enrollmentService } from '../enrollmentService';
+
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+  status: string;
+};
+
+class RazorpayProvider {
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  async createOrder(amount: number, currency: string, receipt: string): Promise<any> {
+    const response = await fetch(`${this.backendUrl}/create-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount,
+        currency,
+        receipt,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create order');
+    }
+
+    return response.json();
+  }
+
+  async processPayment(
+    course: Course,
+    userEmail: string,
+    transactionId: string,
+    amount: number,
+    userId: string
+  ): Promise<{ success: boolean; transactionId?: string; paymentId?: string; error?: string }> {
+    return new Promise(async (resolve) => {
+      try {
+        console.log('RazorpayProvider - Starting payment process:', {
+          courseId: course.id,
+          transactionId,
+          amount,
+          userId,
+          course
+        });
+
+        // Create order through backend
+        const orderData = await this.createOrder(amount, 'INR', transactionId);
+
+        if (!orderData.success) {
+          throw new Error(orderData.error || 'Order creation failed');
+        }
+
+        const { order, key_id } = orderData;
+
+        // Update transaction status
+        await transactionService.updateTransactionStatus(transactionId, 'processing', {
+          razorpay: {
+            orderId: order.id,
+          },
+        });
+
+        const options = {
+          key: key_id,
+          amount: order.amount,
+          currency: order.currency,
+          order_id: order.id,
+          name: 'Vizuara AI Labs',
+          description: `Enrollment for ${course.title}`,
+          prefill: {
+            email: userEmail,
+          },
+          theme: {
+            color: '#3b82f6',
+          },
+          handler: async (response: any) => {
+            console.log('Razorpay payment successful:', response);
+
+            // Verify payment on backend
+            try {
+              const verificationResponse = await fetch(`${this.backendUrl}/verify-payment`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  transaction_id: transactionId,
+                }),
+              });
+
+              const verificationData = await verificationResponse.json();
+
+              if (verificationData.success) {
+                console.log('RazorpayProvider - Payment verified, enrolling user');
+
+                // Update transaction with payment details
+                await transactionService.updateTransactionStatus(transactionId, 'completed', {
+                  razorpay: {
+                    orderId: order.id,
+                    paymentId: response.razorpay_payment_id,
+                    signature: response.razorpay_signature,
+                  },
+                }, {
+                  transactionId: response.razorpay_payment_id,
+                });
+
+                // Auto-enroll user after successful payment
+                try {
+                  await enrollmentService.enrollUser(
+                    userId,
+                    course,
+                    response.razorpay_payment_id,
+                    'razorpay'
+                  );
+                  console.log('RazorpayProvider - User enrolled successfully after payment');
+                } catch (enrollmentError) {
+                  console.error('RazorpayProvider - Enrollment failed:', enrollmentError);
+                  // Don't fail the payment, but log the error
+                }
+
+                resolve({
+                  success: true,
+                  transactionId: transactionId,
+                  paymentId: response.razorpay_payment_id,
+                });
+              } else {
+                console.log("RazorpayProvider - Payment verification failed");
+                throw new Error(verificationData.error || 'Payment verification failed');
+              }
+            } catch (error) {
+              console.error('RazorpayProvider - Payment verification failed:', error);
+              await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
+                failureReason: 'Payment verification failed',
+              });
+
+              resolve({
+                success: false,
+                error: 'Payment verification failed',
+              });
+            }
+          },
+          modal: {
+            ondismiss: async () => {
+              console.log('RazorpayProvider - Payment dismissed by user');
+              await transactionService.updateTransactionStatus(transactionId, 'cancelled', undefined, {
+                failureReason: 'Payment cancelled by user',
+              });
+
+              resolve({
+                success: false,
+                error: 'Payment cancelled by user',
+              });
+            }
+          }
+        };
+
+        // @ts-ignore - Razorpay is loaded externally
+        if (typeof window !== 'undefined' && (window as any).Razorpay) {
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        } else {
+          await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
+            failureReason: 'Razorpay SDK not loaded',
+          });
+
+          resolve({
+            success: false,
+            error: 'Razorpay SDK not loaded',
+          });
+        }
+      } catch (error) {
+        console.error('RazorpayProvider - Payment failed:', error);
+
+        await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
+          failureReason: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        resolve({
+          success: false,
+          error: 'Payment failed. Please try again.',
+        });
+      }
+    });
+  }
+}
+
+export const razorpayProvider = new RazorpayProvider();

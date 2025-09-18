@@ -1,0 +1,207 @@
+
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Clock, Trophy, PlayCircle } from 'lucide-react';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { enrollmentService, Enrollment } from '@/services/enrollmentService';
+import { useCourseQuery } from '@/hooks/useFirebaseApi';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebaseConfig';
+import { useNavigate } from 'react-router-dom';
+import { USER_ROLE } from '@/constants';
+
+
+function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
+  const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
+
+  if (isLoading) {
+    return <LoadingSkeleton className="h-48" />;
+  }
+
+  if (!course) return null;
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg mb-2">{course.title}</h3>
+            <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+              {course.description}
+            </p>
+
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between text-sm">
+                <span>Progress</span>
+                <span>{enrollment.progress.progressPercentage}%</span>
+              </div>
+              <Progress value={enrollment.progress.progressPercentage} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>Enrolled {enrollment.enrolledAt.toLocaleDateString()}</span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {enrollment.status}
+                </Badge>
+              </div>
+              <Button asChild size="sm">
+                <Link to={`/course/${course?.id}`}>
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Continue
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAdminAndFetchEnrollments = async () => {
+      if (!user || !user.email) return;
+
+      try {
+        // Query users collection where email == current user's email
+        const usersRef = collection(db, 'Users');
+        const q = query(usersRef, where('email', '==', user.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data();
+          if (userData.role === USER_ROLE.ADMIN) {
+            navigate('/admin');
+            return; // Skip loading enrollments
+          }
+        }
+
+        // If not admin, fetch enrollments
+        const userEnrollments = await enrollmentService.getUserEnrollments(user.id);
+        setEnrollments(userEnrollments);
+      } catch (error) {
+        console.error('Error checking admin or fetching enrollments:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAdminAndFetchEnrollments();
+  }, [user, navigate]);
+
+
+
+  const stats = {
+    totalCourses: enrollments.length,
+    completedCourses: enrollments.filter(e => e.progress.progressPercentage === 100).length,
+    averageProgress: enrollments.length > 0
+      ? Math.round(enrollments.reduce((sum, e) => sum + e.progress.progressPercentage, 0) / enrollments.length)
+      : 0,
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+
+      <div className="container mx-auto p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
+          <p className="text-muted-foreground">
+            Track your learning progress and continue your courses
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCourses}</div>
+              <p className="text-xs text-muted-foreground">
+                Active enrollments
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <Trophy className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.completedCourses}</div>
+              <p className="text-xs text-muted-foreground">
+                Courses finished
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.averageProgress}%</div>
+              <p className="text-xs text-muted-foreground">
+                Across all courses
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Enrolled Courses */}
+        <div>
+          <h2 className="text-xl font-semibold mb-6">My Courses</h2>
+
+          {isLoading ? (
+            <div className="grid gap-6">
+              <LoadingSkeleton className="h-48" />
+              <LoadingSkeleton className="h-48" />
+            </div>
+          ) : enrollments.length > 0 ? (
+            <div className="grid gap-6">
+              {enrollments.map((enrollment) => (
+                <EnrolledCourseCard key={enrollment.id} enrollment={enrollment} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Start your learning journey by enrolling in a course
+                </p>
+                <Button asChild>
+                  <Link to="/">Browse Courses</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
