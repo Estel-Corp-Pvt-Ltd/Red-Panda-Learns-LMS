@@ -48,15 +48,19 @@ export const AudienceSection = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {audiences.map((audience, index) => (
             <div key={index} className="card p-6 hover:shadow-lg hover:text transition-all duration-300 hover:scale-[1.00] rounded-2xl">
-              <h3 className="text-xl font-bold mb-3 gradient-text">{audience.title}</h3>
-              <p className="text-muted-foreground mb-4 text-sm">{audience.description}</p>
+              <h3 className="text-xl font-bold mb-3 gradient-text">{audience.title} </h3>
+ <p className="text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors duration-200">
+  {audience.description} 
+</p>
+
               <div className="space-y-2">
                 {audience.links.map((link, linkIndex) => (
                   <Button 
                     key={linkIndex}
                     variant="ghost" 
                     size="sm"
-                    className="w-full justify-start text-left h-auto p-2 text-brand-fuchsia hover:bg-brand-light"
+                    className="w-full justify-start text-left h-auto p-2 text-brand-fuchsia hover:bg-brand-light hover:text-brand-jet dark:hover:text-white transition-colors duration-200"
+
                   >
                     {link}
                   </Button>
