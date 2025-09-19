@@ -1,7 +1,6 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import {
   Currency,
-  PaymentAttemptStatus,
   PaymentProvider,
   PayPalWebhookEvent,
   RazorpayWebhookEvent,

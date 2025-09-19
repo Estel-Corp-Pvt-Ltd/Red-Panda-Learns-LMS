@@ -99,8 +99,7 @@ export const PAYMENT_STATUS = {
 
 export const PAYMENT_PROVIDER = {
     RAZORPAY: "RAZORPAY",
-    PAYPAL: "PAYPAL",
-    STRIPE: "STRIPE"
+    PAYPAL: "PAYPAL"
 } as const;
 
 export const CURRENCY = {
@@ -137,8 +136,8 @@ export const PAYMENT_ATTEMPT_STATUS = {
 } as const;
 
 export const TRANSACTION_TYPE = {
-    PAYMENT: "payment",
-    REFUND: "refund",
+    PAYMENT: "PAYMENT",
+    REFUND: "REFUND",
 } as const;
 
 export const REFUND_INITIATOR = {
