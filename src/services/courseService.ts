@@ -227,13 +227,14 @@ class CourseService {
   async getAllCourses(): Promise<Course[]> {
     try {
       const querySnapshot = await getDocs(collection(db, 'Courses'));
-
+      
       const courses = querySnapshot.docs.map(doc => ({
         ...doc.data(),
+        
         createdAt: doc.data().createdAt.toDate(),
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Course[];
-
+      console.log(courses);
       console.log('CourseService - Fetched courses:', courses.length);
       return courses;
     } catch (error) {

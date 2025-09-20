@@ -155,6 +155,7 @@ export const CourseImporterModal = ({
                     // COURSE LIST
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {filteredCourses.map((course) => (
+                           
                             <Card
                                 key={course.id}
                                 className="cursor-pointer border-2 border-transparent hover:border-muted"
@@ -165,6 +166,7 @@ export const CourseImporterModal = ({
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         {course.title}
+                                        
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -175,7 +177,7 @@ export const CourseImporterModal = ({
                             </Card>
                         ))}
                     </div>
-                ) : curriculum ? (
+                ) : curriculum ?  (
                     <div className="flex flex-col gap-2">
                         {curriculum.map((item, idx) => (
                             <div
@@ -192,9 +194,10 @@ export const CourseImporterModal = ({
                                         });
                                     }}
                                 />
+                         
                                 {item.type === "Lesson" && <BookOpen className="h-4 w-4 text-primary" />}
                                 <span className={item.type === "Topic" ? "font-medium" : ""}>
-                                    {item.title}
+                                {item.title}
                                 </span>
                             </div>
                         ))}

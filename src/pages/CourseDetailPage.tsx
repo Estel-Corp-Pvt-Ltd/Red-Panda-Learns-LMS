@@ -278,7 +278,7 @@ export default function CourseDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
-                  Course Curriculum
+                  Course Curriculum 
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {course.topics?.length || 0} topics • {totalLessons as number}{" "}
