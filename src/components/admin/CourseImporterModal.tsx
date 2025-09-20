@@ -171,7 +171,7 @@ export const CourseImporterModal = ({
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground line-clamp-2">
-                                        {course.description || "No description"}
+                                        {course.description || "No description"} 
                                     </p>
                                 </CardContent>
                             </Card>
@@ -185,20 +185,40 @@ export const CourseImporterModal = ({
                                 className={`flex items-center gap-2 py-1 ${item.type === "Lesson" ? "pl-6" : ""}`}
                             >
                                 <Checkbox
-                                    checked={item.isSelected}
-                                    onCheckedChange={() => {
-                                        setCurriculum(prev => {
-                                            const updated = [...prev];
-                                            updated[idx] = { ...updated[idx], isSelected: !updated[idx].isSelected };
-                                            return updated;
-                                        });
-                                    }}
+                                    checked={item.isSelected} 
+                                   onCheckedChange={() => {
+    setCurriculum(prev => {
+        const updated = [...prev];
+
+        const clickedItem = updated[idx];
+
+        // If the item is a topic
+        if (clickedItem.type === "Topic") {
+            const newSelectedState = !clickedItem.isSelected;
+            updated[idx] = { ...clickedItem, isSelected: newSelectedState };
+
+            // Select/Deselect lessons under this topic
+            let i = idx + 1;
+            while (i < updated.length && updated[i].type === "Lesson") {
+                updated[i] = { ...updated[i], isSelected: newSelectedState };
+                i++;
+            }
+        } else {
+            // It's a lesson - toggle individually
+            updated[idx] = { ...clickedItem, isSelected: !clickedItem.isSelected };
+        }
+
+        return updated;
+    });
+}}
+
                                 />
                          
-                                {item.type === "Lesson" && <BookOpen className="h-4 w-4 text-primary" />}
+                                {item.type === "Lesson" && <BookOpen className="h-4 w-4 text-primary" />} 
                                 <span className={item.type === "Topic" ? "font-medium" : ""}>
-                                {item.title}
+                                {item.title} 
                                 </span>
+                              
                             </div>
                         ))}
                     </div>

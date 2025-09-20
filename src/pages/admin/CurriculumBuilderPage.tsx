@@ -710,7 +710,7 @@ const CurriculumBuilderPage = () => {
                   <Button
                     onClick={saveCurriculumStructure}
                     disabled={saving}
-                    className="bg-success hover:bg-success/90"
+                    className=" hover:bg-success/90"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {saving ? "Saving..." : "Save"}
