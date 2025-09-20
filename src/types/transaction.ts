@@ -48,6 +48,7 @@ export type TransactionMetadata = {
   ipAddress?: string;
   paymentAttempts: number;
   reasonForRefund?: string;
+  reasonForFailure?: string;
   refundInitiatedBy?: RefundInitiator;
   notes?: string[];
 };
@@ -56,6 +57,7 @@ export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
 
 export interface Transaction {
   id: string; // internal transaction ID (UUID)
+  orderNumber: number;
   userId: string;
   courseId: string;
   parentTransactionId?: string; // if refund, points to original payment
@@ -73,8 +75,6 @@ export interface Transaction {
   paymentDetails: PaymentDetails;
 
   metadata: TransactionMetadata;
-
-  reasonForFailure?: string;
 
   webhookEvents?: WebhookEvent[];
 

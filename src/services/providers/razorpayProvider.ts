@@ -1,6 +1,8 @@
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
 import { enrollmentService } from '../enrollmentService';
+import { CURRENCY, TRANSACTION_STATUS } from '@/constants';
+import { PaymentDetails } from '@/types/transaction';
 
 export interface RazorpayOrder {
   id: string;
@@ -52,7 +54,7 @@ class RazorpayProvider {
         });
 
         // Create order through backend
-        const orderData = await this.createOrder(amount, 'INR', transactionId);
+        const orderData = await this.createOrder(amount, CURRENCY.INR, transactionId);
 
         if (!orderData.success) {
           throw new Error(orderData.error || 'Order creation failed');
@@ -61,10 +63,8 @@ class RazorpayProvider {
         const { order, key_id } = orderData;
 
         // Update transaction status
-        await transactionService.updateTransactionStatus(transactionId, 'processing', {
-          razorpay: {
-            orderId: order.id,
-          },
+        await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.PROCESSING, {
+          orderId: order.id
         });
 
         const options = {
@@ -104,14 +104,10 @@ class RazorpayProvider {
                 console.log('RazorpayProvider - Payment verified, enrolling user');
 
                 // Update transaction with payment details
-                await transactionService.updateTransactionStatus(transactionId, 'completed', {
-                  razorpay: {
-                    orderId: order.id,
-                    paymentId: response.razorpay_payment_id,
-                    signature: response.razorpay_signature,
-                  },
-                }, {
-                  transactionId: response.razorpay_payment_id,
+                await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.COMPLETED, {
+                  orderId: order.id,
+                  paymentId: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
                 });
 
                 // Auto-enroll user after successful payment
@@ -139,9 +135,7 @@ class RazorpayProvider {
               }
             } catch (error) {
               console.error('RazorpayProvider - Payment verification failed:', error);
-              await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
-                failureReason: 'Payment verification failed',
-              });
+              await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, 'Payment verification failed');
 
               resolve({
                 success: false,
@@ -152,9 +146,7 @@ class RazorpayProvider {
           modal: {
             ondismiss: async () => {
               console.log('RazorpayProvider - Payment dismissed by user');
-              await transactionService.updateTransactionStatus(transactionId, 'cancelled', undefined, {
-                failureReason: 'Payment cancelled by user',
-              });
+              await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.CANCELLED, {} as PaymentDetails, 'Payment cancelled by user');
 
               resolve({
                 success: false,
@@ -169,9 +161,7 @@ class RazorpayProvider {
           const rzp = new (window as any).Razorpay(options);
           rzp.open();
         } else {
-          await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
-            failureReason: 'Razorpay SDK not loaded',
-          });
+          await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, 'Razorpay SDK not loaded');
 
           resolve({
             success: false,
@@ -181,9 +171,7 @@ class RazorpayProvider {
       } catch (error) {
         console.error('RazorpayProvider - Payment failed:', error);
 
-        await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
-          failureReason: error instanceof Error ? error.message : 'Unknown error',
-        });
+        await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, error instanceof Error ? error.message : 'Unknown error');
 
         resolve({
           success: false,
