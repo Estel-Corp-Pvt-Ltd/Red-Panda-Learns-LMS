@@ -32,6 +32,7 @@ import BundleDashboardPage from "./pages/BundleDashboardPage";
 import CreateLessonPage from "./pages/admin/CreateLessonPage";
 import EditLessonPage from "./pages/admin/EditLesson";
 import EditUserPage from "./pages/admin/EditUser";
+import LandingPage from "./pages/landingpage";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +46,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<CoursesPage />} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/course/:courseId" element={<CourseDetailPage />} />
                 <Route
                   path="/course/:courseId/lesson/:lessonId"
@@ -191,6 +192,14 @@ const App = () => (
                     <AuthGuard>
                       <BundleDashboardPage />
                     </AuthGuard>
+                  }
+                />
+                 <Route
+                  path="/CoursesPage"
+                  element={
+                   
+                      <CoursesPage />
+                   
                   }
                 />
                 <Route path="*" element={<NotFound />} />

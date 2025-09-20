@@ -5,6 +5,7 @@ import { enrollmentService } from './enrollmentService';
 import { razorpayProvider } from './providers/razorpayProvider';
 import { paypalProvider } from './providers/paypalProvider';
 import { Currency, PaymentProvider } from '@/types/general';
+import { CURRENCY, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
 
 export type PaymentProviderOption = {
   id: string;
@@ -13,14 +14,6 @@ export type PaymentProviderOption = {
   currency: Currency;
   isAvailable: boolean;
   description: string;
-};
-
-export type PaymentDetails = {
-  courseId: string;
-  amount: number;
-  currency: Currency;
-  provider: PaymentProvider;
-  transactionId: string;
 };
 
 export type PaymentResult = {
@@ -54,9 +47,9 @@ class PaymentService {
     return this.providers.filter(provider => provider.isAvailable);
   }
 
-  async calculatePricing(course: Course, targetCurrency: Currency) {
-    const basePrice = course.salePrice || 0;
-    const baseCurrency: Currency = 'INR'; // Assuming course prices are in INR
+  async calculatePricing(salePrice: number, targetCurrency: Currency) {
+    const basePrice = salePrice || 0;
+    const baseCurrency: Currency = CURRENCY.INR; // Assuming course prices are in INR
 
     if (baseCurrency === targetCurrency) {
       return {
@@ -104,31 +97,40 @@ class PaymentService {
         };
       }
 
-      // Calculate pricing for the provider's currency
-      const pricing = await this.calculatePricing(course, providerOption.currency);
+      const pricing = await this.calculatePricing(course.salePrice, providerOption.currency);
 
-      // Create transaction record in Firebase
-      const transactionId = await transactionService.createTransaction(
+      const transactionId = await transactionService.createTransaction({
         userId,
-        course,
-        provider,
-        providerOption.currency,
-        pricing.amount,
-        userEmail,
-        {
-          userAgent: navigator.userAgent,
+        courseId: course.id,
+        type: TRANSACTION_TYPE.PAYMENT,
+        amount: pricing.amount,
+        currency: pricing.currency,
+        originalAmount: pricing.originalAmount,
+        originalCurrency: pricing.originalCurrency,
+        exchangeRate: pricing.exchangeRate,
+        paymentProvider: provider,
+        status: TRANSACTION_STATUS.PENDING,
+        paymentDetails: {
+          orderId: "",
+          paymentId: "",
+        },
+        metadata: {
+          userEmail,
+          courseTitle: course.title,
+          userAgent: "",
+          ipAddress: "",
           paymentAttempts: 1,
         }
-      );
+      });
 
       console.log('PaymentService - Transaction created:', transactionId);
 
       // Process payment with the specific provider
       let result: PaymentResult;
 
-      if (provider === 'razorpay') {
+      if (provider === PAYMENT_PROVIDER.RAZORPAY) {
         result = await razorpayProvider.processPayment(course, userEmail, transactionId, pricing.amount, userId);
-      } else if (provider === 'paypal') {
+      } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
         result = await paypalProvider.processPayment(course, userEmail, transactionId, pricing.amount, userId);
       } else {
         result = {

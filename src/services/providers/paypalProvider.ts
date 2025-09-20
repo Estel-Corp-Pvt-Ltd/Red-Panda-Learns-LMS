@@ -1,7 +1,8 @@
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
 import { enrollmentService } from '../enrollmentService';
-import { CURRENCY, ENVIRONMENT } from '@/constants';
+import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from '@/constants';
+import { PaymentDetails } from '@/types/transaction';
 
 export interface PayPalOrder {
   id: string;
@@ -54,7 +55,7 @@ class PayPalProvider {
 
       return new Promise((resolve) => {
         // Update transaction status to processing
-        transactionService.updateTransactionStatus(transactionId, 'processing');
+        transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.PROCESSING);
 
         const paypal = (window as any).paypal;
 
@@ -82,17 +83,17 @@ class PayPalProvider {
               console.log('PayPal payment successful:', order);
 
               // Update transaction with PayPal details
-              await transactionService.updateTransactionStatus(transactionId, 'completed', {
-                paypal: {
-                  orderId: order.id,
-                  payerId: order.payer.payer_id,
-                  paymentId: order.purchase_units[0].payments.captures[0].id,
-                  intent: order.intent,
-                  status: order.status,
-                },
-              }, {
-                transactionId: order.purchase_units[0].payments.captures[0].id,
-              });
+              await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.COMPLETED, {
+                orderId: order.id,
+                payerId: order.payer.payer_id,
+                paymentId: order.purchase_units[0].payments.captures[0].id,
+                intent: order.intent,
+                status: order.status,
+              }
+                // , {
+                //     transactionId: order.purchase_units[0].payments.captures[0].id,
+                //   }
+              );
 
               // Auto-enroll user after successful payment
               try {
@@ -116,9 +117,7 @@ class PayPalProvider {
             } catch (error) {
               console.error('PayPal capture error:', error);
 
-              await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
-                failureReason: error instanceof Error ? error.message : 'PayPal capture failed',
-              });
+              await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, error instanceof Error ? error.message : 'PayPal capture failed');
 
               resolve({
                 success: false,
@@ -130,9 +129,7 @@ class PayPalProvider {
           onCancel: async (data: any) => {
             console.log('PayPal payment cancelled:', data);
 
-            await transactionService.updateTransactionStatus(transactionId, 'cancelled', undefined, {
-              failureReason: 'Payment cancelled by user',
-            });
+            await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.CANCELLED, {} as PaymentDetails, 'Payment cancelled by user');
 
             resolve({
               success: false,
@@ -143,9 +140,7 @@ class PayPalProvider {
           onError: async (err: any) => {
             console.error('PayPal payment error:', err);
 
-            await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
-              failureReason: err.message || 'PayPal payment error',
-            });
+            await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, err.message || 'PayPal payment error');
 
             resolve({
               success: false,
@@ -157,9 +152,7 @@ class PayPalProvider {
     } catch (error) {
       console.error('PayPal payment setup failed:', error);
 
-      await transactionService.updateTransactionStatus(transactionId, 'failed', undefined, {
-        failureReason: error instanceof Error ? error.message : 'PayPal SDK load failed',
-      });
+      await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, error instanceof Error ? error.message : 'PayPal SDK load failed');
 
       return {
         success: false,

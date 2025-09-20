@@ -20,18 +20,25 @@ import {
 } from '@/types/transaction';
 import { TransactionStatus } from '@/types/general';
 import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '@/constants';
+import { v4 as uuidv4 } from 'uuid';
 
 class TransactionService {
 
   /**
-     * Generates a new transaction ID in the format `transaction_<number>`, starting from 20000000.
-     * Uses a random gap between 10 and 50 to avoid easy guessing.
-     */
-  private async generateTransactionId(): Promise<string> {
+   * Generates a new transaction record with:
+   * - UUID-based transactionId (globally unique, safe for DB).
+   * - Sequential orderNumber (human-friendly, starts from 20000000).
+   * 
+   * Example:
+   * {
+   *   transactionId: "transaction_550e8400-e29b-41d4-a716-446655440000",
+   *   orderNumber: 20000037
+   * }
+   */
+  private async generateTransactionId(): Promise<{ transactionId: string; orderNumber: number }> {
     const counterRef = doc(db, 'counters', 'transactionCounter');
 
-    const newId = await runTransaction(db, async (transaction) => {
-      const gap = Math.floor(Math.random() * (50 - 10 + 1)) + 10; // 10–50 gap
+    const orderNumber = await runTransaction(db, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
 
       let lastNumber = 20000000;
@@ -39,35 +46,41 @@ class TransactionService {
         lastNumber = counterDoc.data().lastNumber;
       }
 
-      const nextNumber = lastNumber + gap;
+      const nextNumber = lastNumber + 1; // strictly sequential for readability
       transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
 
       return nextNumber;
     });
 
-    return `transaction_${newId}`;
+    const transactionId = `transaction_${uuidv4()}`;
+
+    return {
+      transactionId,
+      orderNumber,
+    };
   }
 
   async createTransaction(
-    data: Omit<Transaction, "id" | "createdAt" | "updatedAt">
+    data: Omit<Transaction, "id" | "orderNumber" | "createdAt" | "updatedAt">
   ): Promise<string> {
     try {
-      const transactionId = await this.generateTransactionId();
+      const transactionIdentifiers = await this.generateTransactionId();
 
       const transaction: Transaction = {
-        id: transactionId,
+        id: transactionIdentifiers.transactionId,
+        orderNumber: transactionIdentifiers.orderNumber,
         userId: data.userId,
         courseId: data.courseId || null,
         type: data.type,
         amount: data.amount,
         currency: data.currency,
         originalAmount: data.originalAmount,
+        originalCurrency: data.originalCurrency,
         exchangeRate: data.exchangeRate,
         paymentProvider: data.paymentProvider,
         status: TRANSACTION_STATUS.PENDING,
         paymentDetails: {} as PaymentDetails,
         metadata: data.metadata,
-        reasonForFailure: data.reasonForFailure,
         webhookEvents: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -75,10 +88,10 @@ class TransactionService {
 
       console.log("transaction: ", transaction)
 
-      await setDoc(doc(db, 'Transactions', transactionId), transaction);
+      await setDoc(doc(db, 'Transactions', transactionIdentifiers.transactionId), transaction);
 
-      console.log('Transaction created:', transactionId);
-      return transactionId;
+      console.log('Transaction created:', transactionIdentifiers);
+      return transactionIdentifiers.transactionId;
     } catch (error) {
       console.error('Error creating transaction:', error);
       throw new Error('Failed to create transaction');
@@ -88,27 +101,46 @@ class TransactionService {
   async updateTransactionStatus(
     transactionId: string,
     status: TransactionStatus,
-    paymentDetails?: PaymentDetails
+    paymentDetails?: PaymentDetails,
+    reasonForFailure?: string
   ): Promise<void> {
     try {
+      const transactionRef = doc(db, "Transactions", transactionId);
+      const snapshot = await getDoc(transactionRef);
+
+      if (!snapshot.exists()) {
+        throw new Error(`Transaction ${transactionId} not found`);
+      }
+
+      const existingData = snapshot.data();
       const updateData: any = {
         status,
         updatedAt: serverTimestamp(),
       };
 
       if (paymentDetails) {
-        updateData.paymentDetails = paymentDetails;
+        updateData.paymentDetails = {
+          ...(existingData.paymentDetails || {}),
+          ...paymentDetails,
+        };
+      }
+
+      if (reasonForFailure) {
+        updateData.metadata = {
+          ...(existingData.metadata || {}),
+          reasonForFailure,
+        };
       }
 
       if (status === TRANSACTION_STATUS.COMPLETED) {
         updateData.completedAt = serverTimestamp();
       }
 
-      await updateDoc(doc(db, 'Transactions', transactionId), updateData);
-      console.log('Transaction updated:', transactionId, status);
+      await updateDoc(transactionRef, updateData);
+      console.log("Transaction updated:", transactionId, status);
     } catch (error) {
-      console.error('Error updating transaction:', error);
-      throw new Error('Failed to update transaction');
+      console.error("Error updating transaction:", error);
+      throw new Error("Failed to update transaction");
     }
   }
 

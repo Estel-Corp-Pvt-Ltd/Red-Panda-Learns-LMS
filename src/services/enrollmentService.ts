@@ -207,7 +207,7 @@ class EnrollmentService {
       console.log('EnrollmentService - Starting bundle enrollment:', {
         userId,
         bundleId: bundle.id,
-        courseCount: bundle.courseIds.length,
+        // courseCount: bundle.courseIds.length,
         paymentId,
         paymentProvider
       });
