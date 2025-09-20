@@ -2,6 +2,7 @@ import { collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, where 
 import { db } from '@/firebaseConfig';
 import { CurrencyRate } from '@/types/transaction';
 import { Currency } from '@/types/general';
+import { CURRENCY } from '@/constants';
 
 class CurrencyService {
   // TODO: Use this, maybe
@@ -438,12 +439,12 @@ class CurrencyService {
     const formatters = {
       INR: new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'INR',
+        currency: CURRENCY.INR
       }),
       USD: new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
-      }),
+        currency: CURRENCY.USD
+      })
     };
 
     return formatters[currency].format(amount);
