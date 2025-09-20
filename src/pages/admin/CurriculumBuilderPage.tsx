@@ -709,7 +709,7 @@ const CurriculumBuilderPage = () => {
                   <Button
                     onClick={saveCurriculumStructure}
                     disabled={saving}
-                  >
+                    >
                     <Save className="mr-2 h-4 w-4" />
                     {saving ? "Saving..." : "Save"}
                   </Button>
