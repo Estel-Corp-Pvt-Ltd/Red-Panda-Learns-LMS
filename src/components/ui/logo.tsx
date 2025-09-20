@@ -5,9 +5,13 @@ interface LogoProps {
 export const Logo = ({ className = "" }: LogoProps) => {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className="w-8 h-8 bg-gradient-to-br from-brand-fuchsia to-brand-blue rounded-lg flex items-center justify-center">
-        <div className="w-4 h-4 bg-white rounded-sm"></div>
-      </div>
+     <div className="w-8 h-8 rounded-lg overflow-hidden">
+  <img
+    src="https://www.vizuara.com/lovable-uploads/4759bf6b-47a5-457f-8246-61d08da3288d.png"
+    alt="Logo"
+    className="w-full h-full object-cover"
+  />
+</div>
       <span className="text-xl font-bold text-foreground">Vizuara</span>
     </div>
   );

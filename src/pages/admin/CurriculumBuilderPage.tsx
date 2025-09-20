@@ -25,7 +25,8 @@ import {
   Trash2,
   GripVertical,
   Upload,
-  Save
+  Save,
+  BookOpen
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,14 +64,19 @@ const SortableItem = ({ id, children, type }: SortableItemProps) => {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    marginLeft: type === LEARNING_UNIT.LESSON ? "2rem" : 0,
+    marginLeft:
+      String(type).toLowerCase() === String(LEARNING_UNIT.LESSON).toLowerCase()
+        ? "2rem"
+        : 0,
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group">
+      <div
+        className={`flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group${type === LEARNING_UNIT.LESSON ? ' ml-[3px]' : ''}`}
+      >
         <div {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <GripVertical className="h-4 w-4 text-muted-foreground " />
         </div>
         {children}
       </div>
@@ -693,7 +699,7 @@ const CurriculumBuilderPage = () => {
           <TabsContent value="curriculum">
             <Card>
               <CardHeader>
-                <CardTitle>Course Curriculum</CardTitle>
+                <CardTitle>Course Curriculum </CardTitle>
                 <div className="flex gap-4 mt-4">
                   <Button variant="outline" onClick={() => setIsCourseImporterModalOpen(true)}>
                     <Upload className="mr-2 h-4 w-4" /> Import
@@ -721,71 +727,105 @@ const CurriculumBuilderPage = () => {
                     items={curriculum.map(i => i.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="space-y-2">
-                      {curriculum.map(item => (
-                        <SortableItem key={item.id} id={item.id} type={item.type}>
-                          {item.type === LEARNING_UNIT.TOPIC && <FolderOpen className="h-5 w-5 text-primary" />}
-                          {item.type === LEARNING_UNIT.LESSON && <FileText className="h-4 w-4 text-accent" />}
-                          {editingTopic === item.id.replace("topic-", "") && item.type === LEARNING_UNIT.TOPIC ? (
-                            <Input
-                              value={newTopicName}
-                              onChange={(e) => setNewTopicName(e.target.value)}
-                              onBlur={() => {
-                                updateTopicName(item.id.replace("topic-", ""), newTopicName);
-                                setEditingTopic(null);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  updateTopicName(item.id.replace("topic-", ""), newTopicName);
-                                  setEditingTopic(null);
-                                }
-                              }}
-                              className="flex-1"
-                              autoFocus
-                            />
-                          ) : (
-                            <span className="flex-1">{item.title}</span>
-                          )}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {item.type === LEARNING_UNIT.TOPIC && (
-                              <>
-                                <Button variant="ghost" size="sm" onClick={() => addLesson(item.id)}>
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingTopic(item.id.replace("topic-", ""));
-                                    setNewTopicName(item.title);
-                                  }}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteTopic(item.id.replace("topic-", ""))}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            {item.type === LEARNING_UNIT.LESSON && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteLesson(item.id.replace("lesson-", ""))}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </SortableItem>
-                      ))}
-                    </div>
+                
+
+                <div className="space-y-2">
+  {curriculum.map((item) => {
+    console.log("Rendering item:", item); // 🔍 Debugging line
+
+    const itemType = item.type.toLowerCase();
+    const topicType = LEARNING_UNIT.TOPIC.toLowerCase();
+    const lessonType = LEARNING_UNIT.LESSON.toLowerCase();
+
+    return (
+      <SortableItem key={item.id} id={item.id} type={item.type}>
+        <div className="flex items-center justify-between w-full  ">
+           <div className="flex items-center gap-x-2 flex-1 translate-x-2">
+    {itemType === topicType && (
+      <FolderOpen className="h-5 w-5 text-primary" />
+    )}
+    {itemType === lessonType && (
+     
+  <BookOpen className="h-4 w-4 text-red-500 " />
+     
+    )}
+
+            {editingTopic === item.id.replace("topic-", "") &&
+            itemType === topicType ? (
+              <Input
+                value={newTopicName}
+                onChange={(e) => setNewTopicName(e.target.value)}
+                onBlur={() => {
+                  updateTopicName(item.id.replace("topic-", ""), newTopicName);
+                  setEditingTopic(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    updateTopicName(
+                      item.id.replace("topic-", ""),
+                      newTopicName
+                    );
+                    setEditingTopic(null);
+                  }
+                }}
+                className="flex-1"
+                autoFocus
+              />
+            ) : (
+              <span className="flex-1 " >{item.title}</span>
+            )}
+          </div>
+
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {itemType === topicType && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => addLesson(item.id)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingTopic(item.id.replace("topic-", ""));
+                    setNewTopicName(item.title);
+                  }}
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteTopic(item.id.replace("topic-", ""))}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {itemType === lessonType && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => deleteLesson(item.id.replace("lesson-", ""))}
+                className="text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </SortableItem>
+    );
+  })}
+</div>
+
+
+
+                
                   </SortableContext>
                 </DndContext>
               </CardContent>
