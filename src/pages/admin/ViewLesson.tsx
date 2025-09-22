@@ -24,8 +24,8 @@ import { LEARNING_UNIT, LESSON_TYPE } from "@/constants";
 import SmartVideoPlayer from "@/components/SmartVideoPlayer";
 import LmsVideoPlayer from "@/components/LMSVideoPlayer";
 
-export default function LessonDetailPage() {
-  const { courseId, lessonId } = useParams<{
+export default function ViewLessonAdmin() {
+  const {  courseId,lessonId } = useParams<{
     courseId: string;
     lessonId: string;
   }>();
@@ -35,22 +35,32 @@ export default function LessonDetailPage() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(
     null
   );
+  
+console.log("courseId param:", courseId);
+const { data: course, isLoading: courseLoading } = useCourseQuery(courseId!);
 
-  const { data: course, isLoading: courseLoading } = useCourseQuery(courseId!);
+useEffect(() => {
+  console.log('Course data:', course);
+}, [course]);
 
   const isLoading = courseLoading;
 
   useEffect(() => {
     if (!isLoading) {
-      console.log("Courses are loading",course)
+      console.log(course)
     }
   }, [isLoading]);
 
-  const loadLessons = async () => {
-    const allLessonIds = course.topics.flatMap(topic => topic.items.map(item => item.id));
-    const allLessons = await lessonService.getLessonsByIds(allLessonIds);
-    setLessons(allLessons);
-  };
+const loadLessons = async () => {
+  if (!course?.topics) {
+    console.warn('Course or course topics are missing');
+    return;
+  }
+  const allLessonIds = course.topics.flatMap(topic => topic.items.map(item => item.id));
+  const allLessons = await lessonService.getLessonsByIds(allLessonIds);
+  console.log('Loaded lessons:', allLessons);
+  setLessons(allLessons);
+};
 
   useEffect(() => {
     if (course)
@@ -112,7 +122,7 @@ export default function LessonDetailPage() {
               className="h-screen"
               onLessonClick={(item) => {
                 if (item.type === LEARNING_UNIT.LESSON) {
-                  handleLessonSelect(lessonId);
+                  handleLessonSelect(item.id);
                 }
               }}
             />
@@ -137,6 +147,7 @@ export default function LessonDetailPage() {
   const hasVideo = selectedLesson.type === LESSON_TYPE.VIDEO_LECTURE;
 
   const getLessonContent = () => {
+    if (!selectedLesson) return null;
     let container = <></>;
     switch (selectedLesson.type) {
       case LESSON_TYPE.SLIDE_DECK:
@@ -247,7 +258,7 @@ export default function LessonDetailPage() {
 
                 <Button variant="outline" size="sm" onClick={markLessonComplete}>
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark Complete 
+                  Mark Complete
                 </Button>
               </div>
             </div>
