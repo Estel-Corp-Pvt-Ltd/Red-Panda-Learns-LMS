@@ -6,12 +6,14 @@ import {
     where,
     getDocs,
     deleteDoc,
-    runTransaction,
+    updateDoc,
+    arrayUnion,
+    getDoc
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
 import { Enrollment } from '@/types/enrollment';
-import { CURRENCY, ENROLLMENT_STATUS, PAYMENT_PROVIDER, PAYMENT_STATUS, USER_ROLE } from '@/constants';
+import { CURRENCY, ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS, PAYMENT_PROVIDER, PAYMENT_STATUS, PRICING_MODEL, USER_ROLE } from '@/constants';
 import { EnrolledProgramType } from '@/types/general';
 
 class EnrollmentService {
@@ -38,34 +40,35 @@ class EnrollmentService {
                 id: enrollmentId,
                 userId,
                 targetId: targetId, // could be course or bundle ID
-                programType,
+                targetType: programType,
                 enrollmentDate: new Date(),
                 status: ENROLLMENT_STATUS.ACTIVE, // default
                 role: USER_ROLE.STUDENT,  // default
                 currentLessonId,
                 progress: {
                     completedLessons: 0,
+                    lessonHistory: [],
                     totalLessons: 0,
                     percentage: 0,
                 },
                 lastAccessed: new Date(),
                 completionDate: null,
-                certificateIssued: false,
-                grade: null,
-                payment: {
-                    status: PAYMENT_STATUS.PENDING,
-                    actualAmount: 0,
-                    currency: CURRENCY.INR,
-                    amountPaid: 0,
-                    balance: 0,
-                    transactionId: null,
-                    provider: PAYMENT_PROVIDER.RAZORPAY,
-                    paidAt: null,
+                updatedAt: new Date(),
+                certificate: {
+                    issued: false
                 },
+                grade: null,
+                pricingModel: PRICING_MODEL.PAID
             };
 
             await setDoc(doc(db, 'Enrollments', enrollmentId), enrollment);
             console.log('EnrollmentService - User enrolled successfully:', enrollmentId);
+
+            // Update user's enrollments
+            const userDocRef = doc(db, 'Users', userId);
+            await updateDoc(userDocRef, {
+                enrollments: arrayUnion({ targetId, targetType: programType })
+            });
 
             return enrollmentId;
         } catch (error) {
@@ -77,18 +80,29 @@ class EnrollmentService {
     /**
      * Checks if a user is enrolled in a specific course/bundle.
      */
-    async isUserEnrolled(userId: string, targetId: string): Promise<boolean> {
+    async isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
         try {
+            // 1. Direct course enrollment (O(1))
+            const enrollmentId = `${userId}_${courseId}`;
+            const enrollmentDoc = await getDoc(doc(db, "Enrollments", enrollmentId));
+
+            if (enrollmentDoc.exists() && enrollmentDoc.data()?.status === ENROLLMENT_STATUS.ACTIVE) {
+                return true;
+            }
+
+            // 2. Bundle enrollment (O(n) over user’s active bundles, usually very small)
             const q = query(
-                collection(db, 'Enrollments'),
-                where('userId', '==', userId),
-                where('targetId', '==', targetId)
+                collection(db, "Enrollments"),
+                where("userId", "==", userId),
+                where("targetType", "==", ENROLLED_PROGRAM_TYPE.BUNDLE),
+                where("status", "==", ENROLLMENT_STATUS.ACTIVE),
+                where("bundleCourseIds", "array-contains", courseId)
             );
 
-            const querySnapshot = await getDocs(q);
-            return !querySnapshot.empty;
-        } catch (error) {
-            console.error('EnrollmentService - Error checking enrollment:', error);
+            const bundleSnapshot = await getDocs(q);
+            return !bundleSnapshot.empty;
+        } catch (err) {
+            console.error("Error checking enrollment:", err);
             return false;
         }
     }
@@ -98,7 +112,11 @@ class EnrollmentService {
      */
     async getUserEnrollments(userId: string): Promise<Enrollment[]> {
         try {
-            const q = query(collection(db, 'Enrollments'), where('userId', '==', userId));
+            const q = query(
+                collection(db, 'Enrollments'),
+                where('userId', '==', userId),
+                where('status', '==', ENROLLMENT_STATUS.ACTIVE),
+            );
             const querySnapshot = await getDocs(q);
 
             return querySnapshot.docs.map((doc) => ({
