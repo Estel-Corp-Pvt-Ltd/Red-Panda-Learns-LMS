@@ -5,8 +5,7 @@ import {
     query,
     where,
     getDocs,
-    deleteDoc,
-    runTransaction,
+    deleteDoc
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';

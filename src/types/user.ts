@@ -8,6 +8,7 @@ export interface User {
     lastName: string;
     role: UserRole;
     status: UserStatus;
+    enrollments: String[];
     organizationId?: string;
     photoURL?: string;
     createdAt: Date;

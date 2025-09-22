@@ -114,6 +114,7 @@ class AuthService {
         lastName,
         role: USER_ROLE.STUDENT,
         status: USER_STATUS.ACTIVE,
+        enrollments: [],
         organizationId: null,
         photoURL: firebaseUser.photoURL || null,
       });
@@ -166,6 +167,7 @@ class AuthService {
         lastName,
         role: existingDoc.exists() ? (existingDoc.data().role as UserRole) : USER_ROLE.STUDENT,
         status: existingDoc.exists() ? (existingDoc.data().status as UserStatus) : USER_STATUS.ACTIVE,
+        enrollments: [],
         organizationId: existingDoc.exists() ? existingDoc.data().organizationId : null,
         photoURL: firebaseUser.photoURL || null,
       });
