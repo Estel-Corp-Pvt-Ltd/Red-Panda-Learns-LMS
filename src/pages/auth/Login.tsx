@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, replace } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,13 +41,15 @@ export default function Login() {
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
-
         
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
         } else {
           navigate(from, { replace: true });
         }
+        
+        navigate('/dashboard', { replace: true });
+
         return;
       }
 
@@ -80,6 +82,8 @@ export default function Login() {
       } else {
         navigate(from, { replace: true });
       }
+      navigate('/dashboard', { replace: true });
+
     } catch (err: any) {
       setError(err.message);
     } finally {

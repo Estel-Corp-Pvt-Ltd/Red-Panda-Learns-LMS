@@ -32,6 +32,9 @@ import { Lesson } from "@/types/lesson";
 import { BUNDLE_STATUS, COURSE_STATUS, USER_ROLE, USER_STATUS } from "@/constants";
 import { User } from "@/types/user";
 import { userService } from "@/services/userService";
+// import { useCourseQuery } from "@/hooks/useFirebaseApi";
+
+// const course = useCourseQuery() =;
 
 const statsData = {
   totalRevenue: 45231,
@@ -59,6 +62,7 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
+
 
   useEffect(() => {
     loadCourses();
@@ -101,10 +105,13 @@ export function AdminDashboard() {
     }
   };
 
+
   const loadCourses = async () => {
     try {
       const coursesList = await courseService.getAllCourses();
       setCourses(coursesList);
+      const courseIds = coursesList.map(course => course.topics);
+      console.log("This Are CourseIDs",courseIds);
     } catch (error) {
       toast({
         title: "Error",
@@ -150,6 +157,7 @@ export function AdminDashboard() {
     try {
       const lessonsList = await lessonService.getAllLessons();
       setLessons(lessonsList);
+      console.log(lessonsList);
     } catch (error) {
       toast({
         title: "Error",
@@ -375,6 +383,7 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
+                      
                         {lessons.map((lesson) => (
                           <TableRow key={lesson.id}>
                             <TableCell>
@@ -393,14 +402,32 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/lesson/${lesson.id}`)}
-                                  title="View Lesson"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
+                               <Button
+  variant="ghost"
+  size="sm"
+  onClick={() => {
+    const course = courses.find(course =>
+      course.topics?.some(topic =>
+        topic.items?.some(item => item.id === lesson.id)
+      )
+    );
+
+    if (!course) {
+      toast({
+        title: "Course not found",
+        description: `No course found for lesson "${lesson.title}"`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
+  }}
+  title="View Lesson"
+>
+  <Eye className="h-4 w-4" />
+</Button>
+
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -461,6 +488,7 @@ export function AdminDashboard() {
                       </TableHeader>
                       <TableBody>
                         {courses.map((course) => (
+                          
                           <TableRow key={course.id}>
                             <TableCell>
                               <div>

@@ -179,49 +179,73 @@ export const CourseImporterModal = ({
                         ))}
                     </div>
                 ) : curriculum ? (
-                    <div className="flex flex-col gap-2">
-                        {curriculum.map((item, idx) => (
-                            <div
-                                key={item.id}
-                                className={`flex items-center gap-2 py-1 ${item.type === LEARNING_UNIT.LESSON ? "pl-6" : ""}`}
-                            >
-                                <Checkbox
-                                    checked={item.isSelected} 
-                                   onCheckedChange={() => {
-    setCurriculum(prev => {
-        const updated = [...prev];
+                  <div className="flex flex-col gap-2">
+  {(() => {
+    const filteredCurriculum = curriculum.filter((item, idx) => {
+      if (item.type !== LEARNING_UNIT.TOPIC) return true;
 
-        const clickedItem = updated[idx];
-
-        // If the item is a topic
-        if (clickedItem.type === "Topic") {
-            const newSelectedState = !clickedItem.isSelected;
-            updated[idx] = { ...clickedItem, isSelected: newSelectedState };
-
-            // Select/Deselect lessons under this topic
-            let i = idx + 1;
-            while (i < updated.length && updated[i].type === "Lesson") {
-                updated[i] = { ...updated[i], isSelected: newSelectedState };
-                i++;
-            }
-        } else {
-            // It's a lesson - toggle individually
-            updated[idx] = { ...clickedItem, isSelected: !clickedItem.isSelected };
-        }
-
-        return updated;
+      // Check if the topic has at least one lesson after it
+      let i = idx + 1;
+      while (i < curriculum.length) {
+        if (curriculum[i].type === LEARNING_UNIT.TOPIC) break;
+        if (curriculum[i].type === LEARNING_UNIT.LESSON) return true;
+        i++;
+      }
+      return false;
     });
-}}
 
-                                />
-                                {item.type === LEARNING_UNIT.LESSON && <BookOpen className="h-4 w-4 text-primary" />}
-                                <span className={item.type === LEARNING_UNIT.TOPIC ? "font-medium" : ""}>
-                                    {item.title}
-                                </span>
-                              
-                            </div>
-                        ))}
-                    </div>
+    if (filteredCurriculum.length === 0) {
+      return <div className="text-sm text-muted-foreground">No topics available.</div>;
+    }
+
+    return filteredCurriculum.map((item, idx) => (
+      <div
+        key={item.id}
+        className={`flex items-center gap-2 py-1 ${
+          item.type === LEARNING_UNIT.LESSON ? "pl-6" : ""
+        }`}
+      >
+        <Checkbox
+          checked={item.isSelected}
+          onCheckedChange={() => {
+            setCurriculum((prev) => {
+              const updated = [...prev];
+              const clickedItem = updated.find((i) => i.id === item.id);
+              const itemIndex = updated.findIndex((i) => i.id === item.id);
+
+              if (!clickedItem) return prev;
+
+              if (clickedItem.type === LEARNING_UNIT.TOPIC) {
+                const newSelectedState = !clickedItem.isSelected;
+                updated[itemIndex] = { ...clickedItem, isSelected: newSelectedState };
+
+                // Select/Deselect all lessons under this topic
+                let i = itemIndex + 1;
+                while (i < updated.length && updated[i].type === LEARNING_UNIT.LESSON) {
+                  updated[i] = { ...updated[i], isSelected: newSelectedState };
+                  i++;
+                }
+              } else {
+                updated[itemIndex] = {
+                  ...clickedItem,
+                  isSelected: !clickedItem.isSelected,
+                };
+              }
+
+              return updated;
+            });
+          }}
+        />
+        {item.type === LEARNING_UNIT.LESSON && (
+          <BookOpen className="h-4 w-4 text-primary" />
+        )}
+        <span className={item.type === LEARNING_UNIT.TOPIC ? "font-medium" : ""}>
+          {item.title}
+        </span>
+      </div>
+    ));
+  })()}
+</div>
 
                 ) : null}
 

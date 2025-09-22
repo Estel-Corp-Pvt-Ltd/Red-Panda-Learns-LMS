@@ -23,3 +23,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Firebase cache & config
+.firebase/
+
+# Firebase debug logs
+firebase-debug.log*
+firebase-debug.*.log*
+
+# Local emulators state
+firebase-debug.json
+storage-debug.log
+
+# Build outputs (adjust for your framework)
+build/
+dist/
+functions/lib/
+functions/node_modules/
+
+# Node dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
