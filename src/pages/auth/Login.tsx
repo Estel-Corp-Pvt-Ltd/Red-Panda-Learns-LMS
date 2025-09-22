@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Mail, Lock, Chrome, BookOpen } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/header';
+import { USER_ROLE } from '@/constants';   
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -26,20 +27,29 @@ export default function Login() {
   const from = (location.state as any)?.from?.pathname || '/';
   const message = (location.state as any)?.message;
 
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const { success, error } = await login(email, password);
+      const { success, error, user } = await login(email, password);
 
       if (success) {
         toast({
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
+        
+        if (user?.role === USER_ROLE.ADMIN) {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate(from, { replace: true });
+        }
+        
         navigate('/dashboard', { replace: true });
+
         return;
       }
 
@@ -54,17 +64,26 @@ export default function Login() {
     }
   };
 
+  
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
 
     try {
-      await loginWithGoogle();
+      const user = await loginWithGoogle();
       toast({
         title: "Welcome!",
         description: "You have successfully logged in with Google.",
       });
+
+      // 👇 Check if admin
+      if (user?.role === USER_ROLE.ADMIN) {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
       navigate('/dashboard', { replace: true });
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -103,6 +122,7 @@ export default function Login() {
               </Alert>
             )}
 
+           
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -150,10 +170,7 @@ export default function Login() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Link
-                  to="/auth/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
+                <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -163,6 +180,7 @@ export default function Login() {
               </Button>
             </form>
 
+           
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
@@ -196,4 +214,4 @@ export default function Login() {
       </div>
     </div>
   );
-};
+}
