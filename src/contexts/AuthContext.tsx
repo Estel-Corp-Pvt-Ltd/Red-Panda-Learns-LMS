@@ -89,9 +89,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await authService.signOut();
   };
 
-  const resetPassword = async (email: string) => {
+const resetPassword = async (email: string) => {
+  try {
     await authService.sendPasswordResetEmail(email);
-  };
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      console.warn("⚠️ No user found with email:", email);
+    } else {
+      console.error("❌ Error sending password reset email:", error);
+    }
+    throw error; // rethrow if you want to handle it elsewhere
+  }
+};
+
 
   const value = {
     user,
