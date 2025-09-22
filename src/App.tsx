@@ -33,8 +33,12 @@ import CreateLessonPage from "./pages/admin/CreateLessonPage";
 import EditLessonPage from "./pages/admin/EditLesson";
 import EditUserPage from "./pages/admin/EditUser";
 import LandingPage from "./pages/landingpage";
+import ViewLessonAdmin from "./pages/admin/ViewLesson";
+import { useCourseQuery } from "./hooks/useFirebaseApi";
 
 const queryClient = new QueryClient();
+
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -79,6 +83,15 @@ const App = () => (
                   element={
                     <AuthGuard requireAuth requireAdmin>
                       <AdminDashboard />
+                    </AuthGuard>
+                  }
+                />
+                 <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
+                <Route
+                  path="/admin/course/:courseId/lesson/:lessonId"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <ViewLessonAdmin />
                     </AuthGuard>
                   }
                 />

@@ -33,7 +33,7 @@ import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuth(); 
   const { isEnrolled } = useEnrollment();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
