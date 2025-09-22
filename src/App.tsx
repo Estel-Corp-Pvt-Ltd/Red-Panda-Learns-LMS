@@ -34,7 +34,9 @@ import EditLessonPage from "./pages/admin/EditLesson";
 import EditUserPage from "./pages/admin/EditUser";
 import LandingPage from "./pages/landingpage";
 import ViewLessonAdmin from "./pages/admin/ViewLesson";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 import { useCourseQuery } from "./hooks/useFirebaseApi";
+import SetNewPassword from "./pages/auth/PasswordReset";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +64,8 @@ const App = () => (
                 />
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/signup" element={<Signup />} />
+                <Route path="/auth/forgot-password" element={< ForgotPassword />} />
+                <Route path="/auth/reset-password" element={<SetNewPassword />} />
                 <Route
                   path="/checkout/:courseId"
                   element={
