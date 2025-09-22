@@ -48,7 +48,7 @@ export default function Signup() {
           title: "Account created successfully!",
           description: "Welcome to Vizuara AI Labs. You can now access your courses.",
         });
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         toast({
           title: "Sign up failed!",
@@ -72,7 +72,7 @@ export default function Signup() {
         title: "Account created successfully!",
         description: "Welcome to Vizuara AI Labs. You can now access your courses.",
       });
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message);
     } finally {
