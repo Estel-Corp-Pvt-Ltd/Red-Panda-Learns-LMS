@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { bundleService } from '@/services/bundleService';
+import { doc,updateDoc , setDoc , getDoc  , Timestamp} from 'firebase/firestore';
 
+import { db } from '@/firebaseConfig';
 // Query keys for consistent caching
 export const bundleQueryKeys = {
   bundles: ['bundles'] as const,
@@ -41,7 +43,7 @@ export const useBundleQuery = (bundleId: string) => {
 };
 
 export const useBundleCoursesQuery = (bundleId: string) => {
-  console.log("useOurse", bundleId)
+  // console.log("useourse", bundleId)
   return useQuery({
     queryKey: bundleQueryKeys.bundleCourses(bundleId),
     queryFn: () => bundleService.getBundleCourses(bundleId),
@@ -49,6 +51,35 @@ export const useBundleCoursesQuery = (bundleId: string) => {
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
   });
+};
+
+
+/**
+ * Updates or creates a bundle document in Firestore.
+ *
+ * @param bundleId - The ID of the bundle document to update.
+ * @param updatedData - An object containing the fields to update.
+ */
+export const updateBundleQuery = async (
+  bundleId: string,
+  updatedData: Record<string, any>
+): Promise<void> => {
+  const bundleRef = doc(db, "Bundles", bundleId);
+
+
+  try {
+    const snap = await getDoc(bundleRef);
+
+
+    if (snap.exists()) {
+      await updateDoc(bundleRef, updatedData);
+    } else {
+      await setDoc(bundleRef, updatedData, { merge: true });
+    }
+  } catch (error) {
+    console.error("❌ Error updating bundle:", error);
+    throw error;
+  }
 };
 
 export const useBundlePricingQuery = (courseIds: string[]) => {
@@ -80,6 +111,8 @@ export const useBundleApiPrefetch = () => {
       staleTime: 10 * 60 * 1000,
     });
   };
+
+  
 
   return {
     prefetchBundle,

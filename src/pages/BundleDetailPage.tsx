@@ -37,6 +37,7 @@ export default function BundleDetailPage() {
   }, [user, bundle, isEnrolledInBundle, loading]);
 
   if (isLoading || coursesLoading || loading || !enrollmentChecked) {
+    console.log("Bundle ----> Data", bundle)
     return (
       <div className="min-h-screen bg-background">
         <Header />

@@ -359,6 +359,8 @@ class BundleService {
     }
   }
 
+
+  
   /**
  * Retrieves all courses associated with a specific bundle from Firestore.
  *
@@ -456,3 +458,4 @@ class BundleService {
 };
 
 export const bundleService = new BundleService();
+

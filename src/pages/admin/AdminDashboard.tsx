@@ -605,6 +605,14 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
+                                 <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`edit-bundle/${bundle.id}`)}
+                                  title="Edit Bundle"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
