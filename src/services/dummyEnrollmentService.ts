@@ -20,7 +20,7 @@ import {
   USER_ROLE
 } from "@/constants";
 import { EnrolledProgramType } from "@/types/general";
-import { LearningProgress } from "@/types/progress";
+import { LearningProgress } from "@/types/learningProgress";
 
 class EnrollmentService {
   /**
@@ -44,7 +44,11 @@ class EnrollmentService {
       completedLessons: 0,
       lessonHistory: [],
       totalLessons: 0,
-      percentage: 0
+      percentage: 0,
+      updatedAt: null,
+      certification: {
+        issued: false
+      }
     };
   }
 
@@ -56,6 +60,7 @@ class EnrollmentService {
     targetId: string,
     programType: EnrolledProgramType,
     currentLessonId: string = "",
+    // TODO: Can use the bundle Id directly
     bundleCourseIds: string[] = []
   ): Promise<string> {
     try {
@@ -77,20 +82,14 @@ class EnrollmentService {
           status: ENROLLMENT_STATUS.ACTIVE,
           role: USER_ROLE.STUDENT,
           progress, // direct course-level progress
-          lastAccessed: now,
-          completionDate: null,
-          updatedAt: now,
-          certificate: {
-            issued: false
-          },
-          grade: null,
           pricingModel: PRICING_MODEL.PAID
         };
       } else {
         // Bundle enrollment
-        const perCourse = bundleCourseIds.map((cid) =>
-          this.initCourseProgress(cid)
-        );
+        const bundleProgress = bundleCourseIds.map((courseId) => {
+          const progress = this.initCourseProgress(courseId);
+          return { courseId: progress.courseId, progressId: progress.id };
+        });
 
         enrollment = {
           id: enrollmentId,
@@ -100,21 +99,17 @@ class EnrollmentService {
           enrollmentDate: now,
           status: ENROLLMENT_STATUS.ACTIVE,
           role: USER_ROLE.STUDENT,
-          bundleCourseIds,
           progress: {
             completedLessons: 0,
             lessonHistory: [],
             totalLessons: 0,
-            percentage: 0
+            percentage: 0,
+            certification: {
+              issued: false
+            },
+            updatedAt: null
           }, // overall bundle progress
-          courseProgress: perCourse, // store progress for each course inside bundle
-          lastAccessed: now,
-          completionDate: null,
-          updatedAt: now,
-          certificate: {
-            issued: false
-          },
-          grade: null,
+          bundleProgress, // store progress for each course inside bundle
           pricingModel: PRICING_MODEL.PAID
         };
       }

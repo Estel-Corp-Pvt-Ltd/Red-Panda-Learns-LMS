@@ -2,7 +2,8 @@
  * Learning progress and certification always represents a single course's progress
  */
 export interface LearningProgress {
-  courseId: string;            
+  id?: string;
+  courseId?: string;
   currentLessonId?: string | null;
   lastAccessed?: Date | null;
 
@@ -17,4 +18,8 @@ export interface LearningProgress {
     issuedAt?: Date | null;
     certificateId?: string; // Optional unique certificate ID
   };
-}
+
+  completionDate?: Date;
+  updatedAt: Date;
+  grade?: number | string | null;
+};
