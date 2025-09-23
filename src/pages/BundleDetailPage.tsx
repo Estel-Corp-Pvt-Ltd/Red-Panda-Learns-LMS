@@ -79,7 +79,7 @@ export default function BundleDetailPage() {
         {/* Back Navigation */}
         <Button
           variant="ghost"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/admin')}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />

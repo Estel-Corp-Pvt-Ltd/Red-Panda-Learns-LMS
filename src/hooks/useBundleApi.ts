@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { bundleService } from '@/services/bundleService';
 import { doc,updateDoc , setDoc , getDoc  , Timestamp} from 'firebase/firestore';
 
+import { useMutation, useQueryClient ,useQuery } from "@tanstack/react-query";
 import { db } from '@/firebaseConfig';
 // Query keys for consistent caching
 export const bundleQueryKeys = {
@@ -54,32 +54,28 @@ export const useBundleCoursesQuery = (bundleId: string) => {
 };
 
 
-/**
- * Updates or creates a bundle document in Firestore.
- *
- * @param bundleId - The ID of the bundle document to update.
- * @param updatedData - An object containing the fields to update.
- */
-export const updateBundleQuery = async (
-  bundleId: string,
-  updatedData: Record<string, any>
-): Promise<void> => {
-  const bundleRef = doc(db, "Bundles", bundleId);
+export const useUpdateBundleMutation = () => {
+  const queryClient = useQueryClient();
 
+  return useMutation({
+    mutationFn: ({
+      bundleId,
+      updatedData,
+    }: {
+      bundleId: string;
+      updatedData: Record<string, any>;
+    }) => bundleService.updateBundleQuery(bundleId, updatedData), 
 
-  try {
-    const snap = await getDoc(bundleRef);
+    onSuccess: (_, { bundleId }) => {
+      queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundles });
+      queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundle(bundleId) });
+      queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundleCourses(bundleId) });
+    },
 
-
-    if (snap.exists()) {
-      await updateDoc(bundleRef, updatedData);
-    } else {
-      await setDoc(bundleRef, updatedData, { merge: true });
-    }
-  } catch (error) {
-    console.error("❌ Error updating bundle:", error);
-    throw error;
-  }
+    onError: (error) => {
+      console.error("❌ Error in mutation:", error);
+    },
+  });
 };
 
 export const useBundlePricingQuery = (courseIds: string[]) => {

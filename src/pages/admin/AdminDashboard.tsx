@@ -33,9 +33,11 @@ import { BUNDLE_STATUS, COURSE_STATUS, USER_ROLE, USER_STATUS } from "@/constant
 import { User } from "@/types/user";
 import { userService } from "@/services/userService";
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
+import { useLocation } from "react-router-dom";
+
+import { useBundleQuery } from "@/hooks/useBundleApi";
 
 // const course = useCourseQuery() =;
-
 const statsData = {
   totalRevenue: 45231,
   activeStudents: 2350,
@@ -48,7 +50,7 @@ const statsData = {
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -64,15 +66,16 @@ export function AdminDashboard() {
   const [bundlesLoading, setBundlesLoading] = useState(true);
 
 
-  useEffect(() => {
+useEffect(() => {
+  if (location.pathname === '/admin') {
     loadCourses();
     loadCohorts();
     loadBundles();
     loadLessons();
     loadAuthors();
     loadUsers();
-  }, []);
-
+  }
+}, [location.pathname]);
   const loadUsers = async () => {
     try {
       const usersList = await userService.getAllUsers();

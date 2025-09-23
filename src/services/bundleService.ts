@@ -138,6 +138,32 @@ class BundleService {
     }
   }
 
+
+
+  
+/**
+ * Updates or creates a bundle document in Firestore.
+ *
+ * @param bundleId - The ID of the bundle document to update.
+ * @param updatedData - An object containing the fields to update.
+ */
+async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Promise<void> {
+  const bundleRef = doc(db, "Bundles", bundleId);
+
+  try {
+    const snap = await getDoc(bundleRef);
+
+    if (snap.exists()) {
+      await updateDoc(bundleRef, updatedData);
+    } else {
+      await setDoc(bundleRef, updatedData, { merge: true });
+    }
+  } catch (error) {
+    console.error("❌ Error updating bundle:", error);
+    throw error;
+  }
+}
+
   /**
  * Updates an existing bundle with the provided changes in Firestore.
  * 

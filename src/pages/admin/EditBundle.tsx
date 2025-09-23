@@ -13,13 +13,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { courseService } from "@/services/courseService";
 import { bundleService } from "@/services/bundleService";
-import { useBundlePricingQuery, useBundleQuery } from "@/hooks/useBundleApi";
+import { useBundlePricingQuery, useBundleQuery, useUpdateBundleMutation } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
 import { PricingModel } from "@/types/general";
 import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
 import { authorService } from "@/services/authorService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { updateBundleQuery } from "@/hooks/useBundleApi";
 
 export default function EditBundlePage() {
   const navigate = useNavigate();
@@ -39,6 +38,7 @@ export default function EditBundlePage() {
 
   // Fetch bundle data
   const { data: bundleData, isLoading: bundleLoading, error: bundleError } = useBundleQuery(bundleId!);
+  const { mutate: updateBundle, } = useUpdateBundleMutation();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -229,12 +229,15 @@ export default function EditBundlePage() {
         ? parseFloat(formData.salePrice)
         : 0;
 
-      await updateBundleQuery(bundleId!, {
+    updateBundle(
+    {
+      bundleId: bundleId!,
+      updatedData: {
         title: formData.title,
         description: formData.description,
-        courses: courses.filter((course) =>
-          selectedCourseIds.includes(course.id!)
-        ).map(course => ({ id: course.id, title: course.title })),
+        courses: courses
+          .filter(course => selectedCourseIds.includes(course.id!))
+          .map(course => ({ id: course.id, title: course.title })),
         regularPrice,
         salePrice,
         pricingModel: formData.pricingModel,
@@ -243,14 +246,29 @@ export default function EditBundlePage() {
         categories,
         tags,
         status: formData.status,
-      });
-
-      toast({
-        title: "Success",
-        description: "Bundle updated successfully!",
-      });
-
-      navigate("/admin");
+      },
+    },
+    {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Bundle updated successfully!",
+        });
+        navigate("/admin");
+      },
+      onError: (error) => {
+        console.error("Error updating bundle:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update bundle. Please try again.",
+          variant: "destructive",
+        });
+      },
+      onSettled: () => {
+        setLoading(false);
+      },
+    }
+  );
     } catch (error) {
       console.error("Error updating bundle:", error);
       toast({
@@ -287,13 +305,15 @@ export default function EditBundlePage() {
       const salePrice = formData.salePrice
         ? parseFloat(formData.salePrice)
         : 0;
-
-      await updateBundleQuery(bundleId!, {
+updateBundle(
+    {
+      bundleId: bundleId!,
+      updatedData: {
         title: formData.title,
         description: formData.description,
-        courses: courses.filter((course) =>
-          selectedCourseIds.includes(course.id!)
-        ).map(course => ({ id: course.id, title: course.title })),
+        courses: courses
+          .filter(course => selectedCourseIds.includes(course.id!))
+          .map(course => ({ id: course.id, title: course.title })),
         regularPrice,
         salePrice,
         pricingModel: formData.pricingModel,
@@ -301,16 +321,31 @@ export default function EditBundlePage() {
         authorName,
         categories,
         tags,
-        status: BUNDLE_STATUS.PUBLISHED,
-      });
+        status: formData.status,
+      },
+    },
+    {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Bundle updated successfully!",
+        });
+        navigate("/admin");
+      },
+      onError: (error) => {
+        console.error("Error updating bundle:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update bundle. Please try again.",
+          variant: "destructive",
+        });
+      },
+      onSettled: () => {
+        setLoading(false);
+      },
+    }
+  );
 
-      toast({
-        title: "Success",
-        description: "Bundle updated and published successfully!",
-      });
-
-      navigate("/admin");
-      window.location.reload();
     } catch (error) {
       console.error("Error updating and publishing bundle:", error);
       toast({
