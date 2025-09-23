@@ -733,9 +733,9 @@ updateBundle(
                 onClick={handleUpdateBundle}
                 disabled={loading || selectedCourseIds.length < 2 || !formData.title.trim() || !formData.description.trim()}
                 className="w-full"
-                variant="outline"
+                variant="default"
               >
-                {loading ? "Updating..." : "Update Bundle"}
+                {loading ? "Updating..." : "Update  Bundle"}
               </Button>
 
               {formData.status !== BUNDLE_STATUS.PUBLISHED && (
