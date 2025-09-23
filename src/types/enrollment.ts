@@ -7,6 +7,7 @@ import {
   PricingModel,
   UserRole
 } from "./general";
+
 import { LearningProgress } from "./progress";
 
 export interface Enrollment {
@@ -14,30 +15,26 @@ export interface Enrollment {
   userId: string;
 
   targetId: string;                // courseId OR bundleId
-  targetType: EnrolledProgramType; // "course" | "bundle"
+  targetType: EnrolledProgramType; // "course" or "bundle"
   enrollmentDate: Date;
   status: EnrollmentStatus;
   role: UserRole;
 
-  // only relevant if this enrollment is a bundle
-  bundleCourseIds?: string[];
-  courseProgress?: LearningProgress[]; // progress per course inside bundle
+  // For bundles → track per-course progress
+  courseProgress?: LearningProgress[];
 
-  // always track main progress (if course → this is the course progress, if bundle → overall bundle progress)
-  progress: {
-    completedLessons: number;
-    lessonHistory: string[];
-    totalLessons: number;
-    percentage: number;
-  };
+  // Always track main progress (for course = course’s progress, for bundle = overall aggregate)
+  progress: LearningProgress;
 
   lastAccessed?: Date;
   completionDate?: Date;
   updatedAt: Date;
 
+  // Top-level bundle/certificate status
   certificate: {
     issued: boolean;
-    issuedAt?: Date;
+    issuedAt?: Date | null;
+    certificateId?: string;
   };
 
   grade?: number | string | null;
