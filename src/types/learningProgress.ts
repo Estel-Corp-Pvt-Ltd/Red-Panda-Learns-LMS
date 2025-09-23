@@ -29,7 +29,7 @@ export interface LearningProgress {
 /**
  * Payment details (enrollment-level)
  */
-export interface Payment {
+export interface LearningPayment {
   status: PaymentStatus;
   actualAmount: number;
   currency: Currency;
@@ -40,87 +40,96 @@ export interface Payment {
   paidAt?: Date;
 }
 
-// Update course progress (lessons, percentage, etc.)
+/**
+ *  Update course progress
+ * Adds in new lessons, recalculates percentage and completion date
+ */
 export function updateProgress(
-  lp: LearningProgress,
-  {
-    completedLessons,
-    lessonHistory,
-    totalLessons
-  }: {
-    completedLessons: number;
-    lessonHistory?: string[];
-    totalLessons: number;
-  }
+  learningProgress: LearningProgress,
+  lessonId: string
 ): LearningProgress {
-  const percentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+  const completed = learningProgress.completedLessons + 1;
+  const total = learningProgress.totalLessons;
+  const percentage = total > 0 ? (completed / total) * 100 : 0;
 
   return {
-    ...lp,
-    completedLessons,
-    totalLessons,
-    lessonHistory: lessonHistory ?? lp.lessonHistory,
+    ...learningProgress,
+    completedLessons: completed,
+    lessonHistory: [...learningProgress.lessonHistory, lessonId],
     percentage,
     updatedAt: new Date(),
-    completionDate: percentage >= 100 ? new Date() : lp.completionDate,
+    completionDate: completed >= total ? new Date() : learningProgress.completionDate,
   };
 }
 
-// Issue/revoke certificate
+/**
+ * ✅ Issue or revoke certificate
+ */
 export function updateCertification(
-  lp: LearningProgress,
-  {
-    issued,
-    certificateId
-  }: {
-    issued: boolean;
-    certificateId?: string;
-  }
+  learningProgress: LearningProgress,
+  issued: boolean,
+  certificateId?: string
 ): LearningProgress {
   return {
-    ...lp,
+    ...learningProgress,
     certification: {
       issued,
       issuedAt: issued ? new Date() : null,
-      certificateId: issued ? certificateId : undefined,
+      certificateId,
     },
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 }
 
-// Update grade
+/**
+ *  Update grade
+ */
 export function updateGrade(
-  lp: LearningProgress,
+  learningProgress: LearningProgress,
   grade: number | string | null
 ): LearningProgress {
-  return {
-    ...lp,
-    grade,
-    updatedAt: new Date()
-  };
+  return { ...learningProgress, grade, updatedAt: new Date() };
 }
 
 /**
- * Update Payment details (for Enrollment)
+ *  Update Payment details (enrollment-level)
  */
-export function updatePayment(enrollment: any, payment: Payment) {
+/**
+ */
+export function updatePayment(
+  enrollment: any,
+  paymentId: string,
+  payment: LearningPayment
+): any {
+  const existingPayment = enrollment.payment;
+
+  // If there is an existing payment and same id → update it
+  if (existingPayment && existingPayment.transactionId === paymentId) {
+    return {
+      ...enrollment,
+      payment: { ...existingPayment, ...payment, transactionId: paymentId },
+      updatedAt: new Date(),
+    };
+  }
+
+  // Otherwise set new payment with given id
   return {
     ...enrollment,
-    payment,
-    updatedAt: new Date()
+    payment: { ...payment, transactionId: paymentId },
+    updatedAt: new Date(),
   };
 }
 
 /**
- * Change Enrollment Status
+ *  Change Enrollment Status
  */
 export function changeEnrollmentStatus(
   enrollment: any,
   status: EnrollmentStatus
-) {
+): any {
   return {
     ...enrollment,
     status,
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 }
