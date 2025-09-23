@@ -1,7 +1,9 @@
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
 import { EnrollmentStatus, PaymentStatus, PaymentProvider, Currency } from "./general";
 
 /**
- * Learning progress and certification always represents a single course's progress
+ * Learning progress interface
  */
 export interface LearningProgress {
   id?: string;
@@ -14,7 +16,6 @@ export interface LearningProgress {
   totalLessons: number;
   percentage: number;
 
-  // Certification info
   certification: {
     issued: boolean;
     issuedAt?: Date | null;
@@ -27,7 +28,7 @@ export interface LearningProgress {
 }
 
 /**
- * Payment details (enrollment-level)
+ * Enrollment payment details
  */
 export interface EnrollmentPaymentDetails {
   status: PaymentStatus;
@@ -41,94 +42,148 @@ export interface EnrollmentPaymentDetails {
 }
 
 /**
- *  Update course progress
- * Adds in new lessons, recalculates percentage and completion date
+ * Update course progress
  */
-export function updateProgress(
-  learningProgress: LearningProgress,
-  lessonId: string
-): { id?: string; updatedAt: Date } {
-  const updatedAt = new Date();
-  const completed = learningProgress.completedLessons + 1;
-  const total = learningProgress.totalLessons;
-  const percentage = total > 0 ? (completed / total) * 100 : 0;
+export async function updateProgress(
+  progressId: string,
+  lessonId?: string,  
+  additionalUpdates: Partial<LearningProgress> = {} 
+): Promise<{ id: string; updatedAt: Date }> {
+  const docRef = doc(db, "LearningProgress", progressId);
+  const snapshot = await getDoc(docRef);
 
-  const updated: LearningProgress = {
-    ...learningProgress,
-    completedLessons: completed,
-    lessonHistory: [...learningProgress.lessonHistory, lessonId],
-    percentage,
+  if (!snapshot.exists()) throw new Error("Progress not found");
+
+  const data = snapshot.data() as LearningProgress;
+  const updatedAt = new Date();
+
+  let updatedData: Partial<LearningProgress> = {
+    ...(data || {}), // keep existing fields
+    ...additionalUpdates, // allow caller to pass extra optional fields
     updatedAt,
-    completionDate: completed >= total ? updatedAt : learningProgress.completionDate,
   };
 
-  return { id: updated.id, updatedAt };
+  
+  if (lessonId) {
+    const completed = (data.completedLessons ?? 0) + 1;
+    const total = data.totalLessons ?? 0;
+    const percentage = total > 0 ? (completed / total) * 100 : 0;
+
+    updatedData = {
+      ...updatedData,
+      completedLessons: completed,
+      lessonHistory: [...(data.lessonHistory ?? []), lessonId],
+      percentage,
+      completionDate: completed >= total ? updatedAt : data.completionDate ?? null,
+    };
+  }
+
+  await updateDoc(docRef, updatedData);
+
+  return { id: progressId, updatedAt };
 }
 
 /**
- *  certificate
+ * Update certification
  */
-export function updateCertification(
-  learningProgress: LearningProgress,
+export async function updateCertification(
+  progressId: string,
   issued: boolean,
   certificateId?: string
-): { id?: string; updatedAt: Date } {
+): Promise<{ id: string; updatedAt: Date }> {
+  const docRef = doc(db, "LearningProgress", progressId);
+  const snapshot = await getDoc(docRef);
+
+  if (!snapshot.exists()) throw new Error("Progress not found");
+
+  const original = snapshot.data();
   const updatedAt = new Date();
 
-  const updated: LearningProgress = {
-    ...learningProgress,
-    certification: {
-      issued,
-      issuedAt: issued ? updatedAt : null,
-      certificateId,
-    },
+  // Merge original certification with new updates
+  const newCertification = {
+    ...(original.certification || {}), // keep existing fields
+    issued,
+    issuedAt: issued ? updatedAt : null,
+    certificateId: certificateId ?? (original.certification?.certificateId || null),
+  };
+
+  await updateDoc(docRef, {
+    certification: newCertification,
+    updatedAt,
+  });
+
+  return { id: progressId, updatedAt };
+}
+
+/**
+ * Update grade
+ */
+export async function updateGrade(
+  progressId: string,
+  grade: number | string | null
+): Promise<{ id: string; grade: number | string | null; updatedAt: Date }> {
+  const docRef = doc(db, "learningProgress", progressId);
+  const snapshot = await getDoc(docRef);
+  if (!snapshot.exists()) throw new Error("Progress not found");
+
+  const original = snapshot.data();
+  const updatedAt = new Date();
+
+  // Preserve old data, update only grade + updatedAt
+  const updatedData = {
+    ...(original || {}),
+    grade,
     updatedAt,
   };
 
-  return { id: updated.id, updatedAt };
+  await updateDoc(docRef, updatedData);
+
+  return { id: progressId, grade, updatedAt };
 }
 
 /**
- *  Update grade
+ * Update payment
  */
-export function updateGrade(
-  progressId: string,
-  grade: number | string | null
-): { id: string; grade: number | string | null; updatedAt: Date } {
-  return {
-    id: progressId,
-    grade,
-    updatedAt: new Date(),
-  };
-}
-
-/**
- *  Update Payment details (enrollment-level)
- */
-/**
- */
-export function updatePayment(
+export async function updatePayment(
   enrollmentId: string,
   paymentId: string,
-  payment: EnrollmentPaymentDetails
-): { id: string; payment: EnrollmentPaymentDetails; updatedAt: Date } {
-  return {
-    id: enrollmentId,
-    payment: { ...payment, transactionId: paymentId },
-    updatedAt: new Date(),
+  payment: Partial<EnrollmentPaymentDetails>
+): Promise<{ id: string; updatedAt: Date }> {
+  const docRef = doc(db, "Enrollments", enrollmentId);
+  const snapshot = await getDoc(docRef);
+  if (!snapshot.exists()) throw new Error("Enrollment not found");
+
+  const original = snapshot.data();
+  const updatedAt = new Date();
+
+  // 🔑 Merge old payment data with the new updates
+  const updatedPayment: EnrollmentPaymentDetails = {
+    ...(original.payment || {}),
+    ...payment,
+    transactionId: paymentId, 
   };
+
+  await updateDoc(docRef, {
+    payment: updatedPayment,
+    updatedAt,
+  });
+
+  return { id: enrollmentId, updatedAt };
 }
 
 /**
- *  Change Enrollment Status
+ * Change enrollment status
  */
-export function changeEnrollmentStatus(
-  enrollment: any,
+export async function changeEnrollmentStatus(
+  enrollmentId: string,
   status: EnrollmentStatus
-): any {
-  return {
-    ...enrollment,
-    status,
-    updatedAt: new Date(),
-  };
+): Promise<{ id: string; updatedAt: Date }> {
+  const docRef = doc(db, "enrollments", enrollmentId);
+  const snapshot = await getDoc(docRef);
+  if (!snapshot.exists()) throw new Error("Enrollment not found");
+
+  const updatedAt = new Date();
+  await updateDoc(docRef, { status, updatedAt });
+
+  return { id: enrollmentId, updatedAt };
 }
