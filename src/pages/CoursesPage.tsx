@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { useCoursesQuery, useCohortsQuery } from "@/hooks/useFirebaseApi";
+import { useCoursesQuery, useCohortsQuery } from "@/hooks/useCaching";
 import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
 import { useCourseFilters } from "@/hooks/useCourseFilters";
 import { BundleCard } from "@/components/bundle/BundleCard";
