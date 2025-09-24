@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService, Enrollment } from '@/services/enrollmentService';
-import { useCourseQuery } from '@/hooks/useFirebaseApi';
+import { useCourseQuery } from '@/hooks/useCaching';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                   Start your learning journey by enrolling in a course
                 </p>
                 <Button asChild>
-                  <Link to="/">Browse Courses</Link>
+                  <Link to="/courses">Browse Courses</Link>
                 </Button>
               </CardContent>
             </Card>
