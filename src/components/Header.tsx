@@ -68,19 +68,19 @@ export function Header({
         {/* ----- Center: Always show Nav Links ----- */}
         <nav className="hidden md:flex items-center gap-8">
           <Link
-            to="/products"
+            to="#products"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Products
           </Link>
           <Link
-            to="/research"
+            to="#research"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Research
           </Link>
           <Link
-            to="/teaching"
+            to="#teaching"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Teaching
