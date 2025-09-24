@@ -1,414 +1,227 @@
-import { 
-  Cohort, 
-  CohortEnrollment, 
-  WeeklyModule, 
-  LiveSession, 
-  Assignment, 
-  AssignmentSubmission,
-  CohortProgress,
-  CohortNotification 
-} from '../types/cohort';
 import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
   doc,
-  getDocs,
+  setDoc,
   getDoc,
+  updateDoc,
+  collection,
   query,
   where,
-  orderBy,
-  serverTimestamp,
-  setDoc
+  getDocs,
+  deleteDoc,
+  runTransaction,
+  WhereFilterOp,
 } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
 
+import { db } from '@/firebaseConfig';
+import { Cohort } from '@/types/course';
+import type { Enrollment } from '@/types/course';
 class CohortService {
-  // Cohort CRUD Operations
-  async createCohort(cohortData: Omit<Cohort, 'id' | 'createdAt' | 'updatedAt' | 'currentEnrollments'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'cohorts'), {
-      ...cohortData,
-      currentEnrollments: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+  
+  private async generateCohortId(): Promise<string> {
+    const counterRef = doc(db, 'counters', 'cohortCounter');
+
+    const newId = await runTransaction(db, async (transaction) => {
+      const gap = Math.floor(Math.random() * (40 - 10 + 1)) + 10; // 10–40 gap
+      const counterDoc = await transaction.get(counterRef);
+
+      let lastNumber = 60000000;
+      if (counterDoc.exists()) {
+        lastNumber = counterDoc.data().lastNumber;
+      }
+
+      const nextNumber = lastNumber + gap;
+      transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
+
+      return nextNumber;
     });
-    
-    return docRef.id;
+
+    return `cohort_${newId}`;
   }
 
-  async updateCohort(cohortId: string, updates: Partial<Cohort>): Promise<void> {
-    const cohortRef = doc(db, 'cohorts', cohortId);
-    await setDoc(cohortRef, {
-      ...updates,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+
+  
+  // FIX: This now accepts and saves the full topics array.
+  async createCohort(
+    data: Omit<Cohort, 'id' | 'createdAt' | 'updatedAt' | 'cohortEnrollments'>
+  ): Promise<string> {
+    try {
+      const cohortId = await this.generateCohortId();
+
+      const cohort: Cohort = {
+        id: cohortId,
+        title: data.title,
+        description: data.description || '',
+        topics: data.topics, // <-- SAVING THE FULL TOPICS ARRAY
+        startDate: data.startDate,
+        endDate: data.endDate,
+        enrollmentOpen: data.enrollmentOpen,
+        maxStudents: data.maxStudents ?? undefined,
+        requireEnrollment: data.requireEnrollment ?? false,
+        requireCohortAccess: data.requireCohortAccess ?? false,
+        cohortEnrollments: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await setDoc(doc(db, 'Cohorts', cohortId), cohort);
+      console.log('CohortService - Cohort created with full curriculum:', cohortId);
+      return cohortId;
+
+    } catch (error) {
+      console.error('CohortService - Error creating cohort:', error);
+      throw new Error('Failed to create cohort');
+    }
+  }
+
+  // FIX: This now accepts and updates the full topics array.
+  async updateCohort(
+    cohortId: string,
+    data: Partial<Omit<Cohort, 'id' | 'createdAt' | 'updatedAt'>>
+  ): Promise<void> {
+    try {
+      const cohortRef = doc(db, 'Cohorts', cohortId);
+      const updateData = {
+        ...data,
+        updatedAt: new Date(),
+      };
+
+      await updateDoc(cohortRef, updateData);
+      console.log('CohortService - Cohort updated with full curriculum:', cohortId);
+    } catch (error) {
+      console.error(`CohortService - Error updating cohort ${cohortId}:`, error);
+      throw new Error('Failed to update cohort');
+    }
   }
 
   async getCohortById(cohortId: string): Promise<Cohort | null> {
-    const docRef = doc(db, 'cohorts', cohortId);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        enrollmentDeadline: data.enrollmentDeadline?.toDate() || new Date()
-      } as Cohort;
+      try {
+        const cohortDoc = await getDoc(doc(db, 'Cohorts', cohortId));
+        if (!cohortDoc.exists()) return null;
+
+        const data = cohortDoc.data();
+        // Safe date conversion
+        const cohort = {
+          ...data,
+          startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate,
+          endDate: data.endDate?.toDate ? data.endDate.toDate() : data.endDate,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+        } as Cohort;
+        return cohort;
+      } catch (error) {
+        console.error('CohortService - Error fetching cohort:', error);
+        return null;
+      }
+  }
+
+  async publishCohort(cohortId: string): Promise<void> {
+    try {
+      const cohortRef = doc(db, 'Cohorts', cohortId);
+      await updateDoc(cohortRef, {
+        enrollmentOpen: true,
+        updatedAt: new Date(),
+      });
+      console.log('CohortService - Cohort published (enrollment open):', cohortId);
+    } catch (error) {
+      console.error('CohortService - Error publishing cohort:', error);
+      throw error;
     }
-    return null;
   }
 
   async getAllCohorts(): Promise<Cohort[]> {
-    const querySnapshot = await getDocs(collection(db, 'cohorts'));
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        enrollmentDeadline: data.enrollmentDeadline?.toDate() || new Date()
-      } as Cohort;
-    });
+    try {
+      const querySnapshot = await getDocs(collection(db, 'Cohorts'));
+
+      const cohorts = querySnapshot.docs.map(doc => ({
+        ...doc.data(),
+        createdAt: doc.data().createdAt.toDate(),
+        updatedAt: doc.data().updatedAt.toDate(),
+      })) as Cohort[];
+
+      console.log('CohortService - Fetched cohorts:', cohorts.length);
+
+      return cohorts;
+    } catch (error) {
+      console.error('CohortService - Error fetching cohorts:', error);
+      return [];
+    }
   }
 
-  async getCohortsByCourse(courseId: string): Promise<Cohort[]> {
-    const q = query(
-      collection(db, 'cohorts'),
-      where('courseId', '==', courseId)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        enrollmentDeadline: data.enrollmentDeadline?.toDate() || new Date()
-      } as Cohort;
-    });
-  }
+  async getFilteredCohorts(
+    filters?: { field: keyof Cohort; op: WhereFilterOp; value: any }[]
+  ): Promise<Cohort[]> {
+    try {
+      const cohortsCollection = collection(db, 'Cohorts');
 
-  async getActiveCohorts(): Promise<Cohort[]> {
-    const q = query(
-      collection(db, 'cohorts'),
-      where('status', 'in', ['open', 'in-progress'])
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        enrollmentDeadline: data.enrollmentDeadline?.toDate() || new Date()
-      } as Cohort;
-    });
+      if (filters && filters.length > 0) {
+        const queryRef = query(
+          cohortsCollection,
+          ...filters.map(f => where(f.field as string, f.op, f.value))
+        );
+
+        const querySnapshot = await getDocs(queryRef);
+
+        const cohorts = querySnapshot.docs.map(doc => ({
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate(),
+          updatedAt: doc.data().updatedAt?.toDate(),
+        })) as Cohort[];
+
+        console.log('CohortService - Fetched filtered cohorts:', cohorts.length);
+        return cohorts;
+      } else {
+        // No filters: fetch all cohorts
+        const querySnapshot = await getDocs(cohortsCollection);
+
+        const cohorts = querySnapshot.docs.map(doc => ({
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate(),
+          updatedAt: doc.data().updatedAt?.toDate(),
+        })) as Cohort[];
+
+        console.log('CohortService - Fetched all cohorts:', cohorts.length);
+        return cohorts;
+      }
+    } catch (error) {
+      console.error('CohortService - Error fetching filtered cohorts:', error);
+      return [];
+    }
   }
 
   async deleteCohort(cohortId: string): Promise<void> {
-    await deleteDoc(doc(db, 'cohorts', cohortId));
+    try {
+      await deleteDoc(doc(db, 'Cohorts', cohortId));
+      console.log('CohortService - Cohort deleted successfully:', cohortId);
+    } catch (error) {
+      console.error('CohortService - Error deleting cohort:', error);
+      throw new Error('Failed to delete cohort');
+    }
   }
 
-  // Cohort Enrollment Management
-  async enrollUserInCohort(
-    userId: string, 
-    cohortId: string, 
-    paymentId?: string, 
-    paymentProvider?: string
-  ): Promise<void> {
-    const cohort = await this.getCohortById(cohortId);
-    if (!cohort) {
-      throw new Error('Cohort not found');
-    }
 
-    // Check enrollment limits
-    if (cohort.currentEnrollments >= cohort.maxStudents) {
-      throw new Error('Cohort is full');
-    }
 
-    // Check enrollment deadline
-    if (new Date() > cohort.enrollmentDeadline) {
-      throw new Error('Enrollment deadline has passed');
-    }
+async getUserCohortEnrollments(userId: string): Promise<Enrollment[]> {
+  try {
+    const enrollmentsRef = collection(db, 'CohortEnrollments');
+    const q = query(enrollmentsRef, where('userId', '==', userId));
+    const snapshot = await getDocs(q);
 
-    const enrollmentData: Omit<CohortEnrollment, 'id'> = {
-      userId,
-      cohortId,
-      courseId: cohort.courseId,
-      enrollmentDate: new Date(),
-      paymentId: paymentId || null,
-      paymentProvider: paymentProvider || null,
-      status: 'active',
-      progress: this.initializeCohortProgress(cohort.weeklySchedule),
-      completedLessons: [],
-      completedAssignments: [],
-      attendedSessions: []
-    };
-
-    await addDoc(collection(db, 'cohort_enrollments'), enrollmentData);
-
-    // Update cohort enrollment count
-    await this.updateCohort(cohortId, {
-      currentEnrollments: cohort.currentEnrollments + 1
-    });
-  }
-
-  async checkCohortEnrollment(userId: string, cohortId: string): Promise<boolean> {
-    const q = query(
-      collection(db, 'cohort_enrollments'),
-      where('userId', '==', userId),
-      where('cohortId', '==', cohortId),
-      where('status', '==', 'active')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.length > 0;
-  }
-
-  async getUserCohortEnrollments(userId: string): Promise<CohortEnrollment[]> {
-    const q = query(
-      collection(db, 'cohort_enrollments'),
-      where('userId', '==', userId),
-      where('status', '==', 'active')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const enrollments = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    })) as CohortEnrollment[];
+      ...doc.data(),
+      enrolledAt: doc.data().enrolledAt.toDate(),
+    })) as Enrollment[];
+
+    return enrollments;
+  } catch (error) {
+    console.error('CohortService - Error fetching user cohort enrollments:', error);
+    return [];
   }
+}
 
-  async getCohortEnrollments(cohortId: string): Promise<CohortEnrollment[]> {
-    const q = query(
-      collection(db, 'cohort_enrollments'),
-      where('cohortId', '==', cohortId),
-      where('status', '==', 'active')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as CohortEnrollment[];
-  }
 
-  // Content Access Control
-  async isContentUnlocked(userId: string, cohortId: string, weekNumber: number): Promise<boolean> {
-    const cohort = await this.getCohortById(cohortId);
-    if (!cohort) return false;
 
-    const enrollment = await this.getUserCohortEnrollment(userId, cohortId);
-    if (!enrollment) return false;
 
-    const weekModule = cohort.weeklySchedule.find(w => w.weekNumber === weekNumber);
-    if (!weekModule) return false;
-
-    return new Date() >= weekModule.unlockDate;
-  }
-
-  async updateProgress(userId: string, cohortId: string, lessonId: string): Promise<void> {
-    const enrollment = await this.getUserCohortEnrollment(userId, cohortId);
-    if (!enrollment) return;
-
-    if (!enrollment.completedLessons.includes(lessonId)) {
-      enrollment.completedLessons.push(lessonId);
-      
-      // Update progress
-      enrollment.progress = await this.calculateProgress(enrollment, cohortId);
-      enrollment.progress.lastActivityDate = new Date();
-
-      const enrollmentRef = doc(db, 'cohort_enrollments', enrollment.id);
-      await setDoc(enrollmentRef, enrollment, { merge: true });
-    }
-  }
-
-  // Weekly Module Management
-  async addWeeklyModule(cohortId: string, moduleData: WeeklyModule): Promise<void> {
-    const cohort = await this.getCohortById(cohortId);
-    if (!cohort) throw new Error('Cohort not found');
-
-    cohort.weeklySchedule.push(moduleData);
-    await this.updateCohort(cohortId, { weeklySchedule: cohort.weeklySchedule });
-  }
-
-  async updateWeeklyModule(cohortId: string, weekNumber: number, updates: Partial<WeeklyModule>): Promise<void> {
-    const cohort = await this.getCohortById(cohortId);
-    if (!cohort) throw new Error('Cohort not found');
-
-    const moduleIndex = cohort.weeklySchedule.findIndex(m => m.weekNumber === weekNumber);
-    if (moduleIndex === -1) throw new Error('Weekly module not found');
-
-    cohort.weeklySchedule[moduleIndex] = { ...cohort.weeklySchedule[moduleIndex], ...updates };
-    await this.updateCohort(cohortId, { weeklySchedule: cohort.weeklySchedule });
-  }
-
-  // Live Session Management
-  async addLiveSession(cohortId: string, sessionData: Omit<LiveSession, 'id'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'live_sessions'), {
-      ...sessionData,
-      cohortId
-    });
-
-    const cohort = await this.getCohortById(cohortId);
-    if (cohort) {
-      cohort.liveSessionSchedule.push({ ...sessionData, id: docRef.id });
-      await this.updateCohort(cohortId, { liveSessionSchedule: cohort.liveSessionSchedule });
-    }
-
-    return docRef.id;
-  }
-
-  async updateLiveSession(sessionId: string, updates: Partial<LiveSession>): Promise<void> {
-    const sessionRef = doc(db, 'live_sessions', sessionId);
-    await setDoc(sessionRef, updates, { merge: true });
-  }
-
-  async getLiveSession(sessionId: string): Promise<LiveSession | null> {
-    const docRef = doc(db, 'live_sessions', sessionId);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      return {
-        id: docSnap.id,
-        ...docSnap.data()
-      } as LiveSession;
-    }
-    return null;
-  }
-
-  async getUpcomingLiveSessions(cohortId: string): Promise<LiveSession[]> {
-    const now = new Date();
-    const q = query(
-      collection(db, 'live_sessions'),
-      where('cohortId', '==', cohortId),
-      where('scheduledDate', '>=', now),
-      where('status', '==', 'scheduled')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as LiveSession[];
-  }
-
-  // Assignment Management
-  async createAssignment(assignmentData: Omit<Assignment, 'id'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'assignments'), assignmentData);
-    return docRef.id;
-  }
-
-  async getAssignmentsByWeek(cohortId: string, weekNumber: number): Promise<Assignment[]> {
-    const q = query(
-      collection(db, 'assignments'),
-      where('cohortId', '==', cohortId),
-      where('weekNumber', '==', weekNumber)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Assignment[];
-  }
-
-  async submitAssignment(submissionData: Omit<AssignmentSubmission, 'id'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'assignment_submissions'), submissionData);
-    return docRef.id;
-  }
-
-  // Notification Management
-  async createNotification(notificationData: Omit<CohortNotification, 'id'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'cohort_notifications'), notificationData);
-    return docRef.id;
-  }
-
-  async getUserNotifications(userId: string, cohortId: string): Promise<CohortNotification[]> {
-    const q = query(
-      collection(db, 'cohort_notifications'),
-      where('cohortId', '==', cohortId),
-      where('userId', 'in', [userId, null])
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as CohortNotification[];
-  }
-
-  // Helper Methods
-  private async getUserCohortEnrollment(userId: string, cohortId: string): Promise<CohortEnrollment | null> {
-    const q = query(
-      collection(db, 'cohort_enrollments'),
-      where('userId', '==', userId),
-      where('cohortId', '==', cohortId),
-      where('status', '==', 'active')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.length > 0 ? {
-      id: querySnapshot.docs[0].id,
-      ...querySnapshot.docs[0].data()
-    } as CohortEnrollment : null;
-  }
-
-  private initializeCohortProgress(weeklySchedule: WeeklyModule[]): CohortProgress {
-    return {
-      currentWeek: 1,
-      completionPercentage: 0,
-      weeklyProgress: weeklySchedule.map(week => ({
-        weekNumber: week.weekNumber,
-        isUnlocked: week.weekNumber === 1,
-        isCompleted: false,
-        lessonsCompleted: 0,
-        totalLessons: week.topicIds.length
-      })),
-      lastActivityDate: new Date()
-    };
-  }
-
-  private async calculateProgress(enrollment: CohortEnrollment, cohortId: string): Promise<CohortProgress> {
-    const cohort = await this.getCohortById(cohortId);
-    if (!cohort) return enrollment.progress;
-
-    const totalLessons = cohort.weeklySchedule.reduce((sum, week) => sum + week.topicIds.length, 0);
-    const completedLessons = enrollment.completedLessons.length;
-    const completionPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-
-    const weeklyProgress = cohort.weeklySchedule.map(week => {
-      const weekLessonsCompleted = enrollment.completedLessons.filter(lessonId => 
-        week.topicIds.includes(lessonId)
-      ).length;
-      
-      return {
-        weekNumber: week.weekNumber,
-        isUnlocked: new Date() >= week.unlockDate,
-        isCompleted: weekLessonsCompleted === week.topicIds.length,
-        completionDate: weekLessonsCompleted === week.topicIds.length ? new Date() : undefined,
-        lessonsCompleted: weekLessonsCompleted,
-        totalLessons: week.topicIds.length
-      };
-    });
-
-    const currentWeek = weeklyProgress.findIndex(w => w.isUnlocked && !w.isCompleted) + 1 || 1;
-
-    return {
-      currentWeek,
-      completionPercentage,
-      weeklyProgress,
-      lastActivityDate: new Date()
-    };
-  }
 }
 
 export const cohortService = new CohortService();

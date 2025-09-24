@@ -24,7 +24,7 @@ import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
-import { Cohort } from "@/types/cohort";
+import { Cohort } from "@/types/course";
 import { Bundle } from "@/types/bundle";
 import { Header } from "@/components/layout/header";
 import { Course } from "@/types/course";
@@ -287,12 +287,7 @@ useEffect(() => {
       description: `${courses.length} courses available`,
       icon: BookOpen,
     },
-    {
-      title: "Active Cohorts",
-      value: cohorts.filter(c => c.status === 'in-progress' || c.status === 'open').length.toString(),
-      description: `${statsData.activeCohorts} cohorts running`,
-      icon: GraduationCap,
-    },
+    
     {
       title: "Cohort Students",
       value: statsData.totalCohortStudents.toString(),
@@ -671,82 +666,86 @@ useEffect(() => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Cohort</TableHead>
-                          <TableHead>Course</TableHead>
+                          <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
-                          <TableHead>Students</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
-                        {cohorts.map((cohort) => {
-                          const course = courses.find(c => c.id === cohort.courseId);
-                          return (
-                            <TableRow key={cohort.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{cohort.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {cohort.description}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm font-medium">
-                                  {course?.title || 'Unknown Course'}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {new Date(cohort.startDate).toLocaleDateString()}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {cohort.currentEnrollments}/{cohort.maxStudents}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={
-                                  cohort.status === 'in-progress' ? 'default' :
-                                    cohort.status === 'open' ? 'secondary' :
-                                      cohort.status === 'completed' ? 'outline' : 'destructive'
-                                }>
-                                  {cohort.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-                                    title="View Details"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-                                    title="Edit Cohort"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteCohort(cohort.id)}
-                                    title="Delete Cohort"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
+                    <TableBody>
+  {cohorts.map(cohort => (
+    <TableRow key={cohort.id}>
+      {/* Cohort title & description */}
+      <TableCell>
+        <div>
+          <div className="font-medium">{cohort.title}</div>
+          <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+        </div>
+      </TableCell>
+
+      {/* Start date */}
+    <TableCell>
+  <div className="text-sm">
+  {cohort.maxStudents}
+  </div>
+</TableCell>
+
+      {/* End date */}
+      <TableCell>
+  <div className="text-sm">
+  {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
+  </div>
+</TableCell>
+
+      {/* Enrollment open status */}
+      <TableCell>
+        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+        </Badge>
+      </TableCell>
+
+        <TableCell>
+        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+        </Badge>
+      </TableCell>
+
+      {/* Actions: view, edit, delete */}
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+            title="Edit Cohort"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => deleteCohort(cohort.id)}
+            title="Delete Cohort"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
                     </Table>
                   )}
                 </CardContent>

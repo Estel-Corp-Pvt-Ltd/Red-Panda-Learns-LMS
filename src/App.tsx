@@ -20,7 +20,7 @@ import Signup from "./pages/auth/Signup";
 import CheckoutPage from "./pages/CheckoutPage";
 import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
-import { CreateCohortPage } from "./pages/admin/CreateCohortPage";
+import CohortBuilderPage from "./pages/admin/CreateCohortPage";
 import CohortDetailPage from "./pages/admin/CohortDetailPage";
 import EditCohortPage from "./pages/admin/EditCohortPage";
 import UserCohortDetailPage from "./pages/CohortDetailPage";
@@ -152,7 +152,7 @@ const App = () => (
                   path="/admin/create-cohort"
                   element={
                     <AuthGuard>
-                      <CreateCohortPage />
+                      <CohortBuilderPage />
                     </AuthGuard>
                   }
                 />
