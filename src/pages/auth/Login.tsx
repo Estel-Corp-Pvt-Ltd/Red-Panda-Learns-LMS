@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail, Lock, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/layout/header';
+import { Header } from '@/components/Header';
 import { USER_ROLE } from '@/constants';   
 
 export default function Login() {
@@ -65,31 +65,29 @@ export default function Login() {
   };
 
   
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
+ const handleGoogleLogin = async () => {
+  setError('');
+  setLoading(true);
 
-    try {
-      const user = await loginWithGoogle();
-      toast({
-        title: "Welcome!",
-        description: "You have successfully logged in with Google.",
-      });
+  try {
+    const user = await loginWithGoogle(); // signs the user in via Google
 
-      // 👇 Check if admin
-      if (user?.role === USER_ROLE.ADMIN) {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate(from, { replace: true });
-      }
-      navigate('/dashboard', { replace: true });
+    toast({
+      title: "Welcome!",
+      description: "You have successfully logged in with Google.",
+    });
 
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    if (user?.role === USER_ROLE.ADMIN) {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
     }
-  };
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen">

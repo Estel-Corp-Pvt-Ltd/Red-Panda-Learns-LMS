@@ -6,7 +6,7 @@ import {
   FileText,
   Video,
 } from "lucide-react";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";

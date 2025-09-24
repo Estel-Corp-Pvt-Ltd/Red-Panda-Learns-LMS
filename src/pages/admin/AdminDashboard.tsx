@@ -53,7 +53,7 @@ import {
   USER_STATUS
 } from "@/constants";
 
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
