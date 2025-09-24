@@ -16,7 +16,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@radix-ui/react-dropdown-menu";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/layout/Header";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { userService } from "@/services/userService";

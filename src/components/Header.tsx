@@ -1,4 +1,4 @@
-import { Search, User, Menu, LogOut } from "lucide-react";
+import { User, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
@@ -43,64 +43,84 @@ export function Header({
       )}
     >
       <div className="container flex h-16 items-center justify-between px-4">
-        {/* ----- Left: Logo ----- */}
+        {/* ----- Left: Logo + Menu Button ----- */}
         <div className="flex items-center gap-4">
           {showMenuButton && (
-            <Button variant="ghost" size="sm" onClick={onMenuClick} className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMenuClick}
+              className="md:hidden"
+            >
               <Menu className="h-5 w-5" />
             </Button>
           )}
 
-          <Link to="/" className="flex items-center gap-2 font-semibold text-xl">
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-semibold text-xl"
+          >
             <img src="/logo.png" className="w-10" alt="Logo" />
             <span>Vizuara</span>
           </Link>
         </div>
 
-        {/* ----- Center: Navigation Links ----- */}
+        {/* ----- Center: Always show Nav Links ----- */}
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#products" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            to="/products"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             Products
-          </a>
-          <a href="#research" className="text-muted-foreground hover:text-foreground transition-colors">
+          </Link>
+          <Link
+            to="/research"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             Research
-          </a>
-          <a href="#teaching" className="text-muted-foreground hover:text-foreground transition-colors">
+          </Link>
+          <Link
+            to="/teaching"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             Teaching
-          </a>
+          </Link>
         </nav>
 
-        {/* ----- Right: Theme + Account ----- */}
+        {/* ----- Right: Theme Toggle + Account Section ----- */}
         <div className="flex items-center gap-4">
-          {/* Theme toggle always visible */}
           <ThemeToggle />
 
-          {/* ACCOUNT SECTION */}
           {user ? (
-            // ----- Logged-in User: Name + Dropdown -----
+            // 🔓 Logged-in dropdown
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary-foreground" />
+                      {/*  FIXED: use text-foreground so it's always visible */}
+                      <User className="h-4 w-4 text-foreground" />
                     </div>
                     <span className="hidden sm:inline text-sm font-medium">
                       {user.firstName && user.lastName
-                        ? `${user.firstName} `
+                        ? `${user.firstName}`
                         : user.firstName || "Account"}
                     </span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end" className="w-56">
+                {/*  Always Dashboard for all roles */}
                 <DropdownMenuItem asChild>
-                  <Link to="/admin">
+                  <Link to="/dashboard">
                     <User className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
                   </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
@@ -108,14 +128,15 @@ export function Header({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            // ----- Not Logged-In: Account redirects -----
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/auth/login")}
-            >
-              Account
-            </Button>
+            //  Logged-out: Login + Signup buttons
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" asChild>
+                <Link to="/auth/login">Login</Link>
+              </Button>
+              <Button variant="default" asChild>
+                <Link to="/auth/signup">Sign Up</Link>
+              </Button>
+            </div>
           )}
         </div>
       </div>

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
 import { Label } from "@radix-ui/react-dropdown-menu";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/layout/Header";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";

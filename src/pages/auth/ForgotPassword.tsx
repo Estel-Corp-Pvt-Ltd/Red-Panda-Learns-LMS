@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/header';
+import { Header } from '@/components/layout/Header';
 
 export default function ForgotPassword() {
     const { resetPassword } = useAuth(); 
