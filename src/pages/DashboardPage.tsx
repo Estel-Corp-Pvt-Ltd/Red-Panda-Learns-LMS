@@ -195,7 +195,7 @@ export default function DashboardPage() {
                   Start your learning journey by enrolling in a course
                 </p>
                 <Button asChild>
-                  <Link to="/">Browse Courses</Link>
+                  <Link to="/courses">Browse Courses</Link>
                 </Button>
               </CardContent>
             </Card>
