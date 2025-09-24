@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail, Lock, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/layout/header';
+import { Header } from '@/components/Header';
 import { USER_ROLE } from '@/constants';   
 
 export default function Login() {

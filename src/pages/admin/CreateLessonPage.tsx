@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
 import { Label } from "@radix-ui/react-dropdown-menu";
-import { Header } from "@/components/layout/Header";
+import { Header } from "@/components/Header";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";

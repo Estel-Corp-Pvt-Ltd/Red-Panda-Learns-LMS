@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Grid, List, TrendingUp, Clock, Users } from "lucide-react";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 import { CourseCard } from "@/components/course/CourseCard";
 import { CourseListView } from "@/components/course/CourseListView";
 import { CourseFilters } from "@/components/course/CourseFilters";

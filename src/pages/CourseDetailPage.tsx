@@ -7,7 +7,7 @@ import {
   Share2,
   Bookmark,
 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
+import { Header } from "@/components/Header";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";

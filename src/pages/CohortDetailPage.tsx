@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, Users, Clock, DollarSign, ArrowLeft, BookOpen, Video, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Header } from '@/components/layout/Header';
+import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
