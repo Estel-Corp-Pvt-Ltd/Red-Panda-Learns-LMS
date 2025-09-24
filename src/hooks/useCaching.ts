@@ -50,7 +50,6 @@ export const useCourseQuery = (courseId: string) => {
     queryFn: async () => {
       const course = await courseService.getCourseById(courseId);
       if (!course) return null;
-      // Map Firebase data to TutorLMS API format
       return course;
     },
     enabled: !!courseId,

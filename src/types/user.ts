@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from "./general";
+import { EnrolledProgramType, UserRole, UserStatus } from "./general";
 
 export interface User {
     id: string;
@@ -8,6 +8,7 @@ export interface User {
     lastName: string;
     role: UserRole;
     status: UserStatus;
+    enrollments: Array<{ targetId: string, targetType: EnrolledProgramType }>;
     organizationId?: string;
     photoURL?: string;
     createdAt: Date;

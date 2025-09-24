@@ -109,8 +109,8 @@ const CurriculumBuilderPage = () => {
   const [categories, setCategories] = useState<string[]>(course?.categories || []);
   const [tags, setTags] = useState<string[]>(course?.tags || []);
   const [tagInput, setTagInput] = useState("");
-  const [authorId, setAuthorId] = useState("");
-  const [authorName, setAuthorName] = useState("");
+ const [authorId, setAuthorId] = useState("");
+const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
 
   const toggleCategory = (category: string) => {
@@ -175,21 +175,34 @@ const CurriculumBuilderPage = () => {
   };
 
   useEffect(() => {
-    const fetchAuthors = async () => {
-      try {
-        const data = await authorService.getAllAuthors();
-        setAuthors(data.map(author => ({ name: author.firstName + " " + author.middleName + " " + author.lastName, id: author.id })));
-      } catch (error) {
-        console.error("Failed to fetch authors:", error);
-        toast({
-          title: "Error",
-          description: "Could not load authors list.",
-          variant: "destructive",
-        });
-      }
-    };
-    fetchAuthors();
-  }, [toast]);
+  const fetchAuthors = async () => {
+    try {
+      const data = await authorService.getAllAuthors();
+      const formattedAuthors = data.map(author => {
+        const fullName = [author.firstName, author.middleName, author.lastName]
+          .filter(Boolean)
+          .join(" ");
+        return { id: author.id, name: fullName };
+      });
+
+      // If the course's author isn’t in the fetched list, add them
+      setAuthors(prev => {
+        const exists = formattedAuthors.some(a => a.id === authorId);
+        return exists || !authorId
+          ? formattedAuthors
+          : [{ id: authorId, name: authorName }, ...formattedAuthors];
+      });
+    } catch (error) {
+      console.error("Failed to fetch authors:", error);
+      toast({
+        title: "Error",
+        description: "Could not load authors list.",
+        variant: "destructive",
+      });
+    }
+  };
+  fetchAuthors();
+}, [toast, authorId, authorName]);
 
   const getFlatCurriculum = (curriculum: Topic[]) => {
     return curriculum.flatMap(topic => [
@@ -670,11 +683,11 @@ const CurriculumBuilderPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Select
-                      value={authorName}
+                      value={authorId}
                       onValueChange={(val) => {
-                        const selected = authors.find((a) => a.name === val);
+                        const selected = authors.find((a) => a.id === val);
                         setAuthorId(selected.id || "");
-                        setAuthorName(val);
+                       setAuthorName(selected?.name || "");
                       }}
                     >
                       <SelectTrigger className="w-full">
@@ -682,7 +695,7 @@ const CurriculumBuilderPage = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {authors.map((a) => (
-                          <SelectItem key={a.id} value={a.name}>
+                          <SelectItem key={a.id} value={a.id}>
                             {a.name}
                           </SelectItem>
                         ))}
