@@ -208,7 +208,7 @@ class LessonService {
                 createdAt: doc.data().createdAt.toDate(),
                 updatedAt: doc.data().updatedAt.toDate(),
             })) as Lesson[];
-
+    
             console.log('LessonService - Fetched lessons:', lessons.length);
             return lessons;
         } catch (error) {

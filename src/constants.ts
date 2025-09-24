@@ -310,3 +310,14 @@ export const RAZORPAY_WEBHOOK_EVENT = {
         VIRTUAL_ACCOUNT_CREDITED: "virtual_account.credited",
     },
 } as const;
+
+
+
+
+export const COLLECTIONS = {
+  COURSES: 'Courses',
+  BUNDLES: 'Bundles',
+  COHORTS: 'Cohorts',
+  USERS: 'Users',
+  LESSONS: 'Lessons',
+} as const;

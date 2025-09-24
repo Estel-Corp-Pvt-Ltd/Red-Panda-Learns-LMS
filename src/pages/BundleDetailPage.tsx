@@ -37,6 +37,7 @@ export default function BundleDetailPage() {
   }, [user, bundle, isEnrolledInBundle, loading]);
 
   if (isLoading || coursesLoading || loading || !enrollmentChecked) {
+    console.log("Bundle ----> Data", bundle)
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -78,7 +79,7 @@ export default function BundleDetailPage() {
         {/* Back Navigation */}
         <Button
           variant="ghost"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/admin')}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
