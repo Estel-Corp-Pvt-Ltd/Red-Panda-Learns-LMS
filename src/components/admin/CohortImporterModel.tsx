@@ -93,79 +93,80 @@ const CohortImporterModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Import Cohorts</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Choose one or more cohorts to import into this course. All topics
-            (and their lessons) belonging to the selected cohorts will be added.
-          </p>
-        </DialogHeader>
+   <Dialog open={isOpen} onOpenChange={onClose}>
+  <DialogContent className="max-w-3xl w-full sm:max-h-[80vh] flex flex-col">
+    <DialogHeader>
+      <DialogTitle>Import Cohorts</DialogTitle>
+      <p className="text-sm text-muted-foreground">
+        Choose one or more cohorts to import into this course. All topics (and their lessons)
+        belonging to the selected cohorts will be added.
+      </p>
+    </DialogHeader>
 
-        <div className="flex items-center gap-2 mb-4">
-          <Input
-            placeholder="Search cohorts..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1"
-          />
-        </div>
+    <div className="flex items-center gap-2 mb-4">
+      <Input
+        placeholder="Search cohorts..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="flex-1"
+      />
+    </div>
 
-        <ScrollArea className="h-[400px] pr-4">
-          {filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-6">
-              {search ? "No matching cohorts." : "No cohorts available to import."}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {/* Select‑All row */}
-              <div className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                <Checkbox
-                  id="select-all"
-                  checked={selected.size === filtered.length}
-                  onCheckedChange={toggleSelectAll}
-                />
-                <label htmlFor="select-all" className="font-medium cursor-pointer">
-                  Select All ({filtered.length})
-                </label>
-              </div>
+    <ScrollArea className="flex-1 pr-4 overflow-auto">
+      {filtered.length === 0 ? (
+        <p className="text-center text-muted-foreground py-6">
+          {search ? 'No matching cohorts.' : 'No cohorts available to import.'}
+        </p>
+      ) : (
+        <div className="space-y-2 pb-2">
+          {/* Select All row */}
+          <div className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+            <Checkbox
+              id="select-all"
+              checked={selected.size === filtered.length}
+              onCheckedChange={toggleSelectAll}
+            />
+            <label htmlFor="select-all" className="font-medium cursor-pointer">
+              Select All ({filtered.length})
+            </label>
+          </div>
 
-              {filtered.map((cohort) => (
-                <div
-                  key={cohort.id}
-                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer"
-                  onClick={() => toggleSelect(cohort.id)}
-                >
-                  <Checkbox
-                    id={`cohort-${cohort.id}`}
-                    checked={selected.has(cohort.id)}
-                    onCheckedChange={() => toggleSelect(cohort.id)}
-                  />
-                  <label htmlFor={`cohort-${cohort.id}`} className="flex-1 cursor-pointer">
-                    <span className="font-medium">{cohort.title}</span>
-                    {cohort.description && (
-                      <p className="text-xs text-muted-foreground">
-                        {cohort.description.slice(0, 60)}...
-                      </p>
-                    )}
-                  </label>
-                </div>
-              ))}
+          {filtered.map((cohort) => (
+            <div
+              key={cohort.id}
+              className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer"
+              onClick={() => toggleSelect(cohort.id)}
+            >
+              <Checkbox
+                id={`cohort-${cohort.id}`}
+                checked={selected.has(cohort.id)}
+                onCheckedChange={() => toggleSelect(cohort.id)}
+              />
+              <label htmlFor={`cohort-${cohort.id}`} className="flex-1 cursor-pointer">
+                <span className="font-medium">{cohort.title}</span>
+                {cohort.description && (
+                  <p className="text-xs text-muted-foreground">
+                    {cohort.description.slice(0, 60)}...
+                  </p>
+                )}
+              </label>
             </div>
-          )}
-        </ScrollArea>
+          ))}
+        </div>
+      )}
+    </ScrollArea>
 
-        <DialogFooter className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={selected.size === 0}>
-            Import Selected ({selected.size})
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DialogFooter className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button onClick={handleConfirm} disabled={selected.size === 0}>
+        Import Selected ({selected.size})
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
   );
 };
 
