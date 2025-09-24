@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail, Lock, User, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/layout/header';
+import { Header } from '@/components/Header';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -79,7 +79,6 @@ export default function Signup() {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen">
       <Header />

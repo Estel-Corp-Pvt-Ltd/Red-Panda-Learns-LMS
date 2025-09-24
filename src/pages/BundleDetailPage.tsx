@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header } from '@/components/layout/header';
+import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,7 @@ export default function BundleDetailPage() {
   }, [user, bundle, isEnrolledInBundle, loading]);
 
   if (isLoading || coursesLoading || loading || !enrollmentChecked) {
+    console.log("Bundle ----> Data", bundle)
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -78,7 +79,7 @@ export default function BundleDetailPage() {
         {/* Back Navigation */}
         <Button
           variant="ghost"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/admin')}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />

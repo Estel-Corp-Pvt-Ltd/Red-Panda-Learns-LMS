@@ -46,6 +46,23 @@ import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
+
+import { userService } from "@/services/userService";
+// import { useCourseQuery } from "@/hooks/useFirebaseApi";
+import { useLocation } from "react-router-dom";
+
+import { useBundleQuery } from "@/hooks/useBundleApi";
+
+// const course = useCourseQuery() =;
+const statsData = {
+  totalRevenue: 45231,
+  activeStudents: 2350,
+  newEnrollments: 180,
+  totalCourses: 12,
+  activeCohorts: 5,
+  totalCohortStudents: 420
+};
+        
 import {
   BUNDLE_STATUS,
   COURSE_STATUS,
@@ -53,12 +70,12 @@ import {
   USER_STATUS
 } from "@/constants";
 
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -76,7 +93,8 @@ export function AdminDashboard() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
+  if (location.pathname === '/admin') {
     loadCourses();
     loadCohorts();
     loadBundles();
@@ -84,7 +102,7 @@ export function AdminDashboard() {
     loadAuthors();
     loadUsers();
     loadStatistics();
-  }, []);
+  }, [location.pathname]);
 
   // 🔹 Load STATISTICS
   const loadStatistics = async () => {
@@ -103,6 +121,7 @@ export function AdminDashboard() {
   };
 
   // 🔹 Load USERS
+
   const loadUsers = async () => {
     try {
       const usersList = await userService.getAllUsers();
@@ -672,6 +691,14 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
+                                 <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`edit-bundle/${bundle.id}`)}
+                                  title="Edit Bundle"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"

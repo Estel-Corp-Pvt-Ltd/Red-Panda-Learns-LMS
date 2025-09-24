@@ -35,8 +35,9 @@ import EditUserPage from "./pages/admin/EditUser";
 import LandingPage from "./pages/landingpage";
 import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import ForgotPassword from "./pages/auth/ForgotPassword";
-import { useCourseQuery } from "./hooks/useFirebaseApi";
+import { useCourseQuery } from "./hooks/useCaching";
 import SetNewPassword from "./pages/auth/PasswordReset";
+import EditBundlePage from "./pages/admin/EditBundle";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +137,14 @@ const App = () => (
                   element={
                     <AuthGuard>
                       <CreateBundlePage />
+                    </AuthGuard>
+                  }
+                />
+                      <Route
+                  path="admin/edit-bundle/:bundleId"
+                  element={
+                    <AuthGuard>
+                      <EditBundlePage />
                     </AuthGuard>
                   }
                 />

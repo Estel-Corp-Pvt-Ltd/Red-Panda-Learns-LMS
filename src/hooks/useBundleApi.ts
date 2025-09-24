@@ -1,6 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { bundleService } from '@/services/bundleService';
+import { doc,updateDoc , setDoc , getDoc  , Timestamp} from 'firebase/firestore';
 
+import { useMutation, useQueryClient ,useQuery } from "@tanstack/react-query";
+import { db } from '@/firebaseConfig';
 // Query keys for consistent caching
 export const bundleQueryKeys = {
   bundles: ['bundles'] as const,
@@ -41,13 +43,38 @@ export const useBundleQuery = (bundleId: string) => {
 };
 
 export const useBundleCoursesQuery = (bundleId: string) => {
-  console.log("useOurse", bundleId)
+  // console.log("useourse", bundleId)
   return useQuery({
     queryKey: bundleQueryKeys.bundleCourses(bundleId),
     queryFn: () => bundleService.getBundleCourses(bundleId),
     enabled: !!bundleId,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
+  });
+};
+
+
+export const useUpdateBundleMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      bundleId,
+      updatedData,
+    }: {
+      bundleId: string;
+      updatedData: Record<string, any>;
+    }) => bundleService.updateBundleQuery(bundleId, updatedData), 
+
+    onSuccess: (_, { bundleId }) => {
+      queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundles });
+      queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundle(bundleId) });
+      queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundleCourses(bundleId) });
+    },
+
+    onError: (error) => {
+      console.error("❌ Error in mutation:", error);
+    },
   });
 };
 
@@ -80,6 +107,8 @@ export const useBundleApiPrefetch = () => {
       staleTime: 10 * 60 * 1000,
     });
   };
+
+  
 
   return {
     prefetchBundle,

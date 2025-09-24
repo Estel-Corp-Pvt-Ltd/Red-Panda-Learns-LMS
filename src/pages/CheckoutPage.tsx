@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
-import { useCourseQuery } from "@/hooks/useFirebaseApi";
+import { useCourseQuery } from "@/hooks/useCaching";
 import { paymentService } from "@/services/paymentService";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { useToast } from "@/hooks/use-toast";

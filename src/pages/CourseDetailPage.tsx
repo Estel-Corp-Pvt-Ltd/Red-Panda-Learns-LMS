@@ -7,7 +7,7 @@ import {
   Share2,
   Bookmark,
 } from "lucide-react";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import {
   useCourseQuery,
-} from "@/hooks/useFirebaseApi";
+} from "@/hooks/useCaching";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,7 @@ import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   const { isEnrolled } = useEnrollment();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
@@ -60,35 +60,6 @@ export default function CourseDetailPage() {
   const isError = courseError;
   const userIsEnrolled = user && courseId ? isEnrolled(courseId) || isEnrolled(course?.id) : false;
 
-  // console.log(course, topics, courseId)
-
-  // Debug logging for enrollment status
-  // useEffect(() => {
-  //   console.log("CourseDetailPage - Enrollment Status:", {
-  //     user: !!user,
-  //     courseId,
-  //     courseIdFromParams: courseId,
-  //     courseIdFromApi: course?.id,
-  //     userIsEnrolled,
-  //     userId: user?.uid,
-  //     enrollmentCheckResults: {
-  //       byParamId: user && courseId ? isEnrolled(courseId) : false,
-  //       byApiId: user && course?.id ? isEnrolled(course.id) : false
-  //     }
-  //   });
-  // }, [user, courseId, userIsEnrolled, course?.id, isEnrolled]);
-
-  // Refresh enrollments when component mounts
-  // useEffect(() => {
-  //   if (user) {
-  //     // console.log(
-  //     //   "CourseDetailPage - Refreshing enrollments for user:",
-  //     //   user.uid
-  //     // );
-  //     refreshEnrollments();
-  //   }
-  // }, [user, refreshEnrollments]);
-
   const handleEnrollClick = async () => {
     if (!user) {
       navigate("/auth/login", {
@@ -103,7 +74,6 @@ export default function CourseDetailPage() {
     // navigate(`/checkout/${courseId}`);
     if (course.topics && course.topics.length > 0) {
       const firstTopic = course.topics[0];
-      const firstTopicId = firstTopic.id;
       navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
     }
   };
@@ -194,13 +164,6 @@ export default function CourseDetailPage() {
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
                   {course.title}
                 </h1>
-
-                {/* {course.post_excerpt && (
-                  <p
-  className="text-lg text-muted-foreground leading-relaxed"
-  dangerouslySetInnerHTML={{ __html: course.post_excerpt || '' }}
-/>
-                )} */}
               </div>
 
               {/* Course Meta */}
@@ -278,7 +241,7 @@ export default function CourseDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
-                  Course Curriculum 
+                  Course Curriculum
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {course.topics?.length || 0} topics • {totalLessons as number}{" "}
