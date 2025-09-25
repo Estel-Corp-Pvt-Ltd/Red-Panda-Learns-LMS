@@ -38,10 +38,10 @@ import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
+
+import { Cohort } from "@/types/course";
 import { statisticsService, DashboardStats } from "@/services/statisticsService";
 import { userService } from "@/services/userService";
-
-import { Cohort } from "@/types/cohort";
 import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
@@ -309,57 +309,41 @@ useEffect(() => {
     }
   };
 
-  // ✅ Dashboard Statistics Cards
-  const statCards = statsData
-    ? [
-        {
-          title: "Total Revenue",
-          value: formatCurrency(statsData.totalRevenue),
-          description: `${statsData.revenueGrowth}% from last month`,
-          icon: DollarSign
-        },
-        {
-          title: "Active Students",
-          value: statsData.activeStudents?.toLocaleString(),
-          description: `${statsData.activeStudentGrowth}% from last month`,
-          icon: Users
-        },
-        {
-          title: "New Enrollments",
-          value: statsData.newEnrollments.toString(),
-          description: `${statsData.enrollmentGrowth}% from last month`,
-          icon: UserPlus
-        },
-        {
-          title: "Total Courses",
-          value: statsData.totalCourses.toString(),
-          description: `${statsData.totalCourses} courses available`,
-          icon: BookOpen
-        },
-        {
-          title: "Active Cohorts",
-          value: statsData.activeCohorts.toString(),
-          description: `${statsData.totalCohorts} cohorts running`,
-          icon: GraduationCap
-        },
-        {
-          title: "Cohort Students",
-          value: statsData.cohortStudents.toString(),
-          description: "Students in cohorts",
-          icon: Calendar
-        }
-      ]
-    : [];
+  const statCards = [
+    {
+      title: "Total Revenue",
+      value: formatCurrency(statsData.totalRevenue),
+      description: "+20.1% from last month",
+      icon: DollarSign,
+    },
+    {
+      title: "Active Students",
+      value: statsData.activeStudents?.toLocaleString(),
+      description: "+180.1% from last month",
+      icon: Users,
+    },
+    {
+      title: "New Enrollments",
+      value: statsData.newEnrollments.toString(),
+      description: "+19% from last month",
+      icon: UserPlus,
+    },
+    {
+      title: "Total Courses",
+      value: courses.length.toString(),
+      description: `${courses.length} courses available`,
+      icon: BookOpen,
+    },
+    
+    {
+      title: "Cohort Students",
+      value: statsData.totalCohortStudents.toString(),
+      description: "Students in cohorts",
+      icon: Calendar,
+    },
+  ];
 
-  if (
-    loading ||
-    cohortsLoading ||
-    bundlesLoading ||
-    lessonsLoading ||
-    authorsLoading ||
-    usersLoading ||
-    statsLoading
-  ) {
+  if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -754,82 +738,86 @@ useEffect(() => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Cohort</TableHead>
-                          <TableHead>Course</TableHead>
+                          <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
-                          <TableHead>Students</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
-                        {cohorts.map((cohort) => {
-                          const course = courses.find(c => c.id === cohort.courseId);
-                          return (
-                            <TableRow key={cohort.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{cohort.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {cohort.description}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm font-medium">
-                                  {course?.title || 'Unknown Course'}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {new Date(cohort.startDate).toLocaleDateString()}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {cohort.currentEnrollments}/{cohort.maxStudents}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={
-                                  cohort.status === 'in-progress' ? 'default' :
-                                    cohort.status === 'open' ? 'secondary' :
-                                      cohort.status === 'completed' ? 'outline' : 'destructive'
-                                }>
-                                  {cohort.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-                                    title="View Details"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-                                    title="Edit Cohort"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteCohort(cohort.id)}
-                                    title="Delete Cohort"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
+                    <TableBody>
+  {cohorts.map(cohort => (
+    <TableRow key={cohort.id}>
+      {/* Cohort title & description */}
+      <TableCell>
+        <div>
+          <div className="font-medium">{cohort.title}</div>
+          <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+        </div>
+      </TableCell>
+
+      {/* Start date */}
+    <TableCell>
+  <div className="text-sm">
+  {cohort.maxStudents}
+  </div>
+</TableCell>
+
+      {/* End date */}
+      <TableCell>
+  <div className="text-sm">
+  {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
+  </div>
+</TableCell>
+
+      {/* Enrollment open status */}
+      <TableCell>
+        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+        </Badge>
+      </TableCell>
+
+        <TableCell>
+        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+        </Badge>
+      </TableCell>
+
+      {/* Actions: view, edit, delete */}
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+            title="Edit Cohort"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => deleteCohort(cohort.id)}
+            title="Delete Cohort"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
                     </Table>
                   )}
                 </CardContent>
