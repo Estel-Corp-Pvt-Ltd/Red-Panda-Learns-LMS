@@ -38,8 +38,9 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import { useCourseQuery } from "./hooks/useFirebaseApi";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
-
+import CreateCouponPage from "./pages/admin/CreateCouponPage";
 const queryClient = new QueryClient();
+
 
 
 
@@ -55,6 +56,8 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/course/:courseId" element={<CourseDetailPage />} />
+                <Route path="/courses/" element={<CoursesPage />} />
+
                 <Route
                   path="/course/:courseId/lesson/:lessonId"
                   element={
@@ -217,6 +220,14 @@ const App = () => (
                   element={
                     <AuthGuard>
                       <BundleDashboardPage />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/create-coupon"
+                  element={
+                    <AuthGuard>
+                      <CreateCouponPage />
                     </AuthGuard>
                   }
                 />
