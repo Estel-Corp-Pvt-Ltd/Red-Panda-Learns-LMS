@@ -2,14 +2,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Clock, Trophy, PlayCircle } from 'lucide-react';
-import { Header } from '@/components/layout/header';
+import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService, Enrollment } from '@/services/enrollmentService';
-import { useCourseQuery } from '@/hooks/useFirebaseApi';
+import { useCourseQuery } from '@/hooks/useCaching';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                   Start your learning journey by enrolling in a course
                 </p>
                 <Button asChild>
-                  <Link to="/">Browse Courses</Link>
+                  <Link to="/courses">Browse Courses</Link>
                 </Button>
               </CardContent>
             </Card>

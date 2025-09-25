@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCohort } from "@/contexts/CohortContext";
-import { useCohortQuery } from "@/hooks/useFirebaseApi";
+import { useCohortQuery } from "@/hooks/useCaching";
 import { paymentService } from "@/services/paymentService";
 import { currencyService } from "@/services/currencyService";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
