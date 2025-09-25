@@ -320,4 +320,6 @@ export const COLLECTIONS = {
   COHORTS: 'Cohorts',
   USERS: 'Users',
   LESSONS: 'Lessons',
+  COUPONS: 'Coupons',
+  COUPON_USAGES: 'CouponUsages',
 } as const;
