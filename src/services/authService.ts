@@ -7,34 +7,26 @@ import {
   User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
-  updateProfile
-} from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { auth, db } from '@/firebaseConfig';
-import { User } from '@/types/user';
-import { USER_ROLE, USER_STATUS } from '@/constants';
-import { UserRole, UserStatus } from '@/types/general';
-import { userService } from './userService';
+  signInWithRedirect,
+  getRedirectResult,
+  updateProfile,
+} from "firebase/auth";
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { auth, db } from "@/firebaseConfig";
+import { User } from "@/types/user";
+import { USER_ROLE, USER_STATUS } from "@/constants";
+import { UserRole, UserStatus } from "@/types/general";
+import { userService } from "./userService";
 
 export type AuthResponse = {
   success: boolean;
   user?: User;
   userId?: string;
-  error?: string
+  error?: string;
 };
 
 class AuthService {
-  /**
-   * Signs in a user with email and password using Firebase Authentication.
-   * 
-   * @param email - The user's email address.
-   * @param password - The user's password.
-   * @returns A promise resolving to an object containing:
-   *  - `success`: Whether the operation succeeded.
-   *  - `user`: The signed-in user (if successful).
-   *  - `error`: A user-friendly error message (if failed).
-   */
-
+  /** 🔹 Email/Password Login */
   async signInWithEmailAndPassword(
     email: string,
     password: string
@@ -43,21 +35,18 @@ class AuthService {
       const userCredential = await firebaseSignIn(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // First, try to fetch by docId = firebaseUID
+      // First, try to fetch user by Firebase UID
       const userDocRef = doc(db, "Users", firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       let userData: User | null = null;
-
       if (userDocSnap.exists()) {
-        // Case 1: Found by UID as docId
         userData = userDocSnap.data() as User;
       } else {
-        // Case 2: Search for user by firebaseUID field inside Users collection
+        // fallback: query by email
         const usersRef = collection(db, "Users");
         const q = query(usersRef, where("email", "==", email));
         const querySnap = await getDocs(q);
-
         if (!querySnap.empty) {
           userData = querySnap.docs[0].data() as User;
         }
@@ -66,27 +55,13 @@ class AuthService {
       if (!userData) {
         return { success: false, error: "User profile not found in Firestore." };
       }
-
       return { success: true, user: userData };
     } catch (error: any) {
-      const handledError = this.handleAuthError(error);
-      return { success: false, error: handledError.message };
+      return { success: false, error: this.handleAuthError(error).message };
     }
   }
 
-
-  /**
- * Creates a new user with email, password, and name.
- * Also updates the user's profile and creates a Firestore user document.
- * 
- * @param email - The user's email address.
- * @param password - The user's chosen password.
- * @param name - The user's display name.
- * @returns A promise resolving to an object containing:
- *  - `success`: Whether the operation succeeded.
- *  - `user`: The created user (if successful).
- *  - `error`: A user-friendly error message (if failed).
- */
+  /** 🔹 Create new Email/Password user & Firestore user doc */
   async createUserWithEmailAndPassword(
     email: string,
     password: string,
@@ -96,21 +71,20 @@ class AuthService {
       const userCredential = await firebaseCreateUser(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Break down full name into firstName, middleName, lastName
-      const nameParts = name.trim().split(/\s+/);
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
-      const middleName =
-        nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "";
+      // Break down full name
+      const parts = name.trim().split(/\s+/);
+      const firstName = parts[0] || "";
+      const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+      const middleName = parts.length > 2 ? parts.slice(1, -1).join(" ") : null;
 
-      // Update Firebase Auth profile with full display name
+      // Update Firebase Auth profile
       await updateProfile(firebaseUser, { displayName: name });
 
-      // Build Firestore User object
+      // Create Firestore user document
       const userId = await userService.createUser({
         email,
         firstName,
-        middleName: middleName || null,
+        middleName,
         lastName,
         role: USER_ROLE.STUDENT,
         status: USER_STATUS.ACTIVE,
@@ -121,29 +95,26 @@ class AuthService {
 
       return { success: true, userId };
     } catch (error: any) {
-      const handledError = this.handleAuthError(error);
-      return { success: false, error: handledError.message };
+      return { success: false, error: this.handleAuthError(error).message };
     }
   }
 
   /**
- * Signs in a user using Google authentication popup.
- * Creates or updates the user document in Firestore with Google profile data.
- * 
- * @returns A promise resolving to an object containing:
- *  - `success`: Whether the operation succeeded.
- *  - `user`: The signed-in user (if successful).
- *  - `error`: A user-friendly error message (if failed).
- */
-  async signInWithGoogle(): Promise<{ success: boolean; userId?: string; error?: string }> {
+   * 🔹 Google Sign-In (using popup by default, fallback can use redirect)
+   */
+  async signInWithGoogle(): Promise<{
+    success: boolean;
+    userId?: string;
+    error?: string;
+    role?: UserRole;
+  }> {
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
-      const firebaseUser = userCredential.user;
 
-      // Split displayName into first/middle/last
+      const firebaseUser = userCredential.user;
       let firstName = "";
-      let middleName: string | null;
+      let middleName: string | null = null;
       let lastName = "";
 
       if (firebaseUser.displayName) {
@@ -152,7 +123,7 @@ class AuthService {
         if (parts.length === 2) {
           lastName = parts[1];
         } else if (parts.length > 2) {
-          middleName = parts.slice(1, parts.length - 1).join(" ");
+          middleName = parts.slice(1, -1).join(" ");
           lastName = parts[parts.length - 1];
         }
       }
@@ -165,106 +136,113 @@ class AuthService {
         firstName,
         middleName,
         lastName,
-        role: existingDoc.exists() ? (existingDoc.data().role as UserRole) : USER_ROLE.STUDENT,
-        status: existingDoc.exists() ? (existingDoc.data().status as UserStatus) : USER_STATUS.ACTIVE,
+        role: existingDoc.exists()
+          ? (existingDoc.data().role as UserRole)
+          : USER_ROLE.STUDENT,
+        status: existingDoc.exists()
+          ? (existingDoc.data().status as UserStatus)
+          : USER_STATUS.ACTIVE,
         enrollments: [],
-        organizationId: existingDoc.exists() ? existingDoc.data().organizationId : null,
+        organizationId: existingDoc.exists()
+          ? existingDoc.data().organizationId
+          : null,
         photoURL: firebaseUser.photoURL || null,
       });
 
-      return { success: true, userId };
+      return {
+        success: true,
+        userId,
+        role: existingDoc.exists()
+          ? (existingDoc.data().role as UserRole)
+          : USER_ROLE.STUDENT,
+      };
     } catch (error: any) {
-      const handledError = this.handleAuthError(error);
-      return { success: false, error: handledError.message };
+      return {
+        success: false,
+        error: this.handleAuthError(error).message,
+        role: USER_ROLE.STUDENT,
+      };
     }
   }
 
-  /**
-   * Signs out the currently authenticated user.
-   * 
-   * @returns A promise resolving to an object containing:
-   *  - `success`: Whether the operation succeeded.
-   *  - `error`: A user-friendly error message (if failed).
-   */
+  /** 🔹 Optional: Google Sign-In using redirect (avoids COOP warnings) */
+  async signInWithGoogleRedirect() {
+    const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider);
+  }
+
+  async handleGoogleRedirectResult() {
+    try {
+      const result = await getRedirectResult(auth);
+      if (result) {
+        return result.user; // FirebaseUser
+      }
+      return null;
+    } catch (error: any) {
+      return null;
+    }
+  }
+
+  /** 🔹 Logout */
   async signOut(): Promise<{ success: boolean; error?: string }> {
     try {
       await firebaseSignOut(auth);
       return { success: true };
     } catch (error: any) {
-      const handledError = this.handleAuthError(error);
-      return { success: false, error: handledError.message };
+      return { success: false, error: this.handleAuthError(error).message };
     }
   }
 
-  /**
-   * Sends a password reset email to the given email address.
-   * 
-   * @param email - The email of the account requesting reset.
-   * @returns A promise resolving to an object containing:
-   *  - `success`: Whether the operation succeeded.
-   *  - `error`: A user-friendly error message (if failed).
-   */
+  /** 🔹 Password Reset */
   async sendPasswordResetEmail(email: string): Promise<{ success: boolean; error?: string }> {
     try {
       await firebaseSendPasswordReset(auth, email);
       return { success: true };
     } catch (error: any) {
-      const handledError = this.handleAuthError(error);
-      return { success: false, error: handledError.message };
+      return { success: false, error: this.handleAuthError(error).message };
     }
   }
 
-  /**
-  * Subscribes to authentication state changes.
-  * 
-  * @param callback - A function that receives the current user or null.
-  * @returns An unsubscribe function to stop listening for auth changes.
-  */
+  /** 🔹 Subscribe to auth state changes */
   onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
     return firebaseOnAuthStateChanged(auth, callback);
   }
 
-  /**
-   * Handles Firebase authentication errors and maps them to user-friendly messages.
-   * 
-   * @param error - The raw Firebase error object.
-   * @returns An object containing a human-readable error message.
-   */
+  /** 🔹 Error Mapper */
   private handleAuthError(error: any): { message: string } {
-    let message = 'An error occurred during authentication.';
+    let message = "An error occurred during authentication.";
 
     switch (error.code) {
-      case 'auth/user-not-found':
-        message = 'No account found with this email address.';
+      case "auth/user-not-found":
+        message = "No account found with this email address.";
         break;
-      case 'auth/wrong-password':
-        message = 'Incorrect password.';
+      case "auth/wrong-password":
+        message = "Incorrect password.";
         break;
-      case 'auth/email-already-in-use':
-        message = 'An account with this email already exists.';
+      case "auth/email-already-in-use":
+        message = "An account with this email already exists.";
         break;
-      case 'auth/weak-password':
-        message = 'Password should be at least 6 characters.';
+      case "auth/weak-password":
+        message = "Password should be at least 6 characters.";
         break;
-      case 'auth/invalid-email':
-        message = 'Invalid email address.';
+      case "auth/invalid-email":
+        message = "Invalid email address.";
         break;
-      case 'auth/too-many-requests':
-        message = 'Too many failed attempts. Please try again later.';
+      case "auth/too-many-requests":
+        message = "Too many failed attempts. Please try again later.";
         break;
-      case 'auth/network-request-failed':
-        message = 'Network error. Please check your connection.';
+      case "auth/network-request-failed":
+        message = "Network error. Please check your connection.";
         break;
-      case 'auth/popup-closed-by-user':
-        message = 'Sign-in popup was closed before completion.';
+      case "auth/popup-closed-by-user":
+        message = "Sign-in popup was closed before completion.";
         break;
       default:
         message = error.message || message;
     }
 
-    const handledError = { message };
-    return handledError;
+    return { message };
   }
-};
+}
 
 export const authService = new AuthService();
