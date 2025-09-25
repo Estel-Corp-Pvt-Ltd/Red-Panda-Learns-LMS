@@ -49,7 +49,6 @@ import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
 
-import { userService } from "@/services/userService";
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
 import { useCouponByCodeQuery,useCouponByIdQuery,useCouponPrefetch,useCouponsQuery } from "@/hooks/useCouponApi";
@@ -106,7 +105,8 @@ useEffect(() => {
     loadAuthors();
     loadUsers();
     loadStatistics();
-  }, [location.pathname]);
+  }}, [location.pathname]);
+
 
   // 🔹 Load STATISTICS
   const loadStatistics = async () => {
