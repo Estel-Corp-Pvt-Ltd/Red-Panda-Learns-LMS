@@ -30,7 +30,9 @@ import {
   Loader2,
   Calendar,
   GraduationCap,
-  Eye
+  Eye,
+  Plus,
+  Gift,
 } from "lucide-react";
 
 import { courseService } from "@/services/courseService";
@@ -38,10 +40,10 @@ import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
+
+import { Cohort } from "@/types/course";
 import { statisticsService, DashboardStats } from "@/services/statisticsService";
 import { userService } from "@/services/userService";
-
-import { Cohort } from "@/types/cohort";
 import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
@@ -49,8 +51,10 @@ import { User } from "@/types/user";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-
+import { useCouponByCodeQuery,useCouponByIdQuery,useCouponPrefetch,useCouponsQuery } from "@/hooks/useCouponApi";
+import { Coupon,CouponStatus } from "@/types/coupon.";
 import { useBundleQuery } from "@/hooks/useBundleApi";
+import { couponService } from "@/services/couponService";
 
 // const course = useCourseQuery() =;
 const statsData = {
@@ -202,7 +206,8 @@ useEffect(() => {
     }
   };
 
-  // 🔹 Load LESSONS
+  const { data: coupons = [], isLoading } = useCouponsQuery();
+
   const loadLessons = async () => {
     try {
       const lessonsList = await lessonService.getAllLessons();
@@ -275,6 +280,10 @@ useEffect(() => {
     }
   };
 
+   const deleteCoupon = async(couponid:string)=>{
+    
+   }
+
   const deleteBundle = async (bundleId: string) => {
     try {
       await bundleService.deleteBundle(bundleId);
@@ -309,57 +318,43 @@ useEffect(() => {
     }
   };
 
-  // ✅ Dashboard Statistics Cards
-  const statCards = statsData
-    ? [
-        {
-          title: "Total Revenue",
-          value: formatCurrency(statsData.totalRevenue),
-          description: `${statsData.revenueGrowth}% from last month`,
-          icon: DollarSign
-        },
-        {
-          title: "Active Students",
-          value: statsData.activeStudents?.toLocaleString(),
-          description: `${statsData.activeStudentGrowth}% from last month`,
-          icon: Users
-        },
-        {
-          title: "New Enrollments",
-          value: statsData.newEnrollments.toString(),
-          description: `${statsData.enrollmentGrowth}% from last month`,
-          icon: UserPlus
-        },
-        {
-          title: "Total Courses",
-          value: statsData.totalCourses.toString(),
-          description: `${statsData.totalCourses} courses available`,
-          icon: BookOpen
-        },
-        {
-          title: "Active Cohorts",
-          value: statsData.activeCohorts.toString(),
-          description: `${statsData.totalCohorts} cohorts running`,
-          icon: GraduationCap
-        },
-        {
-          title: "Cohort Students",
-          value: statsData.cohortStudents.toString(),
-          description: "Students in cohorts",
-          icon: Calendar
-        }
-      ]
-    : [];
+ 
 
-  if (
-    loading ||
-    cohortsLoading ||
-    bundlesLoading ||
-    lessonsLoading ||
-    authorsLoading ||
-    usersLoading ||
-    statsLoading
-  ) {
+  const statCards = [
+    {
+      title: "Total Revenue",
+      value: formatCurrency(statsData.totalRevenue),
+      description: "+20.1% from last month",
+      icon: DollarSign,
+    },
+    {
+      title: "Active Students",
+      value: statsData.activeStudents?.toLocaleString(),
+      description: "+180.1% from last month",
+      icon: Users,
+    },
+    {
+      title: "New Enrollments",
+      value: statsData.newEnrollments.toString(),
+      description: "+19% from last month",
+      icon: UserPlus,
+    },
+    {
+      title: "Total Courses",
+      value: courses.length.toString(),
+      description: `${courses.length} courses available`,
+      icon: BookOpen,
+    },
+    
+    {
+      title: "Cohort Students",
+      value: statsData.totalCohortStudents.toString(),
+      description: "Students in cohorts",
+      icon: Calendar,
+    },
+  ];
+
+  if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -408,6 +403,7 @@ useEffect(() => {
               <TabsTrigger value="statistics">Statistics</TabsTrigger>
               <TabsTrigger value="authors">Authors</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="coupons">Coupon</TabsTrigger>
             </TabsList>
 
             {/* ✅ show STATISTICS cards */}
@@ -754,82 +750,86 @@ useEffect(() => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Cohort</TableHead>
-                          <TableHead>Course</TableHead>
+                          <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
-                          <TableHead>Students</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
-                        {cohorts.map((cohort) => {
-                          const course = courses.find(c => c.id === cohort.courseId);
-                          return (
-                            <TableRow key={cohort.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{cohort.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {cohort.description}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm font-medium">
-                                  {course?.title || 'Unknown Course'}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {new Date(cohort.startDate).toLocaleDateString()}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {cohort.currentEnrollments}/{cohort.maxStudents}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={
-                                  cohort.status === 'in-progress' ? 'default' :
-                                    cohort.status === 'open' ? 'secondary' :
-                                      cohort.status === 'completed' ? 'outline' : 'destructive'
-                                }>
-                                  {cohort.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-                                    title="View Details"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-                                    title="Edit Cohort"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteCohort(cohort.id)}
-                                    title="Delete Cohort"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
+                    <TableBody>
+  {cohorts.map(cohort => (
+    <TableRow key={cohort.id}>
+      {/* Cohort title & description */}
+      <TableCell>
+        <div>
+          <div className="font-medium">{cohort.title}</div>
+          <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+        </div>
+      </TableCell>
+
+      {/* Start date */}
+    <TableCell>
+  <div className="text-sm">
+  {cohort.maxStudents}
+  </div>
+</TableCell>
+
+      {/* End date */}
+      <TableCell>
+  <div className="text-sm">
+  {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
+  </div>
+</TableCell>
+
+      {/* Enrollment open status */}
+      <TableCell>
+        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+        </Badge>
+      </TableCell>
+
+        <TableCell>
+        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+        </Badge>
+      </TableCell>
+
+      {/* Actions: view, edit, delete */}
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+            title="Edit Cohort"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => deleteCohort(cohort.id)}
+            title="Delete Cohort"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
                     </Table>
                   )}
                 </CardContent>
@@ -988,7 +988,123 @@ useEffect(() => {
               </Card>
             </TabsContent>
 
-            {/* other tabs (lessons, courses, bundles, cohorts, authors, users) remain unchanged */}
+             <TabsContent value="coupons">
+      <Card>
+        <CardHeader>
+          <CardTitle>Coupons</CardTitle>
+          <CardDescription>
+            Manage discount codes, their usage, and validity.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {coupons.length === 0 && !isLoading ? (
+            <div className="text-center py-8">
+              <Gift className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by creating a coupon code.
+              </p>
+              <div className="mt-6">
+                <Button onClick={() => navigate('/admin/create-coupon')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Coupon
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Discount</TableHead>
+                  <TableHead>Usage</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {coupons.map((coupon) => (
+                  <TableRow key={coupon.id}>
+                    <TableCell className="font-medium">{coupon.code}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          coupon.status === CouponStatus.ACTIVE
+                            ? 'default'
+                            : coupon.status === CouponStatus.EXPIRED
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {coupon.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                  {coupon.discountPercentage}
+                    </TableCell>
+                    <TableCell>
+                     {coupon.usageLimit}
+                    </TableCell>
+                    <TableCell>
+                      {coupon.expiryDate
+                        ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
+                        : 'No expiry'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                          title="Edit Coupon"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            // Optionally implement delete logic here
+                          }}
+                          title="Delete Coupon"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+
+            <TabsContent value="statistics">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {statCards.map((card, index) => {
+                  const Icon = card.icon;
+                  return (
+                    <Card key={index}>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {card.title}
+                        </CardTitle>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{card.value}</div>
+                        <p className="text-xs text-muted-foreground">
+                          {card.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </div>

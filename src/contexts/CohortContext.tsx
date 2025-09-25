@@ -1,35 +1,42 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cohortService } from '@/services/cohortService';
-import { CohortEnrollment } from '@/types/cohort';
+import { Enrollment } from '@/types/course'; // Contains Enrollment interface
+import { Cohort } from '@/types/course';
 
 interface CohortContextType {
-  cohortEnrollments: CohortEnrollment[];
+  cohortEnrollments: Enrollment[];
   isEnrolledInCohort: (cohortId: string) => boolean;
-  isCohortContentUnlocked: (cohortId: string, weekNumber: number) => Promise<boolean>;
   refreshCohortEnrollments: () => Promise<void>;
   loading: boolean;
 }
 
 const CohortContext = createContext<CohortContextType | undefined>(undefined);
 
-export const useCohort = () => {
+export const useCohort = (): CohortContextType => {
   const context = useContext(CohortContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCohort must be used within a CohortProvider');
   }
   return context;
 };
 
 interface CohortProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const CohortProvider: React.FC<CohortProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const [cohortEnrollments, setCohortEnrollments] = useState<CohortEnrollment[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [cohortEnrollments, setCohortEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
+  // Load user's cohort enrollments
   const refreshCohortEnrollments = async () => {
     if (!user) {
       setCohortEnrollments([]);
@@ -48,34 +55,29 @@ export const CohortProvider: React.FC<CohortProviderProps> = ({ children }) => {
     }
   };
 
+  // Check if user is actively enrolled in a specific cohort
   const isEnrolledInCohort = (cohortId: string): boolean => {
-    return cohortEnrollments.some(enrollment =>
-      enrollment.cohortId === cohortId && enrollment.status === 'active'
+    return cohortEnrollments.some(
+      (enrollment) =>
+        enrollment.cohortId === cohortId && enrollment.status === 'active'
     );
   };
 
-  const isCohortContentUnlocked = async (cohortId: string, weekNumber: number): Promise<boolean> => {
-    if (!user) return false;
-
-    try {
-      return await cohortService.isContentUnlocked(user.id, cohortId, weekNumber);
-    } catch (error) {
-      console.error('CohortContext - Error checking content unlock:', error);
-      return false;
-    }
-  };
-
+  // Load enrollments whenever the user changes
   useEffect(() => {
     refreshCohortEnrollments();
   }, [user]);
 
-  const value = {
+  const value: CohortContextType = {
     cohortEnrollments,
     isEnrolledInCohort,
-    isCohortContentUnlocked,
     refreshCohortEnrollments,
     loading,
   };
 
-  return <CohortContext.Provider value={value}>{children}</CohortContext.Provider>;
+  return (
+    <CohortContext.Provider value={value}>
+      {children}
+    </CohortContext.Provider>
+  );
 };

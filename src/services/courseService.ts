@@ -165,7 +165,8 @@ class CourseService {
       if (updates.topics) updateData.topics = updates.topics;
       if (updates.isEnrollmentPaused !== undefined) updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
       if (updates.certificateTemplateId) updateData.certificateTemplateId = updates.certificateTemplateId;
-
+       if (updates.cohorts) updateData.cohorts = updates.cohorts;
+       
       await updateDoc(courseRef, updateData);
       console.log('CourseService - Course updated successfully:', courseId);
     } catch (error) {

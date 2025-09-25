@@ -20,7 +20,7 @@ import Signup from "./pages/auth/Signup";
 import CheckoutPage from "./pages/CheckoutPage";
 import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
-import { CreateCohortPage } from "./pages/admin/CreateCohortPage";
+import CohortBuilderPage from "./pages/admin/CreateCohortPage";
 import CohortDetailPage from "./pages/admin/CohortDetailPage";
 import EditCohortPage from "./pages/admin/EditCohortPage";
 import UserCohortDetailPage from "./pages/CohortDetailPage";
@@ -38,8 +38,9 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import { useCourseQuery } from "./hooks/useCaching";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
-
+import CreateCouponPage from "./pages/admin/CreateCouponPage";
 const queryClient = new QueryClient();
+
 
 
 
@@ -55,6 +56,8 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/course/:courseId" element={<CourseDetailPage />} />
+                <Route path="/courses/" element={<CoursesPage />} />
+
                 <Route
                   path="/course/:courseId/lesson/:lessonId"
                   element={
@@ -152,7 +155,7 @@ const App = () => (
                   path="/admin/create-cohort"
                   element={
                     <AuthGuard>
-                      <CreateCohortPage />
+                      <CohortBuilderPage />
                     </AuthGuard>
                   }
                 />
@@ -217,6 +220,14 @@ const App = () => (
                   element={
                     <AuthGuard>
                       <BundleDashboardPage />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/create-coupon"
+                  element={
+                    <AuthGuard>
+                      <CreateCouponPage />
                     </AuthGuard>
                   }
                 />
