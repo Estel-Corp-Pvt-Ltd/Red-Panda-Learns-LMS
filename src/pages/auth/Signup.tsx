@@ -54,7 +54,7 @@ export default function Signup() {
     }
 
     //  Load Cloud Function URL from .env.local
-    const verifyUrl = import.meta.env.VITE_RECAPTCHA_URL;
+    const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
 
 
     // 🔹 2. Verify reCAPTCHA token via Firebase Cloud Function

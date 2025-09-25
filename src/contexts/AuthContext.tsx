@@ -10,10 +10,10 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signup: (email: string, password: string, name: string) => Promise<AuthResponse>;
-  loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string ; role: UserRole}>;
+  loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string; role: UserRole }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -27,12 +27,37 @@ export const useAuth = () => {
 
 interface AuthProviderProps {
   children: React.ReactNode;
+}
+
+// 🔹 Helper: Fetch Firestore user
+const fetchUserFromFirestore = async (uid: string, email?: string | null): Promise<User | null> => {
+  try {
+    // First try UID
+    const userDocRef = doc(db, "Users", uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) return userDocSnap.data() as User;
+
+    // fallback: lookup by email
+    if (email) {
+      const usersRef = collection(db, "Users");
+      const q = query(usersRef, where("email", "==", email));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        return querySnap.docs[0].data() as User;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    return null;
+  }
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔹 Keep user in sync with Firebase Auth state
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
       if (!firebaseUser) {
@@ -40,94 +65,92 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
         return;
       }
-
-      try {
-        // Try by UID as docId (works only for those two special users)
-        const userDocRef = doc(db, "Users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        let userData: User | null = null;
-
-        if (userDocSnap.exists()) {
-          userData = userDocSnap.data() as User;
-        } else {
-          // Fallback: search by email
-          const usersRef = collection(db, "Users");
-          const q = query(usersRef, where("email", "==", firebaseUser.email));
-          const querySnap = await getDocs(q);
-
-          if (!querySnap.empty) {
-            userData = querySnap.docs[0].data() as User;
-          }
-        }
-
-        setUser(userData);
-      } catch (err) {
-        console.error("Error fetching user profile:", err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
+      const userData = await fetchUserFromFirestore(firebaseUser.uid, firebaseUser.email);
+      setUser(userData);
+      setLoading(false);
     });
-
-
     return unsubscribe;
   }, []);
 
+  // 🔹 Email/Password Login
   const login = async (email: string, password: string) => {
-    return await authService.signInWithEmailAndPassword(email, password);
+    const result = await authService.signInWithEmailAndPassword(email, password);
+    if (result.success && result.user) {
+      setUser(result.user); // ✅ update immediately so Header changes
+    }
+    return result;
   };
 
+  // 🔹 Signup (Email/Password)
   const signup = async (email: string, password: string, name: string) => {
-    return await authService.createUserWithEmailAndPassword(email, password, name);
+    const result = await authService.createUserWithEmailAndPassword(email, password, name);
+
+    if (result.success && result.userId) {
+      const userData = await fetchUserFromFirestore(result.userId, email);
+      if (userData) {
+        setUser(userData); // ✅ update immediately so Header changes
+      }
+    }
+    return result;
   };
 
-  const loginWithGoogle = async (): Promise<{ 
+  // 🔹 Google Login
+ const loginWithGoogle = async (): Promise<{ 
   success: boolean; 
   userId?: string; 
   error?: string; 
   role: UserRole 
 }> => {
-  // delegate to your service which you’ve updated to return this shape
   const result = await authService.signInWithGoogle();
 
-  // If login succeeded, also update context state so `user` is populated
   if (result.success && result.userId) {
-    try {
-      const userRef = doc(db, "Users", result.userId);
-      const userDocSnap = await getDoc(userRef);
+    const userData = await fetchUserFromFirestore(result.userId);
+    if (userData) {
+      setUser(userData);
 
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data() as User;
-        setUser(userData);
-      }
-    } catch (err) {
-      console.error("Error fetching user profile after Google login:", err);
+      return {
+        success: true,
+        userId: result.userId,
+        role: userData.role as UserRole, // ✅ guarantee role exists
+      };
     }
+    // fallback if user doc missing
+    return {
+      success: true,
+      userId: result.userId,
+      role: "student" as UserRole, // ✅ default role
+    };
   }
 
-  return result;
+  // Fallback failure — must still return a role
+  return {
+    success: false,
+    error: result.error || "Google login failed",
+    role: "student" as UserRole,  // ✅ required prop
+  };
 };
 
+  // 🔹 Logout
   const logout = async () => {
     await authService.signOut();
+    setUser(null);
   };
 
-const resetPassword = async (email: string) => {
-  try {
-    await authService.sendPasswordResetEmail(email);
-  } catch (error: any) {
-    if (error.code === 'auth/user-not-found') {
-      console.warn("⚠️ No user found with email:", email);
-    } else {
-      console.error("❌ Error sending password reset email:", error);
+  // 🔹 Password reset
+  const resetPassword = async (email: string) => {
+    try {
+      await authService.sendPasswordResetEmail(email);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        console.warn("⚠️ No user found with email:", email);
+      } else {
+        console.error("❌ Error sending password reset email:", error);
+      }
+      throw error;
     }
-    throw error; // rethrow if you want to handle it elsewhere
-  }
-};
+  };
 
-
-  const value = {
+  const value: AuthContextType = {
     user,
     loading,
     login,
