@@ -3,13 +3,14 @@ import { User } from '@/types/user';
 import { AuthResponse, authService } from '@/services/authService';
 import { db } from '@/firebaseConfig';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { UserRole } from '@/types/general';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signup: (email: string, password: string, name: string) => Promise<AuthResponse>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string ; role: UserRole}>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 };
@@ -81,9 +82,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return await authService.createUserWithEmailAndPassword(email, password, name);
   };
 
-  const loginWithGoogle = async () => {
-    await authService.signInWithGoogle();
-  };
+  const loginWithGoogle = async (): Promise<{ 
+  success: boolean; 
+  userId?: string; 
+  error?: string; 
+  role: UserRole 
+}> => {
+  // delegate to your service which you’ve updated to return this shape
+  const result = await authService.signInWithGoogle();
+
+  // If login succeeded, also update context state so `user` is populated
+  if (result.success && result.userId) {
+    try {
+      const userRef = doc(db, "Users", result.userId);
+      const userDocSnap = await getDoc(userRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data() as User;
+        setUser(userData);
+      }
+    } catch (err) {
+      console.error("Error fetching user profile after Google login:", err);
+    }
+  }
+
+  return result;
+};
 
   const logout = async () => {
     await authService.signOut();

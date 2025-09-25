@@ -10,6 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail, Lock, User, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
+import { getRecaptchaToken } from "@/utils/recaptcha";
+
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -25,42 +27,75 @@ export default function Signup() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  // 🔹 Password checks
+  if (password !== confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters long');
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const confirmation = await signup(email, password, name);
-      if (confirmation.success) {
-        toast({
-          title: "Account created successfully!",
-          description: "Welcome to Vizuara AI Labs. You can now access your courses.",
-        });
-        navigate('/dashboard', { replace: true });
-      } else {
-        toast({
-          title: "Sign up failed!",
-          description: "Try again later.",
-        });
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
+  try {
+    // 🔹 1. Get reCAPTCHA token
+    const token = await getRecaptchaToken();
+    if (!token) {
+      setError("⚠️ reCAPTCHA verification failed. Please try again.");
       setLoading(false);
+      return;
     }
-  };
+
+    //  Load Cloud Function URL from .env.local
+    const verifyUrl = import.meta.env.VITE_RECAPTCHA_URL;
+
+
+    // 🔹 2. Verify reCAPTCHA token via Firebase Cloud Function
+    const res = await fetch(verifyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+
+    const verifyData = await res.json();
+
+    if (!res.ok || !verifyData.success) {
+      setError("reCAPTCHA verification failed. Please try again.");
+      setLoading(false);
+      return;
+    }
+    console.log("testing");
+
+    console.log(" reCAPTCHA passed, score:", verifyData.score);
+
+    // 🔹 3. Now proceed with Firebase signup
+    const confirmation = await signup(email, password, name);
+
+    if (confirmation.success) {
+      toast({
+        title: "Account created successfully!",
+        description: "Welcome to Vizuara AI Labs. You can now access your courses.",
+      });
+      navigate('/dashboard', { replace: true });
+    } else {
+      toast({
+        title: "Sign up failed!",
+        description: "Please try again later.",
+      });
+    }
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGoogleSignup = async () => {
     setError('');
