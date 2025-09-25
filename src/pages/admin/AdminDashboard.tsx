@@ -320,39 +320,39 @@ useEffect(() => {
 
  
 
-  const statCards = [
-    {
-      title: "Total Revenue",
-      value: formatCurrency(statsData.totalRevenue),
-      description: "+20.1% from last month",
-      icon: DollarSign,
-    },
-    {
-      title: "Active Students",
-      value: statsData.activeStudents?.toLocaleString(),
-      description: "+180.1% from last month",
-      icon: Users,
-    },
-    {
-      title: "New Enrollments",
-      value: statsData.newEnrollments.toString(),
-      description: "+19% from last month",
-      icon: UserPlus,
-    },
-    {
-      title: "Total Courses",
-      value: courses.length.toString(),
-      description: `${courses.length} courses available`,
-      icon: BookOpen,
-    },
+  // const statCards = [
+  //   {
+  //     title: "Total Revenue",
+  //     value: formatCurrency(statsData.totalRevenue),
+  //     description: "+20.1% from last month",
+  //     icon: DollarSign,
+  //   },
+  //   {
+  //     title: "Active Students",
+  //     value: statsData.activeStudents?.toLocaleString(),
+  //     description: "+180.1% from last month",
+  //     icon: Users,
+  //   },
+  //   {
+  //     title: "New Enrollments",
+  //     value: statsData.newEnrollments.toString(),
+  //     description: "+19% from last month",
+  //     icon: UserPlus,
+  //   },
+  //   {
+  //     title: "Total Courses",
+  //     value: courses.length.toString(),
+  //     description: `${courses.length} courses available`,
+  //     icon: BookOpen,
+  //   },
     
-    {
-      title: "Cohort Students",
-      value: statsData.totalCohortStudents.toString(),
-      description: "Students in cohorts",
-      icon: Calendar,
-    },
-  ];
+  //   {
+  //     title: "Cohort Students",
+  //     value: statsData.totalCohortStudents.toString(),
+  //     description: "Students in cohorts",
+  //     icon: Calendar,
+  //   },
+  // ];
 
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
@@ -407,29 +407,97 @@ useEffect(() => {
             </TabsList>
 
             {/* ✅ show STATISTICS cards */}
-            <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent>
+          <TabsContent value="statistics">
+  {statsLoading ? (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  ) : statsData ? (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Total Revenue */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(statsData.totalRevenue)}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.revenueGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Active Students */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Students</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.activeStudents.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.activeStudentGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* New Enrollments */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">New Enrollments</CardTitle>
+          <UserPlus className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.newEnrollments}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.enrollmentGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Total Courses */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.totalCourses}</div>
+          <p className="text-xs text-muted-foreground">
+            {statsData.totalCourses} courses available
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Active Cohorts */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Cohorts</CardTitle>
+          <GraduationCap className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.activeCohorts}</div>
+          <p className="text-xs text-muted-foreground">Currently active cohorts</p>
+        </CardContent>
+      </Card>
+
+      {/* Cohort Students */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Cohort Students</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.totalCohortStudents}</div>
+          <p className="text-xs text-muted-foreground">Students across cohorts</p>
+        </CardContent>
+      </Card>
+    </div>
+  ) : (
+    <p className="text-muted-foreground">No statistics available</p>
+  )}
+</TabsContent>
 
                         <TabsContent value="lessons">
               <Card>
@@ -1084,7 +1152,7 @@ useEffect(() => {
 
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
+                {/* {statCards.map((card, index) => {
                   const Icon = card.icon;
                   return (
                     <Card key={index}>
@@ -1102,7 +1170,7 @@ useEffect(() => {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })} */}
               </div>
             </TabsContent>
           </Tabs>
