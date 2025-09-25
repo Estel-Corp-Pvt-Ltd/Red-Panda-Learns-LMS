@@ -1,8 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -19,18 +32,21 @@ import {
   GraduationCap,
   Eye
 } from "lucide-react";
+
 import { courseService } from "@/services/courseService";
 import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
+
 import { Cohort } from "@/types/course";
+import { statisticsService, DashboardStats } from "@/services/statisticsService";
+import { userService } from "@/services/userService";
 import { Bundle } from "@/types/bundle";
-import { Header } from "@/components/layout/header";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
-import { BUNDLE_STATUS, COURSE_STATUS, USER_ROLE, USER_STATUS } from "@/constants";
 import { User } from "@/types/user";
+
 import { userService } from "@/services/userService";
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
@@ -46,6 +62,15 @@ const statsData = {
   activeCohorts: 5,
   totalCohortStudents: 420
 };
+        
+import {
+  BUNDLE_STATUS,
+  COURSE_STATUS,
+  USER_ROLE,
+  USER_STATUS
+} from "@/constants";
+
+import { Header } from "@/components/Header";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -57,14 +82,16 @@ export function AdminDashboard() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(true);
+  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
 
+  // Loading states
   const [loading, setLoading] = useState(true);
   const [authorsLoading, setAuthorsLoading] = useState(true);
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
-
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
 
 useEffect(() => {
   if (location.pathname === '/admin') {
@@ -74,8 +101,27 @@ useEffect(() => {
     loadLessons();
     loadAuthors();
     loadUsers();
-  }
-}, [location.pathname]);
+    loadStatistics();
+  }, [location.pathname]);
+
+  // 🔹 Load STATISTICS
+  const loadStatistics = async () => {
+    try {
+      const stats = await statisticsService.getDashboardStats();
+      setStatsData(stats);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load statistics",
+        variant: "destructive"
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // 🔹 Load USERS
+
   const loadUsers = async () => {
     try {
       const usersList = await userService.getAllUsers();
@@ -84,7 +130,7 @@ useEffect(() => {
       toast({
         title: "Error",
         description: "Failed to load users",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setUsersLoading(false);
@@ -94,38 +140,37 @@ useEffect(() => {
   const deleteUser = async (userId: string) => {
     try {
       await userService.deleteUser(userId);
-      setUsers(prev => prev.filter(user => user.id !== userId));
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "User deleted successfully"
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete user",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
-
+  // 🔹 Load COURSES
   const loadCourses = async () => {
     try {
       const coursesList = await courseService.getAllCourses();
       setCourses(coursesList);
-      const courseIds = coursesList.map(course => course.topics);
-      console.log("This Are CourseIDs",courseIds);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to load courses",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Load COHORTS
   const loadCohorts = async () => {
     try {
       const cohortsList = await cohortService.getAllCohorts();
@@ -134,13 +179,14 @@ useEffect(() => {
       toast({
         title: "Error",
         description: "Failed to load cohorts",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setCohortsLoading(false);
     }
   };
 
+  // 🔹 Load BUNDLES
   const loadBundles = async () => {
     try {
       const bundlesList = await bundleService.getAllBundles();
@@ -149,29 +195,30 @@ useEffect(() => {
       toast({
         title: "Error",
         description: "Failed to load bundles",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setBundlesLoading(false);
     }
   };
 
+  // 🔹 Load LESSONS
   const loadLessons = async () => {
     try {
       const lessonsList = await lessonService.getAllLessons();
       setLessons(lessonsList);
-      console.log(lessonsList);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to load lessons",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLessonsLoading(false);
     }
   };
 
+  // 🔹 Load AUTHORS
   const loadAuthors = async () => {
     try {
       const authorsList = await authorService.getAllAuthors();
@@ -180,7 +227,7 @@ useEffect(() => {
       toast({
         title: "Error",
         description: "Failed to load authors",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setAuthorsLoading(false);
@@ -188,25 +235,25 @@ useEffect(() => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD"
     }).format(amount);
   };
 
   const deleteCourse = async (courseId: string) => {
     try {
       await courseService.deleteCourse(courseId);
-      setCourses(prev => prev.filter(course => course.id !== courseId));
+      setCourses((prev) => prev.filter((course) => course.id !== courseId));
       toast({
         title: "Success",
-        description: "Course deleted successfully",
+        description: "Course deleted successfully"
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete course",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -214,16 +261,16 @@ useEffect(() => {
   const deleteCohort = async (cohortId: string) => {
     try {
       await cohortService.deleteCohort(cohortId);
-      setCohorts(prev => prev.filter(cohort => cohort.id !== cohortId));
+      setCohorts((prev) => prev.filter((cohort) => cohort.id !== cohortId));
       toast({
         title: "Success",
-        description: "Cohort deleted successfully",
+        description: "Cohort deleted successfully"
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete cohort",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -231,16 +278,16 @@ useEffect(() => {
   const deleteBundle = async (bundleId: string) => {
     try {
       await bundleService.deleteBundle(bundleId);
-      setBundles(prev => prev.filter(bundle => bundle.id !== bundleId));
+      setBundles((prev) => prev.filter((bundle) => bundle.id !== bundleId));
       toast({
         title: "Success",
-        description: "Bundle deleted successfully",
+        description: "Bundle deleted successfully"
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete bundle",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -248,16 +295,16 @@ useEffect(() => {
   const deleteLesson = async (lessonId: string) => {
     try {
       await lessonService.deleteLesson(lessonId);
-      setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
+      setLessons((prev) => prev.filter((lesson) => lesson.id !== lessonId));
       toast({
         title: "Success",
-        description: "Lesson deleted successfully",
+        description: "Lesson deleted successfully"
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete lesson",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -306,15 +353,15 @@ useEffect(() => {
 
   return (
     <div>
-      {/* Header */}
       <Header />
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-between">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage your courses, cohorts, and students</p>
+            <p className="text-muted-foreground">
+              Manage your courses, cohorts, and students
+            </p>
           </div>
-          {/* Action Buttons */}
           <div className="flex gap-4">
             <Button onClick={() => navigate("/admin/create-lesson")}>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -336,7 +383,6 @@ useEffect(() => {
         </div>
 
         <div className="space-y-8">
-          {/* Courses and Cohorts Tabs */}
           <Tabs defaultValue="courses" className="space-y-4">
             <TabsList>
               <TabsTrigger value="lessons">Lessons</TabsTrigger>
@@ -347,7 +393,33 @@ useEffect(() => {
               <TabsTrigger value="authors">Authors</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
             </TabsList>
-            <TabsContent value="lessons">
+
+            {/* ✅ show STATISTICS cards */}
+            <TabsContent value="statistics">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {statCards.map((card, index) => {
+                  const Icon = card.icon;
+                  return (
+                    <Card key={index}>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {card.title}
+                        </CardTitle>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{card.value}</div>
+                        <p className="text-xs text-muted-foreground">
+                          {card.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+                        <TabsContent value="lessons">
               <Card>
                 <CardHeader>
                   <CardTitle>Lessons</CardTitle>
@@ -904,29 +976,7 @@ useEffect(() => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent>
+            {/* other tabs (lessons, courses, bundles, cohorts, authors, users) remain unchanged */}
           </Tabs>
         </div>
       </div>

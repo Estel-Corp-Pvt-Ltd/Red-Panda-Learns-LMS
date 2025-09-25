@@ -1,24 +1,31 @@
-import { Currency, EnrolledProgramType, EnrollmentStatus, PaymentProvider, PaymentStatus, UserRole } from "./general";
+import {
+    Currency,
+    EnrolledProgramType,
+    EnrollmentStatus,
+    PaymentProvider,
+    PaymentStatus,
+    PricingModel,
+    UserRole
+} from "./general";
+
+import { LearningProgress } from "./learningProgress";
 
 export interface Enrollment {
     id: string;
     userId: string;
-    targetId: string; // course or bundle id
+    targetId: string;                // courseId OR bundleId
+    targetType: EnrolledProgramType; // "course" or "bundle"
     enrollmentDate: Date;
     status: EnrollmentStatus;
     role: UserRole;
-    programType: EnrolledProgramType
-    currentLessonId?: string; // last lesson the student was on
-    progress: {
-        completedLessons: number;
-        totalLessons: number;
-        percentage: number;
-    };
-    lastAccessed?: Date;
-    completionDate?: Date;
-    certificateIssued: boolean;
-    grade?: number | string | null;
-    payment: {
+
+    bundleProgress?: Array<{ courseId: string; progressId: string; }>;
+
+    // Always track main progress (for course = course’s progress, for bundle = overall aggregate)
+    progress: LearningProgress;
+    
+    pricingModel: PricingModel;
+    payment?: {
         status: PaymentStatus;
         actualAmount: number;
         currency: Currency;
@@ -27,5 +34,5 @@ export interface Enrollment {
         transactionId?: string;
         provider: PaymentProvider;
         paidAt?: Date;
-    }
-};
+    };
+}

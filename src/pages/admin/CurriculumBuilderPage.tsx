@@ -117,8 +117,8 @@ const CurriculumBuilderPage = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [authorId, setAuthorId] = useState("");
-  const [authorName, setAuthorName] = useState("");
+ const [authorId, setAuthorId] = useState("");
+const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
 
   const sensors = useSensors(

@@ -6,7 +6,7 @@ import {
   FileText,
   Video,
 } from "lucide-react";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import {
   useCourseQuery,
-} from "@/hooks/useFirebaseApi";
+} from "@/hooks/useCaching";
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Lesson } from "@/types/lesson";
