@@ -21,7 +21,7 @@ export interface Cohort {
   startDate: Date;
   endDate: Date;
   enrollmentOpen: boolean;
-
+  price : number;
   // Optional metadata for enrollment control
   maxStudents?: number;            // max allowed students in cohort (if any)
   requireEnrollment?: boolean;     // does cohort require enrollment approval?

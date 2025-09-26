@@ -46,7 +46,7 @@ import { CourseStatus, LearningUnit } from "@/types/general";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/Header";
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
 type DraggableItemType = LearningUnit | 'COHORT';
 

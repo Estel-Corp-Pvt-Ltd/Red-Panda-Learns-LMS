@@ -78,7 +78,7 @@ class CourseService {
  * ```
  */
 
-  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts'>): Promise<string> {
     try {
       const courseId = await this.generateCourseId();
 
@@ -96,6 +96,7 @@ class CourseService {
         status: COURSE_STATUS.DRAFT,
         certificateTemplateId: data.certificateTemplateId || '',
         topics: [],
+        cohorts:[],
         isEnrollmentPaused: true,
         createdAt: new Date(),
         updatedAt: new Date(),

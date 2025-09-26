@@ -51,11 +51,12 @@ class CohortService {
         id: cohortId,
         title: data.title,
         description: data.description || '',
+        price : data.price,
         topics: data.topics, // <-- SAVING THE FULL TOPICS ARRAY
         startDate: data.startDate,
         endDate: data.endDate,
         enrollmentOpen: data.enrollmentOpen,
-        maxStudents: data.maxStudents ?? undefined,
+        maxStudents: data.maxStudents ?? null,
         requireEnrollment: data.requireEnrollment ?? false,
         requireCohortAccess: data.requireCohortAccess ?? false,
         cohortEnrollments: 0,

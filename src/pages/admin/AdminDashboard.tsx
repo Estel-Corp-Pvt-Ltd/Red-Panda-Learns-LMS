@@ -49,7 +49,6 @@ import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
 
-import { userService } from "@/services/userService";
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
 import { useCouponByCodeQuery,useCouponByIdQuery,useCouponPrefetch,useCouponsQuery } from "@/hooks/useCouponApi";
@@ -75,6 +74,8 @@ import {
 } from "@/constants";
 
 import { Header } from "@/components/Header";
+import { error } from "console";
+
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ export function AdminDashboard() {
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [coupon,setCoupon] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
@@ -96,6 +98,7 @@ export function AdminDashboard() {
   const [bundlesLoading, setBundlesLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
+  
 
 useEffect(() => {
   if (location.pathname === '/admin') {
@@ -106,7 +109,7 @@ useEffect(() => {
     loadAuthors();
     loadUsers();
     loadStatistics();
-  }, [location.pathname]);
+  }},[location.pathname]);
 
   // 🔹 Load STATISTICS
   const loadStatistics = async () => {
@@ -263,6 +266,25 @@ useEffect(() => {
     }
   };
 
+  const deleteCoupon = async(couponId:string)=>{
+    try{
+      await couponService.deleteCoupon(couponId);
+      setCoupon((prev)=>prev.filter((coupon) => couponId !== couponId));
+      toast({
+        title:"Success",
+        description:"Coupon Deleted Successfully"
+      })
+     
+    }
+    catch{
+   
+       toast({
+        title: "Error",
+        description: "Failed to delete Coupon",
+        variant: "destructive"
+      });
+    }
+  }
   const deleteCohort = async (cohortId: string) => {
     try {
       await cohortService.deleteCohort(cohortId);
@@ -280,9 +302,7 @@ useEffect(() => {
     }
   };
 
-   const deleteCoupon = async(couponid:string)=>{
-    
-   }
+  
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -320,39 +340,39 @@ useEffect(() => {
 
  
 
-  const statCards = [
-    {
-      title: "Total Revenue",
-      value: formatCurrency(statsData.totalRevenue),
-      description: "+20.1% from last month",
-      icon: DollarSign,
-    },
-    {
-      title: "Active Students",
-      value: statsData.activeStudents?.toLocaleString(),
-      description: "+180.1% from last month",
-      icon: Users,
-    },
-    {
-      title: "New Enrollments",
-      value: statsData.newEnrollments.toString(),
-      description: "+19% from last month",
-      icon: UserPlus,
-    },
-    {
-      title: "Total Courses",
-      value: courses.length.toString(),
-      description: `${courses.length} courses available`,
-      icon: BookOpen,
-    },
+  // const statCards = [
+  //   {
+  //     title: "Total Revenue",
+  //     value: formatCurrency(statsData.totalRevenue),
+  //     description: "+20.1% from last month",
+  //     icon: DollarSign,
+  //   },
+  //   {
+  //     title: "Active Students",
+  //     value: statsData.activeStudents?.toLocaleString(),
+  //     description: "+180.1% from last month",
+  //     icon: Users,
+  //   },
+  //   {
+  //     title: "New Enrollments",
+  //     value: statsData.newEnrollments.toString(),
+  //     description: "+19% from last month",
+  //     icon: UserPlus,
+  //   },
+  //   {
+  //     title: "Total Courses",
+  //     value: courses.length.toString(),
+  //     description: `${courses.length} courses available`,
+  //     icon: BookOpen,
+  //   },
     
-    {
-      title: "Cohort Students",
-      value: statsData.totalCohortStudents.toString(),
-      description: "Students in cohorts",
-      icon: Calendar,
-    },
-  ];
+  //   {
+  //     title: "Cohort Students",
+  //     value: statsData.totalCohorts.toString(),
+  //     description: "Students in cohorts",
+  //     icon: Calendar,
+  //   },
+  // ];
 
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
@@ -400,14 +420,14 @@ useEffect(() => {
               <TabsTrigger value="courses">Courses</TabsTrigger>
               <TabsTrigger value="bundles">Bundles</TabsTrigger>
               <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-              <TabsTrigger value="statistics">Statistics</TabsTrigger>
+              {/* <TabsTrigger value="statistics">Statistics</TabsTrigger> */}
               <TabsTrigger value="authors">Authors</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="coupons">Coupon</TabsTrigger>
             </TabsList>
 
             {/* ✅ show STATISTICS cards */}
-            <TabsContent value="statistics">
+            {/* <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {statCards.map((card, index) => {
                   const Icon = card.icon;
@@ -429,7 +449,7 @@ useEffect(() => {
                   );
                 })}
               </div>
-            </TabsContent>
+            </TabsContent> */}
 
                         <TabsContent value="lessons">
               <Card>
@@ -1064,9 +1084,7 @@ useEffect(() => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            // Optionally implement delete logic here
-                          }}
+                          onClick={() => { deleteCoupon(coupon.id) }}
                           title="Delete Coupon"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1081,7 +1099,7 @@ useEffect(() => {
         </CardContent>
       </Card>
     </TabsContent>
-
+{/* 
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {statCards.map((card, index) => {
@@ -1104,7 +1122,7 @@ useEffect(() => {
                   );
                 })}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>
