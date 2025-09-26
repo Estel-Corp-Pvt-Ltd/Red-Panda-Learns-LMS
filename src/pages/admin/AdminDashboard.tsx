@@ -49,11 +49,10 @@ import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
 
-import { userService } from "@/services/userService";
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { useCouponByCodeQuery,useCouponByIdQuery,useCouponPrefetch,useCouponsQuery } from "@/hooks/useCouponApi";
-import { Coupon,CouponStatus } from "@/types/coupon.";
+import { useCouponByCodeQuery, useCouponByIdQuery, useCouponPrefetch, useCouponsQuery } from "@/hooks/useCouponApi";
+import { Coupon, CouponStatus } from "@/types/coupon.";
 import { useBundleQuery } from "@/hooks/useBundleApi";
 import { couponService } from "@/services/couponService";
 
@@ -66,7 +65,7 @@ const statsData = {
   activeCohorts: 5,
   totalCohortStudents: 420
 };
-        
+
 import {
   BUNDLE_STATUS,
   COURSE_STATUS,
@@ -97,15 +96,16 @@ export function AdminDashboard() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
 
-useEffect(() => {
-  if (location.pathname === '/admin') {
-    loadCourses();
-    loadCohorts();
-    loadBundles();
-    loadLessons();
-    loadAuthors();
-    loadUsers();
-    loadStatistics();
+  useEffect(() => {
+    if (location.pathname === '/admin') {
+      loadCourses();
+      loadCohorts();
+      loadBundles();
+      loadLessons();
+      loadAuthors();
+      loadUsers();
+      loadStatistics();
+    }
   }, [location.pathname]);
 
   // 🔹 Load STATISTICS
@@ -280,9 +280,9 @@ useEffect(() => {
     }
   };
 
-   const deleteCoupon = async(couponid:string)=>{
-    
-   }
+  const deleteCoupon = async (couponid: string) => {
+
+  }
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -318,7 +318,7 @@ useEffect(() => {
     }
   };
 
- 
+
 
   const statCards = [
     {
@@ -345,10 +345,10 @@ useEffect(() => {
       description: `${courses.length} courses available`,
       icon: BookOpen,
     },
-    
+
     {
       title: "Cohort Students",
-      value: statsData.totalCohortStudents.toString(),
+      value: statsData.cohortStudents.toString(),
       description: "Students in cohorts",
       icon: Calendar,
     },
@@ -431,7 +431,7 @@ useEffect(() => {
               </div>
             </TabsContent>
 
-                        <TabsContent value="lessons">
+            <TabsContent value="lessons">
               <Card>
                 <CardHeader>
                   <CardTitle>Lessons</CardTitle>
@@ -465,7 +465,7 @@ useEffect(() => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                      
+
                         {lessons.map((lesson) => (
                           <TableRow key={lesson.id}>
                             <TableCell>
@@ -484,31 +484,31 @@ useEffect(() => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                               <Button
-  variant="ghost"
-  size="sm"
-  onClick={() => {
-    const course = courses.find(course =>
-      course.topics?.some(topic =>
-        topic.items?.some(item => item.id === lesson.id)
-      )
-    );
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const course = courses.find(course =>
+                                      course.topics?.some(topic =>
+                                        topic.items?.some(item => item.id === lesson.id)
+                                      )
+                                    );
 
-    if (!course) {
-      toast({
-        title: "Course not found",
-        description: `No course found for lesson "${lesson.title}"`,
-        variant: "destructive",
-      });
-      return;
-    }
+                                    if (!course) {
+                                      toast({
+                                        title: "Course not found",
+                                        description: `No course found for lesson "${lesson.title}"`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
 
-    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
-  }}
-  title="View Lesson"
->
-  <Eye className="h-4 w-4" />
-</Button>
+                                    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
+                                  }}
+                                  title="View Lesson"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
 
                                 <Button
                                   variant="ghost"
@@ -570,7 +570,7 @@ useEffect(() => {
                       </TableHeader>
                       <TableBody>
                         {courses.map((course) => (
-                          
+
                           <TableRow key={course.id}>
                             <TableCell>
                               <div>
@@ -687,7 +687,7 @@ useEffect(() => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                 <Button
+                                <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => navigate(`edit-bundle/${bundle.id}`)}
@@ -757,78 +757,78 @@ useEffect(() => {
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                    <TableBody>
-  {cohorts.map(cohort => (
-    <TableRow key={cohort.id}>
-      {/* Cohort title & description */}
-      <TableCell>
-        <div>
-          <div className="font-medium">{cohort.title}</div>
-          <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
-        </div>
-      </TableCell>
+                      <TableBody>
+                        {cohorts.map(cohort => (
+                          <TableRow key={cohort.id}>
+                            {/* Cohort title & description */}
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{cohort.title}</div>
+                                <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+                              </div>
+                            </TableCell>
 
-      {/* Start date */}
-    <TableCell>
-  <div className="text-sm">
-  {cohort.maxStudents}
-  </div>
-</TableCell>
+                            {/* Start date */}
+                            <TableCell>
+                              <div className="text-sm">
+                                {cohort.maxStudents}
+                              </div>
+                            </TableCell>
 
-      {/* End date */}
-      <TableCell>
-  <div className="text-sm">
-  {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
-  </div>
-</TableCell>
+                            {/* End date */}
+                            <TableCell>
+                              <div className="text-sm">
+                                {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
+                              </div>
+                            </TableCell>
 
-      {/* Enrollment open status */}
-      <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
+                            {/* Enrollment open status */}
+                            <TableCell>
+                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              </Badge>
+                            </TableCell>
 
-        <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
+                            <TableCell>
+                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              </Badge>
+                            </TableCell>
 
-      {/* Actions: view, edit, delete */}
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-            title="View Details"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+                            {/* Actions: view, edit, delete */}
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
+                                  title="View Details"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-            title="Edit Cohort"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+                                  title="Edit Cohort"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => deleteCohort(cohort.id)}
-            title="Delete Cohort"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteCohort(cohort.id)}
+                                  title="Delete Cohort"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
 
                     </Table>
                   )}
@@ -988,99 +988,99 @@ useEffect(() => {
               </Card>
             </TabsContent>
 
-             <TabsContent value="coupons">
-      <Card>
-        <CardHeader>
-          <CardTitle>Coupons</CardTitle>
-          <CardDescription>
-            Manage discount codes, their usage, and validity.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {coupons.length === 0 && !isLoading ? (
-            <div className="text-center py-8">
-              <Gift className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by creating a coupon code.
-              </p>
-              <div className="mt-6">
-                <Button onClick={() => navigate('/admin/create-coupon')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Coupon
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {coupons.map((coupon) => (
-                  <TableRow key={coupon.id}>
-                    <TableCell className="font-medium">{coupon.code}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          coupon.status === CouponStatus.ACTIVE
-                            ? 'default'
-                            : coupon.status === CouponStatus.EXPIRED
-                              ? 'secondary'
-                              : 'outline'
-                        }
-                      >
-                        {coupon.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                  {coupon.discountPercentage}
-                    </TableCell>
-                    <TableCell>
-                     {coupon.usageLimit}
-                    </TableCell>
-                    <TableCell>
-                      {coupon.expiryDate
-                        ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
-                        : 'No expiry'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
-                          title="Edit Coupon"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            // Optionally implement delete logic here
-                          }}
-                          title="Delete Coupon"
-                        >
-                          <Trash2 className="h-4 w-4" />
+            <TabsContent value="coupons">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Coupons</CardTitle>
+                  <CardDescription>
+                    Manage discount codes, their usage, and validity.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {coupons.length === 0 && !isLoading ? (
+                    <div className="text-center py-8">
+                      <Gift className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Get started by creating a coupon code.
+                      </p>
+                      <div className="mt-6">
+                        <Button onClick={() => navigate('/admin/create-coupon')}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Coupon
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Discount</TableHead>
+                          <TableHead>Usage</TableHead>
+                          <TableHead>Expires</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {coupons.map((coupon) => (
+                          <TableRow key={coupon.id}>
+                            <TableCell className="font-medium">{coupon.code}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  coupon.status === CouponStatus.ACTIVE
+                                    ? 'default'
+                                    : coupon.status === CouponStatus.EXPIRED
+                                      ? 'secondary'
+                                      : 'outline'
+                                }
+                              >
+                                {coupon.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {coupon.discountPercentage}
+                            </TableCell>
+                            <TableCell>
+                              {coupon.usageLimit}
+                            </TableCell>
+                            <TableCell>
+                              {coupon.expiryDate
+                                ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
+                                : 'No expiry'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                                  title="Edit Coupon"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Optionally implement delete logic here
+                                  }}
+                                  title="Delete Coupon"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

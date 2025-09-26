@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,14 +34,11 @@ import EditUserPage from "./pages/admin/EditUser";
 import LandingPage from "./pages/landingpage";
 import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import ForgotPassword from "./pages/auth/ForgotPassword";
-import { useCourseQuery } from "./hooks/useCaching";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
+
 const queryClient = new QueryClient();
-
-
-
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -68,7 +64,7 @@ const App = () => (
                 />
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/signup" element={<Signup />} />
-                <Route path="/auth/forgot-password" element={< ForgotPassword />} />
+                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/reset-password" element={<SetNewPassword />} />
                 <Route
                   path="/checkout/:courseId"
@@ -94,7 +90,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                 <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
+                <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
                 <Route
                   path="/admin/course/:courseId/lesson/:lessonId"
                   element={
@@ -143,7 +139,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                      <Route
+                <Route
                   path="admin/edit-bundle/:bundleId"
                   element={
                     <AuthGuard>
@@ -231,12 +227,12 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                 <Route
+                <Route
                   path="/courses"
                   element={
-                   
-                      <CoursesPage />
-                   
+
+                    <CoursesPage />
+
                   }
                 />
                 <Route path="*" element={<NotFound />} />
