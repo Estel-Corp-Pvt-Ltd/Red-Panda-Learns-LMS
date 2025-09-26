@@ -853,7 +853,6 @@ useEffect(() => {
                           <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -889,11 +888,6 @@ useEffect(() => {
         </Badge>
       </TableCell>
 
-        <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
 
       {/* Actions: view, edit, delete */}
       <TableCell className="text-right">
