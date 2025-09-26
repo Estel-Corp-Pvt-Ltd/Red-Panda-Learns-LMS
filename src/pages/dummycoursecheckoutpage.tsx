@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { couponUsageService } from '@/services/couponUsageService';
 import { couponService } from '@/services/couponService'; // Assuming this is exported
 import { useAuth } from '@/contexts/AuthContext';
+import { Timestamp } from 'firebase/firestore';
 type PaymentProvider = 'razorpay' | 'paypal';
 
 export default function DummyBundleCheckoutPage() {
@@ -39,7 +40,8 @@ const [couponMessage, setCouponMessage] = useState('');
 const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 const [appliedCouponId, setAppliedCouponId] = useState<string | null>(null);
 const {user} = useAuth();
-console.log(user?.id)
+const [CouponKiId,setCouponKiId]=useState("");
+
    
 
   if (isLoading || coursesLoading) {
@@ -106,6 +108,7 @@ console.log(user?.id)
   };
 
 
+
   const handleApplyCoupon = async () => {
   // setIsValidatingCoupon(true);
   setCouponMessage('');
@@ -122,7 +125,12 @@ console.log(user?.id)
     //   return;
     // }
 
-    const applydiscount = async()=>{
+
+    
+    // console.log(couponcode)
+    const coupon = await couponService.getCouponByCode(couponcode);
+    const CouponKiId = setCouponKiId(coupon.id)
+        const applydiscount = async()=>{
       try{
 
         const afterDiscount =  (bundle.regularPrice - ((bundle.regularPrice * coupon.discountPercentage) / 100 ))
@@ -134,9 +142,6 @@ console.log(user?.id)
  console.log('The Error is ',error)
       }
     }
-    
-    // console.log(couponcode)
-    const coupon = await couponService.getCouponByCode(couponcode);
     const applydiscount1 = await applydiscount()
     console.log(coupon.id)
     if (!coupon) {
@@ -180,15 +185,33 @@ console.log(user?.id)
 
 };
 
-useEffect(() => {
-  if (!bundle) return;
 
-  if (discountAmount > 0) {
-    setFinalPrice(discountAmount);
-  } else {
-    setFinalPrice(bundle.regularPrice);
+const handleUseCouponTest = async()=>{
+  try{
+
+    const usageDate = {
+        userId : user?.id,
+        couponId: CouponKiId,
+        bundleId: bundle.id,
+        usedAt : Timestamp.now()
+    }
+    await couponUsageService.recordCouponUsage(usageDate)
+    console.log("Recorded Coupon uses" ,usageDate)
   }
-}, [discountAmount, bundle]);
+  catch(error){
+    console.log("The Error ",error)
+  }
+}
+
+// useEffect(() => {
+//   if (!bundle) return;
+
+//   if (discountAmount > 0) {
+//     setFinalPrice(discountAmount);
+//   } else {
+//     setFinalPrice(bundle.regularPrice);
+//   }
+// }, [discountAmount, bundle]);
 
 
 
@@ -401,6 +424,13 @@ useEffect(() => {
       disabled={!promoCode || isValidatingCoupon}
     >
       {isValidatingCoupon ? 'Checking...' : 'Apply'}
+    </Button>
+     <Button
+      type="button"
+      onClick={handleUseCouponTest}
+     
+    >
+      {"Use Coupon Test"}
     </Button>
   </div>
   {couponMessage && (

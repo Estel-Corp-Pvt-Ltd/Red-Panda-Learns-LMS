@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
-import { Coupon, CouponUsage, CouponStatus } from '@/types/coupon.';
+import { Coupon, CouponUsage, CouponStatus } from '@/types/coupon.'
 import { couponService } from '@/services/couponService';
 
 class CouponUsageService {
@@ -172,6 +172,7 @@ async isCouponApplicable(
       };
 
       await setDoc(usageRef, newUsage);
+      console.log("Data for coupon Usage",newUsage)
       console.log('Coupon usage recorded:', usageRef.id);
       return usageRef.id;
     } catch (error) {
