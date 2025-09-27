@@ -13,6 +13,8 @@ This document defines all the labels used for issues in the website. Consistent 
 | `task`      | gray   | General tasks, non-feature work |
 | `enhancement` | purple | Improvements to existing features |
 | `research`  | yellow | Investigation, POC, or learning tasks |
+| `payment`   | med-purple | Finance or money-related workflows |
+| `discussion` | teal  | For team-wide conversations, ideas, or decisions before implementation | 
 
 ---
 
