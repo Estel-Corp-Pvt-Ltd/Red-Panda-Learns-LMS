@@ -89,6 +89,7 @@ export function AdminDashboard() {
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [statsData, setStatsData] = useState<DashboardStats | null>(null);
+  
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,7 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
+  const [couponsLoading,setCouponsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   
@@ -109,6 +111,8 @@ useEffect(() => {
     loadAuthors();
     loadUsers();
     loadStatistics();
+    loadCoupons();
+  
   }},[location.pathname]);
 
   // 🔹 Load STATISTICS
@@ -209,7 +213,22 @@ useEffect(() => {
     }
   };
 
-  const { data: coupons = [], isLoading } = useCouponsQuery();
+const loadCoupons = async () => {
+  try {
+    const couponsList = await couponService.getAllCoupons();
+    setCoupon(couponsList);
+    console.log(couponsList)
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load coupons",
+      variant: "destructive",
+    });
+  } finally {
+    setCouponsLoading(false);
+  }
+};
+
 
   const loadLessons = async () => {
     try {
@@ -1017,7 +1036,7 @@ useEffect(() => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {coupons.length === 0 && !isLoading ? (
+          {coupon.length === 0 && !loading ? (
             <div className="text-center py-8">
               <Gift className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
@@ -1044,7 +1063,7 @@ useEffect(() => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coupons.map((coupon) => (
+                {coupon.map((coupon) => (
                   <TableRow key={coupon.id}>
                     <TableCell className="font-medium">{coupon.code}</TableCell>
                     <TableCell>

@@ -10,7 +10,7 @@ export interface Topic {
     title: string;
     items: TopicItem[];
 };
-
+ 
 
 
 export interface Cohort {
@@ -29,6 +29,7 @@ export interface Cohort {
 
   // Admin/analytics info
   cohortEnrollments?: number;      // number of enrolled students (count)
+   enrollmentIds?: string[]; 
   
   // Auditing
   createdAt: Date;

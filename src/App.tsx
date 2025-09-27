@@ -40,6 +40,7 @@ import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
+import EditCouponPage from "./pages/admin/EditCouponPage";
 const queryClient = new QueryClient();
 
 
@@ -149,6 +150,14 @@ const App = () => (
                   element={
                     <AuthGuard requireAdmin >
                       <EditBundlePage />
+                    </AuthGuard>
+                  }
+                />
+                    <Route
+                  path="admin/edit-coupon/:couponId"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <EditCouponPage />
                     </AuthGuard>
                   }
                 />
