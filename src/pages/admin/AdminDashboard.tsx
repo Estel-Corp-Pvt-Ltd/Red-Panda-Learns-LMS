@@ -438,7 +438,7 @@ useEffect(() => {
 </TabsList>
 
 
-            {/* ✅ show STATISTICS cards */}
+            {/*  show STATISTICS cards */}
           <TabsContent value="statistics">
   {statsLoading ? (
     <div className="flex items-center justify-center py-8">
