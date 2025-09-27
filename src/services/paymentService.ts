@@ -118,8 +118,7 @@ class PaymentService {
           userEmail,
           courseTitle: course.title,
           userAgent: navigator.userAgent,
-          ipAddress: "",
-          paymentAttempts: 1,
+          paymentAttempts: 1
         }
       });
 
