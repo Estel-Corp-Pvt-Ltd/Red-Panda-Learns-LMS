@@ -8,7 +8,7 @@ import { Currency, PaymentProvider } from '@/types/general';
 import { CURRENCY, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
 
 export type PaymentProviderOption = {
-  id: string;
+  id: PaymentProvider;
   name: string;
   displayName: string;
   currency: Currency;
@@ -26,7 +26,7 @@ export type PaymentResult = {
 class PaymentService {
   private providers: PaymentProviderOption[] = [
     {
-      id: 'razorpay',
+      id: PAYMENT_PROVIDER.RAZORPAY,
       name: 'razorpay',
       displayName: 'Razorpay',
       currency: 'INR',
@@ -34,11 +34,11 @@ class PaymentService {
       description: 'Pay with Cards, UPI, Net Banking & Wallets',
     },
     {
-      id: 'paypal',
+      id: PAYMENT_PROVIDER.PAYPAL,
       name: 'paypal',
       displayName: 'PayPal',
       currency: 'USD',
-      isAvailable: !!import.meta.env.VITE_PAYPAL_CLIENT_ID,
+      isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
       description: 'Pay securely with PayPal',
     },
   ];
@@ -117,7 +117,7 @@ class PaymentService {
         metadata: {
           userEmail,
           courseTitle: course.title,
-          userAgent: "",
+          userAgent: navigator.userAgent,
           ipAddress: "",
           paymentAttempts: 1,
         }

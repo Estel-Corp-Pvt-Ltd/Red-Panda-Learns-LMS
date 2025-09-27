@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -19,7 +19,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import {
   useCourseQuery,
 } from "@/hooks/useCaching";
@@ -58,7 +57,7 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading;
   const isError = courseError;
-  const userIsEnrolled = user && courseId ? isEnrolled(courseId) || isEnrolled(course?.id) : false;
+  const userIsEnrolled = user && courseId ? isEnrolled(courseId) : false;
 
   const handleEnrollClick = async () => {
     if (!user) {
@@ -70,12 +69,13 @@ export default function CourseDetailPage() {
       });
       return;
     }
-    await enrollmentService.enrollUser(user.id, courseId, ENROLLED_PROGRAM_TYPE.COURSE, '1')
-    // navigate(`/checkout/${courseId}`);
-    if (course.topics && course.topics.length > 0) {
-      const firstTopic = course.topics[0];
-      navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+    if (userIsEnrolled) {
+      if (course.topics && course.topics.length > 0) {
+        const firstTopic = course.topics[0];
+        navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+      }
     }
+    navigate(`/checkout/${courseId}`);
   };
 
   const handleContinueLearning = () => {
@@ -324,10 +324,6 @@ export default function CourseDetailPage() {
                               onClick={handleEnrollClick}
                             >
                               Enroll Now
-                            </Button>
-                            <Button variant="outline" className="w-full">
-                              <Play className="h-4 w-4 mr-2" />
-                              Preview Course
                             </Button>
                           </>
                         )}
