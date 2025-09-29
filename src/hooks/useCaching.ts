@@ -298,7 +298,7 @@ export const useCohortsQuery = () => {
     queryKey: queryKeys.cohorts,
     queryFn: async () => {
       console.log('useCohortsQuery - Fetching active cohorts');
-      const cohorts = await cohortService.getActiveCohorts();
+      const cohorts = await cohortService.getAllCohorts();
       console.log('useCohortsQuery - Cohorts fetched:', cohorts.length);
       return cohorts;
     },
@@ -419,7 +419,7 @@ export const useApiPrefetch = () => {
   const prefetchCohorts = () => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.cohorts,
-      queryFn: () => cohortService.getActiveCohorts(),
+      queryFn: () => cohortService.getAllCohorts(),
       staleTime: 5 * 60 * 1000,
     });
   };

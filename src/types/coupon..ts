@@ -14,15 +14,20 @@ export interface Coupon {
   status: CouponStatus;
   usageLimit: number;
   linkedCourseIds: string[];
+  linkedBundleIds:string[];
+  linkedCohortIds:string[];
   createdById: string; 
+  createdbyMail:string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 
 export interface CouponUsage {
-  id: string;
-  courseId: string;
+  id: string; 
   userId: string;
+  couponId: string; 
   usedAt: Timestamp;
-  couponId: string;
+  courseId?: string;
+  bundleId?: string;
+  cohortId?: string;
 }

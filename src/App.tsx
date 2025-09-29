@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,14 +34,16 @@ import EditUserPage from "./pages/admin/EditUser";
 import LandingPage from "./pages/landingpage";
 import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import ForgotPassword from "./pages/auth/ForgotPassword";
-import { useCourseQuery } from "./hooks/useCaching";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import RefundPage from "./pages/RefundPolicy";
+import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
+import EditCouponPage from "./pages/admin/EditCouponPage";
+
 const queryClient = new QueryClient();
-
-
-
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -68,7 +69,7 @@ const App = () => (
                 />
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/signup" element={<Signup />} />
-                <Route path="/auth/forgot-password" element={< ForgotPassword />} />
+                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/reset-password" element={<SetNewPassword />} />
                 <Route
                   path="/checkout/:courseId"
@@ -94,7 +95,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                 <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
+                <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
                 <Route
                   path="/admin/course/:courseId/lesson/:lessonId"
                   element={
@@ -106,7 +107,7 @@ const App = () => (
                 <Route
                   path="/admin/create-lesson"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CreateLessonPage />
                     </AuthGuard>
                   }
@@ -114,7 +115,7 @@ const App = () => (
                 <Route
                   path="/admin/edit-lesson/:lessonId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <EditLessonPage />
                     </AuthGuard>
                   }
@@ -122,7 +123,7 @@ const App = () => (
                 <Route
                   path="/admin/edit-user/:userId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <EditUserPage />
                     </AuthGuard>
                   }
@@ -130,7 +131,7 @@ const App = () => (
                 <Route
                   path="/admin/create-course"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <CreateCoursePage />
                     </AuthGuard>
                   }
@@ -138,23 +139,31 @@ const App = () => (
                 <Route
                   path="/admin/create-bundle"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <CreateBundlePage />
                     </AuthGuard>
                   }
                 />
-                      <Route
+                <Route
                   path="admin/edit-bundle/:bundleId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <EditBundlePage />
+                    </AuthGuard>
+                  }
+                />
+                    <Route
+                  path="admin/edit-coupon/:couponId"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <EditCouponPage />
                     </AuthGuard>
                   }
                 />
                 <Route
                   path="/admin/create-cohort"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CohortBuilderPage />
                     </AuthGuard>
                   }
@@ -162,7 +171,7 @@ const App = () => (
                 <Route
                   path="/admin/cohort/:cohortId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CohortDetailPage />
                     </AuthGuard>
                   }
@@ -170,7 +179,7 @@ const App = () => (
                 <Route
                   path="/admin/cohort/:cohortId/edit"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <EditCohortPage />
                     </AuthGuard>
                   }
@@ -178,7 +187,7 @@ const App = () => (
                 <Route
                   path="/admin/edit-course/:courseId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CurriculumBuilderPage />
                     </AuthGuard>
                   }
@@ -226,20 +235,26 @@ const App = () => (
                 <Route
                   path="/admin/create-coupon"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <CreateCouponPage />
                     </AuthGuard>
                   }
                 />
-                 <Route
+                <Route
                   path="/courses"
                   element={
-                   
                       <CoursesPage />
-                   
                   }
                 />
+                  <Route
+                  path="dummy/bundle/:bundleId/checkout"
+                  element={<DummyBundleCheckoutPage />}
+                />
                 <Route path="*" element={<NotFound />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/refund-policy" element={<RefundPage />} />
+
               </Routes>
             </BrowserRouter>
           </TooltipProvider>

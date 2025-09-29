@@ -153,7 +153,10 @@ class CouponService {
     try {
       const q = query(collection(db, 'CouponUsage'), where('userId', '==', userId));
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => doc.data() as CouponUsage);
+      const data =  snapshot.docs.map((doc) => doc.data() as CouponUsage);
+      console.log("From COuponUsage User Ka",data)
+      return data
+     
     } catch (error) {
       console.error('Error fetching coupon usage:', error);
       return [];

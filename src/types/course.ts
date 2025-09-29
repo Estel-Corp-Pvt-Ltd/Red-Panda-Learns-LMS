@@ -10,7 +10,7 @@ export interface Topic {
     title: string;
     items: TopicItem[];
 };
-
+ 
 
 
 export interface Cohort {
@@ -21,7 +21,7 @@ export interface Cohort {
   startDate: Date;
   endDate: Date;
   enrollmentOpen: boolean;
-
+  price : number;
   // Optional metadata for enrollment control
   maxStudents?: number;            // max allowed students in cohort (if any)
   requireEnrollment?: boolean;     // does cohort require enrollment approval?
@@ -29,6 +29,7 @@ export interface Cohort {
 
   // Admin/analytics info
   cohortEnrollments?: number;      // number of enrolled students (count)
+   enrollmentIds?: string[]; 
   
   // Auditing
   createdAt: Date;

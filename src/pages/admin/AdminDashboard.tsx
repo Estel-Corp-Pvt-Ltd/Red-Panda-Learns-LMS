@@ -51,8 +51,8 @@ import { User } from "@/types/user";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { useCouponByCodeQuery,useCouponByIdQuery,useCouponPrefetch,useCouponsQuery } from "@/hooks/useCouponApi";
-import { Coupon,CouponStatus } from "@/types/coupon.";
+import { useCouponByCodeQuery, useCouponByIdQuery, useCouponPrefetch, useCouponsQuery } from "@/hooks/useCouponApi";
+import { Coupon, CouponStatus } from "@/types/coupon.";
 import { useBundleQuery } from "@/hooks/useBundleApi";
 import { couponService } from "@/services/couponService";
 
@@ -65,7 +65,7 @@ const statsData = {
   activeCohorts: 5,
   totalCohortStudents: 420
 };
-        
+
 import {
   BUNDLE_STATUS,
   COURSE_STATUS,
@@ -74,6 +74,8 @@ import {
 } from "@/constants";
 
 import { Header } from "@/components/Header";
+import { error } from "console";
+
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -81,11 +83,13 @@ export function AdminDashboard() {
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [coupon,setCoupon] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [statsData, setStatsData] = useState<DashboardStats | null>(null);
+  
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -93,9 +97,10 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
+  const [couponsLoading,setCouponsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
-
+  
 useEffect(() => {
   if (location.pathname === '/admin') {
     loadCourses();
@@ -105,8 +110,9 @@ useEffect(() => {
     loadAuthors();
     loadUsers();
     loadStatistics();
-  }}, [location.pathname]);
-
+    loadCoupons();
+  
+  }},[location.pathname]);
 
   // 🔹 Load STATISTICS
   const loadStatistics = async () => {
@@ -206,7 +212,22 @@ useEffect(() => {
     }
   };
 
-  const { data: coupons = [], isLoading } = useCouponsQuery();
+const loadCoupons = async () => {
+  try {
+    const couponsList = await couponService.getAllCoupons();
+    setCoupon(couponsList);
+    console.log(couponsList)
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load coupons",
+      variant: "destructive",
+    });
+  } finally {
+    setCouponsLoading(false);
+  }
+};
+
 
   const loadLessons = async () => {
     try {
@@ -263,6 +284,25 @@ useEffect(() => {
     }
   };
 
+  const deleteCoupon = async(couponId:string)=>{
+    try{
+      await couponService.deleteCoupon(couponId);
+      setCoupon((prev)=>prev.filter((coupon) => couponId !== couponId));
+      toast({
+        title:"Success",
+        description:"Coupon Deleted Successfully"
+      })
+     
+    }
+    catch{
+   
+       toast({
+        title: "Error",
+        description: "Failed to delete Coupon",
+        variant: "destructive"
+      });
+    }
+  }
   const deleteCohort = async (cohortId: string) => {
     try {
       await cohortService.deleteCohort(cohortId);
@@ -280,9 +320,9 @@ useEffect(() => {
     }
   };
 
-   const deleteCoupon = async(couponid:string)=>{
-    
-   }
+  const deleteCoupon = async (couponid: string) => {
+
+  }
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -318,8 +358,6 @@ useEffect(() => {
     }
   };
 
- 
-
   const statCards = [
     {
       title: "Total Revenue",
@@ -345,10 +383,10 @@ useEffect(() => {
       description: `${courses.length} courses available`,
       icon: BookOpen,
     },
-    
+
     {
       title: "Cohort Students",
-      value: statsData.totalCohortStudents.toString(),
+      value: statsData.cohortStudents.toString(),
       description: "Students in cohorts",
       icon: Calendar,
     },
@@ -363,75 +401,175 @@ useEffect(() => {
   }
 
   return (
-    <div>
+     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Manage your courses, cohorts, and students
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Button onClick={() => navigate("/admin/create-lesson")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Lesson
-            </Button>
-            <Button onClick={() => navigate("/admin/create-course")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Course
-            </Button>
-            <Button onClick={() => navigate("/admin/create-bundle")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Course Bundle
-            </Button>
-            <Button onClick={() => navigate("/admin/create-cohort")}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Create New Cohort
-            </Button>
-          </div>
-        </div>
+       <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+  <div>
+    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+      Admin Dashboard
+    </h1>
+    <p className="text-muted-foreground">
+      Manage your courses, cohorts, and students
+    </p>
+  </div>
+
+  {/*  Buttons stack on mobile, row on larger screens */}
+<div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+  <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Create New Lesson
+  </Button>
+  <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Create New Course
+  </Button>
+  <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Create Course Bundle
+  </Button>
+  <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
+    <Calendar className="mr-2 h-4 w-4" />
+    Create New Cohort
+  </Button>
+</div>
+</div>
 
         <div className="space-y-8">
           <Tabs defaultValue="courses" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="lessons">Lessons</TabsTrigger>
-              <TabsTrigger value="courses">Courses</TabsTrigger>
-              <TabsTrigger value="bundles">Bundles</TabsTrigger>
-              <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-              <TabsTrigger value="statistics">Statistics</TabsTrigger>
-              <TabsTrigger value="authors">Authors</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="coupons">Coupon</TabsTrigger>
-            </TabsList>
+         <TabsList
+  className="
+    flex
+    overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
+    whitespace-nowrap
+    gap-2 sm:gap-4
+    no-scrollbar 
+    w-full
+    justify-start sm:justify-center lg:justify-start /* flex behavior by screen size */
+  "
+>
+  <TabsTrigger value="courses" className="flex-shrink-0">
+    Courses
+  </TabsTrigger>
+  <TabsTrigger value="lessons" className="flex-shrink-0">
+    Lessons
+  </TabsTrigger>
+  <TabsTrigger value="bundles" className="flex-shrink-0">
+    Bundles
+  </TabsTrigger>
+  <TabsTrigger value="cohorts" className="flex-shrink-0">
+    Cohorts
+  </TabsTrigger>
+  <TabsTrigger value="statistics" className="flex-shrink-0">
+    Statistics
+  </TabsTrigger>
+  <TabsTrigger value="authors" className="flex-shrink-0">
+    Authors
+  </TabsTrigger>
+  <TabsTrigger value="users" className="flex-shrink-0">
+    Users
+  </TabsTrigger>
+  <TabsTrigger value="coupons" className="flex-shrink-0">
+    Coupon
+  </TabsTrigger>
+</TabsList>
 
-            {/* ✅ show STATISTICS cards */}
-            <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent>
 
-                        <TabsContent value="lessons">
+            {/*  show STATISTICS cards */}
+          <TabsContent value="statistics">
+  {statsLoading ? (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  ) : statsData ? (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Total Revenue */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(statsData.totalRevenue)}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.revenueGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Active Students */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Students</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.activeStudents.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.activeStudentGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* New Enrollments */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">New Enrollments</CardTitle>
+          <UserPlus className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.newEnrollments}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.enrollmentGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Total Courses */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.totalCourses}</div>
+          <p className="text-xs text-muted-foreground">
+            {statsData.totalCourses} courses available
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Active Cohorts */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Cohorts</CardTitle>
+          <GraduationCap className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.activeCohorts}</div>
+          <p className="text-xs text-muted-foreground">Currently active cohorts</p>
+        </CardContent>
+      </Card>
+
+      {/* Cohort Students */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Cohort Students</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.totalCohortStudents}</div>
+          <p className="text-xs text-muted-foreground">Students across cohorts</p>
+        </CardContent>
+      </Card>
+    </div>
+  ) : (
+    <p className="text-muted-foreground">No statistics available</p>
+  )}
+</TabsContent>
+
+            <TabsContent value="lessons">
               <Card>
                 <CardHeader>
                   <CardTitle>Lessons</CardTitle>
@@ -465,7 +603,7 @@ useEffect(() => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                      
+
                         {lessons.map((lesson) => (
                           <TableRow key={lesson.id}>
                             <TableCell>
@@ -484,31 +622,31 @@ useEffect(() => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                               <Button
-  variant="ghost"
-  size="sm"
-  onClick={() => {
-    const course = courses.find(course =>
-      course.topics?.some(topic =>
-        topic.items?.some(item => item.id === lesson.id)
-      )
-    );
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const course = courses.find(course =>
+                                      course.topics?.some(topic =>
+                                        topic.items?.some(item => item.id === lesson.id)
+                                      )
+                                    );
 
-    if (!course) {
-      toast({
-        title: "Course not found",
-        description: `No course found for lesson "${lesson.title}"`,
-        variant: "destructive",
-      });
-      return;
-    }
+                                    if (!course) {
+                                      toast({
+                                        title: "Course not found",
+                                        description: `No course found for lesson "${lesson.title}"`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
 
-    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
-  }}
-  title="View Lesson"
->
-  <Eye className="h-4 w-4" />
-</Button>
+                                    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
+                                  }}
+                                  title="View Lesson"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
 
                                 <Button
                                   variant="ghost"
@@ -570,7 +708,7 @@ useEffect(() => {
                       </TableHeader>
                       <TableBody>
                         {courses.map((course) => (
-                          
+
                           <TableRow key={course.id}>
                             <TableCell>
                               <div>
@@ -687,7 +825,7 @@ useEffect(() => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                 <Button
+                                <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => navigate(`edit-bundle/${bundle.id}`)}
@@ -753,82 +891,81 @@ useEffect(() => {
                           <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                    <TableBody>
-  {cohorts.map(cohort => (
-    <TableRow key={cohort.id}>
-      {/* Cohort title & description */}
-      <TableCell>
-        <div>
-          <div className="font-medium">{cohort.title}</div>
-          <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
-        </div>
-      </TableCell>
+                      <TableBody>
+                        {cohorts.map(cohort => (
+                          <TableRow key={cohort.id}>
+                            {/* Cohort title & description */}
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{cohort.title}</div>
+                                <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+                              </div>
+                            </TableCell>
 
-      {/* Start date */}
-    <TableCell>
-  <div className="text-sm">
-  {cohort.maxStudents}
-  </div>
-</TableCell>
+                            {/* Start date */}
+                            <TableCell>
+                              <div className="text-sm">
+                                {cohort.maxStudents}
+                              </div>
+                            </TableCell>
 
-      {/* End date */}
-      <TableCell>
-  <div className="text-sm">
-  {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
-  </div>
-</TableCell>
+                            {/* End date */}
+                            <TableCell>
+                              <div className="text-sm">
+                                {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
+                              </div>
+                            </TableCell>
 
-      {/* Enrollment open status */}
-      <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
+                            {/* Enrollment open status */}
+                            <TableCell>
+                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              </Badge>
+                            </TableCell>
 
-        <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
+                            <TableCell>
+                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              </Badge>
+                            </TableCell>
 
-      {/* Actions: view, edit, delete */}
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-            title="View Details"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+                            {/* Actions: view, edit, delete */}
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
+                                  title="View Details"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-            title="Edit Cohort"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+                                  title="Edit Cohort"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => deleteCohort(cohort.id)}
-            title="Delete Cohort"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteCohort(cohort.id)}
+                                  title="Delete Cohort"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
 
                     </Table>
                   )}
@@ -997,7 +1134,7 @@ useEffect(() => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {coupons.length === 0 && !isLoading ? (
+          {coupon.length === 0 && !loading ? (
             <div className="text-center py-8">
               <Gift className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
@@ -1024,7 +1161,7 @@ useEffect(() => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coupons.map((coupon) => (
+                {coupon.map((coupon) => (
                   <TableRow key={coupon.id}>
                     <TableCell className="font-medium">{coupon.code}</TableCell>
                     <TableCell>
@@ -1064,9 +1201,7 @@ useEffect(() => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            // Optionally implement delete logic here
-                          }}
+                          onClick={() => { deleteCoupon(coupon.id) }}
                           title="Delete Coupon"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1084,7 +1219,7 @@ useEffect(() => {
 
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
+                {/* {statCards.map((card, index) => {
                   const Icon = card.icon;
                   return (
                     <Card key={index}>
@@ -1102,9 +1237,9 @@ useEffect(() => {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })} */}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>

@@ -196,7 +196,7 @@ const loadLessons = async () => {
                   size="sm"
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <X className="h-4 w-4" />
+                  {/* <X className="h-4 w-4" /> */}
                 </Button>
               </div>
               <CourseNavigator
