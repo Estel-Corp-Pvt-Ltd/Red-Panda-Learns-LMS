@@ -1,6 +1,10 @@
-import { useState, useRef, useEffect } from "react";
-import { Form, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,14 +12,22 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { courseService } from "@/services/courseService";
 import { authorService } from "@/services/authorService";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Header } from "@/components/Header";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 
 interface CourseFormData {
   title: string;
   description: string;
   authorName: string;
   authorId: string;
-};
+}
 
 type AuthorOption = {
   id: string;
@@ -25,27 +37,29 @@ type AuthorOption = {
 const CreateCoursePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const [formData, setFormData] = useState<CourseFormData>({
     title: "",
     description: "",
     authorName: "",
-    authorId: ""
+    authorId: "",
   });
+
   const [authors, setAuthors] = useState<AuthorOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof CourseFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCreateCourse = async () => {
-    // Trimmed values to avoid whitespace-only input passing validation
+    // Required field checks
     const requiredFields: { field: keyof CourseFormData; label: string }[] = [
       { field: "title", label: "Course Title" },
       { field: "description", label: "Course Description" },
+      { field: "authorId", label: "Author" },
     ];
 
-    // Check for empty required fields
     for (const { field, label } of requiredFields) {
       if (!formData[field] || String(formData[field]).trim() === "") {
         toast({
@@ -53,7 +67,7 @@ const CreateCoursePage = () => {
           description: `${label} is required before creating the course.`,
           variant: "destructive",
         });
-        return; // Stop execution if any field is missing
+        return;
       }
     }
 
@@ -63,7 +77,7 @@ const CreateCoursePage = () => {
         title: formData.title.trim(),
         description: formData.description.trim(),
         authorId: formData.authorId,
-        authorName: formData.authorName
+        authorName: formData.authorName,
       };
 
       const courseId = await courseService.createCourse(courseData);
@@ -87,8 +101,8 @@ const CreateCoursePage = () => {
   };
 
   const handleAuthorSelect = (authorId: string) => {
-    const selected = authors.find(a => a.id === authorId);
-    setFormData(prev => ({
+    const selected = authors.find((a) => a.id === authorId);
+    setFormData((prev) => ({
       ...prev,
       authorId: selected?.id || "",
       authorName: selected?.name || "",
@@ -99,7 +113,14 @@ const CreateCoursePage = () => {
     const fetchAuthors = async () => {
       try {
         const data = await authorService.getAllAuthors();
-        setAuthors(data.map(author => ({ name: author.firstName + " " + author.middleName + " " + author.lastName, id: author.id })));
+        setAuthors(
+          data.map((author) => ({
+            id: author.id,
+            name: [author.firstName, author.middleName, author.lastName]
+              .filter(Boolean)
+              .join(" "),
+          }))
+        );
       } catch (error) {
         console.error("Failed to fetch authors:", error);
         toast({
@@ -113,25 +134,28 @@ const CreateCoursePage = () => {
   }, [toast]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-foreground">Create New Course</h1>
-            <Button variant="outline" onClick={() => navigate('/admin')}>
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* ✅ Shared Header */}
+      <Header />
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-3xl mx-auto">
-          <Card>
+          <Card className="bg-card shadow-md rounded-xl">
             <CardHeader>
-              <CardTitle>Course Details</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardTitle className="text-xl font-bold">
+                  Create New Course
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/admin")}
+                  className="w-full sm:w-auto"
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
             </CardHeader>
+
             <CardContent className="space-y-6">
               {/* Course Title */}
               <div className="space-y-2">
@@ -140,19 +164,25 @@ const CreateCoursePage = () => {
                   id="title"
                   placeholder="Enter course title"
                   value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("title", e.target.value)
+                  }
+                  className="bg-background text-foreground"
                 />
               </div>
 
               {/* Course Description */}
               <div className="space-y-2">
-                <Label htmlFor="description">Course Description</Label>
+                <Label htmlFor="description">Course Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Enter a brief overview of the course"
                   rows={4}
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
+                  className="bg-background text-foreground"
                 />
               </div>
 
@@ -163,10 +193,10 @@ const CreateCoursePage = () => {
                   value={formData.authorId}
                   onValueChange={handleAuthorSelect}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full bg-background text-foreground">
                     <SelectValue placeholder="Select an author" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-card text-card-foreground">
                     {authors.map((author) => (
                       <SelectItem key={author.id} value={author.id}>
                         {author.name}
@@ -180,13 +210,11 @@ const CreateCoursePage = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
                 <Button
                   variant="secondary"
-                  onClick={() => {
-                    handleCreateCourse();
-                  }}
+                  onClick={handleCreateCourse}
                   disabled={isLoading}
                   className="flex-1"
                 >
-                  Save & Build Curriculum
+                  {isLoading ? "Creating..." : "Save & Build Curriculum"}
                 </Button>
               </div>
             </CardContent>

@@ -52,7 +52,7 @@ export default function BundleDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ErrorState
             error={error as Error}
             onRetry={() => window.location.reload()}
@@ -111,50 +111,60 @@ export default function BundleDetailPage() {
             </div>
 
             {/* Stats Row */}
-            <div className="flex flex-wrap gap-6 text-gray-700">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                <span>{bundle.courses.length} Courses</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                <span>Save ${(bundle.regularPrice - bundle.salePrice)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                <span>Expert Instructors</span>
-              </div>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-gray-700">
+  <div className="flex items-center gap-2">
+    <BookOpen className="h-5 w-5" />
+    <span>{bundle.courses.length} Courses</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <DollarSign className="h-5 w-5" />
+    <span>Save ${(bundle.regularPrice - bundle.salePrice)}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <Star className="h-5 w-5" />
+    <span>Expert Instructors</span>
+  </div>
+</div>
 
             {/* Pricing + CTA */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex items-center gap-4">
-                <div className="text-3xl font-bold">
-                  ${(bundle.salePrice).toFixed(2)}
-                </div>
-                <div className="text-lg line-through text-gray-500">
-                  ${(bundle.regularPrice).toFixed(2)}
-                </div>
-                <Badge variant="outline" className="text-green-600 border-green-600">
-                  Save {Math.round(((bundle.regularPrice - bundle.salePrice) / bundle.regularPrice) * 100)}%
-                </Badge>
-              </div>
+           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  {/* ✅ Price block */}
+  <div className="flex flex-col">
+    {/* prices side by side */}
+    <div className="flex items-baseline gap-3">
+      <div className="text-3xl font-bold">
+        ${(bundle.salePrice).toFixed(2)}
+      </div>
+      <div className="text-lg line-through text-gray-500">
+        ${(bundle.regularPrice).toFixed(2)}
+      </div>
+    </div>
 
-              <Button
-                onClick={handleEnrollment}
-                size="lg"
-                className="bg-black text-white hover:bg-gray-800"
-              >
-                {isEnrolled ? (
-                  <>
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Access Bundle
-                  </>
-                ) : (
-                  <>Buy Bundle for ${(bundle.salePrice).toFixed(2)}</>
-                )}
-              </Button>
-            </div>
+    {/* ✅ Badge now BELOW prices on phone */}
+    <Badge
+      variant="outline"
+      className="mt-2 self-start text-green-600 border-green-600"
+    >
+      Save {Math.round(((bundle.regularPrice - bundle.salePrice) / bundle.regularPrice) * 100)}%
+    </Badge>
+  </div>
+
+  {/* CTA button still aligns right on desktop */}
+  <Button
+    onClick={handleEnrollment}
+    size="lg"
+    className="w-full sm:w-auto bg-black text-white hover:bg-gray-800"
+  >
+    {isEnrolled ? (
+      <>
+        <CheckCircle className="h-5 w-5 mr-2" />
+        Access Bundle
+      </>
+    ) : (
+      <>Buy Bundle for ${(bundle.salePrice).toFixed(2)}</>
+    )}
+  </Button>
+</div>
           </div>
         </div>
 

@@ -358,40 +358,39 @@ const loadCoupons = async () => {
     }
   };
 
-  // const statCards = [
-  //   {
-  //     title: "Total Revenue",
-  //     value: formatCurrency(statsData.totalRevenue),
-  //     description: "+20.1% from last month",
-  //     icon: DollarSign,
-  //   },
-  //   {
-  //     title: "Active Students",
-  //     value: statsData.activeStudents?.toLocaleString(),
-  //     description: "+180.1% from last month",
-  //     icon: Users,
-  //   },
-  //   {
-  //     title: "New Enrollments",
-  //     value: statsData.newEnrollments.toString(),
-  //     description: "+19% from last month",
-  //     icon: UserPlus,
-  //   },
-  //   {
-  //     title: "Total Courses",
-  //     value: courses.length.toString(),
-  //     description: `${courses.length} courses available`,
-  //     icon: BookOpen,
-  //   },
-    
-  //   {
-  //     title: "Cohort Students",
-  //     value: statsData.totalCohorts.toString(),
-  //     description: "Students in cohorts",
-  //     icon: Calendar,
-  //   },
-  // ];
+  const statCards = [
+    {
+      title: "Total Revenue",
+      value: formatCurrency(statsData.totalRevenue),
+      description: "+20.1% from last month",
+      icon: DollarSign,
+    },
+    {
+      title: "Active Students",
+      value: statsData.activeStudents?.toLocaleString(),
+      description: "+180.1% from last month",
+      icon: Users,
+    },
+    {
+      title: "New Enrollments",
+      value: statsData.newEnrollments.toString(),
+      description: "+19% from last month",
+      icon: UserPlus,
+    },
+    {
+      title: "Total Courses",
+      value: courses.length.toString(),
+      description: `${courses.length} courses available`,
+      icon: BookOpen,
+    },
 
+    {
+      title: "Cohort Students",
+      value: statsData.cohortStudents.toString(),
+      description: "Students in cohorts",
+      icon: Calendar,
+    },
+  ];
 
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
@@ -402,73 +401,173 @@ const loadCoupons = async () => {
   }
 
   return (
-    <div>
+     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Manage your courses, cohorts, and students
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Button onClick={() => navigate("/admin/create-lesson")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Lesson
-            </Button>
-            <Button onClick={() => navigate("/admin/create-course")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Course
-            </Button>
-            <Button onClick={() => navigate("/admin/create-bundle")}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Course Bundle
-            </Button>
-            <Button onClick={() => navigate("/admin/create-cohort")}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Create New Cohort
-            </Button>
-          </div>
-        </div>
+       <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+  <div>
+    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+      Admin Dashboard
+    </h1>
+    <p className="text-muted-foreground">
+      Manage your courses, cohorts, and students
+    </p>
+  </div>
+
+  {/*  Buttons stack on mobile, row on larger screens */}
+<div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+  <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Create New Lesson
+  </Button>
+  <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Create New Course
+  </Button>
+  <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Create Course Bundle
+  </Button>
+  <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
+    <Calendar className="mr-2 h-4 w-4" />
+    Create New Cohort
+  </Button>
+</div>
+</div>
 
         <div className="space-y-8">
           <Tabs defaultValue="courses" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="lessons">Lessons</TabsTrigger>
-              <TabsTrigger value="courses">Courses</TabsTrigger>
-              <TabsTrigger value="bundles">Bundles</TabsTrigger>
-              <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-              {/* <TabsTrigger value="statistics">Statistics</TabsTrigger> */}
-              <TabsTrigger value="authors">Authors</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="coupons">Coupon</TabsTrigger>
-            </TabsList>
+         <TabsList
+  className="
+    flex
+    overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
+    whitespace-nowrap
+    gap-2 sm:gap-4
+    no-scrollbar 
+    w-full
+    justify-start sm:justify-center lg:justify-start /* flex behavior by screen size */
+  "
+>
+  <TabsTrigger value="courses" className="flex-shrink-0">
+    Courses
+  </TabsTrigger>
+  <TabsTrigger value="lessons" className="flex-shrink-0">
+    Lessons
+  </TabsTrigger>
+  <TabsTrigger value="bundles" className="flex-shrink-0">
+    Bundles
+  </TabsTrigger>
+  <TabsTrigger value="cohorts" className="flex-shrink-0">
+    Cohorts
+  </TabsTrigger>
+  <TabsTrigger value="statistics" className="flex-shrink-0">
+    Statistics
+  </TabsTrigger>
+  <TabsTrigger value="authors" className="flex-shrink-0">
+    Authors
+  </TabsTrigger>
+  <TabsTrigger value="users" className="flex-shrink-0">
+    Users
+  </TabsTrigger>
+  <TabsTrigger value="coupons" className="flex-shrink-0">
+    Coupon
+  </TabsTrigger>
+</TabsList>
 
-            {/* ✅ show STATISTICS cards */}
-            {/* <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent> */}
+
+            {/*  show STATISTICS cards */}
+          <TabsContent value="statistics">
+  {statsLoading ? (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  ) : statsData ? (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Total Revenue */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(statsData.totalRevenue)}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.revenueGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Active Students */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Students</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.activeStudents.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.activeStudentGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* New Enrollments */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">New Enrollments</CardTitle>
+          <UserPlus className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.newEnrollments}</div>
+          <p className="text-xs text-muted-foreground">
+            +{statsData.enrollmentGrowth}% from last month
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Total Courses */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.totalCourses}</div>
+          <p className="text-xs text-muted-foreground">
+            {statsData.totalCourses} courses available
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Active Cohorts */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Cohorts</CardTitle>
+          <GraduationCap className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.activeCohorts}</div>
+          <p className="text-xs text-muted-foreground">Currently active cohorts</p>
+        </CardContent>
+      </Card>
+
+      {/* Cohort Students */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Cohort Students</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statsData.totalCohortStudents}</div>
+          <p className="text-xs text-muted-foreground">Students across cohorts</p>
+        </CardContent>
+      </Card>
+    </div>
+  ) : (
+    <p className="text-muted-foreground">No statistics available</p>
+  )}
+</TabsContent>
 
             <TabsContent value="lessons">
               <Card>
@@ -791,7 +890,6 @@ const loadCoupons = async () => {
                           <TableHead>Cohort</TableHead>
                           <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -1121,7 +1219,7 @@ const loadCoupons = async () => {
 
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
+                {/* {statCards.map((card, index) => {
                   const Icon = card.icon;
                   return (
                     <Card key={index}>
@@ -1139,7 +1237,7 @@ const loadCoupons = async () => {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })} */}
               </div>
             </TabsContent> */}
           </Tabs>

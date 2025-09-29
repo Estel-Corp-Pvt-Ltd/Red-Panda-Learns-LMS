@@ -96,7 +96,7 @@ class CourseService {
         status: COURSE_STATUS.DRAFT,
         certificateTemplateId: data.certificateTemplateId || '',
         topics: [],
-        cohorts:[],
+        cohorts: [],
         isEnrollmentPaused: true,
         createdAt: new Date(),
         updatedAt: new Date(),

@@ -37,6 +37,9 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import RefundPage from "./pages/RefundPolicy";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
 
@@ -248,6 +251,10 @@ const App = () => (
                   element={<DummyBundleCheckoutPage />}
                 />
                 <Route path="*" element={<NotFound />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/refund-policy" element={<RefundPage />} />
+
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
