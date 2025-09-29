@@ -14,9 +14,10 @@ export interface RazorpayOrder {
 
 class RazorpayProvider {
   private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
-
+  
   async createOrder(amount: number, currency: string, receipt: string): Promise<any> {
-    const response = await fetch(`${this.backendUrl}/create-order`, {
+    const safeReceipt = (receipt || "").substring(0, 40);
+    const response = await fetch(`${this.backendUrl}/createOrder`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +25,7 @@ class RazorpayProvider {
       body: JSON.stringify({
         amount,
         currency,
-        receipt,
+        receipt:safeReceipt,
       }),
     });
 
@@ -55,7 +56,7 @@ class RazorpayProvider {
 
         // Create order through backend
         const orderData = await this.createOrder(amount, CURRENCY.INR, transactionId);
-
+        console.log("THis is Order Data",orderData)
         if (!orderData.success) {
           throw new Error(orderData.error || 'Order creation failed');
         }
@@ -85,7 +86,7 @@ class RazorpayProvider {
 
             // Verify payment on backend
             try {
-              const verificationResponse = await fetch(`${this.backendUrl}/verify-payment`, {
+              const verificationResponse = await fetch(`${this.backendUrl}/verifyPayment`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
