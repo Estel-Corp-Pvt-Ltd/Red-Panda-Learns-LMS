@@ -75,44 +75,44 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header  />
+      <Header />
 
       <main className="container px-4 py-8">
         {/* Hero Section */}
-       {/* Hero Section */}
-<div className="relative overflow-hidden rounded-2xl bg-gradient-hero p-8 md:p-12 mb-8">
-  <div className="relative z-10 max-w-2xl">
-    <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-      Complete AI solutions for industry, research, and education
-    </h1>
-    <p className="text-muted-foreground text-lg mb-6">
-      Our mission: Make AI accessible for all
-    </p>
-    <div className="flex flex-wrap gap-4">
-      <Badge
-        variant="secondary"
-        className="text-sm bg-background/80 text-foreground border border-border"
-      >
-        <TrendingUp className="h-3 w-3 mr-1" />
-        {stats.total} Total Courses
-      </Badge>
-      <Badge
-        variant="secondary"
-        className="text-sm bg-background/80 text-foreground border border-border"
-      >
-        <Clock className="h-3 w-3 mr-1" />
-        New Content Weekly
-      </Badge>
-      <Badge
-        variant="secondary"
-        className="text-sm bg-background/80 text-foreground border border-border"
-      >
-        <Users className="h-3 w-3 mr-1" />
-        Expert Instructors
-      </Badge>
-    </div>
-  </div>
-</div>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-hero p-8 md:p-12 mb-8">
+          <div className="relative z-10 max-w-2xl">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Complete AI solutions for industry, research, and education
+            </h1>
+            <p className="text-muted-foreground text-lg mb-6">
+              Our mission: Make AI accessible for all
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Badge
+                variant="secondary"
+                className="text-sm bg-background/80 text-foreground border border-border"
+              >
+                <TrendingUp className="h-3 w-3 mr-1" />
+                {stats.total} Total Courses
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-sm bg-background/80 text-foreground border border-border"
+              >
+                <Clock className="h-3 w-3 mr-1" />
+                New Content Weekly
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-sm bg-background/80 text-foreground border border-border"
+              >
+                <Users className="h-3 w-3 mr-1" />
+                Expert Instructors
+              </Badge>
+            </div>
+          </div>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -254,7 +254,7 @@ export default function CoursesPage() {
                   </p>
                 </div>
 
-                <div className={cn(
+                {/* <div className={cn(
                   "grid gap-6 animate-fade-in",
                   viewMode === 'grid'
                     ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
@@ -272,7 +272,7 @@ export default function CoursesPage() {
                       />
                     </div>
                   ))}
-                </div>
+                </div> */}
               </div>
             )}
 

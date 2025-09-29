@@ -45,7 +45,6 @@ export type TransactionMetadata = {
   userEmail: string;
   courseTitle: string;
   userAgent?: string;
-  ipAddress?: string;
   paymentAttempts: number;
   reasonForRefund?: string;
   reasonForFailure?: string;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, Shield, Lock, RefreshCw } from "lucide-react";
@@ -11,7 +10,8 @@ import { useCourseQuery } from "@/hooks/useCaching";
 import { paymentService } from "@/services/paymentService";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { PaymentProvider, Currency } from "@/types/transaction";
+import { PaymentProvider } from "@/types/general";
+import { PAYMENT_PROVIDER } from "@/constants";
 
 export default function CheckoutPage() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const { refreshEnrollments, isEnrolled } = useEnrollment();
   const { toast } = useToast();
   const [selectedProvider, setSelectedProvider] =
-    useState<PaymentProvider>("razorpay");
+    useState<PaymentProvider>(PAYMENT_PROVIDER.RAZORPAY);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pricing, setPricing] = useState<any>(null);
   const [loadingPricing, setLoadingPricing] = useState(false);
@@ -62,7 +62,7 @@ export default function CheckoutPage() {
       const providerOption = providers.find((p) => p.id === selectedProvider);
       if (providerOption) {
         const pricingData = await paymentService.calculatePricing(
-          course,
+          course.salePrice,
           providerOption.currency
         );
         setPricing(pricingData);
@@ -85,10 +85,10 @@ export default function CheckoutPage() {
     console.log("CheckoutPage - Starting payment process:", {
       courseId,
       provider: selectedProvider,
-      userId: user.uid,
+      userId: user.id,
     });
 
-    if (selectedProvider == "paypal") setPaypalClicked(true);
+    if (selectedProvider == PAYMENT_PROVIDER.PAYPAL) setPaypalClicked(true);
 
     setIsProcessing(true);
     try {
@@ -96,7 +96,7 @@ export default function CheckoutPage() {
         selectedProvider,
         course,
         user.email!,
-        user.uid
+        user.id
       );
 
       console.log("CheckoutPage - Payment result:", result);
@@ -280,7 +280,7 @@ export default function CheckoutPage() {
           </Card>
 
           {/* PayPal Button Container */}
-          {selectedProvider === "paypal" && paypalClicked && (
+          {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
             <Card>
               <CardContent className="pt-6">
                 <div id="paypal-button-container"></div>
@@ -331,4 +331,4 @@ export default function CheckoutPage() {
       </div>
     </div>
   );
-}
+};

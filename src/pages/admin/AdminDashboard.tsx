@@ -51,8 +51,8 @@ import { User } from "@/types/user";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { useCouponByCodeQuery,useCouponByIdQuery,useCouponPrefetch,useCouponsQuery } from "@/hooks/useCouponApi";
-import { Coupon,CouponStatus } from "@/types/coupon.";
+import { useCouponByCodeQuery, useCouponByIdQuery, useCouponPrefetch, useCouponsQuery } from "@/hooks/useCouponApi";
+import { Coupon, CouponStatus } from "@/types/coupon.";
 import { useBundleQuery } from "@/hooks/useBundleApi";
 import { couponService } from "@/services/couponService";
 
@@ -65,7 +65,7 @@ const statsData = {
   activeCohorts: 5,
   totalCohortStudents: 420
 };
-        
+
 import {
   BUNDLE_STATUS,
   COURSE_STATUS,
@@ -101,7 +101,6 @@ export function AdminDashboard() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   
-
 useEffect(() => {
   if (location.pathname === '/admin') {
     loadCourses();
@@ -321,7 +320,9 @@ const loadCoupons = async () => {
     }
   };
 
-  
+  const deleteCoupon = async (couponid: string) => {
+
+  }
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -357,8 +358,6 @@ const loadCoupons = async () => {
     }
   };
 
- 
-
   // const statCards = [
   //   {
   //     title: "Total Revenue",
@@ -392,6 +391,7 @@ const loadCoupons = async () => {
   //     icon: Calendar,
   //   },
   // ];
+
 
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
@@ -470,7 +470,7 @@ const loadCoupons = async () => {
               </div>
             </TabsContent> */}
 
-                        <TabsContent value="lessons">
+            <TabsContent value="lessons">
               <Card>
                 <CardHeader>
                   <CardTitle>Lessons</CardTitle>
@@ -504,7 +504,7 @@ const loadCoupons = async () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                      
+
                         {lessons.map((lesson) => (
                           <TableRow key={lesson.id}>
                             <TableCell>
@@ -523,31 +523,31 @@ const loadCoupons = async () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                               <Button
-  variant="ghost"
-  size="sm"
-  onClick={() => {
-    const course = courses.find(course =>
-      course.topics?.some(topic =>
-        topic.items?.some(item => item.id === lesson.id)
-      )
-    );
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const course = courses.find(course =>
+                                      course.topics?.some(topic =>
+                                        topic.items?.some(item => item.id === lesson.id)
+                                      )
+                                    );
 
-    if (!course) {
-      toast({
-        title: "Course not found",
-        description: `No course found for lesson "${lesson.title}"`,
-        variant: "destructive",
-      });
-      return;
-    }
+                                    if (!course) {
+                                      toast({
+                                        title: "Course not found",
+                                        description: `No course found for lesson "${lesson.title}"`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
 
-    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
-  }}
-  title="View Lesson"
->
-  <Eye className="h-4 w-4" />
-</Button>
+                                    navigate(`/admin/course/${course.id}/lesson/${lesson.id}`);
+                                  }}
+                                  title="View Lesson"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
 
                                 <Button
                                   variant="ghost"
@@ -609,7 +609,7 @@ const loadCoupons = async () => {
                       </TableHeader>
                       <TableBody>
                         {courses.map((course) => (
-                          
+
                           <TableRow key={course.id}>
                             <TableCell>
                               <div>
@@ -726,7 +726,7 @@ const loadCoupons = async () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                 <Button
+                                <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => navigate(`edit-bundle/${bundle.id}`)}
@@ -796,78 +796,78 @@ const loadCoupons = async () => {
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                    <TableBody>
-  {cohorts.map(cohort => (
-    <TableRow key={cohort.id}>
-      {/* Cohort title & description */}
-      <TableCell>
-        <div>
-          <div className="font-medium">{cohort.title}</div>
-          <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
-        </div>
-      </TableCell>
+                      <TableBody>
+                        {cohorts.map(cohort => (
+                          <TableRow key={cohort.id}>
+                            {/* Cohort title & description */}
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{cohort.title}</div>
+                                <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+                              </div>
+                            </TableCell>
 
-      {/* Start date */}
-    <TableCell>
-  <div className="text-sm">
-  {cohort.maxStudents}
-  </div>
-</TableCell>
+                            {/* Start date */}
+                            <TableCell>
+                              <div className="text-sm">
+                                {cohort.maxStudents}
+                              </div>
+                            </TableCell>
 
-      {/* End date */}
-      <TableCell>
-  <div className="text-sm">
-  {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
-  </div>
-</TableCell>
+                            {/* End date */}
+                            <TableCell>
+                              <div className="text-sm">
+                                {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
+                              </div>
+                            </TableCell>
 
-      {/* Enrollment open status */}
-      <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
+                            {/* Enrollment open status */}
+                            <TableCell>
+                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              </Badge>
+                            </TableCell>
 
-        <TableCell>
-        <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-          {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-        </Badge>
-      </TableCell>
+                            <TableCell>
+                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
+                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              </Badge>
+                            </TableCell>
 
-      {/* Actions: view, edit, delete */}
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-            title="View Details"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+                            {/* Actions: view, edit, delete */}
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
+                                  title="View Details"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-            title="Edit Cohort"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+                                  title="Edit Cohort"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => deleteCohort(cohort.id)}
-            title="Delete Cohort"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteCohort(cohort.id)}
+                                  title="Delete Cohort"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
 
                     </Table>
                   )}
@@ -1118,7 +1118,7 @@ const loadCoupons = async () => {
         </CardContent>
       </Card>
     </TabsContent>
-{/* 
+
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {statCards.map((card, index) => {
