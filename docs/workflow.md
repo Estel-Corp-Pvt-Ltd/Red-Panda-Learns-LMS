@@ -1,4 +1,4 @@
-This document outlines the workflows, project management, GitHub setup, and documentation standards for the new website. It is designed to ensure consistency, maintainability, and smooth onboarding of furture team members.
+This document outlines the workflows, project management, GitHub setup, and documentation standards for the website. It is designed to ensure consistency, maintainability, and smooth onboarding of future team members.
 
 ---
 
