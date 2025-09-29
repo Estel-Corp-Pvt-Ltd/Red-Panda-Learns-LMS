@@ -24,6 +24,7 @@ export const cohortsApi = {
         description: data.description || '',
         topicIds: data.topicIds || [],
         startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate,
+        price : data.price || '',
         endDate: data.endDate?.toDate ? data.endDate.toDate() : data.endDate,
         enrollmentOpen: data.enrollmentOpen ?? false,
         maxStudents: data.maxStudents ?? null,

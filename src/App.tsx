@@ -37,6 +37,8 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
+import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
+import EditCouponPage from "./pages/admin/EditCouponPage";
 
 const queryClient = new QueryClient();
 
@@ -102,7 +104,7 @@ const App = () => (
                 <Route
                   path="/admin/create-lesson"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CreateLessonPage />
                     </AuthGuard>
                   }
@@ -110,7 +112,7 @@ const App = () => (
                 <Route
                   path="/admin/edit-lesson/:lessonId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <EditLessonPage />
                     </AuthGuard>
                   }
@@ -118,7 +120,7 @@ const App = () => (
                 <Route
                   path="/admin/edit-user/:userId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <EditUserPage />
                     </AuthGuard>
                   }
@@ -126,7 +128,7 @@ const App = () => (
                 <Route
                   path="/admin/create-course"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <CreateCoursePage />
                     </AuthGuard>
                   }
@@ -134,7 +136,7 @@ const App = () => (
                 <Route
                   path="/admin/create-bundle"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <CreateBundlePage />
                     </AuthGuard>
                   }
@@ -142,15 +144,23 @@ const App = () => (
                 <Route
                   path="admin/edit-bundle/:bundleId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <EditBundlePage />
+                    </AuthGuard>
+                  }
+                />
+                    <Route
+                  path="admin/edit-coupon/:couponId"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <EditCouponPage />
                     </AuthGuard>
                   }
                 />
                 <Route
                   path="/admin/create-cohort"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CohortBuilderPage />
                     </AuthGuard>
                   }
@@ -158,7 +168,7 @@ const App = () => (
                 <Route
                   path="/admin/cohort/:cohortId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CohortDetailPage />
                     </AuthGuard>
                   }
@@ -166,7 +176,7 @@ const App = () => (
                 <Route
                   path="/admin/cohort/:cohortId/edit"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <EditCohortPage />
                     </AuthGuard>
                   }
@@ -174,7 +184,7 @@ const App = () => (
                 <Route
                   path="/admin/edit-course/:courseId"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin >
                       <CurriculumBuilderPage />
                     </AuthGuard>
                   }
@@ -222,7 +232,7 @@ const App = () => (
                 <Route
                   path="/admin/create-coupon"
                   element={
-                    <AuthGuard>
+                    <AuthGuard requireAdmin>
                       <CreateCouponPage />
                     </AuthGuard>
                   }
@@ -230,10 +240,12 @@ const App = () => (
                 <Route
                   path="/courses"
                   element={
-
-                    <CoursesPage />
-
+                      <CoursesPage />
                   }
+                />
+                  <Route
+                  path="dummy/bundle/:bundleId/checkout"
+                  element={<DummyBundleCheckoutPage />}
                 />
                 <Route path="*" element={<NotFound />} />
               </Routes>

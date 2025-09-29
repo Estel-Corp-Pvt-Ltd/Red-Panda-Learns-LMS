@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Trash2, Calendar, Users, Clock, Loader2 } from 'lucide-react';
 import { cohortService } from '@/services/cohortService';
 import { courseService } from '@/services/courseService';
-import { Course } from '@/services/courseService';
+import { Course } from '@/types/course';
 import { WeeklyModule, LiveSession } from '@/types/cohort';
 
 const cohortSchema = z.object({

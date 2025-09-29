@@ -78,6 +78,7 @@ const CohortBuilderPage = () => {
   // Cohort-specific state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [price, setPrice] = useState(0);
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(() => {
     const nextMonth = new Date();
@@ -107,6 +108,7 @@ const CohortBuilderPage = () => {
         setCohort(cohortData);
         setTitle(cohortData.title);
         setDescription(cohortData.description || "");
+        setPrice(cohortData.price);
         setStartDate(cohortData.startDate);
         setEndDate(cohortData.endDate);
         setEnrollmentOpen(cohortData.enrollmentOpen);
@@ -219,6 +221,7 @@ const CohortBuilderPage = () => {
       const cohortData = {
         title: title.trim(),
         description: description.trim(),
+       price: price,
         startDate: startDate!,
         endDate: endDate!,
         enrollmentOpen,
@@ -227,6 +230,7 @@ const CohortBuilderPage = () => {
         // The service will add other fields like id, createdAt, etc.
       };
 
+      console.log(cohortData)
       if (isEditMode && cohortId) {
         await cohortService.updateCohort(cohortId, cohortData);
         toast({ title: "Success", description: "Cohort updated successfully!" });
@@ -279,6 +283,15 @@ const CohortBuilderPage = () => {
                       <label className="text-sm font-medium">Description</label>
                       <Textarea placeholder="A brief description of this cohort." value={description} onChange={(e) => setDescription(e.target.value)} />
                     </div>
+                    <div>
+  <label className="text-sm font-medium">Price</label>
+  <Input
+    type="number"
+    placeholder="Enter price"
+    value={price}
+    onChange={(e) => setPrice(+e.target.value)}
+  />
+</div>
                   </CardContent>
                 </Card>
               </div>

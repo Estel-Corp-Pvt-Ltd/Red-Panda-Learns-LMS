@@ -16,6 +16,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { couponService } from '@/services/couponService';
 import { CouponStatus } from '@/types/coupon.';
 import { courseService } from '@/services/courseService';
+import { cohortService } from '@/services/cohortService';
+import { bundleService } from '@/services/bundleService';
+import { useAuth } from '@/contexts/AuthContext';
+
 import { useCouponByCodeQuery } from '@/hooks/useCouponApi';
 const createCouponSchema = z.object({
   code: z.string().min(3, 'Coupon code is required'),
@@ -33,9 +37,14 @@ export default function CreateCouponPage() {
   const { toast } = useToast();
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
+  const [cohorts, setCohorts] = useState<{ id: string; title: string }[]>([]);
+  const [bundles, setBundles] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [selectedCohorts, setSelectedCohorts] = useState<string[]>([]);
+  const [selectedBundles, setSelectedBundles] = useState<string[]>([]);
 
+  
   // Load courses to link
   const loadCourses = async () => {
     try {
@@ -52,9 +61,49 @@ export default function CreateCouponPage() {
     }
   };
 
+
+  const loadCohorts = async () =>{
+    try{
+      const cohortList = await cohortService.getAllCohorts();
+      setCohorts(cohortList.map(cohort => ({id:cohort.id,title:cohort.title})))
+    }
+    catch(error){
+      toast({
+        title:'Error',
+        description:'Failed To Load Cohort',
+        variant: 'destructive'
+      });
+    } finally{
+      setLoading(false);
+    }
+  }
+
+  const loadBundels = async () =>{
+    try{
+      const bundleList = await bundleService.getAllBundles();
+      setBundles(bundleList.map(bundle=>({id:bundle.id,title:bundle.title})))
+    }
+    catch(error){
+      toast({
+        title:'Error',
+        description:'Error Loading Bundle',
+        variant:'destructive'
+      })
+    }
+    finally{
+      setLoading(false)
+    }
+  }
+
+
   useEffect(() => {
     loadCourses();
+    loadBundels();
+    loadCohorts();
   }, []);
+
+
+  const {user} = useAuth();
 
   const {
     register,
@@ -90,12 +139,15 @@ export default function CreateCouponPage() {
         expiryDate: Timestamp.fromDate(new Date(data.expiryDate)),
         usageLimit: data.usageLimit,
         linkedCourseIds: selectedCourses,
+        linkedBundleIds: selectedBundles,
+        linkedCohortIds:selectedCohorts,
         status: data.status,
-        createdById: 'admin_user_id', // Replace with real ID from auth
+        createdById:user?.id , 
+        createdbyMail:user?.email 
       };
-
+     
       await couponService.createCoupon(couponData);
-
+       console.log(couponData)
       toast({
         title: 'Coupon Created',
         description: `Coupon "${data.code}" was created successfully.`,
@@ -120,6 +172,21 @@ export default function CreateCouponPage() {
     );
   };
 
+
+    const toggleCohortSelection = (cohortId: string) => {
+    setSelectedCohorts(prev =>
+      prev.includes(cohortId)
+        ? prev.filter(id => id !== cohortId)
+        : [...prev, cohortId]
+    );
+  };
+    const toggleBundleSelection = (bundleId: string) => {
+    setSelectedBundles(prev =>
+      prev.includes(bundleId)
+        ? prev.filter(id => id !== bundleId)
+        : [...prev, bundleId]
+    );
+  };
   return (
     <div className="max-w-2xl mx-auto p-6">
       <Card>
@@ -184,6 +251,53 @@ export default function CreateCouponPage() {
                 </div>
               )}
             </div>
+
+
+            {/* Select Cohorts */}
+            <div>
+              <Label>Select cohort to Link</Label>
+              {loading ? (
+                <p className="text-sm text-muted">Loading cohort...</p>
+              ) : cohorts.length === 0 ? (
+                <p className="text-sm text-muted">No cohort available.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
+                  {cohorts.map(course => (
+                    <label key={course.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={selectedCohorts.includes(course.id)}
+                        onCheckedChange={() => toggleCohortSelection(course.id)}
+                      />
+                      <span className="text-sm">{course.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
+            {/* Select Bundle */}
+            <div>
+              <Label>Select bundle to Link</Label>
+              {loading ? (
+                <p className="text-sm text-muted">Loading bundle...</p>
+              ) : bundles.length === 0 ? (
+                <p className="text-sm text-muted">No bundle available.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
+                  {bundles.map(bundle => (
+                    <label key={bundle.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={selectedBundles.includes(bundle.id)}
+                        onCheckedChange={() => toggleBundleSelection(bundle.id)}
+                      />
+                      <span className="text-sm">{bundle.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
 
             {/* Status */}
             <div>
