@@ -96,6 +96,7 @@ const CohortDetailPage = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
+  const [price,setPrice]=useState(0);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [enrollmentOpen, setEnrollmentOpen] = useState(true);
   const [maxStudents, setMaxStudents] = useState<number | undefined>(undefined);
@@ -127,10 +128,12 @@ const CohortDetailPage = () => {
         const data = await cohortService.getCohortById(cohortId!);
         if (!data) throw new Error("Cohort not found");
         setCohort(data);
-
+        console.log(data)
         // Initialize form state for basic details
         setTitle(data.title);
         setDescription(data.description || "");
+        setPrice(data.price);
+
         
         // FIX: Convert Firestore Timestamps to JS Dates
         setStartDate(data.startDate && typeof (data.startDate as any).toDate === 'function' ? (data.startDate as any).toDate() : data.startDate);
@@ -332,6 +335,7 @@ const CohortDetailPage = () => {
       const cohortUpdateData = {
         title: title.trim(),
         description: description.trim(),
+        price: price,
         startDate,
         endDate,
         enrollmentOpen,
@@ -340,7 +344,7 @@ const CohortDetailPage = () => {
       };
 
       await cohortService.updateCohort(cohortId, cohortUpdateData);
-
+      console.log(cohortUpdateData)
       // Update local cohort state to reflect saved changes
       setCohort(prev => prev ? { ...prev, ...cohortUpdateData, updatedAt: new Date() } : null);
       setEditing(false); // Exit edit mode
@@ -367,6 +371,7 @@ const CohortDetailPage = () => {
     // Reset form state to original cohort data
     setTitle(cohort.title);
     setDescription(cohort.description || "");
+    setPrice(cohort.price);
     setStartDate(cohort.startDate);
     setEndDate(cohort.endDate);
     setEnrollmentOpen(cohort.enrollmentOpen);
@@ -478,6 +483,24 @@ const CohortDetailPage = () => {
                     ) : (
                       <p className="text-muted-foreground">
                         {description || "No description provided"}
+                      </p>
+                    )}
+                  </CardContent>
+
+                   <CardHeader>
+                    <CardTitle>Price</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {editing ? (
+                      <Textarea
+                        value={price}
+                        onChange={(e) => setPrice(+e.target.value)}
+                        placeholder="Enter cohort Price"
+                        className="min-h-32"
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">
+                        {price || "No Price "}
                       </p>
                     )}
                   </CardContent>

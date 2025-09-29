@@ -78,7 +78,7 @@ class CourseService {
  * ```
  */
 
-  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt'| 'cohorts'>): Promise<string> {
+  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts'>): Promise<string> {
     try {
       const courseId = await this.generateCourseId();
 

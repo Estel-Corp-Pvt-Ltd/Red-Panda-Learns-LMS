@@ -74,6 +74,8 @@ import {
 } from "@/constants";
 
 import { Header } from "@/components/Header";
+import { error } from "console";
+
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -81,11 +83,13 @@ export function AdminDashboard() {
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [coupon,setCoupon] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [statsData, setStatsData] = useState<DashboardStats | null>(null);
+  
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -93,20 +97,22 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
+  const [couponsLoading,setCouponsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
-
-  useEffect(() => {
-    if (location.pathname === '/admin') {
-      loadCourses();
-      loadCohorts();
-      loadBundles();
-      loadLessons();
-      loadAuthors();
-      loadUsers();
-      loadStatistics();
-    }
-  }, [location.pathname]);
+  
+useEffect(() => {
+  if (location.pathname === '/admin') {
+    loadCourses();
+    loadCohorts();
+    loadBundles();
+    loadLessons();
+    loadAuthors();
+    loadUsers();
+    loadStatistics();
+    loadCoupons();
+  
+  }},[location.pathname]);
 
   // 🔹 Load STATISTICS
   const loadStatistics = async () => {
@@ -206,7 +212,22 @@ export function AdminDashboard() {
     }
   };
 
-  const { data: coupons = [], isLoading } = useCouponsQuery();
+const loadCoupons = async () => {
+  try {
+    const couponsList = await couponService.getAllCoupons();
+    setCoupon(couponsList);
+    console.log(couponsList)
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load coupons",
+      variant: "destructive",
+    });
+  } finally {
+    setCouponsLoading(false);
+  }
+};
+
 
   const loadLessons = async () => {
     try {
@@ -263,6 +284,25 @@ export function AdminDashboard() {
     }
   };
 
+  const deleteCoupon = async(couponId:string)=>{
+    try{
+      await couponService.deleteCoupon(couponId);
+      setCoupon((prev)=>prev.filter((coupon) => couponId !== couponId));
+      toast({
+        title:"Success",
+        description:"Coupon Deleted Successfully"
+      })
+     
+    }
+    catch{
+   
+       toast({
+        title: "Error",
+        description: "Failed to delete Coupon",
+        variant: "destructive"
+      });
+    }
+  }
   const deleteCohort = async (cohortId: string) => {
     try {
       await cohortService.deleteCohort(cohortId);
@@ -1085,99 +1125,97 @@ export function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="coupons">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Coupons</CardTitle>
-                  <CardDescription>
-                    Manage discount codes, their usage, and validity.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {coupons.length === 0 && !isLoading ? (
-                    <div className="text-center py-8">
-                      <Gift className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Get started by creating a coupon code.
-                      </p>
-                      <div className="mt-6">
-                        <Button onClick={() => navigate('/admin/create-coupon')}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create Coupon
+             <TabsContent value="coupons">
+      <Card>
+        <CardHeader>
+          <CardTitle>Coupons</CardTitle>
+          <CardDescription>
+            Manage discount codes, their usage, and validity.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {coupon.length === 0 && !loading ? (
+            <div className="text-center py-8">
+              <Gift className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by creating a coupon code.
+              </p>
+              <div className="mt-6">
+                <Button onClick={() => navigate('/admin/create-coupon')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Coupon
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Discount</TableHead>
+                  <TableHead>Usage</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {coupon.map((coupon) => (
+                  <TableRow key={coupon.id}>
+                    <TableCell className="font-medium">{coupon.code}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          coupon.status === CouponStatus.ACTIVE
+                            ? 'default'
+                            : coupon.status === CouponStatus.EXPIRED
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {coupon.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                  {coupon.discountPercentage}
+                    </TableCell>
+                    <TableCell>
+                     {coupon.usageLimit}
+                    </TableCell>
+                    <TableCell>
+                      {coupon.expiryDate
+                        ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
+                        : 'No expiry'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                          title="Edit Coupon"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { deleteCoupon(coupon.id) }}
+                          title="Delete Coupon"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Discount</TableHead>
-                          <TableHead>Usage</TableHead>
-                          <TableHead>Expires</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {coupons.map((coupon) => (
-                          <TableRow key={coupon.id}>
-                            <TableCell className="font-medium">{coupon.code}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  coupon.status === CouponStatus.ACTIVE
-                                    ? 'default'
-                                    : coupon.status === CouponStatus.EXPIRED
-                                      ? 'secondary'
-                                      : 'outline'
-                                }
-                              >
-                                {coupon.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {coupon.discountPercentage}
-                            </TableCell>
-                            <TableCell>
-                              {coupon.usageLimit}
-                            </TableCell>
-                            <TableCell>
-                              {coupon.expiryDate
-                                ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
-                                : 'No expiry'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
-                                  title="Edit Coupon"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Optionally implement delete logic here
-                                  }}
-                                  title="Delete Coupon"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
 
             <TabsContent value="statistics">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -1201,7 +1239,7 @@ export function AdminDashboard() {
                   );
                 })} */}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>

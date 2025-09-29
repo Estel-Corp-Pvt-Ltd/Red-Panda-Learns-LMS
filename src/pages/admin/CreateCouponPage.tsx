@@ -46,6 +46,7 @@ export default function CreateCouponPage() {
   const [selectedCohorts, setSelectedCohorts] = useState<string[]>([]);
   const [selectedBundles, setSelectedBundles] = useState<string[]>([]);
 
+  
   // Load courses to link
   const loadCourses = async () => {
     try {
@@ -145,7 +146,7 @@ export default function CreateCouponPage() {
       };
      
       await couponService.createCoupon(couponData);
-      console.log(couponData)
+
       toast({
         title: 'Coupon Created',
         description: `Coupon "${data.code}" was created successfully.`,
@@ -171,6 +172,7 @@ export default function CreateCouponPage() {
   };
 
   const toggleCohortSelection = (cohortId: string) => {
+
     setSelectedCohorts(prev =>
       prev.includes(cohortId)
         ? prev.filter(id => id !== cohortId)
@@ -179,6 +181,7 @@ export default function CreateCouponPage() {
   };
 
   const toggleBundleSelection = (bundleId: string) => {
+
     setSelectedBundles(prev =>
       prev.includes(bundleId)
         ? prev.filter(id => id !== bundleId)
