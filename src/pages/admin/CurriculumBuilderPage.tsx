@@ -185,7 +185,40 @@ const CurriculumBuilderPage = () => {
     fetchAuthors();
   }, [toast, authorId, authorName]);
 
-  const saveBasics = async () => { /* unchanged, fine */ };
+  const saveBasics = async () => {
+  if (!courseId || !course) return;
+  if (!title.trim()) {
+    toast({ title: "Missing Title", description: "Enter a course title.", variant: "destructive" });
+    return;
+  }
+  if (!description.trim()) {
+    toast({ title: "Missing Description", description: "Enter a description.", variant: "destructive" });
+    return;
+  }
+  if (regularPrice < 0 || salePrice < 0 || salePrice > regularPrice) {
+    toast({ title: "Pricing Error", description: "Check regular / sale price.", variant: "destructive" });
+    return;
+  }
+  try {
+    setSaving(true);
+    await courseService.updateCourse(courseId, {
+      title: title.trim(),
+      description: description.trim(),
+      regularPrice,
+      salePrice,
+      categories,
+      tags,
+      authorId,
+      authorName,
+      status,
+    });
+    toast({ title: "Saved", description: "Basics updated." });
+  } catch (e) {
+    toast({ title: "Error", description: String(e), variant: "destructive" });
+  } finally {
+    setSaving(false);
+  }
+};
 
   const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
     const flatList: DraggableItem[] = [];
@@ -266,7 +299,69 @@ const CurriculumBuilderPage = () => {
     });
   };
 
-  const saveCurriculumStructure = async () => { /* same as your robust version */ };
+  const saveCurriculumStructure = async () => {
+    if (!courseId || !course) {
+      toast({ title: "Error", description: "Course data is not available.", variant: "destructive" });
+      return;
+    }
+    try {
+      setSaving(true);
+      const newRootTopics: Topic[] = [];
+      const newCohorts: Cohort[] = [];
+      // Create maps for efficient lookup
+      const itemMap = new Map(curriculum.map(item => [item.id, item]));
+      const childrenMap = new Map<string, DraggableItem[]>();
+      curriculum.forEach(item => {
+        if (item.parentId) {
+          if (!childrenMap.has(item.parentId)) {
+            childrenMap.set(item.parentId, []);
+          }
+          childrenMap.get(item.parentId)!.push(item);
+        }
+      });
+      // Process only root items (depth 0)
+      for (const item of curriculum) {
+        if (item.depth === 0) {
+            if (item.type === 'COHORT') {
+                const cohortChildren = childrenMap.get(item.id) || []; // These are topics
+                const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
+                    const lessonItems = (childrenMap.get(topicItem.id) || []).map(lessonItem => ({
+                        id: lessonItem.id,
+                        title: lessonItem.title,
+                    }));
+                    return { id: topicItem.id, title: topicItem.title, items: lessonItems };
+                });
+                // Reconstruct the cohort, preserving original data if it exists
+                const originalCohort = item.originalData as Cohort || {};
+                newCohorts.push({
+                    ...originalCohort,
+                    id: item.id,
+                    title: item.title,
+                    topics: cohortTopics,
+                    updatedAt: new Date(),
+                });
+            } else if (item.type === LEARNING_UNIT.TOPIC) {
+                const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
+                    id: lessonItem.id,
+                    title: lessonItem.title,
+                }));
+                newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
+            }
+        }
+      }
+      const updates: Partial<Course> = {
+        topics: newRootTopics,
+        cohorts: newCohorts,
+      };
+      await courseService.updateCourse(courseId, updates);
+      toast({ title: "Success", description: "Curriculum saved!" });
+      console.log("Curriculum saved with:", updates);
+    } catch (error) {
+      toast({ title: "Error", description: `Failed to save: ${error}`, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <div>Loading...</div>;
   if (!course) return <div>Course not found.</div>;
@@ -282,7 +377,200 @@ const CurriculumBuilderPage = () => {
             <TabsTrigger value="additional">Additional</TabsTrigger>
           </TabsList>
 
-          {/* Basics tab unchanged */}
+        {/* ────────── BASICS TAB CONTENT ────────── */}
+  <TabsContent value="basics">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {/* ───────── LEFT SIDE (Main Content) ───────── */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Title */}
+        <Card className="rounded-xl border p-4">
+          <CardHeader className="pb-2">
+            <CardTitle>Course Title</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Mastering React 18"
+            />
+          </CardContent>
+        </Card>
+        {/* Description */}
+        <Card className="rounded-xl border p-4">
+          <CardHeader className="pb-2">
+            <CardTitle>Description</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              A short marketing paragraph – supports markdown.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="min-h-32"
+              placeholder="What will students learn?"
+            />
+          </CardContent>
+        </Card>
+        {/* Instructor + Categories + Tags row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Instructor */}
+          <Card className="rounded-xl border p-4">
+            <CardHeader className="pb-2">
+              <CardTitle>Instructor</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={authorName}
+                onValueChange={(val) => {
+                  const a = authors.find((x) => x.name === val);
+                  setAuthorName(val);
+                  setAuthorId(a?.id || "");
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {authors.map((a) => (
+                    <SelectItem key={a.id} value={a.name}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+          {/* Categories */}
+          <Card className="rounded-xl border p-4">
+            <CardHeader className="pb-2">
+              <CardTitle>Categories</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Pick one or more to help discovery
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {["AI/ML", "Bootcamp", "College", "Data-Science", "Generative-AI"].map((cat) => (
+                <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={categories.includes(cat)}
+                    onCheckedChange={() =>
+                      setCategories((prev) =>
+                        prev.includes(cat)
+                          ? prev.filter((c) => c !== cat)
+                          : [...prev, cat]
+                      )
+                    }
+                  />
+                  {cat}
+                </label>
+              ))}
+            </CardContent>
+          </Card>
+          {/* Tags */}
+          <Card className="rounded-xl border p-4">
+            <CardHeader className="pb-2">
+              <CardTitle>Tags</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Used for search. Press Enter to add.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Input
+                value={tagInput}
+                placeholder="add tag and press ↵"
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && tagInput.trim()) {
+                    e.preventDefault();
+                    if (!tags.includes(tagInput.trim()))
+                      setTags([...tags, tagInput.trim()]);
+                    setTagInput("");
+                  }
+                }}
+              />
+              <div className="flex flex-wrap gap-2 mt-3">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full flex items-center gap-1"
+                  >
+                    {t}
+                    <button
+                      className="hover:text-red-500"
+                      onClick={() => setTags(tags.filter((x) => x !== t))}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
+      <div className="space-y-6">
+        {/* Pricing */}
+        <Card className="rounded-xl border p-4">
+                  <Button onClick={saveBasics} disabled={saving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? "Saving..." : "Save Basics"}
+                  </Button>
+                    <Button variant="outline" onClick={() => navigate("/admin")} >
+                    <ArrowLeft className="mr-2 h-4 w-3" />
+                    {"Back to Courses"}
+                  </Button>
+          <CardHeader className="pb-2">
+            <CardTitle>Pricing</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Regular price</label>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={regularPrice}
+                  onChange={(e) => setRegularPrice(+e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Sale price</label>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={salePrice}
+                  onChange={(e) => setSalePrice(+e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Status */}
+        <Card className="rounded-xl border p-4">
+          <CardHeader className="pb-2">
+            <CardTitle>Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <select
+              className="w-full border rounded-md p-2"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as CourseStatus)}
+            >
+              {Object.values(COURSE_STATUS).map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  </TabsContent>
 
           {/* Curriculum Tab */}
           <TabsContent value="curriculum">
