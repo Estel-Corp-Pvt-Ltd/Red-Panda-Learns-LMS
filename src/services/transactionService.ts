@@ -52,7 +52,7 @@ class TransactionService {
       return nextNumber;
     });
 
-    const transactionId = `transaction_${uuidv4()}`;
+    const transactionId = `tx${uuidv4()}`;
 
     return {
       transactionId,
@@ -85,6 +85,15 @@ class TransactionService {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
+
+      // 👀 Debug which fields are undefined
+for (const [key, value] of Object.entries(transaction)) {
+  if (value === undefined) {
+    console.error(`❌ Field "${key}" is undefined`);
+  } else {
+    console.log(`✅ ${key}:`, value);
+  }
+}
 
       console.log("transaction: ", transaction)
 

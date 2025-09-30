@@ -25,7 +25,7 @@ class RazorpayProvider {
       body: JSON.stringify({
         amount,
         currency,
-        receipt:safeReceipt,
+        receipt,
       }),
     });
 

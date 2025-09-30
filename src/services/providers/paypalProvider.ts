@@ -29,7 +29,11 @@ class PayPalProvider {
       }
 
       const script = document.createElement('script');
-      script.src = `https://www.paypal.com/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.USD}&intent=capture`;
+    
+script.src = `https://www.${
+  this.environment === ENVIRONMENT.SANDBOX ? "sandbox.paypal.com" : "paypal.com"
+}/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.USD}&intent=capture`;
+
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
       document.head.appendChild(script);
