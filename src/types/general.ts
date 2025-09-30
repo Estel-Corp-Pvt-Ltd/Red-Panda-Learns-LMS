@@ -15,7 +15,8 @@ import {
     TRANSACTION_TYPE,
     REFUND_INITIATOR,
     RAZORPAY_WEBHOOK_EVENT,
-    PAYPAL_WEBHOOK_EVENT
+    PAYPAL_WEBHOOK_EVENT,
+    COUPON_STATUS
 } from "@/constants";
 
 export type UserRole = typeof USER_ROLE[keyof typeof USER_ROLE];
@@ -35,3 +36,4 @@ export type TransactionType = typeof TRANSACTION_TYPE[keyof typeof TRANSACTION_T
 export type RefundInitiator = typeof REFUND_INITIATOR[keyof typeof REFUND_INITIATOR];
 export type RazorpayWebhookEvent = typeof RAZORPAY_WEBHOOK_EVENT[keyof typeof RAZORPAY_WEBHOOK_EVENT];
 export type PayPalWebhookEvent = typeof PAYPAL_WEBHOOK_EVENT[keyof typeof PAYPAL_WEBHOOK_EVENT];
+export type CouponStatus = typeof COUPON_STATUS[keyof typeof COUPON_STATUS];
