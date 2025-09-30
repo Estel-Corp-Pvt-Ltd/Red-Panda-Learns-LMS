@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { courseService } from '@/services/courseService';
 import { cohortService } from '@/services/cohortService';
