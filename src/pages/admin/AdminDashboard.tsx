@@ -29,7 +29,6 @@ import {
   BookOpen,
   Loader2,
   Calendar,
-  GraduationCap,
   Eye,
   Plus,
   Gift,
@@ -40,9 +39,7 @@ import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
-
 import { Cohort } from "@/types/course";
-import { statisticsService, DashboardStats } from "@/services/statisticsService";
 import { userService } from "@/services/userService";
 import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
@@ -51,9 +48,7 @@ import { User } from "@/types/user";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { useCouponByCodeQuery, useCouponByIdQuery, useCouponPrefetch, useCouponsQuery } from "@/hooks/useCouponApi";
 import { Coupon, CouponStatus } from "@/types/coupon.";
-import { useBundleQuery } from "@/hooks/useBundleApi";
 import { couponService } from "@/services/couponService";
 
 // const course = useCourseQuery() =;
@@ -83,13 +78,11 @@ export function AdminDashboard() {
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [coupon,setCoupon] = useState<Coupon[]>([]);
+  const [coupon, setCoupon] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
-  
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -97,41 +90,23 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
-  const [couponsLoading,setCouponsLoading] = useState(true);
+  const [couponsLoading, setCouponsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
-  
-useEffect(() => {
-  if (location.pathname === '/admin') {
-    loadCourses();
-    loadCohorts();
-    loadBundles();
-    loadLessons();
-    loadAuthors();
-    loadUsers();
-    loadStatistics();
-    loadCoupons();
-  
-  }},[location.pathname]);
 
-  // 🔹 Load STATISTICS
-  const loadStatistics = async () => {
-    try {
-      const stats = await statisticsService.getDashboardStats();
-      setStatsData(stats);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load statistics",
-        variant: "destructive"
-      });
-    } finally {
-      setStatsLoading(false);
+  useEffect(() => {
+    if (location.pathname === '/admin') {
+      loadCourses();
+      loadCohorts();
+      loadBundles();
+      loadLessons();
+      loadAuthors();
+      loadUsers();
+      loadCoupons();
     }
-  };
+  }, [location.pathname]);
 
   // 🔹 Load USERS
-
   const loadUsers = async () => {
     try {
       const usersList = await userService.getAllUsers();
@@ -212,21 +187,21 @@ useEffect(() => {
     }
   };
 
-const loadCoupons = async () => {
-  try {
-    const couponsList = await couponService.getAllCoupons();
-    setCoupon(couponsList);
-    console.log(couponsList)
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load coupons",
-      variant: "destructive",
-    });
-  } finally {
-    setCouponsLoading(false);
-  }
-};
+  const loadCoupons = async () => {
+    try {
+      const couponsList = await couponService.getAllCoupons();
+      setCoupon(couponsList);
+      console.log(couponsList)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load coupons",
+        variant: "destructive",
+      });
+    } finally {
+      setCouponsLoading(false);
+    }
+  };
 
 
   const loadLessons = async () => {
@@ -284,25 +259,26 @@ const loadCoupons = async () => {
     }
   };
 
-  const deleteCoupon = async(couponId:string)=>{
-    try{
+  const deleteCoupon = async (couponId: string) => {
+    try {
       await couponService.deleteCoupon(couponId);
-      setCoupon((prev)=>prev.filter((coupon) => couponId !== couponId));
+      setCoupon((prev) => prev.filter((coupon) => couponId !== couponId));
       toast({
-        title:"Success",
-        description:"Coupon Deleted Successfully"
+        title: "Success",
+        description: "Coupon Deleted Successfully"
       })
-     
+
     }
-    catch{
-   
-       toast({
+    catch {
+
+      toast({
         title: "Error",
         description: "Failed to delete Coupon",
         variant: "destructive"
       });
     }
-  }
+  };
+
   const deleteCohort = async (cohortId: string) => {
     try {
       await cohortService.deleteCohort(cohortId);
@@ -319,10 +295,6 @@ const loadCoupons = async () => {
       });
     }
   };
-
-  const deleteCoupon = async (couponid: string) => {
-
-  }
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -358,40 +330,6 @@ const loadCoupons = async () => {
     }
   };
 
-  const statCards = [
-    {
-      title: "Total Revenue",
-      value: formatCurrency(statsData.totalRevenue),
-      description: "+20.1% from last month",
-      icon: DollarSign,
-    },
-    {
-      title: "Active Students",
-      value: statsData.activeStudents?.toLocaleString(),
-      description: "+180.1% from last month",
-      icon: Users,
-    },
-    {
-      title: "New Enrollments",
-      value: statsData.newEnrollments.toString(),
-      description: "+19% from last month",
-      icon: UserPlus,
-    },
-    {
-      title: "Total Courses",
-      value: courses.length.toString(),
-      description: `${courses.length} courses available`,
-      icon: BookOpen,
-    },
-
-    {
-      title: "Cohort Students",
-      value: statsData.cohortStudents.toString(),
-      description: "Students in cohorts",
-      icon: Calendar,
-    },
-  ];
-
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -401,173 +339,74 @@ const loadCoupons = async () => {
   }
 
   return (
-     <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
-       <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-  <div>
-    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
-      Admin Dashboard
-    </h1>
-    <p className="text-muted-foreground">
-      Manage your courses, cohorts, and students
-    </p>
-  </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+              Admin Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your courses, cohorts, and students
+            </p>
+          </div>
 
-  {/*  Buttons stack on mobile, row on larger screens */}
-<div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-  <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
-    <PlusCircle className="mr-2 h-4 w-4" />
-    Create New Lesson
-  </Button>
-  <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
-    <PlusCircle className="mr-2 h-4 w-4" />
-    Create New Course
-  </Button>
-  <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
-    <PlusCircle className="mr-2 h-4 w-4" />
-    Create Course Bundle
-  </Button>
-  <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
-    <Calendar className="mr-2 h-4 w-4" />
-    Create New Cohort
-  </Button>
-</div>
-</div>
+          {/*  Buttons stack on mobile, row on larger screens */}
+          <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+            <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create New Lesson
+            </Button>
+            <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create New Course
+            </Button>
+            <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Course Bundle
+            </Button>
+            <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
+              <Calendar className="mr-2 h-4 w-4" />
+              Create New Cohort
+            </Button>
+          </div>
+        </div>
 
         <div className="space-y-8">
           <Tabs defaultValue="courses" className="space-y-4">
-         <TabsList
-  className="
-    flex
-    overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
+            <TabsList
+              className="overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
     whitespace-nowrap
     gap-2 sm:gap-4
     no-scrollbar 
     w-full
     justify-start sm:justify-center lg:justify-start /* flex behavior by screen size */
   "
->
-  <TabsTrigger value="courses" className="flex-shrink-0">
-    Courses
-  </TabsTrigger>
-  <TabsTrigger value="lessons" className="flex-shrink-0">
-    Lessons
-  </TabsTrigger>
-  <TabsTrigger value="bundles" className="flex-shrink-0">
-    Bundles
-  </TabsTrigger>
-  <TabsTrigger value="cohorts" className="flex-shrink-0">
-    Cohorts
-  </TabsTrigger>
-  <TabsTrigger value="statistics" className="flex-shrink-0">
-    Statistics
-  </TabsTrigger>
-  <TabsTrigger value="authors" className="flex-shrink-0">
-    Authors
-  </TabsTrigger>
-  <TabsTrigger value="users" className="flex-shrink-0">
-    Users
-  </TabsTrigger>
-  <TabsTrigger value="coupons" className="flex-shrink-0">
-    Coupon
-  </TabsTrigger>
-</TabsList>
-
-
-            {/*  show STATISTICS cards */}
-          <TabsContent value="statistics">
-  {statsLoading ? (
-    <div className="flex items-center justify-center py-8">
-      <Loader2 className="h-6 w-6 animate-spin" />
-    </div>
-  ) : statsData ? (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {/* Total Revenue */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(statsData.totalRevenue)}</div>
-          <p className="text-xs text-muted-foreground">
-            +{statsData.revenueGrowth}% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Active Students */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Students</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{statsData.activeStudents.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground">
-            +{statsData.activeStudentGrowth}% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* New Enrollments */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">New Enrollments</CardTitle>
-          <UserPlus className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{statsData.newEnrollments}</div>
-          <p className="text-xs text-muted-foreground">
-            +{statsData.enrollmentGrowth}% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Total Courses */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
-          <BookOpen className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{statsData.totalCourses}</div>
-          <p className="text-xs text-muted-foreground">
-            {statsData.totalCourses} courses available
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Active Cohorts */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Cohorts</CardTitle>
-          <GraduationCap className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{statsData.activeCohorts}</div>
-          <p className="text-xs text-muted-foreground">Currently active cohorts</p>
-        </CardContent>
-      </Card>
-
-      {/* Cohort Students */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cohort Students</CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{statsData.totalCohortStudents}</div>
-          <p className="text-xs text-muted-foreground">Students across cohorts</p>
-        </CardContent>
-      </Card>
-    </div>
-  ) : (
-    <p className="text-muted-foreground">No statistics available</p>
-  )}
-</TabsContent>
+            >
+              <TabsTrigger value="courses" className="flex-shrink-0">
+                Courses
+              </TabsTrigger>
+              <TabsTrigger value="lessons" className="flex-shrink-0">
+                Lessons
+              </TabsTrigger>
+              <TabsTrigger value="bundles" className="flex-shrink-0">
+                Bundles
+              </TabsTrigger>
+              <TabsTrigger value="cohorts" className="flex-shrink-0">
+                Cohorts
+              </TabsTrigger>
+              <TabsTrigger value="authors" className="flex-shrink-0">
+                Authors
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex-shrink-0">
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="coupons" className="flex-shrink-0">
+                Coupon
+              </TabsTrigger>
+            </TabsList>
 
             <TabsContent value="lessons">
               <Card>
@@ -1125,126 +964,102 @@ const loadCoupons = async () => {
               </Card>
             </TabsContent>
 
-             <TabsContent value="coupons">
-      <Card>
-        <CardHeader>
-          <CardTitle>Coupons</CardTitle>
-          <CardDescription>
-            Manage discount codes, their usage, and validity.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {coupon.length === 0 && !loading ? (
-            <div className="text-center py-8">
-              <Gift className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by creating a coupon code.
-              </p>
-              <div className="mt-6">
-                <Button onClick={() => navigate('/admin/create-coupon')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Coupon
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {coupon.map((coupon) => (
-                  <TableRow key={coupon.id}>
-                    <TableCell className="font-medium">{coupon.code}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          coupon.status === CouponStatus.ACTIVE
-                            ? 'default'
-                            : coupon.status === CouponStatus.EXPIRED
-                              ? 'secondary'
-                              : 'outline'
-                        }
-                      >
-                        {coupon.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                  {coupon.discountPercentage}
-                    </TableCell>
-                    <TableCell>
-                     {coupon.usageLimit}
-                    </TableCell>
-                    <TableCell>
-                      {coupon.expiryDate
-                        ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
-                        : 'No expiry'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
-                          title="Edit Coupon"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { deleteCoupon(coupon.id) }}
-                          title="Delete Coupon"
-                        >
-                          <Trash2 className="h-4 w-4" />
+            <TabsContent value="coupons">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Coupons</CardTitle>
+                  <CardDescription>
+                    Manage discount codes, their usage, and validity.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {coupon.length === 0 && !loading ? (
+                    <div className="text-center py-8">
+                      <Gift className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Get started by creating a coupon code.
+                      </p>
+                      <div className="mt-6">
+                        <Button onClick={() => navigate('/admin/create-coupon')}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Coupon
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
-
-            <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {/* {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })} */}
-              </div>
-            </TabsContent> */}
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Discount</TableHead>
+                          <TableHead>Usage</TableHead>
+                          <TableHead>Expires</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {coupon.map((coupon) => (
+                          <TableRow key={coupon.id}>
+                            <TableCell className="font-medium">{coupon.code}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  coupon.status === CouponStatus.ACTIVE
+                                    ? 'default'
+                                    : coupon.status === CouponStatus.EXPIRED
+                                      ? 'secondary'
+                                      : 'outline'
+                                }
+                              >
+                                {coupon.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {coupon.discountPercentage}
+                            </TableCell>
+                            <TableCell>
+                              {coupon.usageLimit}
+                            </TableCell>
+                            <TableCell>
+                              {coupon.expiryDate
+                                ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
+                                : 'No expiry'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                                  title="Edit Coupon"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => { deleteCoupon(coupon.id) }}
+                                  title="Delete Coupon"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default AdminDashboard;

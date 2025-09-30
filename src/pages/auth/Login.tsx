@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail, Lock, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
-import { USER_ROLE } from '@/constants';   
+import { USER_ROLE } from '@/constants';
 import { getRecaptchaToken } from "@/utils/recaptcha";
 
 export default function Login() {
@@ -29,10 +29,8 @@ export default function Login() {
   const message = (location.state as any)?.message;
 
   // 🔹 Shared reCAPTCHA verification logic
-    // 🔹 Shared reCAPTCHA verification logic
   const verifyRecaptcha = async () => {
     const token = await getRecaptchaToken("login");  // add action for clarity
-    console.log("👉 got reCAPTCHA token:", token);
 
     const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
     const res = await fetch(verifyUrl, {
@@ -42,13 +40,11 @@ export default function Login() {
     });
 
     const verifyData = await res.json();
-    console.log("👉 verifyData from server:", verifyData); // 🔍 log entire backend response
 
     if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.5) {
       throw new Error("⚠️ Bot verification failed. Debug info in console.");
     }
 
-    console.log("✅ reCAPTCHA passed, score:", verifyData.score);
   };
   // 🔹 Email/Password Login
   const handleSubmit = async (e: React.FormEvent) => {
