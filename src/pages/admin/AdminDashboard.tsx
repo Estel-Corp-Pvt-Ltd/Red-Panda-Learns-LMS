@@ -29,7 +29,6 @@ import {
   BookOpen,
   Loader2,
   Calendar,
-  GraduationCap,
   Eye,
   Plus,
   Gift,
@@ -40,9 +39,7 @@ import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
-
 import { Cohort } from "@/types/course";
-import { statisticsService, DashboardStats } from "@/services/statisticsService";
 import { userService } from "@/services/userService";
 import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
@@ -51,9 +48,7 @@ import { User } from "@/types/user";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { useCouponByCodeQuery, useCouponByIdQuery, useCouponPrefetch, useCouponsQuery } from "@/hooks/useCouponApi";
 import { Coupon, CouponStatus } from "@/types/coupon.";
-import { useBundleQuery } from "@/hooks/useBundleApi";
 import { couponService } from "@/services/couponService";
 
 // const course = useCourseQuery() =;
@@ -88,8 +83,6 @@ export function AdminDashboard() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
-
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -109,30 +102,11 @@ export function AdminDashboard() {
       loadLessons();
       loadAuthors();
       loadUsers();
-      loadStatistics();
       loadCoupons();
-
     }
   }, [location.pathname]);
 
-  // 🔹 Load STATISTICS
-  const loadStatistics = async () => {
-    try {
-      const stats = await statisticsService.getDashboardStats();
-      setStatsData(stats);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load statistics",
-        variant: "destructive"
-      });
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
   // 🔹 Load USERS
-
   const loadUsers = async () => {
     try {
       const usersList = await userService.getAllUsers();
@@ -356,40 +330,6 @@ export function AdminDashboard() {
     }
   };
 
-  const statCards = [
-    {
-      title: "Total Revenue",
-      value: formatCurrency(statsData.totalRevenue),
-      description: "+20.1% from last month",
-      icon: DollarSign,
-    },
-    {
-      title: "Active Students",
-      value: statsData.activeStudents?.toLocaleString(),
-      description: "+180.1% from last month",
-      icon: Users,
-    },
-    {
-      title: "New Enrollments",
-      value: statsData.newEnrollments.toString(),
-      description: "+19% from last month",
-      icon: UserPlus,
-    },
-    {
-      title: "Total Courses",
-      value: courses.length.toString(),
-      description: `${courses.length} courses available`,
-      icon: BookOpen,
-    },
-
-    {
-      title: "Cohort Students",
-      value: statsData.cohortStudents.toString(),
-      description: "Students in cohorts",
-      icon: Calendar,
-    },
-  ];
-
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -457,9 +397,6 @@ export function AdminDashboard() {
               <TabsTrigger value="cohorts" className="flex-shrink-0">
                 Cohorts
               </TabsTrigger>
-              <TabsTrigger value="statistics" className="flex-shrink-0">
-                Statistics
-              </TabsTrigger>
               <TabsTrigger value="authors" className="flex-shrink-0">
                 Authors
               </TabsTrigger>
@@ -470,100 +407,6 @@ export function AdminDashboard() {
                 Coupon
               </TabsTrigger>
             </TabsList>
-
-
-            {/*  show STATISTICS cards */}
-            <TabsContent value="statistics">
-              {statsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : statsData ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                  {/* Total Revenue */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{formatCurrency(statsData.totalRevenue)}</div>
-                      <p className="text-xs text-muted-foreground">
-                        +{statsData.revenueGrowth}% from last month
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Active Students */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Active Students</CardTitle>
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statsData.activeStudents.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">
-                        +{statsData.activeStudentGrowth}% from last month
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* New Enrollments */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">New Enrollments</CardTitle>
-                      <UserPlus className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statsData.newEnrollments}</div>
-                      <p className="text-xs text-muted-foreground">
-                        +{statsData.enrollmentGrowth}% from last month
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Total Courses */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statsData.totalCourses}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {statsData.totalCourses} courses available
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Active Cohorts */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Active Cohorts</CardTitle>
-                      <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statsData.activeCohorts}</div>
-                      <p className="text-xs text-muted-foreground">Currently active cohorts</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Cohort Students */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Cohort Students</CardTitle>
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statsData.totalCohortStudents}</div>
-                      <p className="text-xs text-muted-foreground">Students across cohorts</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No statistics available</p>
-              )}
-            </TabsContent>
 
             <TabsContent value="lessons">
               <Card>
@@ -1211,30 +1054,6 @@ export function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {/* {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })} */}
-              </div>
             </TabsContent>
           </Tabs>
         </div>
