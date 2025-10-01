@@ -16,6 +16,7 @@ This document defines all the labels used for issues in the website. Consistent 
 | `payment`   | med-purple | Finance or money-related workflows |
 | `discussion` | teal  | For team-wide conversations, ideas, or decisions before implementation | 
 | `auth`       | stale-green | Related to user authentication, identity, and authorization workflows |
+| `security`   | gray  | Issues related to payment safety, fraud prevention, and secure data handling |
 ---
 
 ## 2. Priority / Status Labels
