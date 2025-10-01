@@ -19,8 +19,8 @@ export interface Cohort {
   title: string;
   description?: string;
   topics: Topic[];
-  startDate: Timestamp | FieldValue| Date | null;
-  endDate: Timestamp | FieldValue| Date | null;
+  startDate: Timestamp | FieldValue;
+  endDate: Timestamp | FieldValue;
   enrollmentOpen: boolean;
   price : number;
   // Optional metadata for enrollment control
@@ -33,8 +33,8 @@ export interface Cohort {
    enrollmentIds?: string[]; 
   
   // Auditing
-  createdAt: Timestamp | FieldValue | Date | null;
-  updatedAt: Timestamp | FieldValue | Date | null;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue ;
 }
 
 
@@ -63,8 +63,8 @@ export interface Course {
     cohorts: Cohort[];
     topics: Topic[];
     isEnrollmentPaused: boolean;
-    createdAt: Timestamp | FieldValue| Date | null ;
-    updatedAt: Timestamp | FieldValue| Date | null ;
+    createdAt: Timestamp | FieldValue ;
+    updatedAt: Timestamp | FieldValue ;
 };
 
 

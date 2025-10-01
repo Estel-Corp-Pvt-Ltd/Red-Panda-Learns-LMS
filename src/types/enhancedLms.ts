@@ -7,7 +7,7 @@ export interface AttachmentItem {
   type: 'pdf' | 'image' | 'document' | 'link';
   url: string;
   size?: number;
-  uploadedAt?: Timestamp | FieldValue | Date;
+  uploadedAt?: Timestamp | FieldValue ;
 }
 
 export interface VideoRuntime {
@@ -42,8 +42,8 @@ export interface UnifiedLesson {
   duration?: number;
   isPublished?: boolean;
   isPreview?: boolean;
-  createdAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
+  createdAt?: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue ;
   
   // TutorLMS fields (migrated data format)
   ID?: number;
@@ -78,8 +78,8 @@ export interface UnifiedTopic {
   isPublished?: boolean;
   estimatedDuration?: number;
   totalLessons?: number;
-  createdAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
+  createdAt?: Timestamp | FieldValue ;
+  updatedAt?: Timestamp | FieldValue ;
   
   // TutorLMS fields
   ID?: number | string;

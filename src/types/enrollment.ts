@@ -16,7 +16,7 @@ export interface Enrollment {
     userId: string;
     targetId: string;                // courseId OR bundleId
     targetType: EnrolledProgramType; // "course" or "bundle"
-    enrollmentDate: Timestamp | FieldValue | Date;
+    enrollmentDate: Timestamp | FieldValue ;
     status: EnrollmentStatus;
     role: UserRole;
 
@@ -34,6 +34,6 @@ export interface Enrollment {
         balance: number;
         transactionId?: string;
         provider: PaymentProvider;
-        paidAt?:Timestamp | FieldValue | Date;
+        paidAt?:Timestamp | FieldValue ;
     };
 }

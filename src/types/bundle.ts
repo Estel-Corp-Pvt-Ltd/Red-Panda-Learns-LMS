@@ -32,6 +32,6 @@ export interface Bundle {
   authorId: string;
   authorName: string;
   status: BundleStatus;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue ;
   updatedAt: Timestamp | FieldValue;
 };
