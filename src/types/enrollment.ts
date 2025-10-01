@@ -1,3 +1,4 @@
+import { Timestamp,FieldValue } from "firebase/firestore";
 import {
     Currency,
     EnrolledProgramType,
@@ -15,7 +16,7 @@ export interface Enrollment {
     userId: string;
     targetId: string;                // courseId OR bundleId
     targetType: EnrolledProgramType; // "course" or "bundle"
-    enrollmentDate: Date;
+    enrollmentDate: Timestamp | FieldValue;
     status: EnrollmentStatus;
     role: UserRole;
 

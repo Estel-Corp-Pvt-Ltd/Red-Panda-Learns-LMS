@@ -4,7 +4,9 @@ import { db } from '@/firebaseConfig';
 import { Course } from '@/types/course';
 import { Bundle, BundleEnrollment } from '@/types/bundle';
 import { bundleService } from './bundleService';
-
+import { serverTimestamp } from 'firebase/firestore';
+import { User } from '@/types/user';
+import { EnrolledProgramType } from '@/types/general';
 export interface Enrollment {
   id: string;
   userId: string;
@@ -35,6 +37,7 @@ class EnrollmentService {
   ): Promise<void> {
     try {
       const normalizedCourseId = this.normalizeCourseId(course?.id);
+      console.log(normalizedCourseId)
 
       // console.log('EnrollmentService - Starting enrollment:', {
       //   userId,
@@ -45,6 +48,7 @@ class EnrollmentService {
       // });
 
       const enrollmentId = `${userId}_${normalizedCourseId}`;
+      console.log(enrollmentId)
       const enrollment: Partial<Enrollment> = {
         id: enrollmentId,
         userId,
@@ -64,16 +68,28 @@ class EnrollmentService {
       if (paymentProvider) {
         enrollment.paymentProvider = paymentProvider;
       }
-
+      console.log(enrollment)
+      const targetId = normalizedCourseId; 
+const targetType: EnrolledProgramType = "COURSE";
       // Create enrollment document
       await setDoc(doc(db, 'enrollments', enrollmentId), enrollment as Enrollment);
+      console.log("SET DOC HOGAYA")
       // console.log('EnrollmentService - Enrollment document created:', enrollmentId);
+      
 
-      // Update user's enrollments with normalized course ID
-      const userDocRef = doc(db, 'users', userId);
-      await updateDoc(userDocRef, {
-        enrollments: arrayUnion(normalizedCourseId),
-      });
+
+        try{
+    const userDocRef = doc(db, "Users", userId);
+
+await updateDoc(userDocRef, {
+  enrollments: arrayUnion({ targetId, targetType }) as unknown as User["enrollments"],
+  updatedAt: serverTimestamp() as unknown as Date,
+});
+    }
+    catch(error){
+      console.log("Heyy this is error",error)
+    }
+      
 
       // console.log('EnrollmentService - User enrolled successfully:', {
       //   enrollmentId,

@@ -427,6 +427,10 @@ const loadCoupons = async () => {
               <Calendar className="mr-2 h-4 w-4" />
               Create New Cohort
             </Button>
+             <Button onClick={() => navigate("/admin/create-coupon")}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Create New Coupon
+            </Button>
           </div>
         </div>
 
