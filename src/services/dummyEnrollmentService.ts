@@ -8,7 +8,8 @@ import {
   deleteDoc,
   updateDoc,
   arrayUnion,
-  getDoc
+  getDoc,
+  serverTimestamp
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -40,7 +41,7 @@ class EnrollmentService {
     return {
       courseId,
       currentLessonId: currentLessonId || null,
-      lastAccessed: new Date(),
+      lastAccessed: serverTimestamp() ,
       completedLessons: 0,
       lessonHistory: [],
       totalLessons: 0,
@@ -65,7 +66,7 @@ class EnrollmentService {
   ): Promise<string> {
     try {
       const enrollmentId = this.generateEnrollmentId(userId, targetId);
-      const now = new Date();
+      const now = serverTimestamp() ;
 
       let enrollment: Enrollment;
 

@@ -1,4 +1,5 @@
 import { CourseStatus, PricingModel } from "./general";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export interface TopicItem {
     id: string;
@@ -18,8 +19,8 @@ export interface Cohort {
   title: string;
   description?: string;
   topics: Topic[];
-  startDate: Date;
-  endDate: Date;
+  startDate: Timestamp | FieldValue;
+  endDate: Timestamp | FieldValue;
   enrollmentOpen: boolean;
   price : number;
   // Optional metadata for enrollment control
@@ -32,8 +33,8 @@ export interface Cohort {
    enrollmentIds?: string[]; 
   
   // Auditing
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue ;
 }
 
 
@@ -62,8 +63,8 @@ export interface Course {
     cohorts: Cohort[];
     topics: Topic[];
     isEnrollmentPaused: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: Timestamp | FieldValue ;
+    updatedAt: Timestamp | FieldValue ;
 };
 
 

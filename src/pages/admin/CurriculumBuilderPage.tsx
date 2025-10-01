@@ -52,6 +52,7 @@ import {
 import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
+import { serverTimestamp } from "firebase/firestore";
 
 type SortableItemProps = {
   id: string;
@@ -462,7 +463,7 @@ const CurriculumBuilderPage = () => {
                   id: item.id,
                   title: item.title,
                   topics: cohortTopics,
-                  updatedAt: new Date(),
+                  updatedAt:new Date(),
                 });
               } else if (item.type === LEARNING_UNIT.TOPIC) {
                 const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
