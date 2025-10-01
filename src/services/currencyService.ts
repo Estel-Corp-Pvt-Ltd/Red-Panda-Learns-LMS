@@ -304,9 +304,9 @@ class CurrencyService {
  * isCacheValid(cached); // true, since it's within the 4h cache window
  * ```
  */
-  private isCacheValid(cachedRate: CurrencyRate): boolean {
+  private isCacheValid(cachedTime: CurrencyRate): boolean {
   const now = Date.now();
-  const date = toDateSafe(cachedRate.createdAt);
+  const date = toDateSafe(cachedTime.createdAt);
 
   // Safeguard against invalid or null
   if (!date || isNaN(date.getTime())) return false;

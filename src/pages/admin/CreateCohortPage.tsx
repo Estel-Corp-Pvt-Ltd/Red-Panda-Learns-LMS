@@ -7,6 +7,7 @@ import {
 import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
+import { toDateSafe } from "@/utils/date-time";
 import { formatDate } from "@/utils/date-time";
 import { serverTimestamp } from "firebase/firestore";
 import { useSortable } from "@dnd-kit/sortable";
@@ -112,8 +113,8 @@ const CohortBuilderPage = () => {
         setTitle(cohortData.title);
         setDescription(cohortData.description || "");
         setPrice(cohortData.price);
-        setStartDate(formatDate(cohortData.startDate));
-        setEndDate(cohortData.endDate);
+       setStartDate(toDateSafe(cohortData.startDate));
+setEndDate(toDateSafe(cohortData.endDate));
         setEnrollmentOpen(cohortData.enrollmentOpen);
         setMaxStudents(cohortData.maxStudents);
         setCurriculum(getFlatCurriculum(cohortData.topics || []));

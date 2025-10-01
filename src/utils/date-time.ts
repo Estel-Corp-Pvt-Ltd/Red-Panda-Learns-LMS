@@ -1,21 +1,27 @@
 import { Timestamp, FieldValue } from "firebase/firestore";
+import { parseISO, isValid } from "date-fns";
 
 /**
- * Convert Firestore Timestamp / FieldValue / Date / null → JS Date | null
+ * Safely convert values (Date | Firestore Timestamp | ISO string | null) → JS Date | null
+ */
+/**
+ * Normalize Timestamp / Date / ISO string / null → safe Date
  */
 export const toDateSafe = (
-  val: Date | Timestamp | FieldValue | string | number | null | undefined
+  val: Date | Timestamp | FieldValue | string | null | undefined
 ): Date | null => {
   if (!val) return null;
 
   if (val instanceof Timestamp) return val.toDate();
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-  if (typeof val === "string" || typeof val === "number") {
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? null : d;
+
+  if (typeof val === "string") {
+    // Only accept ISO‑8601 strings, reject “02/30/2024”-like formats
+    const d = parseISO(val);
+    return isValid(d) ? d : null;
   }
 
-  // For FieldValue sentinels (like serverTimestamp())
+  // FieldValue or anything else → not a usable date
   return null;
 };
 
@@ -23,7 +29,7 @@ export const toDateSafe = (
  * Format a date to a localized string
  */
 export const formatDate = (
-  val: Date | Timestamp | FieldValue | string | number | null | undefined,
+  val: Date | Timestamp | FieldValue | string | null | undefined,
   options?: Intl.DateTimeFormatOptions
 ): string => {
   const date = toDateSafe(val);
@@ -35,10 +41,14 @@ export const formatDate = (
     day: "numeric",
   }).format(date);
 };
+
 /**
  * Format a date to a localized string including time
  */
-export const formatDateTime = (val: any, options?: Intl.DateTimeFormatOptions): string => {
+export const formatDateTime = (
+  val: Date | Timestamp | FieldValue | string | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string => {
   const date = toDateSafe(val);
   if (!date) return "—";
 
@@ -54,7 +64,10 @@ export const formatDateTime = (val: any, options?: Intl.DateTimeFormatOptions): 
 /**
  * Format only time
  */
-export const formatTime = (val: any, options?: Intl.DateTimeFormatOptions): string => {
+export const formatTime = (
+  val: Date | Timestamp | FieldValue | string | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string => {
   const date = toDateSafe(val);
   if (!date) return "—";
 

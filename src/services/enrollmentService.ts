@@ -10,7 +10,7 @@ export interface Enrollment {
   id: string;
   userId: string;
   courseId: string;
-  enrolledAt: Timestamp | FieldValue | Date;
+  enrolledAt: Timestamp | FieldValue ;
   paymentId?: string;
   paymentProvider?: string;
   amount: number;

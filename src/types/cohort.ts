@@ -8,8 +8,8 @@ export interface Cohort {
   price: number;
   currency: 'INR' | 'USD';
   startDate: Timestamp | FieldValue;
-  endDate: Timestamp | FieldValue | Date | null;
-  enrollmentDeadline: Timestamp | FieldValue|Date|null;
+  endDate: Timestamp | FieldValue ;
+  enrollmentDeadline: Timestamp ;
   maxStudents: number;
   currentEnrollments: number;
   status: 'draft' | 'open' | 'in-progress' | 'completed' | 'cancelled';
