@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PaymentProvider } from "@/types/general";
 import { PAYMENT_PROVIDER } from "@/constants";
 import { Header } from "@/components/Header";
+import { enrollmentService } from "@/services/dummyEnrollmentService";
 export default function CheckoutPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ export default function CheckoutPage() {
 
   const { data: course, isLoading } = useCourseQuery(courseId!);
   const providers = paymentService.getAvailableProviders();
+  const [isUserEnrolled,setUserIsEnrolled] = useState(false)
+
 
   useEffect(() => {
     if (!user) {
@@ -40,13 +43,27 @@ export default function CheckoutPage() {
     }
   }, [user, courseId, navigate]);
 
-  // Check if already enrolled
-  useEffect(() => {
-    if (course && user && isEnrolled(course.id)) {
-      console.log('CheckoutPage - User already enrolled, redirecting to course');
-      navigate(`/course/${courseId}`);
+
+useEffect(() => {
+  const checkUserEnrollment = async () => {
+    if (user && courseId) {
+      const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
+      console.log("✅ isUserEnrolled returned:", enrolled);
+      setUserIsEnrolled(enrolled);
     }
-  }, [course, user, isEnrolled, courseId, navigate]);
+  };
+
+  checkUserEnrollment();
+}, [user, courseId]); // <-- dependencies
+
+
+useEffect(() => {
+  if (isUserEnrolled) {
+    console.log('CheckoutPage - User already enrolled, redirecting to course');
+    navigate(`/course/${courseId}`);
+  }
+}, [course, user, isEnrolled, courseId, navigate]);
+
 
   useEffect(() => {
     if (course && selectedProvider) {

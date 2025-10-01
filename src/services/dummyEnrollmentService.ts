@@ -28,9 +28,9 @@ class EnrollmentService {
   /**
    * Generates a unique enrollment ID in the format: <targetId>_<userId>
    */
-  private generateEnrollmentId(userId: string, targetId: string): string {
-    return `${targetId}_${userId}`;
-  }
+ private generateEnrollmentId(userId: string, targetId: string): string {
+  return `${userId}_${targetId}`; // instead of targetId_userId
+}
 
   /**
    * Creates a fresh course-level progress object
@@ -153,37 +153,39 @@ class EnrollmentService {
     }
   }
 
-  /**
-   * Checks if a user is enrolled in a specific course/bundle.
-   */
-  async isUserEnrolled(userId: string, targetId: string): Promise<boolean> {
-    try {
-      const enrollmentId = this.generateEnrollmentId(userId, targetId);
-      const enrollmentDoc = await getDoc(doc(db, "Enrollments", enrollmentId));
 
-      if (
-        enrollmentDoc.exists() &&
-        enrollmentDoc.data()?.status === ENROLLMENT_STATUS.ACTIVE
-      ) {
-        return true;
-      }
+async isUserEnrolled(userId: string, targetId: string): Promise<boolean> {
+  try {
+    const enrollmentId = this.generateEnrollmentId(userId, targetId);
+    const enrollmentDoc = await getDoc(doc(db, "Enrollments", enrollmentId));
 
-      // If not, check if part of a bundle
-      const q = query(
-        collection(db, "Enrollments"),
-        where("userId", "==", userId),
-        where("targetType", "==", ENROLLED_PROGRAM_TYPE.BUNDLE),
-        where("status", "==", ENROLLMENT_STATUS.ACTIVE),
-        where("bundleCourseIds", "array-contains", targetId)
-      );
+    console.log("arbaaaaaaaaaaaa", targetId);
+    console.log("EnrollmentDoc snapshot:", enrollmentDoc);
 
-      const bundleSnapshot = await getDocs(q);
-      return !bundleSnapshot.empty;
-    } catch (err) {
-      console.error("EnrollmentService - Error checking enrollment:", err);
-      return false;
+    if (enrollmentDoc.exists()) {
+      console.log("EnrollmentDoc data:", enrollmentDoc.data());
+      return true; // ✅ only return true if enrollmentDoc exists
+    } else {
+      console.log("No enrollment found for id:", enrollmentId);
     }
+
+    // If not, check if part of a bundle
+    const q = query(
+      collection(db, "Enrollments"),
+      where("userId", "==", userId),
+      where("targetType", "==", ENROLLED_PROGRAM_TYPE.BUNDLE),
+      where("status", "==", ENROLLMENT_STATUS.ACTIVE),
+      where("bundleCourseIds", "array-contains", targetId)
+    );
+
+    const bundleSnapshot = await getDocs(q);
+    return !bundleSnapshot.empty;
+  } catch (err) {
+    console.error("EnrollmentService - Error checking enrollment:", err);
+    return false;
   }
+}
+
 
   /**
    * Gets all active enrollments for a user.
@@ -197,9 +199,9 @@ class EnrollmentService {
       );
 
       const querySnapshot = await getDocs(q);
-
       return querySnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
+        // console.log("It the data",data)
         return {
           ...data,
           enrollmentDate: data.enrollmentDate?.toDate?.() || null,

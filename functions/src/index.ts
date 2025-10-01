@@ -50,11 +50,13 @@ function validateCurrency(currency: any): string {
 export const createOrder = onRequest(
   { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
   async (req, res) => {
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+   res.set("Access-Control-Allow-Origin", "*");
+res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-    if (req.method === "OPTIONS") { res.status(204).send(""); return;}
+if (req.method === "OPTIONS") {
+   res.status(204).send(""); return; // ✅ preflight ends here
+}
     if (req.method !== "POST")  { res.status(405).send("Method not allowed"); return;}
 
     try {
@@ -106,11 +108,14 @@ export const createOrder = onRequest(
         key_id: razorpayKeyId.value(), // safe to expose
       })
       return;
-    } catch (err) {
-      logger.error("❌ Failed to create Razorpay order:", err);
-       res.status(500).json({ success: false, error: "Failed to create order" });
-       return;
-    }
+    } catch (err: any) {
+  console.error("❌ Failed to create Razorpay order hehe:", err?.message, err);
+  res.status(500).json({ 
+    success: false, 
+    error: err?.message || "Failed to create order" 
+  });
+  return;
+}
   }
 );
 

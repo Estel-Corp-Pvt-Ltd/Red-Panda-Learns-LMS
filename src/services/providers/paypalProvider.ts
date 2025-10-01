@@ -1,9 +1,8 @@
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
-import { enrollmentService } from '../enrollmentService';
+import { enrollmentService } from '@/services/dummyEnrollmentService';
 import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
-
 export interface PayPalOrder {
   id: string;
   status: string;
@@ -103,7 +102,7 @@ script.src = `https://www.${
               try {
                 await enrollmentService.enrollUser(
                   userId,
-                  course,
+                 course.id, // ✅ targetId is a string
                   order.purchase_units[0].payments.captures[0].id,
                   'paypal'
                 );
