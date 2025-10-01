@@ -283,18 +283,18 @@ useEffect(() => {
                     />
                     <div>
                       <span className="font-medium flex items-center gap-2">
-                        {provider.displayName}
+                     
                         {/* Provider Logo */}
                         {provider.id === PAYMENT_PROVIDER.RAZORPAY && (
                           <img
-                            src="/assets/razorpay-icon.svg"
+                            src="/razorpay-icon.svg"
                             alt="Razorpay"
                             className="h-5"
                           />
                         )}
                         {provider.id === PAYMENT_PROVIDER.PAYPAL && (
                           <img
-                            src="/assets/paypal-icon.svg"
+                            src="/paypal-icon.svg"
                             alt="PayPal"
                             className="h-5"
                           />

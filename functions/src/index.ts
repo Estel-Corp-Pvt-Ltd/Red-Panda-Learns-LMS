@@ -3,8 +3,8 @@ import * as logger from "firebase-functions/logger";
 import { defineSecret } from "firebase-functions/params";
 // Correct Node.js crypto import
 import * as crypto from "crypto";
-import { transactionService } from "../../src/services/transactionService";
-import { PAYMENT_PROVIDER } from "../../src/constants"
+// import { transactionService } from "../../src/services/transactionService";
+// import { PAYMENT_PROVIDER } from "../../src/constants"
 const recaptchaSecret = defineSecret("RECAPTCHA_SECRET");
 
 
@@ -18,22 +18,24 @@ const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
 
 
 
-
-function ValidateAmount(amount : any):number {
-
-  if (typeof amount !== "number" || isNaN(amount)){
-    throw new Error ("Invalid amount : must be a number")
+function validateAmount(amount: any): number {
+  if (typeof amount !== "number" || isNaN(amount)) {
+    throw new Error("Invalid amount: must be a number");
   }
 
-  if (amount <= 0 ){
-
-    throw new Error ("Invalid Amount : Must be Positive Integer")
+  if (amount <= 0) {
+    throw new Error("Invalid amount: must be a positive integer");
   }
-  if (!Number.isInteger (amount)){
-    throw new Error ("Number must be a integer")
-  }
-return amount
 
+  if (amount >= 1000000) {
+    throw new Error("Invalid amount: exceeds maximum allowed");
+  }
+
+  if (!Number.isInteger(amount)) {
+    throw new Error("Invalid amount: must be an integer");
+  }
+
+  return amount;
 }
 
 
@@ -55,12 +57,15 @@ export const createOrder = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS")  res.status(204).send("");
-    if (req.method !== "POST")  res.status(405).send("Method not allowed");
+    if (req.method === "OPTIONS"){  res.status(204).send(""); return};
+    if (req.method !== "POST") { res.status(405).send("Method not allowed");return};
 
     try {
-      const { amount, currency, receipt } = req.body;
+      const { rawamount, rawcurrency, receipt } = req.body;
 
+      const amountinpaise = Math.round(rawamount * 100);
+      const amount = validateAmount(amountinpaise)
+      const currency = validateCurrency(rawcurrency)
       const instance = new Razorpay({
         key_id: razorpayKeyId.value(),
         key_secret: razorpayKeySecret.value(),
@@ -78,10 +83,12 @@ export const createOrder = onRequest(
         success: true,
         order,
         key_id: razorpayKeyId.value(), // send only public key to client
-      });
+      })
+      return;
     } catch (err) {
       logger.error("❌ Failed to create Razorpay order:", err);
       res.status(500).json({ success: false, error: "Failed to create order" });
+      return;
     }
   }
 );
@@ -96,8 +103,8 @@ export const verifyPayment = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS")  res.status(204).send("");
-    if (req.method !== "POST")  res.status(405).send("Method not allowed");
+    if (req.method === "OPTIONS") { res.status(204).send("");return};
+    if (req.method !== "POST")  {res.status(405).send("Method not allowed");return};
 
     try {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature, transaction_id } = req.body;
@@ -115,10 +122,12 @@ export const verifyPayment = onRequest(
       } else {
         logger.warn("❌ Invalid signature");
          res.status(400).json({ success: false, error: "Invalid signature" });
+         return;
       }
     } catch (err) {
       logger.error("❌ Verification error:", err);
       res.status(500).json({ success: false, error: "Server error" });
+      return;
     }
   }
 );
@@ -163,14 +172,19 @@ export const createPaypalOrder = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS")  res.status(204).send("");
-    if (req.method !== "POST")
+    if (req.method === "OPTIONS"){ 
+       res.status(204).send("")
+      ;return;};
+    if (req.method !== "POST"){
+
        res.status(405).json({ success: false, message: "Method not allowed" });
+      return;
+      };
 
     try {
       const { rawamount, rawcurrency, description, transactionId } = req.body;
 
-      const amount = ValidateAmount(rawamount)
+      const amount = validateAmount(rawamount)
       const currency = validateCurrency(rawcurrency)
       const accessToken = await generateAccessToken();
       const base = "https://api-m.sandbox.paypal.com"; // sandbox by default
@@ -208,9 +222,11 @@ export const createPaypalOrder = onRequest(
         order,
         clientId: paypalClientId.value(), // safe to expose clientId
       });
+      return;
     } catch (err) {
       logger.error("❌ Failed to create PayPal order:", err);
       res.status(500).json({ success: false, error: "Failed to create order" });
+      return;
     }
   }
 );
@@ -223,9 +239,14 @@ export const capturePaypalOrder = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS")  res.status(204).send("");
-    if (req.method !== "POST")
+    if (req.method === "OPTIONS") { 
+      res.status(204).send("");
+      return;
+    };
+    if (req.method !== "POST"){
        res.status(405).json({ success: false, message: "Method not allowed" });
+      return;
+      };
 
     try {
       const { orderId } = req.body;
@@ -250,12 +271,15 @@ export const capturePaypalOrder = onRequest(
 
       if (captureResponse.ok) {
    res.json({ success: true, capture: captureData });
+   return;
       } else {
         res.status(400).json({ success: false, error: captureData });
+        return;
       }
     } catch (err) {
       logger.error("❌ Failed to capture PayPal order:", err);
       res.status(500).json({ success: false, error: "Failed to capture order" });
+      return;
     }
   }
 );
@@ -283,12 +307,12 @@ export const verifyRecaptcha = onRequest(
 
     if (req.method === "OPTIONS") {
       res.status(204).send("");
-      ;
+      return;
     }
 
     if (req.method !== "POST") {
       res.status(405).json({ success: false, message: "Method Not Allowed" });
-      ;
+      return;
     }
 
     try {
@@ -296,7 +320,8 @@ export const verifyRecaptcha = onRequest(
       logger.info("👉 Incoming body:", req.body);
 
       if (!token) {
-        res.status(400).json({ success: false, message: "Missing token" });
+        res.status(400).json({ success: false, message: "Missing token" })
+        return;
         ;
       }
 
@@ -334,6 +359,7 @@ export const verifyRecaptcha = onRequest(
     } catch (err) {
       logger.error("❌ reCAPTCHA backend error:", err);
       res.status(500).json({ success: false, message: "Server error" });
+      return;
     }
   }
 );
