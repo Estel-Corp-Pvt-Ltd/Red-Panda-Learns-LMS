@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import { formatDate } from "@/utils/date-time";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -744,9 +745,9 @@ export function AdminDashboard() {
 
                             {/* End date */}
                             <TableCell>
-                              <div className="text-sm">
-                                {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
-                              </div>
+                             <div className="text-sm">
+  {cohort.startDate ? formatDate(cohort.startDate) : "No start date"}
+</div>
                             </TableCell>
 
                             {/* Enrollment open status */}

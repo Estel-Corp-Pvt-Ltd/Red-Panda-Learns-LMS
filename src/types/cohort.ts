@@ -1,3 +1,5 @@
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+
 export interface Cohort {
   id: string;
   courseId: string;
@@ -5,24 +7,24 @@ export interface Cohort {
   description?: string;
   price: number;
   currency: 'INR' | 'USD';
-  startDate: Date;
-  endDate: Date;
-  enrollmentDeadline: Date;
+  startDate: Timestamp | FieldValue;
+  endDate: Timestamp | FieldValue | Date | null;
+  enrollmentDeadline: Timestamp | FieldValue|Date|null;
   maxStudents: number;
   currentEnrollments: number;
   status: 'draft' | 'open' | 'in-progress' | 'completed' | 'cancelled';
   instructorId: string;
   weeklySchedule: WeeklyModule[];
   liveSessionSchedule: LiveSession[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
 }
 
 export interface WeeklyModule {
   weekNumber: number;
   title: string;
   description?: string;
-  unlockDate: Date;
+  unlockDate: Timestamp | FieldValue;
   topicIds: string[];
   assignmentIds?: string[];
   isRequired: boolean;
@@ -33,7 +35,7 @@ export interface LiveSession {
   id: string;
   title: string;
   description?: string;
-  scheduledDate: Date;
+  scheduledDate:Timestamp | FieldValue;
   duration: number; // in minutes
   meetingLink?: string;
   recordingLink?: string;
@@ -47,7 +49,7 @@ export interface CohortEnrollment {
   userId: string;
   cohortId: string;
   courseId: string;
-  enrollmentDate: Date;
+  enrollmentDate: Timestamp | FieldValue;
   paymentId?: string;
   paymentProvider?: string;
   status: 'active' | 'completed' | 'dropped' | 'suspended';
@@ -64,11 +66,11 @@ export interface CohortProgress {
     weekNumber: number;
     isUnlocked: boolean;
     isCompleted: boolean;
-    completionDate?: Date;
+    completionDate?: Timestamp | FieldValue;
     lessonsCompleted: number;
     totalLessons: number;
   }[];
-  lastActivityDate: Date;
+  lastActivityDate: Timestamp | FieldValue;
 }
 
 export interface Assignment {
@@ -78,7 +80,7 @@ export interface Assignment {
   title: string;
   description: string;
   instructions: string;
-  dueDate: Date;
+  dueDate: Timestamp | FieldValue;
   maxPoints: number;
   submissionType: 'text' | 'file' | 'link' | 'code';
   isRequired: boolean;
@@ -108,8 +110,8 @@ export interface CohortNotification {
   type: 'announcement' | 'reminder' | 'content-unlock' | 'assignment-due' | 'session-starting';
   title: string;
   message: string;
-  scheduledDate: Date;
-  sentDate?: Date;
+  scheduledDate: Timestamp | FieldValue;
+  sentDate?: Timestamp | FieldValue;
   isRead: boolean;
   priority: 'low' | 'medium' | 'high';
 }

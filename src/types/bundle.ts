@@ -1,10 +1,12 @@
 import { BundleStatus, PricingModel } from "./general";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+
 
 export interface BundleEnrollment {
   id: string;
   userId: string;
   bundleId: string;
-  enrolledAt: Date;
+  enrolledAt: Timestamp | FieldValue;
   paymentId?: string;
   paymentProvider?: string;
   amount: number;
@@ -30,6 +32,6 @@ export interface Bundle {
   authorId: string;
   authorName: string;
   status: BundleStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
 };

@@ -8,7 +8,8 @@ import {
     deleteDoc,
     runTransaction,
     query,
-    where
+    where,
+    serverTimestamp
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
@@ -81,8 +82,8 @@ class LessonService {
                 embedUrl: data.embedUrl || '',
                 scope: data.scope,
                 durationSeconds: data.durationSeconds ?? 0,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdAt: serverTimestamp(),
+                updatedAt:serverTimestamp(),
             };
 
             await setDoc(doc(db, 'Lessons', lessonId), lesson);
@@ -130,7 +131,7 @@ class LessonService {
             const lessonData = lessonDoc.data() as Lesson;
 
             const updateData: Partial<Lesson> = {
-                updatedAt: new Date(),
+                updatedAt: serverTimestamp(),
             };
 
             if (updates.title) updateData.title = updates.title;

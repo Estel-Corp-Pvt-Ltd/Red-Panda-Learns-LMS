@@ -7,6 +7,8 @@ import {
 import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
+import { formatDate } from "@/utils/date-time";
+import { serverTimestamp } from "firebase/firestore";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, FolderOpen, Edit2, Trash2, GripVertical, Save, BookOpen, Unlock, Lock, Users } from "lucide-react";
@@ -110,7 +112,7 @@ const CohortBuilderPage = () => {
         setTitle(cohortData.title);
         setDescription(cohortData.description || "");
         setPrice(cohortData.price);
-        setStartDate(cohortData.startDate);
+        setStartDate(formatDate(cohortData.startDate));
         setEndDate(cohortData.endDate);
         setEnrollmentOpen(cohortData.enrollmentOpen);
         setMaxStudents(cohortData.maxStudents);

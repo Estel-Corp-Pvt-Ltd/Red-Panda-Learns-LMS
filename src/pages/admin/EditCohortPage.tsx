@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { toDateSafe } from '@/utils/date-time';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
@@ -140,50 +141,49 @@ export function EditCohortPage() {
   };
 
   const onSubmit = async (data: CohortFormData) => {
-    if (!cohortId) return;
-    
-    setIsLoading(true);
-    try {
-      // Convert date strings to Date objects
-      const cohortData = {
-        courseId: data.courseId,
-        name: data.name,
-        description: data.description || '',
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        enrollmentDeadline: new Date(data.enrollmentDeadline),
-        maxStudents: data.maxStudents,
-        status: data.status,
-        instructorId: data.instructorId,
-        weeklySchedule: data.weeklySchedule.map(week => ({
-          ...week,
-          unlockDate: new Date(week.unlockDate),
-          isRequired: true
-        })) as WeeklyModule[],
-        liveSessionSchedule: data.liveSessionSchedule.map(session => ({
-          ...session,
-          scheduledDate: new Date(session.scheduledDate)
-        })) as LiveSession[]
-      };
+  if (!cohortId) return;
+  
+  setIsLoading(true);
+  try {
+    const cohortData = {
+      courseId: data.courseId,
+      name: data.name,
+      description: data.description || '',
+      startDate: toDateSafe(data.startDate),
+      endDate: toDateSafe(data.endDate),
+      enrollmentDeadline: toDateSafe(data.enrollmentDeadline),
+      maxStudents: data.maxStudents,
+      status: data.status,
+      instructorId: data.instructorId,
+      weeklySchedule: data.weeklySchedule.map(week => ({
+        ...week,
+        unlockDate: toDateSafe(week.unlockDate),
+        isRequired: true
+      })) as WeeklyModule[],
+      liveSessionSchedule: data.liveSessionSchedule.map(session => ({
+        ...session,
+        scheduledDate: toDateSafe(session.scheduledDate)
+      })) as LiveSession[]
+    };
 
-      await cohortService.updateCohort(cohortId, cohortData);
-      
-      toast({
-        title: 'Success',
-        description: 'Cohort updated successfully'
-      });
-      
-      navigate(`/admin/cohort/${cohortId}`);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update cohort',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    await cohortService.updateCohort(cohortId, cohortData);
+    
+    toast({
+      title: 'Success',
+      description: 'Cohort updated successfully'
+    });
+    
+    navigate(`/admin/cohort/${cohortId}`);
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description: 'Failed to update cohort',
+      variant: 'destructive'
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const addWeek = () => {
     const nextWeekNumber = weekFields.length + 1;

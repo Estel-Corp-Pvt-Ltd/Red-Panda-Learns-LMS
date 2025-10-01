@@ -89,5 +89,5 @@ export type CurrencyRate = {
   rate: number;             // average or closing rate for the day
   date: string;             // YYYY-MM-DD (represents the snapshot day)
   source: string;           // e.g. "ECB", "Fixer.io", "CurrencyLayer"
-  createdAt: Date | string; // when this snapshot was stored
+  createdAt: Timestamp| FieldValue; // when this snapshot was stored
 };

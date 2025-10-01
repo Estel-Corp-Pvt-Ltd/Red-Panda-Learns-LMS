@@ -10,6 +10,7 @@ import {
     deleteDoc,
     runTransaction,
     WhereFilterOp,
+    serverTimestamp,
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
@@ -62,8 +63,8 @@ class UserService {
                 enrollments: [],
                 organizationId: data.organizationId || '',
                 photoURL: data.photoURL || '',
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
             };
 
             await setDoc(doc(db, 'Users', userId), user);
@@ -89,7 +90,7 @@ class UserService {
             }
 
             const updateData: Partial<User> = {
-                updatedAt: new Date(),
+                updatedAt:serverTimestamp(),    
                 ...updates,
             };
 
@@ -207,7 +208,7 @@ class UserService {
     async changeUserRole(userId: string, newRole: UserRole): Promise<void> {
         try {
             const userRef = doc(db, 'Users', userId);
-            await updateDoc(userRef, { role: newRole, updatedAt: new Date() });
+            await updateDoc(userRef, { role: newRole, updatedAt: serverTimestamp() });
             console.log('UserService - User role updated successfully:', userId);
         } catch (error) {
             console.error('UserService - Error changing user role:', error);
@@ -224,7 +225,7 @@ class UserService {
     ): Promise<void> {
         try {
             const userRef = doc(db, 'Users', userId);
-            await updateDoc(userRef, { status: newStatus, updatedAt: new Date() });
+            await updateDoc(userRef, { status: newStatus, updatedAt:serverTimestamp() });
             console.log('UserService - User status updated successfully:', userId, newStatus);
         } catch (error) {
             console.error('UserService - Error changing user status:', error);

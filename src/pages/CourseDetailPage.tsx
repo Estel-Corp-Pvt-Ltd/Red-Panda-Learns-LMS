@@ -7,6 +7,7 @@ import {
   Share2,
   Bookmark,
 } from "lucide-react";
+import { formatDate } from "@/utils/date-time";
 import { Header } from "@/components/Header";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -369,7 +370,10 @@ export default function CourseDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">
-                      {new Date(course.updatedAt).toLocaleDateString()}
+                      <span className="font-medium">
+  {formatDate(course.updatedAt)}
+</span>
+                      
                     </span>
                   </div>
                 </div>

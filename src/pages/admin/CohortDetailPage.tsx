@@ -21,6 +21,7 @@ import {
   Calendar,
   GripVertical, // For SortableItem
 } from "lucide-react";
+import { toDateSafe } from "@/utils/date-time";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -49,6 +50,7 @@ import { LEARNING_UNIT } from "@/constants"; // Assuming LEARNING_UNIT enum is h
 import { LearningUnit } from "@/types/general"; // Assuming LearningUnit type is here
 import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal"; // Assuming this modal exists
 import { Lesson } from "@/types/lesson"; // Assuming Lesson type is here
+import { serverTimestamp } from "firebase/firestore";
 
 // --- Sortable Item Components (Reused from CurriculumBuilderPage) ---
 interface SortableItemProps {
@@ -346,7 +348,7 @@ const CohortDetailPage = () => {
       await cohortService.updateCohort(cohortId, cohortUpdateData);
       console.log(cohortUpdateData)
       // Update local cohort state to reflect saved changes
-      setCohort(prev => prev ? { ...prev, ...cohortUpdateData, updatedAt: new Date() } : null);
+      setCohort(prev => prev ? { ...prev, ...cohortUpdateData, updatedAt: serverTimestamp() } : null);
       setEditing(false); // Exit edit mode
       
       toast({
@@ -366,24 +368,24 @@ const CohortDetailPage = () => {
 
   // --- Cancel Edit ---
   const handleCancel = () => {
-    if (!cohort) return;
+  if (!cohort) return;
 
-    // Reset form state to original cohort data
-    setTitle(cohort.title);
-    setDescription(cohort.description || "");
-    setPrice(cohort.price);
-    setStartDate(cohort.startDate);
-    setEndDate(cohort.endDate);
-    setEnrollmentOpen(cohort.enrollmentOpen);
-    setMaxStudents(cohort.maxStudents);
+  // Reset form state to original cohort data
+  setTitle(cohort.title);
+  setDescription(cohort.description || "");
+  setPrice(cohort.price);
+  setStartDate(toDateSafe(cohort.startDate));
+  setEndDate(toDateSafe(cohort.endDate));
+setEnrollmentOpen(cohort.enrollmentOpen ?? false);
+  setMaxStudents(cohort.maxStudents);
 
-    // Reset curriculum state to original cohort data
-    setCurriculum(getFlatCurriculum(cohort.topics || []));
-    setEditingTopicId(null);
-    setNewTopicName("");
+  // Reset curriculum state to original cohort data
+  setCurriculum(getFlatCurriculum(cohort.topics || []));
+  setEditingTopicId(null);
+  setNewTopicName("");
 
-    setEditing(false); // Exit edit mode
-  };
+  setEditing(false); // Exit edit mode
+};
 
   if (loading) {
     return (
