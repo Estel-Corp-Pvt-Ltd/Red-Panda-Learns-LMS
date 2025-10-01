@@ -403,7 +403,7 @@ const CurriculumBuilderPage = () => {
               title: item.title,
               topics: cohortTopics,
               updatedAt: new Date(),
-              createdAt: new Date (),
+              createdAt: new Date(),
               startDate: new Date(),
               endDate: new Date(),
               enrollmentOpen: true
@@ -463,7 +463,7 @@ const CurriculumBuilderPage = () => {
                   id: item.id,
                   title: item.title,
                   topics: cohortTopics,
-                  updatedAt:new Date (),
+                  updatedAt:new Date(),
                 });
               } else if (item.type === LEARNING_UNIT.TOPIC) {
                 const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
