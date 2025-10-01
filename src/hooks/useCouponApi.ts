@@ -1,8 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Coupon } from '@/types/coupon.';
-import { couponsApi
-    
- } from '@/lib/couponapi';
+import { Coupon } from '@/types/coupon';
+import { couponsApi } from '@/lib/couponapi';
 // Query Keys
 export const couponQueryKeys = {
   coupons: ['coupons'] as const,

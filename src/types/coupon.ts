@@ -1,33 +1,28 @@
 import { Timestamp } from "firebase/firestore";
-
-export enum CouponStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  EXPIRED = 'expired',
-}
+import { CouponStatus } from "./general";
 
 export interface Coupon {
   id: string;
-  code: string; 
-  expiryDate: Timestamp;
+  code: string;
+  expiryDate: Date;
   discountPercentage: number;
   status: CouponStatus;
   usageLimit: number;
   linkedCourseIds: string[];
-  linkedBundleIds:string[];
-  linkedCohortIds:string[];
-  createdById: string; 
-  createdbyMail:string;
+  linkedBundleIds: string[];
+  linkedCohortIds: string[];
+  createdById: string;
+  createdbyMail: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-}
+};
 
 export interface CouponUsage {
-  id: string; 
+  id: string;
   userId: string;
-  couponId: string; 
+  couponId: string;
   usedAt: Timestamp;
   courseId?: string;
   bundleId?: string;
   cohortId?: string;
-}
+};

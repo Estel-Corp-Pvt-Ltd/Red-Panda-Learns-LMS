@@ -48,7 +48,7 @@ import { User } from "@/types/user";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { Coupon, CouponStatus } from "@/types/coupon.";
+import { Coupon } from "@/types/coupon";
 import { couponService } from "@/services/couponService";
 
 // const course = useCourseQuery() =;
@@ -63,6 +63,7 @@ const statsData = {
 
 import {
   BUNDLE_STATUS,
+  COUPON_STATUS,
   COURSE_STATUS,
   USER_ROLE,
   USER_STATUS
@@ -78,7 +79,7 @@ export function AdminDashboard() {
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [coupon, setCoupon] = useState<Coupon[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
@@ -86,13 +87,9 @@ export function AdminDashboard() {
 
   // Loading states
   const [loading, setLoading] = useState(true);
-  const [authorsLoading, setAuthorsLoading] = useState(true);
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
-  const [couponsLoading, setCouponsLoading] = useState(true);
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (location.pathname === '/admin') {
@@ -117,8 +114,6 @@ export function AdminDashboard() {
         description: "Failed to load users",
         variant: "destructive"
       });
-    } finally {
-      setUsersLoading(false);
     }
   };
 
@@ -190,7 +185,7 @@ export function AdminDashboard() {
   const loadCoupons = async () => {
     try {
       const couponsList = await couponService.getAllCoupons();
-      setCoupon(couponsList);
+      setCoupons(couponsList);
       console.log(couponsList)
     } catch (error) {
       toast({
@@ -198,8 +193,6 @@ export function AdminDashboard() {
         description: "Failed to load coupons",
         variant: "destructive",
       });
-    } finally {
-      setCouponsLoading(false);
     }
   };
 
@@ -230,8 +223,6 @@ export function AdminDashboard() {
         description: "Failed to load authors",
         variant: "destructive"
       });
-    } finally {
-      setAuthorsLoading(false);
     }
   };
 
@@ -262,7 +253,7 @@ export function AdminDashboard() {
   const deleteCoupon = async (couponId: string) => {
     try {
       await couponService.deleteCoupon(couponId);
-      setCoupon((prev) => prev.filter((coupon) => couponId !== couponId));
+      setCoupons((prev) => prev.filter((coupon) => couponId !== couponId));
       toast({
         title: "Success",
         description: "Coupon Deleted Successfully"
@@ -973,7 +964,7 @@ export function AdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {coupon.length === 0 && !loading ? (
+                  {coupons.length === 0 && !loading ? (
                     <div className="text-center py-8">
                       <Gift className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
@@ -1000,15 +991,15 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {coupon.map((coupon) => (
+                        {coupons.map((coupon) => (
                           <TableRow key={coupon.id}>
                             <TableCell className="font-medium">{coupon.code}</TableCell>
                             <TableCell>
                               <Badge
                                 variant={
-                                  coupon.status === CouponStatus.ACTIVE
+                                  coupon.status === COUPON_STATUS.ACTIVE
                                     ? 'default'
-                                    : coupon.status === CouponStatus.EXPIRED
+                                    : coupon.status === COUPON_STATUS.EXPIRED
                                       ? 'secondary'
                                       : 'outline'
                                 }
@@ -1024,7 +1015,8 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               {coupon.expiryDate
-                                ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
+                                // TODO: fix expiryDate type issue
+                                ? new Date(coupon.expiryDate).toLocaleDateString()
                                 : 'No expiry'}
                             </TableCell>
                             <TableCell className="text-right">
