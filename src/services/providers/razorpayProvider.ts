@@ -1,6 +1,6 @@
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
-import { enrollmentService } from '../enrollmentService';
+import { enrollmentService } from '../dummyEnrollmentService';
 import { CURRENCY, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
 
@@ -25,7 +25,7 @@ class RazorpayProvider {
       body: JSON.stringify({
         amount,
         currency,
-        receipt,
+        receipt:safeReceipt,
       }),
     });
 
@@ -115,7 +115,7 @@ class RazorpayProvider {
                 try {
                   await enrollmentService.enrollUser(
                     userId,
-                    course,
+                    course.id,
                     response.razorpay_payment_id,
                     'razorpay'
                   );

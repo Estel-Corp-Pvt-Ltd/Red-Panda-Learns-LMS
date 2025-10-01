@@ -12,14 +12,14 @@ import {
   serverTimestamp,
   runTransaction
 } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
+import { db } from '../firebaseConfig.ts';
 import {
   PaymentDetails,
   Transaction,
   WebhookEvent
-} from '@/types/transaction';
-import { TransactionStatus } from '@/types/general';
-import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '@/constants';
+} from '../types/transaction';
+import { TransactionStatus } from '../types/general.ts';
+import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { v4 as uuidv4 } from 'uuid';
 
 class TransactionService {

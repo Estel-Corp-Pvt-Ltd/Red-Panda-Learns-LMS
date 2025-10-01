@@ -12,7 +12,7 @@
   "engines": {
     "node": "22"
   },
-  "main": "lib/index.js",
+  "main": "lib/functions/src/index.js",
   "dependencies": {
     "cors": "^2.8.5",
     "crypto": "^1.0.1",

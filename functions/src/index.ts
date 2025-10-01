@@ -46,81 +46,49 @@ function validateCurrency(currency: any): string {
 
 
 
+
 // ------------------ Create Order ------------------
 export const createOrder = onRequest(
   { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
   async (req, res) => {
-   res.set("Access-Control-Allow-Origin", "*");
-res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
-if (req.method === "OPTIONS") {
-   res.status(204).send(""); return; // ✅ preflight ends here
-}
-    if (req.method !== "POST")  { res.status(405).send("Method not allowed"); return;}
+    if (req.method === "OPTIONS")  res.status(204).send("");
+    if (req.method !== "POST")  res.status(405).send("Method not allowed");
 
     try {
-      const { rawamount, rawcurrency, receipt, userId, courseId, transactionId } = req.body;
+      const { amount, currency, receipt } = req.body;
 
-      // ✅ Validate
-      const amount = ValidateAmount(rawamount);
-      const currency = validateCurrency(rawcurrency);
-
-      // ✅ Ensure we have or create a transaction
-      const txId = await transactionService.createTransaction(
-        {
-          userId,
-          courseId,
-          type: "payment",
-          amount,
-          currency,
-          originalAmount: amount,
-          originalCurrency: currency,
-          exchangeRate: 1,
-          paymentProvider: PAYMENT_PROVIDER.RAZORPAY,
-          metadata: { receipt },
-        },
-        transactionId // 🔑 pass for idempotency
-      );
-
-      // ✅ Create Razorpay order
       const instance = new Razorpay({
         key_id: razorpayKeyId.value(),
         key_secret: razorpayKeySecret.value(),
       });
 
       const order = await instance.orders.create({
-        amount,
+        amount, // in paise (100 INR = 10000)
         currency,
         receipt,
       });
 
-      logger.info("✅ Razorpay order created:", order);
+      logger.info("✅ Order created:", order);
 
-      // ✅ Save Razorpay order details into transaction
-      await transactionService.updateTransactionStatus(txId, "PENDING", {
-        razorpay_order_id: order.id,
-      });
-        res.json({
+      res.json({
         success: true,
         order,
-        transactionId: txId,
-        key_id: razorpayKeyId.value(), // safe to expose
-      })
-      return;
-    } catch (err: any) {
-  console.error("❌ Failed to create Razorpay order hehe:", err?.message, err);
-  res.status(500).json({ 
-    success: false, 
-    error: err?.message || "Failed to create order" 
-  });
-  return;
-}
+        key_id: razorpayKeyId.value(), // send only public key to client
+      });
+    } catch (err) {
+      logger.error("❌ Failed to create Razorpay order:", err);
+      res.status(500).json({ success: false, error: "Failed to create order" });
+    }
   }
 );
 
 // ------------------ Verify Payment ------------------
-// ------------------ Verify Payment ------------------
+
+
 export const verifyPayment = onRequest(
   { region: "us-central1", secrets: [razorpayKeySecret] },
   async (req, res) => {
@@ -132,35 +100,29 @@ export const verifyPayment = onRequest(
     if (req.method !== "POST")  res.status(405).send("Method not allowed");
 
     try {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, transactionId } = req.body;
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, transaction_id } = req.body;
 
       const body = razorpay_order_id + "|" + razorpay_payment_id;
+
       const expectedSignature = crypto
         .createHmac("sha256", razorpayKeySecret.value())
         .update(body.toString())
         .digest("hex");
 
-      if (expectedSignature !== razorpay_signature) {
-        logger.warn("❌ Invalid Razorpay signature");
+      if (expectedSignature === razorpay_signature) {
+        logger.info("✅ Payment verified:", { razorpay_order_id, razorpay_payment_id });
+         res.json({ success: true, transaction_id });
+      } else {
+        logger.warn("❌ Invalid signature");
          res.status(400).json({ success: false, error: "Invalid signature" });
       }
-
-      logger.info("✅ Payment verified:", { razorpay_order_id, razorpay_payment_id });
-
-      // ✅ Update transaction
-      await transactionService.updateTransactionStatus(transactionId, "COMPLETED", {
-        paymentId: razorpay_payment_id,
-        razorpay_order_id,
-        razorpay_signature,
-      });
-
-      res.json({ success: true, transactionId });
     } catch (err) {
       logger.error("❌ Verification error:", err);
       res.status(500).json({ success: false, error: "Server error" });
     }
   }
 );
+
 
 
 
