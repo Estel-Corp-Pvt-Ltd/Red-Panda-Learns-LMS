@@ -15,28 +15,29 @@ export interface RazorpayOrder {
 class RazorpayProvider {
   private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
   
-  async createOrder(amount: number, currency: string, receipt: string): Promise<any> {
-    const safeReceipt = (receipt || "").substring(0, 40);
-    const response = await fetch(`${this.backendUrl}/createOrder`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        amount,
-        currency,
-        receipt:safeReceipt,
-      }),
-    });
+async createOrder(amount: number, currency: string, receipt: string, transactionId: string): Promise<any> {
+  const safeReceipt = (receipt || "").substring(0, 40);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create order');
-    }
+  const response = await fetch(`${this.backendUrl}/createOrder`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Idempotency-Key': transactionId,   
+    },
+    body: JSON.stringify({
+      rawamount: amount,
+      rawcurrency: currency,
+      receipt: safeReceipt,
+    }),
+  });
 
-    return response.json();
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create order');
   }
 
+  return response.json();
+}
   async processPayment(
     course: Course,
     userEmail: string,
@@ -55,7 +56,8 @@ class RazorpayProvider {
         });
 
         // Create order through backend
-        const orderData = await this.createOrder(amount, CURRENCY.INR, transactionId);
+       const orderData = await this.createOrder(amount, CURRENCY.INR, transactionId, transactionId);
+
         console.log("THis is Order Data",orderData)
         if (!orderData.success) {
           throw new Error(orderData.error || 'Order creation failed');
@@ -91,11 +93,13 @@ class RazorpayProvider {
                 headers: {
                   'Content-Type': 'application/json',
                 },
+
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
                   transaction_id: transactionId,
+                  
                 }),
               });
 
