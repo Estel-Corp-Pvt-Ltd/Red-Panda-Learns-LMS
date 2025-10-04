@@ -69,3 +69,11 @@ On Query: use new Date()
 ✅ UI shows user-local time by default.
 ✅ Queries use new Date() where needed.
 ✅ This guide is updated when new timestamp fields are added.
+
+<!-- organization -->
+
+All users have a required organizationType.
+Valid values: SCHOOL, INDUSTRY, COLLEGE.
+Default = INDUSTRY for all manual signups (including Google).
+Always use the ORGANIZATION constant and OrganizationType type.
+Update this document if a new organization type is added.

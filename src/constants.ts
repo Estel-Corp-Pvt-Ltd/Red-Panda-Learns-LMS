@@ -329,3 +329,10 @@ export const COUPON_STATUS = {
     INACTIVE: "INACTIVE",
     EXPIRED: "EXPIRED"
 } as const;
+
+
+export const ORGANIZATION = {
+  SCHOOL: 'SCHOOL',
+  INDUSTRY: 'INDUSTRY',
+  COLLEGE: 'COLLEGE',
+} as const;
