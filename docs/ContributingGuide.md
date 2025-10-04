@@ -72,7 +72,8 @@ On Query: use new Date()
 
 <!-- organization -->
 
-Every user must have an organizationType.
-Allowed values are in constants.ts under ORGANIZATION.
-Default: INDUSTRY for email/password signups.
-Developers must always use ORGANIZATION constants instead of raw strings.
+All users have a required organizationType.
+Valid values: SCHOOL, INDUSTRY, COLLEGE.
+Default = INDUSTRY for all manual signups (including Google).
+Always use the ORGANIZATION constant and OrganizationType type.
+Update this document if a new organization type is added.
