@@ -46,6 +46,7 @@ import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
+import { Organization } from "@/types/organization";
 import { organizationService } from "@/services/organizationService";
 import { ORGANIZATION } from "@/constants";
 
@@ -325,13 +326,13 @@ export function AdminDashboard() {
     }
   };
 
-  const OrganizationTab = () => {
-  const [organizations, setOrganizations] = useState<any[]>([]);
+ const OrganizationTab = () => {
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [name, setName] = useState("");
   const [type, setType] = useState(ORGANIZATION.INDUSTRY);
-  const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
   const { toast } = useToast();
 
   useEffect(() => {
@@ -340,9 +341,9 @@ export function AdminDashboard() {
 
   async function loadOrganizations() {
     try {
-     const data = await organizationService.getAllOrganizations();
+      const data = await organizationService.getAllOrganizations();
       setOrganizations(data);
-    } catch (err) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load organizations",
@@ -354,16 +355,18 @@ export function AdminDashboard() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      toast({ title: "Validation", description: "Name cannot be empty.", variant: "destructive" });
+      toast({
+        title: "Validation",
+        description: "Name cannot be empty.",
+        variant: "destructive",
+      });
       return;
     }
 
     setSaving(true);
     try {
-      
-
-      if (isEditing) {
-        await organizationService.updateOrganization(isEditing, { name, type });
+      if (isEditing && editingOrgId) {
+        await organizationService.updateOrganization(editingOrgId, { name, type });
         toast({ title: "Updated", description: "Organization updated successfully." });
       } else {
         await organizationService.createOrganization({ name, type });
@@ -372,9 +375,10 @@ export function AdminDashboard() {
 
       setName("");
       setType(ORGANIZATION.INDUSTRY);
-      setIsEditing(null);
+      setIsEditing(false);
+      setEditingOrgId(null);
       await loadOrganizations();
-    } catch (err) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to save organization",
@@ -387,16 +391,27 @@ export function AdminDashboard() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this organization?")) return;
-
-    await organizationService.deleteOrganization(id);
-    toast({ title: "Deleted", description: "Organization deleted successfully." });
-    await loadOrganizations();
+    try {
+      await organizationService.deleteOrganization(id);
+      toast({ title: "Deleted", description: "Organization deleted successfully." });
+      await loadOrganizations();
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete organization.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
     <div>
       {/* Add / Edit form */}
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end mb-6">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-wrap gap-3 items-end mb-6"
+      >
         <input
           type="text"
           value={name}
@@ -426,7 +441,8 @@ export function AdminDashboard() {
             type="button"
             variant="ghost"
             onClick={() => {
-              setIsEditing(null);
+              setIsEditing(false);
+              setEditingOrgId(null);
               setName("");
               setType(ORGANIZATION.INDUSTRY);
             }}
@@ -459,7 +475,8 @@ export function AdminDashboard() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setIsEditing(org.id);
+                        setIsEditing(true);
+                        setEditingOrgId(org.id);
                         setName(org.name);
                         setType(org.type);
                       }}
