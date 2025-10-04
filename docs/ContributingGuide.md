@@ -69,3 +69,9 @@ On Query: use new Date()
 ✅ UI shows user-local time by default.
 ✅ Queries use new Date() where needed.
 ✅ This guide is updated when new timestamp fields are added.
+
+<!-- organization -->
+Every user must have an organizationType.
+Allowed values are in constants.ts under ORGANIZATION.
+Default: INDUSTRY for email/password signups.
+Developers must always use ORGANIZATION constants instead of raw strings.
