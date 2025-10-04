@@ -98,10 +98,11 @@ async isCouponApplicable(
     // Check usage limit
     const usageCount = await this.getUsageCountByCoupon(couponId);
     // console.log("🔢 Usage count:", usageCount, " / Limit:", coupon.usageLimit);
-    if (usageCount >= coupon.usageLimit) {
-      console.warn("⚠️ Usage limit reached");
-      return { isApplicable: false, reason: 'Usage limit reached' };
-    }
+   if (coupon.usageLimit > 0 && usageCount >= coupon.usageLimit) {
+  console.warn("⚠️ Usage limit reached");
+  return { isApplicable: false, reason: 'Usage limit reached' };
+}
+
 
     // Start checking if coupon is linked to course, bundle, or cohort
     let isLinked = false;

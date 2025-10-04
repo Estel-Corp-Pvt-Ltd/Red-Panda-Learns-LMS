@@ -1085,8 +1085,8 @@ const loadCoupons = async () => {
                   {coupon.discountPercentage}
                     </TableCell>
                     <TableCell>
-                     {coupon.usageLimit}
-                    </TableCell>
+  {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
+</TableCell>
                     <TableCell>
                       {coupon.expiryDate
                         ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
