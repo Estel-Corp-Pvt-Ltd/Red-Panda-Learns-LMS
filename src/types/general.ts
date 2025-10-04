@@ -38,4 +38,4 @@ export type RefundInitiator = typeof REFUND_INITIATOR[keyof typeof REFUND_INITIA
 export type RazorpayWebhookEvent = typeof RAZORPAY_WEBHOOK_EVENT[keyof typeof RAZORPAY_WEBHOOK_EVENT];
 export type PayPalWebhookEvent = typeof PAYPAL_WEBHOOK_EVENT[keyof typeof PAYPAL_WEBHOOK_EVENT];
 export type CouponStatus = typeof COUPON_STATUS[keyof typeof COUPON_STATUS];
-export type OrganizationType = 'SCHOOL' | 'INDUSTRY' | 'COLLEGE';
+export type OrganizationType = typeof ORGANIZATION[keyof typeof ORGANIZATION];
