@@ -71,6 +71,7 @@ On Query: use new Date()
 ✅ This guide is updated when new timestamp fields are added.
 
 <!-- organization -->
+
 Every user must have an organizationType.
 Allowed values are in constants.ts under ORGANIZATION.
 Default: INDUSTRY for email/password signups.
