@@ -10,7 +10,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { COLLECTIONS, ORGANIZATION } from "@/constants";
+import { COLLECTIONS, ORGANIZATIONS } from "@/constants";
 import { OrganizationType } from "@/types/general";
 import { Organization } from "@/types/organization";
 

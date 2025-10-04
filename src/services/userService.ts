@@ -12,7 +12,7 @@ import {
     WhereFilterOp,
     serverTimestamp,
 } from 'firebase/firestore';
-import { ORGANIZATION } from '@/constants';
+import { ORGANIZATIONS } from '@/constants';
 
 import { db } from '@/firebaseConfig';
 import { UserRole, UserStatus , OrganizationType} from '@/types/general';
