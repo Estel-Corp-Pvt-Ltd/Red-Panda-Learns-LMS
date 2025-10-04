@@ -1,6 +1,5 @@
 import { EnrolledProgramType, UserRole, UserStatus } from "./general";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { OrganizationType } from './general';
 
 
 export interface User {
@@ -13,7 +12,6 @@ export interface User {
     status: UserStatus;
     enrollments: Array<{ targetId: string, targetType: EnrolledProgramType }>;
     organizationId?: string;
-     organizationType: OrganizationType;
     photoURL?: string;
     createdAt: Timestamp | FieldValue;
     updatedAt: Timestamp | FieldValue;

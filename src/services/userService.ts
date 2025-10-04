@@ -64,8 +64,6 @@ class UserService {
                 enrollments: [],
                 organizationId: data.organizationId || '',
                 photoURL: data.photoURL || '',
-                 organizationType:
-          (data.organizationType as OrganizationType) || ORGANIZATION.INDUSTRY,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -121,8 +119,7 @@ class UserService {
                 ...userDoc.data(),
                 createdAt: userDoc.data()?.createdAt.toDate(),
                 updatedAt: userDoc.data()?.updatedAt.toDate(),
-               organizationType:
-          (userDoc.data()?.organizationType as OrganizationType) || ORGANIZATION.INDUSTRY,
+            
             } as User;
 
             return user;
@@ -143,8 +140,7 @@ class UserService {
                 ...doc.data(),
                 createdAt: doc.data().createdAt.toDate(),
                 updatedAt: doc.data().updatedAt.toDate(),
-               organizationType:
-          (doc.data()?.organizationType as OrganizationType) || ORGANIZATION.INDUSTRY,
+               
             })) as User[];
 
             console.log('UserService - Fetched users:', users.length);
@@ -175,7 +171,7 @@ class UserService {
                     ...doc.data(),
                     createdAt: doc.data().createdAt?.toDate(),
                     updatedAt: doc.data().updatedAt?.toDate(),
-                     organizationType:(doc.data()?.organizationType as OrganizationType) || ORGANIZATION.INDUSTRY,
+                    
                 })) as User[];
 
                 console.log('UserService - Fetched filtered users:', users.length);
@@ -186,7 +182,7 @@ class UserService {
                     ...doc.data(),
                     createdAt: doc.data().createdAt?.toDate(),
                     updatedAt: doc.data().updatedAt?.toDate(),
-                    organizationType: doc.data().organizationType as OrganizationType,
+                   
                 })) as User[];
 
                 console.log('UserService - Fetched all users:', users.length);

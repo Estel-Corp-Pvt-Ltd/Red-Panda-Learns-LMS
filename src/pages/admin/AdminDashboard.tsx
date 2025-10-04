@@ -46,6 +46,8 @@ import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
+import { organizationService } from "@/services/organizationService";
+import { ORGANIZATION } from "@/constants";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
@@ -67,7 +69,8 @@ import {
   COUPON_STATUS,
   COURSE_STATUS,
   USER_ROLE,
-  USER_STATUS
+  USER_STATUS,
+
 } from "@/constants";
 
 import { Header } from "@/components/Header";
@@ -322,6 +325,165 @@ export function AdminDashboard() {
     }
   };
 
+  const OrganizationTab = () => {
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [name, setName] = useState("");
+  const [type, setType] = useState(ORGANIZATION.INDUSTRY);
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadOrganizations();
+  }, []);
+
+  async function loadOrganizations() {
+    try {
+     const data = await organizationService.getAllOrganizations();
+      setOrganizations(data);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to load organizations",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast({ title: "Validation", description: "Name cannot be empty.", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      
+
+      if (isEditing) {
+        await organizationService.updateOrganization(isEditing, { name, type });
+        toast({ title: "Updated", description: "Organization updated successfully." });
+      } else {
+        await organizationService.createOrganization({ name, type });
+        toast({ title: "Created", description: "Organization created successfully." });
+      }
+
+      setName("");
+      setType(ORGANIZATION.INDUSTRY);
+      setIsEditing(null);
+      await loadOrganizations();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to save organization",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this organization?")) return;
+
+    await organizationService.deleteOrganization(id);
+    toast({ title: "Deleted", description: "Organization deleted successfully." });
+    await loadOrganizations();
+  }
+
+  return (
+    <div>
+      {/* Add / Edit form */}
+      <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end mb-6">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Organization name"
+          className="border p-2 rounded"
+        />
+
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="border p-2 rounded"
+        >
+          {Object.values(ORGANIZATION).map((val) => (
+            <option key={val} value={val}>
+              {val}
+            </option>
+          ))}
+        </select>
+
+        <Button type="submit" disabled={saving}>
+          {isEditing ? "Update Organization" : "Add Organization"}
+        </Button>
+
+        {isEditing && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setIsEditing(null);
+              setName("");
+              setType(ORGANIZATION.INDUSTRY);
+            }}
+          >
+            Cancel
+          </Button>
+        )}
+      </form>
+
+      {/* Table list */}
+      {organizations.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No organizations found.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {organizations.map((org) => (
+              <TableRow key={org.id}>
+                <TableCell>{org.name}</TableCell>
+                <TableCell>{org.type}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditing(org.id);
+                        setName(org.name);
+                        setType(org.type);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(org.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+};
+
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -398,6 +560,9 @@ export function AdminDashboard() {
               <TabsTrigger value="coupons" className="flex-shrink-0">
                 Coupon
               </TabsTrigger>
+              <TabsTrigger value="organizations" className="flex-shrink-0">
+  Organizations
+</TabsTrigger>
             </TabsList>
 
             <TabsContent value="lessons">
@@ -1048,6 +1213,20 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
+            <TabsContent value="organizations">
+  <Card>
+    <CardHeader>
+      <CardTitle>Organizations</CardTitle>
+      <CardDescription>
+        Manage all organizations in your system.
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      {/* Organization CRUD */}
+      <OrganizationTab />
+    </CardContent>
+  </Card>
+</TabsContent>
           </Tabs>
         </div>
       </div>
