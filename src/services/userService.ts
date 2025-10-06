@@ -29,7 +29,7 @@ class UserService {
      */
     async createUser(
 uid:string,
-        data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>
+        data: Omit<User,   'createdAt' | 'updatedAt'>
     ): Promise<void> {
         try {
           

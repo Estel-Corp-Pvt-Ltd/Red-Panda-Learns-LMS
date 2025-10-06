@@ -82,6 +82,7 @@ class AuthService {
 
       // Create Firestore user document
       await  userService.createUser (firebaseUser.uid,{
+       id: firebaseUser.uid,
         email,
         firstName,
         middleName,
@@ -134,7 +135,7 @@ async signInWithGoogle(): Promise<{
 
    if (!existingDoc.exists()) {
       await userService.createUser(uid, {
-        
+        id:uid,
         email: firebaseUser.email || "",
         firstName,
         middleName,
