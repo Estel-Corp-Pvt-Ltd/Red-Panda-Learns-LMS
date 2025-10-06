@@ -405,7 +405,8 @@ const CurriculumBuilderPage = () => {
               createdAt: new Date(),
               startDate: new Date(),
               endDate: new Date(),
-              enrollmentOpen: true
+              enrollmentOpen: true,
+              price: 1000
             });
 
           } else if (item.type === LEARNING_UNIT.TOPIC) {
@@ -423,69 +424,8 @@ const CurriculumBuilderPage = () => {
         cohorts: newCohorts,
       };
 
-      const saveCurriculumStructure = async () => {
-        if (!courseId || !course) {
-          toast({ title: "Error", description: "Course data is not available.", variant: "destructive" });
-          return;
-        }
-        try {
-          setSaving(true);
-          const newRootTopics: Topic[] = [];
-          const newCohorts: Cohort[] = [];
-          // Create maps for efficient lookup
-          const itemMap = new Map(curriculum.map(item => [item.id, item]));
-          const childrenMap = new Map<string, DraggableItem[]>();
-          curriculum.forEach(item => {
-            if (item.parentId) {
-              if (!childrenMap.has(item.parentId)) {
-                childrenMap.set(item.parentId, []);
-              }
-              childrenMap.get(item.parentId)!.push(item);
-            }
-          });
-          // Process only root items (depth 0)
-          for (const item of curriculum) {
-            if (item.depth === 0) {
-              if (item.type === LEARNING_UNIT.COHORT) {
-                const cohortChildren = childrenMap.get(item.id) || []; // These are topics
-                const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
-                  const lessonItems = (childrenMap.get(topicItem.id) || []).map(lessonItem => ({
-                    id: lessonItem.id,
-                    title: lessonItem.title,
-                  }));
-                  return { id: topicItem.id, title: topicItem.title, items: lessonItems };
-                });
-                // Reconstruct the cohort, preserving original data if it exists
-                const originalCohort = item.originalData as Cohort || {};
-                newCohorts.push({
-                  ...originalCohort,
-                  id: item.id,
-                  title: item.title,
-                  topics: cohortTopics,
-                  updatedAt: new Date(),
-                });
-              } else if (item.type === LEARNING_UNIT.TOPIC) {
-                const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
-                  id: lessonItem.id,
-                  title: lessonItem.title,
-                }));
-                newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
-              }
-            }
-          }
-          const updates: Partial<Course> = {
-            topics: newRootTopics,
-            cohorts: newCohorts,
-          };
-          await courseService.updateCourse(courseId, updates);
-          toast({ title: "Success", description: "Curriculum saved!" });
-          console.log("Curriculum saved with:", updates);
-        } catch (error) {
-          toast({ title: "Error", description: `Failed to save: ${error}`, variant: "destructive" });
-        } finally {
-          setSaving(false);
-        }
-      };
+      await courseService.updateCourse(courseId, updates);
+
       toast({ title: "Success", description: "Curriculum saved!" });
       console.log("Curriculum saved with:", updates);
 
@@ -651,14 +591,16 @@ const CurriculumBuilderPage = () => {
               <div className="space-y-6">
                 {/* Pricing */}
                 <Card className="rounded-xl border p-4">
-                  <Button onClick={saveBasics} disabled={saving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {saving ? "Saving..." : "Save Basics"}
-                  </Button>
-                  <Button variant="outline" onClick={() => navigate("/admin")} >
-                    <ArrowLeft className="mr-2 h-4 w-3" />
-                    {"Back to Courses"}
-                  </Button>
+                  <div className="flex gap-4">
+                    <Button onClick={saveBasics} disabled={saving}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {saving ? "Saving..." : "Save Basics"}
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/admin")} >
+                      <ArrowLeft className="mr-2 h-4 w-3" />
+                      {"Back to Courses"}
+                    </Button>
+                  </div>
                   <CardHeader className="pb-2">
                     <CardTitle>Pricing</CardTitle>
                   </CardHeader>
@@ -693,17 +635,21 @@ const CurriculumBuilderPage = () => {
                     <CardTitle>Status</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <select
-                      className="w-full border rounded-md p-2"
+                    <Select
                       value={status}
-                      onChange={(e) => setStatus(e.target.value as CourseStatus)}
+                      onValueChange={(val) => setStatus(val as CourseStatus)}
                     >
-                      {Object.values(COURSE_STATUS).map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(COURSE_STATUS).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </CardContent>
                 </Card>
               </div>
