@@ -14,8 +14,8 @@ import {
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { auth, db } from "@/firebaseConfig";
 import { User } from "@/types/user";
-import { USER_ROLE, USER_STATUS , ORGANIZATION } from "@/constants";
-import { UserRole, UserStatus ,OrganizationType} from "@/types/general";
+import { USER_ROLE, USER_STATUS  } from "@/constants";
+import { UserRole, UserStatus } from "@/types/general";
 import { userService } from "./userService";
 
 export type AuthResponse = {
@@ -81,7 +81,8 @@ class AuthService {
       await updateProfile(firebaseUser, { displayName: name });
 
       // Create Firestore user document
-      const userId = await userService.createUser({
+      await  userService.createUser (firebaseUser.uid,{
+       id: firebaseUser.uid,
         email,
         firstName,
         middleName,
@@ -93,78 +94,75 @@ class AuthService {
         photoURL: firebaseUser.photoURL || null,
       });
 
-      return { success: true, userId };
+      return { success: true, userId: firebaseUser.uid };
     } catch (error: any) {
       return { success: false, error: this.handleAuthError(error).message };
     }
   }
 
   /**
-   * 🔹 Google Sign-In (using popup by default, fallback can use redirect)
-   */
-  async signInWithGoogle(): Promise<{
-    success: boolean;
-    userId?: string;
-    error?: string;
-    role?: UserRole;
-  }> {
-    try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
+   
+ /** 🔹 Google Sign‑In (using popup) */
+async signInWithGoogle(): Promise<{
+  success: boolean;
+  userId?: string;
+  error?: string;
+  role?: UserRole;
+}> {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const firebaseUser = result.user;
 
-      const firebaseUser = userCredential.user;
-      let firstName = "";
-      let middleName: string | null = null;
-      let lastName = "";
-
-      if (firebaseUser.displayName) {
-        const parts = firebaseUser.displayName.split(" ");
-        firstName = parts[0];
-        if (parts.length === 2) {
-          lastName = parts[1];
-        } else if (parts.length > 2) {
-          middleName = parts.slice(1, -1).join(" ");
-          lastName = parts[parts.length - 1];
-        }
+    // Parse name
+    let firstName = "";
+    let middleName: string | null = null;
+    let lastName = "";
+    if (firebaseUser.displayName) {
+      const parts = firebaseUser.displayName.split(" ");
+      firstName = parts[0];
+      if (parts.length === 2) {
+        lastName = parts[1];
+      } else if (parts.length > 2) {
+        middleName = parts.slice(1, -1).join(" ");
+        lastName = parts[parts.length - 1];
       }
+    }
 
-      const userRef = doc(db, "Users", firebaseUser.uid);
-      const existingDoc = await getDoc(userRef);
+    const uid = firebaseUser.uid;
+    const userRef = doc(db, "Users", uid);
+    const existingDoc = await getDoc(userRef);
 
-      const userId = await userService.createUser({
+   if (!existingDoc.exists()) {
+      await userService.createUser(uid, {
+        id:uid,
         email: firebaseUser.email || "",
         firstName,
         middleName,
         lastName,
-        role: existingDoc.exists()
-          ? (existingDoc.data().role as UserRole)
-          : USER_ROLE.STUDENT,
-        status: existingDoc.exists()
-          ? (existingDoc.data().status as UserStatus)
-          : USER_STATUS.ACTIVE,
+        role: USER_ROLE.STUDENT,
+        status: USER_STATUS.ACTIVE,
         enrollments: [],
-        organizationId: existingDoc.exists()
-          ? existingDoc.data().organizationId
-          : null,
-         
+        organizationId: null,
         photoURL: firebaseUser.photoURL || null,
       });
-
-      return {
-        success: true,
-        userId,
-        role: existingDoc.exists()
-          ? (existingDoc.data().role as UserRole)
-          : USER_ROLE.STUDENT,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: this.handleAuthError(error).message,
-        role: USER_ROLE.STUDENT,
-      };
     }
+
+    return {
+  success: true,
+  userId: uid,
+  role: existingDoc.exists()
+    ? (existingDoc.data().role as UserRole)
+    : USER_ROLE.STUDENT,
+};
+  } catch (error: any) {
+    return {
+      success: false,
+      error: this.handleAuthError(error).message,
+      role: USER_ROLE.STUDENT,
+    };
   }
+}
 
   /** 🔹 Optional: Google Sign-In using redirect (avoids COOP warnings) */
   async signInWithGoogleRedirect() {
