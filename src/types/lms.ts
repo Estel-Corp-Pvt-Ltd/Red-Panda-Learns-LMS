@@ -1,3 +1,5 @@
+import { Timestamp, FieldValue } from "firebase-admin/firestore";
+
 export interface Topic {
   id: string;
   title: string;
@@ -7,8 +9,8 @@ export interface Topic {
   isPublished: boolean;
   estimatedDuration: number; // in minutes
   totalLessons: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
 }
 
 export interface Lesson {
@@ -35,6 +37,6 @@ export interface Lesson {
     url: string;
     size?: number;
   }>;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
 }

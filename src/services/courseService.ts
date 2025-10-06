@@ -9,7 +9,8 @@ import {
   getDocs,
   deleteDoc,
   runTransaction,
-  WhereFilterOp
+  WhereFilterOp,
+  serverTimestamp
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
@@ -98,8 +99,8 @@ class CourseService {
         topics: [],
         cohorts: [],
         isEnrollmentPaused: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp() ,
+        updatedAt: serverTimestamp() ,
       };
 
       await setDoc(doc(db, 'Courses', courseId), course);
@@ -148,7 +149,7 @@ class CourseService {
       }
 
       const updateData: Partial<Course> = {
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp() ,
       };
 
       // Simple field mapping
@@ -198,7 +199,7 @@ class CourseService {
       const courseRef = doc(db, 'Courses', courseId);
       await updateDoc(courseRef, {
         status: COURSE_STATUS.PUBLISHED,
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp() ,
       });
       console.log('CourseService - Course published successfully:', courseId);
     } catch (error) {

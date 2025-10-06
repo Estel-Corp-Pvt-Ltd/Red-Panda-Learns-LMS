@@ -52,6 +52,7 @@ import {
 import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
+import { serverTimestamp } from "firebase/firestore";
 
 type SortableItemProps = {
   id: string;

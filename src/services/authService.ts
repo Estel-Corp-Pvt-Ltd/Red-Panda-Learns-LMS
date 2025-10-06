@@ -14,8 +14,8 @@ import {
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { auth, db } from "@/firebaseConfig";
 import { User } from "@/types/user";
-import { USER_ROLE, USER_STATUS } from "@/constants";
-import { UserRole, UserStatus } from "@/types/general";
+import { USER_ROLE, USER_STATUS , ORGANIZATION } from "@/constants";
+import { UserRole, UserStatus ,OrganizationType} from "@/types/general";
 import { userService } from "./userService";
 
 export type AuthResponse = {
@@ -146,6 +146,7 @@ class AuthService {
         organizationId: existingDoc.exists()
           ? existingDoc.data().organizationId
           : null,
+         
         photoURL: firebaseUser.photoURL || null,
       });
 

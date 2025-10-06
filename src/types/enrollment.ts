@@ -7,6 +7,7 @@ import {
     PricingModel,
     UserRole
 } from "./general";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 import { LearningProgress } from "./learningProgress";
 
@@ -15,7 +16,7 @@ export interface Enrollment {
     userId: string;
     targetId: string;                // courseId OR bundleId
     targetType: EnrolledProgramType; // "course" or "bundle"
-    enrollmentDate: Date;
+    enrollmentDate: Timestamp | FieldValue ;
     status: EnrollmentStatus;
     role: UserRole;
 
@@ -33,6 +34,6 @@ export interface Enrollment {
         balance: number;
         transactionId?: string;
         provider: PaymentProvider;
-        paidAt?: Date;
+        paidAt?:Timestamp | FieldValue ;
     };
 }

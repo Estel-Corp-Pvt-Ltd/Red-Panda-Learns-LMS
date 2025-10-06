@@ -1,8 +1,9 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { CurrencyRate } from '@/types/transaction';
 import { Currency } from '@/types/general';
 import { CURRENCY } from '@/constants';
+import { toDateSafe } from '@/utils/date-time';
 
 class CurrencyService {
   // TODO: Use this, maybe
@@ -258,7 +259,7 @@ class CurrencyService {
         rate,
         date: today,               // snapshot day
         source: "exchangerate-api",
-        createdAt: new Date(),     // when this record was stored
+        createdAt: serverTimestamp()     // when this record was stored
       };
 
       await setDoc(doc(db, "currency_rates", rateId), currencyRate);
@@ -304,10 +305,14 @@ class CurrencyService {
  * ```
  */
   private isCacheValid(cachedRate: CurrencyRate): boolean {
-    const now = Date.now();
-    const cacheTime = new Date(cachedRate.createdAt).getTime();
-    return (now - cacheTime) < this.CACHE_DURATION;
-  }
+  const now = Date.now();
+  const cachedTime = toDateSafe(cachedRate.createdAt);
+
+  // Safeguard against invalid or null
+  if (!cachedTime || isNaN(cachedTime.getTime())) return false;
+
+  return (now - cachedTime.getTime()) < this.CACHE_DURATION;
+}
 
   /**
  * Provides a static fallback exchange rate for a given currency pair.

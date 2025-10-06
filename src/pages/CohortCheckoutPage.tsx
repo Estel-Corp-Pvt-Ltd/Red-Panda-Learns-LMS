@@ -12,6 +12,7 @@ import { currencyService } from "@/services/currencyService";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/utils/date-time";
 import { PaymentProvider, Currency } from "@/types/transaction";
 
 export default function CohortCheckoutPage() {
@@ -146,14 +147,7 @@ export default function CohortCheckoutPage() {
     return `${symbol}${amount?.toLocaleString()}`;
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+ 
 
   if (isLoading) {
     return (

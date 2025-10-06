@@ -10,10 +10,12 @@ import {
     deleteDoc,
     runTransaction,
     WhereFilterOp,
+    serverTimestamp,
 } from 'firebase/firestore';
+import { ORGANIZATIONS } from '@/constants';
 
 import { db } from '@/firebaseConfig';
-import { UserRole, UserStatus } from '@/types/general';
+import { UserRole, UserStatus , OrganizationType} from '@/types/general';
 import { User } from '@/types/user';
 
 class UserService {
@@ -62,8 +64,8 @@ class UserService {
                 enrollments: [],
                 organizationId: data.organizationId || '',
                 photoURL: data.photoURL || '',
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
             };
 
             await setDoc(doc(db, 'Users', userId), user);
@@ -89,7 +91,7 @@ class UserService {
             }
 
             const updateData: Partial<User> = {
-                updatedAt: new Date(),
+                updatedAt:serverTimestamp(),    
                 ...updates,
             };
 
@@ -117,6 +119,7 @@ class UserService {
                 ...userDoc.data(),
                 createdAt: userDoc.data()?.createdAt.toDate(),
                 updatedAt: userDoc.data()?.updatedAt.toDate(),
+            
             } as User;
 
             return user;
@@ -137,6 +140,7 @@ class UserService {
                 ...doc.data(),
                 createdAt: doc.data().createdAt.toDate(),
                 updatedAt: doc.data().updatedAt.toDate(),
+               
             })) as User[];
 
             console.log('UserService - Fetched users:', users.length);
@@ -167,6 +171,7 @@ class UserService {
                     ...doc.data(),
                     createdAt: doc.data().createdAt?.toDate(),
                     updatedAt: doc.data().updatedAt?.toDate(),
+                    
                 })) as User[];
 
                 console.log('UserService - Fetched filtered users:', users.length);
@@ -177,6 +182,7 @@ class UserService {
                     ...doc.data(),
                     createdAt: doc.data().createdAt?.toDate(),
                     updatedAt: doc.data().updatedAt?.toDate(),
+                   
                 })) as User[];
 
                 console.log('UserService - Fetched all users:', users.length);
@@ -207,7 +213,7 @@ class UserService {
     async changeUserRole(userId: string, newRole: UserRole): Promise<void> {
         try {
             const userRef = doc(db, 'Users', userId);
-            await updateDoc(userRef, { role: newRole, updatedAt: new Date() });
+            await updateDoc(userRef, { role: newRole, updatedAt: serverTimestamp() });
             console.log('UserService - User role updated successfully:', userId);
         } catch (error) {
             console.error('UserService - Error changing user role:', error);
@@ -224,7 +230,7 @@ class UserService {
     ): Promise<void> {
         try {
             const userRef = doc(db, 'Users', userId);
-            await updateDoc(userRef, { status: newStatus, updatedAt: new Date() });
+            await updateDoc(userRef, { status: newStatus, updatedAt:serverTimestamp() });
             console.log('UserService - User status updated successfully:', userId, newStatus);
         } catch (error) {
             console.error('UserService - Error changing user status:', error);

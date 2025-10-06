@@ -21,7 +21,7 @@ import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 import CohortBuilderPage from "./pages/admin/CreateCohortPage";
 import CohortDetailPage from "./pages/admin/CohortDetailPage";
-import EditCohortPage from "./pages/admin/EditCohortPage";
+// import EditCohortPage from "./pages/admin/EditCohortPage";
 import UserCohortDetailPage from "./pages/CohortDetailPage";
 import CohortCheckoutPage from "./pages/CohortCheckoutPage";
 import CohortDashboardPage from "./pages/CohortDashboardPage";
@@ -176,14 +176,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                <Route
-                  path="/admin/cohort/:cohortId/edit"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <EditCohortPage />
-                    </AuthGuard>
-                  }
-                />
+                
                 <Route
                   path="/admin/edit-course/:courseId"
                   element={
