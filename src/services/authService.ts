@@ -14,7 +14,7 @@ import {
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { auth, db } from "@/firebaseConfig";
 import { User } from "@/types/user";
-import { USER_ROLE, USER_STATUS , ORGANIZATIONS } from "@/constants";
+import { USER_ROLE, USER_STATUS , ORGANIZATION } from "@/constants";
 import { UserRole, UserStatus ,OrganizationType} from "@/types/general";
 import { userService } from "./userService";
 

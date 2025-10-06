@@ -320,7 +320,7 @@ export const COLLECTIONS = {
     LESSONS: 'Lessons',
     COUPONS: 'Coupons',
     COUPON_USAGES: 'CouponUsages',
-     ORGANIZATIONS: 'Organizations',  
+     ORGANIZATION: 'Organizations',  
 } as const;
 
 // --- COUPON SYSTEM ---
@@ -332,7 +332,7 @@ export const COUPON_STATUS = {
 } as const;
 
 
-export const ORGANIZATIONS = {
+export const ORGANIZATION = {
   SCHOOL: 'SCHOOL',
   INDUSTRY: 'INDUSTRY',
   COLLEGE: 'COLLEGE',

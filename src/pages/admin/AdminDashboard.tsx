@@ -49,7 +49,7 @@ import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
 import { Organization } from "@/types/organization";
 import { organizationService } from "@/services/organizationService";
-import { ORGANIZATIONS } from "@/constants";
+import { ORGANIZATION } from "@/constants";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
@@ -330,7 +330,7 @@ export function AdminDashboard() {
  const OrganizationTab = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [name, setName] = useState("");
-  const [type, setType] = useState<OrganizationType>(ORGANIZATIONS.INDUSTRY);
+  const [type, setType] = useState<OrganizationType>(ORGANIZATION.INDUSTRY);
   const [isEditing, setIsEditing] = useState(false);
   const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -375,7 +375,7 @@ export function AdminDashboard() {
       }
 
       setName("");
-      setType(ORGANIZATIONS.INDUSTRY);
+      setType(ORGANIZATION.INDUSTRY);
       setIsEditing(false);
       setEditingOrgId(null);
       await loadOrganizations();
@@ -426,7 +426,7 @@ export function AdminDashboard() {
           onChange={(e) => setType(e.target.value as OrganizationType)}
           className="border p-2 rounded"
         >
-          {Object.values(ORGANIZATIONS).map((val) => (
+          {Object.values(ORGANIZATION).map((val) => (
             <option key={val} value={val}>
               {val}
             </option>
@@ -445,7 +445,7 @@ export function AdminDashboard() {
               setIsEditing(false);
               setEditingOrgId(null);
               setName("");
-              setType(ORGANIZATIONS.INDUSTRY);
+              setType(ORGANIZATION.INDUSTRY);
             }}
           >
             Cancel

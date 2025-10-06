@@ -10,7 +10,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { COLLECTIONS, ORGANIZATIONS } from "@/constants";
+import { COLLECTIONS, ORGANIZATION } from "@/constants";
 import { OrganizationType } from "@/types/general";
 import { Organization } from "@/types/organization";
 
@@ -54,7 +54,7 @@ class OrganizationService {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, COLLECTIONS.ORGANIZATIONS, id), org);  // 👈 use constant
+      await setDoc(doc(db, COLLECTIONS.ORGANIZATION, id), org);  // 👈 use constant
       console.log("OrganizationService - created:", id);
       return id;
     } catch (error) {
@@ -66,7 +66,7 @@ class OrganizationService {
   /** Fetch all organizations */
   async getAllOrganizations(): Promise<Organization[]> {
     try {
-      const querySnapshot = await getDocs(collection(db, COLLECTIONS.ORGANIZATIONS));  // 👈 use constant
+      const querySnapshot = await getDocs(collection(db, COLLECTIONS.ORGANIZATION));  
       const orgs = querySnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         return {
@@ -86,7 +86,7 @@ class OrganizationService {
   /** Fetch organization by ID */
   async getOrganizationById(id: string): Promise<Organization | null> {
     try {
-      const docSnap = await getDoc(doc(db, COLLECTIONS.ORGANIZATIONS, id));  // 👈 use constant
+      const docSnap = await getDoc(doc(db, COLLECTIONS.ORGANIZATION, id));  // 👈 use constant
       if (!docSnap.exists()) return null;
       const data = docSnap.data();
       return {
@@ -103,7 +103,7 @@ class OrganizationService {
   /** Update organization */
   async updateOrganization(id: string, updates: Partial<Organization>): Promise<void> {
     try {
-      const ref = doc(db, COLLECTIONS.ORGANIZATIONS, id);  // 👈 use constant
+      const ref = doc(db, COLLECTIONS.ORGANIZATION, id);  // 👈 use constant
       await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
       console.log("OrganizationService - updated:", id);
     } catch (error) {
@@ -115,7 +115,7 @@ class OrganizationService {
   /** Delete organization */
   async deleteOrganization(id: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, COLLECTIONS.ORGANIZATIONS, id));  // 👈 use constant
+      await deleteDoc(doc(db, COLLECTIONS.ORGANIZATION, id));  // 👈 use constant
       console.log("OrganizationService - deleted:", id);
     } catch (error) {
       console.error("OrganizationService - Error deleting organization:", error);
