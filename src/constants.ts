@@ -332,7 +332,7 @@ export const COUPON_STATUS = {
 } as const;
 
 
-export const ORGANIZATION = {
+export const ORGANIZATIONS = {
   SCHOOL: 'SCHOOL',
   INDUSTRY: 'INDUSTRY',
   COLLEGE: 'COLLEGE',
