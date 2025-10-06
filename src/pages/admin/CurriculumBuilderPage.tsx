@@ -402,10 +402,10 @@ const CurriculumBuilderPage = () => {
               id: item.id,
               title: item.title,
               topics: cohortTopics,
-              updatedAt: new Date(),
-              createdAt: new Date(),
-              startDate: new Date(),
-              endDate: new Date(),
+              updatedAt: serverTimestamp(),
+              createdAt: serverTimestamp(),
+              startDate:serverTimestamp(),
+              endDate: serverTimestamp(),
               enrollmentOpen: true,
               price: 1000
             });

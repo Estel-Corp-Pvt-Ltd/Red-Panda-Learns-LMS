@@ -12,7 +12,6 @@ import {
     WhereFilterOp,
     serverTimestamp,
 } from 'firebase/firestore';
-import { ORGANIZATIONS } from '@/constants';
 
 import { db } from '@/firebaseConfig';
 import { UserRole, UserStatus , OrganizationType} from '@/types/general';
@@ -23,38 +22,21 @@ class UserService {
      * Generates a new user ID in the format `user_<number>`, starting from 10000000.
      * Uses a random gap between 5 and 20 to avoid easy guessing.
      */
-    private async generateUserId(): Promise<string> {
-        const counterRef = doc(db, 'counters', 'userCounter');
-
-        const newId = await runTransaction(db, async (transaction) => {
-            const gap = Math.floor(Math.random() * (20 - 5 + 1)) + 5;
-            const counterDoc = await transaction.get(counterRef);
-
-            let lastNumber = 10000000;
-            if (counterDoc.exists()) {
-                lastNumber = counterDoc.data().lastNumber;
-            }
-
-            const nextNumber = lastNumber + gap;
-            transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
-
-            return nextNumber;
-        });
-
-        return `user_${newId}`;
-    }
+    
 
     /**
      * Creates a new user in Firestore.
      */
     async createUser(
-        data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>
-    ): Promise<string> {
+        uid:string,
+        data: Omit<User, 'uid'|'id' | 'createdAt' | 'updatedAt'>
+    ): Promise<void> {
         try {
-            const userId = await this.generateUserId();
+          
 
             const user: User = {
-                id: userId,
+                uid,
+                id: uid,
                 email: data.email,
                 firstName: data.firstName,
                 middleName: data.middleName || '',
@@ -68,10 +50,10 @@ class UserService {
                 updatedAt: serverTimestamp(),
             };
 
-            await setDoc(doc(db, 'Users', userId), user);
-            console.log('UserService - User created successfully:', userId);
+            await setDoc(doc(db, 'Users', uid), user);
+            console.log('UserService - User created successfully:', uid);
 
-            return userId;
+           
         } catch (error) {
             console.error('UserService - Error creating user:', error);
             throw new Error('Failed to create user');
@@ -81,9 +63,9 @@ class UserService {
     /**
      * Updates an existing user document.
      */
-    async updateUser(userId: string, updates: Partial<User>): Promise<void> {
+    async updateUser(uid: string, updates: Partial<User>): Promise<void> {
         try {
-            const userRef = doc(db, 'Users', userId);
+            const userRef = doc(db, 'Users', uid);
             const userDoc = await getDoc(userRef);
 
             if (!userDoc.exists()) {
@@ -96,7 +78,7 @@ class UserService {
             };
 
             await updateDoc(userRef, updateData);
-            console.log('UserService - User updated successfully:', userId);
+            console.log('UserService - User updated successfully:', uid);
         } catch (error) {
             console.error('UserService - Error updating user:', error);
             throw new Error('Failed to update user');
@@ -106,12 +88,12 @@ class UserService {
     /**
      * Retrieves a single user by ID.
      */
-    async getUserById(userId: string): Promise<User | null> {
+    async getUserById(uid: string): Promise<User | null> {
         try {
-            const userDoc = await getDoc(doc(db, 'Users', userId));
+            const userDoc = await getDoc(doc(db, 'Users', uid));
 
             if (!userDoc.exists()) {
-                console.log('UserService - User not found:', userId);
+                console.log('UserService - User not found:', uid);
                 return null;
             }
 
@@ -197,10 +179,10 @@ class UserService {
     /**
      * Deletes a user by ID.
      */
-    async deleteUser(userId: string): Promise<void> {
+    async deleteUser(uid: string): Promise<void> {
         try {
-            await deleteDoc(doc(db, 'Users', userId));
-            console.log('UserService - User deleted successfully:', userId);
+            await deleteDoc(doc(db, 'Users', uid));
+            console.log('UserService - User deleted successfully:', uid);
         } catch (error) {
             console.error('UserService - Error deleting user:', error);
             throw new Error('Failed to delete user');
@@ -210,11 +192,11 @@ class UserService {
     /**
      * Updates only the user's role.
      */
-    async changeUserRole(userId: string, newRole: UserRole): Promise<void> {
+    async changeUserRole(uid: string, newRole: UserRole): Promise<void> {
         try {
-            const userRef = doc(db, 'Users', userId);
+            const userRef = doc(db, 'Users', uid);
             await updateDoc(userRef, { role: newRole, updatedAt: serverTimestamp() });
-            console.log('UserService - User role updated successfully:', userId);
+            console.log('UserService - User role updated successfully:', uid);
         } catch (error) {
             console.error('UserService - Error changing user role:', error);
             throw new Error('Failed to change user role');
@@ -225,13 +207,13 @@ class UserService {
  * Updates only the user's status (ACTIVE, INACTIVE, SUSPENDED).
  */
     async changeUserStatus(
-        userId: string,
+        uid: string,
         newStatus: UserStatus
     ): Promise<void> {
         try {
-            const userRef = doc(db, 'Users', userId);
+            const userRef = doc(db, 'Users', uid);
             await updateDoc(userRef, { status: newStatus, updatedAt:serverTimestamp() });
-            console.log('UserService - User status updated successfully:', userId, newStatus);
+            console.log('UserService - User status updated successfully:', uid, newStatus);
         } catch (error) {
             console.error('UserService - Error changing user status:', error);
             throw new Error('Failed to change user status');
