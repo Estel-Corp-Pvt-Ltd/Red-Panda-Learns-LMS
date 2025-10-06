@@ -3,7 +3,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 
 export interface User {
-    uid: string;
+    
     id: string;
     email: string;
     firstName: string;

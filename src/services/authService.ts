@@ -132,31 +132,28 @@ async signInWithGoogle(): Promise<{
     const userRef = doc(db, "Users", uid);
     const existingDoc = await getDoc(userRef);
 
-    await userService.createUser(uid, {
-      email: firebaseUser.email || "",
-      firstName,
-      middleName,
-      lastName,
-      role: existingDoc.exists()
-        ? (existingDoc.data().role as UserRole)
-        : USER_ROLE.STUDENT,
-      status: existingDoc.exists()
-        ? (existingDoc.data().status as UserStatus)
-        : USER_STATUS.ACTIVE,
-      enrollments: [],
-      organizationId: existingDoc.exists()
-        ? existingDoc.data().organizationId
-        : null,
-      photoURL: firebaseUser.photoURL || null,
-    });
+   if (!existingDoc.exists()) {
+      await userService.createUser(uid, {
+        
+        email: firebaseUser.email || "",
+        firstName,
+        middleName,
+        lastName,
+        role: USER_ROLE.STUDENT,
+        status: USER_STATUS.ACTIVE,
+        enrollments: [],
+        organizationId: null,
+        photoURL: firebaseUser.photoURL || null,
+      });
+    }
 
     return {
-      success: true,
-      userId: uid,
-      role: existingDoc.exists()
-        ? (existingDoc.data().role as UserRole)
-        : USER_ROLE.STUDENT,
-    };
+  success: true,
+  userId: uid,
+  role: existingDoc.exists()
+    ? (existingDoc.data().role as UserRole)
+    : USER_ROLE.STUDENT,
+};
   } catch (error: any) {
     return {
       success: false,

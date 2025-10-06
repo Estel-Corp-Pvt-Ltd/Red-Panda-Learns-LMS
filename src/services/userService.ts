@@ -28,14 +28,14 @@ class UserService {
      * Creates a new user in Firestore.
      */
     async createUser(
-        uid:string,
-        data: Omit<User, 'uid'|'id' | 'createdAt' | 'updatedAt'>
+uid:string,
+        data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>
     ): Promise<void> {
         try {
           
 
             const user: User = {
-                uid,
+                
                 id: uid,
                 email: data.email,
                 firstName: data.firstName,
