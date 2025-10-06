@@ -90,7 +90,6 @@ class AuthService {
         status: USER_STATUS.ACTIVE,
         enrollments: [],
         organizationId: null,
-        organizationType: ORGANIZATION.INDUSTRY,
         photoURL: firebaseUser.photoURL || null,
       });
 
@@ -147,9 +146,7 @@ class AuthService {
         organizationId: existingDoc.exists()
           ? existingDoc.data().organizationId
           : null,
-          organizationType: existingDoc.exists()
-          ? (existingDoc.data().organizationType as OrganizationType)
-          : ORGANIZATION.INDUSTRY,
+         
         photoURL: firebaseUser.photoURL || null,
       });
 
