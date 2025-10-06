@@ -62,6 +62,8 @@ export interface Transaction {
   parentTransactionId?: string; // if refund, points to original payment
   type: TransactionType;
 
+  
+
   amount: number; // final charged amount
   currency: Currency;
   originalAmount?: number; // in original currency
