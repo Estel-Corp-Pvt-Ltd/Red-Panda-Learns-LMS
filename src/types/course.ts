@@ -11,8 +11,6 @@ export interface Topic {
     title: string;
     items: TopicItem[];
 };
- 
-
 
 export interface Cohort {
   id: string;
@@ -35,8 +33,7 @@ export interface Cohort {
   // Auditing
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue ;
-}
-
+};
 
 export interface Enrollment {
   id: string;           // enrollment document id
@@ -44,7 +41,7 @@ export interface Enrollment {
   cohortId: string;
   status: 'active' | 'inactive' | 'pending'; // or other statuses you want
   enrolledAt: Date;
-}
+};
 
 export interface Course {
     id: string;
@@ -66,5 +63,3 @@ export interface Course {
     createdAt: Timestamp | FieldValue ;
     updatedAt: Timestamp | FieldValue ;
 };
-
-
