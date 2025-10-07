@@ -22,7 +22,7 @@ class UserService {
      * Generates a new user ID in the format `user_<number>`, starting from 10000000.
      * Uses a random gap between 5 and 20 to avoid easy guessing.
      */
-    
+
 
     /**
      * Creates a new user in Firestore.
@@ -32,11 +32,10 @@ uid:string,
         data: Omit<User,   'createdAt' | 'updatedAt'>
     ): Promise<void> {
         try {
-          
 
             const user: User = {
-                
                 id: uid,
+                username: data.username || '',
                 email: data.email,
                 firstName: data.firstName,
                 middleName: data.middleName || '',
@@ -53,7 +52,7 @@ uid:string,
             await setDoc(doc(db, 'Users', uid), user);
             console.log('UserService - User created successfully:', uid);
 
-           
+
         } catch (error) {
             console.error('UserService - Error creating user:', error);
             throw new Error('Failed to create user');
@@ -73,7 +72,7 @@ uid:string,
             }
 
             const updateData: Partial<User> = {
-                updatedAt:serverTimestamp(),    
+                updatedAt:serverTimestamp(),  
                 ...updates,
             };
 
@@ -82,6 +81,35 @@ uid:string,
         } catch (error) {
             console.error('UserService - Error updating user:', error);
             throw new Error('Failed to update user');
+        }
+    }
+
+    /**
+     * Retrieves user by username
+     */
+    async getUserByUsername(username:string): Promise<User | null> {
+        try {
+            const usersRef = collection(db, "users");
+            // Create query
+            const q = query(usersRef, where("username", "==", username));
+            // Execute query
+            const querySnapshot = await getDocs(q);
+            if(querySnapshot.empty) {
+                return null;
+            }
+
+            const userDoc = querySnapshot.docs[0];
+
+            const user = {
+                ...userDoc.data(),
+                createdAt: userDoc.data()?.createdAt.toDate(),
+                updatedAt: userDoc.data()?.updatedAt.toDate(),
+            } as User;
+
+            return user;
+        } catch (error) {
+            console.error('UserService - Error fetching user:', error);
+            return null;
         }
     }
 
