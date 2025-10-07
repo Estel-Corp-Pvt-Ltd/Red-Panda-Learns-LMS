@@ -41,9 +41,8 @@ export const fail = (
 });
 ```
 
-Now you have ok() and fail() to standardize all returns.
+You have ok() and fail() to standardize all returns.
 
-.
 
 **🧱 3️⃣ Refactor Functions Incrementally**
 
