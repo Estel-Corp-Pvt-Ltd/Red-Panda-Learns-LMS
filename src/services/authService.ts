@@ -72,7 +72,7 @@ class AuthService {
         return { success: false, error: "username does not exists" };
       }
 
-      const email = username+"@visuara.ai";
+      const email = username+"@vizuara.ai";
       const userCredential = await firebaseSignIn(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -154,7 +154,7 @@ class AuthService {
       }
 
 
-      const email = username+"@visuara.ai";
+      const email = username+"@vizuara.ai";
      const userCredential = await firebaseCreateUser(auth, email, password);
       const firebaseUser = userCredential.user;
 

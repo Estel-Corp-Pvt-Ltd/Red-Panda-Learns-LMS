@@ -14,7 +14,7 @@ import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { useNavigate } from 'react-router-dom';
-import { USER_ROLE } from '@/constants';
+import { COLLECTION, USER_ROLE } from '@/constants';
 import { formatDate } from '@/utils/date-time';
 
 
@@ -83,7 +83,7 @@ export default function DashboardPage() {
 
       try {
         // Query users collection where email == current user's email
-        const usersRef = collection(db, 'Users');
+        const usersRef = collection(db, COLLECTION.USERS);
         const q = query(usersRef, where('email', '==', user.email));
         const querySnapshot = await getDocs(q);
 
