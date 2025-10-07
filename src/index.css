@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.grecaptcha-badge {
+display: none !important;
+}
+
 /* LMS Design System - Modern, beautiful tokens for learning platform */
 @layer base {
   :root {

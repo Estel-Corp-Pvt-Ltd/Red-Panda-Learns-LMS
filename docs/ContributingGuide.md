@@ -77,3 +77,60 @@ Valid values: SCHOOL, INDUSTRY, COLLEGE.
 Default = INDUSTRY for all manual signups (including Google).
 Always use the ORGANIZATION constant and OrganizationType type.
 Update this document if a new organization type is added.
+
+
+🔹User Identity Standardization
+Overview
+All user documents in Firestore are now keyed directly by the Firebase Authentication UID.
+The UID serves both as the Firestore document ID and is stored inside the document as its id field.
+
+This replaces the older custom format (user_<number>, e.g., user_10000000) that caused mismatches between Auth and Firestore identifiers.
+
+
+New Standard
+Aspect	Rule
+Firestore document path	/users/{uid}
+Document ID	The Firebase Auth uid
+Stored field	id: uid (explicitly stored in the document data)
+Removed field	uid (no longer a separate field in the document)
+
+Example
+```bash
+
+users/
+  ajx7T34HdSmKyP9zR21L9LQ7v5o2
+    {
+      "id": "ajx7T34HdSmKyP9zR21L9LQ7v5o2",
+      "email": "user@example.com",
+      "firstName": "Aria",
+      "lastName": "Bennett",
+      "role": "STUDENT",
+      "status": "ACTIVE",
+      ...
+    }
+    ```
+
+Implementation Notes
+User creation
+
+When a user signs up or logs in via Google, the application calls userService.createUser(uid, data).
+userService automatically assigns id: uid before writing to Firestore.
+No code should manually generate or use the deprecated user_<number> identifiers.
+Queried relationships
+
+All lookups, joins, and rules now use the UID (user.id or document ID) as the definitive user reference.
+Security rules
+
+Firestore security rules validate using request.auth.uid exclusively.
+Example:
+```bash
+JavaScript
+
+match /users/{uid} {
+  allow read, update, delete: if request.auth.uid == uid;
+}
+```
+Benefits
+One‑to‑one mapping between Firebase Auth and Firestore.
+Simplified queries, stronger security, and easier integrations.
+Zero risk of ID mismatches between systems.
