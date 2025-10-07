@@ -1,33 +1,39 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Mail, Lock, User, Chrome } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/Header';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff, Mail, Lock, User, Chrome } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Header } from "@/components/Header";
 import { getRecaptchaToken } from "@/utils/recaptcha";
 
-
 export default function Signup() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
- const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setError('');
 
@@ -45,37 +51,33 @@ export default function Signup() {
   setLoading(true);
 
   try {
-    // 🔹 1. Get reCAPTCHA token
-    const token = await getRecaptchaToken();
+    // 🔹 1) Get v3 token with action 'signup'
+    const token = await getRecaptchaToken('signup');
     if (!token) {
       setError("⚠️ reCAPTCHA verification failed. Please try again.");
       setLoading(false);
       return;
     }
 
-    //  Load Cloud Function URL from .env.local
+    // 🔹 2) Verify on backend and enforce a score threshold (e.g., 0.6)
     const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
-
-
-    // 🔹 2. Verify reCAPTCHA token via Firebase Cloud Function
     const res = await fetch(verifyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, expectedAction: "signup" }),
     });
 
     const verifyData = await res.json();
 
-    if (!res.ok || !verifyData.success) {
+    if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.6) {
       setError("reCAPTCHA verification failed. Please try again.");
       setLoading(false);
       return;
     }
-    console.log("testing");
 
-    console.log(" reCAPTCHA passed, score:", verifyData.score);
+    console.log("reCAPTCHA v3 passed — score:", verifyData.score, "action:", verifyData.action);
 
-    // 🔹 3. Now proceed with Firebase signup
+    // 🔹 3) Proceed with Firebase signup
     const confirmation = await signup(email, password, name);
 
     if (confirmation.success) {
@@ -91,23 +93,24 @@ export default function Signup() {
       });
     }
   } catch (err: any) {
-    setError(err.message);
+    setError(err.message || "Something went wrong");
   } finally {
     setLoading(false);
   }
 };
 
   const handleGoogleSignup = async () => {
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await loginWithGoogle();
       toast({
         title: "Account created successfully!",
-        description: "Welcome to Vizuara AI Labs. You can now access your courses.",
+        description:
+          "Welcome to Vizuara AI Labs. You can now access your courses.",
       });
-      navigate('/dashboard', { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -122,11 +125,11 @@ export default function Signup() {
           <CardHeader className="space-y-1 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <img src="/logo.png" className="w-10" alt="" />
-              <span className="text-2xl font-bold">
-                Vizuara AI Labs
-              </span>
+              <span className="text-2xl font-bold">Vizuara AI Labs</span>
             </div>
-            <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              Create an account
+            </CardTitle>
             <CardDescription>
               Enter your information to get started with Vizuara AI Labs
             </CardDescription>
@@ -179,7 +182,7 @@ export default function Signup() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
+placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
@@ -240,7 +243,9 @@ export default function Signup() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -256,9 +261,46 @@ export default function Signup() {
             </Button>
           </CardContent>
 
-          <CardFooter className="flex flex-col items-center gap-3"> <p className="text-sm text-muted-foreground"> Already have an account?{" "} <Link to="/auth/login" className="text-primary hover:underline font-medium"> Sign in </Link> </p> <p className="text-[11px] text-muted-foreground text-center leading-snug"> This site is protected by reCAPTCHA and the Google{" "} <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline" > Privacy Policy </a>{" "} and{" "} <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline" > Terms of Service </a>{" "} apply. </p> </CardFooter>
+          <CardFooter className="flex flex-col items-center gap-3">
+            {" "}
+            <p className="text-sm text-muted-foreground">
+              {" "}
+              Already have an account?{" "}
+              <Link
+                to="/auth/login"
+                className="text-primary hover:underline font-medium"
+              >
+                {" "}
+                Sign in{" "}
+              </Link>{" "}
+            </p>{" "}
+            <p className="text-[11px] text-muted-foreground text-center leading-snug">
+              {" "}
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                {" "}
+                Privacy Policy{" "}
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://policies.google.com/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                {" "}
+                Terms of Service{" "}
+              </a>{" "}
+              apply.{" "}
+            </p>{" "}
+          </CardFooter>
         </Card>
       </div>
     </div>
   );
-};
+}
