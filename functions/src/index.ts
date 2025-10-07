@@ -8,7 +8,7 @@ import * as crypto from "crypto";
 const recaptchaSecret = defineSecret("RECAPTCHA_SECRET");
 import * as admin from "firebase-admin";
 
-import fetch from "node-fetch";  
+import fetch from "node-fetch";
 import Razorpay from "razorpay";
 
 if (!admin.apps.length) {
@@ -18,8 +18,6 @@ const db = admin.firestore();
 
 const razorpayKeyId = defineSecret("RAZORPAY_KEY_ID");
 const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
-
-
 
 function validateAmount(amount: any): number {
   if (typeof amount !== "number" || isNaN(amount)) {
@@ -41,16 +39,11 @@ function validateAmount(amount: any): number {
   return amount;
 }
 
-
-
 function validateCurrency(currency: any): string {
   const allowed = ["USD", "INR"];
   if (!allowed.includes(currency)) throw new Error("Invalid currency");
   return currency;
 }
-
-
-
 
 // ------------------ Create Order ------------------
 // Temporary in-memory cache (use Firestore/Redis for production)
@@ -61,7 +54,7 @@ export const createOrder = onRequest(
   { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Methods", "GET , POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
 
     if (req.method === "OPTIONS") {
@@ -77,13 +70,17 @@ export const createOrder = onRequest(
       // Grab idempotency key
       const idempotencyKey = req.get("Idempotency-Key");
       if (!idempotencyKey) {
-         res.status(400).json({ success: false, error: "Missing Idempotency-Key header" }) ;return;;
+        res
+          .status(400)
+          .json({ success: false, error: "Missing Idempotency-Key header" });
+        return;
       }
 
       // If we've seen this key, return cached response
       if (idempotencyCache.has(idempotencyKey)) {
         console.log(`♻️ Returning cached order for key: ${idempotencyKey}`);
-         res.json(idempotencyCache.get(idempotencyKey));return;
+        res.json(idempotencyCache.get(idempotencyKey));
+        return;
       }
 
       // Debug log
@@ -102,7 +99,9 @@ export const createOrder = onRequest(
 
       const rawamountNum = Number(rawamount);
       if (!rawamount || isNaN(rawamountNum)) {
-        throw new Error(`Invalid amount: rawamount could not be converted to number (got ${rawamount})`);
+        throw new Error(
+          `Invalid amount: rawamount could not be converted to number (got ${rawamount})`
+        );
       }
 
       const amountInPaise = Math.round(rawamountNum * 100);
@@ -135,13 +134,18 @@ export const createOrder = onRequest(
       res.json(response);
     } catch (err: any) {
       console.error("❌ Failed to create Razorpay order:", err);
-      res.status(500).json({ success: false, error: err.message || "Failed to create order" }) ; return;
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: err.message || "Failed to create order",
+        });
+      return;
     }
   }
 );
 
 // ------------------ Verify Payment ------------------
-
 
 export const verifyPayment = onRequest(
   { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
@@ -150,85 +154,104 @@ export const verifyPayment = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS") { res.status(204).send("");return;};
-    if (req.method !== "POST"){ res.status(405).send("Method not allowed");return;};
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).send("Method not allowed");
+      return;
+    }
 
- try {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, transaction_id } = req.body;
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        transaction_id,
+      } = req.body;
 
-  console.log("🔎 Incoming verifyPayment body:", req.body);
+      console.log("🔎 Incoming verifyPayment body:", req.body);
 
-  // Step 1: Validate HMAC signature
-  const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-  const expectedSignature = crypto
-    .createHmac("sha256", razorpayKeySecret.value())
-    .update(body)
-    .digest("hex");
+      // Step 1: Validate HMAC signature
+      const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+      const expectedSignature = crypto
+        .createHmac("sha256", razorpayKeySecret.value())
+        .update(body)
+        .digest("hex");
 
-  if (expectedSignature !== razorpay_signature) {
-    console.warn("❌ Invalid signature", { expectedSignature, razorpay_signature });
-     res.status(400).json({ success: false, error: "Invalid signature" }) ;return ;
-  }
+      if (expectedSignature !== razorpay_signature) {
+        console.warn("❌ Invalid signature", {
+          expectedSignature,
+          razorpay_signature,
+        });
+        res.status(400).json({ success: false, error: "Invalid signature" });
+        return;
+      }
 
-  // Step 2: Check transaction record in DB
-  const txnRef = db.collection("Transactions").doc(transaction_id);
-  const txnSnap = await txnRef.get();
+      // Step 2: Check transaction record in DB
+      const txnRef = db.collection("Transactions").doc(transaction_id);
+      const txnSnap = await txnRef.get();
 
-  if (!txnSnap.exists) {
-    console.warn("❌ Transaction not found:", transaction_id);
-     res.status(404).json({ success: false, error: "Transaction not found" }) ;return ;
-  }
+      if (!txnSnap.exists) {
+        console.warn("❌ Transaction not found:", transaction_id);
+        res
+          .status(404)
+          .json({ success: false, error: "Transaction not found" });
+        return;
+      }
 
-  const txn = txnSnap.data()!;
-  console.log("✅ Transaction fetched from DB:", txn);
+      const txn = txnSnap.data()!;
+      console.log("✅ Transaction fetched from DB:", txn);
 
-  if (txn.status === "COMPLETED") {
-    console.log("ℹ️ Transaction already completed, returning success (idempotent)");
-     res.json({ success: true, transaction_id }) ;return ;
-  }
+      if (txn.status === "COMPLETED") {
+        console.log(
+          "ℹ️ Transaction already completed, returning success (idempotent)"
+        );
+        res.json({ success: true, transaction_id });
+        return;
+      }
 
-  // Step 3: Cross-check with Razorpay API
- const instance = new Razorpay({
-      key_id: razorpayKeyId.value(),
-      key_secret: razorpayKeySecret.value(),
-    });
+      // Step 3: Cross-check with Razorpay API
+      const instance = new Razorpay({
+        key_id: razorpayKeyId.value(),
+        key_secret: razorpayKeySecret.value(),
+      });
 
-  let payment;
-  try {
-    payment = await instance.payments.fetch(razorpay_payment_id);
-    console.log("✅ Razorpay payment fetched:", payment);
-  } catch (fetchErr) {
-    console.error("❌ Razorpay fetch failed:", fetchErr);
-     res.status(400).json({ success: false, error: "Invalid payment ID" }) ;return ;
-  }
+      let payment;
+      try {
+        payment = await instance.payments.fetch(razorpay_payment_id);
+        console.log("✅ Razorpay payment fetched:", payment);
+      } catch (fetchErr) {
+        console.error("❌ Razorpay fetch failed:", fetchErr);
+        res.status(400).json({ success: false, error: "Invalid payment ID" });
+        return;
+      }
 
-  if (payment.status !== "captured") {
-     res.status(400).json({ success: false, error: "Payment not captured" }) ;return ;
-  }
+      if (payment.status !== "captured") {
+        res.status(400).json({ success: false, error: "Payment not captured" });
+        return;
+      }
 
+      // Step 4: Update transaction as completed
+      // await txnRef.update({
+      //   status: "COMPLETED",
+      //   razorpay_order_id,
+      //   razorpay_payment_id,
+      //   razorpay_signature,
+      //   completedAt: Date.now(),
+      // });
 
-  // Step 4: Update transaction as completed
-  await txnRef.update({
-    status: "COMPLETED",
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    completedAt: Date.now(),
-  });
-
-  console.log("✅ Transaction updated to COMPLETED:", transaction_id);
-   res.json({ success: true, transaction_id });return ;
-
-} catch (error) {
-  console.error("❌ Verification crash:", error);
-   res.status(500).json({ success: false, error: "Server error", });return ;
-}
+      console.log("✅ Transaction updated to COMPLETED:", transaction_id);
+      res.json({ success: true, transaction_id });
+      return;
+    } catch (error) {
+      console.error("❌ Verification crash:", error);
+      res.status(500).json({ success: false, error: "Server error" });
+      return;
+    }
   }
 );
-
-
-
-
 
 // ------------------ PayPal Provider ------------------
 
@@ -271,16 +294,30 @@ export const createPaypalOrder = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
 
-    if (req.method === "OPTIONS"){  res.status(204).send(""); return};
-    if (req.method !== "POST") { res.status(405).json({ success: false, message: "Method not allowed" }); return};
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).json({ success: false, message: "Method not allowed" });
+      return;
+    }
 
     try {
       const idempotencyKey = req.get("Idempotency-Key");
-      if (!idempotencyKey) { res.status(400).json({ success: false, error: "Missing Idempotency-Key header" })  ; return };
+      if (!idempotencyKey) {
+        res
+          .status(400)
+          .json({ success: false, error: "Missing Idempotency-Key header" });
+        return;
+      }
 
       if (paypalIdempotencyCache.has(idempotencyKey)) {
-        console.log(`♻️ Returning cached PayPal order for key: ${idempotencyKey}`);
-         res.json(paypalIdempotencyCache.get(idempotencyKey)) ; return;
+        console.log(
+          `♻️ Returning cached PayPal order for key: ${idempotencyKey}`
+        );
+        res.json(paypalIdempotencyCache.get(idempotencyKey));
+        return;
       }
 
       const { rawamount, rawcurrency, description, transactionId } = req.body;
@@ -320,13 +357,16 @@ export const createPaypalOrder = onRequest(
 
       // Store transaction in Firestore
       const txnRef = db.collection("Transactions").doc(transactionId);
-      await txnRef.set({
-        status: "PENDING",
-        provider: "PAYPAL",
-        expectedAmount: amount,
-        currency,
-        createdAt: Date.now(),
-      }, { merge: true });
+      await txnRef.set(
+        {
+          status: "PENDING",
+          provider: "PAYPAL",
+          expectedAmount: amount,
+          currency,
+          createdAt: Date.now(),
+        },
+        { merge: true }
+      );
 
       const response = {
         success: true,
@@ -335,11 +375,17 @@ export const createPaypalOrder = onRequest(
       };
 
       paypalIdempotencyCache.set(idempotencyKey, response);
-       res.json(response) ; return;
-
+      res.json(response);
+      return;
     } catch (err: any) {
       console.error("❌ Failed to create PayPal order:", err);
-       res.status(500).json({ success: false, error: err.message || "Failed to create order" }) ; return;
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: err.message || "Failed to create order",
+        });
+      return;
     }
   }
 );
@@ -352,8 +398,14 @@ export const capturePaypalOrder = onRequest(
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS") { res.status(204).send(""); return};
-    if (req.method !== "POST"){  res.status(405).json({ success: false, message: "Method not allowed" }); return};
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).json({ success: false, message: "Method not allowed" });
+      return;
+    }
 
     try {
       const { orderId, transactionId } = req.body;
@@ -385,19 +437,22 @@ export const capturePaypalOrder = onRequest(
           completedAt: Date.now(),
         });
 
-         res.json({ success: true, capture: captureData }) ; return;
+        res.json({ success: true, capture: captureData });
+        return;
       } else {
         console.error("❌ PayPal capture failed:", captureData);
-         res.status(400).json({ success: false, error: captureData }) ; return;
+        res.status(400).json({ success: false, error: captureData });
+        return;
       }
-
     } catch (err) {
       console.error("❌ Failed to capture PayPal order:", err);
-       res.status(500).json({ success: false, error: "Failed to capture order" }) ; return;
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to capture order" });
+      return;
     }
   }
 );
-
 
 // ✅ Define the expected reCAPTCHA API response
 interface RecaptchaResponse {
@@ -433,9 +488,8 @@ export const verifyRecaptcha = onRequest(
       logger.info("👉 Incoming body:", req.body);
 
       if (!token) {
-        res.status(400).json({ success: false, message: "Missing token" })
+        res.status(400).json({ success: false, message: "Missing token" });
         return;
-        ;
       }
 
       const secret = recaptchaSecret.value();
