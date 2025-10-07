@@ -178,7 +178,7 @@ const CurriculumBuilderPage = () => {
       setSalePrice(courseData.salePrice);
 
       setSelectedTargetAudiences(courseData.targetAudienceIds || []);
-      setSelectedCategories(courseData.categoryIds || [] )
+      setCategories(courseData.categoryIds || [] );
       setTags(courseData.tags || []);
       setAuthorId(courseData.authorId);
       setAuthorName(courseData.authorName);
@@ -248,8 +248,7 @@ const CurriculumBuilderPage = () => {
         regularPrice,
         salePrice,
          targetAudienceIds: selectedTargetAudiences,
-         categoryIds : SelectedCategories,
-  
+         categoryIds : categories,
         tags,
         authorId,
         authorName,
@@ -652,10 +651,7 @@ const CurriculumBuilderPage = () => {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              </div>
-
-
+                  
               {/* Categories */}
 <Card className="rounded-xl border p-4">
   <CardHeader className="pb-2">
@@ -668,7 +664,7 @@ const CurriculumBuilderPage = () => {
     {allCategories.map((cat) => (
       <label key={cat} className="flex items-center gap-2 cursor-pointer">
         <Checkbox
-          checked={SelectedCategories.includes(cat)}
+          checked={categories.includes(cat)}
           onCheckedChange={() =>
             setCategories((prev) =>
               prev.includes(cat)
@@ -734,6 +730,11 @@ const CurriculumBuilderPage = () => {
     />
   </CardContent>
 </Card>
+
+
+                </div>
+              </div>
+
 
 
               {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
