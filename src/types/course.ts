@@ -54,7 +54,8 @@ export interface Course {
     salePrice: number;
     pricingModel: PricingModel;
     tags: string[];
-    categories: string[];
+    categoryIds: string[];      
+    targetAudienceIds: string[]; 
     authorId: string;
     authorName: string;
     status: CourseStatus;

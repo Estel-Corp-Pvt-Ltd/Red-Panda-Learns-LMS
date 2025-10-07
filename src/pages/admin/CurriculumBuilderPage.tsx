@@ -47,6 +47,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
+import { AttributeService } from "@/services/attributeService";
+// import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
+
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
 type DraggableItemType = LearningUnit | 'COHORT';
 
@@ -115,6 +118,11 @@ const CurriculumBuilderPage = () => {
   const [regularPrice, setRegularPrice] = useState(0);
   const [salePrice, setSalePrice] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [SelectedCategories,setSelectedCategories] = useState<string[]>([]);
+  const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
+  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<string[]>([]);
+
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [authorId, setAuthorId] = useState("");
@@ -125,6 +133,29 @@ const CurriculumBuilderPage = () => {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+
+  useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const categoriesData = await AttributeService.getAttributes("Category");
+      const targetAudienceData = await AttributeService.getAttributes("TargetAudience");
+
+      setAllCategories(categoriesData.map((a) => a.name));
+      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+    } catch (error) {
+      console.error("Error fetching attributes:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load categories or target audiences.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  fetchAttributes();
+}, [toast]);
+
 
   useEffect(() => {
     loadCourseData();
@@ -145,7 +176,9 @@ const CurriculumBuilderPage = () => {
       setStatus(courseData.status);
       setRegularPrice(courseData.regularPrice);
       setSalePrice(courseData.salePrice);
-      setCategories(courseData.categories || []);
+
+      setSelectedTargetAudiences(courseData.targetAudienceIds || []);
+      setSelectedCategories(courseData.categoryIds || [] )
       setTags(courseData.tags || []);
       setAuthorId(courseData.authorId);
       setAuthorName(courseData.authorName);
@@ -214,7 +247,9 @@ const CurriculumBuilderPage = () => {
         description: description.trim(),
         regularPrice,
         salePrice,
-        categories,
+         targetAudienceIds: selectedTargetAudiences,
+         categoryIds : SelectedCategories,
+  
         tags,
         authorId,
         authorName,
@@ -551,7 +586,7 @@ const CurriculumBuilderPage = () => {
                   </Card>
 
                   {/* Categories */}
-                  <Card className="rounded-xl border p-4">
+                  {/* <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Categories</CardTitle>
                       <p className="text-xs text-muted-foreground">
@@ -575,7 +610,7 @@ const CurriculumBuilderPage = () => {
                         </label>
                       ))}
                     </CardContent>
-                  </Card>
+                  </Card> */}
 
                   {/* Tags */}
                   <Card className="rounded-xl border p-4">
@@ -619,6 +654,87 @@ const CurriculumBuilderPage = () => {
                   </Card>
                 </div>
               </div>
+
+
+              {/* Categories */}
+<Card className="rounded-xl border p-4">
+  <CardHeader className="pb-2">
+    <CardTitle>Categories</CardTitle>
+    <p className="text-xs text-muted-foreground">
+      Pick one or more to help discovery
+    </p>
+  </CardHeader>
+  <CardContent className="space-y-2">
+    {allCategories.map((cat) => (
+      <label key={cat} className="flex items-center gap-2 cursor-pointer">
+        <Checkbox
+          checked={SelectedCategories.includes(cat)}
+          onCheckedChange={() =>
+            setCategories((prev) =>
+              prev.includes(cat)
+                ? prev.filter((c) => c !== cat)
+                : [...prev, cat]
+            )
+          }
+        />
+        {cat}
+      </label>
+    ))}
+
+    {/* Option to add new category */}
+    <Input
+      placeholder="Add new category"
+      onKeyDown={async (e) => {
+        if (e.key === "Enter" && e.currentTarget.value.trim()) {
+          const newCat = e.currentTarget.value.trim();
+          await AttributeService.addAttribute("Category", newCat);
+          setAllCategories((prev) => [...prev, newCat]);
+          setCategories((prev) => [...prev, newCat]);
+          e.currentTarget.value = "";
+        }
+      }}
+    />
+  </CardContent>
+</Card>
+
+{/* Target Audience */}
+<Card className="rounded-xl border p-4">
+  <CardHeader className="pb-2">
+    <CardTitle>Target Audience</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-2">
+    {allTargetAudiences.map((aud) => (
+      <label key={aud} className="flex items-center gap-2 cursor-pointer">
+        <Checkbox
+          checked={selectedTargetAudiences.includes(aud)}
+          onCheckedChange={() =>
+            setSelectedTargetAudiences((prev) =>
+              prev.includes(aud)
+                ? prev.filter((a) => a !== aud)
+                : [...prev, aud]
+            )
+          }
+        />
+        {aud}
+      </label>
+    ))}
+
+    {/* Option to add new audience */}
+    <Input
+      placeholder="Add new target audience"
+      onKeyDown={async (e) => {
+        if (e.key === "Enter" && e.currentTarget.value.trim()) {
+          const newAud = e.currentTarget.value.trim();
+          await AttributeService.addAttribute("TargetAudience", newAud);
+          setAllTargetAudiences((prev) => [...prev, newAud]);
+          setSelectedTargetAudiences((prev) => [...prev, newAud]);
+          e.currentTarget.value = "";
+        }
+      }}
+    />
+  </CardContent>
+</Card>
+
 
               {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
               <div className="space-y-6">

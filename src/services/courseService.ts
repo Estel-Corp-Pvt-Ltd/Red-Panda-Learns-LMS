@@ -91,7 +91,10 @@ class CourseService {
         salePrice: 0,
         pricingModel: PRICING_MODEL.PAID,
         tags: [],
-        categories: [],
+        // categories: [],
+
+        categoryIds: data.categoryIds || [],
+       targetAudienceIds: data.targetAudienceIds || [],
         authorId: data.authorId,
         status: COURSE_STATUS.DRAFT,
         certificateTemplateId: data.certificateTemplateId || '',
@@ -157,7 +160,9 @@ class CourseService {
       if (updates.url) updateData.url = updates.url;
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
-      if (updates.categories) updateData.categories = updates.categories;
+      // if (updates.categories) updateData.categories = updates.categories;
+     if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
+     if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.status) updateData.status = updates.status;
       if (updates.authorId) updateData.authorId = updates.authorId;

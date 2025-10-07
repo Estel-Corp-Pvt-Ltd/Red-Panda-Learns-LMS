@@ -39,6 +39,7 @@ import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
+import { AttributeManager } from "./components/admin/attribute";
 
 const queryClient = new QueryClient();
 
@@ -186,6 +187,14 @@ const App = () => (
                   element={
                     <AuthGuard requireAdmin >
                       <CurriculumBuilderPage />
+                    </AuthGuard>
+                  }
+                />
+                    <Route
+                  path="/admin/add-attribute"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <AttributeManager />
                     </AuthGuard>
                   }
                 />
