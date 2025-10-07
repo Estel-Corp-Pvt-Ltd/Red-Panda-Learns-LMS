@@ -195,14 +195,11 @@ export default function Login() {
             </Button>
           </CardContent>
 
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link to="/auth/signup" className="text-primary hover:underline font-medium">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
+          
+
+         
+
+          <CardFooter className="flex flex-col items-center gap-3"> <p className="text-sm text-muted-foreground"> Don&apos;t have an account?{" "} <Link to="/auth/signup" className="text-primary hover:underline font-medium"> Sign up </Link> </p> <p className="text-[11px] text-muted-foreground text-center leading-snug"> This site is protected by reCAPTCHA and the Google{" "} <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline" > Privacy Policy </a>{" "} and{" "} <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline" > Terms of Service </a>{" "} apply. </p> </CardFooter>
         </Card>
       </div>
     </div>
