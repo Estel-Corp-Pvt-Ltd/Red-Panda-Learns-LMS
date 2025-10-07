@@ -1,10 +1,10 @@
 # Razorpay Payment Integration - Detailed Technical Analysis
 
 ## 🏗️ System Architecture
-- [Razorpay System Architecture](./Razorpay_System_Architecture)
+- [Razorpay System Architecture](Razorpay_System_Architecture)
 
 ## 🔄 Payment Flow Sequence
-- [Razorpay Flow Sequence](./Razorpay_Flow_Sequence)
+- [Razorpay Flow Sequence](Razorpay_Flow_Sequence)
 
 ## 📁 Backend Implementation Analysis
 
@@ -272,7 +272,7 @@ const response = await fetch(`${this.backendUrl}/createOrder`, {
 ## ⚡ Amount Handling System
 
 ### Currency Conversion Pipeline
-- [Razorpay Currency Conversion](./Razorpay_Currency_Conversion)
+- [Razorpay Currency Conversion](Razorpay_Currency_Conversion)
 #### Frontend (Rupees)
 ```typescript
 // User sees: ₹100
@@ -397,7 +397,7 @@ if (!verificationData.success) {
 ```
 
 ## 🔄 State Management Flow
-- [Razorpay State Management](./Razorpay_State_Management)
+- [Razorpay State Management](Razorpay_State_Management)
 
 ## 📈 Monitoring and Logging
 
