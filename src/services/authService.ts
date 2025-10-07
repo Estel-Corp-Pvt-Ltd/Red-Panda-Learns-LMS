@@ -61,6 +61,47 @@ class AuthService {
     }
   }
 
+  /** 🔹 Email/Password Login */
+  async signInWithUsernameAndPassword(
+    username: string,
+    password: string
+  ): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const user = await userService.getUserByUsername(username);
+      if(user == null) {
+        return { success: false, error: "username does not exists" };
+      }
+
+      const email = username+"@vizuara.ai";
+      const userCredential = await firebaseSignIn(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // First, try to fetch user by Firebase UID
+      const userDocRef = doc(db, "Users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let userData: User | null = null;
+      if (userDocSnap.exists()) {
+        userData = userDocSnap.data() as User;
+      } else {
+        // fallback: query by email
+        const usersRef = collection(db, "Users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          userData = querySnap.docs[0].data() as User;
+        }
+      }
+
+      if (!userData) {
+        return { success: false, error: "User profile not found in Firestore." };
+      }
+      return { success: true, user: userData };
+    } catch (error: any) {
+      return { success: false, error: this.handleAuthError(error).message };
+    }
+  }
+
   /** 🔹 Create new Email/Password user & Firestore user doc */
   async createUserWithEmailAndPassword(
     email: string,
@@ -100,8 +141,53 @@ class AuthService {
     }
   }
 
-  /**
-   
+  /** 🔹 Create new Email/Password user & Firestore user doc */
+  async createUserWithUsernameAndPassword(
+    username: string,
+    password: string,
+    name: string
+  ): Promise<AuthResponse> {
+    try {
+      const user = await userService.getUserByUsername(username);
+      if(user != null) {
+        return { success: false, error: "username already exists" };
+      }
+
+
+      const email = username+"@vizuara.ai";
+     const userCredential = await firebaseCreateUser(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Break down full name
+      const parts = name.trim().split(/\s+/);
+      const firstName = parts[0] || "";
+      const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+      const middleName = parts.length > 2 ? parts.slice(1, -1).join(" ") : null;
+
+      // Update Firebase Auth profile
+      await updateProfile(firebaseUser, { displayName: name });
+
+      // Create Firestore user document
+      const userId = await userService.createUser(firebaseUser.uid, {
+        id: firebaseUser.uid,
+        username,
+        email,
+        firstName,
+        middleName,
+        lastName,
+        role: USER_ROLE.STUDENT,
+        status: USER_STATUS.ACTIVE,
+        enrollments: [],
+        organizationId: null,
+        photoURL: firebaseUser.photoURL || null,
+      });
+
+      return { success: true, userId: firebaseUser.uid };
+    } catch (error: any) {
+      return { success: false, error: this.handleAuthError(error).message };
+    }
+  }
+
  /** 🔹 Google Sign‑In (using popup) */
 async signInWithGoogle(): Promise<{
   success: boolean;

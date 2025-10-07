@@ -16,13 +16,14 @@ import {
 import { db } from '@/firebaseConfig';
 import { UserRole, UserStatus , OrganizationType} from '@/types/general';
 import { User } from '@/types/user';
+import { COLLECTION } from '@/constants';
 
 class UserService {
     /**
      * Generates a new user ID in the format `user_<number>`, starting from 10000000.
      * Uses a random gap between 5 and 20 to avoid easy guessing.
      */
-    
+
 
     /**
      * Creates a new user in Firestore.
@@ -32,11 +33,10 @@ uid:string,
         data: Omit<User,   'createdAt' | 'updatedAt'>
     ): Promise<void> {
         try {
-          
 
             const user: User = {
-                
                 id: uid,
+                username: data.username || '',
                 email: data.email,
                 firstName: data.firstName,
                 middleName: data.middleName || '',
@@ -50,10 +50,10 @@ uid:string,
                 updatedAt: serverTimestamp(),
             };
 
-            await setDoc(doc(db, 'Users', uid), user);
+            await setDoc(doc(db, COLLECTION.USERS, uid), user);
             console.log('UserService - User created successfully:', uid);
 
-           
+
         } catch (error) {
             console.error('UserService - Error creating user:', error);
             throw new Error('Failed to create user');
@@ -65,7 +65,7 @@ uid:string,
      */
     async updateUser(uid: string, updates: Partial<User>): Promise<void> {
         try {
-            const userRef = doc(db, 'Users', uid);
+            const userRef = doc(db, COLLECTION.USERS, uid);
             const userDoc = await getDoc(userRef);
 
             if (!userDoc.exists()) {
@@ -73,7 +73,7 @@ uid:string,
             }
 
             const updateData: Partial<User> = {
-                updatedAt:serverTimestamp(),    
+                updatedAt:serverTimestamp(),  
                 ...updates,
             };
 
@@ -86,11 +86,40 @@ uid:string,
     }
 
     /**
+     * Retrieves user by username
+     */
+    async getUserByUsername(username:string): Promise<User | null> {
+        try {
+            const usersRef = collection(db, "users");
+            // Create query
+            const q = query(usersRef, where("username", "==", username));
+            // Execute query
+            const querySnapshot = await getDocs(q);
+            if(querySnapshot.empty) {
+                return null;
+            }
+
+            const userDoc = querySnapshot.docs[0];
+
+            const user = {
+                ...userDoc.data(),
+                createdAt: userDoc.data()?.createdAt.toDate(),
+                updatedAt: userDoc.data()?.updatedAt.toDate(),
+            } as User;
+
+            return user;
+        } catch (error) {
+            console.error('UserService - Error fetching user:', error);
+            return null;
+        }
+    }
+
+    /**
      * Retrieves a single user by ID.
      */
     async getUserById(uid: string): Promise<User | null> {
         try {
-            const userDoc = await getDoc(doc(db, 'Users', uid));
+            const userDoc = await getDoc(doc(db, COLLECTION.USERS, uid));
 
             if (!userDoc.exists()) {
                 console.log('UserService - User not found:', uid);
@@ -116,7 +145,7 @@ uid:string,
      */
     async getAllUsers(): Promise<User[]> {
         try {
-            const querySnapshot = await getDocs(collection(db, 'Users'));
+            const querySnapshot = await getDocs(collection(db, COLLECTION.USERS));
 
             const users = querySnapshot.docs.map((doc) => ({
                 ...doc.data(),
@@ -140,7 +169,7 @@ uid:string,
         filters?: { field: keyof User; op: WhereFilterOp; value: any }[]
     ): Promise<User[]> {
         try {
-            let q = collection(db, 'Users');
+            let q = collection(db, COLLECTION.USERS);
 
             if (filters && filters.length > 0) {
                 let queryRef = query(
@@ -181,7 +210,7 @@ uid:string,
      */
     async deleteUser(uid: string): Promise<void> {
         try {
-            await deleteDoc(doc(db, 'Users', uid));
+            await deleteDoc(doc(db, COLLECTION.USERS, uid));
             console.log('UserService - User deleted successfully:', uid);
         } catch (error) {
             console.error('UserService - Error deleting user:', error);
@@ -194,7 +223,7 @@ uid:string,
      */
     async changeUserRole(uid: string, newRole: UserRole): Promise<void> {
         try {
-            const userRef = doc(db, 'Users', uid);
+            const userRef = doc(db, COLLECTION.USERS, uid);
             await updateDoc(userRef, { role: newRole, updatedAt: serverTimestamp() });
             console.log('UserService - User role updated successfully:', uid);
         } catch (error) {
@@ -211,7 +240,7 @@ uid:string,
         newStatus: UserStatus
     ): Promise<void> {
         try {
-            const userRef = doc(db, 'Users', uid);
+            const userRef = doc(db, COLLECTION.USERS, uid);
             await updateDoc(userRef, { status: newStatus, updatedAt:serverTimestamp() });
             console.log('UserService - User status updated successfully:', uid, newStatus);
         } catch (error) {

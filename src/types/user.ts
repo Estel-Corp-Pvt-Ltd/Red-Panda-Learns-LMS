@@ -3,8 +3,8 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 
 export interface User {
-    
     id: string;
+    username?: string;
     email: string;
     firstName: string;
     middleName?: string;

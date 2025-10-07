@@ -312,7 +312,7 @@ export const RAZORPAY_WEBHOOK_EVENT = {
     },
 } as const;
 
-export const COLLECTIONS = {
+export const COLLECTION = {
     COURSES: 'Courses',
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',
