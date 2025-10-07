@@ -1,36 +1,43 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Mail, Lock, Chrome } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/Header';
-import { USER_ROLE } from '@/constants';
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff, Mail, Lock, Chrome } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Header } from "@/components/Header";
+import { USER_ROLE } from "@/constants";
 import { getRecaptchaToken } from "@/utils/recaptcha";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = (location.state as any)?.from?.pathname || "/";
   const message = (location.state as any)?.message;
 
   // 🔹 Shared reCAPTCHA verification logic
   const verifyRecaptcha = async () => {
-    const token = await getRecaptchaToken("login");  // add action for clarity
+    const token = await getRecaptchaToken("login"); // add action for clarity
 
     const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
     const res = await fetch(verifyUrl, {
@@ -44,12 +51,11 @@ export default function Login() {
     if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.5) {
       throw new Error("⚠️ Bot verification failed. Debug info in console.");
     }
-
   };
   // 🔹 Email/Password Login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -58,7 +64,10 @@ export default function Login() {
       const { success, error, user } = await login(email, password);
 
       if (success) {
-        toast({ title: "Welcome back!", description: "You have successfully logged in." });
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
         } else {
@@ -76,7 +85,7 @@ export default function Login() {
 
   // 🔹 Google OAuth Login
   const handleGoogleLogin = async () => {
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -108,15 +117,21 @@ export default function Login() {
               <span className="text-2xl font-bold">Vizuara AI Labs</span>
             </div>
             <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardDescription>
+              Enter your credentials to access your account
+            </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
             {message && (
-              <Alert><AlertDescription>{message}</AlertDescription></Alert>
+              <Alert>
+                <AlertDescription>{message}</AlertDescription>
+              </Alert>
             )}
             {error && (
-              <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -156,15 +171,20 @@ export default function Login() {
                     className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword
-                      ? <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </Button>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -179,7 +199,9 @@ export default function Login() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -195,11 +217,44 @@ export default function Login() {
             </Button>
           </CardContent>
 
-          
-
-         
-
-          <CardFooter className="flex flex-col items-center gap-3"> <p className="text-sm text-muted-foreground"> Don&apos;t have an account?{" "} <Link to="/auth/signup" className="text-primary hover:underline font-medium"> Sign up </Link> </p> <p className="text-[11px] text-muted-foreground text-center leading-snug"> This site is protected by reCAPTCHA and the Google{" "} <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline" > Privacy Policy </a>{" "} and{" "} <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline" > Terms of Service </a>{" "} apply. </p> </CardFooter>
+          <CardFooter className="flex flex-col items-center gap-3">
+            {" "}
+            <p className="text-sm text-muted-foreground">
+              {" "}
+              Don&apos;t have an account?{" "}
+              <Link
+                to="/auth/signup"
+                className="text-primary hover:underline font-medium"
+              >
+                {" "}
+                Sign up{" "}
+              </Link>{" "}
+            </p>{" "}
+            <p className="text-[11px] text-muted-foreground text-center leading-snug">
+              {" "}
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                {" "}
+                Privacy Policy{" "}
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://policies.google.com/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                {" "}
+                Terms of Service{" "}
+              </a>{" "}
+              apply.{" "}
+            </p>{" "}
+          </CardFooter>
         </Card>
       </div>
     </div>
