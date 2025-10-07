@@ -99,8 +99,8 @@ class CourseService {
         topics: [],
         cohorts: [],
         isEnrollmentPaused: true,
-        createdAt: serverTimestamp() ,
-        updatedAt: serverTimestamp() ,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, 'Courses', courseId), course);
@@ -149,12 +149,13 @@ class CourseService {
       }
 
       const updateData: Partial<Course> = {
-        updatedAt: serverTimestamp() ,
+        updatedAt: serverTimestamp(),
       };
 
       // Simple field mapping
       if (updates.title) updateData.title = updates.title;
       if (updates.description) updateData.description = updates.description;
+      if (updates.thumbnail) updateData.thumbnail = updates.thumbnail;
       if (updates.url) updateData.url = updates.url;
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
@@ -167,8 +168,8 @@ class CourseService {
       if (updates.topics) updateData.topics = updates.topics;
       if (updates.isEnrollmentPaused !== undefined) updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
       if (updates.certificateTemplateId) updateData.certificateTemplateId = updates.certificateTemplateId;
-       if (updates.cohorts) updateData.cohorts = updates.cohorts;
-       
+      if (updates.cohorts) updateData.cohorts = updates.cohorts;
+
       await updateDoc(courseRef, updateData);
       console.log('CourseService - Course updated successfully:', courseId);
     } catch (error) {
@@ -199,7 +200,7 @@ class CourseService {
       const courseRef = doc(db, 'Courses', courseId);
       await updateDoc(courseRef, {
         status: COURSE_STATUS.PUBLISHED,
-        updatedAt: serverTimestamp() ,
+        updatedAt: serverTimestamp(),
       });
       console.log('CourseService - Course published successfully:', courseId);
     } catch (error) {
@@ -230,10 +231,10 @@ class CourseService {
   async getAllCourses(): Promise<Course[]> {
     try {
       const querySnapshot = await getDocs(collection(db, 'Courses'));
-      
+
       const courses = querySnapshot.docs.map(doc => ({
         ...doc.data(),
-        
+
         createdAt: doc.data().createdAt.toDate(),
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Course[];
