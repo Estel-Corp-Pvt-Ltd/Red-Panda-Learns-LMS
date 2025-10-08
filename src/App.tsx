@@ -42,6 +42,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import RefundPage from "./pages/RefundPolicy";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
+// import { AttributeManager } from "./components/admin/attribute";
 
 const queryClient = new QueryClient();
 
@@ -185,6 +186,14 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
+                    {/* <Route
+                  path="/admin/add-attribute"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <AttributeManager />
+                    </AuthGuard>
+                  }
+                /> */}
                 <Route
                   path="/cohort/:cohortId"
                   element={<UserCohortDetailPage />}

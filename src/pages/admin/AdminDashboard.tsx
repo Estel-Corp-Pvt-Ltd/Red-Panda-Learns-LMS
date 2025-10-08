@@ -291,7 +291,7 @@ export function AdminDashboard() {
         variant: "destructive"
       });
     }
-  };
+  }; 
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -542,6 +542,10 @@ export function AdminDashboard() {
             <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
               <Calendar className="mr-2 h-4 w-4" />
               Create New Cohort
+            </Button>
+             <Button onClick={() => navigate("/admin/create-coupon")}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Create New Coupon
             </Button>
           </div>
         </div>
@@ -1139,98 +1143,97 @@ export function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="coupons">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Coupons</CardTitle>
-                  <CardDescription>
-                    Manage discount codes, their usage, and validity.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {coupons.length === 0 && !loading ? (
-                    <div className="text-center py-8">
-                      <Gift className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Get started by creating a coupon code.
-                      </p>
-                      <div className="mt-6">
-                        <Button onClick={() => navigate('/admin/create-coupon')}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create Coupon
+             <TabsContent value="coupons">
+      <Card>
+        <CardHeader>
+          <CardTitle>Coupons</CardTitle>
+          <CardDescription>
+            Manage discount codes, their usage, and validity.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {coupon.length === 0 && !loading ? (
+            <div className="text-center py-8">
+              <Gift className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by creating a coupon code.
+              </p>
+              <div className="mt-6">
+                <Button onClick={() => navigate('/admin/create-coupon')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Coupon
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Discount</TableHead>
+                  <TableHead>Usage</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {coupon.map((coupon) => (
+                  <TableRow key={coupon.id}>
+                    <TableCell className="font-medium">{coupon.code}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          coupon.status === CouponStatus.ACTIVE
+                            ? 'default'
+                            : coupon.status === CouponStatus.EXPIRED
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {coupon.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                  {coupon.discountPercentage}
+                    </TableCell>
+                    <TableCell>
+  {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
+</TableCell>
+                    <TableCell>
+                      {coupon.expiryDate
+                        ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
+                        : 'No expiry'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                          title="Edit Coupon"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { deleteCoupon(coupon.id) }}
+                          title="Delete Coupon"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Discount</TableHead>
-                          <TableHead>Usage</TableHead>
-                          <TableHead>Expires</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {coupons.map((coupon) => (
-                          <TableRow key={coupon.id}>
-                            <TableCell className="font-medium">{coupon.code}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  coupon.status === COUPON_STATUS.ACTIVE
-                                    ? 'default'
-                                    : coupon.status === COUPON_STATUS.EXPIRED
-                                      ? 'secondary'
-                                      : 'outline'
-                                }
-                              >
-                                {coupon.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {coupon.discountPercentage}
-                            </TableCell>
-                            <TableCell>
-                              {coupon.usageLimit}
-                            </TableCell>
-                            <TableCell>
-                              {coupon.expiryDate
-                                // TODO: fix expiryDate type issue
-                                ? new Date(coupon.expiryDate).toLocaleDateString()
-                                : 'No expiry'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
-                                  title="Edit Coupon"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => { deleteCoupon(coupon.id) }}
-                                  title="Delete Coupon"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
             <TabsContent value="organizations">
   <Card>
     <CardHeader>

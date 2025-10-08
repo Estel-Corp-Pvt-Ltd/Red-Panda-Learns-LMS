@@ -110,7 +110,7 @@ export const CURRENCY = {
 export const LEARNING_UNIT = {
     LESSON: "LESSON",
     TOPIC: "TOPIC",
-    COHORT: "COHORT"
+    COHORT:"COHORT"
 } as const;
 
 export const ENVIRONMENT = {
@@ -331,6 +331,21 @@ export const COUPON_STATUS = {
     EXPIRED: "EXPIRED"
 } as const;
 
+export const COLLECTION = {
+  COURSES: 'Courses',
+  BUNDLES: 'Bundles',
+  COHORTS: 'Cohorts',
+  USERS: 'Users',
+  LESSONS: 'Lessons',
+  COUPONS: 'Coupons',
+  COUPON_USAGES: 'CouponUsages',
+ATTRIBUTES: 'Attributes', 
+} as const;
+
+export const ATTRIBUTE_TYPE = {
+  CATEGORY : "CATEGORY",
+  TARGET_AUDIENCE : "TARGET AUDIENCE",
+} as const;
 
 export const ORGANIZATION = {
   SCHOOL: 'SCHOOL',

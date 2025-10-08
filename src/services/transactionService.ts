@@ -12,14 +12,14 @@ import {
   serverTimestamp,
   runTransaction
 } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
+import { db } from '../firebaseConfig.ts';
 import {
   PaymentDetails,
   Transaction,
   WebhookEvent
-} from '@/types/transaction';
-import { TransactionStatus } from '@/types/general';
-import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '@/constants';
+} from '../types/transaction';
+import { TransactionStatus } from '../types/general.ts';
+import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { v4 as uuidv4 } from 'uuid';
 
 class TransactionService {
@@ -52,51 +52,69 @@ class TransactionService {
       return nextNumber;
     });
 
-    const transactionId = `transaction_${uuidv4()}`;
+    const transactionId = `tx${uuidv4()}`;
 
     return {
       transactionId,
       orderNumber,
     };
   }
+async createTransaction(
+  data: Omit<Transaction, "id" | "orderNumber" | "createdAt" | "updatedAt">,
+  providedTransactionId?: string // <-- add this
+): Promise<string> {
+  try {
+    let transactionId = providedTransactionId;
+    let orderNumber: number;
+    
+    if (transactionId) {
+      // 🔎 If caller gave us one, check DB first
+      const existing = await this.getTransaction(transactionId);
+      if (existing) {
+        console.log("♻️ Returning existing transaction:", transactionId);
+        return transactionId; // idempotent return
+      }
 
-  async createTransaction(
-    data: Omit<Transaction, "id" | "orderNumber" | "createdAt" | "updatedAt">
-  ): Promise<string> {
-    try {
-      const transactionIdentifiers = await this.generateTransactionId();
-
-      const transaction: Transaction = {
-        id: transactionIdentifiers.transactionId,
-        orderNumber: transactionIdentifiers.orderNumber,
-        userId: data.userId,
-        courseId: data.courseId || null,
-        type: data.type,
-        amount: data.amount,
-        currency: data.currency,
-        originalAmount: data.originalAmount,
-        originalCurrency: data.originalCurrency,
-        exchangeRate: data.exchangeRate,
-        paymentProvider: data.paymentProvider,
-        status: TRANSACTION_STATUS.PENDING,
-        paymentDetails: {} as PaymentDetails,
-        metadata: data.metadata,
-        webhookEvents: [],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-
-      console.log("transaction: ", transaction)
-
-      await setDoc(doc(db, 'Transactions', transactionIdentifiers.transactionId), transaction);
-
-      console.log('Transaction created:', transactionIdentifiers);
-      return transactionIdentifiers.transactionId;
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      throw new Error('Failed to create transaction');
+      // need a new orderNumber for human-friendly readability
+      const ids = await this.generateTransactionId();
+      orderNumber = ids.orderNumber;
+    } else {
+      // If no transactionId provided → create new
+      const ids = await this.generateTransactionId();
+      transactionId = ids.transactionId;
+      orderNumber = ids.orderNumber;
     }
+
+    const transaction: Transaction = {
+      id: transactionId,
+      orderNumber,
+      userId: data.userId,
+      courseId: data.courseId || null,
+      type: data.type,
+      amount: data.amount,
+      currency: data.currency,
+      originalAmount: data.originalAmount,
+      originalCurrency: data.originalCurrency,
+      exchangeRate: data.exchangeRate,
+      paymentProvider: data.paymentProvider,
+      status: TRANSACTION_STATUS.PENDING,
+      paymentDetails: {} as PaymentDetails,
+      metadata: data.metadata,
+      webhookEvents: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await setDoc(doc(db, 'Transactions', transactionId), transaction);
+
+    console.log('Transaction created:', transactionId);
+    return transactionId;
+  } catch (error) {
+    console.error('Error creating transaction:', error);
+    throw new Error('Failed to create transaction');
   }
+}
+
 
   async updateTransactionStatus(
     transactionId: string,

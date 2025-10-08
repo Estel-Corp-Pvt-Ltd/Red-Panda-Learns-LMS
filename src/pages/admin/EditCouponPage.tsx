@@ -24,7 +24,7 @@ const createCouponSchema = z.object({
   code: z.string().min(3, 'Coupon code is required'),
   discountPercentage: z.number().min(1).max(100, '1–100% allowed'),
   expiryDate: z.date(), // TODO: extra validation required 
-  usageLimit: z.number().min(1, 'At least 1 usage allowed'),
+  usageLimit: z.number().min(0, 'At least 1 usage allowed'),
   linkedCourseIds: z.array(z.string()).optional(),
   status: z.nativeEnum(COUPON_STATUS),
 });

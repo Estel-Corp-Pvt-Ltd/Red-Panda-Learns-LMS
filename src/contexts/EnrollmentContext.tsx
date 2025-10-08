@@ -40,6 +40,7 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     setLoading(true);
 
     try {
+    
       const userEnrollments = await enrollmentService.getUserEnrollments(user.id);
       setEnrollments(userEnrollments);
     } catch (err: any) {
@@ -50,14 +51,35 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     }
   }, [user]);
 
-  const isEnrolled = useCallback(
-    (courseId: string): boolean => {
-      return enrollments.some(
-        (enrollment) => String(enrollment.targetId) === String(courseId) && enrollment.status === ENROLLMENT_STATUS.ACTIVE
-      );
-    },
-    [enrollments]
-  );
+ const isEnrolled = useCallback(
+  (courseId: string): boolean => {
+    console.log("Checking enrollment for courseId:", courseId);
+    console.log("Current enrollments:", enrollments);
+
+    const result = enrollments.some(
+      (enrollment) => {
+        const match = String(enrollment.targetId) === String(courseId);
+        const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
+
+        console.log("Checking enrollment:", {
+          targetId: enrollment.targetId,
+          courseId,
+          match,
+          status: enrollment.status,
+          statusOk,
+        });
+
+        return match && statusOk;
+      }
+    );
+
+    console.log("Final result for", courseId, "=>", result);
+    return result;
+  },
+  [enrollments]
+);
+
+  console.log("THis is isEnrolled hiya",isEnrolled('course_20000955'))
 
   const enrollInCourse = useCallback(
     async (courseId: string, paymentId?: string, paymentProvider?: string) => {

@@ -1,9 +1,8 @@
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
-import { enrollmentService } from '../enrollmentService';
+import { enrollmentService } from '@/services/dummyEnrollmentService';
 import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
-
 export interface PayPalOrder {
   id: string;
   status: string;
@@ -29,7 +28,11 @@ class PayPalProvider {
       }
 
       const script = document.createElement('script');
-      script.src = `https://www.paypal.com/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.USD}&intent=capture`;
+    
+script.src = `https://www.${
+  this.environment === ENVIRONMENT.SANDBOX ? "sandbox.paypal.com" : "paypal.com"
+}/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.USD}&intent=capture`;
+
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
       document.head.appendChild(script);
@@ -99,7 +102,7 @@ class PayPalProvider {
               try {
                 await enrollmentService.enrollUser(
                   userId,
-                  course,
+                 course.id, // ✅ targetId is a string
                   order.purchase_units[0].payments.captures[0].id,
                   'paypal'
                 );

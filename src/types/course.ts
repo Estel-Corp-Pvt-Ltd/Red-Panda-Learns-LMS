@@ -44,6 +44,8 @@ export interface Enrollment {
 };
 
 export interface Course {
+    categoryIds: string[];      
+    targetAudienceIds: string[]; 
   id: string;
   title: string;
   url: string;

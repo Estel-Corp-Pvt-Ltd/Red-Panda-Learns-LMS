@@ -74,7 +74,10 @@ export async function updateProgress(
       completedLessons: completed,
       lessonHistory: [...(data.lessonHistory ?? []), lessonId],
       percentage,
-      completionDate: completed >= total ? updatedAt : data.completionDate ?? null,
+        completionDate: completed >= total
+    ? serverTimestamp() // ✅ Firestore server-side timestamp
+    : data.completionDate ?? null,
+  updatedAt: serverTimestamp(), 
     };
   }
 

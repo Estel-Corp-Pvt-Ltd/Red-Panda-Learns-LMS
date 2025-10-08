@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState,useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -27,9 +27,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { cn } from "@/lib/utils";
 import { Topic } from "@/types/course";
-import { enrollmentService } from "@/services/dummyEnrollmentService";
 import { ENROLLED_PROGRAM_TYPE } from "@/constants";
-
+import { enrollmentService } from "@/services/dummyEnrollmentService";
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -37,7 +36,7 @@ export default function CourseDetailPage() {
   const { isEnrolled } = useEnrollment();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
-
+  const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const handleLessonCount = useCallback(
     (topicId: string, count: number) =>
       setLessonCountByTopic((prev) => {
@@ -58,7 +57,20 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading;
   const isError = courseError;
-  const userIsEnrolled = user && courseId ? isEnrolled(courseId) : false;
+
+ 
+ useEffect(() => {
+  const checkEnrollment = async () => {
+    if (user && courseId) {
+      const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
+      console.log("is user enrolled wala log", enrolled);
+      setUserIsEnrolled(enrolled)
+    }
+  };
+
+  checkEnrollment();
+}, [user, courseId]);
+
 
   const handleEnrollClick = async () => {
     if (!user) {
