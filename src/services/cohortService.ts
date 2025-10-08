@@ -10,6 +10,7 @@ import {
   deleteDoc,
   runTransaction,
   WhereFilterOp,
+  serverTimestamp,
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
@@ -60,8 +61,8 @@ class CohortService {
         requireEnrollment: data.requireEnrollment ?? false,
         requireCohortAccess: data.requireCohortAccess ?? false,
         cohortEnrollments: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
       await setDoc(doc(db, 'Cohorts', cohortId), cohort);
@@ -83,7 +84,7 @@ class CohortService {
       const cohortRef = doc(db, 'Cohorts', cohortId);
       const updateData = {
         ...data,
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp()
       };
 
       await updateDoc(cohortRef, updateData);
@@ -120,7 +121,7 @@ class CohortService {
       const cohortRef = doc(db, 'Cohorts', cohortId);
       await updateDoc(cohortRef, {
         enrollmentOpen: true,
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp(),
       });
       console.log('CohortService - Cohort published (enrollment open):', cohortId);
     } catch (error) {

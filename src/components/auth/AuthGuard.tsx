@@ -8,7 +8,7 @@ import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lock, Clock } from 'lucide-react';
-import { USER_ROLE } from '@/constants';
+import { COLLECTION, USER_ROLE } from '@/constants';
 import { Enrollment } from '@/types/course';
 
 interface AuthGuardProps {
@@ -46,7 +46,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     const checkAdminRole = async () => {
       if (requireAdmin && user) {
         try {
-          const docSnap = await getDoc(doc(db, 'Users', user.id));
+          const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
           const data = docSnap.data();
           setIsAdmin(data?.role === USER_ROLE.ADMIN);
         } catch {

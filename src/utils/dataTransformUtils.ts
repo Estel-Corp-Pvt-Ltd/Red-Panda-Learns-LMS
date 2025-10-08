@@ -1,6 +1,7 @@
 
 import { UnifiedLesson, UnifiedTopic, DataFormat } from '@/types/enhancedLms';
 import { Lesson, Topic } from '@/types/lms';
+import { serverTimestamp } from 'firebase/firestore';
 
 export const dataTransformUtils = {
   // Detect data format
@@ -32,8 +33,8 @@ export const dataTransformUtils = {
       isPublished: tutorLesson.post_status === 'publish',
       isPreview: tutorLesson.is_preview || false,
       video: tutorLesson.video && tutorLesson.video.length > 0 ? tutorLesson.video[0] : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
   },
 
@@ -79,8 +80,8 @@ export const dataTransformUtils = {
       isPublished: tutorTopic.post_status === 'publish',
       estimatedDuration: 0,
       totalLessons: tutorTopic.lessons?.length || 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
   },
 

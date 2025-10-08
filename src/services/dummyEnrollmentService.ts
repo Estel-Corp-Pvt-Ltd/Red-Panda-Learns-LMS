@@ -66,15 +66,9 @@ class EnrollmentService {
     currentLessonId: string = "",
     bundleCourseIds: string[] = []
   ): Promise<string> {
-    const enrollmentId = this.generateEnrollmentId(userId, targetId);
-    console.log("📌 EnrollUser called with:", {
-      userId,
-      targetId,
-      programType,
-      currentLessonId,
-      bundleCourseIds,
-      enrollmentId
-    });
+    try {
+      const enrollmentId = this.generateEnrollmentId(userId, targetId);
+      const now = serverTimestamp() ;
 
     try {
       let enrollment: Enrollment;

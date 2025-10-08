@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toDateSafe } from '@/utils/date-time';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
@@ -86,14 +87,23 @@ export default function CohortDashboardPage() {
     });
   };
 
-  const getUpcomingSessions = () => {
-    if (!cohort) return [];
-    const now = new Date();
-    return cohort.liveSessionSchedule
-      .filter(session => new Date(session.scheduledDate) > now)
-      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
-      .slice(0, 3);
-  };
+ const getUpcomingSessions = () => {
+  if (!cohort) return [];
+  const now = new Date();
+
+  return cohort.liveSessionSchedule
+    .map(session => ({
+      ...session,
+      scheduledDate: toDateSafe(session.scheduledDate),
+    }))
+    .filter(session => session.scheduledDate && session.scheduledDate > now)
+    .sort(
+      (a, b) =>
+        (a.scheduledDate?.getTime() || 0) -
+        (b.scheduledDate?.getTime() || 0)
+    )
+    .slice(0, 3);
+};
 
   const getCurrentWeek = () => {
     if (!cohort || !enrollment) return null;

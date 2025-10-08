@@ -16,6 +16,7 @@ import { bundleService } from "@/services/bundleService";
 import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
 import { PricingModel } from "@/types/general";
+import { Header } from "@/components/Header"; 
 import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
 import { authorService } from "@/services/authorService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -273,26 +274,31 @@ export default function CreateBundlePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/admin")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
-            </Button>
-            <div className="flex items-center gap-2">
-              <Package className="h-6 w-6 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Create Course Bundle
-              </h1>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
+    <header className="border-b bg-card">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Back Button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => navigate("/admin")}
+        className="w-full sm:w-auto"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Admin
+      </Button>
+
+      {/* Title Section */}
+      <div className="flex items-center gap-2">
+        <Package className="h-6 w-6 text-primary" />
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+          Create Course Bundle
+        </h1>
+      </div>
+    </div>
+  </div>
+</header>
 
       <main className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -454,51 +460,58 @@ export default function CreateBundlePage() {
             </Card>
 
             {/* Course Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Select Courses ({selectedCourseIds.length} selected)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {courses.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No courses available</h3>
-                    <p className="text-muted-foreground mb-4">
-                      You need published courses to create a bundle.
-                    </p>
-                    <Button onClick={() => navigate('/admin/create-course')}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create First Course
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {courses.map((course) => (
-                      <div key={course.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50">
-                        <Checkbox
-                          checked={selectedCourseIds.includes(course.id!)}
-                          onCheckedChange={() => handleCourseToggle(course.id!)}
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium">{course.title}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {course.description}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            {formatCurrency(course.salePrice || course.regularPrice)}
-                          </p>
-                          <Badge variant="outline" className="text-xs">
-                            {course.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+           <Card>
+  <CardHeader>
+    <CardTitle>
+      Select Courses ({selectedCourseIds.length} selected)
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    {courses.length === 0 ? (
+      <div className="text-center py-8">
+        <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium mb-2">No courses available</h3>
+        <p className="text-muted-foreground mb-4">
+          You need published courses to create a bundle.
+        </p>
+        <Button onClick={() => navigate("/admin/create-course")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create First Course
+        </Button>
+      </div>
+    ) : (
+      <div className="space-y-3">
+        {courses.map((course) => (
+          <div
+            key={course.id}
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50"
+          >
+            <div className="flex items-start sm:items-center gap-3 flex-1">
+              <Checkbox
+                checked={selectedCourseIds.includes(course.id!)}
+                onCheckedChange={() => handleCourseToggle(course.id!)}
+              />
+              <div className="flex-1">
+                <h4 className="font-medium">{course.title}</h4>
+                <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
+                  {course.description}
+                </p>
+              </div>
+            </div>
+            <div className="text-left sm:text-right">
+              <p className="font-semibold">
+                {formatCurrency(course.salePrice || course.regularPrice)}
+              </p>
+              <Badge variant="outline" className="text-xs">
+                {course.status}
+              </Badge>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </CardContent>
+</Card>
           </div>
 
           {/* Pricing & Preview */}

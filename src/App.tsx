@@ -21,7 +21,7 @@ import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 import CohortBuilderPage from "./pages/admin/CreateCohortPage";
 import CohortDetailPage from "./pages/admin/CohortDetailPage";
-import EditCohortPage from "./pages/admin/EditCohortPage";
+// import EditCohortPage from "./pages/admin/EditCohortPage";
 import UserCohortDetailPage from "./pages/CohortDetailPage";
 import CohortCheckoutPage from "./pages/CohortCheckoutPage";
 import CohortDashboardPage from "./pages/CohortDashboardPage";
@@ -37,8 +37,12 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import SetNewPassword from "./pages/auth/PasswordReset";
 import EditBundlePage from "./pages/admin/EditBundle";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import RefundPage from "./pages/RefundPolicy";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
+// import { AttributeManager } from "./components/admin/attribute";
 
 const queryClient = new QueryClient();
 
@@ -173,14 +177,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                <Route
-                  path="/admin/cohort/:cohortId/edit"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <EditCohortPage />
-                    </AuthGuard>
-                  }
-                />
+                
                 <Route
                   path="/admin/edit-course/:courseId"
                   element={
@@ -189,6 +186,14 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
+                    {/* <Route
+                  path="/admin/add-attribute"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <AttributeManager />
+                    </AuthGuard>
+                  }
+                /> */}
                 <Route
                   path="/cohort/:cohortId"
                   element={<UserCohortDetailPage />}
@@ -248,6 +253,10 @@ const App = () => (
                   element={<DummyBundleCheckoutPage />}
                 />
                 <Route path="*" element={<NotFound />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/refund-policy" element={<RefundPage />} />
+
               </Routes>
             </BrowserRouter>
           </TooltipProvider>

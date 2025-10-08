@@ -14,7 +14,8 @@ import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { useNavigate } from 'react-router-dom';
-import { USER_ROLE } from '@/constants';
+import { COLLECTION, USER_ROLE } from '@/constants';
+import { formatDate } from '@/utils/date-time';
 
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
@@ -48,7 +49,8 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>Enrolled {enrollment.enrolledAt.toLocaleDateString()}</span>
+                  <span>Enrolled {formatDate(
+                  enrollment.enrolledAt)}</span>
                 </div>
                 <Badge variant="outline" className="text-xs">
                   {enrollment.status}
@@ -81,7 +83,7 @@ export default function DashboardPage() {
 
       try {
         // Query users collection where email == current user's email
-        const usersRef = collection(db, 'Users');
+        const usersRef = collection(db, COLLECTION.USERS);
         const q = query(usersRef, where('email', '==', user.email));
         const querySnapshot = await getDocs(q);
 

@@ -1,7 +1,8 @@
 
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs, serverTimestamp , Timestamp , FieldValue } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { Course } from '@/types/course';
+
 import { Bundle, BundleEnrollment } from '@/types/bundle';
 import { bundleService } from './bundleService';
 import { serverTimestamp } from 'firebase/firestore';
@@ -11,7 +12,7 @@ export interface Enrollment {
   id: string;
   userId: string;
   courseId: string;
-  enrolledAt: Date;
+  enrolledAt: Timestamp | FieldValue ;
   paymentId?: string;
   paymentProvider?: string;
   amount: number;
@@ -53,7 +54,7 @@ class EnrollmentService {
         id: enrollmentId,
         userId,
         courseId: normalizedCourseId,
-        enrolledAt: new Date(),
+        enrolledAt: serverTimestamp() ,
         amount: course.salePrice || 0,
         status: 'active',
         progress: {
@@ -266,7 +267,7 @@ await updateDoc(userDocRef, {
         id: bundleEnrollmentId,
         userId,
         bundleId: bundle.id,
-        enrolledAt: new Date(),
+        enrolledAt: serverTimestamp(),
         amount: bundle.salePrice,
         status: 'active',
         enrolledCourseIds,

@@ -8,7 +8,8 @@ import {
   where,
   getDocs,
   deleteDoc,
-  runTransaction
+  runTransaction,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import {
@@ -122,8 +123,8 @@ class BundleService {
         status: data.status,
         categories: data.categories,
         tags: data.tags || [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       console.log("bundle", bundle)
@@ -189,7 +190,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
 
       const currentBundle = bundleDoc.data() as Bundle;
       const updateData: Partial<Bundle> = {
-        updatedAt: new Date()
+        updatedAt: serverTimestamp(),
       };
 
       // If courseIds are being updated, recalculate pricing
@@ -252,7 +253,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
       const bundleRef = doc(db, 'Bundles', bundleId);
       await updateDoc(bundleRef, {
         status: BUNDLE_STATUS.PUBLISHED,
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp(),
       });
       console.log('BundleService - Bundle published successfully:', bundleId);
     } catch (error) {

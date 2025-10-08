@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import { OrganizationType } from "@/types/general";
+import { formatDate } from "@/utils/date-time";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -29,7 +31,6 @@ import {
   BookOpen,
   Loader2,
   Calendar,
-  GraduationCap,
   Eye,
   Plus,
   Gift,
@@ -40,20 +41,19 @@ import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
-
 import { Cohort } from "@/types/course";
-import { statisticsService, DashboardStats } from "@/services/statisticsService";
 import { userService } from "@/services/userService";
 import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
 import { Lesson } from "@/types/lesson";
 import { User } from "@/types/user";
+import { Organization } from "@/types/organization";
+import { organizationService } from "@/services/organizationService";
+import { ORGANIZATION } from "@/constants";
 
 // import { useCourseQuery } from "@/hooks/useFirebaseApi";
 import { useLocation } from "react-router-dom";
-import { useCouponByCodeQuery, useCouponByIdQuery, useCouponPrefetch, useCouponsQuery } from "@/hooks/useCouponApi";
-import { Coupon, CouponStatus } from "@/types/coupon.";
-import { useBundleQuery } from "@/hooks/useBundleApi";
+import { Coupon } from "@/types/coupon";
 import { couponService } from "@/services/couponService";
 
 // const course = useCourseQuery() =;
@@ -68,9 +68,11 @@ const statsData = {
 
 import {
   BUNDLE_STATUS,
+  COUPON_STATUS,
   COURSE_STATUS,
   USER_ROLE,
-  USER_STATUS
+  USER_STATUS,
+
 } from "@/constants";
 
 import { Header } from "@/components/Header";
@@ -83,55 +85,31 @@ export function AdminDashboard() {
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [coupon,setCoupon] = useState<Coupon[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [authors, setAuthors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
-  
 
   // Loading states
   const [loading, setLoading] = useState(true);
-  const [authorsLoading, setAuthorsLoading] = useState(true);
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
-  const [couponsLoading,setCouponsLoading] = useState(true);
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [statsLoading, setStatsLoading] = useState(true);
-  
-useEffect(() => {
-  if (location.pathname === '/admin') {
-    loadCourses();
-    loadCohorts();
-    loadBundles();
-    loadLessons();
-    loadAuthors();
-    loadUsers();
-    loadStatistics();
-    loadCoupons();
-  
-  }},[location.pathname]);
 
-  // 🔹 Load STATISTICS
-  const loadStatistics = async () => {
-    try {
-      const stats = await statisticsService.getDashboardStats();
-      setStatsData(stats);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load statistics",
-        variant: "destructive"
-      });
-    } finally {
-      setStatsLoading(false);
+  useEffect(() => {
+    if (location.pathname === '/admin') {
+      loadCourses();
+      loadCohorts();
+      loadBundles();
+      loadLessons();
+      loadAuthors();
+      loadUsers();
+      loadCoupons();
     }
-  };
+  }, [location.pathname]);
 
   // 🔹 Load USERS
-
   const loadUsers = async () => {
     try {
       const usersList = await userService.getAllUsers();
@@ -142,8 +120,6 @@ useEffect(() => {
         description: "Failed to load users",
         variant: "destructive"
       });
-    } finally {
-      setUsersLoading(false);
     }
   };
 
@@ -212,21 +188,19 @@ useEffect(() => {
     }
   };
 
-const loadCoupons = async () => {
-  try {
-    const couponsList = await couponService.getAllCoupons();
-    setCoupon(couponsList);
-    console.log(couponsList)
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load coupons",
-      variant: "destructive",
-    });
-  } finally {
-    setCouponsLoading(false);
-  }
-};
+  const loadCoupons = async () => {
+    try {
+      const couponsList = await couponService.getAllCoupons();
+      setCoupons(couponsList);
+      console.log(couponsList)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load coupons",
+        variant: "destructive",
+      });
+    }
+  };
 
 
   const loadLessons = async () => {
@@ -255,8 +229,6 @@ const loadCoupons = async () => {
         description: "Failed to load authors",
         variant: "destructive"
       });
-    } finally {
-      setAuthorsLoading(false);
     }
   };
 
@@ -284,25 +256,26 @@ const loadCoupons = async () => {
     }
   };
 
-  const deleteCoupon = async(couponId:string)=>{
-    try{
+  const deleteCoupon = async (couponId: string) => {
+    try {
       await couponService.deleteCoupon(couponId);
-      setCoupon((prev)=>prev.filter((coupon) => couponId !== couponId));
+      setCoupons((prev) => prev.filter((coupon) => couponId !== couponId));
       toast({
-        title:"Success",
-        description:"Coupon Deleted Successfully"
+        title: "Success",
+        description: "Coupon Deleted Successfully"
       })
-     
+
     }
-    catch{
-   
-       toast({
+    catch {
+
+      toast({
         title: "Error",
         description: "Failed to delete Coupon",
         variant: "destructive"
       });
     }
-  }
+  };
+
   const deleteCohort = async (cohortId: string) => {
     try {
       await cohortService.deleteCohort(cohortId);
@@ -318,9 +291,7 @@ const loadCoupons = async () => {
         variant: "destructive"
       });
     }
-  };
-
- 
+  }; 
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -356,40 +327,180 @@ const loadCoupons = async () => {
     }
   };
 
-  // const statCards = [
-  //   {
-  //     title: "Total Revenue",
-  //     value: formatCurrency(statsData.totalRevenue),
-  //     description: "+20.1% from last month",
-  //     icon: DollarSign,
-  //   },
-  //   {
-  //     title: "Active Students",
-  //     value: statsData.activeStudents?.toLocaleString(),
-  //     description: "+180.1% from last month",
-  //     icon: Users,
-  //   },
-  //   {
-  //     title: "New Enrollments",
-  //     value: statsData.newEnrollments.toString(),
-  //     description: "+19% from last month",
-  //     icon: UserPlus,
-  //   },
-  //   {
-  //     title: "Total Courses",
-  //     value: courses.length.toString(),
-  //     description: `${courses.length} courses available`,
-  //     icon: BookOpen,
-  //   },
-    
-  //   {
-  //     title: "Cohort Students",
-  //     value: statsData.totalCohorts.toString(),
-  //     description: "Students in cohorts",
-  //     icon: Calendar,
-  //   },
-  // ];
+ const OrganizationTab = () => {
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [name, setName] = useState("");
+  const [type, setType] = useState<OrganizationType>(ORGANIZATION.INDUSTRY);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
+  useEffect(() => {
+    loadOrganizations();
+  }, []);
+
+  async function loadOrganizations() {
+    try {
+      const data = await organizationService.getAllOrganizations();
+      setOrganizations(data);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load organizations",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast({
+        title: "Validation",
+        description: "Name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEditing && editingOrgId) {
+        await organizationService.updateOrganization(editingOrgId, { name, type });
+        toast({ title: "Updated", description: "Organization updated successfully." });
+      } else {
+        await organizationService.createOrganization({ name, type });
+        toast({ title: "Created", description: "Organization created successfully." });
+      }
+
+      setName("");
+      setType(ORGANIZATION.INDUSTRY);
+      setIsEditing(false);
+      setEditingOrgId(null);
+      await loadOrganizations();
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to save organization",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this organization?")) return;
+    try {
+      await organizationService.deleteOrganization(id);
+      toast({ title: "Deleted", description: "Organization deleted successfully." });
+      await loadOrganizations();
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete organization.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  return (
+    <div>
+      {/* Add / Edit form */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-wrap gap-3 items-end mb-6"
+      >
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Organization name"
+          className="border p-2 rounded"
+        />
+
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as OrganizationType)}
+          className="border p-2 rounded"
+        >
+          {Object.values(ORGANIZATION).map((val) => (
+            <option key={val} value={val}>
+              {val}
+            </option>
+          ))}
+        </select>
+
+        <Button type="submit" disabled={saving}>
+          {isEditing ? "Update Organization" : "Add Organization"}
+        </Button>
+
+        {isEditing && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setIsEditing(false);
+              setEditingOrgId(null);
+              setName("");
+              setType(ORGANIZATION.INDUSTRY);
+            }}
+          >
+            Cancel
+          </Button>
+        )}
+      </form>
+
+      {/* Table list */}
+      {organizations.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No organizations found.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {organizations.map((org) => (
+              <TableRow key={org.id}>
+                <TableCell>{org.name}</TableCell>
+                <TableCell>{org.type}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setEditingOrgId(org.id);
+                        setName(org.name);
+                        setType(org.type);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(org.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+};
 
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
@@ -400,30 +511,35 @@ const loadCoupons = async () => {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
+      <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+              Admin Dashboard
+            </h1>
             <p className="text-muted-foreground">
               Manage your courses, cohorts, and students
             </p>
           </div>
-          <div className="flex gap-4">
-            <Button onClick={() => navigate("/admin/create-lesson")}>
+
+          {/*  Buttons stack on mobile, row on larger screens */}
+          <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+            <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
               <PlusCircle className="mr-2 h-4 w-4" />
               Create New Lesson
             </Button>
-            <Button onClick={() => navigate("/admin/create-course")}>
+            <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
               <PlusCircle className="mr-2 h-4 w-4" />
               Create New Course
             </Button>
-            <Button onClick={() => navigate("/admin/create-bundle")}>
+            <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
               <PlusCircle className="mr-2 h-4 w-4" />
               Create Course Bundle
             </Button>
-            <Button onClick={() => navigate("/admin/create-cohort")}>
+            <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
               <Calendar className="mr-2 h-4 w-4" />
               Create New Cohort
             </Button>
@@ -436,41 +552,40 @@ const loadCoupons = async () => {
 
         <div className="space-y-8">
           <Tabs defaultValue="courses" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="lessons">Lessons</TabsTrigger>
-              <TabsTrigger value="courses">Courses</TabsTrigger>
-              <TabsTrigger value="bundles">Bundles</TabsTrigger>
-              <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-              {/* <TabsTrigger value="statistics">Statistics</TabsTrigger> */}
-              <TabsTrigger value="authors">Authors</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="coupons">Coupon</TabsTrigger>
+            <TabsList
+              className="overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
+    whitespace-nowrap
+    gap-2 sm:gap-4
+    no-scrollbar 
+    w-full
+    justify-start sm:justify-center lg:justify-start /* flex behavior by screen size */
+  "
+            >
+              <TabsTrigger value="courses" className="flex-shrink-0">
+                Courses
+              </TabsTrigger>
+              <TabsTrigger value="lessons" className="flex-shrink-0">
+                Lessons
+              </TabsTrigger>
+              <TabsTrigger value="bundles" className="flex-shrink-0">
+                Bundles
+              </TabsTrigger>
+              <TabsTrigger value="cohorts" className="flex-shrink-0">
+                Cohorts
+              </TabsTrigger>
+              <TabsTrigger value="authors" className="flex-shrink-0">
+                Authors
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex-shrink-0">
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="coupons" className="flex-shrink-0">
+                Coupon
+              </TabsTrigger>
+              <TabsTrigger value="organizations" className="flex-shrink-0">
+  Organizations
+</TabsTrigger>
             </TabsList>
-
-            {/* ✅ show STATISTICS cards */}
-            {/* <TabsContent value="statistics">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statCards.map((card, index) => {
-                  const Icon = card.icon;
-                  return (
-                    <Card key={index}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {card.title}
-                        </CardTitle>
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {card.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent> */}
 
             <TabsContent value="lessons">
               <Card>
@@ -794,7 +909,6 @@ const loadCoupons = async () => {
                           <TableHead>Max Students</TableHead>
                           <TableHead>Start Date</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -818,9 +932,9 @@ const loadCoupons = async () => {
 
                             {/* End date */}
                             <TableCell>
-                              <div className="text-sm">
-                                {cohort.startDate ? (new Date(cohort.startDate), "Invalid Date") : "No start date"}
-                              </div>
+                             <div className="text-sm">
+  {cohort.startDate ? formatDate(cohort.startDate) : "No start date"}
+</div>
                             </TableCell>
 
                             {/* Enrollment open status */}
@@ -1085,8 +1199,8 @@ const loadCoupons = async () => {
                   {coupon.discountPercentage}
                     </TableCell>
                     <TableCell>
-                     {coupon.usageLimit}
-                    </TableCell>
+  {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
+</TableCell>
                     <TableCell>
                       {coupon.expiryDate
                         ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
@@ -1120,35 +1234,25 @@ const loadCoupons = async () => {
         </CardContent>
       </Card>
     </TabsContent>
-
-              {/* <TabsContent value="statistics">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                  {statCards.map((card, index) => {
-                    const Icon = card.icon;
-                    return (
-                      <Card key={index}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">
-                            {card.title}
-                          </CardTitle>
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold">{card.value}</div>
-                          <p className="text-xs text-muted-foreground">
-                            {card.description}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </TabsContent> */} 
+            <TabsContent value="organizations">
+  <Card>
+    <CardHeader>
+      <CardTitle>Organizations</CardTitle>
+      <CardDescription>
+        Manage all organizations in your system.
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      {/* Organization CRUD */}
+      <OrganizationTab />
+    </CardContent>
+  </Card>
+</TabsContent>
           </Tabs>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default AdminDashboard;

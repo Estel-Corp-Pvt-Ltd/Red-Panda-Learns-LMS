@@ -1,10 +1,13 @@
+
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+
 export interface AttachmentItem {
   id: string;
   name: string;
   type: 'pdf' | 'image' | 'document' | 'link';
   url: string;
   size?: number;
-  uploadedAt?: Date;
+  uploadedAt?: Timestamp | FieldValue ;
 }
 
 export interface VideoRuntime {
@@ -39,8 +42,8 @@ export interface UnifiedLesson {
   duration?: number;
   isPublished?: boolean;
   isPreview?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue ;
   
   // TutorLMS fields (migrated data format)
   ID?: number;
@@ -75,8 +78,8 @@ export interface UnifiedTopic {
   isPublished?: boolean;
   estimatedDuration?: number;
   totalLessons?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: Timestamp | FieldValue ;
+  updatedAt?: Timestamp | FieldValue ;
   
   // TutorLMS fields
   ID?: number | string;

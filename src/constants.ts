@@ -109,7 +109,8 @@ export const CURRENCY = {
 
 export const LEARNING_UNIT = {
     LESSON: "LESSON",
-    TOPIC: "TOPIC"
+    TOPIC: "TOPIC",
+    COHORT:"COHORT"
 } as const;
 
 export const ENVIRONMENT = {
@@ -311,10 +312,26 @@ export const RAZORPAY_WEBHOOK_EVENT = {
     },
 } as const;
 
+export const COLLECTION = {
+    COURSES: 'Courses',
+    BUNDLES: 'Bundles',
+    COHORTS: 'Cohorts',
+    USERS: 'Users',
+    LESSONS: 'Lessons',
+    COUPONS: 'Coupons',
+    COUPON_USAGES: 'CouponUsages',
+     ORGANIZATIONS: 'Organizations',  
+} as const;
 
+// --- COUPON SYSTEM ---
 
+export const COUPON_STATUS = {
+    ACTIVE: "ACTIVE",
+    INACTIVE: "INACTIVE",
+    EXPIRED: "EXPIRED"
+} as const;
 
-export const COLLECTIONS = {
+export const COLLECTION = {
   COURSES: 'Courses',
   BUNDLES: 'Bundles',
   COHORTS: 'Cohorts',
@@ -323,6 +340,18 @@ export const COLLECTIONS = {
   COUPONS: 'Coupons',
   COUPON_USAGES: 'CouponUsages',
    CONFIG: 'Config',
+ATTRIBUTES: 'Attributes', 
+} as const;
+
+export const ATTRIBUTE_TYPE = {
+  CATEGORY : "CATEGORY",
+  TARGET_AUDIENCE : "TARGET AUDIENCE",
+} as const;
+
+export const ORGANIZATION = {
+  SCHOOL: 'SCHOOL',
+  INDUSTRY: 'INDUSTRY',
+  COLLEGE: 'COLLEGE',
 } as const;
 
 export const CONFIG_DOCS = {

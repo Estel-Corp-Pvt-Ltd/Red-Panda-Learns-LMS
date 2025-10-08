@@ -14,6 +14,7 @@ export type DashboardStats = {
   activeStudentGrowth: number;
   newEnrollments: number;
   enrollmentGrowth: number;
+  totalCohortStudents: number;
   totalCourses: number;
   activeCohorts: number;
   totalCohorts: number;
@@ -66,6 +67,7 @@ class StatisticsService {
     ]);
 
     return {
+      totalCohortStudents: cohortStudents,
       totalRevenue,
       revenueGrowth,
       activeStudents,
@@ -80,7 +82,7 @@ class StatisticsService {
   }
 
   // ==========================================================
-  // 📊 Revenue
+  //  Revenue
   // ==========================================================
 
   /**
@@ -108,7 +110,7 @@ class StatisticsService {
   }
 
   // ==========================================================
-  // 👩‍🎓 Students
+  //  Students
   // ==========================================================
 
   /**
@@ -136,7 +138,7 @@ class StatisticsService {
   }
 
   // ==========================================================
-  // 📝 Enrollments
+  //  Enrollments
   // ==========================================================
 
   /**
@@ -160,7 +162,7 @@ class StatisticsService {
   }
 
   // ==========================================================
-  // 📚 Courses
+  //  Courses
   // ==========================================================
 
   /**
@@ -174,7 +176,7 @@ class StatisticsService {
   }
 
   // ==========================================================
-  // 🎓 Cohorts
+  //  Cohorts
   // ==========================================================
 
   /**
