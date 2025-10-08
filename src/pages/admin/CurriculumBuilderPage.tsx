@@ -199,7 +199,7 @@ const CurriculumBuilderPage = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file!");
+      toast({ title: "Invalid file", description: "Please select an image file!", variant: "destructive" });
       return;
     }
 
@@ -208,30 +208,56 @@ const CurriculumBuilderPage = () => {
   };
 
   const uploadThumbnail = async () => {
-    const uploadtask = imageService.uploadImage(`/courses/${courseId}/thumbnail.png`, selectedFile);
-    uploadtask.on(
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please choose an image before uploading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (3MB limit)
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+    if (selectedFile.size > MAX_SIZE) {
+      toast({
+        title: "File Too Large",
+        description: "The selected file exceeds the 3MB size limit.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const uploadTask = imageService.uploadImage(`/courses/${courseId}/thumbnail.png`, selectedFile);
+    if (!uploadTask) {
+      toast({
+        title: "Upload Failed",
+        description: "Unable to upload the file. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadTask.on(
       "state_changed",
       (snapshot) => {
         setUploading(true);
-        console.log(snapshot);
         // Calculate progress
         const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(Math.round(prog));
       }, (error) => {
         console.error(error);
         setUploading(false);
-      }, () => {
-        setProgress(100);
-        setUploading(false);
-
-        getDownloadURL(uploadtask.snapshot.ref)
-          .then((url) => {
-            setThumbnailUrl(url);
-            console.log("thumbnail url", url);
-          })
-          .catch((error) => {
-            console.error("Error getting download URL:", error);
-          });
+      },
+      async () => {
+        try {
+          setProgress(100);
+          setUploading(false);
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          setThumbnailUrl(url);
+        } catch (error) {
+          console.error("Error getting download URL:", error);
+        }
       });
   }
 
@@ -582,7 +608,7 @@ const CurriculumBuilderPage = () => {
                     )}
                     <div className="flex justify-between items-center">
                       <input type="file" accept="image/*" onChange={handleFileChange} />
-                      <Button className="border px-5 py-2" onClick={uploadThumbnail} disabled={!preview}>{!preview ? "Uploaded" : "Upload"}</Button>
+                      <Button className="border px-5 py-2" onClick={uploadThumbnail} disabled={uploading || !preview}>{!preview ? "Uploaded" : "Upload"}</Button>
                     </div>
                   </CardContent>
                 </Card>

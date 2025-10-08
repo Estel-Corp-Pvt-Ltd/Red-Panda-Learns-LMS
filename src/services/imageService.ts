@@ -3,14 +3,15 @@ import { ref, uploadBytesResumable, UploadTask } from "firebase/storage";
 
 
 class ImageService {
-  uploadImage(uploadPath: string, file: File): UploadTask {
-    // Create a reference (folder structure optional)
-    const storageRef = ref(storage, uploadPath);
-
-    // Upload the file
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    return uploadTask;
+  uploadImage(uploadPath: string, file: File): UploadTask | null {
+    try {
+      const storageRef = ref(storage, uploadPath);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+      return uploadTask;
+    } catch (error) {
+      console.error("Error starting upload:", error);
+      return null;
+    }
   }
 }
 
