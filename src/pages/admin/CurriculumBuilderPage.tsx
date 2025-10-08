@@ -29,7 +29,6 @@ import {
   Users,
   ArrowLeft,
   ChevronDown,
-
 } from "lucide-react";
 import {
   Popover,
@@ -62,6 +61,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
 import { attributeService } from "@/services/attributeService";
 import { ATTRIBUTE_TYPE } from "@/constants";
+import { AttributeType } from "@/types/general";
 // import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
 
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
@@ -133,11 +133,8 @@ const CurriculumBuilderPage = () => {
   const [salePrice, setSalePrice] = useState(0);
 const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 const [allCategories, setAllCategories] = useState<string[]>([]);
-
 const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<string[]>([]);
 const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
-
-
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [authorId, setAuthorId] = useState("");
@@ -148,6 +145,7 @@ const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
 useEffect(() => {
   const fetchAttributes = async () => {
     try {

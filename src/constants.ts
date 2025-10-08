@@ -326,8 +326,7 @@ export const COLLECTIONS = {
 ATTRIBUTES: 'Attributes', 
 } as const;
 
-
-export enum ATTRIBUTE_TYPE {
-  CATEGORY = "Category",
-  TARGET_AUDIENCE = "TargetAudience",
-}
+export const ATTRIBUTE_TYPE = {
+  CATEGORY : "CATEGORY",
+  TARGET_AUDIENCE : "TARGET AUDIENCE",
+} as const;

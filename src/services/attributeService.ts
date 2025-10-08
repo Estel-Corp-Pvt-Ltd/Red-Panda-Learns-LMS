@@ -12,13 +12,17 @@ import {
 import { db } from "@/firebaseConfig";
 import { COLLECTIONS } from "@/constants";
 import { Attribute } from "@/types/attribute";
+import { AttributeType } from "@/types/general";
 
 export class AttributeService {
   private collectionName = COLLECTIONS.ATTRIBUTES;
-
-  async getAttributes(type: Attribute["type"]): Promise<Attribute[]> {
+  y;
+  async getAttributes(type: AttributeType): Promise<Attribute[]> {
     try {
-      const q = query(collection(db, this.collectionName), where("type", "==", type));
+      const q = query(
+        collection(db, this.collectionName),
+        where("type", "==", type)
+      );
       const snapshot = await getDocs(q);
 
       return snapshot.docs.map((docSnap) => {
@@ -27,8 +31,8 @@ export class AttributeService {
           id: docSnap.id,
           name: data.name,
           type: data.type,
-          createdAt: data.createdAt as Timestamp,
-          updatedAt: data.updatedAt as Timestamp | undefined,
+          createdAt: (data.createdAt as Timestamp) || serverTimestamp(),
+          updatedAt: (data.updatedAt as Timestamp) || serverTimestamp(),
         };
       });
     } catch (error) {
@@ -39,7 +43,7 @@ export class AttributeService {
 
   /** Add a new attribute (Category or TargetAudience) */
   async addAttribute(
-    type: Attribute["type"],
+    type: AttributeType,
     name: string
   ): Promise<Attribute | null> {
     try {

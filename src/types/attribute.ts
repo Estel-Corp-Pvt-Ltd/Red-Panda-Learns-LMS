@@ -1,10 +1,11 @@
 import { ATTRIBUTE_TYPE } from "@/constants";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp  , FieldValue} from "firebase/firestore";
+import { AttributeType } from "./general";
 
 export interface Attribute {
   id: string;
   name: string;
-  type: ATTRIBUTE_TYPE;
-  createdAt: Timestamp;            
-  updatedAt?: Timestamp;           
+  type: AttributeType;
+  createdAt: Timestamp | FieldValue;            
+  updatedAt?: Timestamp| FieldValue ;           
 }
