@@ -255,6 +255,11 @@ const CurriculumBuilderPage = () => {
           setUploading(false);
           const url = await getDownloadURL(uploadTask.snapshot.ref);
           setThumbnailUrl(url);
+          toast({
+            title: "Thumbnail Uploaded",
+            description: "Thumbnail has been successfully uploaded",
+            variant: "default",
+          });
         } catch (error) {
           console.error("Error getting download URL:", error);
         }
