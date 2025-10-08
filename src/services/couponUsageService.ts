@@ -1,28 +1,23 @@
-// couponUsageService.ts
 import {
   doc,
   setDoc,
-  getDoc,
-  updateDoc,
   collection,
   query,
   where,
   getDocs,
-  runTransaction,
   Timestamp,
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
-import { Coupon, CouponUsage, CouponStatus } from '@/types/coupon.'
+import { CouponUsage } from '@/types/coupon'
 import { couponService } from '@/services/couponService';
+import { COUPON_STATUS } from '@/constants';
 
 class CouponUsageService {
   /**
    * Returns the total number of times a coupon has been used.
    */
 
-
-  
   async getUsageCountByCoupon(couponId: string): Promise<number> {
     try {
       const q = query(
@@ -142,21 +137,13 @@ async isCouponApplicable(
       console.log("🧮 Universal coupon result:", isLinked);
     }
 
-    if (!isLinked) {
-      console.warn("❌ Coupon is not applicable to this item");
-      return { isApplicable: false, reason: 'Coupon not applicable to this item' };
+    } catch (error) {
+      console.error("💥 Error checking coupon applicability:", error);
+      return { isApplicable: false, reason: 'Error validating coupon' };
     }
-
-    // console.log("✅ Coupon is applicable");
-    return { isApplicable: true };
-
-  } catch (error) {
-    console.error("💥 Error checking coupon applicability:", error);
-    return { isApplicable: false, reason: 'Error validating coupon' };
   }
-}
 
-  
+
 
 
 
@@ -173,7 +160,7 @@ async isCouponApplicable(
       };
 
       await setDoc(usageRef, newUsage);
-      console.log("Data for coupon Usage",newUsage)
+      console.log("Data for coupon Usage", newUsage)
       console.log('Coupon usage recorded:', usageRef.id);
       return usageRef.id;
     } catch (error) {

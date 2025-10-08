@@ -45,7 +45,7 @@ export const TeamSection = () => {
               <img 
                 src="https://www.vizuara.com/lovable-uploads/8dc8e40c-8c8b-48c1-a187-0ee0ef7a4a75.png" 
                 alt="Team Vizuara at MIT"
-                className="w-half max-w-2xl mx-auto rounded-lg mb-4"
+                className="w-half  mx-auto rounded-lg mb-4"
               />
               <p className="text-muted-foreground">The founding team at MIT</p>
             </div>

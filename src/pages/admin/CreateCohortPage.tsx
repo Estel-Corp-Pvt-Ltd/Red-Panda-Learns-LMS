@@ -7,6 +7,9 @@ import {
 import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
+import { toDateSafe } from "@/utils/date-time";
+import { formatDate } from "@/utils/date-time";
+import { serverTimestamp } from "firebase/firestore";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, FolderOpen, Edit2, Trash2, GripVertical, Save, BookOpen, Unlock, Lock, Users } from "lucide-react";
@@ -23,6 +26,7 @@ import { LEARNING_UNIT } from "@/constants";
 import { LearningUnit } from "@/types/general";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Header } from "@/components/Header"; 
 
 // --- Components (copied from CurriculumBuilderPage) ---
 interface SortableItemProps {
@@ -109,8 +113,8 @@ const CohortBuilderPage = () => {
         setTitle(cohortData.title);
         setDescription(cohortData.description || "");
         setPrice(cohortData.price);
-        setStartDate(cohortData.startDate);
-        setEndDate(cohortData.endDate);
+       setStartDate(toDateSafe(cohortData.startDate));
+setEndDate(toDateSafe(cohortData.endDate));
         setEnrollmentOpen(cohortData.enrollmentOpen);
         setMaxStudents(cohortData.maxStudents);
         setCurriculum(getFlatCurriculum(cohortData.topics || []));
@@ -249,20 +253,35 @@ const CohortBuilderPage = () => {
   if (loading) return <div className="p-8">Loading Cohort Builder...</div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">{isEditMode ? "Edit Cohort" : "Create New Cohort"}</h1>
-              <p className="text-muted-foreground mt-1">{isEditMode ? cohort?.title : "Define the details and curriculum for a new cohort."}</p>
-            </div>
-            <Button variant="outline" onClick={() => navigate("/admin")}>Back to Cohorts</Button>
-          </div>
-        </div>
-      </header>
+   <div className="min-h-screen bg-background text-foreground flex flex-col">
+    {/* ✅ Shared Header */}
+    <Header />
 
-      <main className="container mx-auto px-6 py-8">
+    <header className="border-b bg-card">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">
+              {isEditMode ? "Edit Cohort" : "Create New Cohort"}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {isEditMode
+                ? cohort?.title
+                : "Define the details and curriculum for a new cohort."}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin")}
+            className="w-full sm:w-auto"
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    </header>
+
+      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="basics" className="w-full">
           <TabsList>
             <TabsTrigger value="basics">Basics & Enrollment</TabsTrigger>

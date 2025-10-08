@@ -47,15 +47,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { courseService } from "@/services/courseService";
-import { Course, Topic, TopicItem, Cohort } from "@/types/course";
+import { Course, Topic, Cohort } from "@/types/course";
 import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
 import { Lesson } from "@/types/lesson";
-import CohortImporterModal from "@/components/admin/CohortImporterModel"; // Corrected import name
+import CohortImporterModal from "@/components/admin/CohortImporterModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COURSE_STATUS, LEARNING_UNIT } from "@/constants";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CourseStatus, LearningUnit } from "@/types/general";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
@@ -66,23 +72,23 @@ import { AttributeType } from "@/types/general";
 
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
 type DraggableItemType = LearningUnit ;
+import { serverTimestamp } from "firebase/firestore";
+import { imageService } from "@/services/imageService";
+import { getDownloadURL } from "firebase/storage";
 
-interface SortableItemProps {
+type SortableItemProps = {
   id: string;
   children: React.ReactNode;
-  type: DraggableItemType;
+  type: LearningUnit;
   depth: number;
 };
 
-
-// FIX: A robust state structure for our hierarchical list
 type DraggableItem = {
   id: string;
   title: string;
-  type: DraggableItemType;
+  type: LearningUnit;
   depth: number;
-  parentId: string | null; // null for root items (Topics and Cohorts)
-  // Store original data to reconstruct on save
+  parentId: string | null;
   originalData?: Cohort | Topic;
 };
 
@@ -94,12 +100,12 @@ const SortableItem = ({ id, children, depth }: SortableItemProps) => {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    marginLeft: `${depth * 2}rem`, // Indentation based on depth
+    marginLeft: `${depth * 2}rem`,
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <div className={`flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group`}>
+      <div className="flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group">
         <div {...listeners} className="cursor-grab active:cursor-grabbing">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
@@ -118,14 +124,11 @@ const CurriculumBuilderPage = () => {
   const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
-  const [lessonsToBeAdded, setLessonsToBeAdded] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] = useState(false);
   const [isCohortImporterModalOpen, setIsCohortImporterModalOpen] = useState(false);
   const [activeParentId, setActiveParentId] = useState<string | null>(null); // For adding lessons/topics
-
-  // ... (all other state for basics tab is fine)
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
@@ -140,6 +143,11 @@ const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
   const [authorId, setAuthorId] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [preview, setPreview] = useState(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -193,6 +201,8 @@ useEffect(() => {
 
       setSelectedTargetAudiences(courseData.targetAudienceIds || []);
       setSelectedCategories(courseData.categoryIds || [] );
+      setThumbnailUrl(courseData.thumbnail || "");
+      setCategories(courseData.categories || []);
       setTags(courseData.tags || []);
       setAuthorId(courseData.authorId);
       setAuthorName(courseData.authorName);
@@ -224,6 +234,7 @@ useEffect(() => {
         });
       } catch (error) {
         console.error("Failed to fetch authors:", error);
+
         toast({
           title: "Error",
           description: "Could not load authors list.",
@@ -234,13 +245,90 @@ useEffect(() => {
     fetchAuthors();
   }, [toast, authorId, authorName]);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  /* ----------------------------------------------------------------- */
-  /* Save Basics  ─ title / description / pricing / categories / tags  */
-  /* ----------------------------------------------------------------- */
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file!", variant: "destructive" });
+      return;
+    }
+
+    setSelectedFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const uploadThumbnail = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please choose an image before uploading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (3MB limit)
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+    if (selectedFile.size > MAX_SIZE) {
+      toast({
+        title: "File Too Large",
+        description: "The selected file exceeds the 3MB size limit.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const uploadTask = imageService.uploadImage(`/courses/${courseId}/thumbnail.png`, selectedFile);
+    if (!uploadTask) {
+      toast({
+        title: "Upload Failed",
+        description: "Unable to upload the file. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        setUploading(true);
+        // Calculate progress
+        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setProgress(Math.round(prog));
+      }, (error) => {
+        toast({
+          title: "Failed to upload thumbnail.",
+          description: "Something went wrong",
+          variant: "destructive"
+        })
+        console.error(error);
+        setUploading(false);
+      },
+      async () => {
+        try {
+          setProgress(100);
+          setUploading(false);
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          setThumbnailUrl(url);
+          toast({
+            title: "Thumbnail Uploaded",
+            description: "Thumbnail has been successfully uploaded",
+            variant: "default",
+          });
+        } catch (error) {
+          toast({
+            title: "Thumbnail not uploaded",
+            description: "Something went wrong",
+            variant: "destructive"
+          });
+          console.error("Error getting download URL:", error);
+        }
+      });
+  }
+
   const saveBasics = async () => {
     if (!courseId || !course) return;
-
     if (!title.trim()) {
       toast({ title: "Missing Title", description: "Enter a course title.", variant: "destructive" });
       return;
@@ -260,6 +348,7 @@ useEffect(() => {
         title: title.trim(),
         description: description.trim(),
         regularPrice,
+        thumbnail: thumbnailUrl,
         salePrice,
          targetAudienceIds: selectedTargetAudiences,
          categoryIds : selectedCategories,
@@ -276,21 +365,16 @@ useEffect(() => {
     }
   };
 
-  // FIX: Robust function to flatten Course data into a hierarchical list
   const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
     const flatList: DraggableItem[] = [];
-
-    // Add root topics and their lessons
     (courseData.topics || []).forEach(topic => {
       flatList.push({ id: topic.id, title: topic.title, type: LEARNING_UNIT.TOPIC, depth: 0, parentId: null, originalData: topic });
       (topic.items || []).forEach(lesson => {
         flatList.push({ id: lesson.id, title: lesson.title, type: LEARNING_UNIT.LESSON, depth: 1, parentId: topic.id });
       });
     });
-
-    // Add cohorts, their topics, and their lessons
     (courseData.cohorts || []).forEach(cohort => {
-      flatList.push({ id: cohort.id, title: cohort.title, type: 'COHORT', depth: 0, parentId: null, originalData: cohort });
+      flatList.push({ id: cohort.id, title: cohort.title, type: LEARNING_UNIT.COHORT, depth: 0, parentId: null, originalData: cohort });
       (cohort.topics || []).forEach(topic => {
         flatList.push({ id: topic.id, title: topic.title, type: LEARNING_UNIT.TOPIC, depth: 1, parentId: cohort.id });
         (topic.items || []).forEach(lesson => {
@@ -298,14 +382,10 @@ useEffect(() => {
         });
       });
     });
-
     return flatList;
   };
 
-  // ... (fetchAuthors effect is fine)
-
   const handleDragEnd = (event: DragEndEvent) => {
-    // Basic drag-and-drop. More complex logic can be added to prevent invalid nesting.
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setCurriculum(prev => {
@@ -315,7 +395,7 @@ useEffect(() => {
     });
   };
 
-  const addItem = (type: DraggableItemType, parentId: string | null = null, depth = 0) => {
+  const addItem = (type: LearningUnit, parentId: string | null = null, depth = 0) => {
     const newItem: DraggableItem = {
       id: `${type.toLowerCase()}_${Date.now()}`,
       title: `New ${type}`,
@@ -328,13 +408,15 @@ useEffect(() => {
     setNewItemName(newItem.title);
   };
 
-  const addLessonToParent = (parentId: string, parentDepth: number) => {
-    addItem(LEARNING_UNIT.LESSON, parentId, parentDepth + 1);
+  const addLessonToParent = (parentId: string) => {
+    setActiveParentId(parentId);
+    setIsLessonSelectorModalOpen(true);
   };
 
   const addTopicToCohort = (cohortId: string, cohortDepth: number) => {
     addItem(LEARNING_UNIT.TOPIC, cohortId, cohortDepth + 1);
   };
+
   // utils ---------------------------------------------------------------
   const flattenCohort = (
     cohort: Cohort,
@@ -344,7 +426,7 @@ useEffect(() => {
       {
         id: cohort.id,
         title: cohort.title,
-        type: "COHORT",
+        type: LEARNING_UNIT.COHORT,
         depth: cohortDepth,
         parentId: null,
         originalData: cohort,
@@ -389,14 +471,12 @@ useEffect(() => {
 
     setIsCohortImporterModalOpen(false);
   };
+
   const updateItemName = (itemId: string, name: string) => {
-    setCurriculum(prev =>
-      prev.map(item =>
-        item.id === itemId ? { ...item, title: name } : item
-      )
-    );
+    setCurriculum(prev => prev.map(item => (item.id === itemId ? { ...item, title: name } : item)));
     setEditingItemId(null);
   };
+
   const deleteItem = (itemId: string) => {
     console.log("Deleting item:", itemId);
 
@@ -449,7 +529,7 @@ useEffect(() => {
       // Process only root items (depth 0)
       for (const item of curriculum) {
         if (item.depth === 0) {
-          if (item.type === 'COHORT') {
+          if (item.type === LEARNING_UNIT.COHORT) {
             const cohortChildren = childrenMap.get(item.id) || []; // These are topics
             const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
               const lessonItems = (childrenMap.get(topicItem.id) || []).map(lessonItem => ({
@@ -466,11 +546,12 @@ useEffect(() => {
               id: item.id,
               title: item.title,
               topics: cohortTopics,
-              updatedAt: new Date(),
-              createdAt: new Date(),
-              startDate: new Date(),
-              endDate: new Date(),
-              enrollmentOpen: true
+              updatedAt: serverTimestamp(),
+              createdAt: serverTimestamp(),
+              startDate: serverTimestamp(),
+              endDate: serverTimestamp(),
+              enrollmentOpen: true,
+              price: 1000
             });
 
           } else if (item.type === LEARNING_UNIT.TOPIC) {
@@ -500,13 +581,10 @@ useEffect(() => {
     }
   };
 
-  // ... (saveBasics is fine)
-
   if (loading) return <div>Loading...</div>;
   if (!course) return <div>Course not found.</div>;
 
   return (
-
     <div className="min-h-screen bg-background">
       <Header />
       {/* Header is fine */}
@@ -522,23 +600,15 @@ useEffect(() => {
             <TabsTrigger value="additional">Additional</TabsTrigger>
           </TabsList>
 
-
-
-          {/* ───────── BASICS TAB (NEW) ───────── */}
-
           {/* ────────── BASICS TAB CONTENT ────────── */}
           <TabsContent value="basics">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
               {/* ───────── LEFT SIDE (Main Content) ───────── */}
               <div className="lg:col-span-2 space-y-6">
-
                 {/* Title */}
                 <Card className="rounded-xl border p-4">
                   <CardHeader className="pb-2">
-
                     <CardTitle>Course Title</CardTitle>
-
                   </CardHeader>
                   <CardContent>
                     <Input
@@ -548,7 +618,6 @@ useEffect(() => {
                     />
                   </CardContent>
                 </Card>
-
                 {/* Description */}
                 <Card className="rounded-xl border p-4">
                   <CardHeader className="pb-2">
@@ -566,10 +635,52 @@ useEffect(() => {
                     />
                   </CardContent>
                 </Card>
-
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Thumbnail</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!preview && thumbnailUrl && (
+                      <div className="mb-5">
+                        <img
+                          src={thumbnailUrl}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {preview && (
+                      <div className="mb-5">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {uploading && (
+                      <div className="mb-8">
+                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
+                          <div
+                            style={{
+                              width: `${progress}%`,
+                              height: "100%",
+                              backgroundColor: "#ff00ff",
+                              transition: "width 0.3s",
+                            }}
+                          />
+                        </div>
+                        <small>{progress}%</small>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <input type="file" accept="image/*" onChange={handleFileChange} />
+                      <Button className="border px-5 py-2" onClick={uploadThumbnail} disabled={uploading || !preview}>{!preview ? "Uploaded" : "Upload"}</Button>
+                    </div>
+                  </CardContent>
+                </Card>
                 {/* Instructor + Categories + Tags row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
                   {/* Instructor */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
@@ -597,7 +708,6 @@ useEffect(() => {
                       </Select>
                     </CardContent>
                   </Card>
-
                   {/* Categories */}
                   {/* <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
@@ -623,8 +733,7 @@ useEffect(() => {
                         </label>
                       ))}
                     </CardContent>
-                  </Card> */}
-
+                  </Card>
                   {/* Tags */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
@@ -806,25 +915,20 @@ useEffect(() => {
 
                 </div>
               </div>
-
-
-
               {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
               <div className="space-y-6">
-
                 {/* Pricing */}
-
-
                 <Card className="rounded-xl border p-4">
-
-                  <Button onClick={saveBasics} disabled={saving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {saving ? "Saving..." : "Save Basics"}
-                  </Button>
-                  <Button variant="outline" onClick={() => navigate("/admin")} >
-                    <ArrowLeft className="mr-2 h-4 w-3" />
-                    {"Back to Courses"}
-                  </Button>
+                  <div className="flex gap-4">
+                    <Button onClick={saveBasics} disabled={saving}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {saving ? "Saving..." : "Save Basics"}
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/admin")} >
+                      <ArrowLeft className="mr-2 h-4 w-3" />
+                      {"Back to Courses"}
+                    </Button>
+                  </div>
                   <CardHeader className="pb-2">
                     <CardTitle>Pricing</CardTitle>
                   </CardHeader>
@@ -853,33 +957,34 @@ useEffect(() => {
                     </div>
                   </CardContent>
                 </Card>
-
                 {/* Status */}
                 <Card className="rounded-xl border p-4">
                   <CardHeader className="pb-2">
                     <CardTitle>Status</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <select
-                      className="w-full border rounded-md p-2"
+                    <Select
                       value={status}
-                      onChange={(e) => setStatus(e.target.value as CourseStatus)}
+                      onValueChange={(val) => setStatus(val as CourseStatus)}
                     >
-                      {Object.values(COURSE_STATUS).map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(COURSE_STATUS).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </CardContent>
                 </Card>
               </div>
             </div>
           </TabsContent>
 
-          {/* --------------------------------------------------------------- */}
-          {/* ----------------------  CURRICULUM TAB  ---------------------- */}
-          {/* --------------------------------------------------------------- */}
+          {/* Curriculum Tab */}
           <TabsContent value="curriculum">
             <Card className="shadow-lg border">
               {/* ---- Header ------------------------------------------------ */}
@@ -950,7 +1055,7 @@ useEffect(() => {
                               {item.type === LEARNING_UNIT.LESSON && (
                                 <BookOpen className="h-4 w-4 text-red-500 flex-shrink-0" />
                               )}
-                              {item.type === "COHORT" && (
+                              {item.type === LEARNING_UNIT.COHORT && (
                                 <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
                               )}
 
@@ -981,7 +1086,7 @@ useEffect(() => {
                             {/* ---- Action Buttons ----------------------------- */}
                             <div className="flex items-center gap-1">
                               {/* Cohort actions */}
-                              {item.type === "COHORT" && (
+                              {item.type === LEARNING_UNIT.COHORT && (
                                 <>
                                   <Button
                                     variant="ghost"
@@ -1024,7 +1129,7 @@ useEffect(() => {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => addLessonToParent(item.id, item.depth)}
+                                    onClick={() => addLessonToParent(item.id)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                                     title="Add Lesson"
                                   >
@@ -1093,24 +1198,35 @@ useEffect(() => {
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Additional tab is fine */}
         </Tabs>
       </main>
 
-      {/* FIX: Corrected props */}
+      {/* Cohort Importer */}
       <CohortImporterModal
         isOpen={isCohortImporterModalOpen}
         onClose={() => setIsCohortImporterModalOpen(false)}
         onConfirm={handleImportCohorts}
-        excludedCohortIds={curriculum.filter(item => item.type === 'COHORT').map(item => item.id)}
+        excludedCohortIds={curriculum.filter(i => i.type === LEARNING_UNIT.COHORT).map(i => i.id)}
       />
 
+      {/* Lesson Selector */}
       <LessonSelectorModal
         isOpen={isLessonSelectorModalOpen}
         onClose={() => setIsLessonSelectorModalOpen(false)}
-        onConfirm={setLessonsToBeAdded}
-        excludedLessonIds={[]} // Simplified for this example
+        onConfirm={(lessons: Lesson[]) => {
+          if (!activeParentId) return;
+          const parentDepth = curriculum.find(i => i.id === activeParentId)?.depth || 0;
+          const newItems = lessons.map(lesson => ({
+            id: lesson.id,
+            title: lesson.title,
+            type: LEARNING_UNIT.LESSON,
+            depth: parentDepth + 1,
+            parentId: activeParentId,
+          }));
+          setCurriculum(prev => [...prev, ...newItems]);
+          setIsLessonSelectorModalOpen(false);
+        }}
+        excludedLessonIds={curriculum.filter(i => i.type === LEARNING_UNIT.LESSON).map(l => l.id)}
       />
     </div>
   );
