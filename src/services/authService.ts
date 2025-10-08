@@ -14,7 +14,7 @@ import {
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { auth, db } from "@/firebaseConfig";
 import { User } from "@/types/user";
-import { USER_ROLE, USER_STATUS } from "@/constants";
+import { USER_ROLE, USER_STATUS  } from "@/constants";
 import { UserRole, UserStatus } from "@/types/general";
 import { userService } from "./userService";
 
@@ -32,6 +32,47 @@ class AuthService {
     password: string
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
+      const userCredential = await firebaseSignIn(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // First, try to fetch user by Firebase UID
+      const userDocRef = doc(db, "Users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let userData: User | null = null;
+      if (userDocSnap.exists()) {
+        userData = userDocSnap.data() as User;
+      } else {
+        // fallback: query by email
+        const usersRef = collection(db, "Users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          userData = querySnap.docs[0].data() as User;
+        }
+      }
+
+      if (!userData) {
+        return { success: false, error: "User profile not found in Firestore." };
+      }
+      return { success: true, user: userData };
+    } catch (error: any) {
+      return { success: false, error: this.handleAuthError(error).message };
+    }
+  }
+
+  /** 🔹 Email/Password Login */
+  async signInWithUsernameAndPassword(
+    username: string,
+    password: string
+  ): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const user = await userService.getUserByUsername(username);
+      if(user == null) {
+        return { success: false, error: "username does not exists" };
+      }
+
+      const email = username+"@vizuara.ai";
       const userCredential = await firebaseSignIn(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -81,7 +122,8 @@ class AuthService {
       await updateProfile(firebaseUser, { displayName: name });
 
       // Create Firestore user document
-      const userId = await userService.createUser({
+      await  userService.createUser (firebaseUser.uid,{
+       id: firebaseUser.uid,
         email,
         firstName,
         middleName,
@@ -93,77 +135,120 @@ class AuthService {
         photoURL: firebaseUser.photoURL || null,
       });
 
-      return { success: true, userId };
+      return { success: true, userId: firebaseUser.uid };
     } catch (error: any) {
       return { success: false, error: this.handleAuthError(error).message };
     }
   }
 
-  /**
-   * 🔹 Google Sign-In (using popup by default, fallback can use redirect)
-   */
-  async signInWithGoogle(): Promise<{
-    success: boolean;
-    userId?: string;
-    error?: string;
-    role?: UserRole;
-  }> {
+  /** 🔹 Create new Email/Password user & Firestore user doc */
+  async createUserWithUsernameAndPassword(
+    username: string,
+    password: string,
+    name: string
+  ): Promise<AuthResponse> {
     try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-
-      const firebaseUser = userCredential.user;
-      let firstName = "";
-      let middleName: string | null = null;
-      let lastName = "";
-
-      if (firebaseUser.displayName) {
-        const parts = firebaseUser.displayName.split(" ");
-        firstName = parts[0];
-        if (parts.length === 2) {
-          lastName = parts[1];
-        } else if (parts.length > 2) {
-          middleName = parts.slice(1, -1).join(" ");
-          lastName = parts[parts.length - 1];
-        }
+      const user = await userService.getUserByUsername(username);
+      if(user != null) {
+        return { success: false, error: "username already exists" };
       }
 
-      const userRef = doc(db, "Users", firebaseUser.uid);
-      const existingDoc = await getDoc(userRef);
 
-      const userId = await userService.createUser({
+      const email = username+"@vizuara.ai";
+     const userCredential = await firebaseCreateUser(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Break down full name
+      const parts = name.trim().split(/\s+/);
+      const firstName = parts[0] || "";
+      const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+      const middleName = parts.length > 2 ? parts.slice(1, -1).join(" ") : null;
+
+      // Update Firebase Auth profile
+      await updateProfile(firebaseUser, { displayName: name });
+
+      // Create Firestore user document
+      const userId = await userService.createUser(firebaseUser.uid, {
+        id: firebaseUser.uid,
+        username,
+        email,
+        firstName,
+        middleName,
+        lastName,
+        role: USER_ROLE.STUDENT,
+        status: USER_STATUS.ACTIVE,
+        enrollments: [],
+        organizationId: null,
+        photoURL: firebaseUser.photoURL || null,
+      });
+
+      return { success: true, userId: firebaseUser.uid };
+    } catch (error: any) {
+      return { success: false, error: this.handleAuthError(error).message };
+    }
+  }
+
+ /** 🔹 Google Sign‑In (using popup) */
+async signInWithGoogle(): Promise<{
+  success: boolean;
+  userId?: string;
+  error?: string;
+  role?: UserRole;
+}> {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const firebaseUser = result.user;
+
+    // Parse name
+    let firstName = "";
+    let middleName: string | null = null;
+    let lastName = "";
+    if (firebaseUser.displayName) {
+      const parts = firebaseUser.displayName.split(" ");
+      firstName = parts[0];
+      if (parts.length === 2) {
+        lastName = parts[1];
+      } else if (parts.length > 2) {
+        middleName = parts.slice(1, -1).join(" ");
+        lastName = parts[parts.length - 1];
+      }
+    }
+
+    const uid = firebaseUser.uid;
+    const userRef = doc(db, "Users", uid);
+    const existingDoc = await getDoc(userRef);
+
+   if (!existingDoc.exists()) {
+      await userService.createUser(uid, {
+        id:uid,
         email: firebaseUser.email || "",
         firstName,
         middleName,
         lastName,
-        role: existingDoc.exists()
-          ? (existingDoc.data().role as UserRole)
-          : USER_ROLE.STUDENT,
-        status: existingDoc.exists()
-          ? (existingDoc.data().status as UserStatus)
-          : USER_STATUS.ACTIVE,
+        role: USER_ROLE.STUDENT,
+        status: USER_STATUS.ACTIVE,
         enrollments: [],
-        organizationId: existingDoc.exists()
-          ? existingDoc.data().organizationId
-          : null,
+        organizationId: null,
         photoURL: firebaseUser.photoURL || null,
       });
-
-      return {
-        success: true,
-        userId,
-        role: existingDoc.exists()
-          ? (existingDoc.data().role as UserRole)
-          : USER_ROLE.STUDENT,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: this.handleAuthError(error).message,
-        role: USER_ROLE.STUDENT,
-      };
     }
+
+    return {
+  success: true,
+  userId: uid,
+  role: existingDoc.exists()
+    ? (existingDoc.data().role as UserRole)
+    : USER_ROLE.STUDENT,
+};
+  } catch (error: any) {
+    return {
+      success: false,
+      error: this.handleAuthError(error).message,
+      role: USER_ROLE.STUDENT,
+    };
   }
+}
 
   /** 🔹 Optional: Google Sign-In using redirect (avoids COOP warnings) */
   async signInWithGoogleRedirect() {

@@ -130,6 +130,7 @@ const [CouponKiId,setCouponKiId]=useState("");
     // console.log(couponcode)
     const coupon = await couponService.getCouponByCode(couponcode);
     const CouponKiId = setCouponKiId(coupon.id)
+    console.log(CouponKiId)
         const applydiscount = async()=>{
       try{
 

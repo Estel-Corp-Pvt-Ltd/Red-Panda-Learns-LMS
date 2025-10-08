@@ -12,7 +12,8 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentProvider } from "@/types/general";
 import { PAYMENT_PROVIDER } from "@/constants";
-
+import { Header } from "@/components/Header";
+import { enrollmentService } from "@/services/dummyEnrollmentService";
 export default function CheckoutPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ export default function CheckoutPage() {
 
   const { data: course, isLoading } = useCourseQuery(courseId!);
   const providers = paymentService.getAvailableProviders();
+  const [isUserEnrolled,setUserIsEnrolled] = useState(false)
+
 
   useEffect(() => {
     if (!user) {
@@ -40,13 +43,27 @@ export default function CheckoutPage() {
     }
   }, [user, courseId, navigate]);
 
-  // Check if already enrolled
-  useEffect(() => {
-    if (course && user && isEnrolled(course.id)) {
-      console.log('CheckoutPage - User already enrolled, redirecting to course');
-      navigate(`/course/${courseId}`);
+
+useEffect(() => {
+  const checkUserEnrollment = async () => {
+    if (user && courseId) {
+      const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
+      console.log("✅ isUserEnrolled returned:", enrolled);
+      setUserIsEnrolled(enrolled);
     }
-  }, [course, user, isEnrolled, courseId, navigate]);
+  };
+
+  checkUserEnrollment();
+}, [user, courseId]); // <-- dependencies
+
+
+useEffect(() => {
+  if (isUserEnrolled) {
+    console.log('CheckoutPage - User already enrolled, redirecting to course');
+    navigate(`/course/${courseId}`);
+  }
+}, [course, user, isEnrolled, courseId, navigate]);
+
 
   useEffect(() => {
     if (course && selectedProvider) {
@@ -175,160 +192,181 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/course/${courseId}`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Course
-          </Button>
-          <h1 className="text-3xl font-bold mb-2">Complete Your Enrollment</h1>
-          <p className="text-muted-foreground">
-            You're just one step away from accessing this course
-          </p>
-        </div>
+ <div className="min-h-screen bg-background flex flex-col">
+  {/* Header */}
+  <Header />
 
-        <div className="grid gap-6">
-          {/* Course Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-2">
-                    {course.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    {course.description}
-                  </p>
-                  {pricing && !loadingPricing ? (
-                    <div className="space-y-2">
-                      <div className="text-2xl font-bold">
-                        {pricing.formattedPrice}
+  <div className="flex-1 p-4 sm:p-6">
+    <div className="max-w-2xl mx-auto">
+      {/* Back Button + Title */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(`/course/${courseId}`)}
+          className="mb-4 flex items-center"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Course
+        </Button>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+          Complete Your Enrollment
+        </h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
+          You're just one step away from accessing this course
+        </p>
+      </div>
+
+      <div className="grid gap-6">
+        {/* Course Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Course Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2">{course.title}</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  {course.description}
+                </p>
+                {pricing && !loadingPricing ? (
+                  <div className="space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold">
+                      {pricing.formattedPrice}
+                    </div>
+                    {pricing.originalCurrency !== pricing.currency && (
+                      <div className="text-sm text-muted-foreground">
+                        Original: {pricing.originalAmount}{" "}
+                        {pricing.originalCurrency} (Rate:{" "}
+                        {pricing.exchangeRate.toFixed(4)})
                       </div>
-                      {pricing.originalCurrency !== pricing.currency && (
-                        <div className="text-sm text-muted-foreground">
-                          Original: {pricing.originalAmount}{" "}
-                          {pricing.originalCurrency}
-                          (Rate: {pricing.exchangeRate.toFixed(4)})
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Loading pricing...</span>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Loading pricing...</span>
+                  </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Payment Method Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Select Payment Method
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {providers.map((provider) => (
-                <div
-                  key={provider.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedProvider === provider.id
+        {/* Payment Method Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Select Payment Method
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {providers.map((provider) => (
+              <div
+                key={provider.id}
+                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedProvider === provider.id
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
-                    }`}
-                  onClick={() => {
-                    setSelectedProvider(provider.id);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 ${selectedProvider === provider.id
+                }`}
+                onClick={() => setSelectedProvider(provider.id)}
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        selectedProvider === provider.id
                           ? "border-primary bg-primary"
                           : "border-border"
-                          }`}
-                      />
-                      <div>
-                        <span className="font-medium">
-                          {provider.displayName}
-                        </span>
-                        <div className="text-sm text-muted-foreground">
-                          {provider.description}
-                        </div>
+                      }`}
+                    />
+                    <div>
+                      <span className="font-medium flex items-center gap-2">
+                     
+                        {/* Provider Logo */}
+                        {provider.id === PAYMENT_PROVIDER.RAZORPAY && (
+                          <img
+                            src="/razorpay-icon.svg"
+                            alt="Razorpay"
+                            className="h-5"
+                          />
+                        )}
+                        {provider.id === PAYMENT_PROVIDER.PAYPAL && (
+                          <img
+                            src="/paypal-icon.svg"
+                            alt="PayPal"
+                            className="h-5"
+                          />
+                        )}
+                      </span>
+                      <div className="text-sm text-muted-foreground">
+                        {provider.description}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{provider.currency}</Badge>
-                      <Badge variant="secondary">Secure</Badge>
-                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{provider.currency}</Badge>
+                    <Badge variant="secondary">Secure</Badge>
                   </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* PayPal Button Container */}
-          {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
-            <Card>
-              <CardContent className="pt-6">
-                <div id="paypal-button-container"></div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Security Notice */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <h4 className="font-medium mb-1">Secure Payment</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Your payment information is encrypted and secure. We never
-                    store your payment details. All transactions are recorded
-                    and can be viewed in your account.
-                  </p>
-                </div>
               </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* PayPal Button Container */}
+        {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
+          <Card>
+            <CardContent className="pt-6">
+              <div id="paypal-button-container"></div>
             </CardContent>
           </Card>
+        )}
 
-          {/* Payment Button */}
-          {selectedProvider && (
-            <Button
-              onClick={handlePayment}
-              disabled={isProcessing || loadingPricing || !pricing}
-              size="lg"
-              className="w-full"
-            >
-              {isProcessing ? (
-                "Processing..."
-              ) : loadingPricing ? (
-                "Loading..."
-              ) : pricing ? (
-                <>
-                  <Lock className="h-4 w-4 mr-2" />
-                  Pay {pricing.formattedPrice} & Enroll Now
-                </>
-              ) : (
-                "Loading Payment..."
-              )}
-            </Button>
-          )}
-        </div>
+        {/* Security Notice */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 text-primary mt-0.5" />
+              <div>
+                <h4 className="font-medium mb-1">Secure Payment</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your payment information is encrypted and secure. We never
+                  store your payment details. All transactions are recorded and
+                  can be viewed in your account.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Button */}
+        {selectedProvider && (
+          <Button
+            onClick={handlePayment}
+            disabled={isProcessing || loadingPricing || !pricing}
+            size="lg"
+            className="w-full"
+          >
+            {isProcessing ? (
+              "Processing..."
+            ) : loadingPricing ? (
+              "Loading..."
+            ) : pricing ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Pay {pricing.formattedPrice} & Enroll Now
+              </>
+            ) : (
+              "Loading Payment..."
+            )}
+          </Button>
+        )}
       </div>
     </div>
+  </div>
+</div>
+
   );
 };

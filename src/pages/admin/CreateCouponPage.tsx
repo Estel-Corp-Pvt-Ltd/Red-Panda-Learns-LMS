@@ -14,7 +14,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 
 import { couponService } from '@/services/couponService';
-import { CouponStatus } from '@/types/coupon.';
 import { courseService } from '@/services/courseService';
 import { cohortService } from '@/services/cohortService';
 import { bundleService } from '@/services/bundleService';
@@ -22,14 +21,16 @@ import { useAuth } from '@/contexts/AuthContext';
 
 import { useCouponByCodeQuery } from '@/hooks/useCouponApi';
 import { Header } from "@/components/Header";   // ✅ Import global header
+import { COUPON_STATUS } from '@/constants';
+import { CouponStatus } from '@/types/general';
 
 const createCouponSchema = z.object({
   code: z.string().min(3, 'Coupon code is required'),
   discountPercentage: z.number().min(1).max(100, '1–100% allowed'),
-  expiryDate: z.string().min(1, 'Expiry date is required'),
-  usageLimit: z.number().min(1, 'At least 1 usage allowed'),
+  expiryDate: z.date(),// TODO: extra validation required
+  usageLimit: z.number().min(0, 'At least 1 usage allowed'),
   linkedCourseIds: z.array(z.string()).optional(), // allow empty array
-  status: z.nativeEnum(CouponStatus),
+  status: z.nativeEnum(COUPON_STATUS)
 });
 
 type CreateCouponFormData = z.infer<typeof createCouponSchema>;
@@ -46,7 +47,7 @@ export default function CreateCouponPage() {
   const [selectedCohorts, setSelectedCohorts] = useState<string[]>([]);
   const [selectedBundles, setSelectedBundles] = useState<string[]>([]);
 
-  
+
   // Load courses to link
   const loadCourses = async () => {
     try {
@@ -63,46 +64,46 @@ export default function CreateCouponPage() {
     }
   };
 
-  const loadCohorts = async () =>{
-    try{
+  const loadCohorts = async () => {
+    try {
       const cohortList = await cohortService.getAllCohorts();
-      setCohorts(cohortList.map(cohort => ({id:cohort.id,title:cohort.title})))
+      setCohorts(cohortList.map(cohort => ({ id: cohort.id, title: cohort.title })))
     }
-    catch(error){
+    catch (error) {
       toast({
-        title:'Error',
-        description:'Failed To Load Cohort',
+        title: 'Error',
+        description: 'Failed To Load Cohort',
         variant: 'destructive'
       });
-    } finally{
+    } finally {
       setLoading(false);
     }
   }
 
-  const loadBundels = async () =>{
-    try{
+  const loadBundles = async () => {
+    try {
       const bundleList = await bundleService.getAllBundles();
-      setBundles(bundleList.map(bundle=>({id:bundle.id,title:bundle.title})))
+      setBundles(bundleList.map(bundle => ({ id: bundle.id, title: bundle.title })))
     }
-    catch(error){
+    catch (error) {
       toast({
-        title:'Error',
-        description:'Error Loading Bundle',
-        variant:'destructive'
+        title: 'Error',
+        description: 'Error Loading Bundle',
+        variant: 'destructive'
       })
     }
-    finally{
+    finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
     loadCourses();
-    loadBundels();
+    loadBundles();
     loadCohorts();
   }, []);
 
-  const {user} = useAuth();
+  const { user } = useAuth();
 
   const {
     register,
@@ -113,7 +114,7 @@ export default function CreateCouponPage() {
   } = useForm<CreateCouponFormData>({
     resolver: zodResolver(createCouponSchema),
     defaultValues: {
-      status: CouponStatus.ACTIVE,
+      status: COUPON_STATUS.ACTIVE,
       linkedCourseIds: [],
     },
   });
@@ -135,16 +136,16 @@ export default function CreateCouponPage() {
       const couponData = {
         code: data.code.trim(),
         discountPercentage: data.discountPercentage,
-        expiryDate: Timestamp.fromDate(new Date(data.expiryDate)),
+        expiryDate: new Date(data.expiryDate),
         usageLimit: data.usageLimit,
         linkedCourseIds: selectedCourses,
         linkedBundleIds: selectedBundles,
-        linkedCohortIds:selectedCohorts,
+        linkedCohortIds: selectedCohorts,
         status: data.status,
-        createdById:user?.id , 
-        createdbyMail:user?.email 
+        createdById: user?.id,
+        createdbyMail: user?.email
       };
-     
+
       await couponService.createCoupon(couponData);
 
       toast({
@@ -211,7 +212,7 @@ export default function CreateCouponPage() {
                 Back to Dashboard
               </Button>
             </CardHeader>
-            
+
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 {/* Coupon Code */}
@@ -317,24 +318,24 @@ export default function CreateCouponPage() {
                 <div>
                   <Label>Status</Label>
                   <Select
-                    defaultValue={CouponStatus.ACTIVE}
+                    defaultValue={COUPON_STATUS.ACTIVE}
                     onValueChange={(val) => setValue('status', val as CouponStatus)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={CouponStatus.ACTIVE}>Active</SelectItem>
-                      <SelectItem value={CouponStatus.INACTIVE}>Inactive</SelectItem>
-                      <SelectItem value={CouponStatus.EXPIRED}>Expired</SelectItem>
+                      <SelectItem value={COUPON_STATUS.ACTIVE}>Active</SelectItem>
+                      <SelectItem value={COUPON_STATUS.INACTIVE}>Inactive</SelectItem>
+                      <SelectItem value={COUPON_STATUS.EXPIRED}>Expired</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.status && <p className="text-sm text-red-500">{errors.status.message}</p>}
                 </div>
 
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting || !!existingCoupon} 
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !!existingCoupon}
                   className="w-full"
                 >
                   {isSubmitting ? 'Creating...' : 'Create Coupon'}

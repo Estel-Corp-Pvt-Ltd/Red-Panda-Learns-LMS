@@ -1,15 +1,18 @@
 
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs, serverTimestamp , Timestamp , FieldValue } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { Course } from '@/types/course';
+
 import { Bundle, BundleEnrollment } from '@/types/bundle';
 import { bundleService } from './bundleService';
-
+import { serverTimestamp } from 'firebase/firestore';
+import { User } from '@/types/user';
+import { EnrolledProgramType } from '@/types/general';
 export interface Enrollment {
   id: string;
   userId: string;
   courseId: string;
-  enrolledAt: Date;
+  enrolledAt: Timestamp | FieldValue ;
   paymentId?: string;
   paymentProvider?: string;
   amount: number;
@@ -35,6 +38,7 @@ class EnrollmentService {
   ): Promise<void> {
     try {
       const normalizedCourseId = this.normalizeCourseId(course?.id);
+      console.log(normalizedCourseId)
 
       // console.log('EnrollmentService - Starting enrollment:', {
       //   userId,
@@ -45,11 +49,12 @@ class EnrollmentService {
       // });
 
       const enrollmentId = `${userId}_${normalizedCourseId}`;
+      console.log(enrollmentId)
       const enrollment: Partial<Enrollment> = {
         id: enrollmentId,
         userId,
         courseId: normalizedCourseId,
-        enrolledAt: new Date(),
+        enrolledAt: serverTimestamp() ,
         amount: course.salePrice || 0,
         status: 'active',
         progress: {
@@ -64,16 +69,28 @@ class EnrollmentService {
       if (paymentProvider) {
         enrollment.paymentProvider = paymentProvider;
       }
-
+      console.log(enrollment)
+      const targetId = normalizedCourseId; 
+const targetType: EnrolledProgramType = "COURSE";
       // Create enrollment document
       await setDoc(doc(db, 'enrollments', enrollmentId), enrollment as Enrollment);
+      console.log("SET DOC HOGAYA")
       // console.log('EnrollmentService - Enrollment document created:', enrollmentId);
+      
 
-      // Update user's enrollments with normalized course ID
-      const userDocRef = doc(db, 'users', userId);
-      await updateDoc(userDocRef, {
-        enrollments: arrayUnion(normalizedCourseId),
-      });
+
+        try{
+    const userDocRef = doc(db, "Users", userId);
+
+await updateDoc(userDocRef, {
+  enrollments: arrayUnion({ targetId, targetType }) as unknown as User["enrollments"],
+  updatedAt: serverTimestamp() as unknown as Date,
+});
+    }
+    catch(error){
+      console.log("Heyy this is error",error)
+    }
+      
 
       // console.log('EnrollmentService - User enrolled successfully:', {
       //   enrollmentId,
@@ -250,7 +267,7 @@ class EnrollmentService {
         id: bundleEnrollmentId,
         userId,
         bundleId: bundle.id,
-        enrolledAt: new Date(),
+        enrolledAt: serverTimestamp(),
         amount: bundle.salePrice,
         status: 'active',
         enrolledCourseIds,

@@ -1,4 +1,4 @@
-import { Coupon } from "@/types/coupon.";
+import { Coupon } from "@/types/coupon";
 import { couponService } from "@/services/couponService";
 
 export const couponsApi = {
