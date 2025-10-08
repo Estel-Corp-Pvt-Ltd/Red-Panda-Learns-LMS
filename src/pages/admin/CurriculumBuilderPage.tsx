@@ -53,6 +53,8 @@ import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
 import { serverTimestamp } from "firebase/firestore";
+import { imageService } from "@/services/imageService";
+import { getDownloadURL } from "firebase/storage";
 
 type SortableItemProps = {
   id: string;
@@ -118,6 +120,11 @@ const CurriculumBuilderPage = () => {
   const [authorId, setAuthorId] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [preview, setPreview] = useState(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -143,6 +150,7 @@ const CurriculumBuilderPage = () => {
       setStatus(courseData.status);
       setRegularPrice(courseData.regularPrice);
       setSalePrice(courseData.salePrice);
+      setThumbnailUrl(courseData.thumbnail || "");
       setCategories(courseData.categories || []);
       setTags(courseData.tags || []);
       setAuthorId(courseData.authorId);
@@ -186,6 +194,88 @@ const CurriculumBuilderPage = () => {
     fetchAuthors();
   }, [toast, authorId, authorName]);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file!", variant: "destructive" });
+      return;
+    }
+
+    setSelectedFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const uploadThumbnail = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please choose an image before uploading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (3MB limit)
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+    if (selectedFile.size > MAX_SIZE) {
+      toast({
+        title: "File Too Large",
+        description: "The selected file exceeds the 3MB size limit.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const uploadTask = imageService.uploadImage(`/courses/${courseId}/thumbnail.png`, selectedFile);
+    if (!uploadTask) {
+      toast({
+        title: "Upload Failed",
+        description: "Unable to upload the file. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        setUploading(true);
+        // Calculate progress
+        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setProgress(Math.round(prog));
+      }, (error) => {
+        toast({
+          title: "Failed to upload thumbnail.",
+          description: "Something went wrong",
+          variant: "destructive"
+        })
+        console.error(error);
+        setUploading(false);
+      },
+      async () => {
+        try {
+          setProgress(100);
+          setUploading(false);
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          setThumbnailUrl(url);
+          toast({
+            title: "Thumbnail Uploaded",
+            description: "Thumbnail has been successfully uploaded",
+            variant: "default",
+          });
+        } catch (error) {
+          toast({
+            title: "Thumbnail not uploaded",
+            description: "Something went wrong",
+            variant: "destructive"
+          });
+          console.error("Error getting download URL:", error);
+        }
+      });
+  }
+
   const saveBasics = async () => {
     if (!courseId || !course) return;
     if (!title.trim()) {
@@ -200,12 +290,14 @@ const CurriculumBuilderPage = () => {
       toast({ title: "Pricing Error", description: "Check regular / sale price.", variant: "destructive" });
       return;
     }
+
     try {
       setSaving(true);
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
         regularPrice,
+        thumbnail: thumbnailUrl,
         salePrice,
         categories,
         tags,
@@ -404,7 +496,7 @@ const CurriculumBuilderPage = () => {
               topics: cohortTopics,
               updatedAt: serverTimestamp(),
               createdAt: serverTimestamp(),
-              startDate:serverTimestamp(),
+              startDate: serverTimestamp(),
               endDate: serverTimestamp(),
               enrollmentOpen: true,
               price: 1000
@@ -489,6 +581,50 @@ const CurriculumBuilderPage = () => {
                       className="min-h-32"
                       placeholder="What will students learn?"
                     />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Thumbnail</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!preview && thumbnailUrl && (
+                      <div className="mb-5">
+                        <img
+                          src={thumbnailUrl}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {preview && (
+                      <div className="mb-5">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {uploading && (
+                      <div className="mb-8">
+                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
+                          <div
+                            style={{
+                              width: `${progress}%`,
+                              height: "100%",
+                              backgroundColor: "#ff00ff",
+                              transition: "width 0.3s",
+                            }}
+                          />
+                        </div>
+                        <small>{progress}%</small>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <input type="file" accept="image/*" onChange={handleFileChange} />
+                      <Button className="border px-5 py-2" onClick={uploadThumbnail} disabled={uploading || !preview}>{!preview ? "Uploaded" : "Upload"}</Button>
+                    </div>
                   </CardContent>
                 </Card>
                 {/* Instructor + Categories + Tags row */}
