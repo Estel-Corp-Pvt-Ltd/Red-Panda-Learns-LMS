@@ -1,29 +1,36 @@
-// services/attributeService.ts
-import { collection, getDocs, addDoc, query, where , deleteDoc , doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import { COLLECTIONS } from "@/constants";
+import { Attribute } from "@/types/attribute";
 
-export interface Attribute {
-  id: string;
-  name: string;
-  type: "Category" | "TargetAudience";
-  createdAt: Date;
-  updatedAt?: Date;
-}
+export class AttributeService {
+  private collectionName = COLLECTIONS.ATTRIBUTES;
 
-class attributeService {
-  private collectionName = "Attributes";
-
-  /** Fetch all attributes of a given type */
-  async getAttributes(type: "Category" | "TargetAudience"): Promise<Attribute[]> {
+  async getAttributes(type: Attribute["type"]): Promise<Attribute[]> {
     try {
       const q = query(collection(db, this.collectionName), where("type", "==", type));
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data()?.createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
-        updatedAt: doc.data()?.updatedAt?.toDate ? doc.data().updatedAt.toDate() : undefined,
-      })) as Attribute[];
+
+      return snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          name: data.name,
+          type: data.type,
+          createdAt: data.createdAt as Timestamp,
+          updatedAt: data.updatedAt as Timestamp | undefined,
+        };
+      });
     } catch (error) {
       console.error("Failed to fetch attributes:", error);
       return [];
@@ -31,23 +38,31 @@ class attributeService {
   }
 
   /** Add a new attribute (Category or TargetAudience) */
-  async addAttribute(type: "Category" | "TargetAudience", name: string): Promise<Attribute | null> {
+  async addAttribute(
+    type: Attribute["type"],
+    name: string
+  ): Promise<Attribute | null> {
     try {
       const newAttr = {
         name,
         type,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
+
       const docRef = await addDoc(collection(db, this.collectionName), newAttr);
-      return { id: docRef.id, ...newAttr };
+
+      return {
+        id: docRef.id,
+        ...newAttr,
+      } as Attribute;
     } catch (error) {
       console.error("Failed to add attribute:", error);
       return null;
     }
   }
 
-  /** Optional: delete an attribute by ID */
+  /** Delete an attribute by ID */
   async deleteAttribute(attributeId: string): Promise<boolean> {
     try {
       await deleteDoc(doc(db, this.collectionName, attributeId));
@@ -59,4 +74,5 @@ class attributeService {
   }
 }
 
-export const AttributeService = new attributeService();
+// Singleton instance
+export const attributeService = new AttributeService();
