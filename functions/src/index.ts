@@ -7,9 +7,9 @@ import * as crypto from "crypto";
 // import { PAYMENT_PROVIDER } from "../../src/constants"
 const recaptchaSecret = defineSecret("RECAPTCHA_SECRET");
 import * as admin from "firebase-admin";
-
 import fetch from "node-fetch";
 import Razorpay from "razorpay";
+import { PayPalAccessToken } from "../src/types/paypalConfig";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -262,8 +262,51 @@ const paypalClientSecret = defineSecret("PAYPAL_CLIENT_SECRET");
 // Local idempotency cache
 const paypalIdempotencyCache = new Map<string, any>();
 
+export async function getPayPalAccessToken(): Promise<string> {
+  const tokenRef = db.collection("config").doc("paypal_access_token");
+
+  logger.info("🔍 Checking existing PayPal access token in Firestore...");
+  const tokenSnap = await tokenRef.get();
+
+  if (tokenSnap.exists) {
+    const data = tokenSnap.data() as PayPalAccessToken;
+    const now = admin.firestore.Timestamp.now();
+    const remainingMs = data.expiresAt.toMillis() - now.toMillis();
+
+    logger.info("📄 Existing token found:", {
+      expiresAt: data.expiresAt.toDate().toISOString(),
+      remainingMinutes: Math.floor(remainingMs / 60000),
+    });
+
+    // If still valid for > 1 min, reuse it
+    if (remainingMs > 60 * 1000) {
+      logger.info("✅ Reusing existing PayPal access token.");
+      return data.token;
+    } else {
+      logger.warn("⚠️ Token is expired or expiring soon — generating a new one.");
+    }
+  } else {
+    logger.info("ℹ️ No existing PayPal token found — generating a new one.");
+  }
+
+  // ---------------------- Generate new token ----------------------
+  const newToken: string = await generateAccessToken();
+  const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + 32400 * 1000); // 9h validity
+
+  await tokenRef.set({ token: newToken, expiresAt }, { merge: true });
+
+  logger.info("💾 New PayPal token saved to Firestore:", {
+    docPath: tokenRef.path,
+    expiresAt: expiresAt.toDate().toISOString(),
+  });
+
+  return newToken;
+}
+
+
+// ----------------------------------------------------------------
 // Helper to get access token from PayPal
-async function generateAccessToken() {
+async function generateAccessToken(): Promise<string> {
   const base = "https://api-m.sandbox.paypal.com"; // switch to live in prod
   const auth = Buffer.from(
     paypalClientId.value() + ":" + paypalClientSecret.value()
@@ -279,13 +322,15 @@ async function generateAccessToken() {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch access token: ${await response.text()}`);
+    const err = await response.text();
+    logger.error("❌ Failed to fetch PayPal access token:", err);
+    throw new Error(`PayPal access token fetch failed: ${err}`);
   }
 
-  const data = (await response.json()) as { access_token: string };
+  const data = (await response.json()) as { access_token: string; expires_in?: number };
+  logger.info("🔑 Successfully generated new PayPal access token.");
   return data.access_token;
 }
-
 // ---------------- Create PayPal Order ----------------
 export const createPaypalOrder = onRequest(
   { region: "us-central1", secrets: [paypalClientId, paypalClientSecret] },
