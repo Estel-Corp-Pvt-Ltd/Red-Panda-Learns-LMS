@@ -54,16 +54,15 @@ Even though branch rules aren’t available on our private repo, we follow a **p
 
 ## 3. Documentation (Design & Technical)
 
-All documentation lives in the `docs/` folder inside the repo.
+All documentation is stored in the `docs/` folder within the repository. Document filenames use SNAKE_CASE formatting.
 
 ### Key Docs
 
 1. `README.md` → High-level project overview and setup instructions.
-2. `docs/architecture.md` → System architecture and diagrams.
-    - Use [Excalidraw](https://excalidraw.com/) or [Mermaid](https://mermaid.js.org/) for diagrams.
-3. `docs/workflows.md` → Git/GitHub workflows (this file).
-4. `docs/api.md` → API contracts and specifications.
-5. `docs/features/feature-name.md` → Detailed design for complex features.
+2. Use [Excalidraw](https://excalidraw.com/) or [Mermaid](https://mermaid.js.org/) for diagrams.
+3. `docs/WORKFLOWS.md` → Git/GitHub workflows (this file).
+4. `docs/API.md` → API contracts and specifications.
+5. `docs/features/FEATURE_NAME.md` → Detailed design for complex features.
 
 ---
 
