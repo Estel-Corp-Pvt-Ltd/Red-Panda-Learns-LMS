@@ -13,6 +13,7 @@ import { db } from "@/firebaseConfig";
 import { COLLECTIONS } from "@/constants";
 import { Attribute } from "@/types/attribute";
 import { AttributeType } from "@/types/general";
+import { toDateSafe } from "@/utils/date-time";
 
 export class AttributeService {
   private collectionName = COLLECTIONS.ATTRIBUTES;
@@ -31,8 +32,8 @@ export class AttributeService {
           id: docSnap.id,
           name: data.name,
           type: data.type,
-          createdAt: (data.createdAt as Timestamp) || serverTimestamp(),
-          updatedAt: (data.updatedAt as Timestamp) || serverTimestamp(),
+       createdAt: data.createdAt?.toDate?.() ?? null,
+    updatedAt: data.createdAt?.toDate?.() ?? null,
         };
       });
     } catch (error) {
