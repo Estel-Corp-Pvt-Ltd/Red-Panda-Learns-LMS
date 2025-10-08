@@ -39,7 +39,7 @@ class TransactionService {
     const counterRef = doc(db, 'counters', 'transactionCounter');
 
     const orderNumber = await runTransaction(db, async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
+    const counterDoc = await transaction.get(counterRef);
 
       let lastNumber = 20000000;
       if (counterDoc.exists()) {
@@ -52,7 +52,7 @@ class TransactionService {
       return nextNumber;
     });
 
-    const transactionId = `tx${uuidv4()}`;
+    const transactionId = `tnx_${uuidv4()}`;
 
     return {
       transactionId,

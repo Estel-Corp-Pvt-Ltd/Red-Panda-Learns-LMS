@@ -339,6 +339,7 @@ export const COLLECTION = {
   LESSONS: 'Lessons',
   COUPONS: 'Coupons',
   COUPON_USAGES: 'CouponUsages',
+   CONFIG: 'Config',
 ATTRIBUTES: 'Attributes', 
 } as const;
 
@@ -351,4 +352,8 @@ export const ORGANIZATION = {
   SCHOOL: 'SCHOOL',
   INDUSTRY: 'INDUSTRY',
   COLLEGE: 'COLLEGE',
+} as const;
+
+export const CONFIG_DOCS = {
+  PAYPAL_ACCESS_TOKEN: 'paypal_access_token',
 } as const;

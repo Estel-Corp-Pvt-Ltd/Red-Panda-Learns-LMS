@@ -9,7 +9,8 @@ import {
   arrayUnion,
   getDoc,
   serverTimestamp,
-  FieldValue
+  FieldValue,
+  updateDoc
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -128,10 +129,10 @@ class EnrollmentService {
         programType
       });
 
-      await setDoc(
+      await updateDoc(
         userDocRef,
         { enrollments: arrayUnion({ targetId, targetType: programType }) },
-        { merge: true }
+       
       );
 
       console.log("✅ User doc updated:", userId);
@@ -153,7 +154,6 @@ async isUserEnrolled(userId: string, targetId: string): Promise<boolean> {
     const enrollmentId = this.generateEnrollmentId(userId, targetId);
     const enrollmentDoc = await getDoc(doc(db, "Enrollments", enrollmentId));
 
-    console.log("arbaaaaaaaaaaaa", targetId);
     console.log("EnrollmentDoc snapshot:", enrollmentDoc);
 
     if (enrollmentDoc.exists()) {
