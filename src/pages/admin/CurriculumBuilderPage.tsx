@@ -246,6 +246,11 @@ const CurriculumBuilderPage = () => {
         const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(Math.round(prog));
       }, (error) => {
+        toast({
+          title: "Failed to upload thumbnail.",
+          description: "Something went wrong",
+          variant: "destructive"
+        })
         console.error(error);
         setUploading(false);
       },
@@ -261,6 +266,11 @@ const CurriculumBuilderPage = () => {
             variant: "default",
           });
         } catch (error) {
+          toast({
+            title: "Thumbnail not uploaded",
+            description: "Something went wrong",
+            variant: "destructive"
+          });
           console.error("Error getting download URL:", error);
         }
       });
