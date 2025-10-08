@@ -7,15 +7,14 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  Timestamp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { COLLECTIONS } from "@/constants";
+import { COLLECTION } from "@/constants";
 import { Attribute } from "@/types/attribute";
 import { AttributeType } from "@/types/general";
 
 export class AttributeService {
-  private collectionName = COLLECTIONS.ATTRIBUTES;
+  private collectionName = COLLECTION.ATTRIBUTES;
   y;
   async getAttributes(type: AttributeType): Promise<Attribute[]> {
     try {
@@ -31,8 +30,8 @@ export class AttributeService {
           id: docSnap.id,
           name: data.name,
           type: data.type,
-       createdAt: data.createdAt?.toDate?.() ?? null,
-    updatedAt: data.createdAt?.toDate?.() ?? null,
+          createdAt: data.createdAt?.toDate?.() ?? null,
+          updatedAt: data.createdAt?.toDate?.() ?? null,
         };
       });
     } catch (error) {
