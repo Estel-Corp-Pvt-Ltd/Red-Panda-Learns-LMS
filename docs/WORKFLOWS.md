@@ -75,6 +75,49 @@ All documentation is stored in the `docs/` folder within the repository. Documen
 - No debug logs or unnecessary prints
 - Documentation updated (if required)
 
+### PR Review & Local Testing Workflow
+
+To ensure code quality, consistent integration, and learning for all team members, the following practices are followed:
+
+#### 1. Pull Request Reviews
+
+- Every PR must have at least **one primary reviewer**. A **secondary reviewer** may be assigned for additional feedback.  
+- Reviews should be conducted **within 24 hours** of the PR being marked `Ready for Review`.  
+- **Review focus includes**:
+  - Code correctness and functionality
+  - Alignment with coding standards and project conventions
+  - Proper TypeScript typing, error handling, and documentation
+  - Passing automated tests and CI checks
+- Reviewers provide **inline comments** for clarity and actionable feedback.  
+- Developers are expected to **address comments promptly** before the PR can be merged.  
+
+#### 2. Testing PR Merges Locally
+
+- Before merging, developers should **test how the PR integrates with the staging branch**.  
+- Recommended workflow:
+  1. Fetch the latest `staging` branch:
+     ```bash
+     git checkout staging
+     git pull origin staging
+     git fetch pull origin pull/<PR-NUMBER>/merge:pr-<PR-NUMBER>-merge
+     git checkout pr-<PR-NUMBER>-merge
+     ```
+  2. Build and run the application locally, ensuring functionality works as expected.  
+  3. Run unit tests and integration tests.  
+  4. Discard the temporary branch after testing:
+     ```bash
+     git checkout staging
+     git branch -D test-merge
+     ```
+- This ensures that any integration issues are caught **before the PR is merged**, reducing regressions and conflicts.
+
+#### 3. Reviewer Etiquette & Responsibilities
+
+- **Timely reviews** prevent blocking teammates; aim for **same-day feedback** when possible.  
+- **Peer reviews** are encouraged for junior developers to learn and improve before senior review.  
+- Avoid waiting until a feature is fully completed—review in **smaller increments** to maintain fast feedback loops.  
+- Only merge after all comments are addressed, automated checks pass, and at least one approval is received.
+
 ---
 
 ## 5. Testing & Deployment
