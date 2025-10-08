@@ -27,9 +27,21 @@ import {
   Save,
   BookOpen,
   Users,
-  ArrowLeft
-
+  ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,8 +59,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { authorService } from "@/services/authorService";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/Header";
+import { attributeService } from "@/services/attributeService";
+import { ATTRIBUTE_TYPE } from "@/constants";
+import { AttributeType } from "@/types/general";
+// import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
+
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
-type DraggableItemType = LearningUnit | 'COHORT';
+type DraggableItemType = LearningUnit ;
 
 interface SortableItemProps {
   id: string;
@@ -114,7 +131,10 @@ const CurriculumBuilderPage = () => {
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
   const [regularPrice, setRegularPrice] = useState(0);
   const [salePrice, setSalePrice] = useState(0);
-  const [categories, setCategories] = useState<string[]>([]);
+const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+const [allCategories, setAllCategories] = useState<string[]>([]);
+const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<string[]>([]);
+const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [authorId, setAuthorId] = useState("");
@@ -125,6 +145,31 @@ const CurriculumBuilderPage = () => {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const [categoriesData, targetAudienceData] = await Promise.all([
+        attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY),
+        attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE),
+      ]);
+
+      setAllCategories(categoriesData.map((a) => a.name));
+      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+    } catch (error) {
+      console.error("Error fetching attributes:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load categories or target audiences.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  fetchAttributes();
+}, [toast]);
+
+
 
   useEffect(() => {
     loadCourseData();
@@ -145,7 +190,9 @@ const CurriculumBuilderPage = () => {
       setStatus(courseData.status);
       setRegularPrice(courseData.regularPrice);
       setSalePrice(courseData.salePrice);
-      setCategories(courseData.categories || []);
+
+      setSelectedTargetAudiences(courseData.targetAudienceIds || []);
+      setSelectedCategories(courseData.categoryIds || [] );
       setTags(courseData.tags || []);
       setAuthorId(courseData.authorId);
       setAuthorName(courseData.authorName);
@@ -214,7 +261,8 @@ const CurriculumBuilderPage = () => {
         description: description.trim(),
         regularPrice,
         salePrice,
-        categories,
+         targetAudienceIds: selectedTargetAudiences,
+         categoryIds : selectedCategories,
         tags,
         authorId,
         authorName,
@@ -551,7 +599,7 @@ const CurriculumBuilderPage = () => {
                   </Card>
 
                   {/* Categories */}
-                  <Card className="rounded-xl border p-4">
+                  {/* <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Categories</CardTitle>
                       <p className="text-xs text-muted-foreground">
@@ -575,7 +623,7 @@ const CurriculumBuilderPage = () => {
                         </label>
                       ))}
                     </CardContent>
-                  </Card>
+                  </Card> */}
 
                   {/* Tags */}
                   <Card className="rounded-xl border p-4">
@@ -617,8 +665,149 @@ const CurriculumBuilderPage = () => {
                       </div>
                     </CardContent>
                   </Card>
+                  
+        
+{/* Categories */}
+<Card className="rounded-xl border p-4">
+  <CardHeader className="pb-2">
+    <CardTitle>Categories</CardTitle>
+    <p className="text-xs text-muted-foreground">
+      Pick one or more to help discovery
+    </p>
+  </CardHeader>
+  <CardContent>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between"
+        >
+          {selectedCategories.length > 0
+            ? `${selectedCategories.length} selected`
+            : "Select categories"}
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search or add category..." />
+          <CommandList>
+            <CommandGroup>
+              {allCategories.map((cat) => (
+                <CommandItem
+                  key={cat}
+                  onSelect={() =>
+                    setSelectedCategories((prev) =>
+                      prev.includes(cat)
+                        ? prev.filter((c) => c !== cat)
+                        : [...prev, cat]
+                    )
+                  }
+                >
+                  <Checkbox
+                    checked={selectedCategories.includes(cat)}
+                    className="mr-2"
+                  />
+                  {cat}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+          <div className="p-2 border-t">
+            <Input
+              placeholder="Add new category"
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                  const newCat = e.currentTarget.value.trim();
+                  await attributeService.addAttribute(
+                    ATTRIBUTE_TYPE.CATEGORY,
+                    newCat
+                  );
+                  setAllCategories((prev) => [...prev, newCat]);
+                  setSelectedCategories((prev) => [...prev, newCat]);
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+          </div>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  </CardContent>
+</Card>
+
+{/* Target Audience */}
+<Card className="rounded-xl border p-4">
+  <CardHeader className="pb-2">
+    <CardTitle>Target Audience</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between"
+        >
+          {selectedTargetAudiences.length > 0
+            ? `${selectedTargetAudiences.length} selected`
+            : "Select target audience"}
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search or add audience..." />
+          <CommandList>
+            <CommandGroup>
+              {allTargetAudiences.map((aud) => (
+                <CommandItem
+                  key={aud}
+                  onSelect={() =>
+                    setSelectedTargetAudiences((prev) =>
+                      prev.includes(aud)
+                        ? prev.filter((a) => a !== aud)
+                        : [...prev, aud]
+                    )
+                  }
+                >
+                  <Checkbox
+                    checked={selectedTargetAudiences.includes(aud)}
+                    className="mr-2"
+                  />
+                  {aud}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+          <div className="p-2 border-t">
+            <Input
+              placeholder="Add new target audience"
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                  const newAud = e.currentTarget.value.trim();
+                  await attributeService.addAttribute(
+                    ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+                    newAud
+                  );
+                  setAllTargetAudiences((prev) => [...prev, newAud]);
+                  setSelectedTargetAudiences((prev) => [...prev, newAud]);
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+          </div>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  </CardContent>
+</Card>
+
                 </div>
               </div>
+
+
 
               {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
               <div className="space-y-6">

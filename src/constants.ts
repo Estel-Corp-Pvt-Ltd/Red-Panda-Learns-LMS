@@ -109,7 +109,8 @@ export const CURRENCY = {
 
 export const LEARNING_UNIT = {
     LESSON: "LESSON",
-    TOPIC: "TOPIC"
+    TOPIC: "TOPIC",
+    COHORT:'COHORT'
 } as const;
 
 export const ENVIRONMENT = {
@@ -322,4 +323,10 @@ export const COLLECTIONS = {
   LESSONS: 'Lessons',
   COUPONS: 'Coupons',
   COUPON_USAGES: 'CouponUsages',
+ATTRIBUTES: 'Attributes', 
+} as const;
+
+export const ATTRIBUTE_TYPE = {
+  CATEGORY : "CATEGORY",
+  TARGET_AUDIENCE : "TARGET AUDIENCE",
 } as const;
