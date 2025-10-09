@@ -1202,9 +1202,7 @@ export function AdminDashboard() {
                               {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
                             </TableCell>
                             <TableCell>
-                              {coupon.expiryDate
-                                ? new Date(coupon.expiryDate).toLocaleDateString()
-                                : 'No expiry'}
+                              {formatDate(coupon.expiryDate)}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
