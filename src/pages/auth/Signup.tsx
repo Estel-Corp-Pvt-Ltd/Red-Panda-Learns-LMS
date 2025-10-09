@@ -37,16 +37,16 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // 🔹 Password checks
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError("Password must be at least 6 characters long");
       return;
     }
 
@@ -54,7 +54,7 @@ export default function Signup() {
 
     try {
       // 🔹 1) Get v3 token with action 'signup'
-      const token = await getRecaptchaToken('signup');
+      const token = await getRecaptchaToken("signup");
       if (!token) {
         setError("⚠️ reCAPTCHA verification failed. Please try again.");
         setLoading(false);
@@ -77,7 +77,12 @@ export default function Signup() {
         return;
       }
 
-      console.log("reCAPTCHA v3 passed — score:", verifyData.score, "action:", verifyData.action);
+      console.log(
+        "reCAPTCHA v3 passed — score:",
+        verifyData.score,
+        "action:",
+        verifyData.action
+      );
 
       // 🔹 3) Proceed with Firebase signup
       const confirmation = await signup(email, password, name);
@@ -123,7 +128,7 @@ export default function Signup() {
   return (
     <div className="min-h-screen">
       <Header />
-      <div className='py-12 px-4 flex items-center justify-center'>
+      <div className="py-12 px-4 flex items-center justify-center">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="space-y-1 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -146,6 +151,42 @@ export default function Signup() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGoogleSignup}
+                disabled={loading}
+                className="
+     w-full h-15 justify-center gap-3 rounded-md
+    bg-[#060606] text-white text-lg font-semibold
+    hover:bg-[#060606] active:bg-[#1557b0]
+    hover:scale-[1.02] transition-transform duration-150 ease-in-out
+    shadow-lg shadow-[#1a73e8]/30
+    focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1a73e8]
+    disabled:opacity-90
+  "
+                aria-label="Continue with Google"
+              >
+                <img
+                  src="/google-logo.svg"
+                  alt="Google"
+                  className="h-6 w-6 "
+                  loading="eager"
+                />
+                {loading ? "Signing in..." : "Continue with Google"}
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <div className="relative">
@@ -184,7 +225,7 @@ export default function Signup() {
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -213,7 +254,7 @@ export default function Signup() {
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -237,31 +278,9 @@ export default function Signup() {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? "Creating account..." : "Create account"}
               </Button>
             </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignup}
-              disabled={loading}
-            >
-              <Chrome className="h-4 w-4 mr-2" />
-              Google
-            </Button>
           </CardContent>
 
           <CardFooter className="flex flex-col items-center gap-3">
