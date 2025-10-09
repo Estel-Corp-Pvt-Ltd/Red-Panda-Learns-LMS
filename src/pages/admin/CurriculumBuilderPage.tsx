@@ -75,6 +75,7 @@ type DraggableItemType = LearningUnit;
 import { serverTimestamp } from "firebase/firestore";
 import { imageService } from "@/services/imageService";
 import { getDownloadURL } from "firebase/storage";
+import CohortBuilderPage from "./CreateCohortPage";
 
 type SortableItemProps = {
   id: string;
@@ -87,6 +88,7 @@ type DraggableItem = {
   id: string;
   title: string;
   type: LearningUnit;
+  
   depth: number;
   parentId: string | null;
   originalData?: Cohort | Topic;
@@ -502,6 +504,7 @@ const CurriculumBuilderPage = () => {
   };
 
   // FIX: Complete rewrite of the save function to be robust and correct.
+  // FIX: Complete rewrite of the save function to be robust and correct.
   const saveCurriculumStructure = async () => {
     if (!courseId || !course) {
       toast({ title: "Error", description: "Course data is not available.", variant: "destructive" });
@@ -525,45 +528,41 @@ const CurriculumBuilderPage = () => {
           childrenMap.get(item.parentId)!.push(item);
         }
       });
-
+      
       // Process only root items (depth 0)
       for (const item of curriculum) {
         if (item.depth === 0) {
-          if (item.type === LEARNING_UNIT.COHORT) {
-            const cohortChildren = childrenMap.get(item.id) || []; // These are topics
-            const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
-              const lessonItems = (childrenMap.get(topicItem.id) || []).map(lessonItem => ({
-                id: lessonItem.id,
-                title: lessonItem.title,
-              }));
-              return { id: topicItem.id, title: topicItem.title, items: lessonItems };
-            });
+            if (item.type === 'COHORT') {
+                const cohortChildren = childrenMap.get(item.id) || []; // These are topics
+                const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
+                    const lessonItems = (childrenMap.get(topicItem.id) || []).map(lessonItem => ({
+                        id: lessonItem.id,
+                        title: lessonItem.title,
+                    }));
+                    return { id: topicItem.id, title: topicItem.title, items: lessonItems };
+                });
+                
+                // Reconstruct the cohort, preserving original data if it exists
+                const originalCohort = item.originalData as Cohort || {};
+                newCohorts.push({
+                    ...originalCohort,
+                    id: item.id,
+                    title: item.title,
+                    topics: cohortTopics,
+                    price: 0 ,
+            
+                });
 
-            // Reconstruct the cohort, preserving original data if it exists
-            const originalCohort = item.originalData as Cohort || {};
-            newCohorts.push({
-              ...originalCohort,
-              id: item.id,
-              title: item.title,
-              topics: cohortTopics,
-              updatedAt: serverTimestamp(),
-              createdAt: serverTimestamp(),
-              startDate: serverTimestamp(),
-              endDate: serverTimestamp(),
-              enrollmentOpen: true,
-              price: 1000
-            });
-
-          } else if (item.type === LEARNING_UNIT.TOPIC) {
-            const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
-              id: lessonItem.id,
-              title: lessonItem.title,
-            }));
-            newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
-          }
+            } else if (item.type === LEARNING_UNIT.TOPIC) {
+                const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
+                    id: lessonItem.id,
+                    title: lessonItem.title,
+                }));
+                newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
+            }
         }
       }
-
+      
       const updates: Partial<Course> = {
         topics: newRootTopics,
         cohorts: newCohorts,
@@ -573,7 +572,7 @@ const CurriculumBuilderPage = () => {
 
       toast({ title: "Success", description: "Curriculum saved!" });
       console.log("Curriculum saved with:", updates);
-
+      
     } catch (error) {
       toast({ title: "Error", description: `Failed to save: ${error}`, variant: "destructive" });
     } finally {
@@ -591,7 +590,7 @@ const CurriculumBuilderPage = () => {
 
       <main className="container mx-auto px-6 py-8">
 
-        <Tabs defaultValue="basics" className="w-full">
+        <Tabs defaultValue="curriculum" className="w-full">
 
           {/* Tab buttons ----------------------------------------------------- */}
           <TabsList>
@@ -995,6 +994,7 @@ const CurriculumBuilderPage = () => {
                 </CardTitle>
 
                 <div className="flex flex-wrap gap-2">
+                  <CohortBuilderPage />
                   <Button
                     variant="outline"
                     size="sm"

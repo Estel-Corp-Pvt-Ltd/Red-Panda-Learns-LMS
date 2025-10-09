@@ -926,27 +926,27 @@ export function AdminDashboard() {
                             {/* Start date */}
                             <TableCell>
                               <div className="text-sm">
-                                {cohort.maxStudents}
+                          LOREM
                               </div>
                             </TableCell>
 
                             {/* End date */}
                             <TableCell>
                               <div className="text-sm">
-                                {cohort.startDate ? formatDate(cohort.startDate) : "No start date"}
+                              LOREM
                               </div>
                             </TableCell>
 
                             {/* Enrollment open status */}
                             <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              <Badge >
+                                LOREM
                               </Badge>
                             </TableCell>
 
                             <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              <Badge>
+                            LOREM
                               </Badge>
                             </TableCell>
 
@@ -965,7 +965,7 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
+                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
                                   title="Edit Cohort"
                                 >
                                   <Edit className="h-4 w-4" />
