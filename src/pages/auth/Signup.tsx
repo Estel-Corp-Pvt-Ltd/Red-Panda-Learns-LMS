@@ -18,6 +18,7 @@ import { Eye, EyeOff, Mail, Lock, User, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { getRecaptchaToken } from "@/utils/recaptcha";
+import EmailSentAlert from "@/components/auth/EmailSentAlert";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -28,76 +29,78 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showEmailSentAlert, setShowEmailSentAlert] = useState(false);
 
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError('');
 
-  // 🔹 Password checks
-  if (password !== confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
-
-  if (password.length < 6) {
-    setError('Password must be at least 6 characters long');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    // 🔹 1) Get v3 token with action 'signup'
-    const token = await getRecaptchaToken('signup');
-    if (!token) {
-      setError("⚠️ reCAPTCHA verification failed. Please try again.");
-      setLoading(false);
+    // 🔹 Password checks
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
-    // 🔹 2) Verify on backend and enforce a score threshold (e.g., 0.6)
-    const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
-    const res = await fetch(verifyUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, expectedAction: "signup" }),
-    });
-
-    const verifyData = await res.json();
-
-    if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.6) {
-      setError("reCAPTCHA verification failed. Please try again.");
-      setLoading(false);
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
       return;
     }
 
-    console.log("reCAPTCHA v3 passed — score:", verifyData.score, "action:", verifyData.action);
+    setLoading(true);
 
-    // 🔹 3) Proceed with Firebase signup
-    const confirmation = await signup(email, password, name);
+    try {
+      // 🔹 1) Get v3 token with action 'signup'
+      const token = await getRecaptchaToken('signup');
+      if (!token) {
+        setError("⚠️ reCAPTCHA verification failed. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-    if (confirmation.success) {
-      toast({
-        title: "Account created successfully!",
-        description: "Welcome to Vizuara AI Labs. You can now access your courses.",
+      // 🔹 2) Verify on backend and enforce a score threshold (e.g., 0.6)
+      const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
+      const res = await fetch(verifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, expectedAction: "signup" }),
       });
-      navigate('/dashboard', { replace: true });
-    } else {
-      toast({
-        title: "Sign up failed!",
-        description: "Please try again later.",
-      });
+
+      const verifyData = await res.json();
+
+      if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.6) {
+        setError("reCAPTCHA verification failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("reCAPTCHA v3 passed — score:", verifyData.score, "action:", verifyData.action);
+
+      // 🔹 3) Proceed with Firebase signup
+      const confirmation = await signup(email, password, name);
+
+      if (confirmation.success) {
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to Vizuara AI Labs. You can now access your courses.",
+        });
+        setShowEmailSentAlert(true);
+      } else {
+        toast({
+          title: "Sign up failed!",
+          description: "Please try again later.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-  } catch (err: any) {
-    setError(err.message || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleGoogleSignup = async () => {
     setError("");
@@ -182,7 +185,7 @@ export default function Signup() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-placeholder="Create a password"
+                    placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
@@ -301,6 +304,7 @@ placeholder="Create a password"
           </CardFooter>
         </Card>
       </div>
+      {showEmailSentAlert && (<EmailSentAlert email={email} setVisible={setShowEmailSentAlert} />)}
     </div>
   );
 }

@@ -42,6 +42,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import RefundPage from "./pages/RefundPolicy";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
+import VerifyEmail from "./pages/auth/VerifyEmail";
 // import { AttributeManager } from "./components/admin/attribute";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ const App = () => (
                 />
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/signup" element={<Signup />} />
+                <Route path="/auth/verify-email" element={<VerifyEmail />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/reset-password" element={<SetNewPassword />} />
                 <Route
@@ -153,7 +155,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                    <Route
+                <Route
                   path="admin/edit-coupon/:couponId"
                   element={
                     <AuthGuard requireAdmin >
@@ -177,7 +179,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                
+
                 <Route
                   path="/admin/edit-course/:courseId"
                   element={
@@ -186,7 +188,7 @@ const App = () => (
                     </AuthGuard>
                   }
                 />
-                    {/* <Route
+                {/* <Route
                   path="/admin/add-attribute"
                   element={
                     <AuthGuard requireAdmin >
@@ -245,17 +247,17 @@ const App = () => (
                 <Route
                   path="/courses"
                   element={
-                      <CoursesPage />
+                    <CoursesPage />
                   }
                 />
-                  <Route
+                <Route
                   path="dummy/bundle/:bundleId/checkout"
                   element={<DummyBundleCheckoutPage />}
                 />
                 <Route path="*" element={<NotFound />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/privacy" element={<PrivacyPage />} />
-                  <Route path="/refund-policy" element={<RefundPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/refund-policy" element={<RefundPage />} />
 
               </Routes>
             </BrowserRouter>
