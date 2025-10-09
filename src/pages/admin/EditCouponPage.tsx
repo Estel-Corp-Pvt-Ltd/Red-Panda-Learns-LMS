@@ -121,7 +121,7 @@ useEffect(() => {
         description: 'Failed to load coupon',
         variant: 'destructive',
       });
-      navigate('/admin');
+  
     } finally {
       setLoading(false);
     }
