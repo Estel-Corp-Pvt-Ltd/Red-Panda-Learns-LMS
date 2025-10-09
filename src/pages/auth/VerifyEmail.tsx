@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { applyActionCode } from "firebase/auth";
 import { auth } from "@/firebaseConfig";
 
-type Status = "verifying" | "success" | "error";
 
 export default function VerifyEmail() {
-  const [status, setStatus] = useState<Status>("verifying");
+  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
@@ -21,13 +20,14 @@ export default function VerifyEmail() {
 
       try {
         await applyActionCode(auth, code);
-        setStatus("success");
-        setMessage("Your email has been verified successfully!");
       } catch (error) {
         console.error("Email verification failed:", error);
         setStatus("error");
         setMessage("The verification link is invalid or expired.");
+        return;
       }
+      setStatus("success");
+      setMessage("Your email has been verified successfully!");
     };
 
     void verifyEmail(); // Run async function safely
