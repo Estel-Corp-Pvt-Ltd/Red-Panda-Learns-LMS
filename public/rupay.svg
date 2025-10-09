@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 20" role="img" aria-label="RuPay">
+  <title>RuPay</title>
+  <text x="2" y="14" fill="#183B8F"
+        font-family="Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+        font-size="12" font-weight="800" letter-spacing=".2"
+        lengthAdjust="spacingAndGlyphs" textLength="58">RuPay</text>
+
+  <!-- Adjust translate(X, 0) to change gap -->
+  <g transform="translate(61, 0)">
+    <polygon points="0,6 7,10 0,14" fill="#F58220"/>
+    <polygon points="7,6 14,10 7,14" fill="#2DB84D"/>
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Visa">
+  <title>Visa</title>
+  <!-- Flush left: x=0 and tight viewBox -->
+  <text x="0" y="14" fill="#1A1F71"
+        font-family="Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="800" letter-spacing=".3"
+        lengthAdjust="spacingAndGlyphs" textLength="40">
+    VISA
+  </text>
+</svg>
