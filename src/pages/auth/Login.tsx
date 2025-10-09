@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { USER_ROLE } from "@/constants";
 import { getRecaptchaToken } from "@/utils/recaptcha";
+import EmailNotVerifiedPopup from "@/components/auth/EmailNotVerifiedPopup";
+import { UserCredential } from "firebase/auth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,6 +28,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userCredential, setUserCredential] = useState<UserCredential | null>(null);
+  const [showEmailNotVerifiedPopup, setShowEmailNotVerifiedPopup] = useState<boolean>(false);
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -61,17 +65,16 @@ export default function Login() {
     try {
       await verifyRecaptcha(); //  Check human first
 
-      const { success, error, user } = await login(email, password);
+      const { success, error, user, userCredential } = await login(email, password);
 
       if (success) {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
-        });
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
-        } else {
+        } else if (userCredential.user.emailVerified == true) {
           navigate(from || "/dashboard", { replace: true });
+        } else {
+          setUserCredential(userCredential);
+          setShowEmailNotVerifiedPopup(true);
         }
         return;
       }
@@ -294,6 +297,7 @@ export default function Login() {
           </CardFooter>
         </Card>
       </div>
+      {showEmailNotVerifiedPopup && userCredential && !userCredential.user.emailVerified && (<EmailNotVerifiedPopup userCredential={userCredential} setVisible={setShowEmailNotVerifiedPopup} />)}
     </div>
   );
 }
