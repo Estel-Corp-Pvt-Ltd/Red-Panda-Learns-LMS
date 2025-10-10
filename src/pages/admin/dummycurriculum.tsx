@@ -367,7 +367,7 @@ const DummyCurriculumBuilderPage = () => {
       
       // Process only root items (depth 0)
       for (const item of curriculum) {
-        if (item.depth === 0 ) {
+        if (item.depth === 0) {
             if (item.type === 'COHORT') {
                 const cohortChildren = childrenMap.get(item.id) || []; // These are topics
                 const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
@@ -467,14 +467,21 @@ const DummyCurriculumBuilderPage = () => {
 }} />
            
 
-                  <Button
-                    size="sm"
-                    onClick={() => addItem(LEARNING_UNIT.TOPIC)}
-                    className="flex items-center gap-1"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Topic
-                  </Button>
+                 <Button
+  size="sm"
+  onClick={() => {
+    const existingCohort = curriculum.find(item => item.type === LEARNING_UNIT.COHORT);
+    if (existingCohort) {
+      addTopicToCohort(existingCohort.id, existingCohort.depth); // depth will likely be 0
+    } else {
+      addItem(LEARNING_UNIT.TOPIC);
+    }
+  }}
+  className="flex items-center gap-1"
+>
+  Add Topic
+</Button>
+
 
                   <Button
                     size="sm"
