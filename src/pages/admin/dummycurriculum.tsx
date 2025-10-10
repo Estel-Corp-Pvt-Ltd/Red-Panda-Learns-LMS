@@ -236,6 +236,60 @@ const DummyCurriculumBuilderPage = () => {
     });
     return flatList;
   };
+
+
+  const duplicateCohort = (cohortId: string) => {
+  setCurriculum(prev => {
+    const newList = [...prev];
+
+    const originalCohort = newList.find(i => i.id === cohortId);
+    if (!originalCohort || originalCohort.type !== LEARNING_UNIT.COHORT) return prev;
+
+    const newCohortId = `cohort_${Date.now()}`;
+    const newCohortTitle = `${originalCohort.title} -- Copy`;
+
+    const newCohort: DraggableItem = {
+      id: newCohortId,
+      title: newCohortTitle,
+      type: LEARNING_UNIT.COHORT,
+      depth: 0,
+      parentId: null,
+    };
+
+    // Get topics inside the original cohort
+    const topics = newList.filter(i => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC);
+
+    const duplicatedTopics: DraggableItem[] = [];
+    const duplicatedLessons: DraggableItem[] = [];
+
+    topics.forEach(topic => {
+      const newTopicId = `topic_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const newTopic: DraggableItem = {
+        id: newTopicId,
+        title: topic.title,
+        type: LEARNING_UNIT.TOPIC,
+        depth: 1,
+        parentId: newCohortId,
+      };
+      duplicatedTopics.push(newTopic);
+
+      const lessons = newList.filter(i => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON);
+      lessons.forEach(lesson => {
+        duplicatedLessons.push({
+          ...lesson,
+          id: `lesson_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          parentId: newTopicId,
+          depth: 2,
+        });
+      });
+    });
+
+    return [...newList, newCohort, ...duplicatedTopics, ...duplicatedLessons];
+  });
+};
+
+
+
 const handleDragEnd = (event: DragEndEvent) => {
   const { active, over } = event;
   if (!over) return;
@@ -611,6 +665,17 @@ const handleDragEnd = (event: DragEndEvent) => {
                                   >
                                     <Plus className="h-4 w-4" />
                                   </Button>
+
+                                <Button
+  variant="ghost"
+  size="sm"
+  onClick={() => duplicateCohort(item.id)}
+  className="opacity-0 group-hover:opacity-100 transition-opacity"
+  title="Duplicate Cohort"
+>
+  <Upload className="h-4 w-4 text-blue-500" />
+</Button>
+
 
                                   <Button
                                     variant="ghost"
