@@ -170,7 +170,6 @@ export async function sendPaymentFailedEmail({ email, name }: { email: string, n
     return result;
   } catch (error) {
     console.error("🚨 Error sending payment failed email:", error);
-    throw error;
   }
 }
 
