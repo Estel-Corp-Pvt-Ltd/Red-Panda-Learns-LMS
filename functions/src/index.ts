@@ -10,6 +10,7 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import Razorpay from "razorpay";
 import { PayPalAccessToken } from "../src/types/paypalConfig";
+import { sendInvoice } from "./invoice";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -241,6 +242,53 @@ export const verifyPayment = onRequest(
       //   razorpay_signature,
       //   completedAt: Date.now(),
       // });
+
+      // Step 5. Get User Details
+      const userRef = db.collection("Users").doc(txn.userId);
+      const userSnap = await userRef.get();
+
+      if (!userSnap.exists) {
+        res.status(400).json({ success: false, error: "Something wrong with userID" });
+        return;
+      }
+
+      const userData = userSnap.data();
+      if (!userData) {
+        res.status(400).json({ success: false, error: "User data is missing" });
+        return;
+      }
+
+      const firstName = userData.firstName;
+      const email = userData.email;
+
+      // Step: 6 Send Email
+      console.time("sendInvoice");
+      await sendInvoice({
+        email: email,
+        name: firstName,
+        amount: 1000,
+        billTo: {
+          name: "Gyanendra Singh",
+          address: {
+            city: "Indore",
+            line1: "G",
+            country: "India",
+            postalCode: "486220",
+            state: "Madhya Pradesh",
+          }
+        },
+        shipTo: {
+          name: "Gyanendra Singh",
+          address: {
+            city: "Indore",
+            line1: "G",
+            country: "India",
+            postalCode: "486220",
+            state: "Madhya Pradesh",
+          }
+        }
+      });
+      console.timeEnd("sendInvoice");
 
       console.log("✅ Transaction updated to COMPLETED:", transaction_id);
       res.json({ success: true, transaction_id });
