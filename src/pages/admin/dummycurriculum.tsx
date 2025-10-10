@@ -236,16 +236,61 @@ const DummyCurriculumBuilderPage = () => {
     });
     return flatList;
   };
+const handleDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+  if (!over) return;
+  if (active.id === over.id) return;
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setCurriculum(prev => {
-      const oldIndex = prev.findIndex(i => i.id === active.id);
-      const newIndex = prev.findIndex(i => i.id === over.id);
-      return arrayMove(prev, oldIndex, newIndex);
-    });
-  };
+  setCurriculum(prev => {
+    const newList = [...prev];
+    const idxActive = newList.findIndex(i => i.id === active.id);
+    const idxOver = newList.findIndex(i => i.id === over.id);
+    if (idxActive === -1 || idxOver === -1) return prev;
+
+    const activeItem = newList[idxActive];
+    const overItem = newList[idxOver];
+
+    // Reparent logic:
+    let newParentId: string | null = activeItem.parentId;
+    let newDepth = activeItem.depth;
+
+    // If overItem is a Cohort and activeItem is a Topic, drop topic into cohort
+    if (overItem.type === LEARNING_UNIT.COHORT && activeItem.type === LEARNING_UNIT.TOPIC) {
+      newParentId = overItem.id;
+      newDepth = overItem.depth + 1;
+    }
+    // If overItem is a Topic and activeItem is a Lesson, drop lesson into topic
+    else if (overItem.type === LEARNING_UNIT.TOPIC && activeItem.type === LEARNING_UNIT.LESSON) {
+      newParentId = overItem.id;
+      newDepth = overItem.depth + 1;
+    }
+    // If overItem is Topic and active is Topic (drag topic into siblings), maybe make same parent
+    else if (overItem.type === LEARNING_UNIT.TOPIC && activeItem.type === LEARNING_UNIT.TOPIC) {
+      newParentId = overItem.parentId;  // put in same cohort or same root
+      newDepth = overItem.depth;
+    }
+    // If you drop topic into “root” (i.e. over a root-level item or empty), you may want to parentId = null, depth=0
+    else {
+      // e.g. if active is topic and over is root-level topic or cohort, revert to root
+      // only do this if you allow topics without cohorts
+      newParentId = overItem.parentId || null;
+      newDepth = overItem.depth;
+    }
+
+    // Update the activeItem's parentId and depth
+    newList[idxActive] = {
+      ...activeItem,
+      parentId: newParentId,
+      depth: newDepth,
+    };
+
+    // Also reorder the array so the dragged item appears in correct position
+    const moved = arrayMove(newList, idxActive, idxOver);
+
+    return moved;
+  });
+};
+
 
   const addItem = (type: LearningUnit, parentId: string | null = null, depth = 0) => {
     const newItem: DraggableItem = {
