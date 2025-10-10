@@ -17,6 +17,7 @@ class RazorpayProvider {
   
 async createOrder(amount: number, currency: string, receipt: string, transactionId: string): Promise<any> {
   const safeReceipt = (receipt || "").substring(0, 40);
+  
 
   const response = await fetch(`${this.backendUrl}/createOrder`, {
     method: 'POST',

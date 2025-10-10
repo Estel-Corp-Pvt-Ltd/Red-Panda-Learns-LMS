@@ -40,7 +40,7 @@ function validateAmount(amount: any): number {
 }
 
 function validateCurrency(currency: any): string {
-  const allowed = ["USD", "INR"];
+  const allowed = ["USD", "INR","GBP"];
   if (!allowed.includes(currency)) throw new Error("Invalid currency");
   return currency;
 }

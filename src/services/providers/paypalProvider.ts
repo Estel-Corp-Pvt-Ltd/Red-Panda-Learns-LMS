@@ -1,3 +1,4 @@
+
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
 import { enrollmentService } from '@/services/dummyEnrollmentService';
@@ -15,30 +16,24 @@ export interface PayPalOrder {
     description: string;
   }>;
 };
-
 class PayPalProvider {
   private readonly environment = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION ? ENVIRONMENT.PRODUCTION : ENVIRONMENT.SANDBOX;
   private readonly clientId = this.environment === ENVIRONMENT.SANDBOX ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
-
   async loadPayPalSDK(): Promise<void> {
     return new Promise((resolve, reject) => {
       if ((window as any).paypal) {
         resolve();
         return;
       }
-
       const script = document.createElement('script');
-    
 script.src = `https://www.${
   this.environment === ENVIRONMENT.SANDBOX ? "sandbox.paypal.com" : "paypal.com"
-}/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.USD}&intent=capture`;
-
+}/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.GBP}&intent=capture`;
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
       document.head.appendChild(script);
     });
   }
-
   async processPayment(
     course: Course,
     userEmail: string,
@@ -53,22 +48,18 @@ script.src = `https://www.${
         amount,
         userId
       });
-
       await this.loadPayPalSDK();
-
       return new Promise((resolve) => {
         // Update transaction status to processing
         transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.PROCESSING);
-
         const paypal = (window as any).paypal;
-
         paypal.Buttons({
           createOrder: async (data: any, actions: any) => {
             return actions.order.create({
               intent: 'CAPTURE',
               purchase_units: [{
                 amount: {
-                  currency_code: 'USD',
+                  currency_code: 'GBP',
                   value: amount.toFixed(2),
                 },
                 description: `Enrollment for ${course.title}`,
@@ -79,12 +70,10 @@ script.src = `https://www.${
               },
             });
           },
-
           onApprove: async (data: any, actions: any) => {
             try {
               const order = await actions.order.capture();
               console.log('PayPal payment successful:', order);
-
               // Update transaction with PayPal details
               await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.COMPLETED, {
                 orderId: order.id,
@@ -97,12 +86,11 @@ script.src = `https://www.${
                 //     transactionId: order.purchase_units[0].payments.captures[0].id,
                 //   }
               );
-
               // Auto-enroll user after successful payment
               try {
                 await enrollmentService.enrollUser(
                   userId,
-                 course.id, // ✅ targetId is a string
+                 course.id, // :white_check_mark: targetId is a string
                   order.purchase_units[0].payments.captures[0].id,
                   'paypal'
                 );
@@ -111,7 +99,6 @@ script.src = `https://www.${
                 console.error('PayPalProvider - Enrollment failed:', enrollmentError);
                 // Don't fail the payment, but log the error
               }
-
               resolve({
                 success: true,
                 transactionId: transactionId,
@@ -119,32 +106,24 @@ script.src = `https://www.${
               });
             } catch (error) {
               console.error('PayPal capture error:', error);
-
               await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, error instanceof Error ? error.message : 'PayPal capture failed');
-
               resolve({
                 success: false,
                 error: 'Payment capture failed',
               });
             }
           },
-
           onCancel: async (data: any) => {
             console.log('PayPal payment cancelled:', data);
-
             await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.CANCELLED, {} as PaymentDetails, 'Payment cancelled by user');
-
             resolve({
               success: false,
               error: 'Payment cancelled by user',
             });
           },
-
           onError: async (err: any) => {
             console.error('PayPal payment error:', err);
-
             await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, err.message || 'PayPal payment error');
-
             resolve({
               success: false,
               error: 'Payment failed. Please try again.',
@@ -154,9 +133,7 @@ script.src = `https://www.${
       });
     } catch (error) {
       console.error('PayPal payment setup failed:', error);
-
       await transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.FAILED, {} as PaymentDetails, error instanceof Error ? error.message : 'PayPal SDK load failed');
-
       return {
         success: false,
         error: 'PayPal payment setup failed',
@@ -164,5 +141,4 @@ script.src = `https://www.${
     }
   }
 }
-
 export const paypalProvider = new PayPalProvider();
