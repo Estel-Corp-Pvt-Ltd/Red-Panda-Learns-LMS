@@ -53,6 +53,7 @@ import { Lesson } from "@/types/lesson";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COURSE_STATUS, LEARNING_UNIT } from "@/constants";
 import { Checkbox } from "@/components/ui/checkbox";
+import { v4 as uuidv4 } from 'uuid';
 import { CourseStatus, LearningUnit } from "@/types/general";
 import {
   Select,
@@ -364,10 +365,30 @@ const handleDragEnd = (event: DragEndEvent) => {
     setIsLessonSelectorModalOpen(true);
   };
 
-  const addTopicToCohort = (cohortId: string, cohortDepth: number) => {
-    addItem(LEARNING_UNIT.TOPIC, cohortId, cohortDepth + 1);
+const addTopicToCohort = (cohortId: string, depth: number) => {
+  const newTopic = {
+    id: uuidv4(),
+    title: "New Topic",
+    type: LEARNING_UNIT.TOPIC,
+    depth: depth + 1,
+    parentId: cohortId,
   };
 
+  setCurriculum((prev) => {
+    const cohortIndex = prev.findIndex((i) => i.id === cohortId);
+
+    // Find index after the last child of the cohort
+    let insertIndex = cohortIndex + 1;
+    for (let i = cohortIndex + 1; i < prev.length; i++) {
+      if (prev[i].depth <= depth) break;
+      insertIndex = i + 1;
+    }
+
+    const newCurriculum = [...prev];
+    newCurriculum.splice(insertIndex, 0, newTopic);
+    return newCurriculum;
+  });
+};
   // utils ---------------------------------------------------------------
   const flattenCohort = (
     cohort: Cohort,
@@ -784,24 +805,41 @@ const handleDragEnd = (event: DragEndEvent) => {
      
 
       {/* Lesson Selector */}
-      <LessonSelectorModal
-        isOpen={isLessonSelectorModalOpen}
-        onClose={() => setIsLessonSelectorModalOpen(false)}
-        onConfirm={(lessons: Lesson[]) => {
-          if (!activeParentId) return;
-          const parentDepth = curriculum.find(i => i.id === activeParentId)?.depth || 0;
-          const newItems = lessons.map(lesson => ({
-            id: lesson.id,
-            title: lesson.title,
-            type: LEARNING_UNIT.LESSON,
-            depth: parentDepth + 1,
-            parentId: activeParentId,
-          }));
-          setCurriculum(prev => [...prev, ...newItems]);
-          setIsLessonSelectorModalOpen(false);
-        }}
-        excludedLessonIds={curriculum.filter(i => i.type === LEARNING_UNIT.LESSON).map(l => l.id)}
-      />
+     <LessonSelectorModal
+  isOpen={isLessonSelectorModalOpen}
+  onClose={() => setIsLessonSelectorModalOpen(false)}
+  onConfirm={(lessons: Lesson[]) => {
+    if (!activeParentId) return;
+
+    const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
+    const parentDepth = curriculum[parentIndex]?.depth || 0;
+
+    const newItems = lessons.map(lesson => ({
+      id: uuidv4(), 
+      title: lesson.title,
+      type: LEARNING_UNIT.LESSON,
+      depth: parentDepth + 1,
+      parentId: activeParentId,
+      originalData: lesson, // optional
+    }));
+
+    setCurriculum(prev => {
+      let insertIndex = parentIndex + 1;
+      for (let i = parentIndex + 1; i < prev.length; i++) {
+        if (prev[i].depth <= parentDepth) break;
+        insertIndex = i + 1;
+      }
+
+      const updated = [...prev];
+      updated.splice(insertIndex, 0, ...newItems);
+      return updated;
+    });
+
+    setIsLessonSelectorModalOpen(false);
+  }}
+  excludedLessonIds={[]} // you can remove this filter if needed
+/>
+
     </div>
   );
 };
