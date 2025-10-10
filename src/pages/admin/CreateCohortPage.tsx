@@ -1,5 +1,5 @@
+// CohortBuilderPage.tsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,13 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Cohort } from "@/types/course";
 
-const CohortBuilderPage = () => {
-  const navigate = useNavigate();
+type CohortBuilderPageProps = {
+  onCohortCreated?: (cohort: Cohort) => void;
+};
+
+const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
   const { toast } = useToast();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -45,22 +49,39 @@ const CohortBuilderPage = () => {
     try {
       setSaving(true);
 
-      const cohortData = {
+      const cohortData =  {
         title: title.trim(),
         description: description.trim(),
-        price: price,
+        price,
         topics: [],
       };
 
+      // create the cohort in Firestore
       const newId = await cohortService.createCohort(cohortData);
+
+      const fullCohort: Cohort = {
+        id: newId,
+        title: title.trim(),
+        description: description.trim(),
+        price,
+        topics: [],
+      };
+
       toast({
         title: "Success",
         description: "Cohort created successfully!",
       });
-      
+
+      // If parent listening, use callback instead of navigating
+      if (onCohortCreated) {
+        onCohortCreated(fullCohort);
+      } else {
+        // fallback: navigate to cohort page (original behavior)
+        window.location.href = `/admin/cohort/${newId}`;
+      }
+
       resetForm();
       setIsOpen(false);
-      navigate(`/admin/cohort/${newId}`);
     } catch (error) {
       toast({
         title: "Error",
@@ -77,7 +98,7 @@ const CohortBuilderPage = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="w-full sm:w-auto">
+        <Button size="sm">
           Create Cohort
         </Button>
       </DialogTrigger>
@@ -117,7 +138,6 @@ const CohortBuilderPage = () => {
               value={price}
               onChange={(e) => setPrice(+e.target.value)}
               min="0"
-              step="0.01"
             />
           </div>
         </div>
@@ -125,10 +145,7 @@ const CohortBuilderPage = () => {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => {
-              resetForm();
-              setIsOpen(false);
-            }}
+            onClick={() => { resetForm(); setIsOpen(false); }}
             disabled={saving}
           >
             Cancel

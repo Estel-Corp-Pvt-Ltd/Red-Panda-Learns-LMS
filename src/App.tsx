@@ -43,7 +43,7 @@ import RefundPage from "./pages/RefundPolicy";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
 // import { AttributeManager } from "./components/admin/attribute";
-
+import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -183,6 +183,14 @@ const App = () => (
                   element={
                     <AuthGuard requireAdmin >
                       <CurriculumBuilderPage />
+                    </AuthGuard>
+                  }
+                />
+                   <Route
+                  path="/admin/dummy/edit-course/:courseId"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <DummyCurriculumBuilderPage />
                     </AuthGuard>
                   }
                 />

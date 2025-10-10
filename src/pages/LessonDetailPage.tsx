@@ -40,17 +40,41 @@ export default function LessonDetailPage() {
 
   const isLoading = courseLoading;
 
+  
   useEffect(() => {
     if (!isLoading) {
       console.log("Courses are loading",course)
     }
   }, [isLoading]);
 
-  const loadLessons = async () => {
-    const allLessonIds = course.topics.flatMap(topic => topic.items.map(item => item.id));
-    const allLessons = await lessonService.getLessonsByIds(allLessonIds);
-    setLessons(allLessons);
-  };
+const loadLessons = async () => {
+  if (!course) return;
+
+  // Collect course-level lessons
+  const courseLessonIds =
+    course.topics?.flatMap(topic => topic.items.map(item => item.id)) || [];
+  
+  // Collect cohort-level lessons
+  const cohortLessonIds =
+    course.cohorts?.flatMap(cohort =>
+      cohort.topics?.flatMap(topic => topic.items.map(item => item.id)) || []
+    ) || [];
+
+  // Combine both
+  const allLessonIds = [...courseLessonIds, ...cohortLessonIds];
+    console.log("ye  hai all lesson id " ,allLessonIds)
+  if (allLessonIds.length === 0) {
+    setLessons([]);
+    return;
+  }
+
+  // Fetch lesson details
+  const allLessons = await lessonService.getLessonsByIds(allLessonIds);
+
+  // Update state
+  setLessons(allLessons);
+  
+};
 
   useEffect(() => {
     if (course)
@@ -168,7 +192,7 @@ export default function LessonDetailPage() {
             className="h-screen"
             onLessonClick={(item) => {
               if (item.type === LEARNING_UNIT.LESSON) {
-                handleLessonSelect(item.id);
+                handleLessonSelect(item.id); 
               }
             }}
           />
@@ -179,7 +203,7 @@ export default function LessonDetailPage() {
           <SheetContent side="left" className="p-0 w-80">
             <div className="h-full">
               <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="font-semibold">Course Content</h2>
+                <h2 className="font-semibold">Course Content </h2>
                 <Button
                   variant="ghost"
                   size="sm"
