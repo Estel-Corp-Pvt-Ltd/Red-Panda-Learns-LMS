@@ -1,7 +1,6 @@
 import { Address, InvoiceData } from "../types/invoice";
 
 
-
 export function generateInvoiceHTML(invoiceData: InvoiceData): string {
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-IN', {
@@ -516,6 +515,15 @@ body {
         <div class="signature-right">
           <p>Authorized Signature</p>
         </div>
+      </div>
+      <!-- Policy Links Section -->
+      <div class="policy-links">
+          <p>
+              <a href="https://vizuara.ai/terms" target="_blank">Payment Terms and Conditions</a> | 
+              <a href="https://vizuara.ai/privacy" target="_blank">Privacy Policy</a> | 
+              <a href="https://vizuara.ai/refund-policy" target="_blank">Refund Policy</a>
+          </p>
+          <p>For more information, visit: <a href="https://vizuara.ai" target="_blank">https://vizuara.ai</a></p>
       </div>
     </div>
   </div>

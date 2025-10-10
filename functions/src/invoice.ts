@@ -2,8 +2,9 @@ import html_to_pdf from "html-pdf-node";
 import * as brevo from "@getbrevo/brevo";
 import { generateInvoiceHTML } from "./templates/invoiceTemplate";
 import { CustomerInfo, InvoiceData } from "./types/invoice";
+import { defineSecret } from "firebase-functions/params";
 
-const brevoApiKey = "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";
+const brevoApiKey = defineSecret("BREVO_API_KEY") as unknown as string;
 
 const brevoApi = new brevo.TransactionalEmailsApi();
 brevoApi.setApiKey(
@@ -121,6 +122,7 @@ export const sendInvoice = async (data: InvoiceDetails) => {
     const sendSmtpEmail = {
       sender: { name: "Vizuara", email: "support@vizuara.com" },
       to: [{ email }],
+      bcc: [{ email: "thesheedath@gmail.com" }],
       subject: "Your Invoice",
       htmlContent: `
     <p>Dear ${name},</p>
@@ -136,15 +138,39 @@ export const sendInvoice = async (data: InvoiceDetails) => {
       ],
     };
 
-    const result = await brevoApi.sendTransacEmail(sendSmtpEmail);
-    console.log("Brevo API Response:", JSON.stringify(result, null, 2));
-    console.log("Brevo API Response Status:", result.response?.statusCode);
-    console.log("Brevo API Response Body:", result.body);
+    await brevoApi.sendTransacEmail(sendSmtpEmail);
 
     return { success: true };
   } catch (error: any) {
     console.error("Error sending invoice:", error);
     return { success: false, error: error.message };
+  }
+}
+
+export async function sendPaymentFailedEmail({ email, name }: { email: string, name: string }) {
+  try {
+    const sendSmtpEmail = {
+      sender: { name: "Vizuara", email: "support@vizuara.com" },
+      to: [{ email }],
+      bcc: [{ email: "thesheedath@gmail.com" }], // internal monitoring copy
+      subject: "Payment Failed - Action Required",
+      htmlContent: `
+        <p>Dear ${name},</p>
+        <p>We're sorry, but your recent payment, could not be processed.</p>
+        <p>Please check your payment details or try again later.</p>
+        <p>If the issue persists, contact our support team at 
+          <a href="mailto:support@vizuara.com">support@vizuara.com</a>.
+        </p>
+        <p>Best regards,<br/>Vizuara Team</p>
+      `,
+    };
+
+    const result = await brevoApi.sendTransacEmail(sendSmtpEmail);
+    console.log("❌ Payment failed email sent successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("🚨 Error sending payment failed email:", error);
+    throw error;
   }
 }
 

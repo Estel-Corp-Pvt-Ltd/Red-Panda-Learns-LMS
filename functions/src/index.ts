@@ -10,7 +10,7 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import Razorpay from "razorpay";
 import { PayPalAccessToken } from "../src/types/paypalConfig";
-import { sendInvoice } from "./invoice";
+import { sendInvoice, sendPaymentFailedEmail } from "./invoice";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -213,37 +213,7 @@ export const verifyPayment = onRequest(
         return;
       }
 
-      // Step 3: Cross-check with Razorpay API
-      const instance = new Razorpay({
-        key_id: razorpayKeyId.value(),
-        key_secret: razorpayKeySecret.value(),
-      });
-
-      let payment;
-      try {
-        payment = await instance.payments.fetch(razorpay_payment_id);
-        console.log("✅ Razorpay payment fetched:", payment);
-      } catch (fetchErr) {
-        console.error("❌ Razorpay fetch failed:", fetchErr);
-        res.status(400).json({ success: false, error: "Invalid payment ID" });
-        return;
-      }
-
-      if (payment.status !== "captured") {
-        res.status(400).json({ success: false, error: "Payment not captured" });
-        return;
-      }
-
-      // Step 4: Update transaction as completed
-      // await txnRef.update({
-      //   status: "COMPLETED",
-      //   razorpay_order_id,
-      //   razorpay_payment_id,
-      //   razorpay_signature,
-      //   completedAt: Date.now(),
-      // });
-
-      // Step 5. Get User Details
+      // Step 3. Get User Details
       const userRef = db.collection("Users").doc(txn.userId);
       const userSnap = await userRef.get();
 
@@ -260,6 +230,37 @@ export const verifyPayment = onRequest(
 
       const firstName = userData.firstName;
       const email = userData.email;
+
+      // Step 4: Cross-check with Razorpay API
+      const instance = new Razorpay({
+        key_id: razorpayKeyId.value(),
+        key_secret: razorpayKeySecret.value(),
+      });
+
+      let payment;
+      try {
+        payment = await instance.payments.fetch(razorpay_payment_id);
+        console.log("✅ Razorpay payment fetched:", payment);
+      } catch (fetchErr) {
+        console.error("❌ Razorpay fetch failed:", fetchErr);
+        await sendPaymentFailedEmail({ email, name: firstName });
+        res.status(400).json({ success: false, error: "Invalid payment ID" });
+        return;
+      }
+
+      if (payment.status !== "captured") {
+        res.status(400).json({ success: false, error: "Payment not captured" });
+        return;
+      }
+
+      // Step 5: Update transaction as completed
+      // await txnRef.update({
+      //   status: "COMPLETED",
+      //   razorpay_order_id,
+      //   razorpay_payment_id,
+      //   razorpay_signature,
+      //   completedAt: Date.now(),
+      // });
 
       // Step: 6 Send Email
       console.time("sendInvoice");
