@@ -820,7 +820,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
       type: LEARNING_UNIT.LESSON,
       depth: parentDepth + 1,
       parentId: activeParentId,
-      originalData: lesson, // optional
+    
     }));
 
     setCurriculum(prev => {
