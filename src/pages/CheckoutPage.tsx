@@ -31,7 +31,7 @@ const METHOD_LOGOS: Record<
   { name: string; src: string; className?: string }[]
 > = {
   RAZORPAY: [
-    { name: "UPI", src: "/upi.svg.webp", className: "h-[30px] w-[32px]" },
+    { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
     { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
     {
       name: "Mastercard",
