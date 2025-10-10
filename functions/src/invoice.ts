@@ -122,7 +122,7 @@ export const sendInvoice = async (data: InvoiceDetails) => {
     const sendSmtpEmail = {
       sender: { name: "Vizuara", email: "support@vizuara.com" },
       to: [{ email }],
-      bcc: [{ email: "thesheedath@gmail.com" }],
+      bcc: [{ email: "thesreedath@gmail.com" }],
       subject: "Your Invoice",
       htmlContent: `
     <p>Dear ${name},</p>
@@ -152,7 +152,7 @@ export async function sendPaymentFailedEmail({ email, name }: { email: string, n
     const sendSmtpEmail = {
       sender: { name: "Vizuara", email: "support@vizuara.com" },
       to: [{ email }],
-      bcc: [{ email: "thesheedath@gmail.com" }], // internal monitoring copy
+      bcc: [{ email: "thesreedath@gmail.com" }], // internal monitoring copy
       subject: "Payment Failed - Action Required",
       htmlContent: `
         <p>Dear ${name},</p>
