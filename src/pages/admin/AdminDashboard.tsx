@@ -98,7 +98,7 @@ export function AdminDashboard() {
   const [bundlesLoading, setBundlesLoading] = useState(true);
 
   useEffect(() => {
-    if (location.pathname === '/admin') {
+    if (location.pathname === "/admin") {
       loadCourses();
       loadCohorts();
       loadBundles();
@@ -111,10 +111,10 @@ export function AdminDashboard() {
 
   // 🔹 Load USERS
   const loadUsers = async () => {
-    try {
-      const usersList = await userService.getAllUsers();
-      setUsers(usersList);
-    } catch (error) {
+    const response = await userService.getAllUsers();
+    if (response.success) {
+      setUsers(response.data);
+    } else {
       toast({
         title: "Error",
         description: "Failed to load users",
@@ -124,14 +124,14 @@ export function AdminDashboard() {
   };
 
   const deleteUser = async (userId: string) => {
-    try {
-      await userService.deleteUser(userId);
+    const response = await userService.deleteUser(userId);
+    if (response.success) {
       setUsers((prev) => prev.filter((user) => user.id !== userId));
       toast({
         title: "Success",
         description: "User deleted successfully"
       });
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to delete user",
@@ -737,7 +737,7 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? 'default' : 'secondary'}>
+                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? "default" : "secondary"}>
                                 {course.status}
                               </Badge>
                             </TableCell>
@@ -837,7 +837,7 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? 'default' : 'secondary'}>
+                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? "default" : "secondary"}>
                                 {bundle.status}
                               </Badge>
                             </TableCell>
@@ -919,7 +919,7 @@ export function AdminDashboard() {
                             <TableCell>
                               <div>
                                 <div className="font-medium">{cohort.title}</div>
-                                <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+                                <div className="text-sm text-muted-foreground">{cohort.description || "-"}</div>
                               </div>
                             </TableCell>
 
@@ -939,14 +939,14 @@ export function AdminDashboard() {
 
                             {/* Enrollment open status */}
                             <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              <Badge variant={cohort.enrollmentOpen ? "secondary" : "destructive"}>
+                                {cohort.enrollmentOpen ? "Open" : "Closed"}
                               </Badge>
                             </TableCell>
 
                             <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              <Badge variant={cohort.enrollmentOpen ? "secondary" : "destructive"}>
+                                {cohort.enrollmentOpen ? "Open" : "Closed"}
                               </Badge>
                             </TableCell>
 
@@ -1160,7 +1160,7 @@ export function AdminDashboard() {
                         Get started by creating a coupon code.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate('/admin/create-coupon')}>
+                        <Button onClick={() => navigate("/admin/create-coupon")}>
                           <Plus className="mr-2 h-4 w-4" />
                           Create Coupon
                         </Button>
@@ -1186,10 +1186,10 @@ export function AdminDashboard() {
                               <Badge
                                 variant={
                                   coupon.status === COUPON_STATUS.ACTIVE
-                                    ? 'default'
+                                    ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                      ? 'secondary'
-                                      : 'outline'
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {coupon.status}

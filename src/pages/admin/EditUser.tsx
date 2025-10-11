@@ -43,21 +43,15 @@ const EditUserPage = () => {
     // Load user data
     useEffect(() => {
         const fetchUser = async () => {
-            try {
-                if (!userId) return;
-                const data = await userService.getUserById(userId);
-                if (!data) {
-                    toast.error("User not found");
-                    navigate("/admin");
-                    return;
-                }
-                setUser(data);
-            } catch (error) {
-                console.error("Error loading user:", error);
-                toast.error("Failed to load user");
-            } finally {
-                setLoading(false);
+            if (!userId) return;
+            const response = await userService.getUserById(userId);
+            if (response.success) {
+                setUser(response.data);
+            } else {
+                toast.error("User not found");
+                navigate("/admin");
             }
+            setLoading(false);
         };
 
         fetchUser();
@@ -68,25 +62,24 @@ const EditUserPage = () => {
     };
 
     const handleUpdateUser = async () => {
-        try {
-            if (!user.firstName?.trim()) {
-                toast.error("First name is required");
-                return;
-            }
-            if (!user.lastName?.trim()) {
-                toast.error("Last name is required");
-                return;
-            }
-            if (!user.email?.trim()) {
-                toast.error("Email is required");
-                return;
-            }
+        if (!user.firstName?.trim()) {
+            toast.error("First name is required");
+            return;
+        }
+        if (!user.lastName?.trim()) {
+            toast.error("Last name is required");
+            return;
+        }
+        if (!user.email?.trim()) {
+            toast.error("Email is required");
+            return;
+        }
 
-            await userService.updateUser(userId!, user);
+        const response = await userService.updateUser(userId!, user);
+        if (response.success) {
             toast.success("User updated successfully!");
             navigate("/admin");
-        } catch (error) {
-            console.error("Error updating user:", error);
+        } else {
             toast.error("Failed to update user");
         }
     };
