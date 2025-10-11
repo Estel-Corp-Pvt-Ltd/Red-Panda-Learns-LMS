@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect , useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   DndContext,
@@ -92,6 +92,18 @@ type DraggableItem = {
   depth: number;
   parentId: string | null;
   originalData?: Cohort | Topic;
+  lessonRefId?: string; // real lesson id for lessons
+};
+
+
+const mkLessonInstanceId = (lessonRefId: string, topicId: string) =>
+  `lesson_${lessonRefId}__topic_${topicId}`;
+
+const ensureUniqueId = (baseId: string, taken: Set<string>) => {
+  if (!taken.has(baseId)) return baseId;
+  let n = 2, id = `${baseId}__${n}`;
+  while (taken.has(id)) { n += 1; id = `${baseId}__${n}`; }
+  return id;
 };
 
 const SortableItem = ({ id, children, depth }: SortableItemProps) => {
@@ -218,31 +230,70 @@ const DummyCurriculumBuilderPage = () => {
 
 
 
-  const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
-    const flatList: DraggableItem[] = [];
-    (courseData.topics || []).forEach(topic => {
-      flatList.push({ id: topic.id, title: topic.title, type: LEARNING_UNIT.TOPIC, depth: 0, parentId: null, originalData: topic });
-      (topic.items || []).forEach(lesson => {
-        flatList.push({ id: lesson.id, title: lesson.title, type: LEARNING_UNIT.LESSON, depth: 1, parentId: topic.id });
+const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
+  const flatList: DraggableItem[] = [];
+
+  // Root topics
+  (courseData.topics || []).forEach(topic => {
+    flatList.push({
+      id: topic.id,
+      title: topic.title,
+      type: LEARNING_UNIT.TOPIC,
+      depth: 0,
+      parentId: null,
+      originalData: topic,
+    });
+
+    (topic.items || []).forEach(lesson => {
+      flatList.push({
+        id: mkLessonInstanceId(lesson.id, topic.id), // instance id
+        lessonRefId: lesson.id,                      // real lesson id
+        title: lesson.title,
+        type: LEARNING_UNIT.LESSON,
+        depth: 1,
+        parentId: topic.id,
       });
     });
-    (courseData.cohorts || []).forEach(cohort => {
-      flatList.push({ id: cohort.id, title: cohort.title, type: LEARNING_UNIT.COHORT, depth: 0, parentId: null, originalData: cohort });
-      (cohort.topics || []).forEach(topic => {
-        flatList.push({ id: topic.id, title: topic.title, type: LEARNING_UNIT.TOPIC, depth: 1, parentId: cohort.id });
-        (topic.items || []).forEach(lesson => {
-          flatList.push({ id: lesson.id, title: lesson.title, type: LEARNING_UNIT.LESSON, depth: 2, parentId: topic.id });
+  });
+
+  // Cohorts
+  (courseData.cohorts || []).forEach(cohort => {
+    flatList.push({
+      id: cohort.id,
+      title: cohort.title,
+      type: LEARNING_UNIT.COHORT,
+      depth: 0,
+      parentId: null,
+      originalData: cohort,
+    });
+
+    (cohort.topics || []).forEach(topic => {
+      flatList.push({
+        id: topic.id,
+        title: topic.title,
+        type: LEARNING_UNIT.TOPIC,
+        depth: 1,
+        parentId: cohort.id,
+      });
+
+      (topic.items || []).forEach(lesson => {
+        flatList.push({
+          id: mkLessonInstanceId(lesson.id, topic.id), // instance id
+          lessonRefId: lesson.id,                      // real lesson id
+          title: lesson.title,
+          type: LEARNING_UNIT.LESSON,
+          depth: 2,
+          parentId: topic.id,
         });
       });
     });
-    return flatList;
-  };
+  });
 
-
-  const duplicateCohort = (cohortId: string) => {
+  return flatList;
+};
+const duplicateCohort = (cohortId: string) => {
   setCurriculum(prev => {
     const newList = [...prev];
-
     const originalCohort = newList.find(i => i.id === cohortId);
     if (!originalCohort || originalCohort.type !== LEARNING_UNIT.COHORT) return prev;
 
@@ -257,9 +308,7 @@ const DummyCurriculumBuilderPage = () => {
       parentId: null,
     };
 
-    // Get topics inside the original cohort
     const topics = newList.filter(i => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC);
-
     const duplicatedTopics: DraggableItem[] = [];
     const duplicatedLessons: DraggableItem[] = [];
 
@@ -275,19 +324,55 @@ const DummyCurriculumBuilderPage = () => {
       duplicatedTopics.push(newTopic);
 
       const lessons = newList.filter(i => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON);
-      lessons.forEach(lesson => {
-        duplicatedLessons.push({
-          ...lesson,
-          id: `lesson_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          parentId: newTopicId,
-          depth: 2,
-        });
-      });
+     lessons.forEach(lesson => {
+  const refId = lesson.lessonRefId ?? lesson.id; // prefer lessonRefId
+  duplicatedLessons.push({
+    ...lesson,
+    id: mkLessonInstanceId(refId, newTopicId),   // instance id for the new topic
+    lessonRefId: refId,
+    parentId: newTopicId,
+    depth: 2,
+  });
+});
     });
 
+
+    
     return [...newList, newCohort, ...duplicatedTopics, ...duplicatedLessons];
   });
 };
+
+
+
+// compute once per open/parent change
+const excludedLessonIdsForActiveParent = useMemo(() => {
+  if (!isLessonSelectorModalOpen || !activeParentId) return [];
+
+  // find the topic we're adding into
+  const topic = curriculum.find(i => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC);
+  if (!topic) return [];
+
+  // if topic has no cohort parent, no restriction per your rule
+  const cohortId = topic.parentId;
+  if (!cohortId) return [];
+
+  // all topics inside this cohort
+  const topicIdsInCohort = new Set(
+    curriculum
+      .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+      .map(i => i.id)
+  );
+
+  // lessons already used anywhere in this cohort
+  const usedLessonIds = new Set<string>();
+  curriculum.forEach(i => {
+    if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
+      usedLessonIds.add(i.lessonRefId ?? i.id);
+    }
+  });
+
+  return Array.from(usedLessonIds);
+}, [isLessonSelectorModalOpen, activeParentId, curriculum]);
 
 const handleDragEnd = (event: DragEndEvent) => {
   const { active, over } = event;
@@ -550,39 +635,45 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
       });
       
       // Process only root items (depth 0)
-      for (const item of curriculum) {
-        if (item.depth === 0) {
-            if (item.type === 'COHORT') {
-                const cohortChildren = childrenMap.get(item.id) || []; // These are topics
-                const cohortTopics: Topic[] = cohortChildren.map(topicItem => {
-                    const lessonItems = (childrenMap.get(topicItem.id) || []).map(lessonItem => ({
-                        id: lessonItem.id,
-                        title: lessonItem.title,
-                    }));
-                    return { id: topicItem.id, title: topicItem.title, items: lessonItems };
-                });
-                
-                // Reconstruct the cohort, preserving original data if it exists
-                const originalCohort = item.originalData as Cohort || {};
-                newCohorts.push({
-                    ...originalCohort,
-                    id: item.id,
-                    title: item.title,
-                    topics: cohortTopics,
-                    price: 0 ,
-            
-                });
+  for (const item of curriculum) {
+  if (item.parentId == null) {
+    if (item.type === LEARNING_UNIT.COHORT) {
+      // Topics directly under this cohort
+      const cohortTopicItems = (childrenMap.get(item.id) || []).filter(
+        (c) => c.type === LEARNING_UNIT.TOPIC
+      );
 
-            } else if (item.type === LEARNING_UNIT.TOPIC) {
-                const lessonItems = (childrenMap.get(item.id) || []).map(lessonItem => ({
-                    id: lessonItem.id,
-                    title: lessonItem.title,
-                }));
-                newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
-            }
-        }
-      }
-      
+      const cohortTopics: Topic[] = cohortTopicItems.map((topicItem) => {
+        const lessonItems = (childrenMap.get(topicItem.id) || [])
+          .filter((l) => l.type === LEARNING_UNIT.LESSON)
+          .map((lessonItem) => ({
+            id: (lessonItem as any).lessonRefId ?? lessonItem.id, // prefer real lesson id if present
+            title: lessonItem.title,
+          }));
+
+        return { id: topicItem.id, title: topicItem.title, items: lessonItems };
+      });
+
+      const originalCohort = (item.originalData as Cohort) || {};
+      newCohorts.push({
+        ...originalCohort,
+        id: item.id,
+        title: item.title,
+        topics: cohortTopics,
+        price: 0,
+      });
+    } else if (item.type === LEARNING_UNIT.TOPIC) {
+      // Root topic
+      const lessonItems = (childrenMap.get(item.id) || [])
+        .filter((l) => l.type === LEARNING_UNIT.LESSON)
+        .map((lessonItem) => ({
+          id: (lessonItem as any).lessonRefId ?? lessonItem.id, // align with cohort-lesson behavior
+          title: lessonItem.title,
+        }));
+      newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
+    }
+  }
+}
       const updates: Partial<Course> = {
         topics: newRootTopics,
         cohorts: newCohorts,
@@ -730,7 +821,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
                                 />
                               ) : (
                                 <span className="flex-1 truncate cursor-pointer hover:underline">
-                                  {item.title} -- {item.id}
+                                  {item.title} 
                                 </span>
                               )}
                             </div>
@@ -869,7 +960,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
      
 
       {/* Lesson Selector */}
-     <LessonSelectorModal
+    <LessonSelectorModal
   isOpen={isLessonSelectorModalOpen}
   onClose={() => setIsLessonSelectorModalOpen(false)}
   onConfirm={(lessons: Lesson[]) => {
@@ -877,14 +968,51 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 
     const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
     const parentDepth = curriculum[parentIndex]?.depth || 0;
+    const parentTopic = curriculum[parentIndex];
 
-    const newItems = lessons.map(lesson => ({
-      id: `Lesson ` +  uuidv4(), 
-      title: lesson.title,
-      type: LEARNING_UNIT.LESSON,
-      depth: parentDepth + 1,
-      parentId: activeParentId,
-    }));
+    // if topic has a cohort, collect used lesson ids in that cohort
+    let usedInCohort = new Set<string>();
+    const cohortId = parentTopic?.parentId ?? null;
+
+    if (cohortId) {
+      const topicIdsInCohort = new Set(
+        curriculum
+          .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+          .map(i => i.id)
+      );
+
+      curriculum.forEach(i => {
+        if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
+          usedInCohort.add(i.lessonRefId ?? i.id);
+        }
+      });
+    }
+
+    // Filter: remove duplicates already present in cohort AND duplicates within selection
+    const seenInSelection = new Set<string>();
+    const filtered = lessons.filter(l => {
+      if (cohortId && usedInCohort.has(l.id)) return false;
+      if (seenInSelection.has(l.id)) return false;
+      seenInSelection.add(l.id);
+      return true;
+    });
+
+    const skippedCount = lessons.length - filtered.length;
+    if (skippedCount > 0) {
+      toast({
+        title: "Skipped duplicates",
+        description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
+      });
+    }
+
+    const newItems: DraggableItem[] = filtered.map(lesson => ({
+  id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
+  lessonRefId: lesson.id,                             // real id
+  title: lesson.title,
+  type: LEARNING_UNIT.LESSON,
+  depth: parentDepth + 1,
+  parentId: activeParentId,
+}));
 
     setCurriculum(prev => {
       let insertIndex = parentIndex + 1;
@@ -900,7 +1028,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 
     setIsLessonSelectorModalOpen(false);
   }}
-  excludedLessonIds={[]} // you can remove this filter if needed
+  excludedLessonIds={excludedLessonIdsForActiveParent}
 />
 
     </div>
