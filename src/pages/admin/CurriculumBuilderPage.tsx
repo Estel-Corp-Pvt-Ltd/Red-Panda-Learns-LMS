@@ -1498,23 +1498,75 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 
       {/* Lesson Selector */}
       <LessonSelectorModal
-        isOpen={isLessonSelectorModalOpen}
-        onClose={() => setIsLessonSelectorModalOpen(false)}
-        onConfirm={(lessons: Lesson[]) => {
-          if (!activeParentId) return;
-          const parentDepth = curriculum.find(i => i.id === activeParentId)?.depth || 0;
-          const newItems = lessons.map(lesson => ({
-            id: lesson.id,
-            title: lesson.title,
-            type: LEARNING_UNIT.LESSON,
-            depth: parentDepth + 1,
-            parentId: activeParentId,
-          }));
-          setCurriculum(prev => [...prev, ...newItems]);
-          setIsLessonSelectorModalOpen(false);
-        }}
-        excludedLessonIds={curriculum.filter(i => i.type === LEARNING_UNIT.LESSON).map(l => l.id)}
-      />
+    isOpen={isLessonSelectorModalOpen}
+    onClose={() => setIsLessonSelectorModalOpen(false)}
+    onConfirm={(lessons: Lesson[]) => {
+      if (!activeParentId) return;
+  
+      const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
+      const parentDepth = curriculum[parentIndex]?.depth || 0;
+      const parentTopic = curriculum[parentIndex];
+  
+      // if topic has a cohort, collect used lesson ids in that cohort
+      let usedInCohort = new Set<string>();
+      const cohortId = parentTopic?.parentId ?? null;
+  
+      if (cohortId) {
+        const topicIdsInCohort = new Set(
+          curriculum
+            .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+            .map(i => i.id)
+        );
+  
+        curriculum.forEach(i => {
+          if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
+            usedInCohort.add(i.lessonRefId ?? i.id);
+          }
+        });
+      }
+  
+      // Filter: remove duplicates already present in cohort AND duplicates within selection
+      const seenInSelection = new Set<string>();
+      const filtered = lessons.filter(l => {
+        if (cohortId && usedInCohort.has(l.id)) return false;
+        if (seenInSelection.has(l.id)) return false;
+        seenInSelection.add(l.id);
+        return true;
+      });
+  
+      const skippedCount = lessons.length - filtered.length;
+      if (skippedCount > 0) {
+        toast({
+          title: "Skipped duplicates",
+          description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
+        });
+      }
+  
+      const newItems: DraggableItem[] = filtered.map(lesson => ({
+    id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
+    lessonRefId: lesson.id,                             // real id
+    title: lesson.title,
+    type: LEARNING_UNIT.LESSON,
+    depth: parentDepth + 1,
+    parentId: activeParentId,
+  }));
+  
+      setCurriculum(prev => {
+        let insertIndex = parentIndex + 1;
+        for (let i = parentIndex + 1; i < prev.length; i++) {
+          if (prev[i].depth <= parentDepth) break;
+          insertIndex = i + 1;
+        }
+  
+        const updated = [...prev];
+        updated.splice(insertIndex, 0, ...newItems);
+        return updated;
+      });
+  
+      setIsLessonSelectorModalOpen(false);
+    }}
+    excludedLessonIds={excludedLessonIdsForActiveParent}
+  />
     </div>
   );
 };
