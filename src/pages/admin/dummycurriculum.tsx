@@ -23,7 +23,7 @@ import {
   Edit2,
   Trash2,
   GripVertical,
-  Upload,
+  Copy,
   Save,
   BookOpen,
   Users,
@@ -403,7 +403,6 @@ const handleDragEnd = (event: DragEndEvent) => {
         const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
         d = parent && isTopic(parent) ? depthOf(parent) + 1 : 2; // fallback to level 2
       }
-
       depthMemo.set(item.id, d);
       return d;
     };
@@ -432,7 +431,7 @@ const handleDragEnd = (event: DragEndEvent) => {
 
 const addTopicToCohort = (cohortId: string, depth: number) => {
   const newTopic = {
-    id: uuidv4(),
+    id: `TOPIC_${Date.now()}`,
     title: "New Topic",
     type: LEARNING_UNIT.TOPIC,
     depth: depth + 1,
@@ -759,7 +758,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
   className="opacity-0 group-hover:opacity-100 transition-opacity"
   title="Duplicate Cohort"
 >
-  <Upload className="h-4 w-4 text-blue-500" />
+  <Copy className="h-4 w-4 text-blue-500" />
 </Button>
 
 
@@ -880,7 +879,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
     const parentDepth = curriculum[parentIndex]?.depth || 0;
 
     const newItems = lessons.map(lesson => ({
-      id: uuidv4(), 
+      id: `Lesson ` +  uuidv4(), 
       title: lesson.title,
       type: LEARNING_UNIT.LESSON,
       depth: parentDepth + 1,
