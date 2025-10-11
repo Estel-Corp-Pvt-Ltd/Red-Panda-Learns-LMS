@@ -289,63 +289,128 @@ const DummyCurriculumBuilderPage = () => {
   });
 };
 
-
-
 const handleDragEnd = (event: DragEndEvent) => {
   const { active, over } = event;
-  if (!over) return;
-  if (active.id === over.id) return;
+  if (!over || active.id === over.id) return;
 
   setCurriculum(prev => {
-    const newList = [...prev];
-    const idxActive = newList.findIndex(i => i.id === active.id);
-    const idxOver = newList.findIndex(i => i.id === over.id);
+    let list = [...prev];
+
+    const isCohort = (i: typeof list[number]) => i.type === LEARNING_UNIT.COHORT;
+    const isTopic  = (i: typeof list[number]) => i.type === LEARNING_UNIT.TOPIC;
+    const isLesson = (i: typeof list[number]) => i.type === LEARNING_UNIT.LESSON;
+
+    const idxActive = list.findIndex(i => i.id === active.id);
+    const idxOver   = list.findIndex(i => i.id === over.id);
     if (idxActive === -1 || idxOver === -1) return prev;
 
-    const activeItem = newList[idxActive];
-    const overItem = newList[idxOver];
+    const itemMap = new Map(list.map(i => [i.id, i] as const));
 
-    // Reparent logic:
-    let newParentId: string | null = activeItem.parentId;
-    let newDepth = activeItem.depth;
-
-    // If overItem is a Cohort and activeItem is a Topic, drop topic into cohort
-    if (overItem.type === LEARNING_UNIT.COHORT && activeItem.type === LEARNING_UNIT.TOPIC) {
-      newParentId = overItem.id;
-      newDepth = overItem.depth + 1;
-    }
-    // If overItem is a Topic and activeItem is a Lesson, drop lesson into topic
-    else if (overItem.type === LEARNING_UNIT.TOPIC && activeItem.type === LEARNING_UNIT.LESSON) {
-      newParentId = overItem.id;
-      newDepth = overItem.depth + 1;
-    }
-    // If overItem is Topic and active is Topic (drag topic into siblings), maybe make same parent
-    else if (overItem.type === LEARNING_UNIT.TOPIC && activeItem.type === LEARNING_UNIT.TOPIC) {
-      newParentId = overItem.parentId;  // put in same cohort or same root
-      newDepth = overItem.depth;
-    }
-    // If you drop topic into “root” (i.e. over a root-level item or empty), you may want to parentId = null, depth=0
-    else {
-      // e.g. if active is topic and over is root-level topic or cohort, revert to root
-      // only do this if you allow topics without cohorts
-      newParentId = overItem.parentId || null;
-      newDepth = overItem.depth;
-    }
-
-    // Update the activeItem's parentId and depth
-    newList[idxActive] = {
-      ...activeItem,
-      parentId: newParentId,
-      depth: newDepth,
+    const getCohortIdFor = (item: typeof list[number]): string | null => {
+      if (isCohort(item)) return item.id;
+      if (isTopic(item)) return item.parentId ?? null;
+      if (isLesson(item)) {
+        const topic = item.parentId ? itemMap.get(item.parentId) : undefined;
+        return topic && isTopic(topic) ? (topic.parentId ?? null) : null;
+      }
+      return null;
     };
 
-    // Also reorder the array so the dragged item appears in correct position
-    const moved = arrayMove(newList, idxActive, idxOver);
+    // Reparent only when the drop pairing is valid
+    const activeItem = { ...list[idxActive] };
+    const overItem   = list[idxOver];
 
-    return moved;
+    const computeNewParentId = (): string | null | undefined => {
+      // undefined => keep current parent
+      if (isCohort(activeItem)) return null; // cohorts are always top-level (parentId = null)
+
+      if (isTopic(activeItem)) {
+        if (isCohort(overItem)) return overItem.id;                  // Topic into that cohort
+        if (isTopic(overItem))  return overItem.parentId ?? null;    // Topic among topics of same cohort
+        if (isLesson(overItem)) return getCohortIdFor(overItem);     // Topic near a lesson => adopt that lesson's cohort
+        return undefined;
+      }
+
+      if (isLesson(activeItem)) {
+        if (isTopic(overItem))  return overItem.id;                  // Lesson into that topic
+        if (isLesson(overItem)) return overItem.parentId ?? null;    // Lesson among lessons of same topic
+        if (isCohort(overItem)) return undefined;                    // Don't reparent off a cohort
+        return undefined;
+      }
+
+      return undefined;
+    };
+
+    const maybeNewParent = computeNewParentId();
+    if (maybeNewParent !== undefined) {
+      activeItem.parentId = maybeNewParent;
+    }
+    list[idxActive] = activeItem;
+
+    // Move active to the 'over' index
+    list = arrayMove(list, idxActive, idxOver);
+
+    // Enforce relaxed “level gating” (minimal movement):
+    // 1) Ensure at least one cohort exists above the first topic (if both exist).
+    // 2) Ensure at least one topic exists above the first lesson (if both exist).
+    const ensureLevelGating = (arr: typeof list) => {
+      let out = arr;
+      // Iterate a few times to resolve interdependencies (e.g., moving topic before lesson may require moving cohort before topic)
+      for (let pass = 0; pass < 4; pass++) {
+        let changed = false;
+
+        const cIdx = out.findIndex(isCohort);
+        const tIdx = out.findIndex(isTopic);
+        const lIdx = out.findIndex(isLesson);
+
+        if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
+          // Move earliest cohort to just before the earliest topic
+          out = arrayMove(out, cIdx, tIdx);
+          changed = true;
+        }
+
+        // Recompute after potential move
+        const tIdx2 = out.findIndex(isTopic);
+        const lIdx2 = out.findIndex(isLesson);
+
+        if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
+          // Move earliest topic to just before the earliest lesson
+          out = arrayMove(out, tIdx2, lIdx2);
+          changed = true;
+        }
+
+        if (!changed) break;
+      }
+      return out;
+    };
+
+    list = ensureLevelGating(list);
+
+    // Recompute depth from actual parent chain (order-independent)
+    const finalMap = new Map(list.map(i => [i.id, i] as const));
+    const depthMemo = new Map<string, number>();
+
+    const depthOf = (item: typeof list[number]): number => {
+      if (depthMemo.has(item.id)) return depthMemo.get(item.id)!;
+
+      let d = 0;
+      if (isCohort(item)) {
+        d = 0;
+      } else if (isTopic(item)) {
+        const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
+        d = parent && isCohort(parent) ? depthOf(parent) + 1 : 1; // fallback to level 1
+      } else if (isLesson(item)) {
+        const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
+        d = parent && isTopic(parent) ? depthOf(parent) + 1 : 2; // fallback to level 2
+      }
+
+      depthMemo.set(item.id, d);
+      return d;
+    };
+
+    return list.map(i => ({ ...i, depth: depthOf(i) }));
   });
 };
-
 
   const addItem = (type: LearningUnit, parentId: string | null = null, depth = 0) => {
     const newItem: DraggableItem = {
@@ -820,7 +885,6 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
       type: LEARNING_UNIT.LESSON,
       depth: parentDepth + 1,
       parentId: activeParentId,
-    
     }));
 
     setCurriculum(prev => {
