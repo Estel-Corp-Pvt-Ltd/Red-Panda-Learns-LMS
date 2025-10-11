@@ -64,8 +64,8 @@ export default function CheckoutPage() {
   const [providerCurrencies, setProviderCurrencies] = useState<
     Record<PaymentProvider, Currency>
   >({
-    RAZORPAY: "INR",
-    PAYPAL: "USD",
+    [PAYMENT_PROVIDER.RAZORPAY]: CURRENCY.INR,
+    [PAYMENT_PROVIDER.PAYPAL]: CURRENCY.USD,
   });
 
   const selectedCurrency = providerCurrencies[selectedProvider];
@@ -143,17 +143,21 @@ export default function CheckoutPage() {
         user.email!,
         user.id,
         selectedCurrency,
-        "INR"
+        CURRENCY.INR
       );
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
+          // Check if enrollment is now active
           if (isEnrolled(course.id)) {
             enrollmentVerified = true;
             break;
           }
-          await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+          // Wait before next attempt
+          if (i < 4) {
+            await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+          }
         }
         toast({
           title: "Enrollment Successful!",
@@ -218,7 +222,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Course Summary */}
-          <Card className="bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl shadow-sm mb-6">
+          <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6">
             <CardHeader>
               <CardTitle>Course Summary</CardTitle>
             </CardHeader>
@@ -250,7 +254,7 @@ export default function CheckoutPage() {
           </Card>
 
           {/* Payment Providers */}
-          <Card className="bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl shadow-sm">
+          <Card className="bg-card text-card-foreground border border-border rounded-xl shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />

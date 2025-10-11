@@ -5,6 +5,19 @@
   text-align: center;
 }
 
+
+:root {
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --border: 0 0% 90%;
+}
+
+.dark {
+  --card: 0 0% 10%;        /* #1a1a1a */
+  --card-foreground: 0 0% 98%;
+  --border: 240 3% 18%;    /* #2c2c2e */
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

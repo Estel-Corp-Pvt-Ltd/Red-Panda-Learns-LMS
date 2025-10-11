@@ -333,6 +333,7 @@ export const COLLECTION = {
     ORGANIZATIONS: 'Organizations',
     CONFIG: 'Config',
     ATTRIBUTES: 'Attributes',
+    fallback_CURRENCY_RATES: 'FallbackCurrencyRates',
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -349,3 +350,17 @@ export const ORGANIZATION = {
 export const CONFIG_DOCS = {
     PAYPAL_ACCESS_TOKEN: 'paypal_access_token',
 } as const;
+
+export const FALLBACK_CURRENCY_RATES: Record<string, number> = {
+  // INR to/from
+  USD_INR: 83.5,
+  INR_USD: 0.012,
+  EUR_INR: 90.0,
+  INR_EUR: 0.011,
+  GBP_INR: 100.0,
+  INR_GBP: 0.01,
+
+  // Cross foreign
+  USD_EUR: 0.92,
+  EUR_USD: 1.09,
+};

@@ -4,6 +4,7 @@ import { transactionService } from '../transactionService';
 import { enrollmentService } from '@/services/dummyEnrollmentService';
 import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
+import { Currency } from '@/types/general';
 export interface PayPalOrder {
   id: string;
   status: string;
@@ -19,7 +20,7 @@ export interface PayPalOrder {
 class PayPalProvider {
   private readonly environment = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION ? ENVIRONMENT.PRODUCTION : ENVIRONMENT.SANDBOX;
   private readonly clientId = this.environment === ENVIRONMENT.SANDBOX ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
-  async loadPayPalSDK(): Promise<void> {
+  async loadPayPalSDK(currency:Currency): Promise<void> {
     return new Promise((resolve, reject) => {
       if ((window as any).paypal) {
         resolve();
@@ -28,7 +29,7 @@ class PayPalProvider {
       const script = document.createElement('script');
 script.src = `https://www.${
   this.environment === ENVIRONMENT.SANDBOX ? "sandbox.paypal.com" : "paypal.com"
-}/sdk/js?client-id=${this.clientId}&currency=${CURRENCY.GBP}&intent=capture`;
+}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
       document.head.appendChild(script);
@@ -39,7 +40,8 @@ script.src = `https://www.${
     userEmail: string,
     transactionId: string,
     amount: number,
-    userId: string
+    userId: string,
+    currency: Currency
   ): Promise<{ success: boolean; transactionId?: string; paymentId?: string; error?: string }> {
     try {
       console.log('PayPalProvider - Starting payment process:', {
@@ -48,9 +50,9 @@ script.src = `https://www.${
         amount,
         userId
       });
-      await this.loadPayPalSDK();
+      await this.loadPayPalSDK(currency);
       return new Promise((resolve) => {
-        // Update transaction status to processing
+        // Update transaction status to   processing
         transactionService.updateTransactionStatus(transactionId, TRANSACTION_STATUS.PROCESSING);
         const paypal = (window as any).paypal;
         paypal.Buttons({
@@ -59,7 +61,7 @@ script.src = `https://www.${
               intent: 'CAPTURE',
               purchase_units: [{
                 amount: {
-                  currency_code: 'GBP',
+                  currency_code:  currency,
                   value: amount.toFixed(2),
                 },
                 description: `Enrollment for ${course.title}`,

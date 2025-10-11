@@ -9,6 +9,7 @@ const recaptchaSecret = defineSecret("RECAPTCHA_SECRET");
 import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import Razorpay from "razorpay";
+import { CURRENCY } from "../../src/constants";
 import { PayPalAccessToken } from "../src/types/paypalConfig";
 
 if (!admin.apps.length) {
@@ -40,7 +41,7 @@ function validateAmount(amount: any): number {
 }
 
 function validateCurrency(currency: any): string {
-  const allowed = ["USD", "INR","GBP",  "EUR"];
+  const allowed = Object.values(CURRENCY);;
   if (!allowed.includes(currency)) throw new Error("Invalid currency");
   return currency;
 }

@@ -4,6 +4,7 @@ import { CurrencyRate } from '@/types/transaction';
 import { Currency } from '@/types/general';
 import { CURRENCY } from '@/constants';
 import { toDateSafe } from '@/utils/date-time';
+import { FALLBACK_CURRENCY_RATES } from "@/constants";
 
 class CurrencyService {
   // TODO: Use this, maybe
@@ -354,18 +355,7 @@ class CurrencyService {
  * ```
  */
   private getFallbackRate(from: Currency, to: Currency): number {
-  const fallbackRates: Record<string, number> = {
-    'USD_INR': 83.50,
-    'INR_USD': 0.012,
-    'EUR_INR': 90.0,   // example static rate
-    'INR_EUR': 0.011,
-    'GBP_INR': 100.0,  // example static rate
-    'INR_GBP': 0.01,
-    'USD_EUR': 0.92,   // optional cross rates
-    'EUR_USD': 1.09,
-  };
-
-  return fallbackRates[`${from}_${to}`] || 1;
+    return FALLBACK_CURRENCY_RATES[`${from}_${to}`] || 1;
 }
 
 
