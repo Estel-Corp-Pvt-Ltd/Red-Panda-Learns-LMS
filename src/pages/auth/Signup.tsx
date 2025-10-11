@@ -96,7 +96,7 @@ export default function Signup() {
       } else {
         toast({
           title: "Sign up failed!",
-          description: "Please try again later.",
+          description: confirmation.error,
           variant: "destructive",
         });
       }
