@@ -1291,20 +1291,18 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 }} />
            
 
-                 <Button
-  size="sm"
-  onClick={() => {
-    const existingCohort = curriculum.find(item => item.type === LEARNING_UNIT.COHORT);
-    if (existingCohort) {
-      addTopicToCohort(existingCohort.id, existingCohort.depth); // depth will likely be 0
-    } else {
+               {!curriculum.some(item => item.type === LEARNING_UNIT.COHORT) && (
+  <Button
+    size="sm"
+    onClick={() => {
       addItem(LEARNING_UNIT.TOPIC);
-    }
-  }}
-  className="flex items-center gap-1"
->
-  Add Topic
-</Button>
+    }}
+    className="flex items-center gap-1"
+  >
+    Add Topic
+  </Button>
+)}
+
 
 
                   <Button
