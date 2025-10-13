@@ -65,9 +65,10 @@ export default function Login() {
     try {
       await verifyRecaptcha(); //  Check human first
 
-      const { success, error, user, userCredential } = await login(email, password);
+      const response = await login(email, password);
 
-      if (success) {
+      if (response.success) {
+        const { user, userCredential } = response.data;
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
         } else if (userCredential.user.emailVerified == true) {
