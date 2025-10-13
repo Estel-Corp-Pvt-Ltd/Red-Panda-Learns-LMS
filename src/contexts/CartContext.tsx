@@ -57,7 +57,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   // Initialize cart from localStorage
   const [cart, cartDispatch] = useReducer(cartReducer, [], () => {
-    if (typeof window === "undefined") return []; // SSR safety
     const storedCart = localStorage.getItem(CART_STORAGE_KEY);
     return storedCart ? JSON.parse(storedCart) : [];
   });
