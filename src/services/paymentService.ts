@@ -1,11 +1,16 @@
-import { Course } from '@/types/course';
-import { currencyService } from './currencyService';
-import { transactionService } from './transactionService';
-import { enrollmentService } from './enrollmentService';
-import { razorpayProvider } from './providers/razorpayProvider';
-import { paypalProvider } from './providers/paypalProvider';
-import { Currency, PaymentProvider } from '@/types/general';
-import { CURRENCY, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
+import { Course } from "@/types/course";
+import { currencyService } from "./currencyService";
+import { transactionService } from "./transactionService";
+import { enrollmentService } from "./enrollmentService";
+import { razorpayProvider } from "./providers/razorpayProvider";
+import { paypalProvider } from "./providers/paypalProvider";
+import { Currency, PaymentProvider } from "@/types/general";
+import {
+  CURRENCY,
+  PAYMENT_PROVIDER,
+  TRANSACTION_STATUS,
+  TRANSACTION_TYPE,
+} from "@/constants";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -27,57 +32,66 @@ class PaymentService {
   private providers: PaymentProviderOption[] = [
     {
       id: PAYMENT_PROVIDER.RAZORPAY,
-      name: 'razorpay',
-      displayName: 'Razorpay',
-      currency: 'INR',
+      name: "razorpay",
+      displayName: "Razorpay",
+      currency: "INR",
       isAvailable: !!import.meta.env.VITE_RAZORPAY_KEY_ID,
-      description: 'Pay with Cards, UPI, Net Banking & Wallets',
+      description: "Pay with Cards, UPI, Net Banking & Wallets",
     },
     {
       id: PAYMENT_PROVIDER.PAYPAL,
-      name: 'paypal',
-      displayName: 'PayPal',
-      currency: 'USD',
+      name: "paypal",
+      displayName: "PayPal",
+      currency: "USD",
       isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
-      description: 'Pay securely with PayPal',
+      description: "Pay securely with PayPal",
     },
   ];
 
   getAvailableProviders(): PaymentProviderOption[] {
-    return this.providers.filter(provider => provider.isAvailable);
+    return this.providers.filter((p) => p.isAvailable);
   }
 
+  // ✅ Only PayPal adds its service charge. No tax for either.
   async calculatePricing(
     salePrice: number,
     targetCurrency: Currency,
+    provider?: PaymentProvider,
     baseCurrency: Currency = CURRENCY.INR
   ) {
     const basePrice = salePrice || 0;
 
-    if (baseCurrency === targetCurrency) {
-      return {
-        amount: basePrice,
-        currency: targetCurrency,
-        originalAmount: basePrice,
-        originalCurrency: baseCurrency,
-        exchangeRate: 1,
-        formattedPrice: currencyService.formatCurrency(basePrice, targetCurrency),
-      };
+    let convertedAmount = basePrice;
+    let exchangeRate = 1;
+
+    // Convert only if needed
+    if (baseCurrency !== targetCurrency) {
+      const conversion = await currencyService.convertAmount(
+        basePrice,
+        baseCurrency,
+        targetCurrency
+      );
+      convertedAmount = conversion.convertedAmount;
+      exchangeRate = conversion.exchangeRate;
     }
 
-    const conversion = await currencyService.convertAmount(
-      basePrice,
-      baseCurrency,
-      targetCurrency
-    );
+    // For PayPal, adjust so seller receives the base price after fees
+    let total = convertedAmount;
+    if (provider === PAYMENT_PROVIDER.PAYPAL) {
+      const percent = 0.0349; // PayPal ~3.49%
+      const fixed = 0.49; // flat fee in selected currency
+      total = (convertedAmount + fixed) / (1 - percent);
+    }
 
     return {
-      amount: conversion.convertedAmount,
+      amount: total,
+      baseAmount: salePrice,
       currency: targetCurrency,
       originalAmount: basePrice,
       originalCurrency: baseCurrency,
-      exchangeRate: conversion.exchangeRate,
-      formattedPrice: currencyService.formatCurrency(conversion.convertedAmount, targetCurrency),
+      exchangeRate,
+      formattedPrice: currencyService.formatCurrency(convertedAmount, targetCurrency),
+      formattedTotal: currencyService.formatCurrency(total, targetCurrency),
     };
   }
 
@@ -87,31 +101,17 @@ class PaymentService {
     userEmail: string,
     userId: string,
     selectedCurrency: Currency,
-    baseCurrency: Currency 
+    baseCurrency: Currency
   ): Promise<PaymentResult> {
     try {
-      console.log('PaymentService - Processing payment:', {
-        provider,
-        courseId: course.id,
-        userId,
-        userEmail,
-        course,
-        selectedCurrency,
-        baseCurrency
-      });
+      const providerOption = this.providers.find((p) => p.id === provider);
+      if (!providerOption)
+        return { success: false, error: "Unsupported payment provider" };
 
-      const providerOption = this.providers.find(p => p.id === provider);
-      if (!providerOption) {
-        return {
-          success: false,
-          error: 'Unsupported payment provider',
-        };
-      }
-
-      // Pricing in selected currency (based on user’s choice)
       const pricing = await this.calculatePricing(
         course.salePrice,
         selectedCurrency,
+        provider,
         baseCurrency
       );
 
@@ -126,23 +126,11 @@ class PaymentService {
         exchangeRate: pricing.exchangeRate,
         paymentProvider: provider,
         status: TRANSACTION_STATUS.PENDING,
-        paymentDetails: {
-          orderId: "",
-          paymentId: "",
-        },
-        metadata: {
-          userEmail,
-          courseTitle: course.title,
-          userAgent: navigator.userAgent,
-          paymentAttempts: 1
-        }
+        paymentDetails: { orderId: "", paymentId: "" },
+        metadata: { userEmail },
       });
 
-      console.log('PaymentService - Transaction created:', transactionId);
-
-      // Call provider
       let result: PaymentResult;
-
       if (provider === PAYMENT_PROVIDER.RAZORPAY) {
         result = await razorpayProvider.processPayment(
           course,
@@ -150,7 +138,7 @@ class PaymentService {
           transactionId,
           pricing.amount,
           userId,
-
+          selectedCurrency
         );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
         result = await paypalProvider.processPayment(
@@ -159,24 +147,14 @@ class PaymentService {
           transactionId,
           pricing.amount,
           userId,
-          
+          selectedCurrency
         );
       } else {
-        result = {
-          success: false,
-          error: 'Unsupported payment provider',
-        };
+        result = { success: false, error: "Unsupported payment provider" };
       }
 
       if (result.success) {
         result.transactionId = transactionId;
-        console.log('PaymentService - Payment successful, enrolling user:', {
-          transactionId,
-          paymentId: result.paymentId,
-          courseId: course.id,
-          userId
-        });
-
         try {
           await enrollmentService.enrollUser(
             userId,
@@ -184,20 +162,16 @@ class PaymentService {
             result.paymentId,
             provider
           );
-          console.log('PaymentService - User enrolled successfully after payment');
-        } catch (enrollmentError) {
-          console.error('PaymentService - Enrollment failed after payment:', enrollmentError);
+        } catch (err) {
+          console.error("Enrollment failed after payment:", err);
         }
-      } else {
-        console.log('PaymentService - Payment failed:', result.error);
       }
-
       return result;
     } catch (error) {
-      console.log('PaymentService - Payment processing failed:', error);
+      console.error(error);
       return {
         success: false,
-        error: 'Payment processing failed. Please try again.',
+        error: "Payment processing failed. Please try again.",
       };
     }
   }
@@ -206,8 +180,8 @@ class PaymentService {
     return transactionService.getUserTransactions(userId);
   }
 
-  async getTransactionDetails(transactionId: string) {
-    return transactionService.getTransaction(transactionId);
+  async getTransactionDetails(id: string) {
+    return transactionService.getTransaction(id);
   }
 }
 

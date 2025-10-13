@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, CreditCard, Shield, Lock, RefreshCw } from "lucide-react";
@@ -69,16 +70,20 @@ export default function CheckoutPage() {
   });
 
   const selectedCurrency = providerCurrencies[selectedProvider];
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paypalClicked, setPaypalClicked] = useState(false);
+
   const [pricing, setPricing] = useState<any>(null);
   const [loadingPricing, setLoadingPricing] = useState(false);
-  const [isUserEnrolled, setUserIsEnrolled] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paypalClicked, setPaypalClicked] = useState(false);
   const [agreed, setAgreed] = useState(false);
+
+  // keep "after" functionality
+  const [isUserEnrolled, setUserIsEnrolled] = useState(false);
 
   const providers = paymentService.getAvailableProviders();
   const { data: course, isLoading } = useCourseQuery(courseId!);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
       navigate("/auth/login", {
@@ -88,8 +93,9 @@ export default function CheckoutPage() {
         },
       });
     }
-  }, [user, courseId, navigate]);
+  }, [user, navigate, courseId]);
 
+  // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
     const checkEnrollment = async () => {
       if (user && courseId) {
@@ -103,23 +109,27 @@ export default function CheckoutPage() {
     checkEnrollment();
   }, [user, courseId]);
 
+  // Navigate away if already enrolled
   useEffect(() => {
     if (isUserEnrolled) navigate(`/course/${courseId}`);
   }, [isUserEnrolled, navigate, courseId]);
 
+  // Load pricing when course or currency/provider changes
   useEffect(() => {
     if (course && selectedCurrency) loadPricing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, selectedCurrency, selectedProvider]);
 
   const loadPricing = async () => {
     if (!course) return;
     setLoadingPricing(true);
     try {
-      const pricingData = await paymentService.calculatePricing(
+      // Keep "after" signature to avoid changing functionality
+      const data = await paymentService.calculatePricing(
         course.salePrice,
         selectedCurrency
       );
-      setPricing(pricingData);
+      setPricing(data);
     } catch (error) {
       toast({
         title: "Error",
@@ -145,25 +155,33 @@ export default function CheckoutPage() {
         selectedCurrency,
         CURRENCY.INR
       );
+
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
+
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
-          // Check if enrollment is now active
           if (isEnrolled(course.id)) {
             enrollmentVerified = true;
             break;
           }
-          // Wait before next attempt
-          if (i < 4) {
-            await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
-          }
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
         }
-        toast({
-          title: "Enrollment Successful!",
-          description: `You are now enrolled in ${course.title}`,
-        });
-        navigate(`/course/${courseId}`);
+
+        if (enrollmentVerified) {
+          toast({
+            title: "Enrollment Successful!",
+            description: `You are now enrolled in ${course.title}`,
+          });
+          navigate(`/course/${courseId}`);
+        } else {
+          toast({
+            title: "Payment Successful",
+            description:
+              "Your payment was processed. If you don't see the course immediately, please refresh the page.",
+          });
+          navigate(`/course/${courseId}`);
+        }
       } else {
         toast({
           title: "Payment Failed",
@@ -203,26 +221,23 @@ export default function CheckoutPage() {
       <Header />
       <div className="flex-1 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto text-gray-800 dark:text-white">
-          {/* Back / Heading */}
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/course/${courseId}`)}
-              className="mb-4 flex items-center text-indigo-600"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Course
-            </Button>
-            <h1 className="text-3xl font-bold mb-2">
-              Complete Your Enrollment
-            </h1>
-            <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
-              You’re just one step away from accessing this course
-            </p>
-          </div>
+          {/* Back / Heading (styled like "before") */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/course/${courseId}`)}
+            className="mb-4 flex items-center text-indigo-600"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Course
+          </Button>
 
-          {/* Course Summary */}
-          <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6">
+          <h1 className="text-3xl font-bold mb-2">Complete Your Enrollment</h1>
+          <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
+            You’re just one step away from accessing this course
+          </p>
+
+          {/* Course Summary (layout like "before", functionality from "after") */}
+          <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6 mt-6">
             <CardHeader>
               <CardTitle>Course Summary</CardTitle>
             </CardHeader>
@@ -231,16 +246,43 @@ export default function CheckoutPage() {
               <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
                 {course.description}
               </p>
+
               {pricing && !loadingPricing ? (
-                <div className="space-y-2">
-                  <div className="text-xl sm:text-2xl font-bold">
-                    {pricing.formattedPrice}
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>Course Price:</span>
+                    <span className="font-medium">
+                      {pricing.formattedPrice}
+                    </span>
                   </div>
+
+                  {selectedProvider === PAYMENT_PROVIDER.PAYPAL && (
+                    <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                      <span>Taxes and service charge included</span>
+                      <span>✓</span>
+                    </div>
+                  )}
+
+                  <hr className="my-2 border-gray-300 dark:border-gray-600" />
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-semibold">Total:</span>
+                    <span
+                      className={`text-xl font-bold ${
+                        selectedProvider === PAYMENT_PROVIDER.PAYPAL
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-indigo-600 dark:text-indigo-400"
+                      }`}
+                    >
+                      {pricing.formattedTotal ?? pricing.formattedPrice}
+                    </span>
+                  </div>
+
                   {pricing.originalCurrency !== pricing.currency && (
-                    <div className="text-sm text-muted-foreground dark:text-gray-400">
+                    <div className="text-xs text-muted-foreground dark:text-gray-400">
                       Original: {pricing.originalAmount}{" "}
                       {pricing.originalCurrency} (Rate:{" "}
-                      {pricing.exchangeRate.toFixed(4)})
+                      {Number(pricing.exchangeRate).toFixed(4)})
                     </div>
                   )}
                 </div>
@@ -253,12 +295,11 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Payment Providers */}
+          {/* Payment Providers (structure like "before") */}
           <Card className="bg-card text-card-foreground border border-border rounded-xl shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Select Payment Method
+                <CreditCard className="h-5 w-5" /> Select Payment Method
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -269,14 +310,14 @@ export default function CheckoutPage() {
                 return (
                   <div
                     key={provider.id}
+                    onClick={() => setSelectedProvider(provider.id)}
                     className={`cursor-pointer p-4 rounded-xl border transition ${
                       isSelected
                         ? "bg-indigo-50 dark:bg-[#1f1f25] border-indigo-600"
                         : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-indigo-500 dark:border-[#3a3a3a]"
                     }`}
-                    onClick={() => setSelectedProvider(provider.id)}
                   >
-                    <div className="flex justify-between items-start flex-wrap sm:flex-nowrap gap-4">
+                    <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                       <div className="flex gap-3">
                         <div
                           className={`w-4 h-4 mt-1 rounded-full border-2 ${
@@ -297,10 +338,10 @@ export default function CheckoutPage() {
                               alt={provider.id}
                             />
                           </div>
-                          <div className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
+                          <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
                             {provider.description}
-                          </div>
-                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                          </p>
+                          <div className="mt-2 flex gap-1.5 flex-wrap">
                             {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
                               <img
                                 key={m.name}
@@ -308,9 +349,7 @@ export default function CheckoutPage() {
                                 alt={m.name}
                                 title={m.name}
                                 loading="lazy"
-                                className={`${
-                                  m.className ?? "h-[20px] w-[32px]"
-                                } ${isSelected ? "opacity-100" : "opacity-70"}`}
+                                className={m.className ?? "h-[20px] w-[32px]"}
                               />
                             ))}
                           </div>
@@ -318,9 +357,7 @@ export default function CheckoutPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 sm:items-end">
-                        {/* 🔁 Currency dropdown */}
                         <select
-                          className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
                           value={providerCurrencies[provider.id]}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) =>
@@ -329,16 +366,14 @@ export default function CheckoutPage() {
                               [provider.id]: e.target.value as Currency,
                             }))
                           }
+                          className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
                         >
-                          {providerSupportedCurrencies[provider.id].map(
-                            (curr) => (
-                              <option key={curr} value={curr}>
-                                {curr}
-                              </option>
-                            )
-                          )}
+                          {providerSupportedCurrencies[provider.id].map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
                         </select>
-
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{currency}</Badge>
                           <Badge
@@ -356,7 +391,7 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Secure Indicator */}
+          {/* Secure Indicator (same) */}
           <Card className="bg-indigo-50 dark:bg-[#1e1e2c] border border-indigo-200 dark:border-indigo-500/20 rounded-xl mt-6">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
@@ -372,18 +407,14 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Agree */}
+          {/* Agree (styled like "before") */}
           <div className="flex items-start gap-3 mt-4">
             <Checkbox
               id="agree"
               checked={agreed}
               onCheckedChange={(v) => setAgreed(!!v)}
-              className="!border-indigo-600 dark:!border-indigo-400 !text-indigo-600 dark:!text-indigo-400"
             />
-            <Label
-              htmlFor="agree"
-              className="text-sm text-muted-foreground dark:text-gray-400 leading-snug"
-            >
+            <Label htmlFor="agree" className="text-sm leading-snug">
               I agree to the{" "}
               <Link
                 to="/terms"
@@ -409,7 +440,7 @@ export default function CheckoutPage() {
             </Label>
           </div>
 
-          {/* CTA */}
+          {/* CTA (keeps loading/processing states, matches "before" layout) */}
           <Button
             onClick={handlePayment}
             disabled={!agreed || isProcessing || loadingPricing || !pricing}
@@ -420,15 +451,15 @@ export default function CheckoutPage() {
               "Processing..."
             ) : loadingPricing ? (
               "Loading..."
-            ) : pricing ? (
+            ) : (
               <>
                 <Lock className="h-4 w-4 mr-2" />
-                Pay {pricing.formattedPrice} & Enroll Now
+                Pay {pricing?.formattedTotal ?? pricing?.formattedPrice} &
+                Enroll Now
               </>
-            ) : (
-              "Loading..."
             )}
           </Button>
+
           {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
             <Card className="mt-4 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
               <CardContent className="pt-6">

@@ -4,7 +4,7 @@ import { CurrencyRate } from '@/types/transaction';
 import { Currency } from '@/types/general';
 import { CURRENCY } from '@/constants';
 import { toDateSafe } from '@/utils/date-time';
-import { FALLBACK_CURRENCY_RATES } from "@/constants";
+import { FALLBACK_CURRENCY_RATE } from "@/constants";
 
 class CurrencyService {
   // TODO: Use this, maybe
@@ -355,7 +355,7 @@ class CurrencyService {
  * ```
  */
   private getFallbackRate(from: Currency, to: Currency): number {
-    return FALLBACK_CURRENCY_RATES[`${from}_${to}`] || 1;
+    return FALLBACK_CURRENCY_RATE[`${from}_${to}`] || 1;
 }
 
 
