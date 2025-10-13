@@ -468,8 +468,8 @@ const duplicateCohort = (cohortId: string) => {
     };
 
     const topics = newList.filter(i => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC);
-    const duplicatedTopics: DraggableItem[] = [];
-    const duplicatedLessons: DraggableItem[] = [];
+    
+    const itemsToInsert: DraggableItem[] = [newCohort];
 
     topics.forEach(topic => {
       const newTopicId = `topic_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
@@ -480,24 +480,25 @@ const duplicateCohort = (cohortId: string) => {
         depth: 1,
         parentId: newCohortId,
       };
-      duplicatedTopics.push(newTopic);
+
+      itemsToInsert.push(newTopic);
 
       const lessons = newList.filter(i => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON);
-     lessons.forEach(lesson => {
-  const refId = lesson.lessonRefId ?? lesson.id; // prefer lessonRefId
-  duplicatedLessons.push({
-    ...lesson,
-    id: mkLessonInstanceId(refId, newTopicId),   // instance id for the new topic
-    lessonRefId: refId,
-    parentId: newTopicId,
-    depth: 2,
-  });
-});
+
+      lessons.forEach(lesson => {
+        const refId = lesson.lessonRefId ?? lesson.id;
+        const newLesson: DraggableItem = {
+          ...lesson,
+          id: mkLessonInstanceId(refId, newTopicId),
+          lessonRefId: refId,
+          parentId: newTopicId,
+          depth: 2,
+        };
+        itemsToInsert.push(newLesson);
+      });
     });
 
-
-    
-    return [...newList, newCohort, ...duplicatedTopics, ...duplicatedLessons];
+    return [...newList, ...itemsToInsert];
   });
 };
 
