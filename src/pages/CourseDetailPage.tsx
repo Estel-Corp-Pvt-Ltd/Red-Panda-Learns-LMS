@@ -31,7 +31,8 @@ import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 import { enrollmentService } from "@/services/dummyEnrollmentService";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { CART_ACTIONS } from "@/types/cart";
+import { CART_ACTION } from "@/constants";
+
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const { cart, cartDispatch } = useCart();
@@ -98,12 +99,12 @@ export default function CourseDetailPage() {
     }
     if (!course) return;
     cartDispatch({
-      type: CART_ACTIONS.ADD,
+      type: CART_ACTION.ADD,
       item: { courseId },
     });
     toast({
       title: "Course Added",
-      description: `${course.title} has been added from your cart.`,
+      description: `${course.title} has been added to your cart.`,
     });
   };
 

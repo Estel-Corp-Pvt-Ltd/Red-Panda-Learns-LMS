@@ -348,3 +348,10 @@ export const ORGANIZATION = {
 export const CONFIG_DOCS = {
     PAYPAL_ACCESS_TOKEN: 'paypal_access_token',
 } as const;
+
+export const CART_ACTION = {
+    ADD: "ADD",
+    REMOVE: "REMOVE",
+    CLEAR: "CLEAR",
+    SET_CART: "SET_CART",
+} as const;

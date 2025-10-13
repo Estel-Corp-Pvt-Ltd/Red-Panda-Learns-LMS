@@ -162,7 +162,6 @@ class CourseService {
       if (updates.url) updateData.url = updates.url;
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
-      // if (updates.categories) updateData.categories = updates.categories;
       if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
       if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
       if (updates.tags) updateData.tags = updates.tags;

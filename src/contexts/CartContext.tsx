@@ -12,29 +12,29 @@ import { useAuth } from "./AuthContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
-import { CART_ACTIONS } from "@/types/cart";
+import { CART_ACTION } from "@/constants";
 
 export interface CartItem {
   courseId: string;
 }
 
 type Action =
-  | { type: typeof CART_ACTIONS.ADD; item: CartItem }
-  | { type: typeof CART_ACTIONS.REMOVE; id: string }
-  | { type: typeof CART_ACTIONS.CLEAR }
-  | { type: typeof CART_ACTIONS.SET_CART; payload: CartItem[] };
+  | { type: typeof CART_ACTION.ADD; item: CartItem }
+  | { type: typeof CART_ACTION.REMOVE; id: string }
+  | { type: typeof CART_ACTION.CLEAR }
+  | { type: typeof CART_ACTION.SET_CART; payload: CartItem[] };
 
 function cartReducer(state: CartItem[], action: Action): CartItem[] {
   switch (action.type) {
-    case CART_ACTIONS.ADD:
+    case CART_ACTION.ADD:
       return state.some((c) => c.courseId === action.item.courseId)
         ? state
         : [...state, action.item];
-    case CART_ACTIONS.REMOVE:
+    case CART_ACTION.REMOVE:
       return state.filter((c) => c.courseId !== action.id);
-    case CART_ACTIONS.CLEAR:
+    case CART_ACTION.CLEAR:
       return [];
-    case CART_ACTIONS.SET_CART:
+    case CART_ACTION.SET_CART:
       return action.payload || [];
     default:
       return state;
@@ -89,9 +89,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         if (cartDoc.exists()) {
           const data = cartDoc.data();
           if (data?.courses) {
-            cartDispatch({ type: CART_ACTIONS.CLEAR }); // clear initial local cart
+            cartDispatch({ type: CART_ACTION.CLEAR }); // clear initial local cart
             data.courses.forEach((item: CartItem) =>
-              cartDispatch({ type: CART_ACTIONS.ADD, item })
+              cartDispatch({ type: CART_ACTION.ADD, item })
             );
           }
         }

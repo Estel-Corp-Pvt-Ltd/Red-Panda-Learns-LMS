@@ -5,7 +5,7 @@ import EmptyCart from "@/components/EmptyCart";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CART_ACTIONS } from "@/types/cart";
+import { CART_ACTION } from "@/constants";
 
 const CartPage: React.FC = () => {
   const { cartCourses, cartDispatch, loading } = useCart();
@@ -40,7 +40,7 @@ const CartPage: React.FC = () => {
       title: "Courses removed",
       description: `All courses removed from your cart.`,
     });
-    cartDispatch({ type: CART_ACTIONS.CLEAR })
+    cartDispatch({ type: CART_ACTION.CLEAR })
   }
 
   return (
