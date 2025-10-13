@@ -255,7 +255,7 @@ class AuthService {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithRedirect(auth, provider);
-      return ok(undefined);
+      return ok(null);
     } catch (error: any) {
       logError("AuthService.signInWithGoogleRedirect", error);
       return fail(this.handleAuthError(error).message, error.code);
@@ -276,7 +276,7 @@ class AuthService {
   async signOut(): Promise<Result<void>> {
     try {
       await firebaseSignOut(auth);
-      return ok(undefined);
+      return ok(null);
     } catch (error: any) {
       logError("AuthService.signOut", error);
       return fail(this.handleAuthError(error).message, error.code);
@@ -287,7 +287,7 @@ class AuthService {
   async sendPasswordResetEmail(email: string): Promise<Result<void>> {
     try {
       await firebaseSendPasswordReset(auth, email);
-      return ok(undefined);
+      return ok(null);
     } catch (error: any) {
       logError("AuthService.sendPasswordResetEmail", error);
       return fail(this.handleAuthError(error).message, error.code);

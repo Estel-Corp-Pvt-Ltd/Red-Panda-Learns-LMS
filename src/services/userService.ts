@@ -52,7 +52,7 @@ class UserService {
 
             await setDoc(doc(db, COLLECTION.USERS, uid), user);
             console.log("UserService - User created successfully:", uid);
-            return ok(undefined);
+            return ok(null);
         } catch (error) {
             logError("UserService.createUser", error);
             return fail("Failed to create user");
@@ -78,9 +78,9 @@ class UserService {
 
             await updateDoc(userRef, updateData);
             console.log("UserService - User updated successfully:", uid);
-            return ok(undefined);
+            return ok(null);
         } catch (error) {
-            logError("UserService.updateUse", error);
+            logError("UserService.updateUser", error);
             return fail("Failed to update user");
         }
     }
@@ -204,7 +204,7 @@ class UserService {
         try {
             await deleteDoc(doc(db, COLLECTION.USERS, uid));
             console.log("UserService - User deleted successfully:", uid);
-            return ok(undefined);
+            return ok(null);
         } catch (error) {
             logError("UserService.deleteUser", error);
             return fail("Failed to delete user");
@@ -221,7 +221,7 @@ class UserService {
                 role: newRole,
                 updatedAt: serverTimestamp(),
             });
-            return ok(undefined);
+            return ok(null);
         } catch (error) {
             logError("UserService.changeUserRole", error);
             return fail("Failed to change user role");
@@ -241,7 +241,7 @@ class UserService {
                 status: newStatus,
                 updatedAt: serverTimestamp(),
             });
-            return ok(undefined);
+            return ok(null);
         } catch (error) {
             logError("UserService.changeUserStatus", error);
             return fail("Failed to change user status");
