@@ -43,6 +43,8 @@ import RefundPage from "./pages/RefundPolicy";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import EditCouponPage from "./pages/admin/EditCouponPage";
 import VerifyEmail from "./pages/auth/VerifyEmail";
+import { CartProvider } from "./contexts/CartContext";
+import CartPage from "./pages/CartPage";
 // import { AttributeManager } from "./components/admin/attribute";
 
 const queryClient = new QueryClient();
@@ -52,143 +54,144 @@ const App = () => (
     <AuthProvider>
       <EnrollmentProvider>
         <CohortProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/course/:courseId" element={<CourseDetailPage />} />
-                <Route path="/courses/" element={<CoursesPage />} />
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/course/:courseId" element={<CourseDetailPage />} />
+                  <Route path="/courses/" element={<CoursesPage />} />
 
-                <Route
-                  path="/course/:courseId/lesson/:lessonId"
-                  element={
-                    <AuthGuard requireAuth requireEnrollment>
-                      <LessonDetailPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route path="/auth/login" element={<Login />} />
-                <Route path="/auth/signup" element={<Signup />} />
-                <Route path="/auth/verify-email" element={<VerifyEmail />} />
-                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                <Route path="/auth/reset-password" element={<SetNewPassword />} />
-                <Route
-                  path="/checkout/:courseId"
-                  element={
-                    <AuthGuard>
-                      <CheckoutPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <AuthGuard>
-                      <DashboardPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <AuthGuard requireAuth requireAdmin>
-                      <AdminDashboard />
-                    </AuthGuard>
-                  }
-                />
-                <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
-                <Route
-                  path="/admin/course/:courseId/lesson/:lessonId"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <ViewLessonAdmin />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/create-lesson"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <CreateLessonPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/edit-lesson/:lessonId"
-                  element={
-                    <AuthGuard requireAdmin>
-                      <EditLessonPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/edit-user/:userId"
-                  element={
-                    <AuthGuard requireAdmin>
-                      <EditUserPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/create-course"
-                  element={
-                    <AuthGuard requireAdmin>
-                      <CreateCoursePage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/create-bundle"
-                  element={
-                    <AuthGuard requireAdmin>
-                      <CreateBundlePage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="admin/edit-bundle/:bundleId"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <EditBundlePage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="admin/edit-coupon/:couponId"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <EditCouponPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/create-cohort"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <CohortBuilderPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/cohort/:cohortId"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <CohortDetailPage />
-                    </AuthGuard>
-                  }
-                />
+                  <Route
+                    path="/course/:courseId/lesson/:lessonId"
+                    element={
+                      <AuthGuard requireAuth requireEnrollment>
+                        <LessonDetailPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route path="/auth/login" element={<Login />} />
+                  <Route path="/auth/signup" element={<Signup />} />
+                  <Route path="/auth/verify-email" element={<VerifyEmail />} />
+                  <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/auth/reset-password" element={<SetNewPassword />} />
+                  <Route
+                    path="/checkout/:courseId"
+                    element={
+                      <AuthGuard>
+                        <CheckoutPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <AuthGuard>
+                        <DashboardPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <AuthGuard requireAuth requireAdmin>
+                        <AdminDashboard />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
+                  <Route
+                    path="/admin/course/:courseId/lesson/:lessonId"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <ViewLessonAdmin />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/create-lesson"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <CreateLessonPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/edit-lesson/:lessonId"
+                    element={
+                      <AuthGuard requireAdmin>
+                        <EditLessonPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/edit-user/:userId"
+                    element={
+                      <AuthGuard requireAdmin>
+                        <EditUserPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/create-course"
+                    element={
+                      <AuthGuard requireAdmin>
+                        <CreateCoursePage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/create-bundle"
+                    element={
+                      <AuthGuard requireAdmin>
+                        <CreateBundlePage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="admin/edit-bundle/:bundleId"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <EditBundlePage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="admin/edit-coupon/:couponId"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <EditCouponPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/create-cohort"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <CohortBuilderPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/cohort/:cohortId"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <CohortDetailPage />
+                      </AuthGuard>
+                    }
+                  />
 
-                <Route
-                  path="/admin/edit-course/:courseId"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <CurriculumBuilderPage />
-                    </AuthGuard>
-                  }
-                />
-                {/* <Route
+                  <Route
+                    path="/admin/edit-course/:courseId"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <CurriculumBuilderPage />
+                      </AuthGuard>
+                    }
+                  />
+                  {/* <Route
                   path="/admin/add-attribute"
                   element={
                     <AuthGuard requireAdmin >
@@ -196,72 +199,74 @@ const App = () => (
                     </AuthGuard>
                   }
                 /> */}
-                <Route
-                  path="/cohort/:cohortId"
-                  element={<UserCohortDetailPage />}
-                />
-                <Route
-                  path="/cohort/:cohortId/checkout"
-                  element={
-                    <AuthGuard>
-                      <CohortCheckoutPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/cohort/:cohortId/dashboard"
-                  element={
-                    <AuthGuard>
-                      <CohortDashboardPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/bundle/:bundleId"
-                  element={<BundleDetailPage />}
-                />
-                <Route
-                  path="/bundle/:bundleId/checkout"
-                  element={
-                    <AuthGuard>
-                      <BundleCheckoutPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/bundle/:bundleId/dashboard"
-                  element={
-                    <AuthGuard>
-                      <BundleDashboardPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/create-coupon"
-                  element={
-                    <AuthGuard requireAdmin>
-                      <CreateCouponPage />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/courses"
-                  element={
-                    <CoursesPage />
-                  }
-                />
-                <Route
-                  path="dummy/bundle/:bundleId/checkout"
-                  element={<DummyBundleCheckoutPage />}
-                />
-                <Route path="*" element={<NotFound />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/refund-policy" element={<RefundPage />} />
+                  <Route
+                    path="/cohort/:cohortId"
+                    element={<UserCohortDetailPage />}
+                  />
+                  <Route
+                    path="/cohort/:cohortId/checkout"
+                    element={
+                      <AuthGuard>
+                        <CohortCheckoutPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/cohort/:cohortId/dashboard"
+                    element={
+                      <AuthGuard>
+                        <CohortDashboardPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/bundle/:bundleId"
+                    element={<BundleDetailPage />}
+                  />
+                  <Route
+                    path="/bundle/:bundleId/checkout"
+                    element={
+                      <AuthGuard>
+                        <BundleCheckoutPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/bundle/:bundleId/dashboard"
+                    element={
+                      <AuthGuard>
+                        <BundleDashboardPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/create-coupon"
+                    element={
+                      <AuthGuard requireAdmin>
+                        <CreateCouponPage />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/courses"
+                    element={
+                      <CoursesPage />
+                    }
+                  />
+                  <Route
+                    path="dummy/bundle/:bundleId/checkout"
+                    element={<DummyBundleCheckoutPage />}
+                  />
+                  <Route path="*" element={<NotFound />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/refund-policy" element={<RefundPage />} />
+                  <Route path="/cart" element={<CartPage />} />
 
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </CartProvider>
         </CohortProvider>
       </EnrollmentProvider>
     </AuthProvider>
