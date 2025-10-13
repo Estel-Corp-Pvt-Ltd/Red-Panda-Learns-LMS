@@ -62,7 +62,7 @@ const loadLessons = async () => {
 
   // Combine both
   const allLessonIds = [...courseLessonIds, ...cohortLessonIds];
-    console.log("ye  hai all lesson id " ,allLessonIds)
+
   if (allLessonIds.length === 0) {
     setLessons([]);
     return;

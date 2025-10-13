@@ -16,14 +16,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Cohort } from "@/types/course";
+import { useNavigate
 
+ } from "react-router-dom";
 type CohortBuilderPageProps = {
   onCohortCreated?: (cohort: Cohort) => void;
 };
 
 const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
   const { toast } = useToast();
-
+ const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -77,7 +79,7 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
         onCohortCreated(fullCohort);
       } else {
         // fallback: navigate to cohort page (original behavior)
-        window.location.href = `/admin/cohort/${newId}`;
+       navigate(`/admin/cohort/${newId}`);
       }
 
       resetForm();

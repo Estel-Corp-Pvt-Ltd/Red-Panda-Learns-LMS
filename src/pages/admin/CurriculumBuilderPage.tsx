@@ -168,28 +168,35 @@ const CurriculumBuilderPage = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => {
-    const fetchAttributes = async () => {
-      try {
-        const [categoriesData, targetAudienceData] = await Promise.all([
-          attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY),
-          attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE),
-        ]);
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
+      setAllCategories(categoriesData.map((a) => a.name));
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load categories.",
+        variant: "destructive",
+      });
+    }
 
-        setAllCategories(categoriesData.map((a) => a.name));
-        setAllTargetAudiences(targetAudienceData.map((a) => a.name));
-      } catch (error) {
-        console.error("Error fetching attributes:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load categories or target audiences.",
-          variant: "destructive",
-        });
-      }
-    };
+    try {
+      const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
+      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+    } catch (error) {
+      console.error("Error fetching target audiences:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load target audiences.",
+        variant: "destructive",
+      });
+    }
+  };
 
-    fetchAttributes();
-  }, [toast]);
+  fetchAttributes();
+}, [toast]);
 
 
 
@@ -379,7 +386,8 @@ const CurriculumBuilderPage = () => {
     }
   };
 
-
+//Todo
+// Notify the system if both cohorts and topics are non-empty simultaneously
 const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
   const flatList: DraggableItem[] = [];
 
@@ -441,6 +449,7 @@ const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
 
   return flatList;
 };
+
 const duplicateCohort = (cohortId: string) => {
   setCurriculum(prev => {
     const newList = [...prev];
