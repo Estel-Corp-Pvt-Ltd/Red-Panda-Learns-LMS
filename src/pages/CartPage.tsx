@@ -4,9 +4,11 @@ import CartItemCard from "@/components/CartItemCard";
 import EmptyCart from "@/components/EmptyCart";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const CartPage: React.FC = () => {
-  const { cart, courses, fetchCourses, dispatch, loading } = useCart();
+  const { courses, dispatch, loading } = useCart();
+  const { toast } = useToast();
   const [totalAmount, setTotalAmount] = useState(0);
   const [regularTotal, setRegularTotal] = useState(0);
   const [savings, setSavings] = useState(0);
@@ -32,6 +34,14 @@ const CartPage: React.FC = () => {
     setSavings(regTotal - saleTotal);
   }, [courses]);
 
+  const handleClearCart = () => {
+    toast({
+      title: "Courses removed",
+      description: `All courses removed from your cart.`,
+    });
+    dispatch({ type: "CLEAR" })
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -40,7 +50,7 @@ const CartPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Your Cart</h1>
           <button
-            onClick={() => dispatch({ type: "CLEAR" })}
+            onClick={handleClearCart}
             className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md transition-colors"
           >
             Clear Cart

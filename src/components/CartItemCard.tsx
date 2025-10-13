@@ -1,9 +1,15 @@
 import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 
 const CartItemCard = ({ item }) => {
   const { dispatch } = useCart();
+  const { toast } = useToast();
 
   const handleRemove = () => {
+    toast({
+      title: "Course removed",
+      description: `${item.title} has been removed from your cart.`,
+    });
     dispatch({ type: "REMOVE", id: item.id });
   };
 

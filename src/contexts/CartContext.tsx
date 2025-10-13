@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { courseService } from "@/services/courseService";
+import { Course } from "@/types/course";
 
 export interface CartItem {
   courseId: string;
@@ -52,7 +53,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return storedCart ? JSON.parse(storedCart) : [];
   });
 
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Persist cart to localStorage whenever it changes

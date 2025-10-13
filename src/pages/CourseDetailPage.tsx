@@ -30,11 +30,13 @@ import { Topic } from "@/types/course";
 import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 import { enrollmentService } from "@/services/dummyEnrollmentService";
 import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const { cart, dispatch } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { isEnrolled } = useEnrollment();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
@@ -97,7 +99,11 @@ export default function CourseDetailPage() {
     dispatch({
       type: "ADD",
       item: { courseId },
-    })
+    });
+    toast({
+      title: "Course Added",
+      description: `${course.title} has been removed from your cart.`,
+    });
   };
 
   const handleCheckout = async () => {
