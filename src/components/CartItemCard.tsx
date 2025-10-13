@@ -1,8 +1,9 @@
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+import { CART_ACTIONS } from "@/types/cart";
 
 const CartItemCard = ({ item }) => {
-  const { dispatch } = useCart();
+  const { cartDispatch } = useCart();
   const { toast } = useToast();
 
   const handleRemove = () => {
@@ -10,7 +11,7 @@ const CartItemCard = ({ item }) => {
       title: "Course removed",
       description: `${item.title} has been removed from your cart.`,
     });
-    dispatch({ type: "REMOVE", id: item.id });
+    cartDispatch({ type: CART_ACTIONS.REMOVE, id: item.id });
   };
 
   const hasDiscount =

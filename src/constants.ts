@@ -325,6 +325,7 @@ export const COLLECTION = {
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',
     USERS: 'Users',
+    CARTS: 'Carts',
     LESSONS: 'Lessons',
     COUPONS: 'Coupons',
     COUPON_USAGES: 'CouponUsages',

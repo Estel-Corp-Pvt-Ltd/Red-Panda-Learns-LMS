@@ -31,9 +31,10 @@ import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 import { enrollmentService } from "@/services/dummyEnrollmentService";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+import { CART_ACTIONS } from "@/types/cart";
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
-  const { cart, dispatch } = useCart();
+  const { cart, cartDispatch } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -96,18 +97,18 @@ export default function CourseDetailPage() {
       }
     }
     if (!course) return;
-    dispatch({
-      type: "ADD",
+    cartDispatch({
+      type: CART_ACTIONS.ADD,
       item: { courseId },
     });
     toast({
       title: "Course Added",
-      description: `${course.title} has been removed from your cart.`,
+      description: `${course.title} has been added from your cart.`,
     });
   };
 
   const handleCheckout = async () => {
-    // dispatch({
+    // cartDispatch({
     //   type: "ADD",
     //   item: { courseId },
     // })

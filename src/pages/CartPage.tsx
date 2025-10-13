@@ -5,9 +5,10 @@ import EmptyCart from "@/components/EmptyCart";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { CART_ACTIONS } from "@/types/cart";
 
 const CartPage: React.FC = () => {
-  const { courses, dispatch, loading } = useCart();
+  const { cartCourses, cartDispatch, loading } = useCart();
   const { toast } = useToast();
   const [totalAmount, setTotalAmount] = useState(0);
   const [regularTotal, setRegularTotal] = useState(0);
@@ -16,15 +17,15 @@ const CartPage: React.FC = () => {
 
   // Calculate totals and savings
   useEffect(() => {
-    if (!courses || courses.length === 0) {
+    if (!cartCourses || cartCourses.length === 0) {
       setTotalAmount(0);
       setRegularTotal(0);
       setSavings(0);
       return;
     }
 
-    const regTotal = courses.reduce((sum, c) => sum + (c.regularPrice ?? 0), 0);
-    const saleTotal = courses.reduce(
+    const regTotal = cartCourses.reduce((sum, c) => sum + (c.regularPrice ?? 0), 0);
+    const saleTotal = cartCourses.reduce(
       (sum, c) => sum + (c.salePrice ?? c.regularPrice ?? 0),
       0
     );
@@ -32,14 +33,14 @@ const CartPage: React.FC = () => {
     setRegularTotal(regTotal);
     setTotalAmount(saleTotal);
     setSavings(regTotal - saleTotal);
-  }, [courses]);
+  }, [cartCourses]);
 
   const handleClearCart = () => {
     toast({
       title: "Courses removed",
       description: `All courses removed from your cart.`,
     });
-    dispatch({ type: "CLEAR" })
+    cartDispatch({ type: CART_ACTIONS.CLEAR })
   }
 
   return (
@@ -62,7 +63,7 @@ const CartPage: React.FC = () => {
           <div className="flex justify-center items-center min-h-[20rem]">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
           </div>
-        ) : courses.length === 0 ? (
+        ) : cartCourses.length === 0 ? (
           <div className="flex justify-center items-center min-h-[20rem]">
             <EmptyCart />
           </div>
@@ -70,8 +71,8 @@ const CartPage: React.FC = () => {
           <div className="flex flex-col space-y-6">
             {/* Cart Items */}
             <div className="space-y-4">
-              {courses.map((course) => (
-                <CartItemCard key={course.courseId} item={course} />
+              {cartCourses.map((course) => (
+                <CartItemCard key={course.id} item={course} />
               ))}
             </div>
 
