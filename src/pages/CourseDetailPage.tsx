@@ -70,7 +70,7 @@ export default function CourseDetailPage() {
     const checkEnrollment = async () => {
       if (user && courseId) {
         const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
-        console.log("is user enrolled wala log", enrolled);
+        console.log("checkEnrollment", enrolled);
         setUserIsEnrolled(enrolled)
       }
     };
