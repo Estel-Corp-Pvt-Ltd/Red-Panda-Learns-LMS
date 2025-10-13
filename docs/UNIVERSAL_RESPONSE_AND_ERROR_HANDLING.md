@@ -1,47 +1,46 @@
-#TypeScript Universal Response & Error Handling Standard
+# TypeScript Universal Response & Error Handling Standard
 
-**1️⃣ Define a Universal Response Structure**
+## Why we do this
+This standard ensures all functions return a consistent, type-safe result, making error handling predictable across the project. 
+It simplifies async operations, prevents unhandled exceptions, and improves TypeScript type safety.
 
-At the core of your project (e.g. /src/types/common.ts):
+**1️⃣ Our Universal Response Structure**
 
 ```ts
-export type Result<T> = {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-    code?: string;
-    stack?: string;
-  };
-};
+type Result<T> =
+  | { success: true; data: T }
+  | { success: false; error: { message: string; code?: string; stack?: string } };
+
 ```
 
-✅ This becomes your single source of truth for return types.
 Every function — API, service, or utility — must return this Result<T>.
 
-**⚙️ 2️⃣ Create a Helper Utility**
-
-File: /src/utils/response.ts
+**⚙️ 2️⃣ Helper Utilities For Success And Failure**
 
 ```ts
-import { Result } from "../types/common";
-
-export const ok = <T>(data: T): Result<T> => ({
+const ok = <T>(data: T): Result<T> => ({
   success: true,
   data,
 });
 
-export const fail = (
+const fail = (
   message: string,
   code?: string,
   stack?: string
-): Result<never> => ({
-  success: false,
-  error: { message, code, stack },
-});
+): { success: false; error: { message: string; code?: string; stack?: string } } => {
+  return {
+    success: false,
+    error: {
+      message,
+      code,
+      // If stack is not provided, capture the current stack trace
+      stack: stack ?? new Error().stack,
+    },
+  };
+};
 ```
 
-You have ok() and fail() to standardize all returns.
+We use ok() and fail() to standardize all returns.
 
 
 **🧱 3️⃣ Refactor Functions Incrementally**
@@ -130,16 +129,14 @@ or
 
 **🧹 6️⃣ Enforce with ESLint / TypeScript**
 
-✅ Option 1: Manual Rule in ESLint
-
 In .eslintrc.cjs (or .eslintrc.json):
 
 ```js
 module.exports = {
   rules: {
     // Warn if exported async functions don’t have an explicit return type
+    // Enforces that all exported async functions explicitly declare Promise<Result<T>>, preventing accidental mismatched return types.
     "@typescript-eslint/explicit-function-return-type": "warn",
-
     // Optional: enforce typing for module exports
     "import/no-default-export": "off",
   },
@@ -152,31 +149,15 @@ This ensures functions like:
 export async function getUser() { ... }
 ```
 
-will warn you unless you specify:
+will warn us unless we specify:
 
 ```ts
 export async function getUser(): Promise<Result<User>> { ... }
 ```
 
-✅ Option 2: Use TypeScript types for service layers
 
-Example — enforce all service functions return Result<T>:
-
-```ts
-type ServiceFunction<T> = (...args: any[]) => Promise<Result<T>>;
-```
-
-Usage:
-
-```ts
-const getUser: ServiceFunction<User> = async (id) => {
-  ...
-};
-```
-
-This ensures compile-time consistency.
-
-**🧰 7️⃣ Optional: Universal Async Wrapper**
+**🧰 7️⃣ Universal Async Wrapper**
+> Use `handle()` for most async service calls. For complex flows where you need granular error handling, manual try/catch is still fine.
 
 ```ts
 import { ok, fail } from "./response";
