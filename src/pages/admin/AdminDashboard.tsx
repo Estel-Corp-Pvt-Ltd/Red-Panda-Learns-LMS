@@ -1,5 +1,22 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  PlusCircle,
+  Edit,
+  Trash2,
+  Users,
+  UserPlus,
+  BookOpen,
+  Loader2,
+  Calendar,
+  Eye,
+  Plus,
+  Gift,
+} from "lucide-react";
+
+import { formatDate } from "@/utils/date-time";
+import { useToast } from "@/hooks/use-toast";
+
 import {
   Card,
   CardContent,
@@ -7,8 +24,6 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { OrganizationType } from "@/types/general";
-import { formatDate } from "@/utils/date-time";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -20,64 +35,33 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import {
-  PlusCircle,
-  Edit,
-  Trash2,
-  DollarSign,
-  Users,
-  UserPlus,
-  BookOpen,
-  Loader2,
-  Calendar,
-  Eye,
-  Plus,
-  Gift,
-} from "lucide-react";
+import { Header } from "@/components/Header";
 
-import { courseService } from "@/services/courseService";
-import { cohortService } from "@/services/cohortService";
-import { bundleService } from "@/services/bundleService";
-import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
-import { Cohort } from "@/types/course";
-import { userService } from "@/services/userService";
-import { Bundle } from "@/types/bundle";
-import { Course } from "@/types/course";
-import { Lesson } from "@/types/lesson";
-import { User } from "@/types/user";
-import { Organization } from "@/types/organization";
-import { organizationService } from "@/services/organizationService";
-import { ORGANIZATION } from "@/constants";
-
-// import { useCourseQuery } from "@/hooks/useFirebaseApi";
-import { useLocation } from "react-router-dom";
-import { Coupon } from "@/types/coupon";
+import { bundleService } from "@/services/bundleService";
+import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
+import { courseService } from "@/services/courseService";
+import { lessonService } from "@/services/lessonService";
+import { organizationService } from "@/services/organizationService";
+import { userService } from "@/services/userService";
 
-// const course = useCourseQuery() =;
-const statsData = {
-  totalRevenue: 45231,
-  activeStudents: 2350,
-  newEnrollments: 180,
-  totalCourses: 12,
-  activeCohorts: 5,
-  totalCohortStudents: 420
-};
+import { Bundle } from "@/types/bundle";
+import { Lesson } from "@/types/lesson";
+import { Organization } from "@/types/organization";
+import { User } from "@/types/user";
+import { Cohort, Course } from "@/types/course";
+import { Coupon } from "@/types/coupon";
+import { OrganizationType } from "@/types/general";
 
+import { ORGANIZATION } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
   COURSE_STATUS,
   USER_ROLE,
   USER_STATUS,
-
 } from "@/constants";
-
-import { Header } from "@/components/Header";
-import { error } from "console";
-
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -640,7 +624,7 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button
+                                {/* <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
@@ -664,7 +648,7 @@ export function AdminDashboard() {
                                   title="View Lesson"
                                 >
                                   <Eye className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
 
                                 <Button
                                   variant="ghost"
@@ -751,14 +735,6 @@ export function AdminDashboard() {
                                   onClick={() => navigate(`/admin/edit-course/${course.id}`)}
                                 >
                                   <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/create-cohort?courseId=${course.id}`)}
-                                  title="Create Cohort"
-                                >
-                                  <Calendar className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -906,9 +882,6 @@ export function AdminDashboard() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Cohort</TableHead>
-                          <TableHead>Max Students</TableHead>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -923,54 +896,9 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
 
-                            {/* Start date */}
-                            <TableCell>
-                              <div className="text-sm">
-                          LOREM
-                              </div>
-                            </TableCell>
-
-                            {/* End date */}
-                            <TableCell>
-                              <div className="text-sm">
-                              LOREM
-                              </div>
-                            </TableCell>
-
-                            {/* Enrollment open status */}
-                            <TableCell>
-                              <Badge >
-                                LOREM
-                              </Badge>
-                            </TableCell>
-
-                            <TableCell>
-                              <Badge>
-                            LOREM
-                              </Badge>
-                            </TableCell>
-
                             {/* Actions: view, edit, delete */}
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-                                  title="View Details"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-                                  title="Edit Cohort"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-
                                 <Button
                                   variant="ghost"
                                   size="sm"
