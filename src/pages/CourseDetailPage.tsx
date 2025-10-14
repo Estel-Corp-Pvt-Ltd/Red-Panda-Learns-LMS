@@ -1,4 +1,4 @@
-import { useCallback, useState,useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -29,10 +29,16 @@ import { cn } from "@/lib/utils";
 import { Topic } from "@/types/course";
 import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 import { enrollmentService } from "@/services/dummyEnrollmentService";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import { CART_ACTION } from "@/constants";
+
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const { cart, cartDispatch } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { isEnrolled } = useEnrollment();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
@@ -47,6 +53,8 @@ export default function CourseDetailPage() {
     []
   );
 
+  const isAddedToCart = cart.some((item) => item.courseId === courseId);
+
   const {
     data: course,
     isLoading: courseLoading,
@@ -58,21 +66,21 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading;
   const isError = courseError;
 
- 
- useEffect(() => {
-  const checkEnrollment = async () => {
-    if (user && courseId) {
-      const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
-      console.log("is user enrolled wala log", enrolled);
-      setUserIsEnrolled(enrolled)
-    }
-  };
 
-  checkEnrollment();
-}, [user, courseId]);
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      if (user && courseId) {
+        const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
+        console.log("checkEnrollment", enrolled);
+        setUserIsEnrolled(enrolled)
+      }
+    };
+
+    checkEnrollment();
+  }, [user, courseId]);
 
 
-  const handleEnrollClick = async () => {
+  const handleAddToCart = async () => {
     if (!user) {
       navigate("/auth/login", {
         state: {
@@ -82,14 +90,31 @@ export default function CourseDetailPage() {
       });
       return;
     }
+
     if (userIsEnrolled) {
       if (course.topics && course.topics.length > 0) {
         const firstTopic = course.topics[0];
         navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
       }
     }
-    navigate(`/checkout/${courseId}`);
+    if (!course) return;
+    cartDispatch({
+      type: CART_ACTION.ADD,
+      item: { courseId },
+    });
+    toast({
+      title: "Course Added",
+      description: `${course.title} has been added to your cart.`,
+    });
   };
+
+  const handleCheckout = async () => {
+    // cartDispatch({
+    //   type: "ADD",
+    //   item: { courseId },
+    // })
+    navigate(`/checkout/${courseId}`);
+  }
 
   const handleContinueLearning = () => {
     // Find first lesson to navigate to
@@ -158,7 +183,7 @@ export default function CourseDetailPage() {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
           <Link
-            to="/"
+            to="/courses"
             className="hover:text-primary transition-colors flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -331,13 +356,20 @@ export default function CourseDetailPage() {
                           </Button>
                         ) : (
                           <>
-                            <Button
-                              className="w-full"
-                              size="lg"
-                              onClick={handleEnrollClick}
-                            >
-                              Enroll Now
-                            </Button>
+                            {isAddedToCart ? (
+                              <Link to="/cart">
+                                <Button className="w-full">Go to Cart</Button>
+                              </Link>
+                            ) :
+                              <Button
+                                className="w-full"
+                                size="lg"
+                                onClick={handleAddToCart}
+                              >
+                                Add to Cart
+                              </Button>
+                            }
+                            <Button className="w-full" onClick={handleCheckout}>Go To Checkout</Button>
                           </>
                         )}
                   </div>
@@ -383,9 +415,9 @@ export default function CourseDetailPage() {
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">
                       <span className="font-medium">
-  {formatDate(course.updatedAt)}
-</span>
-                      
+                        {formatDate(course.updatedAt)}
+                      </span>
+
                     </span>
                   </div>
                 </div>

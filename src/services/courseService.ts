@@ -15,7 +15,7 @@ import {
 
 import { db } from '@/firebaseConfig';
 import { Course } from '@/types/course';
-import { COURSE_STATUS, PRICING_MODEL } from '@/constants';
+import { COLLECTION, COURSE_STATUS, PRICING_MODEL } from '@/constants';
 
 class CourseService {
   /**
@@ -95,7 +95,7 @@ class CourseService {
         // categories: [],
 
         categoryIds: data.categoryIds || [],
-       targetAudienceIds: data.targetAudienceIds || [],
+        targetAudienceIds: data.targetAudienceIds || [],
         authorId: data.authorId,
         status: COURSE_STATUS.DRAFT,
         certificateTemplateId: data.certificateTemplateId || '',
@@ -106,7 +106,7 @@ class CourseService {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'Courses', courseId), course);
+      await setDoc(doc(db, COLLECTION.COURSES, courseId), course);
       console.log('CourseService - Course created successfully:', courseId);
 
       return courseId;
@@ -144,7 +144,7 @@ class CourseService {
 
   async updateCourse(courseId: string, updates: Partial<Course>): Promise<void> {
     try {
-      const courseRef = doc(db, 'Courses', courseId);
+      const courseRef = doc(db, COLLECTION.COURSES, courseId);
       const courseDoc = await getDoc(courseRef);
 
       if (!courseDoc.exists()) {
@@ -162,9 +162,8 @@ class CourseService {
       if (updates.url) updateData.url = updates.url;
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
-      // if (updates.categories) updateData.categories = updates.categories;
-     if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
-     if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
+      if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
+      if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.status) updateData.status = updates.status;
       if (updates.authorId) updateData.authorId = updates.authorId;
@@ -202,7 +201,7 @@ class CourseService {
 
   async publishCourse(courseId: string): Promise<void> {
     try {
-      const courseRef = doc(db, 'Courses', courseId);
+      const courseRef = doc(db, COLLECTION.COURSES, courseId);
       await updateDoc(courseRef, {
         status: COURSE_STATUS.PUBLISHED,
         updatedAt: serverTimestamp(),
@@ -235,7 +234,7 @@ class CourseService {
 
   async getAllCourses(): Promise<Course[]> {
     try {
-      const querySnapshot = await getDocs(collection(db, 'Courses'));
+      const querySnapshot = await getDocs(collection(db, COLLECTION.COURSES));
 
       const courses = querySnapshot.docs.map(doc => ({
         ...doc.data(),
@@ -280,7 +279,7 @@ class CourseService {
     filters?: { field: keyof Course; op: WhereFilterOp; value: any }[]
   ): Promise<Course[]> {
     try {
-      let q = collection(db, 'Courses');
+      let q = collection(db, COLLECTION.COURSES);
 
       if (filters && filters.length > 0) {
         let queryRef = query(
@@ -337,7 +336,7 @@ class CourseService {
   async getPublishedCourses(): Promise<Course[]> {
     try {
       const q = query(
-        collection(db, 'Courses'),
+        collection(db, COLLECTION.COURSES),
         where('status', '==', COURSE_STATUS.PUBLISHED)
       );
       const querySnapshot = await getDocs(q);
@@ -381,7 +380,7 @@ class CourseService {
 
   async getCourseById(courseId: string): Promise<Course | null> {
     try {
-      const courseDoc = await getDoc(doc(db, 'Courses', courseId));
+      const courseDoc = await getDoc(doc(db, COLLECTION.COURSES, courseId));
 
       if (!courseDoc.exists()) {
         console.log('CourseService - Course not found:', courseId);
@@ -399,6 +398,35 @@ class CourseService {
       console.error('CourseService - Error fetching course:', error);
       return null;
     }
+  }
+
+  async getCoursesByIds(courseIds: string[]): Promise<Course[]> {
+    if (!courseIds || courseIds.length === 0) return [];
+
+    const CHUNK_SIZE = 10; // Firestore 'in' queries allow max 10 items
+    const chunks: string[][] = [];
+
+    for (let i = 0; i < courseIds.length; i += CHUNK_SIZE) {
+      chunks.push(courseIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    const courses: Course[] = [];
+
+    for (const chunk of chunks) {
+      const q = query(collection(db, COLLECTION.COURSES), where("id", "in", chunk));
+      const snapshot = await getDocs(q);
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        courses.push({
+          ...data,
+          createdAt: data?.createdAt?.toDate(),
+          updatedAt: data?.updatedAt?.toDate(),
+        } as Course);
+      });
+    }
+
+    return courses;
   }
 
   /**
@@ -420,7 +448,7 @@ class CourseService {
 
   async deleteCourse(courseId: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, 'Courses', courseId));
+      await deleteDoc(doc(db, COLLECTION.COURSES, courseId));
       console.log('CourseService - Course deleted successfully:', courseId);
     } catch (error) {
       console.error('CourseService - Error deleting course:', error);
