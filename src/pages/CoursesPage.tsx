@@ -19,7 +19,6 @@ import { useCoursesQuery, useCohortsQuery } from "@/hooks/useCaching";
 import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
 import { useCourseFilters } from "@/hooks/useCourseFilters";
 import { BundleCard } from "@/components/bundle/BundleCard";
-import { CohortCard } from "@/components/cohort/cohort-card";
 import { SORT_OPTIONS } from "@/types/courseFilters";
 import { cn } from "@/lib/utils";
 
