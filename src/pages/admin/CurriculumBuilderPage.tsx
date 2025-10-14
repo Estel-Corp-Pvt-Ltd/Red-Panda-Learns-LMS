@@ -556,32 +556,26 @@ const CurriculumBuilderPage = () => {
     });
   };
 
-  // compute once per open/parent change
-  const excludedLessonIdsForActiveParent = useMemo(() => {
-    if (!isLessonSelectorModalOpen || !activeParentId) return [];
+const excludedLessonIdsForActiveParent = useMemo(() => {
+  if (!isLessonSelectorModalOpen || !activeParentId) return [];
 
-    // find the topic we're adding into
-    const topic = curriculum.find(
-      (i) => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC
-    );
-    if (!topic) return [];
+  const topic = curriculum.find(
+    i => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC
+  );
+  if (!topic) return [];
 
-    // if topic has no cohort parent, no restriction per your rule
-    const cohortId = topic.parentId;
-    if (!cohortId) return [];
+  const cohortId = topic.parentId;
 
-    // all topics inside this cohort
+  // ------- CASE 1: topic inside a cohort -------
+  if (cohortId) {
     const topicIdsInCohort = new Set(
       curriculum
-        .filter(
-          (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId
-        )
-        .map((i) => i.id)
+        .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+        .map(i => i.id)
     );
 
-    // lessons already used anywhere in this cohort
     const usedLessonIds = new Set<string>();
-    curriculum.forEach((i) => {
+    curriculum.forEach(i => {
       if (
         i.type === LEARNING_UNIT.LESSON &&
         i.parentId &&
@@ -590,9 +584,19 @@ const CurriculumBuilderPage = () => {
         usedLessonIds.add(i.lessonRefId ?? i.id);
       }
     });
-
     return Array.from(usedLessonIds);
-  }, [isLessonSelectorModalOpen, activeParentId, curriculum]);
+  }
+
+  // ------- CASE 2: root topic (no cohort) -------
+  // Then exclude *all* lessons used anywhere else in the course
+  const usedLessonIds = new Set<string>();
+  curriculum.forEach(i => {
+    if (i.type === LEARNING_UNIT.LESSON) {
+      usedLessonIds.add(i.lessonRefId ?? i.id);
+    }
+  });
+  return Array.from(usedLessonIds);
+}, [isLessonSelectorModalOpen, activeParentId, curriculum]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
