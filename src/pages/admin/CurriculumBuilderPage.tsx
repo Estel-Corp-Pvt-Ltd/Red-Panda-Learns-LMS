@@ -866,7 +866,7 @@ const CurriculumBuilderPage = () => {
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="additional">Additional</TabsTrigger>
+            {/* <TabsTrigger value="additional">Additional</TabsTrigger> */}
           </TabsList>
 
           {/* ────────── BASICS TAB CONTENT ────────── */}
