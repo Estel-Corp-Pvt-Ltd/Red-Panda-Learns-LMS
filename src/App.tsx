@@ -46,7 +46,7 @@ import VerifyEmail from "./pages/auth/VerifyEmail";
 import { CartProvider } from "./contexts/CartContext";
 import CartPage from "./pages/CartPage";
 // import { AttributeManager } from "./components/admin/attribute";
-
+import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -191,6 +191,14 @@ const App = () => (
                       </AuthGuard>
                     }
                   />
+                  <Route
+                  path="/admin/dummy/edit-course/:courseId"
+                  element={
+                    <AuthGuard requireAdmin >
+                      <DummyCurriculumBuilderPage />
+                    </AuthGuard>
+                  }
+                />
                   {/* <Route
                   path="/admin/add-attribute"
                   element={

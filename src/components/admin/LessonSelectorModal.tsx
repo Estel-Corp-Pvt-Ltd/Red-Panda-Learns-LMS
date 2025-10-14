@@ -159,7 +159,7 @@ export const LessonSelectorModal = ({
                         Cancel
                     </Button>
                     <Button onClick={handleConfirm} disabled={selectedIds.length === 0}>
-                        Add Selected
+                        Add Selected 
                     </Button>
                 </div>
             </DialogContent>
