@@ -120,7 +120,6 @@ export default function CourseDetailPage() {
     // Find first lesson to navigate to
     if (course.topics && course.topics.length > 0) {
       const firstTopic = course.topics[0];
-      const firstTopicId = firstTopic.id;
       // console.log("CourseDetailPage - Continue Learning:", {
       //   courseId,
       //   firstTopicId,

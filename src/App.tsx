@@ -21,10 +21,7 @@ import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 import CohortBuilderPage from "./pages/admin/CreateCohortPage";
 import CohortDetailPage from "./pages/admin/CohortDetailPage";
-// import EditCohortPage from "./pages/admin/EditCohortPage";
-import UserCohortDetailPage from "./pages/CohortDetailPage";
 import CohortCheckoutPage from "./pages/CohortCheckoutPage";
-import CohortDashboardPage from "./pages/CohortDashboardPage";
 import BundleDetailPage from "./pages/BundleDetailPage";
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
 import BundleDashboardPage from "./pages/BundleDashboardPage";
@@ -45,8 +42,8 @@ import EditCouponPage from "./pages/admin/EditCouponPage";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import { CartProvider } from "./contexts/CartContext";
 import CartPage from "./pages/CartPage";
-// import { AttributeManager } from "./components/admin/attribute";
 import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -192,38 +189,18 @@ const App = () => (
                     }
                   />
                   <Route
-                  path="/admin/dummy/edit-course/:courseId"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <DummyCurriculumBuilderPage />
-                    </AuthGuard>
-                  }
-                />
-                  {/* <Route
-                  path="/admin/add-attribute"
-                  element={
-                    <AuthGuard requireAdmin >
-                      <AttributeManager />
-                    </AuthGuard>
-                  }
-                /> */}
-                  <Route
-                    path="/cohort/:cohortId"
-                    element={<UserCohortDetailPage />}
+                    path="/admin/dummy/edit-course/:courseId"
+                    element={
+                      <AuthGuard requireAdmin >
+                        <DummyCurriculumBuilderPage />
+                      </AuthGuard>
+                    }
                   />
                   <Route
                     path="/cohort/:cohortId/checkout"
                     element={
                       <AuthGuard>
                         <CohortCheckoutPage />
-                      </AuthGuard>
-                    }
-                  />
-                  <Route
-                    path="/cohort/:cohortId/dashboard"
-                    element={
-                      <AuthGuard>
-                        <CohortDashboardPage />
                       </AuthGuard>
                     }
                   />

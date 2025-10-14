@@ -10,22 +10,21 @@ import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import {
   useCourseQuery,
 } from "@/hooks/useCaching";
 import { useAuth } from '@/contexts/AuthContext';
-import { enrollmentService } from '@/services/enrollmentService';
 import { Lesson } from "@/types/lesson";
 import { lessonService } from "@/services/lessonService";
 import { LEARNING_UNIT, LESSON_TYPE } from "@/constants";
-import SmartVideoPlayer from "@/components/SmartVideoPlayer";
 import LmsVideoPlayer from "@/components/LMSVideoPlayer";
+import { toast } from "@/hooks/use-toast";
 
 export default function ViewLessonAdmin() {
-  const {  courseId,lessonId } = useParams<{
+  const { courseId, lessonId } = useParams<{
     courseId: string;
     lessonId: string;
   }>();
@@ -35,13 +34,13 @@ export default function ViewLessonAdmin() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(
     null
   );
-  
-console.log("courseId param:", courseId);
-const { data: course, isLoading: courseLoading } = useCourseQuery(courseId!);
 
-useEffect(() => {
-  console.log('Course data:', course);
-}, [course]);
+  console.log("courseId param:", courseId);
+  const { data: course, isLoading: courseLoading } = useCourseQuery(courseId!);
+
+  useEffect(() => {
+    console.log('Course data:', course);
+  }, [course]);
 
   const isLoading = courseLoading;
 
@@ -51,16 +50,16 @@ useEffect(() => {
     }
   }, [isLoading]);
 
-const loadLessons = async () => {
-  if (!course?.topics) {
-    console.warn('Course or course topics are missing');
-    return;
-  }
-  const allLessonIds = course.topics.flatMap(topic => topic.items.map(item => item.id));
-  const allLessons = await lessonService.getLessonsByIds(allLessonIds);
-  console.log('Loaded lessons:', allLessons);
-  setLessons(allLessons);
-};
+  const loadLessons = async () => {
+    if (!course?.topics) {
+      console.warn('Course or course topics are missing');
+      return;
+    }
+    const allLessonIds = course.topics.flatMap(topic => topic.items.map(item => item.id));
+    const allLessons = await lessonService.getLessonsByIds(allLessonIds);
+    console.log('Loaded lessons:', allLessons);
+    setLessons(allLessons);
+  };
 
   useEffect(() => {
     if (course)
@@ -84,8 +83,11 @@ const loadLessons = async () => {
     if (!user || !courseId || !lessonId) return;
 
     try {
-      await enrollmentService.updateProgress(user.id, courseId, lessonId);
-      // You could add a toast notification here
+      toast({
+        title: "Error",
+        description: "This functionality has not been implemented yet",
+        variant: "destructive",
+      });
     } catch (error) {
       console.error('Error updating progress:', error);
     }
