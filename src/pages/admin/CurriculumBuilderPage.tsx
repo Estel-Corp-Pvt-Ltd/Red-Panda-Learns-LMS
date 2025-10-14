@@ -68,6 +68,7 @@ import { Header } from "@/components/Header";
 import { attributeService } from "@/services/attributeService";
 import { ATTRIBUTE_TYPE } from "@/constants";
 import { AttributeType } from "@/types/general";
+
 // import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
 
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
@@ -76,6 +77,8 @@ import { serverTimestamp } from "firebase/firestore";
 import { imageService } from "@/services/imageService";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
+import { CreateLessonModal } from "@/components/admin/AddLesson";
+
 type SortableItemProps = {
   id: string;
   children: React.ReactNode;
@@ -174,7 +177,7 @@ const CurriculumBuilderPage = () => {
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
-
+  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -218,6 +221,8 @@ const CurriculumBuilderPage = () => {
     loadCourseData();
   }, [courseId]);
 
+
+  
   const loadCourseData = async () => {
     if (!courseId) return;
     try {
@@ -556,47 +561,50 @@ const CurriculumBuilderPage = () => {
     });
   };
 
-const excludedLessonIdsForActiveParent = useMemo(() => {
-  if (!isLessonSelectorModalOpen || !activeParentId) return [];
 
-  const topic = curriculum.find(
-    i => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC
-  );
-  if (!topic) return [];
+  const excludedLessonIdsForActiveParent = useMemo(() => {
+    if (!isLessonSelectorModalOpen || !activeParentId) return [];
 
-  const cohortId = topic.parentId;
-
-  // ------- CASE 1: topic inside a cohort -------
-  if (cohortId) {
-    const topicIdsInCohort = new Set(
-      curriculum
-        .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
-        .map(i => i.id)
+    const topic = curriculum.find(
+      (i) => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC
     );
+    if (!topic) return [];
 
+    const cohortId = topic.parentId;
+
+    // ------- CASE 1: topic inside a cohort -------
+    if (cohortId) {
+      const topicIdsInCohort = new Set(
+        curriculum
+          .filter(
+            (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId
+          )
+          .map((i) => i.id)
+      );
+
+      const usedLessonIds = new Set<string>();
+      curriculum.forEach((i) => {
+        if (
+          i.type === LEARNING_UNIT.LESSON &&
+          i.parentId &&
+          topicIdsInCohort.has(i.parentId)
+        ) {
+          usedLessonIds.add(i.lessonRefId ?? i.id);
+        }
+      });
+      return Array.from(usedLessonIds);
+    }
+
+    // ------- CASE 2: root topic (no cohort) -------
+    // Then exclude *all* lessons used anywhere else in the course
     const usedLessonIds = new Set<string>();
-    curriculum.forEach(i => {
-      if (
-        i.type === LEARNING_UNIT.LESSON &&
-        i.parentId &&
-        topicIdsInCohort.has(i.parentId)
-      ) {
+    curriculum.forEach((i) => {
+      if (i.type === LEARNING_UNIT.LESSON) {
         usedLessonIds.add(i.lessonRefId ?? i.id);
       }
     });
     return Array.from(usedLessonIds);
-  }
-
-  // ------- CASE 2: root topic (no cohort) -------
-  // Then exclude *all* lessons used anywhere else in the course
-  const usedLessonIds = new Set<string>();
-  curriculum.forEach(i => {
-    if (i.type === LEARNING_UNIT.LESSON) {
-      usedLessonIds.add(i.lessonRefId ?? i.id);
-    }
-  });
-  return Array.from(usedLessonIds);
-}, [isLessonSelectorModalOpen, activeParentId, curriculum]);
+  }, [isLessonSelectorModalOpen, activeParentId, curriculum]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -1468,6 +1476,17 @@ const excludedLessonIdsForActiveParent = useMemo(() => {
                     <Save className="h-4 w-4" />
                     {saving ? "Saving…" : "Save"}
                   </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsCreateLessonOpen(true)}
+                  
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {"Add lesson"}
+                  </Button>
+                 
+
                 </div>
               </CardHeader>
 
@@ -1740,6 +1759,15 @@ const excludedLessonIdsForActiveParent = useMemo(() => {
         }}
         excludedLessonIds={excludedLessonIdsForActiveParent}
       />
+      
+      <CreateLessonModal
+  isOpen={isCreateLessonOpen}
+  onClose={() => setIsCreateLessonOpen(false)}
+  onLessonCreated={() => {
+    // Refresh list or trigger your parent logic
+ 
+  }}
+/>
     </div>
   );
 };
