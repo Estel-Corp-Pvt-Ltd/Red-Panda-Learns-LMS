@@ -76,6 +76,7 @@ import { serverTimestamp } from "firebase/firestore";
 import { imageService } from "@/services/imageService";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
+import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 type SortableItemProps = {
   id: string;
   children: React.ReactNode;
@@ -133,13 +134,13 @@ const CurriculumBuilderPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { showOverlay, hideOverlay } = useLoadingOverlay();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] = useState(false);
   const [isCohortImporterModalOpen, setIsCohortImporterModalOpen] = useState(false);
   const [activeParentId, setActiveParentId] = useState<string | null>(null); // For adding lessons/topics
@@ -277,17 +278,11 @@ const CurriculumBuilderPage = () => {
 
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
+    uploadThumbnail();
   };
 
   const uploadThumbnail = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "No File Selected",
-        description: "Please choose an image before uploading.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!selectedFile) return;
 
     // Check file size (3MB limit)
     const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
@@ -364,7 +359,7 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      setSaving(true);
+      showOverlay("Saving Course Basics");
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
@@ -382,7 +377,7 @@ const CurriculumBuilderPage = () => {
     } catch (e) {
       toast({ title: "Error", description: String(e), variant: "destructive" });
     } finally {
-      setSaving(false);
+      hideOverlay();
     }
   };
 
@@ -782,7 +777,7 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      setSaving(true);
+      showOverlay("Saving Curriculum.");
 
       const newRootTopics: Topic[] = [];
       const newCohorts: Cohort[] = [];
@@ -851,7 +846,7 @@ const CurriculumBuilderPage = () => {
     } catch (error) {
       toast({ title: "Error", description: `Failed to save: ${error}`, variant: "destructive" });
     } finally {
-      setSaving(false);
+      hideOverlay();
     }
   };
 
@@ -949,7 +944,6 @@ const CurriculumBuilderPage = () => {
                     )}
                     <div className="flex justify-between items-center">
                       <input type="file" accept="image/*" onChange={handleFileChange} />
-                      <Button className="border px-5 py-2" onClick={uploadThumbnail} disabled={uploading || !preview}>{!preview ? "Uploaded" : "Upload"}</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -1194,9 +1188,9 @@ const CurriculumBuilderPage = () => {
                 {/* Pricing */}
                 <Card className="rounded-xl border p-4">
                   <div className="flex gap-4">
-                    <Button onClick={saveBasics} disabled={saving}>
+                    <Button onClick={saveBasics}>
                       <Save className="mr-2 h-4 w-4" />
-                      {saving ? "Saving..." : "Save Basics"}
+                      Save Basics
                     </Button>
                     <Button variant="outline" onClick={() => navigate("/admin")} >
                       <ArrowLeft className="mr-2 h-4 w-3" />
@@ -1305,11 +1299,10 @@ const CurriculumBuilderPage = () => {
                   <Button
                     size="sm"
                     onClick={saveCurriculumStructure}
-                    disabled={saving}
                     className="flex items-center gap-1"
                   >
                     <Save className="h-4 w-4" />
-                    {saving ? "Saving…" : "Save"}
+                    Save
                   </Button>
                 </div>
               </CardHeader>
