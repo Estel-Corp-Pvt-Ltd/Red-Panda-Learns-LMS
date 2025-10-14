@@ -98,7 +98,7 @@ export function AdminDashboard() {
   const [bundlesLoading, setBundlesLoading] = useState(true);
 
   useEffect(() => {
-    if (location.pathname === '/admin') {
+    if (location.pathname === "/admin") {
       loadCourses();
       loadCohorts();
       loadBundles();
@@ -111,10 +111,10 @@ export function AdminDashboard() {
 
   // 🔹 Load USERS
   const loadUsers = async () => {
-    try {
-      const usersList = await userService.getAllUsers();
-      setUsers(usersList);
-    } catch (error) {
+    const response = await userService.getAllUsers();
+    if (response.success) {
+      setUsers(response.data);
+    } else {
       toast({
         title: "Error",
         description: "Failed to load users",
@@ -124,14 +124,14 @@ export function AdminDashboard() {
   };
 
   const deleteUser = async (userId: string) => {
-    try {
-      await userService.deleteUser(userId);
+    const response = await userService.deleteUser(userId);
+    if (response.success) {
       setUsers((prev) => prev.filter((user) => user.id !== userId));
       toast({
         title: "Success",
         description: "User deleted successfully"
       });
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to delete user",
@@ -291,7 +291,7 @@ export function AdminDashboard() {
         variant: "destructive"
       });
     }
-  }; 
+  };
 
   const deleteBundle = async (bundleId: string) => {
     try {
@@ -327,180 +327,180 @@ export function AdminDashboard() {
     }
   };
 
- const OrganizationTab = () => {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [name, setName] = useState("");
-  const [type, setType] = useState<OrganizationType>(ORGANIZATION.INDUSTRY);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
+  const OrganizationTab = () => {
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [name, setName] = useState("");
+    const [type, setType] = useState<OrganizationType>(ORGANIZATION.INDUSTRY);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const { toast } = useToast();
 
-  useEffect(() => {
-    loadOrganizations();
-  }, []);
+    useEffect(() => {
+      loadOrganizations();
+    }, []);
 
-  async function loadOrganizations() {
-    try {
-      const data = await organizationService.getAllOrganizations();
-      setOrganizations(data);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load organizations",
-        variant: "destructive",
-      });
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) {
-      toast({
-        title: "Validation",
-        description: "Name cannot be empty.",
-        variant: "destructive",
-      });
-      return;
+    async function loadOrganizations() {
+      try {
+        const data = await organizationService.getAllOrganizations();
+        setOrganizations(data);
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to load organizations",
+          variant: "destructive",
+        });
+      }
     }
 
-    setSaving(true);
-    try {
-      if (isEditing && editingOrgId) {
-        await organizationService.updateOrganization(editingOrgId, { name, type });
-        toast({ title: "Updated", description: "Organization updated successfully." });
-      } else {
-        await organizationService.createOrganization({ name, type });
-        toast({ title: "Created", description: "Organization created successfully." });
+    async function handleSubmit(e: React.FormEvent) {
+      e.preventDefault();
+      if (!name.trim()) {
+        toast({
+          title: "Validation",
+          description: "Name cannot be empty.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      setName("");
-      setType(ORGANIZATION.INDUSTRY);
-      setIsEditing(false);
-      setEditingOrgId(null);
-      await loadOrganizations();
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to save organization",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
+      setSaving(true);
+      try {
+        if (isEditing && editingOrgId) {
+          await organizationService.updateOrganization(editingOrgId, { name, type });
+          toast({ title: "Updated", description: "Organization updated successfully." });
+        } else {
+          await organizationService.createOrganization({ name, type });
+          toast({ title: "Created", description: "Organization created successfully." });
+        }
+
+        setName("");
+        setType(ORGANIZATION.INDUSTRY);
+        setIsEditing(false);
+        setEditingOrgId(null);
+        await loadOrganizations();
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to save organization",
+          variant: "destructive",
+        });
+      } finally {
+        setSaving(false);
+      }
     }
-  }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this organization?")) return;
-    try {
-      await organizationService.deleteOrganization(id);
-      toast({ title: "Deleted", description: "Organization deleted successfully." });
-      await loadOrganizations();
-    } catch (error) {
-      console.error("Error deleting organization:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete organization.",
-        variant: "destructive",
-      });
+    async function handleDelete(id: string) {
+      if (!confirm("Are you sure you want to delete this organization?")) return;
+      try {
+        await organizationService.deleteOrganization(id);
+        toast({ title: "Deleted", description: "Organization deleted successfully." });
+        await loadOrganizations();
+      } catch (error) {
+        console.error("Error deleting organization:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete organization.",
+          variant: "destructive",
+        });
+      }
     }
-  }
 
-  return (
-    <div>
-      {/* Add / Edit form */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-wrap gap-3 items-end mb-6"
-      >
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Organization name"
-          className="border p-2 rounded"
-        />
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as OrganizationType)}
-          className="border p-2 rounded"
+    return (
+      <div>
+        {/* Add / Edit form */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-wrap gap-3 items-end mb-6"
         >
-          {Object.values(ORGANIZATION).map((val) => (
-            <option key={val} value={val}>
-              {val}
-            </option>
-          ))}
-        </select>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Organization name"
+            className="border p-2 rounded"
+          />
 
-        <Button type="submit" disabled={saving}>
-          {isEditing ? "Update Organization" : "Add Organization"}
-        </Button>
-
-        {isEditing && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setIsEditing(false);
-              setEditingOrgId(null);
-              setName("");
-              setType(ORGANIZATION.INDUSTRY);
-            }}
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as OrganizationType)}
+            className="border p-2 rounded"
           >
-            Cancel
-          </Button>
-        )}
-      </form>
-
-      {/* Table list */}
-      {organizations.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No organizations found.</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {organizations.map((org) => (
-              <TableRow key={org.id}>
-                <TableCell>{org.name}</TableCell>
-                <TableCell>{org.type}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditing(true);
-                        setEditingOrgId(org.id);
-                        setName(org.name);
-                        setType(org.type);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(org.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+            {Object.values(ORGANIZATION).map((val) => (
+              <option key={val} value={val}>
+                {val}
+              </option>
             ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  );
-};
+          </select>
+
+          <Button type="submit" disabled={saving}>
+            {isEditing ? "Update Organization" : "Add Organization"}
+          </Button>
+
+          {isEditing && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setIsEditing(false);
+                setEditingOrgId(null);
+                setName("");
+                setType(ORGANIZATION.INDUSTRY);
+              }}
+            >
+              Cancel
+            </Button>
+          )}
+        </form>
+
+        {/* Table list */}
+        {organizations.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No organizations found.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {organizations.map((org) => (
+                <TableRow key={org.id}>
+                  <TableCell>{org.name}</TableCell>
+                  <TableCell>{org.type}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditing(true);
+                          setEditingOrgId(org.id);
+                          setName(org.name);
+                          setType(org.type);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(org.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    );
+  };
 
   if (loading || cohortsLoading || bundlesLoading || lessonsLoading) {
     return (
@@ -543,7 +543,7 @@ export function AdminDashboard() {
               <Calendar className="mr-2 h-4 w-4" />
               Create New Cohort
             </Button>
-             <Button onClick={() => navigate("/admin/create-coupon")}>
+            <Button onClick={() => navigate("/admin/create-coupon")}>
               <Calendar className="mr-2 h-4 w-4" />
               Create New Coupon
             </Button>
@@ -583,8 +583,8 @@ export function AdminDashboard() {
                 Coupon
               </TabsTrigger>
               <TabsTrigger value="organizations" className="flex-shrink-0">
-  Organizations
-</TabsTrigger>
+                Organizations
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="lessons">
@@ -737,7 +737,7 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? 'default' : 'secondary'}>
+                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? "default" : "secondary"}>
                                 {course.status}
                               </Badge>
                             </TableCell>
@@ -837,7 +837,7 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? 'default' : 'secondary'}>
+                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? "default" : "secondary"}>
                                 {bundle.status}
                               </Badge>
                             </TableCell>
@@ -919,7 +919,7 @@ export function AdminDashboard() {
                             <TableCell>
                               <div>
                                 <div className="font-medium">{cohort.title}</div>
-                                <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+                                <div className="text-sm text-muted-foreground">{cohort.description || "-"}</div>
                               </div>
                             </TableCell>
 
@@ -932,21 +932,21 @@ export function AdminDashboard() {
 
                             {/* End date */}
                             <TableCell>
-                             <div className="text-sm">
-  {cohort.startDate ? formatDate(cohort.startDate) : "No start date"}
-</div>
+                              <div className="text-sm">
+                                {cohort.startDate ? formatDate(cohort.startDate) : "No start date"}
+                              </div>
                             </TableCell>
 
                             {/* Enrollment open status */}
                             <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              <Badge variant={cohort.enrollmentOpen ? "secondary" : "destructive"}>
+                                {cohort.enrollmentOpen ? "Open" : "Closed"}
                               </Badge>
                             </TableCell>
 
                             <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
+                              <Badge variant={cohort.enrollmentOpen ? "secondary" : "destructive"}>
+                                {cohort.enrollmentOpen ? "Open" : "Closed"}
                               </Badge>
                             </TableCell>
 
@@ -1143,111 +1143,109 @@ export function AdminDashboard() {
               </Card>
             </TabsContent>
 
-             <TabsContent value="coupons">
-      <Card>
-        <CardHeader>
-          <CardTitle>Coupons</CardTitle>
-          <CardDescription>
-            Manage discount codes, their usage, and validity.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {coupon.length === 0 && !loading ? (
-            <div className="text-center py-8">
-              <Gift className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by creating a coupon code.
-              </p>
-              <div className="mt-6">
-                <Button onClick={() => navigate('/admin/create-coupon')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Coupon
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {coupon.map((coupon) => (
-                  <TableRow key={coupon.id}>
-                    <TableCell className="font-medium">{coupon.code}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          coupon.status === CouponStatus.ACTIVE
-                            ? 'default'
-                            : coupon.status === CouponStatus.EXPIRED
-                              ? 'secondary'
-                              : 'outline'
-                        }
-                      >
-                        {coupon.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                  {coupon.discountPercentage}
-                    </TableCell>
-                    <TableCell>
-  {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
-</TableCell>
-                    <TableCell>
-                      {coupon.expiryDate
-                        ? new Date(coupon.expiryDate.seconds * 1000).toLocaleDateString()
-                        : 'No expiry'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
-                          title="Edit Coupon"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { deleteCoupon(coupon.id) }}
-                          title="Delete Coupon"
-                        >
-                          <Trash2 className="h-4 w-4" />
+            <TabsContent value="coupons">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Coupons</CardTitle>
+                  <CardDescription>
+                    Manage discount codes, their usage, and validity.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {coupons.length === 0 && !loading ? (
+                    <div className="text-center py-8">
+                      <Gift className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Get started by creating a coupon code.
+                      </p>
+                      <div className="mt-6">
+                        <Button onClick={() => navigate("/admin/create-coupon")}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Coupon
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Discount</TableHead>
+                          <TableHead>Usage</TableHead>
+                          <TableHead>Expires</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {coupons.map((coupon) => (
+                          <TableRow key={coupon.id}>
+                            <TableCell className="font-medium">{coupon.code}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  coupon.status === COUPON_STATUS.ACTIVE
+                                    ? "default"
+                                    : coupon.status === COUPON_STATUS.EXPIRED
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                              >
+                                {coupon.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {coupon.discountPercentage}
+                            </TableCell>
+                            <TableCell>
+                              {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(coupon.expiryDate)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                                  title="Edit Coupon"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => { deleteCoupon(coupon.id) }}
+                                  title="Delete Coupon"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
             <TabsContent value="organizations">
-  <Card>
-    <CardHeader>
-      <CardTitle>Organizations</CardTitle>
-      <CardDescription>
-        Manage all organizations in your system.
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      {/* Organization CRUD */}
-      <OrganizationTab />
-    </CardContent>
-  </Card>
-</TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Organizations</CardTitle>
+                  <CardDescription>
+                    Manage all organizations in your system.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {/* Organization CRUD */}
+                  <OrganizationTab />
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </div>

@@ -110,7 +110,7 @@ export const CURRENCY = {
 export const LEARNING_UNIT = {
     LESSON: "LESSON",
     TOPIC: "TOPIC",
-    COHORT:"COHORT"
+    COHORT: "COHORT"
 } as const;
 
 export const ENVIRONMENT = {
@@ -312,17 +312,6 @@ export const RAZORPAY_WEBHOOK_EVENT = {
     },
 } as const;
 
-export const COLLECTION = {
-    COURSES: 'Courses',
-    BUNDLES: 'Bundles',
-    COHORTS: 'Cohorts',
-    USERS: 'Users',
-    LESSONS: 'Lessons',
-    COUPONS: 'Coupons',
-    COUPON_USAGES: 'CouponUsages',
-     ORGANIZATIONS: 'Organizations',  
-} as const;
-
 // --- COUPON SYSTEM ---
 
 export const COUPON_STATUS = {
@@ -332,28 +321,37 @@ export const COUPON_STATUS = {
 } as const;
 
 export const COLLECTION = {
-  COURSES: 'Courses',
-  BUNDLES: 'Bundles',
-  COHORTS: 'Cohorts',
-  USERS: 'Users',
-  LESSONS: 'Lessons',
-  COUPONS: 'Coupons',
-  COUPON_USAGES: 'CouponUsages',
-   CONFIG: 'Config',
-ATTRIBUTES: 'Attributes', 
+    COURSES: 'Courses',
+    BUNDLES: 'Bundles',
+    COHORTS: 'Cohorts',
+    USERS: 'Users',
+    CARTS: 'Carts',
+    LESSONS: 'Lessons',
+    COUPONS: 'Coupons',
+    COUPON_USAGES: 'CouponUsages',
+    ORGANIZATIONS: 'Organizations',
+    CONFIG: 'Config',
+    ATTRIBUTES: 'Attributes',
 } as const;
 
 export const ATTRIBUTE_TYPE = {
-  CATEGORY : "CATEGORY",
-  TARGET_AUDIENCE : "TARGET AUDIENCE",
+    CATEGORY: "CATEGORY",
+    TARGET_AUDIENCE: "TARGET AUDIENCE",
 } as const;
 
 export const ORGANIZATION = {
-  SCHOOL: 'SCHOOL',
-  INDUSTRY: 'INDUSTRY',
-  COLLEGE: 'COLLEGE',
+    SCHOOL: 'SCHOOL',
+    INDUSTRY: 'INDUSTRY',
+    COLLEGE: 'COLLEGE',
 } as const;
 
 export const CONFIG_DOCS = {
-  PAYPAL_ACCESS_TOKEN: 'paypal_access_token',
+    PAYPAL_ACCESS_TOKEN: 'paypal_access_token',
+} as const;
+
+export const CART_ACTION = {
+    ADD: "ADD",
+    REMOVE: "REMOVE",
+    CLEAR: "CLEAR",
+    SET_CART: "SET_CART",
 } as const;

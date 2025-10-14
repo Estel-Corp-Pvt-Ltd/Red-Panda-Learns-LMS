@@ -19,11 +19,20 @@ import { Header } from '@/components/Header';
 import { COUPON_STATUS } from '@/constants';
 import { Coupon } from '@/types/coupon';
 import { CouponStatus } from '@/types/general';
-
+import { toDateSafe } from '@/utils/date-time';
+import { Timestamp } from 'firebase/firestore';
 const createCouponSchema = z.object({
   code: z.string().min(3, 'Coupon code is required'),
   discountPercentage: z.number().min(1).max(100, '1–100% allowed'),
-  expiryDate: z.date(), // TODO: extra validation required 
+   expiryDate: z.string()
+     .min(1, "Expiry date is required")
+     .refine((val) => {
+       const date = toDateSafe(val);
+       if (!date) return false; // Invalid date string
+       const today = new Date();
+       today.setHours(0, 0, 0, 0);
+       return date >= today; // No past dates
+     }, "Expiry date cannot be in the past"),
   usageLimit: z.number().min(0, 'At least 1 usage allowed'),
   linkedCourseIds: z.array(z.string()).optional(),
   status: z.nativeEnum(COUPON_STATUS),
@@ -72,42 +81,54 @@ export default function EditCouponPage() {
   }, []);
 
   // Load current coupon data
-  useEffect(() => {
-    if (!couponId) return;
+  
+useEffect(() => {
+  if (!couponId) return;
 
-    const loadCoupon = async () => {
-      try {
-        const coupon = await couponService.getCouponById(couponId);
-        if (!coupon) {
-          toast({
-            title: 'Error',
-            description: 'Coupon not found',
-            variant: 'destructive',
-          });
-          navigate('/admin');
-          return;
-        }
-
-        setCurrentCoupon(coupon);
-
-        // Set initial selections
-        setSelectedCourses(coupon.linkedCourseIds || []);
-        setSelectedCohorts(coupon.linkedCohortIds || []);
-        setSelectedBundles(coupon.linkedBundleIds || []);
-      } catch (error) {
+  const loadCoupon = async () => {
+    try {
+      const coupon = await couponService.getCouponById(couponId);
+      if (!coupon) {
         toast({
           title: 'Error',
-          description: 'Failed to load coupon',
+          description: 'Coupon not found',
           variant: 'destructive',
         });
         navigate('/admin');
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
-    loadCoupon();
-  }, [couponId, navigate, toast]);
+      // Convert Firestore Timestamp → string for form state
+      setCurrentCoupon({
+        code: coupon.code,
+        discountPercentage: coupon.discountPercentage,
+        expiryDate: (() => {
+          const d = toDateSafe(coupon.expiryDate);
+          return d ? d.toISOString().split('T')[0] : '';
+        })(),
+        usageLimit: coupon.usageLimit,
+        status: coupon.status,
+        linkedCourseIds: coupon.linkedCourseIds || [],
+      });
+
+      // Set initial selections
+      setSelectedCourses(coupon.linkedCourseIds || []);
+      setSelectedCohorts(coupon.linkedCohortIds || []);
+      setSelectedBundles(coupon.linkedBundleIds || []);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load coupon',
+        variant: 'destructive',
+      });
+  
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadCoupon();
+}, [couponId, navigate, toast]);
 
   const {
     register,
@@ -176,10 +197,11 @@ export default function EditCouponPage() {
     }
 
     try {
+      const date = toDateSafe(data.expiryDate);
       const couponData = {
         code: data.code.trim(),
         discountPercentage: data.discountPercentage,
-        expiryDate: new Date(data.expiryDate),
+       expiryDate: date ? Timestamp.fromDate(date) : null,
         // expiryDate: Timestamp.fromDate(new Date(data.expiryDate)),
         usageLimit: data.usageLimit,
         linkedCourseIds: selectedCourses,

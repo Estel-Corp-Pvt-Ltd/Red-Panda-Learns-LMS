@@ -4,7 +4,7 @@ import { CouponStatus } from "./general";
 export interface Coupon {
   id: string;
   code: string;
-  expiryDate: Date;
+  expiryDate: Timestamp | FieldValue;
   discountPercentage: number;
   status: CouponStatus;
   usageLimit: number;

@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { USER_ROLE } from "@/constants";
 import { getRecaptchaToken } from "@/utils/recaptcha";
+import EmailNotVerifiedPopup from "@/components/auth/EmailNotVerifiedPopup";
+import { UserCredential } from "firebase/auth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,6 +28,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userCredential, setUserCredential] = useState<UserCredential | null>(null);
+  const [showEmailNotVerifiedPopup, setShowEmailNotVerifiedPopup] = useState<boolean>(false);
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -61,17 +65,17 @@ export default function Login() {
     try {
       await verifyRecaptcha(); //  Check human first
 
-      const { success, error, user } = await login(email, password);
+      const response = await login(email, password);
 
-      if (success) {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
-        });
+      if (response.success) {
+        const { user, userCredential } = response.data;
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
-        } else {
+        } else if (userCredential.user.emailVerified == true) {
           navigate(from || "/dashboard", { replace: true });
+        } else {
+          setUserCredential(userCredential);
+          setShowEmailNotVerifiedPopup(true);
         }
         return;
       }
@@ -134,6 +138,43 @@ export default function Login() {
               </Alert>
             )}
 
+            {/* GOOGLE FIRST */}
+            <Button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              aria-label="Continue with Google"
+              className="
+    w-full h-15 justify-center gap-3 rounded-md
+    bg-[#060606] text-white text-lg font-semibold
+    hover:bg-[#060606] active:bg-[#1557b0]
+    hover:scale-[1.02] transition-transform duration-150 ease-in-out
+    shadow-lg shadow-[#1a73e8]/30
+    focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1a73e8]
+    disabled:opacity-90
+  "
+            >
+              <img
+                src="/google-logo.svg"
+                alt="Google"
+                className="h-6 w-6"
+                loading="eager"
+              />
+              {loading ? "Signing in..." : "Continue with Google"}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or sign in with email
+                </span>
+              </div>
+            </div>
+
+            {/* EMAIL/PASSWORD */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -194,7 +235,7 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="relative">
+            {/* <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
               </div>
@@ -214,7 +255,7 @@ export default function Login() {
             >
               <Chrome className="h-4 w-4 mr-2" />
               Google
-            </Button>
+            </Button> */}
           </CardContent>
 
           <CardFooter className="flex flex-col items-center gap-3">
@@ -257,6 +298,7 @@ export default function Login() {
           </CardFooter>
         </Card>
       </div>
+      {showEmailNotVerifiedPopup && userCredential && !userCredential.user.emailVerified && (<EmailNotVerifiedPopup userCredential={userCredential} setVisible={setShowEmailNotVerifiedPopup} />)}
     </div>
   );
 }
