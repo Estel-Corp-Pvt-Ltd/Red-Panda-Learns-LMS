@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 20" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Mastercard">
+  <title>Mastercard</title>
+  <!-- No left spacing; small right padding via wider viewBox; no center bar -->
+  <circle cx="9" cy="10" r="9" fill="#EB001B"/>
+  <circle cx="23" cy="10" r="9" fill="#F79E1B"/>
+</svg>

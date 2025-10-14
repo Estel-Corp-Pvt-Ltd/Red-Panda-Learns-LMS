@@ -18,6 +18,7 @@ import { Eye, EyeOff, Mail, Lock, User, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { getRecaptchaToken } from "@/utils/recaptcha";
+import EmailSentAlert from "@/components/auth/EmailSentAlert";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -28,6 +29,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showEmailSentAlert, setShowEmailSentAlert] = useState(false);
 
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -88,14 +90,14 @@ export default function Signup() {
       if (confirmation.success) {
         toast({
           title: "Account created successfully!",
-          description:
-            "Welcome to Vizuara AI Labs. You can now access your courses.",
+          description: "Welcome to Vizuara AI Labs. You can now access your courses.",
         });
-        navigate("/dashboard", { replace: true });
+        setShowEmailSentAlert(true);
       } else {
         toast({
           title: "Sign up failed!",
-          description: "Please try again later.",
+          description: confirmation.error,
+          variant: "destructive",
         });
       }
     } catch (err: any) {
@@ -321,6 +323,7 @@ export default function Signup() {
           </CardFooter>
         </Card>
       </div>
+      {showEmailSentAlert && (<EmailSentAlert email={email} setVisible={setShowEmailSentAlert} />)}
     </div>
   );
 }

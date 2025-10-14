@@ -50,7 +50,7 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
                   <span>Enrolled {formatDate(
-                  enrollment.enrolledAt)}</span>
+                    enrollment.enrolledAt)}</span>
                 </div>
                 <Badge variant="outline" className="text-xs">
                   {enrollment.status}
@@ -175,8 +175,10 @@ export default function DashboardPage() {
 
         {/* Enrolled Courses */}
         <div>
-          <h2 className="text-xl font-semibold mb-6">My Courses</h2>
-
+          <div className='flex justify-between items-center mb-6'>
+            <h2 className="text-2xl font-semibold">My Courses</h2>
+            {enrollments.length < 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
+          </div>
           {isLoading ? (
             <div className="grid gap-6">
               <LoadingSkeleton className="h-48" />

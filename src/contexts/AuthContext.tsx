@@ -1,15 +1,17 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@/types/user';
-import { AuthResponse, authService } from '@/services/authService';
-import { db } from '@/firebaseConfig';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { UserRole } from '@/types/general';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { User } from "@/types/user";
+import { authService } from "@/services/authService";
+import { db } from "@/firebaseConfig";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { UserRole } from "@/types/general";
+import { UserCredential } from "firebase/auth";
+import { Result } from "@/utils/response";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
-  signup: (email: string, password: string, name: string) => Promise<AuthResponse>;
+  login: (email: string, password: string) => Promise<Result<{ user: User; userCredential: UserCredential }>>;
+  signup: (email: string, password: string, name: string) => Promise<Result<{ userId: string }>>;
   loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string; role: UserRole }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -20,7 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -60,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 🔹 Keep user in sync with Firebase Auth state
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser) {
+      if (!firebaseUser || !firebaseUser.emailVerified) {
         setUser(null);
         setLoading(false);
         return;
@@ -75,8 +77,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 🔹 Email/Password Login
   const login = async (email: string, password: string) => {
     const result = await authService.signInWithEmailAndPassword(email, password);
-    if (result.success && result.user) {
-      setUser(result.user); // ✅ update immediately so Header changes
+    if (result.success && result.data) {
+      setUser(result.data.user); // ✅ update immediately so Header changes
     }
     return result;
   };
@@ -84,51 +86,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 🔹 Signup (Email/Password)
   const signup = async (email: string, password: string, name: string) => {
     const result = await authService.createUserWithEmailAndPassword(email, password, name);
-
-    if (result.success && result.userId) {
-      const userData = await fetchUserFromFirestore(result.userId, email);
-      if (userData) {
-        setUser(userData); // ✅ update immediately so Header changes
-      }
-    }
     return result;
   };
 
   // 🔹 Google Login
- const loginWithGoogle = async (): Promise<{ 
-  success: boolean; 
-  userId?: string; 
-  error?: string; 
-  role: UserRole 
-}> => {
-  const result = await authService.signInWithGoogle();
+  const loginWithGoogle = async (): Promise<{
+    success: boolean;
+    userId?: string;
+    error?: string;
+    role: UserRole
+  }> => {
+    const response = await authService.signInWithGoogle();
 
-  if (result.success && result.userId) {
-    const userData = await fetchUserFromFirestore(result.userId);
-    if (userData) {
-      setUser(userData);
+    if (response.success && response.data.userId) {
+      const userData = await fetchUserFromFirestore(response.data.userId);
+      if (userData) {
+        setUser(userData);
 
+        return {
+          success: true,
+          userId: response.data.userId,
+          role: userData.role as UserRole, // ✅ guarantee role exists
+        };
+      }
+      // fallback if user doc missing
       return {
         success: true,
-        userId: result.userId,
-        role: userData.role as UserRole, // ✅ guarantee role exists
+        userId: response.data.userId,
+        role: "student" as UserRole, // ✅ default role
       };
     }
-    // fallback if user doc missing
-    return {
-      success: true,
-      userId: result.userId,
-      role: "student" as UserRole, // ✅ default role
-    };
-  }
 
-  // Fallback failure — must still return a role
-  return {
-    success: false,
-    error: result.error || "Google login failed",
-    role: "student" as UserRole,  // ✅ required prop
+    // Fallback failure — must still return a role
+    return {
+      success: false,
+      error: response.error.message || "Google login failed",
+      role: "student" as UserRole,  // ✅ required prop
+    };
   };
-};
 
   // 🔹 Logout
   const logout = async () => {
@@ -141,7 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await authService.sendPasswordResetEmail(email);
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
+      if (error.code === "auth/user-not-found") {
         console.warn("⚠️ No user found with email:", email);
       } else {
         console.error("❌ Error sending password reset email:", error);
