@@ -1,4 +1,6 @@
-import { Timestamp,FieldValue } from "firebase/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+
+import { LearningProgress } from "./learningProgress";
 import {
     Currency,
     EnrolledProgramType,
@@ -8,9 +10,6 @@ import {
     PricingModel,
     UserRole
 } from "./general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
-
-import { LearningProgress } from "./learningProgress";
 
 export interface Enrollment {
     id: string;
@@ -25,7 +24,7 @@ export interface Enrollment {
 
     // Always track main progress (for course = course’s progress, for bundle = overall aggregate)
     progress: LearningProgress;
-    
+
     pricingModel: PricingModel;
     payment?: {
         status: PaymentStatus;
@@ -35,6 +34,6 @@ export interface Enrollment {
         balance: number;
         transactionId?: string;
         provider: PaymentProvider;
-        paidAt?:Timestamp | FieldValue ;
+        paidAt?: Timestamp | FieldValue;
     };
 }
