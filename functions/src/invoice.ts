@@ -167,9 +167,7 @@ export async function sendPaymentFailedEmail({ email, name }: { email: string, n
 
     const result = await brevoApi.sendTransacEmail(sendSmtpEmail);
     console.log("❌ Payment failed email sent successfully:", result);
-    return result;
   } catch (error) {
     console.error("🚨 Error sending payment failed email:", error);
   }
 }
-
