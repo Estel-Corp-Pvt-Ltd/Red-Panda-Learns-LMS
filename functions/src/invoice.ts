@@ -2,15 +2,6 @@ import html_to_pdf from "html-pdf-node";
 import * as brevo from "@getbrevo/brevo";
 import { generateInvoiceHTML } from "./templates/invoiceTemplate";
 import { CustomerInfo, InvoiceData } from "./types/invoice";
-import { defineSecret } from "firebase-functions/params";
-
-const brevoApiKey = defineSecret("BREVO_API_KEY") as unknown as string;
-
-const brevoApi = new brevo.TransactionalEmailsApi();
-brevoApi.setApiKey(
-  brevo.TransactionalEmailsApiApiKeys.apiKey,
-  brevoApiKey
-);
 
 const generatePdfAsync = (file: any, options: any): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
@@ -24,21 +15,23 @@ const generatePdfAsync = (file: any, options: any): Promise<Buffer> => {
   });
 };
 
-
-
-interface InvoiceDetails {
+type InvoiceDetails = {
   name: string;
   email: string,
   amount: number,
   billTo: CustomerInfo,
   shipTo: CustomerInfo,
-}
+};
 
-
-export const sendInvoice = async (data: InvoiceDetails) => {
+export const sendInvoice = async (data: InvoiceDetails, brevoApiKey: string) => {
   const { name, email, amount, billTo, shipTo } = data;
 
   try {
+    const brevoApi = new brevo.TransactionalEmailsApi();
+    brevoApi.setApiKey(
+      brevo.TransactionalEmailsApiApiKeys.apiKey,
+      brevoApiKey
+    );
     const invoiceData: InvoiceData = {
       company: {
         name: "VIZUARA TECHNOLOGIES PRIVATE LIMITED",
@@ -145,10 +138,16 @@ export const sendInvoice = async (data: InvoiceDetails) => {
     console.error("Error sending invoice:", error);
     return { success: false, error: error.message };
   }
-}
+};
 
-export async function sendPaymentFailedEmail({ email, name }: { email: string, name: string }) {
+export async function sendPaymentFailedEmail({ email, name, }: { email: string, name: string }, brevoApiKey: string) {
   try {
+    const brevoApi = new brevo.TransactionalEmailsApi();
+    brevoApi.setApiKey(
+      brevo.TransactionalEmailsApiApiKeys.apiKey,
+      brevoApiKey
+    );
+
     const sendSmtpEmail = {
       sender: { name: "Vizuara", email: "support@vizuara.com" },
       to: [{ email }],
@@ -170,4 +169,4 @@ export async function sendPaymentFailedEmail({ email, name }: { email: string, n
   } catch (error) {
     console.error("🚨 Error sending payment failed email:", error);
   }
-}
+};

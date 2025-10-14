@@ -17,8 +17,9 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-const razorpayKeyId = defineSecret("RAZORPAY_KEY_ID");
-const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
+const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
+const RAZORPAY_SECRET_KEY = defineSecret("RAZORPAY_KEY_SECRET");
+const BREVO_API_KEY = defineSecret("BREVO_API_KEY");
 
 function validateAmount(amount: any): number {
   if (typeof amount !== "number" || isNaN(amount)) {
@@ -52,7 +53,7 @@ const idempotencyCache = new Map<string, any>();
 
 // ------------------ Create Order ------------------
 export const createOrder = onRequest(
-  { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
+  { region: "us-central1", secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY] },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET , POST, OPTIONS");
@@ -110,8 +111,8 @@ export const createOrder = onRequest(
       const currency = validateCurrency(rawcurrency);
 
       const instance = new Razorpay({
-        key_id: razorpayKeyId.value(),
-        key_secret: razorpayKeySecret.value(),
+        key_id: RAZORPAY_KEY_ID.value(),
+        key_secret: RAZORPAY_SECRET_KEY.value(),
       });
 
       const order = await instance.orders.create({
@@ -126,7 +127,7 @@ export const createOrder = onRequest(
       const response = {
         success: true,
         order,
-        key_id: razorpayKeyId.value(),
+        key_id: RAZORPAY_KEY_ID.value(),
       };
 
       // Cache response for this idempotency key
@@ -149,7 +150,7 @@ export const createOrder = onRequest(
 // ------------------ Verify Payment ------------------
 
 export const verifyPayment = onRequest(
-  { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
+  { region: "us-central1", secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY, BREVO_API_KEY] },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -177,7 +178,7 @@ export const verifyPayment = onRequest(
       // Step 1: Validate HMAC signature
       const body = `${razorpay_order_id}|${razorpay_payment_id}`;
       const expectedSignature = crypto
-        .createHmac("sha256", razorpayKeySecret.value())
+        .createHmac("sha256", RAZORPAY_SECRET_KEY.value())
         .update(body)
         .digest("hex");
 
@@ -233,8 +234,8 @@ export const verifyPayment = onRequest(
 
       // Step 4: Cross-check with Razorpay API
       const instance = new Razorpay({
-        key_id: razorpayKeyId.value(),
-        key_secret: razorpayKeySecret.value(),
+        key_id: RAZORPAY_KEY_ID.value(),
+        key_secret: RAZORPAY_SECRET_KEY.value(),
       });
 
       let payment;
@@ -243,7 +244,7 @@ export const verifyPayment = onRequest(
         console.log("✅ Razorpay payment fetched:", payment);
       } catch (fetchErr) {
         console.error("❌ Razorpay fetch failed:", fetchErr);
-        await sendPaymentFailedEmail({ email, name: firstName });
+        await sendPaymentFailedEmail({ email, name: firstName }, BREVO_API_KEY.value());
         res.status(400).json({ success: false, error: "Invalid payment ID" });
         return;
       }
@@ -288,7 +289,7 @@ export const verifyPayment = onRequest(
             state: "Madhya Pradesh",
           }
         }
-      });
+      }, BREVO_API_KEY.value());
       console.timeEnd("sendInvoice");
 
       console.log("✅ Transaction updated to COMPLETED:", transaction_id);
