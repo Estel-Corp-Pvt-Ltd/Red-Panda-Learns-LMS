@@ -1,4 +1,4 @@
-import { useState, useEffect ,useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   DndContext,
@@ -87,7 +87,7 @@ type DraggableItem = {
   id: string;
   title: string;
   type: LearningUnit;
-  
+
   depth: number;
   parentId: string | null;
   originalData?: Cohort | Topic;
@@ -168,35 +168,35 @@ const CurriculumBuilderPage = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-      const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
-      setAllCategories(categoriesData.map((a) => a.name));
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load categories.",
-        variant: "destructive",
-      });
-    }
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
+        setAllCategories(categoriesData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load categories.",
+          variant: "destructive",
+        });
+      }
 
-    try {
-      const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
-      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
-    } catch (error) {
-      console.error("Error fetching target audiences:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load target audiences.",
-        variant: "destructive",
-      });
-    }
-  };
+      try {
+        const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
+        setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching target audiences:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load target audiences.",
+          variant: "destructive",
+        });
+      }
+    };
 
-  fetchAttributes();
-}, [toast]);
+    fetchAttributes();
+  }, [toast]);
 
 
 
@@ -223,7 +223,7 @@ useEffect(() => {
       setSelectedTargetAudiences(courseData.targetAudienceIds || []);
       setSelectedCategories(courseData.categoryIds || []);
       setThumbnailUrl(courseData.thumbnail || "");
-      setAllCategories(courseData.categories || []);
+      // setAllCategories(courseData.categories || []);
       setTags(courseData.tags || []);
       setAuthorId(courseData.authorId);
       setAuthorName(courseData.authorName);
@@ -386,52 +386,20 @@ useEffect(() => {
     }
   };
 
-//Todo
-// Notify the system if both cohorts and topics are non-empty simultaneously
-const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
-  const flatList: DraggableItem[] = [];
+  //Todo
+  // Notify the system if both cohorts and topics are non-empty simultaneously
+  const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
+    const flatList: DraggableItem[] = [];
 
-  // Root topics
-  (courseData.topics || []).forEach(topic => {
-    flatList.push({
-      id: topic.id,
-      title: topic.title,
-      type: LEARNING_UNIT.TOPIC,
-      depth: 0,
-      parentId: null,
-      originalData: topic,
-    });
-
-    (topic.items || []).forEach(lesson => {
-      flatList.push({
-        id: mkLessonInstanceId(lesson.id, topic.id), // instance id
-        lessonRefId: lesson.id,                      // real lesson id
-        title: lesson.title,
-        type: LEARNING_UNIT.LESSON,
-        depth: 1,
-        parentId: topic.id,
-      });
-    });
-  });
-
-  // Cohorts
-  (courseData.cohorts || []).forEach(cohort => {
-    flatList.push({
-      id: cohort.id,
-      title: cohort.title,
-      type: LEARNING_UNIT.COHORT,
-      depth: 0,
-      parentId: null,
-      originalData: cohort,
-    });
-
-    (cohort.topics || []).forEach(topic => {
+    // Root topics
+    (courseData.topics || []).forEach(topic => {
       flatList.push({
         id: topic.id,
         title: topic.title,
         type: LEARNING_UNIT.TOPIC,
-        depth: 1,
-        parentId: cohort.id,
+        depth: 0,
+        parentId: null,
+        originalData: topic,
       });
 
       (topic.items || []).forEach(lesson => {
@@ -440,222 +408,254 @@ const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
           lessonRefId: lesson.id,                      // real lesson id
           title: lesson.title,
           type: LEARNING_UNIT.LESSON,
-          depth: 2,
+          depth: 1,
           parentId: topic.id,
         });
       });
     });
-  });
 
-  return flatList;
-};
+    // Cohorts
+    (courseData.cohorts || []).forEach(cohort => {
+      flatList.push({
+        id: cohort.id,
+        title: cohort.title,
+        type: LEARNING_UNIT.COHORT,
+        depth: 0,
+        parentId: null,
+        originalData: cohort,
+      });
 
-const duplicateCohort = (cohortId: string) => {
-  setCurriculum(prev => {
-    const newList = [...prev];
-    const originalCohort = newList.find(i => i.id === cohortId);
-    if (!originalCohort || originalCohort.type !== LEARNING_UNIT.COHORT) return prev;
+      (cohort.topics || []).forEach(topic => {
+        flatList.push({
+          id: topic.id,
+          title: topic.title,
+          type: LEARNING_UNIT.TOPIC,
+          depth: 1,
+          parentId: cohort.id,
+        });
 
-    const newCohortId = `cohort_${Date.now()}`;
-    const newCohortTitle = `${originalCohort.title} -- Copy`;
-
-    const newCohort: DraggableItem = {
-      id: newCohortId,
-      title: newCohortTitle,
-      type: LEARNING_UNIT.COHORT,
-      depth: 0,
-      parentId: null,
-    };
-
-    const topics = newList.filter(i => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC);
-    
-    const itemsToInsert: DraggableItem[] = [newCohort];
-
-    topics.forEach(topic => {
-      const newTopicId = `topic_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const newTopic: DraggableItem = {
-        id: newTopicId,
-        title: topic.title,
-        type: LEARNING_UNIT.TOPIC,
-        depth: 1,
-        parentId: newCohortId,
-      };
-
-      itemsToInsert.push(newTopic);
-
-      const lessons = newList.filter(i => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON);
-
-      lessons.forEach(lesson => {
-        const refId = lesson.lessonRefId ?? lesson.id;
-        const newLesson: DraggableItem = {
-          ...lesson,
-          id: mkLessonInstanceId(refId, newTopicId),
-          lessonRefId: refId,
-          parentId: newTopicId,
-          depth: 2,
-        };
-        itemsToInsert.push(newLesson);
+        (topic.items || []).forEach(lesson => {
+          flatList.push({
+            id: mkLessonInstanceId(lesson.id, topic.id), // instance id
+            lessonRefId: lesson.id,                      // real lesson id
+            title: lesson.title,
+            type: LEARNING_UNIT.LESSON,
+            depth: 2,
+            parentId: topic.id,
+          });
+        });
       });
     });
 
-    return [...newList, ...itemsToInsert];
-  });
-};
+    return flatList;
+  };
+
+  const duplicateCohort = (cohortId: string) => {
+    setCurriculum(prev => {
+      const newList = [...prev];
+      const originalCohort = newList.find(i => i.id === cohortId);
+      if (!originalCohort || originalCohort.type !== LEARNING_UNIT.COHORT) return prev;
+
+      const newCohortId = `cohort_${Date.now()}`;
+      const newCohortTitle = `${originalCohort.title} -- Copy`;
+
+      const newCohort: DraggableItem = {
+        id: newCohortId,
+        title: newCohortTitle,
+        type: LEARNING_UNIT.COHORT,
+        depth: 0,
+        parentId: null,
+      };
+
+      const topics = newList.filter(i => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC);
+
+      const itemsToInsert: DraggableItem[] = [newCohort];
+
+      topics.forEach(topic => {
+        const newTopicId = `topic_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        const newTopic: DraggableItem = {
+          id: newTopicId,
+          title: topic.title,
+          type: LEARNING_UNIT.TOPIC,
+          depth: 1,
+          parentId: newCohortId,
+        };
+
+        itemsToInsert.push(newTopic);
+
+        const lessons = newList.filter(i => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON);
+
+        lessons.forEach(lesson => {
+          const refId = lesson.lessonRefId ?? lesson.id;
+          const newLesson: DraggableItem = {
+            ...lesson,
+            id: mkLessonInstanceId(refId, newTopicId),
+            lessonRefId: refId,
+            parentId: newTopicId,
+            depth: 2,
+          };
+          itemsToInsert.push(newLesson);
+        });
+      });
+
+      return [...newList, ...itemsToInsert];
+    });
+  };
 
 
-// compute once per open/parent change
-const excludedLessonIdsForActiveParent = useMemo(() => {
-  if (!isLessonSelectorModalOpen || !activeParentId) return [];
+  // compute once per open/parent change
+  const excludedLessonIdsForActiveParent = useMemo(() => {
+    if (!isLessonSelectorModalOpen || !activeParentId) return [];
 
-  // find the topic we're adding into
-  const topic = curriculum.find(i => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC);
-  if (!topic) return [];
+    // find the topic we're adding into
+    const topic = curriculum.find(i => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC);
+    if (!topic) return [];
 
-  // if topic has no cohort parent, no restriction per your rule
-  const cohortId = topic.parentId;
-  if (!cohortId) return [];
+    // if topic has no cohort parent, no restriction per your rule
+    const cohortId = topic.parentId;
+    if (!cohortId) return [];
 
-  // all topics inside this cohort
-  const topicIdsInCohort = new Set(
-    curriculum
-      .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
-      .map(i => i.id)
-  );
+    // all topics inside this cohort
+    const topicIdsInCohort = new Set(
+      curriculum
+        .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+        .map(i => i.id)
+    );
 
-  // lessons already used anywhere in this cohort
-  const usedLessonIds = new Set<string>();
-  curriculum.forEach(i => {
-    if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
-      usedLessonIds.add(i.lessonRefId ?? i.id);
-    }
-  });
-
-  return Array.from(usedLessonIds);
-}, [isLessonSelectorModalOpen, activeParentId, curriculum]);
-
-
-
-const handleDragEnd = (event: DragEndEvent) => {
-  const { active, over } = event;
-  if (!over || active.id === over.id) return;
-
-  setCurriculum(prev => {
-    let list = [...prev];
-
-    const isCohort = (i: typeof list[number]) => i.type === LEARNING_UNIT.COHORT;
-    const isTopic  = (i: typeof list[number]) => i.type === LEARNING_UNIT.TOPIC;
-    const isLesson = (i: typeof list[number]) => i.type === LEARNING_UNIT.LESSON;
-
-    const idxActive = list.findIndex(i => i.id === active.id);
-    const idxOver   = list.findIndex(i => i.id === over.id);
-    if (idxActive === -1 || idxOver === -1) return prev;
-
-    const itemMap = new Map(list.map(i => [i.id, i] as const));
-
-    const getCohortIdFor = (item: typeof list[number]): string | null => {
-      if (isCohort(item)) return item.id;
-      if (isTopic(item)) return item.parentId ?? null;
-      if (isLesson(item)) {
-        const topic = item.parentId ? itemMap.get(item.parentId) : undefined;
-        return topic && isTopic(topic) ? (topic.parentId ?? null) : null;
+    // lessons already used anywhere in this cohort
+    const usedLessonIds = new Set<string>();
+    curriculum.forEach(i => {
+      if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
+        usedLessonIds.add(i.lessonRefId ?? i.id);
       }
-      return null;
-    };
+    });
 
-    // Reparent only when the drop pairing is valid
-    const activeItem = { ...list[idxActive] };
-    const overItem   = list[idxOver];
+    return Array.from(usedLessonIds);
+  }, [isLessonSelectorModalOpen, activeParentId, curriculum]);
 
-    const computeNewParentId = (): string | null | undefined => {
-      // undefined => keep current parent
-      if (isCohort(activeItem)) return null; // cohorts are always top-level (parentId = null)
 
-      if (isTopic(activeItem)) {
-        if (isCohort(overItem)) return overItem.id;                  // Topic into that cohort
-        if (isTopic(overItem))  return overItem.parentId ?? null;    // Topic among topics of same cohort
-        if (isLesson(overItem)) return getCohortIdFor(overItem);     // Topic near a lesson => adopt that lesson's cohort
-        return undefined;
-      }
 
-      if (isLesson(activeItem)) {
-        if (isTopic(overItem))  return overItem.id;                  // Lesson into that topic
-        if (isLesson(overItem)) return overItem.parentId ?? null;    // Lesson among lessons of same topic
-        if (isCohort(overItem)) return undefined;                    // Don't reparent off a cohort
-        return undefined;
-      }
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-      return undefined;
-    };
+    setCurriculum(prev => {
+      let list = [...prev];
 
-    const maybeNewParent = computeNewParentId();
-    if (maybeNewParent !== undefined) {
-      activeItem.parentId = maybeNewParent;
-    }
-    list[idxActive] = activeItem;
+      const isCohort = (i: typeof list[number]) => i.type === LEARNING_UNIT.COHORT;
+      const isTopic = (i: typeof list[number]) => i.type === LEARNING_UNIT.TOPIC;
+      const isLesson = (i: typeof list[number]) => i.type === LEARNING_UNIT.LESSON;
 
-    // Move active to the 'over' index
-    list = arrayMove(list, idxActive, idxOver);
+      const idxActive = list.findIndex(i => i.id === active.id);
+      const idxOver = list.findIndex(i => i.id === over.id);
+      if (idxActive === -1 || idxOver === -1) return prev;
 
-    // Enforce relaxed “level gating” (minimal movement):
-    // 1) Ensure at least one cohort exists above the first topic (if both exist).
-    // 2) Ensure at least one topic exists above the first lesson (if both exist).
-    const ensureLevelGating = (arr: typeof list) => {
-      let out = arr;
-      // Iterate a few times to resolve interdependencies (e.g., moving topic before lesson may require moving cohort before topic)
-      for (let pass = 0; pass < 4; pass++) {
-        let changed = false;
+      const itemMap = new Map(list.map(i => [i.id, i] as const));
 
-        const cIdx = out.findIndex(isCohort);
-        const tIdx = out.findIndex(isTopic);
-        const lIdx = out.findIndex(isLesson);
+      const getCohortIdFor = (item: typeof list[number]): string | null => {
+        if (isCohort(item)) return item.id;
+        if (isTopic(item)) return item.parentId ?? null;
+        if (isLesson(item)) {
+          const topic = item.parentId ? itemMap.get(item.parentId) : undefined;
+          return topic && isTopic(topic) ? (topic.parentId ?? null) : null;
+        }
+        return null;
+      };
 
-        if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
-          // Move earliest cohort to just before the earliest topic
-          out = arrayMove(out, cIdx, tIdx);
-          changed = true;
+      // Reparent only when the drop pairing is valid
+      const activeItem = { ...list[idxActive] };
+      const overItem = list[idxOver];
+
+      const computeNewParentId = (): string | null | undefined => {
+        // undefined => keep current parent
+        if (isCohort(activeItem)) return null; // cohorts are always top-level (parentId = null)
+
+        if (isTopic(activeItem)) {
+          if (isCohort(overItem)) return overItem.id;                  // Topic into that cohort
+          if (isTopic(overItem)) return overItem.parentId ?? null;    // Topic among topics of same cohort
+          if (isLesson(overItem)) return getCohortIdFor(overItem);     // Topic near a lesson => adopt that lesson's cohort
+          return undefined;
         }
 
-        // Recompute after potential move
-        const tIdx2 = out.findIndex(isTopic);
-        const lIdx2 = out.findIndex(isLesson);
-
-        if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
-          // Move earliest topic to just before the earliest lesson
-          out = arrayMove(out, tIdx2, lIdx2);
-          changed = true;
+        if (isLesson(activeItem)) {
+          if (isTopic(overItem)) return overItem.id;                  // Lesson into that topic
+          if (isLesson(overItem)) return overItem.parentId ?? null;    // Lesson among lessons of same topic
+          if (isCohort(overItem)) return undefined;                    // Don't reparent off a cohort
+          return undefined;
         }
 
-        if (!changed) break;
+        return undefined;
+      };
+
+      const maybeNewParent = computeNewParentId();
+      if (maybeNewParent !== undefined) {
+        activeItem.parentId = maybeNewParent;
       }
-      return out;
-    };
+      list[idxActive] = activeItem;
 
-    list = ensureLevelGating(list);
+      // Move active to the 'over' index
+      list = arrayMove(list, idxActive, idxOver);
 
-    // Recompute depth from actual parent chain (order-independent)
-    const finalMap = new Map(list.map(i => [i.id, i] as const));
-    const depthMemo = new Map<string, number>();
+      // Enforce relaxed “level gating” (minimal movement):
+      // 1) Ensure at least one cohort exists above the first topic (if both exist).
+      // 2) Ensure at least one topic exists above the first lesson (if both exist).
+      const ensureLevelGating = (arr: typeof list) => {
+        let out = arr;
+        // Iterate a few times to resolve interdependencies (e.g., moving topic before lesson may require moving cohort before topic)
+        for (let pass = 0; pass < 4; pass++) {
+          let changed = false;
 
-    const depthOf = (item: typeof list[number]): number => {
-      if (depthMemo.has(item.id)) return depthMemo.get(item.id)!;
+          const cIdx = out.findIndex(isCohort);
+          const tIdx = out.findIndex(isTopic);
+          const lIdx = out.findIndex(isLesson);
 
-      let d = 0;
-      if (isCohort(item)) {
-        d = 0;
-      } else if (isTopic(item)) {
-        const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
-        d = parent && isCohort(parent) ? depthOf(parent) + 1 : 1; // fallback to level 1
-      } else if (isLesson(item)) {
-        const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
-        d = parent && isTopic(parent) ? depthOf(parent) + 1 : 2; // fallback to level 2
-      }
-      depthMemo.set(item.id, d);
-      return d;
-    };
+          if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
+            // Move earliest cohort to just before the earliest topic
+            out = arrayMove(out, cIdx, tIdx);
+            changed = true;
+          }
 
-    return list.map(i => ({ ...i, depth: depthOf(i) }));
-  });
-};
+          // Recompute after potential move
+          const tIdx2 = out.findIndex(isTopic);
+          const lIdx2 = out.findIndex(isLesson);
+
+          if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
+            // Move earliest topic to just before the earliest lesson
+            out = arrayMove(out, tIdx2, lIdx2);
+            changed = true;
+          }
+
+          if (!changed) break;
+        }
+        return out;
+      };
+
+      list = ensureLevelGating(list);
+
+      // Recompute depth from actual parent chain (order-independent)
+      const finalMap = new Map(list.map(i => [i.id, i] as const));
+      const depthMemo = new Map<string, number>();
+
+      const depthOf = (item: typeof list[number]): number => {
+        if (depthMemo.has(item.id)) return depthMemo.get(item.id)!;
+
+        let d = 0;
+        if (isCohort(item)) {
+          d = 0;
+        } else if (isTopic(item)) {
+          const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
+          d = parent && isCohort(parent) ? depthOf(parent) + 1 : 1; // fallback to level 1
+        } else if (isLesson(item)) {
+          const parent = item.parentId ? finalMap.get(item.parentId) : undefined;
+          d = parent && isTopic(parent) ? depthOf(parent) + 1 : 2; // fallback to level 2
+        }
+        depthMemo.set(item.id, d);
+        return d;
+      };
+
+      return list.map(i => ({ ...i, depth: depthOf(i) }));
+    });
+  };
 
   const addItem = (type: LearningUnit, parentId: string | null = null, depth = 0) => {
     const newItem: DraggableItem = {
@@ -676,32 +676,32 @@ const handleDragEnd = (event: DragEndEvent) => {
     setIsLessonSelectorModalOpen(true);
   };
 
-const addTopicToCohort = (cohortId: string, depth: number) => {
-  const newTopic = {
-    id: `TOPIC_${Date.now()}`,
-    title: "New Topic",
-    type: LEARNING_UNIT.TOPIC,
-    depth: depth + 1,
-    parentId: cohortId,
+  const addTopicToCohort = (cohortId: string, depth: number) => {
+    const newTopic = {
+      id: `TOPIC_${Date.now()}`,
+      title: "New Topic",
+      type: LEARNING_UNIT.TOPIC,
+      depth: depth + 1,
+      parentId: cohortId,
+    };
+
+    setCurriculum((prev) => {
+      const cohortIndex = prev.findIndex((i) => i.id === cohortId);
+
+      // Find index after the last child of the cohort
+      let insertIndex = cohortIndex + 1;
+      for (let i = cohortIndex + 1; i < prev.length; i++) {
+        if (prev[i].depth <= depth) break;
+        insertIndex = i + 1;
+      }
+
+      const newCurriculum = [...prev];
+      newCurriculum.splice(insertIndex, 0, newTopic);
+      return newCurriculum;
+    });
   };
 
-  setCurriculum((prev) => {
-    const cohortIndex = prev.findIndex((i) => i.id === cohortId);
 
-    // Find index after the last child of the cohort
-    let insertIndex = cohortIndex + 1;
-    for (let i = cohortIndex + 1; i < prev.length; i++) {
-      if (prev[i].depth <= depth) break;
-      insertIndex = i + 1;
-    }
-
-    const newCurriculum = [...prev];
-    newCurriculum.splice(insertIndex, 0, newTopic);
-    return newCurriculum;
-  });
-};
-
- 
 
   // utils ---------------------------------------------------------------
   const flattenCohort = (
@@ -775,8 +775,6 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
   };
 
 
-  
-
   const saveCurriculumStructure = async () => {
     if (!courseId || !course) {
       toast({ title: "Error", description: "Course data is not available.", variant: "destructive" });
@@ -800,47 +798,47 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
           childrenMap.get(item.parentId)!.push(item);
         }
       });
-      
+
       // Process only root items (depth 0)
-  for (const item of curriculum) {
-  if (item.parentId == null) {
-    if (item.type === LEARNING_UNIT.COHORT) {
-      // Topics directly under this cohort
-      const cohortTopicItems = (childrenMap.get(item.id) || []).filter(
-        (c) => c.type === LEARNING_UNIT.TOPIC
-      );
+      for (const item of curriculum) {
+        if (item.parentId == null) {
+          if (item.type === LEARNING_UNIT.COHORT) {
+            // Topics directly under this cohort
+            const cohortTopicItems = (childrenMap.get(item.id) || []).filter(
+              (c) => c.type === LEARNING_UNIT.TOPIC
+            );
 
-      const cohortTopics: Topic[] = cohortTopicItems.map((topicItem) => {
-        const lessonItems = (childrenMap.get(topicItem.id) || [])
-          .filter((l) => l.type === LEARNING_UNIT.LESSON)
-          .map((lessonItem) => ({
-            id: (lessonItem as any).lessonRefId ?? lessonItem.id, // prefer real lesson id if present
-            title: lessonItem.title,
-          }));
+            const cohortTopics: Topic[] = cohortTopicItems.map((topicItem) => {
+              const lessonItems = (childrenMap.get(topicItem.id) || [])
+                .filter((l) => l.type === LEARNING_UNIT.LESSON)
+                .map((lessonItem) => ({
+                  id: (lessonItem as any).lessonRefId ?? lessonItem.id, // prefer real lesson id if present
+                  title: lessonItem.title,
+                }));
 
-        return { id: topicItem.id, title: topicItem.title, items: lessonItems };
-      });
+              return { id: topicItem.id, title: topicItem.title, items: lessonItems };
+            });
 
-      const originalCohort = (item.originalData as Cohort) || {};
-      newCohorts.push({
-        ...originalCohort,
-        id: item.id,
-        title: item.title,
-        topics: cohortTopics,
-        price: 0,
-      });
-    } else if (item.type === LEARNING_UNIT.TOPIC) {
-      // Root topic
-      const lessonItems = (childrenMap.get(item.id) || [])
-        .filter((l) => l.type === LEARNING_UNIT.LESSON)
-        .map((lessonItem) => ({
-          id: (lessonItem as any).lessonRefId ?? lessonItem.id, // align with cohort-lesson behavior
-          title: lessonItem.title,
-        }));
-      newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
-    }
-  }
-}
+            const originalCohort = (item.originalData as Cohort) || {};
+            newCohorts.push({
+              ...originalCohort,
+              id: item.id,
+              title: item.title,
+              topics: cohortTopics,
+              price: 0,
+            });
+          } else if (item.type === LEARNING_UNIT.TOPIC) {
+            // Root topic
+            const lessonItems = (childrenMap.get(item.id) || [])
+              .filter((l) => l.type === LEARNING_UNIT.LESSON)
+              .map((lessonItem) => ({
+                id: (lessonItem as any).lessonRefId ?? lessonItem.id, // align with cohort-lesson behavior
+                title: lessonItem.title,
+              }));
+            newRootTopics.push({ id: item.id, title: item.title, items: lessonItems });
+          }
+        }
+      }
       const updates: Partial<Course> = {
         topics: newRootTopics,
         cohorts: newCohorts,
@@ -850,7 +848,6 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 
       toast({ title: "Success", description: "Curriculum saved!" });
       console.log("Curriculum saved with:", updates);
-      
     } catch (error) {
       toast({ title: "Error", description: `Failed to save: ${error}`, variant: "destructive" });
     } finally {
@@ -1261,7 +1258,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
             </div>
           </TabsContent>
 
-            {/* Curriculum Tab */}
+          {/* Curriculum Tab */}
           <TabsContent value="curriculum">
             <Card className="shadow-lg border">
               {/* ---- Header ------------------------------------------------ */}
@@ -1272,36 +1269,36 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
                 </CardTitle>
 
                 <div className="flex flex-wrap gap-2">
-                 <CohortBuilderPage onCohortCreated={(cohort) => {
-  // Add new cohort row at root level in curriculum
-  const newItem = {
-    id: cohort.id,
-    title: cohort.title,
-    type: LEARNING_UNIT.COHORT,
-    depth: 0,
-    parentId: null,
-    originalData: cohort,
-  };
-  setCurriculum(prev => [...prev, newItem]);
+                  <CohortBuilderPage onCohortCreated={(cohort) => {
+                    // Add new cohort row at root level in curriculum
+                    const newItem = {
+                      id: cohort.id,
+                      title: cohort.title,
+                      type: LEARNING_UNIT.COHORT,
+                      depth: 0,
+                      parentId: null,
+                      originalData: cohort,
+                    };
+                    setCurriculum(prev => [...prev, newItem]);
 
-  toast({
-    title: "Cohort Added",
-    description: `“${cohort.title}” has been added to this course.`,
-  });
-}} />
-           
+                    toast({
+                      title: "Cohort Added",
+                      description: `“${cohort.title}” has been added to this course.`,
+                    });
+                  }} />
 
-               {!curriculum.some(item => item.type === LEARNING_UNIT.COHORT) && (
-  <Button
-    size="sm"
-    onClick={() => {
-      addItem(LEARNING_UNIT.TOPIC);
-    }}
-    className="flex items-center gap-1"
-  >
-    Add Topic
-  </Button>
-)}
+
+                  {!curriculum.some(item => item.type === LEARNING_UNIT.COHORT) && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        addItem(LEARNING_UNIT.TOPIC);
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      Add Topic
+                    </Button>
+                  )}
 
 
 
@@ -1368,7 +1365,7 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
                                 />
                               ) : (
                                 <span className="flex-1 truncate cursor-pointer hover:underline">
-                                  {item.title} 
+                                  {item.title}
                                 </span>
                               )}
                             </div>
@@ -1382,22 +1379,22 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => addTopicToCohort(item.id, item.depth)} 
+                                    onClick={() => addTopicToCohort(item.id, item.depth)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title={`Add Topic to Cohort${item.id} ${item.depth} ${item.parentId}`} 
+                                    title={`Add Topic to Cohort${item.id} ${item.depth} ${item.parentId}`}
                                   >
                                     <Plus className="h-4 w-4" />
                                   </Button>
 
-                                <Button
-  variant="ghost"
-  size="sm"
-  onClick={() => duplicateCohort(item.id)}
-  className="opacity-0 group-hover:opacity-100 transition-opacity"
-  title="Duplicate Cohort"
->
-  <Copy className="h-4 w-4 text-blue-500" />
-</Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => duplicateCohort(item.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Duplicate Cohort"
+                                  >
+                                    <Copy className="h-4 w-4 text-blue-500" />
+                                  </Button>
 
 
                                   <Button
@@ -1506,75 +1503,75 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 
       {/* Lesson Selector */}
       <LessonSelectorModal
-    isOpen={isLessonSelectorModalOpen}
-    onClose={() => setIsLessonSelectorModalOpen(false)}
-    onConfirm={(lessons: Lesson[]) => {
-      if (!activeParentId) return;
-  
-      const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
-      const parentDepth = curriculum[parentIndex]?.depth || 0;
-      const parentTopic = curriculum[parentIndex];
-  
-      // if topic has a cohort, collect used lesson ids in that cohort
-      let usedInCohort = new Set<string>();
-      const cohortId = parentTopic?.parentId ?? null;
-  
-      if (cohortId) {
-        const topicIdsInCohort = new Set(
-          curriculum
-            .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
-            .map(i => i.id)
-        );
-  
-        curriculum.forEach(i => {
-          if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
-            usedInCohort.add(i.lessonRefId ?? i.id);
+        isOpen={isLessonSelectorModalOpen}
+        onClose={() => setIsLessonSelectorModalOpen(false)}
+        onConfirm={(lessons: Lesson[]) => {
+          if (!activeParentId) return;
+
+          const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
+          const parentDepth = curriculum[parentIndex]?.depth || 0;
+          const parentTopic = curriculum[parentIndex];
+
+          // if topic has a cohort, collect used lesson ids in that cohort
+          let usedInCohort = new Set<string>();
+          const cohortId = parentTopic?.parentId ?? null;
+
+          if (cohortId) {
+            const topicIdsInCohort = new Set(
+              curriculum
+                .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+                .map(i => i.id)
+            );
+
+            curriculum.forEach(i => {
+              if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
+                usedInCohort.add(i.lessonRefId ?? i.id);
+              }
+            });
           }
-        });
-      }
-  
-      // Filter: remove duplicates already present in cohort AND duplicates within selection
-      const seenInSelection = new Set<string>();
-      const filtered = lessons.filter(l => {
-        if (cohortId && usedInCohort.has(l.id)) return false;
-        if (seenInSelection.has(l.id)) return false;
-        seenInSelection.add(l.id);
-        return true;
-      });
-  
-      const skippedCount = lessons.length - filtered.length;
-      if (skippedCount > 0) {
-        toast({
-          title: "Skipped duplicates",
-          description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
-        });
-      }
-  
-      const newItems: DraggableItem[] = filtered.map(lesson => ({
-    id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
-    lessonRefId: lesson.id,                             // real id
-    title: lesson.title,
-    type: LEARNING_UNIT.LESSON,
-    depth: parentDepth + 1,
-    parentId: activeParentId,
-  }));
-  
-      setCurriculum(prev => {
-        let insertIndex = parentIndex + 1;
-        for (let i = parentIndex + 1; i < prev.length; i++) {
-          if (prev[i].depth <= parentDepth) break;
-          insertIndex = i + 1;
-        }
-  
-        const updated = [...prev];
-        updated.splice(insertIndex, 0, ...newItems);
-        return updated;
-      });
-  
-      setIsLessonSelectorModalOpen(false);
-    }}
-    excludedLessonIds={excludedLessonIdsForActiveParent}
-  />
+
+          // Filter: remove duplicates already present in cohort AND duplicates within selection
+          const seenInSelection = new Set<string>();
+          const filtered = lessons.filter(l => {
+            if (cohortId && usedInCohort.has(l.id)) return false;
+            if (seenInSelection.has(l.id)) return false;
+            seenInSelection.add(l.id);
+            return true;
+          });
+
+          const skippedCount = lessons.length - filtered.length;
+          if (skippedCount > 0) {
+            toast({
+              title: "Skipped duplicates",
+              description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
+            });
+          }
+
+          const newItems: DraggableItem[] = filtered.map(lesson => ({
+            id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
+            lessonRefId: lesson.id,                             // real id
+            title: lesson.title,
+            type: LEARNING_UNIT.LESSON,
+            depth: parentDepth + 1,
+            parentId: activeParentId,
+          }));
+
+          setCurriculum(prev => {
+            let insertIndex = parentIndex + 1;
+            for (let i = parentIndex + 1; i < prev.length; i++) {
+              if (prev[i].depth <= parentDepth) break;
+              insertIndex = i + 1;
+            }
+
+            const updated = [...prev];
+            updated.splice(insertIndex, 0, ...newItems);
+            return updated;
+          });
+
+          setIsLessonSelectorModalOpen(false);
+        }}
+        excludedLessonIds={excludedLessonIdsForActiveParent}
+      />
     </div>
   );
 };
