@@ -1,4 +1,4 @@
-import { useState, useEffect ,useMemo } from "react";
+import { useState, useEffect , useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   DndContext,
@@ -50,10 +50,10 @@ import { courseService } from "@/services/courseService";
 import { Course, Topic, Cohort } from "@/types/course";
 import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
 import { Lesson } from "@/types/lesson";
-import CohortImporterModal from "@/components/admin/CohortImporterModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COURSE_STATUS, LEARNING_UNIT } from "@/constants";
 import { Checkbox } from "@/components/ui/checkbox";
+import { v4 as uuidv4 } from 'uuid';
 import { CourseStatus, LearningUnit } from "@/types/general";
 import {
   Select,
@@ -76,6 +76,7 @@ import { serverTimestamp } from "firebase/firestore";
 import { imageService } from "@/services/imageService";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
+
 type SortableItemProps = {
   id: string;
   children: React.ReactNode;
@@ -93,7 +94,6 @@ type DraggableItem = {
   originalData?: Cohort | Topic;
   lessonRefId?: string; // real lesson id for lessons
 };
-
 
 
 const mkLessonInstanceId = (lessonRefId: string, topicId: string) =>
@@ -129,7 +129,7 @@ const SortableItem = ({ id, children, depth }: SortableItemProps) => {
   );
 };
 
-const CurriculumBuilderPage = () => {
+const DummyCurriculumBuilderPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -168,35 +168,28 @@ const CurriculumBuilderPage = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-      const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
-      setAllCategories(categoriesData.map((a) => a.name));
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load categories.",
-        variant: "destructive",
-      });
-    }
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const [categoriesData, targetAudienceData] = await Promise.all([
+          attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY),
+          attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE),
+        ]);
 
-    try {
-      const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
-      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
-    } catch (error) {
-      console.error("Error fetching target audiences:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load target audiences.",
-        variant: "destructive",
-      });
-    }
-  };
+        setAllCategories(categoriesData.map((a) => a.name));
+        setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load categories or target audiences.",
+          variant: "destructive",
+        });
+      }
+    };
 
-  fetchAttributes();
-}, [toast]);
+    fetchAttributes();
+  }, [toast]);
 
 
 
@@ -235,159 +228,8 @@ useEffect(() => {
     }
   };
 
-  useEffect(() => {
-    const fetchAuthors = async () => {
-      try {
-        const data = await authorService.getAllAuthors();
-        const formattedAuthors = data.map(author => {
-          const fullName = [author.firstName, author.middleName, author.lastName]
-            .filter(Boolean)
-            .join(" ");
-          return { id: author.id, name: fullName };
-        });
 
-        // If the course's author isn’t in the fetched list, add them
-        setAuthors(prev => {
-          const exists = formattedAuthors.some(a => a.id === authorId);
-          return exists || !authorId
-            ? formattedAuthors
-            : [{ id: authorId, name: authorName }, ...formattedAuthors];
-        });
-      } catch (error) {
-        console.error("Failed to fetch authors:", error);
 
-        toast({
-          title: "Error",
-          description: "Could not load authors list.",
-          variant: "destructive",
-        });
-      }
-    };
-    fetchAuthors();
-  }, [toast, authorId, authorName]);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please select an image file!", variant: "destructive" });
-      return;
-    }
-
-    setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
-  };
-
-  const uploadThumbnail = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "No File Selected",
-        description: "Please choose an image before uploading.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check file size (3MB limit)
-    const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
-    if (selectedFile.size > MAX_SIZE) {
-      toast({
-        title: "File Too Large",
-        description: "The selected file exceeds the 3MB size limit.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const uploadTask = imageService.uploadImage(`/courses/${courseId}/thumbnail.png`, selectedFile);
-    if (!uploadTask) {
-      toast({
-        title: "Upload Failed",
-        description: "Unable to upload the file. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        setUploading(true);
-        // Calculate progress
-        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(Math.round(prog));
-      }, (error) => {
-        toast({
-          title: "Failed to upload thumbnail.",
-          description: "Something went wrong",
-          variant: "destructive"
-        })
-        console.error(error);
-        setUploading(false);
-      },
-      async () => {
-        try {
-          setProgress(100);
-          setUploading(false);
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          setThumbnailUrl(url);
-          toast({
-            title: "Thumbnail Uploaded",
-            description: "Thumbnail has been successfully uploaded",
-            variant: "default",
-          });
-        } catch (error) {
-          toast({
-            title: "Thumbnail not uploaded",
-            description: "Something went wrong",
-            variant: "destructive"
-          });
-          console.error("Error getting download URL:", error);
-        }
-      });
-  }
-
-  const saveBasics = async () => {
-    if (!courseId || !course) return;
-    if (!title.trim()) {
-      toast({ title: "Missing Title", description: "Enter a course title.", variant: "destructive" });
-      return;
-    }
-    if (!description.trim()) {
-      toast({ title: "Missing Description", description: "Enter a description.", variant: "destructive" });
-      return;
-    }
-    if (regularPrice < 0 || salePrice < 0 || salePrice > regularPrice) {
-      toast({ title: "Pricing Error", description: "Check regular / sale price.", variant: "destructive" });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await courseService.updateCourse(courseId, {
-        title: title.trim(),
-        description: description.trim(),
-        regularPrice,
-        thumbnail: thumbnailUrl,
-        salePrice,
-        targetAudienceIds: selectedTargetAudiences,
-        categoryIds: selectedCategories,
-        tags,
-        authorId,
-        authorName,
-        status,
-      });
-      toast({ title: "Saved", description: "Basics updated." });
-    } catch (e) {
-      toast({ title: "Error", description: String(e), variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-//Todo
-// Notify the system if both cohorts and topics are non-empty simultaneously
 const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
   const flatList: DraggableItem[] = [];
 
@@ -449,7 +291,6 @@ const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
 
   return flatList;
 };
-
 const duplicateCohort = (cohortId: string) => {
   setCurriculum(prev => {
     const newList = [...prev];
@@ -502,7 +343,6 @@ const duplicateCohort = (cohortId: string) => {
   });
 };
 
-
 // compute once per open/parent change
 const excludedLessonIdsForActiveParent = useMemo(() => {
   if (!isLessonSelectorModalOpen || !activeParentId) return [];
@@ -532,8 +372,6 @@ const excludedLessonIdsForActiveParent = useMemo(() => {
 
   return Array.from(usedLessonIds);
 }, [isLessonSelectorModalOpen, activeParentId, curriculum]);
-
-
 
 const handleDragEnd = (event: DragEndEvent) => {
   const { active, over } = event;
@@ -670,7 +508,6 @@ const handleDragEnd = (event: DragEndEvent) => {
     setNewItemName(newItem.title);
   };
 
-
   const addLessonToParent = (parentId: string) => {
     setActiveParentId(parentId);
     setIsLessonSelectorModalOpen(true);
@@ -700,9 +537,6 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
     return newCurriculum;
   });
 };
-
- 
-
   // utils ---------------------------------------------------------------
   const flattenCohort = (
     cohort: Cohort,
@@ -742,7 +576,6 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
     return rows;
   };
 
-  // --------------------------------------------------------------------
 
 
   const updateItemName = (itemId: string, name: string) => {
@@ -774,9 +607,8 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
     });
   };
 
-
-  
-
+  // FIX: Complete rewrite of the save function to be robust and correct.
+  // FIX: Complete rewrite of the save function to be robust and correct.
   const saveCurriculumStructure = async () => {
     if (!courseId || !course) {
       toast({ title: "Error", description: "Course data is not available.", variant: "destructive" });
@@ -868,400 +700,18 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 
       <main className="container mx-auto px-6 py-8">
 
-        <Tabs defaultValue="basics" className="w-full">
+        <Tabs defaultValue="curriculum" className="w-full">
 
           {/* Tab buttons ----------------------------------------------------- */}
           <TabsList>
-            <TabsTrigger value="basics">Basics</TabsTrigger>
+   
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="additional">Additional</TabsTrigger>
+        
           </TabsList>
 
-          {/* ────────── BASICS TAB CONTENT ────────── */}
-          <TabsContent value="basics">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              {/* ───────── LEFT SIDE (Main Content) ───────── */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Title */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Course Title</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Mastering React 18"
-                    />
-                  </CardContent>
-                </Card>
-                {/* Description */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Description</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      A short marketing paragraph – supports markdown.
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <Textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="min-h-32"
-                      placeholder="What will students learn?"
-                    />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Thumbnail</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {!preview && thumbnailUrl && (
-                      <div className="mb-5">
-                        <img
-                          src={thumbnailUrl}
-                          alt="Preview"
-                          className="border rounded"
-                        />
-                      </div>
-                    )}
-                    {preview && (
-                      <div className="mb-5">
-                        <img
-                          src={preview}
-                          alt="Preview"
-                          className="border rounded"
-                        />
-                      </div>
-                    )}
-                    {uploading && (
-                      <div className="mb-8">
-                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
-                          <div
-                            style={{
-                              width: `${progress}%`,
-                              height: "100%",
-                              backgroundColor: "#ff00ff",
-                              transition: "width 0.3s",
-                            }}
-                          />
-                        </div>
-                        <small>{progress}%</small>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <input type="file" accept="image/*" onChange={handleFileChange} />
-                      <Button className="border px-5 py-2" onClick={uploadThumbnail} disabled={uploading || !preview}>{!preview ? "Uploaded" : "Upload"}</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Instructor + Categories + Tags row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Instructor */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Instructor</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select
-                        value={authorName}
-                        onValueChange={(val) => {
-                          const a = authors.find((x) => x.name === val);
-                          setAuthorName(val);
-                          setAuthorId(a?.id || "");
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select instructor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {authors.map((a) => (
-                            <SelectItem key={a.id} value={a.name}>
-                              {a.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-                  {/* Categories */}
-                  {/* <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Categories</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Pick one or more to help discovery
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {["AI/ML", "Bootcamp", "College", "Data-Science", "Generative-AI"].map((cat) => (
-                        <label key={cat} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox
-                            checked={categories.includes(cat)}
-                            onCheckedChange={() =>
-                              setCategories((prev) =>
-                                prev.includes(cat)
-                                  ? prev.filter((c) => c !== cat)
-                                  : [...prev, cat]
-                              )
-                            }
-                          />
-                          {cat}
-                        </label>
-                      ))}
-                    </CardContent>
-                  </Card>
-                  {/* Tags */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Tags</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Used for search. Press Enter to add.
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <Input
-                        value={tagInput}
-                        placeholder="add tag and press ↵"
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && tagInput.trim()) {
-                            e.preventDefault();
-                            if (!tags.includes(tagInput.trim()))
-                              setTags([...tags, tagInput.trim()]);
-                            setTagInput("");
-                          }
-                        }}
-                      />
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {tags.map((t) => (
-                          <span
-                            key={t}
-                            className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full flex items-center gap-1"
-                          >
-                            {t}
-                            <button
-                              className="hover:text-red-500"
-                              onClick={() => setTags(tags.filter((x) => x !== t))}
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+        
 
-
-                  {/* Categories */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Categories</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Pick one or more to help discovery
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className="w-full justify-between"
-                          >
-                            {selectedCategories.length > 0
-                              ? `${selectedCategories.length} selected`
-                              : "Select categories"}
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
-                          <Command>
-                            <CommandInput placeholder="Search or add category..." />
-                            <CommandList>
-                              <CommandGroup>
-                                {allCategories.map((cat) => (
-                                  <CommandItem
-                                    key={cat}
-                                    onSelect={() =>
-                                      setSelectedCategories((prev) =>
-                                        prev.includes(cat)
-                                          ? prev.filter((c) => c !== cat)
-                                          : [...prev, cat]
-                                      )
-                                    }
-                                  >
-                                    <Checkbox
-                                      checked={selectedCategories.includes(cat)}
-                                      className="mr-2"
-                                    />
-                                    {cat}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                            <div className="p-2 border-t">
-                              <Input
-                                placeholder="Add new category"
-                                onKeyDown={async (e) => {
-                                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                                    const newCat = e.currentTarget.value.trim();
-                                    await attributeService.addAttribute(
-                                      ATTRIBUTE_TYPE.CATEGORY,
-                                      newCat
-                                    );
-                                    setAllCategories((prev) => [...prev, newCat]);
-                                    setSelectedCategories((prev) => [...prev, newCat]);
-                                    e.currentTarget.value = "";
-                                  }
-                                }}
-                              />
-                            </div>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </CardContent>
-                  </Card>
-
-                  {/* Target Audience */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Target Audience</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className="w-full justify-between"
-                          >
-                            {selectedTargetAudiences.length > 0
-                              ? `${selectedTargetAudiences.length} selected`
-                              : "Select target audience"}
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
-                          <Command>
-                            <CommandInput placeholder="Search or add audience..." />
-                            <CommandList>
-                              <CommandGroup>
-                                {allTargetAudiences.map((aud) => (
-                                  <CommandItem
-                                    key={aud}
-                                    onSelect={() =>
-                                      setSelectedTargetAudiences((prev) =>
-                                        prev.includes(aud)
-                                          ? prev.filter((a) => a !== aud)
-                                          : [...prev, aud]
-                                      )
-                                    }
-                                  >
-                                    <Checkbox
-                                      checked={selectedTargetAudiences.includes(aud)}
-                                      className="mr-2"
-                                    />
-                                    {aud}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                            <div className="p-2 border-t">
-                              <Input
-                                placeholder="Add new target audience"
-                                onKeyDown={async (e) => {
-                                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                                    const newAud = e.currentTarget.value.trim();
-                                    await attributeService.addAttribute(
-                                      ATTRIBUTE_TYPE.TARGET_AUDIENCE,
-                                      newAud
-                                    );
-                                    setAllTargetAudiences((prev) => [...prev, newAud]);
-                                    setSelectedTargetAudiences((prev) => [...prev, newAud]);
-                                    e.currentTarget.value = "";
-                                  }
-                                }}
-                              />
-                            </div>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </CardContent>
-                  </Card>
-
-                </div>
-              </div>
-              {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
-              <div className="space-y-6">
-                {/* Pricing */}
-                <Card className="rounded-xl border p-4">
-                  <div className="flex gap-4">
-                    <Button onClick={saveBasics} disabled={saving}>
-                      <Save className="mr-2 h-4 w-4" />
-                      {saving ? "Saving..." : "Save Basics"}
-                    </Button>
-                    <Button variant="outline" onClick={() => navigate("/admin")} >
-                      <ArrowLeft className="mr-2 h-4 w-3" />
-                      {"Back to Courses"}
-                    </Button>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Pricing</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">Regular price</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
-                        <Input
-                          type="number"
-                          value={regularPrice}
-                          onChange={(e) => setRegularPrice(+e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">Sale price</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
-                        <Input
-                          type="number"
-                          value={salePrice}
-                          onChange={(e) => setSalePrice(+e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Status */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select
-                      value={status}
-                      onValueChange={(val) => setStatus(val as CourseStatus)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(COURSE_STATUS).map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-            {/* Curriculum Tab */}
+          {/* Curriculum Tab */}
           <TabsContent value="curriculum">
             <Card className="shadow-lg border">
               {/* ---- Header ------------------------------------------------ */}
@@ -1291,18 +741,20 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
 }} />
            
 
-               {!curriculum.some(item => item.type === LEARNING_UNIT.COHORT) && (
-  <Button
-    size="sm"
-    onClick={() => {
+                 <Button
+  size="sm"
+  onClick={() => {
+    const existingCohort = curriculum.find(item => item.type === LEARNING_UNIT.COHORT);
+    if (existingCohort) {
+      addTopicToCohort(existingCohort.id, existingCohort.depth); // depth will likely be 0
+    } else {
       addItem(LEARNING_UNIT.TOPIC);
-    }}
-    className="flex items-center gap-1"
-  >
-    Add Topic
-  </Button>
-)}
-
+    }
+  }}
+  className="flex items-center gap-1"
+>
+  Add Topic
+</Button>
 
 
                   <Button
@@ -1503,80 +955,83 @@ const addTopicToCohort = (cohortId: string, depth: number) => {
         </Tabs>
       </main>
 
+      {/* Cohort Importer */}
+     
 
       {/* Lesson Selector */}
-      <LessonSelectorModal
-    isOpen={isLessonSelectorModalOpen}
-    onClose={() => setIsLessonSelectorModalOpen(false)}
-    onConfirm={(lessons: Lesson[]) => {
-      if (!activeParentId) return;
-  
-      const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
-      const parentDepth = curriculum[parentIndex]?.depth || 0;
-      const parentTopic = curriculum[parentIndex];
-  
-      // if topic has a cohort, collect used lesson ids in that cohort
-      let usedInCohort = new Set<string>();
-      const cohortId = parentTopic?.parentId ?? null;
-  
-      if (cohortId) {
-        const topicIdsInCohort = new Set(
-          curriculum
-            .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
-            .map(i => i.id)
-        );
-  
-        curriculum.forEach(i => {
-          if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
-            usedInCohort.add(i.lessonRefId ?? i.id);
-          }
-        });
-      }
-  
-      // Filter: remove duplicates already present in cohort AND duplicates within selection
-      const seenInSelection = new Set<string>();
-      const filtered = lessons.filter(l => {
-        if (cohortId && usedInCohort.has(l.id)) return false;
-        if (seenInSelection.has(l.id)) return false;
-        seenInSelection.add(l.id);
-        return true;
-      });
-  
-      const skippedCount = lessons.length - filtered.length;
-      if (skippedCount > 0) {
-        toast({
-          title: "Skipped duplicates",
-          description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
-        });
-      }
-  
-      const newItems: DraggableItem[] = filtered.map(lesson => ({
-    id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
-    lessonRefId: lesson.id,                             // real id
-    title: lesson.title,
-    type: LEARNING_UNIT.LESSON,
-    depth: parentDepth + 1,
-    parentId: activeParentId,
-  }));
-  
-      setCurriculum(prev => {
-        let insertIndex = parentIndex + 1;
-        for (let i = parentIndex + 1; i < prev.length; i++) {
-          if (prev[i].depth <= parentDepth) break;
-          insertIndex = i + 1;
+    <LessonSelectorModal
+  isOpen={isLessonSelectorModalOpen}
+  onClose={() => setIsLessonSelectorModalOpen(false)}
+  onConfirm={(lessons: Lesson[]) => {
+    if (!activeParentId) return;
+
+    const parentIndex = curriculum.findIndex(i => i.id === activeParentId);
+    const parentDepth = curriculum[parentIndex]?.depth || 0;
+    const parentTopic = curriculum[parentIndex];
+
+    // if topic has a cohort, collect used lesson ids in that cohort
+    let usedInCohort = new Set<string>();
+    const cohortId = parentTopic?.parentId ?? null;
+
+    if (cohortId) {
+      const topicIdsInCohort = new Set(
+        curriculum
+          .filter(i => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId)
+          .map(i => i.id)
+      );
+
+      curriculum.forEach(i => {
+        if (i.type === LEARNING_UNIT.LESSON && i.parentId && topicIdsInCohort.has(i.parentId)) {
+          usedInCohort.add(i.lessonRefId ?? i.id);
         }
-  
-        const updated = [...prev];
-        updated.splice(insertIndex, 0, ...newItems);
-        return updated;
       });
-  
-      setIsLessonSelectorModalOpen(false);
-    }}
-    excludedLessonIds={excludedLessonIdsForActiveParent}
-  />
+    }
+
+    // Filter: remove duplicates already present in cohort AND duplicates within selection
+    const seenInSelection = new Set<string>();
+    const filtered = lessons.filter(l => {
+      if (cohortId && usedInCohort.has(l.id)) return false;
+      if (seenInSelection.has(l.id)) return false;
+      seenInSelection.add(l.id);
+      return true;
+    });
+
+    const skippedCount = lessons.length - filtered.length;
+    if (skippedCount > 0) {
+      toast({
+        title: "Skipped duplicates",
+        description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
+      });
+    }
+
+    const newItems: DraggableItem[] = filtered.map(lesson => ({
+  id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
+  lessonRefId: lesson.id,                             // real id
+  title: lesson.title,
+  type: LEARNING_UNIT.LESSON,
+  depth: parentDepth + 1,
+  parentId: activeParentId,
+}));
+
+    setCurriculum(prev => {
+      let insertIndex = parentIndex + 1;
+      for (let i = parentIndex + 1; i < prev.length; i++) {
+        if (prev[i].depth <= parentDepth) break;
+        insertIndex = i + 1;
+      }
+
+      const updated = [...prev];
+      updated.splice(insertIndex, 0, ...newItems);
+      return updated;
+    });
+
+    setIsLessonSelectorModalOpen(false);
+  }}
+  excludedLessonIds={excludedLessonIdsForActiveParent}
+/>
+
     </div>
   );
 };
 
-export default CurriculumBuilderPage;
+export default DummyCurriculumBuilderPage;

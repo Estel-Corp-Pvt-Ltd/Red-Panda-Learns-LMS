@@ -43,7 +43,7 @@ class CohortService {
   
   // FIX: This now accepts and saves the full topics array.
   async createCohort(
-    data: Omit<Cohort, 'id' | 'createdAt' | 'updatedAt' | 'cohortEnrollments'>
+    data: Omit<Cohort, 'id' | 'createdAt' | 'updatedAt' >
   ): Promise<string> {
     try {
       const cohortId = await this.generateCohortId();
@@ -53,14 +53,7 @@ class CohortService {
         title: data.title,
         description: data.description || '',
         price : data.price,
-        topics: data.topics, // <-- SAVING THE FULL TOPICS ARRAY
-        startDate: data.startDate,
-        endDate: data.endDate,
-        enrollmentOpen: data.enrollmentOpen,
-        maxStudents: data.maxStudents ?? null,
-        requireEnrollment: data.requireEnrollment ?? false,
-        requireCohortAccess: data.requireCohortAccess ?? false,
-        cohortEnrollments: 0,
+        topics: data.topics, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -104,10 +97,6 @@ class CohortService {
         // Safe date conversion
         const cohort = {
           ...data,
-          startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate,
-          endDate: data.endDate?.toDate ? data.endDate.toDate() : data.endDate,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
         } as Cohort;
         return cohort;
       } catch (error) {

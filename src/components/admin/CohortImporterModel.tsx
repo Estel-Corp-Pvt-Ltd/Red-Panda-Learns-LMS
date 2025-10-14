@@ -99,7 +99,7 @@ const CohortImporterModal = ({
       <DialogTitle>Import Cohorts</DialogTitle>
       <p className="text-sm text-muted-foreground">
         Choose one or more cohorts to import into this course. All topics (and their lessons)
-        belonging to the selected cohorts will be added.
+        belonging to the selected cohorts will be added. 
       </p>
     </DialogHeader>
 

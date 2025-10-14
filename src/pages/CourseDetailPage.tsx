@@ -282,35 +282,59 @@ export default function CourseDetailPage() {
                   Course Curriculum
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {course.topics?.length || 0} topics • {totalLessons as number}{" "}
+                  {course.cohorts.length || 0} topics • {totalLessons as number}{" "}
                   lessons
                 </p>
               </CardHeader>
-              <CardContent>
-                {course.topics && course.topics.length > 0 ? (
-                  <Accordion
-                    type="multiple"
-                    value={expandedTopics}
-                    onValueChange={setExpandedTopics}
-                  >
-                    {course.topics.map((topic, index) => (
-                      <TopicAccordion
-                        key={topic.id || topic.id}
-                        courseId={courseId!}
-                        topic={topic}
-                        index={index}
-                        topicId={topic.id.toString()}
-                        isEnrolled={true}
-                      />
-                    ))}
-                  </Accordion>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No curriculum available yet.</p>
-                  </div>
-                )}
-              </CardContent>
+          <CardContent>
+  {(course.topics.length > 0 || course.cohorts?.length > 0) ? (
+    <Accordion
+      type="multiple"
+      value={expandedTopics}
+      onValueChange={setExpandedTopics}
+    >
+      {/* 1. Render top-level course topics (if any) */}
+      {course.topics.length > 0 &&
+        course.topics.map((topic, index) => (
+          <TopicAccordion
+            key={`course-topic-${topic.id}`}
+            courseId={courseId!}
+            topic={topic}
+            index={index}
+            topicId={topic.id.toString()}
+            isEnrolled={true}
+          />
+        ))}
+
+      {/* 2. Render cohorts with their topics */}
+      {course.cohorts?.map((cohort, cohortIndex) => (
+        <div key={`cohort-${cohortIndex}`} className="mt-6">
+          {/* Optional: Display cohort title */}
+          <h3 className="text-lg font-semibold mb-2">
+            {cohort.title || `Cohort ${cohortIndex + 1}`}
+          </h3>
+
+          {cohort.topics?.map((topic, topicIndex) => (
+            <TopicAccordion
+              key={`cohort-topic-${topic.id}`}
+              courseId={courseId!}
+              topic={topic}
+              index={topicIndex}
+              topicId={topic.id.toString()}
+              isEnrolled={true}
+            />
+          ))}
+        </div>
+      ))}
+    </Accordion>
+  ) : (
+    <div className="text-center py-8 text-muted-foreground">
+      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+      <p>No curriculum available yet.</p>
+    </div>
+  )}
+</CardContent>
+
             </Card>
           </div>
 
