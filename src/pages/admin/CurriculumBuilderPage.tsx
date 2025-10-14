@@ -159,7 +159,7 @@ const CurriculumBuilderPage = () => {
   const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
@@ -278,7 +278,7 @@ const CurriculumBuilderPage = () => {
 
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
-    uploadThumbnail();
+    setTimeout(() => uploadThumbnail(), 100);
   };
 
   const uploadThumbnail = async () => {
@@ -308,7 +308,7 @@ const CurriculumBuilderPage = () => {
     uploadTask.on(
       "state_changed",
       (snapshot) => {
-        setUploading(true);
+        setUploadingThumbnail(true);
         // Calculate progress
         const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(Math.round(prog));
@@ -319,12 +319,12 @@ const CurriculumBuilderPage = () => {
           variant: "destructive"
         })
         console.error(error);
-        setUploading(false);
+        setUploadingThumbnail(false);
       },
       async () => {
         try {
           setProgress(100);
-          setUploading(false);
+          setUploadingThumbnail(false);
           const url = await getDownloadURL(uploadTask.snapshot.ref);
           setThumbnailUrl(url);
           toast({
@@ -927,7 +927,7 @@ const CurriculumBuilderPage = () => {
                         />
                       </div>
                     )}
-                    {uploading && (
+                    {uploadingThumbnail && (
                       <div className="mb-8">
                         <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
                           <div
