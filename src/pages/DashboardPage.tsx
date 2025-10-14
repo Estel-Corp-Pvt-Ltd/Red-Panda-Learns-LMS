@@ -177,7 +177,7 @@ export default function DashboardPage() {
         <div>
           <div className='flex justify-between items-center mb-6'>
             <h2 className="text-2xl font-semibold">My Courses</h2>
-            {enrollments.length < 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
+            {enrollments.length > 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
           </div>
           {isLoading ? (
             <div className="grid gap-6">
