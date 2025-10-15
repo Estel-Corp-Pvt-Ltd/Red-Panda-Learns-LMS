@@ -127,7 +127,13 @@ class PaymentService {
         paymentProvider: provider,
         status: TRANSACTION_STATUS.PENDING,
         paymentDetails: { orderId: "", paymentId: "" },
-        metadata: { userEmail },
+
+metadata: {
+  userEmail,
+  courseTitle: course.title,
+  userAgent: navigator.userAgent,
+  paymentAttempts: 1
+}
       });
 
       let result: PaymentResult;

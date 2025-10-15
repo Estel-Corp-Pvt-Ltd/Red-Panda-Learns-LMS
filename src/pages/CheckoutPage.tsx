@@ -120,26 +120,27 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, selectedCurrency, selectedProvider]);
 
-  const loadPricing = async () => {
-    if (!course) return;
-    setLoadingPricing(true);
-    try {
-      // Keep "after" signature to avoid changing functionality
-      const data = await paymentService.calculatePricing(
-        course.salePrice,
-        selectedCurrency
-      );
-      setPricing(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load pricing information",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingPricing(false);
-    }
-  };
+ const loadPricing = async () => {
+  if (!course) return;
+  setLoadingPricing(true);
+  try {
+    const data = await paymentService.calculatePricing(
+      course.salePrice,
+      selectedCurrency,
+      selectedProvider,  
+      CURRENCY.INR
+    );
+    setPricing(data);
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load pricing information",
+      variant: "destructive",
+    });
+  } finally {
+    setLoadingPricing(false);
+  }
+};
 
   const handlePayment = async () => {
     if (!course || !user || !pricing) return;
@@ -258,7 +259,7 @@ export default function CheckoutPage() {
 
                   {selectedProvider === PAYMENT_PROVIDER.PAYPAL && (
                     <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
-                      <span>Taxes and service charge included</span>
+                      <span>All fees and service charges included</span>
                       <span>✓</span>
                     </div>
                   )}
