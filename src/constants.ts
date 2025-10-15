@@ -353,21 +353,27 @@ export const CONFIG_DOCS = {
 } as const;
 
 export const FALLBACK_CURRENCY_RATE: Record<string, number> = {
-  // INR to/from
-  USD_INR: 83.5,
-  INR_USD: 0.012,
-  EUR_INR: 90.0,
-  INR_EUR: 0.011,
-  GBP_INR: 100.0,
-  INR_GBP: 0.01,
+    // INR to/from
+    USD_INR: 83.5,
+    INR_USD: 0.012,
+    EUR_INR: 90.0,
+    INR_EUR: 0.011,
+    GBP_INR: 100.0,
+    INR_GBP: 0.01,
 
-  // Cross foreign
-  USD_EUR: 0.92,
-  EUR_USD: 1.09,
+    // Cross foreign
+    USD_EUR: 0.92,
+    EUR_USD: 1.09,
 };
+
 export const CART_ACTION = {
     ADD: "ADD",
     REMOVE: "REMOVE",
     CLEAR: "CLEAR",
     SET_CART: "SET_CART",
+} as const;
+
+export const POPUP_COURSE_TYPE = {
+    LIVE: "LIVE",
+    SELF_PACED: "SELF-PACED"
 } as const;

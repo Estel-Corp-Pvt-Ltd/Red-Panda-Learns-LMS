@@ -1,50 +1,49 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { EnrollmentProvider } from "@/contexts/EnrollmentContext";
-import { CohortProvider } from "@/contexts/CohortContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import CoursesPage from "./pages/CoursesPage";
-import CourseDetailPage from "./pages/CourseDetailPage";
-import LessonDetailPage from "./pages/LessonDetailPage";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import CreateCoursePage from "./pages/admin/CreateCoursePage";
-import CreateBundlePage from "./pages/admin/CreateBundlePage";
-import CurriculumBuilderPage from "./pages/admin/CurriculumBuilderPage";
-import Login from "./pages/auth/Login";
-import Signup from "./pages/auth/Signup";
-import CheckoutPage from "./pages/CheckoutPage";
-import DashboardPage from "./pages/DashboardPage";
-import NotFound from "./pages/NotFound";
-import CohortBuilderPage from "./pages/admin/CreateCohortPage";
-import CohortDetailPage from "./pages/admin/CohortDetailPage";
-import CohortCheckoutPage from "./pages/CohortCheckoutPage";
-import BundleDetailPage from "./pages/BundleDetailPage";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { CohortProvider } from "@/contexts/CohortContext";
+import { EnrollmentProvider } from "@/contexts/EnrollmentContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { CartProvider } from "./contexts/CartContext";
+import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
 import BundleDashboardPage from "./pages/BundleDashboardPage";
-import CreateLessonPage from "./pages/admin/CreateLessonPage";
-import EditLessonPage from "./pages/admin/EditLesson";
-import EditUserPage from "./pages/admin/EditUser";
-import LandingPage from "./pages/landingpage";
-import ViewLessonAdmin from "./pages/admin/ViewLesson";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import SetNewPassword from "./pages/auth/PasswordReset";
-import EditBundlePage from "./pages/admin/EditBundle";
-import CreateCouponPage from "./pages/admin/CreateCouponPage";
-import TermsPage from "./pages/TermsPage";
+import BundleDetailPage from "./pages/BundleDetailPage";
+import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import CohortCheckoutPage from "./pages/CohortCheckoutPage";
+import CourseDetailPage from "./pages/CourseDetailPage";
+import CoursesPage from "./pages/CoursesPage";
+import DashboardPage from "./pages/DashboardPage";
+import LessonDetailPage from "./pages/LessonDetailPage";
+import NotFound from "./pages/NotFound";
 import PrivacyPage from "./pages/PrivacyPage";
 import RefundPage from "./pages/RefundPolicy";
-import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
+import TermsPage from "./pages/TermsPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import CohortDetailPage from "./pages/admin/CohortDetailPage";
+import CreateBundlePage from "./pages/admin/CreateBundlePage";
+import CohortBuilderPage from "./pages/admin/CreateCohortPage";
+import CreateCouponPage from "./pages/admin/CreateCouponPage";
+import CreateCoursePage from "./pages/admin/CreateCoursePage";
+import CreateLessonPage from "./pages/admin/CreateLessonPage";
+import CurriculumBuilderPage from "./pages/admin/CurriculumBuilderPage";
+import EditBundlePage from "./pages/admin/EditBundle";
 import EditCouponPage from "./pages/admin/EditCouponPage";
-import VerifyEmail from "./pages/auth/VerifyEmail";
-import { CartProvider } from "./contexts/CartContext";
-import CartPage from "./pages/CartPage";
+import EditLessonPage from "./pages/admin/EditLesson";
+import EditUserPage from "./pages/admin/EditUser";
+import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
-import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
-import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import Login from "./pages/auth/Login";
+import SetNewPassword from "./pages/auth/PasswordReset";
+import Signup from "./pages/auth/Signup";
+import VerifyEmail from "./pages/auth/VerifyEmail";
+import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
+import LandingPage from "./pages/landingpage";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +62,6 @@ const App = () => (
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/course/:courseId" element={<CourseDetailPage />} />
                     <Route path="/courses/" element={<CoursesPage />} />
-
                     <Route
                       path="/course/:courseId/lesson/:lessonId"
                       element={

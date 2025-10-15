@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .grecaptcha-badge {
-display: none !important;
+  display: none !important;
 }
 
 /* LMS Design System - Modern, beautiful tokens for learning platform */
@@ -45,30 +45,30 @@ display: none !important;
     --brand-blue: 198 75% 52%;
     --brand-jet: 30 2% 16%;
     --brand-white: 0 0% 100%;
-    
+
     /* Light Theme Background */
     --space-bg: linear-gradient(135deg, hsl(36 95% 98%) 0%, hsl(198 75% 98%) 100%);
-    
+
     /* Light Glassomorphic Elements */
     --glass-bg: hsl(0 0% 100% / 0.8);
     --glass-border: hsl(0 0% 90% / 0.3);
     --glass-shadow: 0 8px 32px hsl(0 0% 0% / 0.1);
     --glass-backdrop: blur(16px);
-    
+
     /* Gradients */
     --brand-gradient: linear-gradient(135deg, hsl(36 95% 61%) 0%, hsl(300 100% 50%) 50%, hsl(198 75% 52%) 100%);
     --brand-gradient-triple: linear-gradient(135deg, hsl(36 95% 61%), hsl(300 100% 50%), hsl(198 75% 52%));
     --brand-light: 36 95% 98%;
-    
+
     /* Text Colors */
     --text-primary: 30 2% 16%;
     --text-secondary: 30 10% 40%;
     --text-gradient: linear-gradient(135deg, hsl(300 100% 50%), hsl(198 75% 52%));
-    
+
     /* Background Elements */
     --bg-soft: 36 50% 97%;
     --bg-gradient: var(--space-bg);
-    
+
     /* Interactive Elements */
     --hero-button: linear-gradient(135deg, hsl(300 100% 50%), hsl(198 75% 52%));
     --card-hover: 36 50% 98%;
@@ -118,7 +118,7 @@ display: none !important;
     --border: 220 27% 20%;
     --input: 220 27% 20%;
     --ring: 300 100% 50%;
-    
+
     --glass-bg: hsl(220 27% 12% / 0.8);
     --glass-border: hsl(220 27% 30% / 0.3);
     --glass-shadow: 0 8px 32px hsl(0 0% 0% / 0.3);
@@ -139,27 +139,28 @@ display: none !important;
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background: var(--bg-gradient);
-    font-family: 'figTree',sans-serif;
+    font-family: 'figTree', sans-serif;
   }
-  
+
   .gradient-text {
     background: var(--text-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .hero-section {
     background: transparent;
     position: relative;
   }
-  
+
   .card {
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
     box-shadow: 0 2px 10px hsl(0 0% 0% / 0.1);
   }
 }
+
 @layer base {
   * {
     @apply border-border;
@@ -173,4 +174,24 @@ display: none !important;
 body {
   font-family: "Figtree", sans-serif;
   font-optical-sizing: auto;
+}
+
+/* --- POP UP --- */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
 }
