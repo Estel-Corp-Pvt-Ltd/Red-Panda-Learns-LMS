@@ -4,13 +4,16 @@ import { ServicesSection } from "@/components/ServicesSection";
 import { AudienceSection } from "@/components/AudienceSection";
 import { TeamSection } from "@/components/Team";
 import { NewsletterSection } from "@/components/NewsletterSection";
+// import { PhilosophySection } from "./PhilosophySection";
+import PhilosophySection from "./PhilosophySection";
 
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <HeroSection />
-      <ServicesSection />
+      <PhilosophySection />
+      {/* <ServicesSection /> */}
       <AudienceSection />
       <TeamSection />
       <NewsletterSection />
