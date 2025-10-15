@@ -17,27 +17,38 @@ class PayPalProvider {
       : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
 
   /** Dynamically load PayPal SDK for the selected currency. */
- async loadPayPalSDK(currency: Currency): Promise<void> {
+async loadPayPalSDK(currency: Currency): Promise<void> {
   return new Promise((resolve, reject) => {
-    // ✅ Load SDK only once
-    if ((window as any).paypal) {
-      resolve();
-      return;
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src*="paypal.com/sdk/js"]'
+    );
+
+    // If already loaded with same currency, reuse it
+    if ((window as any).paypal && existing) {
+      const currentCurrency = new URL(existing.src).searchParams.get("currency");
+      if (currentCurrency === currency) {
+        resolve();
+        return;
+      }
+      // Otherwise, remove old script and reset globals
+      existing.remove();
+      delete (window as any).paypal;
+      delete (window as any).zoid; // PayPal’s internal bridge
     }
 
-    const script = document.createElement("script");
-    script.src = `https://www.${
+    const host =
       this.environment === ENVIRONMENT.SANDBOX
         ? "sandbox.paypal.com"
-        : "paypal.com"
-    }/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
+        : "paypal.com";
+
+    const script = document.createElement("script");
+    script.src = `https://${host}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
     document.head.appendChild(script);
   });
 }
-
 
   /** Launches the PayPal payment flow. */
   async processPayment(
