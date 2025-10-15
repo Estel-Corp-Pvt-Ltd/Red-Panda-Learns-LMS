@@ -1,96 +1,130 @@
-
-import { Play } from "lucide-react";
+import { Play, BookOpen, Users, Clock } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Course } from "@/types/course";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import { CART_ACTION } from "@/constants";
+import type { Course } from "@/types/course";
 
 type CourseCardProps = {
   course: Course;
   className?: string;
-  variant?: 'default' | 'featured' | 'compact';
+  variant?: "default" | "featured" | "compact";
 };
 
-export function CourseCard({ course, className, variant = 'default' }: CourseCardProps) {
+export function CourseCard({ course, className, variant = "default" }: CourseCardProps) {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const { cart, cartDispatch } = useCart();
   const { isEnrolled } = useEnrollment();
-  const isCompact = variant === 'compact';
-  const isFeatured = variant === 'featured';
-  const courseId = (course as any)?.id || course?.id?.toString();
-  const userIsEnrolled = user && courseId ? isEnrolled(courseId) : false;
+
+  const isCompact = variant === "compact";
+  const isFeatured = variant === "featured";
+
+  const courseId = String(course?.id);
+  const userIsEnrolled = user && isEnrolled(courseId);
+  const isAddedToCart = cart.some((item) => item.courseId === courseId);
+
+  /** Handles adding course to cart or navigating if already in cart */
+  const handleCart = () => {
+    if (userIsEnrolled) {
+      navigate(`/course/${courseId}`);
+      return;
+    }
+    if (isAddedToCart) {
+      navigate("/cart");
+      return;
+    }
+
+    cartDispatch({
+      type: CART_ACTION.ADD,
+      item: { courseId },
+    });
+
+    toast({
+      title: "Course added",
+      description: `${course.title} has been added to your cart.`,
+    });
+  };
 
   return (
-    <Card className={cn(
-      "group overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10",
-      "hover:-translate-y-1 cursor-pointer border-0 bg-gradient-card",
-      isFeatured && "ring-2 ring-primary/20 shadow-glow",
-      className
-    )}>
-      <Link to={`/course/${courseId}`} className="block">
-        {/* Thumbnail */}
-        <div className={cn(
+    <Card
+      className={cn(
+        "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10",
+        isFeatured && "ring-2 ring-primary/20 shadow-glow",
+        className
+      )}
+    >
+      {/* --- Thumbnail --- */}
+      <div
+        className={cn(
           "relative overflow-hidden bg-muted",
           isCompact ? "aspect-[16/9]" : "aspect-[16/10]"
-        )}>
+        )}
+      >
+        {/* Background image */}
+        {course.thumbnail && (
+          <img
+            src={course.thumbnail}
+            alt={`${course.title} thumbnail`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        )}
 
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          {course.thumbnail && <img src={course.thumbnail} className="w-full" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          {/* Play button overlay */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4 transform scale-90 group-hover:scale-100 transition-transform duration-300">
-              <Play className="h-6 w-6 text-primary-foreground fill-current" />
-            </div>
-          </div>
-
-          {/* Status badges */}
-          <div className="absolute top-3 left-3 flex gap-2">
-            {userIsEnrolled && (
-              <Badge variant="secondary" className="bg-success text-success-foreground">
-                Enrolled
-              </Badge>
-            )}
-            {isFeatured && (
-              <Badge className="bg-gradient-primary text-primary-foreground">
-                Featured
-              </Badge>
-            )}
+        {/* Play icon */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4 transform scale-90 group-hover:scale-100 transition-transform duration-300">
+            <Play className="h-6 w-6 text-primary-foreground fill-current" />
           </div>
         </div>
 
-        <CardContent className={cn("p-4", isCompact && "p-3")}>
-          <div className="space-y-2">
-            <h3 className={cn(
-              "font-semibold leading-tight text-foreground group-hover:text-primary transition-colors",
-              isCompact ? "text-sm" : "text-lg",
-              "line-clamp-2"
-            )}>
-              {course.title}
-            </h3>
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          {userIsEnrolled && (
+            <Badge variant="secondary" className="bg-success text-success-foreground">
+              Enrolled
+            </Badge>
+          )}
+          {isFeatured && (
+            <Badge className="bg-gradient-primary text-primary-foreground">Featured</Badge>
+          )}
+        </div>
+      </div>
 
-            {!isCompact && course.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {course.description}
-              </p>
-            )}
+      {/* --- Content --- */}
+      <CardContent className={cn("p-4 space-y-2", isCompact && "p-3 space-y-1")}>
+        <h3
+          className={cn(
+            "font-semibold leading-tight text-foreground transition-colors group-hover:text-primary line-clamp-2",
+            isCompact ? "text-sm" : "text-lg"
+          )}
+        >
+          {course.title}
+        </h3>
 
-            <div className="flex items-center text-xs text-muted-foreground">
-              <span>by {course.authorName}</span>
-            </div>
-          </div>
-        </CardContent>
+        {!isCompact && course.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
+        )}
 
-        <CardFooter className={cn("px-4 pb-4 pt-0", isCompact && "px-3 pb-3")}>
-          <div className="w-full space-y-3">
-            {/* Stats */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-4">
-                {/* {course.total_lessons > 0 && (
+        <p className="text-xs text-muted-foreground">by {course.authorName}</p>
+      </CardContent>
+
+      {/* --- Footer --- */}
+      <CardFooter className={cn("px-4 pb-4 pt-0", isCompact && "px-3 pb-3")}>
+        <div className="w-full space-y-3">
+          {/* Stats */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-4">
+              {/* {course.total_lessons > 0 && (
                   <div className="flex items-center gap-1">
                     <BookOpen className="h-3 w-3" />
                     <span>{course.total_lessons} lessons</span>
@@ -108,28 +142,47 @@ export function CourseCard({ course, className, variant = 'default' }: CourseCar
                     <span>{course.course_duration}</span>
                   </div>
                 )} */}
-              </div>
-
-              {course.salePrice && (
-                <div className="font-semibold text-primary">
-                  ₹{course.salePrice}
-                </div>
-              )}
             </div>
 
-            {/* Action button */}
-            {!isCompact && (
+            {course.salePrice && (
+              <div className="font-semibold text-primary">
+                ₹{course.salePrice}
+              </div>
+            )}
+          </div>
+          {/* Actions */}
+          {userIsEnrolled ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+              onClick={() => navigate(`/course/${courseId}`)}
+            >
+              Continue Learning
+            </Button>
+          ) : (
+            <div className="flex justify-between items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all"
+                onClick={handleCart}
+                className="flex-1 transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
               >
-                {userIsEnrolled ? 'Continue Learning' : 'View Course'}
+                {isAddedToCart ? "Go to Cart" : "Add to Cart"}
               </Button>
-            )}
-          </div>
-        </CardFooter>
-      </Link>
+              <Link to={`/course/${courseId}`} className="flex-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                >
+                  View Course
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </CardFooter>
     </Card>
   );
-};
+}

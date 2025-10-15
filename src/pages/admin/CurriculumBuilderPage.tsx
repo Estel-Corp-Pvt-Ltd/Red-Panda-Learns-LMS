@@ -77,6 +77,7 @@ import { serverTimestamp } from "firebase/firestore";
 import { imageService } from "@/services/imageService";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
+import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { CreateLessonModal } from "@/components/admin/AddLesson";
 
 type SortableItemProps = {
@@ -144,6 +145,7 @@ const CurriculumBuilderPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { showOverlay, hideOverlay } = useLoadingOverlay();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
@@ -173,7 +175,7 @@ const CurriculumBuilderPage = () => {
   const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
@@ -312,17 +314,11 @@ const CurriculumBuilderPage = () => {
 
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
+    setTimeout(() => uploadThumbnail(), 100);
   };
 
   const uploadThumbnail = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "No File Selected",
-        description: "Please choose an image before uploading.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!selectedFile) return;
 
     // Check file size (3MB limit)
     const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
@@ -351,7 +347,7 @@ const CurriculumBuilderPage = () => {
     uploadTask.on(
       "state_changed",
       (snapshot) => {
-        setUploading(true);
+        setUploadingThumbnail(true);
         // Calculate progress
         const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(Math.round(prog));
@@ -363,12 +359,12 @@ const CurriculumBuilderPage = () => {
           variant: "destructive",
         });
         console.error(error);
-        setUploading(false);
+        setUploadingThumbnail(false);
       },
       async () => {
         try {
           setProgress(100);
-          setUploading(false);
+          setUploadingThumbnail(false);
           const url = await getDownloadURL(uploadTask.snapshot.ref);
           setThumbnailUrl(url);
           toast({
@@ -416,7 +412,7 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      setSaving(true);
+      showOverlay("Saving Course Basics");
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
@@ -434,7 +430,7 @@ const CurriculumBuilderPage = () => {
     } catch (e) {
       toast({ title: "Error", description: String(e), variant: "destructive" });
     } finally {
-      setSaving(false);
+      hideOverlay();
     }
   };
 
@@ -862,7 +858,7 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      setSaving(true);
+      showOverlay("Saving Curriculum.");
 
       const newRootTopics: Topic[] = [];
       const newCohorts: Cohort[] = [];
@@ -943,7 +939,7 @@ const CurriculumBuilderPage = () => {
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      hideOverlay();
     }
   };
 
@@ -961,7 +957,7 @@ const CurriculumBuilderPage = () => {
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="additional">Additional</TabsTrigger>
+            {/* <TabsTrigger value="additional">Additional</TabsTrigger> */}
           </TabsList>
 
           {/* ────────── BASICS TAB CONTENT ────────── */}
@@ -1022,7 +1018,7 @@ const CurriculumBuilderPage = () => {
                         />
                       </div>
                     )}
-                    {uploading && (
+                    {uploadingThumbnail && (
                       <div className="mb-8">
                         <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
                           <div
@@ -1038,18 +1034,7 @@ const CurriculumBuilderPage = () => {
                       </div>
                     )}
                     <div className="flex justify-between items-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                      />
-                      <Button
-                        className="border px-5 py-2"
-                        onClick={uploadThumbnail}
-                        disabled={uploading || !preview}
-                      >
-                        {!preview ? "Uploaded" : "Upload"}
-                      </Button>
+                      <input type="file" accept="image/*" onChange={handleFileChange} />
                     </div>
                   </CardContent>
                 </Card>
@@ -1314,9 +1299,9 @@ const CurriculumBuilderPage = () => {
                 {/* Pricing */}
                 <Card className="rounded-xl border p-4">
                   <div className="flex gap-4">
-                    <Button onClick={saveBasics} disabled={saving}>
+                    <Button onClick={saveBasics}>
                       <Save className="mr-2 h-4 w-4" />
-                      {saving ? "Saving..." : "Save Basics"}
+                      Save Basics
                     </Button>
                     <Button
                       variant="outline"
@@ -1470,11 +1455,10 @@ const CurriculumBuilderPage = () => {
                   <Button
                     size="sm"
                     onClick={saveCurriculumStructure}
-                    disabled={saving}
                     className="flex items-center gap-1"
                   >
                     <Save className="h-4 w-4" />
-                    {saving ? "Saving…" : "Save"}
+                    Save
                   </Button>
                   <Button
                     size="sm"
