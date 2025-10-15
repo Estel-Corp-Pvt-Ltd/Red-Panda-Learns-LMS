@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   CheckCircle,
-  X,
   FileText,
   Video,
 } from "lucide-react";
@@ -10,19 +9,18 @@ import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import {
   useCourseQuery,
 } from "@/hooks/useCaching";
 import { useAuth } from '@/contexts/AuthContext';
-import { enrollmentService } from '@/services/enrollmentService';
 import { Lesson } from "@/types/lesson";
 import { lessonService } from "@/services/lessonService";
 import { LEARNING_UNIT, LESSON_TYPE } from "@/constants";
-import SmartVideoPlayer from "@/components/SmartVideoPlayer";
 import LmsVideoPlayer from "@/components/LMSVideoPlayer";
+import { toast } from "@/hooks/use-toast";
 
 export default function LessonDetailPage() {
   const { courseId, lessonId } = useParams<{
@@ -40,16 +38,40 @@ export default function LessonDetailPage() {
 
   const isLoading = courseLoading;
 
+
   useEffect(() => {
     if (!isLoading) {
-      console.log("Courses are loading",course)
+      console.log("Courses are loading", course)
     }
   }, [isLoading]);
 
   const loadLessons = async () => {
-    const allLessonIds = course.topics.flatMap(topic => topic.items.map(item => item.id));
+    if (!course) return;
+
+    // Collect course-level lessons
+    const courseLessonIds =
+      course.topics?.flatMap(topic => topic.items.map(item => item.id)) || [];
+
+    // Collect cohort-level lessons
+    const cohortLessonIds =
+      course.cohorts?.flatMap(cohort =>
+        cohort.topics?.flatMap(topic => topic.items.map(item => item.id)) || []
+      ) || [];
+
+    // Combine both
+    const allLessonIds = [...courseLessonIds, ...cohortLessonIds];
+
+    if (allLessonIds.length === 0) {
+      setLessons([]);
+      return;
+    }
+
+    // Fetch lesson details
     const allLessons = await lessonService.getLessonsByIds(allLessonIds);
+
+    // Update state
     setLessons(allLessons);
+
   };
 
   useEffect(() => {
@@ -72,10 +94,12 @@ export default function LessonDetailPage() {
   // Mark lesson as completed
   const markLessonComplete = async () => {
     if (!user || !courseId || !lessonId) return;
-
     try {
-      await enrollmentService.updateProgress(user.id, courseId, lessonId);
-      // You could add a toast notification here
+      toast({
+        title: "Error",
+        description: "This functionality has not been implemented yet",
+        variant: "destructive",
+      });
     } catch (error) {
       console.error('Error updating progress:', error);
     }
@@ -179,7 +203,7 @@ export default function LessonDetailPage() {
           <SheetContent side="left" className="p-0 w-80">
             <div className="h-full">
               <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="font-semibold">Course Content</h2>
+                <h2 className="font-semibold">Course Content </h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -246,7 +270,7 @@ export default function LessonDetailPage() {
 
                 <Button variant="outline" size="sm" onClick={markLessonComplete}>
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark Complete 
+                  Mark Complete
                 </Button>
               </div>
             </div>

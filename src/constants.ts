@@ -327,6 +327,7 @@ export const COLLECTION = {
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',
     USERS: 'Users',
+    CARTS: 'Carts',
     LESSONS: 'Lessons',
     COUPONS: 'Coupons',
     COUPON_USAGES: 'CouponUsages',
@@ -364,3 +365,9 @@ export const FALLBACK_CURRENCY_RATE: Record<string, number> = {
   USD_EUR: 0.92,
   EUR_USD: 1.09,
 };
+export const CART_ACTION = {
+    ADD: "ADD",
+    REMOVE: "REMOVE",
+    CLEAR: "CLEAR",
+    SET_CART: "SET_CART",
+} as const;

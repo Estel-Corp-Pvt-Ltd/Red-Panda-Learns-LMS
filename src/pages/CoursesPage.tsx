@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Grid, List, TrendingUp, Clock, Users } from "lucide-react";
+import { BookOpen, CheckCircle, Clock, Grid, Layers, List, TrendingUp, Users } from "lucide-react";
+
 import { Header } from "@/components/Header";
+import { BundleCard } from "@/components/bundle/BundleCard";
 import { CourseCard } from "@/components/course/CourseCard";
-import { CourseListView } from "@/components/course/CourseListView";
 import { CourseFilters } from "@/components/course/CourseFilters";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { ErrorState } from "@/components/ui/error-state";
-import { Button } from "@/components/ui/button";
+import { CourseListView } from "@/components/course/CourseListView";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import {
   Select,
   SelectContent,
@@ -15,13 +18,14 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { useCoursesQuery, useCohortsQuery } from "@/hooks/useCaching";
+
 import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
+import { useCohortsQuery, useCoursesQuery } from "@/hooks/useCaching";
 import { useCourseFilters } from "@/hooks/useCourseFilters";
-import { BundleCard } from "@/components/bundle/BundleCard";
-import { CohortCard } from "@/components/cohort/cohort-card";
-import { SORT_OPTIONS } from "@/types/courseFilters";
+
 import { cn } from "@/lib/utils";
+
+import { SORT_OPTIONS } from "@/types/courseFilters";
 
 export default function CoursesPage() {
 
@@ -119,7 +123,7 @@ export default function CoursesPage() {
           <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-primary/80 border-primary text-white rounded-full border-4 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6" />
+                <BookOpen className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{stats.total}</p>
@@ -143,7 +147,7 @@ export default function CoursesPage() {
           <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-primary/80 rounded-full border-4 border-primary text-white flex items-center justify-center">
-                <TrendingUp className="h-6 w-6" />
+                <Layers className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{stats.bundles}</p>
@@ -155,7 +159,7 @@ export default function CoursesPage() {
           <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-primary/80 rounded-full border-4 text-white border-primary flex items-center justify-center">
-                <Clock className="h-6 w-6" />
+                <CheckCircle className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{stats.completed}</p>

@@ -1,16 +1,11 @@
 import { Course } from "@/types/course";
 import { currencyService } from "./currencyService";
 import { transactionService } from "./transactionService";
-import { enrollmentService } from "./enrollmentService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { paypalProvider } from "./providers/paypalProvider";
 import { Currency, PaymentProvider } from "@/types/general";
-import {
-  CURRENCY,
-  PAYMENT_PROVIDER,
-  TRANSACTION_STATUS,
-  TRANSACTION_TYPE,
-} from "@/constants";
+import { enrollmentService } from './dummyEnrollmentService';
+import { CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -164,9 +159,8 @@ metadata: {
         try {
           await enrollmentService.enrollUser(
             userId,
-            course,
-            result.paymentId,
-            provider
+            course.id,
+            ENROLLED_PROGRAM_TYPE.COURSE
           );
         } catch (err) {
           console.error("Enrollment failed after payment:", err);

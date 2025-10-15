@@ -14,14 +14,17 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.0.1",
+    "html-pdf-node": "^1.0.8",
     "razorpay": "^2.9.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/html-pdf-node": "^1.0.2",
     "@types/node": "^24.5.2",
     "firebase-functions-test": "^3.1.0",
     "typescript": "^5.9.2"

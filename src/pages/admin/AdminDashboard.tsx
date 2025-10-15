@@ -1,5 +1,22 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  PlusCircle,
+  Edit,
+  Trash2,
+  Users,
+  UserPlus,
+  BookOpen,
+  Loader2,
+  Calendar,
+  Eye,
+  Plus,
+  Gift,
+} from "lucide-react";
+
+import { formatDate } from "@/utils/date-time";
+import { useToast } from "@/hooks/use-toast";
+
 import {
   Card,
   CardContent,
@@ -7,8 +24,6 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { OrganizationType } from "@/types/general";
-import { formatDate } from "@/utils/date-time";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -20,64 +35,33 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import {
-  PlusCircle,
-  Edit,
-  Trash2,
-  DollarSign,
-  Users,
-  UserPlus,
-  BookOpen,
-  Loader2,
-  Calendar,
-  Eye,
-  Plus,
-  Gift,
-} from "lucide-react";
+import { Header } from "@/components/Header";
 
-import { courseService } from "@/services/courseService";
-import { cohortService } from "@/services/cohortService";
-import { bundleService } from "@/services/bundleService";
-import { lessonService } from "@/services/lessonService";
 import { authorService } from "@/services/authorService";
-import { Cohort } from "@/types/course";
-import { userService } from "@/services/userService";
-import { Bundle } from "@/types/bundle";
-import { Course } from "@/types/course";
-import { Lesson } from "@/types/lesson";
-import { User } from "@/types/user";
-import { Organization } from "@/types/organization";
-import { organizationService } from "@/services/organizationService";
-import { ORGANIZATION } from "@/constants";
-
-// import { useCourseQuery } from "@/hooks/useFirebaseApi";
-import { useLocation } from "react-router-dom";
-import { Coupon } from "@/types/coupon";
+import { bundleService } from "@/services/bundleService";
+import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
+import { courseService } from "@/services/courseService";
+import { lessonService } from "@/services/lessonService";
+import { organizationService } from "@/services/organizationService";
+import { userService } from "@/services/userService";
 
-// const course = useCourseQuery() =;
-const statsData = {
-  totalRevenue: 45231,
-  activeStudents: 2350,
-  newEnrollments: 180,
-  totalCourses: 12,
-  activeCohorts: 5,
-  totalCohortStudents: 420
-};
+import { Bundle } from "@/types/bundle";
+import { Lesson } from "@/types/lesson";
+import { Organization } from "@/types/organization";
+import { User } from "@/types/user";
+import { Cohort, Course } from "@/types/course";
+import { Coupon } from "@/types/coupon";
+import { OrganizationType } from "@/types/general";
 
+import { ORGANIZATION } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
   COURSE_STATUS,
   USER_ROLE,
   USER_STATUS,
-
 } from "@/constants";
-
-import { Header } from "@/components/Header";
-import { error } from "console";
-
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -98,7 +82,7 @@ export function AdminDashboard() {
   const [bundlesLoading, setBundlesLoading] = useState(true);
 
   useEffect(() => {
-    if (location.pathname === '/admin') {
+    if (location.pathname === "/admin") {
       loadCourses();
       loadCohorts();
       loadBundles();
@@ -111,10 +95,10 @@ export function AdminDashboard() {
 
   // 🔹 Load USERS
   const loadUsers = async () => {
-    try {
-      const usersList = await userService.getAllUsers();
-      setUsers(usersList);
-    } catch (error) {
+    const response = await userService.getAllUsers();
+    if (response.success) {
+      setUsers(response.data);
+    } else {
       toast({
         title: "Error",
         description: "Failed to load users",
@@ -124,14 +108,14 @@ export function AdminDashboard() {
   };
 
   const deleteUser = async (userId: string) => {
-    try {
-      await userService.deleteUser(userId);
+    const response = await userService.deleteUser(userId);
+    if (response.success) {
       setUsers((prev) => prev.filter((user) => user.id !== userId));
       toast({
         title: "Success",
         description: "User deleted successfully"
       });
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to delete user",
@@ -640,7 +624,7 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button
+                                {/* <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
@@ -664,7 +648,7 @@ export function AdminDashboard() {
                                   title="View Lesson"
                                 >
                                   <Eye className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
 
                                 <Button
                                   variant="ghost"
@@ -737,7 +721,7 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? 'default' : 'secondary'}>
+                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? "default" : "secondary"}>
                                 {course.status}
                               </Badge>
                             </TableCell>
@@ -751,14 +735,6 @@ export function AdminDashboard() {
                                   onClick={() => navigate(`/admin/edit-course/${course.id}`)}
                                 >
                                   <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/create-cohort?courseId=${course.id}`)}
-                                  title="Create Cohort"
-                                >
-                                  <Calendar className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -837,7 +813,7 @@ export function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? 'default' : 'secondary'}>
+                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? "default" : "secondary"}>
                                 {bundle.status}
                               </Badge>
                             </TableCell>
@@ -906,9 +882,6 @@ export function AdminDashboard() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Cohort</TableHead>
-                          <TableHead>Max Students</TableHead>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -919,58 +892,13 @@ export function AdminDashboard() {
                             <TableCell>
                               <div>
                                 <div className="font-medium">{cohort.title}</div>
-                                <div className="text-sm text-muted-foreground">{cohort.description || '-'}</div>
+                                <div className="text-sm text-muted-foreground">{cohort.description || "-"}</div>
                               </div>
-                            </TableCell>
-
-                            {/* Start date */}
-                            <TableCell>
-                              <div className="text-sm">
-                                {cohort.maxStudents}
-                              </div>
-                            </TableCell>
-
-                            {/* End date */}
-                            <TableCell>
-                              <div className="text-sm">
-                                {cohort.startDate ? formatDate(cohort.startDate) : "No start date"}
-                              </div>
-                            </TableCell>
-
-                            {/* Enrollment open status */}
-                            <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-                              </Badge>
-                            </TableCell>
-
-                            <TableCell>
-                              <Badge variant={cohort.enrollmentOpen ? 'secondary' : 'destructive'}>
-                                {cohort.enrollmentOpen ? 'Open' : 'Closed'}
-                              </Badge>
                             </TableCell>
 
                             {/* Actions: view, edit, delete */}
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/cohort/${cohort.id}`)}
-                                  title="View Details"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/cohort/${cohort.id}/edit`)}
-                                  title="Edit Cohort"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -1160,7 +1088,7 @@ export function AdminDashboard() {
                         Get started by creating a coupon code.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate('/admin/create-coupon')}>
+                        <Button onClick={() => navigate("/admin/create-coupon")}>
                           <Plus className="mr-2 h-4 w-4" />
                           Create Coupon
                         </Button>
@@ -1186,10 +1114,10 @@ export function AdminDashboard() {
                               <Badge
                                 variant={
                                   coupon.status === COUPON_STATUS.ACTIVE
-                                    ? 'default'
+                                    ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                      ? 'secondary'
-                                      : 'outline'
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {coupon.status}

@@ -1,16 +1,21 @@
-import { User, Menu, LogOut } from "lucide-react";
+import { LogOut, Menu, ShoppingCart, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link, useNavigate } from "react-router-dom";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+
 import { cn } from "@/lib/utils";
+import { USER_ROLE } from "@/constants";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -24,6 +29,7 @@ export function Header({
   className,
 }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { cart } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -92,41 +98,55 @@ export function Header({
           <ThemeToggle />
 
           {user ? (
-            // 🔓 Logged-in dropdown
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                      {/* 👇 FIXED: use text-foreground so it's always visible */}
-                      <User className="h-4 w-4 text-foreground" />
-                    </div>
-                    <span className="hidden sm:inline text-sm font-medium">
-                      {user.firstName && user.lastName
-                        ? `${user.firstName}`
-                        : user.firstName || "Account"}
+            <div className="flex items-center">
+              {
+                user.role !== USER_ROLE.ADMIN &&
+                <Link to="/cart" className="relative mr-3">
+                  <ShoppingCart className="w-6 h-6" />
+
+                  {cart.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {cart.length}
                     </span>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
+                  )}
+                </Link>
+              }
+              {/* // 🔓 Logged-in dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="relative">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                        {/* 👇 FIXED: use text-foreground so it's always visible */}
+                        <User className="h-4 w-4 text-foreground" />
+                      </div>
+                      <span className="hidden sm:inline text-sm font-medium">
+                        {user.firstName && user.lastName
+                          ? `${user.firstName}`
+                          : user.firstName || "Account"}
+                      </span>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-56">
-                {/* 👇 Always Dashboard for all roles */}
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56">
+                  {/* 👇 Always Dashboard for all roles */}
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           ) : (
             // 🔒 Logged-out: Login + Signup buttons
             <div className="flex items-center gap-2">

@@ -99,7 +99,7 @@ To ensure code quality, consistent integration, and learning for all team member
      ```bash
      git checkout staging
      git pull origin staging
-     git fetch pull origin pull/<PR-NUMBER>/merge:pr-<PR-NUMBER>-merge
+     git fetch origin pull/<PR-NUMBER>/merge:pr-<PR-NUMBER>-merge
      git checkout pr-<PR-NUMBER>-merge
      ```
   2. Build and run the application locally, ensuring functionality works as expected.  

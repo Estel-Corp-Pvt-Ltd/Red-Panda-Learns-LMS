@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { enrollmentService, Enrollment } from '@/services/enrollmentService';
+import { enrollmentService } from '@/services/dummyEnrollmentService';
 import { useCourseQuery } from '@/hooks/useCaching';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -16,10 +16,11 @@ import { db } from '@/firebaseConfig';
 import { useNavigate } from 'react-router-dom';
 import { COLLECTION, USER_ROLE } from '@/constants';
 import { formatDate } from '@/utils/date-time';
+import { Enrollment } from '@/types/enrollment';
 
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
-  const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
+  const { data: course, isLoading } = useCourseQuery(enrollment.targetId);
 
   if (isLoading) {
     return <LoadingSkeleton className="h-48" />;
@@ -40,9 +41,9 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
             <div className="space-y-3 mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span>Progress</span>
-                <span>{enrollment.progress.progressPercentage}%</span>
+                <span>{enrollment.progress.percentage}%</span>
               </div>
-              <Progress value={enrollment.progress.progressPercentage} />
+              <Progress value={enrollment.progress.percentage} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -50,7 +51,7 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
                   <span>Enrolled {formatDate(
-                  enrollment.enrolledAt)}</span>
+                    enrollment.enrollmentDate)}</span>
                 </div>
                 <Badge variant="outline" className="text-xs">
                   {enrollment.status}
@@ -112,9 +113,9 @@ export default function DashboardPage() {
 
   const stats = {
     totalCourses: enrollments.length,
-    completedCourses: enrollments.filter(e => e.progress.progressPercentage === 100).length,
+    completedCourses: enrollments.filter(e => e.progress.percentage === 100).length,
     averageProgress: enrollments.length > 0
-      ? Math.round(enrollments.reduce((sum, e) => sum + e.progress.progressPercentage, 0) / enrollments.length)
+      ? Math.round(enrollments.reduce((sum, e) => sum + e.progress.percentage, 0) / enrollments.length)
       : 0,
   };
 
@@ -175,8 +176,10 @@ export default function DashboardPage() {
 
         {/* Enrolled Courses */}
         <div>
-          <h2 className="text-xl font-semibold mb-6">My Courses</h2>
-
+          <div className='flex justify-between items-center mb-6'>
+            <h2 className="text-2xl font-semibold">My Courses</h2>
+            {enrollments.length > 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
+          </div>
           {isLoading ? (
             <div className="grid gap-6">
               <LoadingSkeleton className="h-48" />

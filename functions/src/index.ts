@@ -11,14 +11,16 @@ import fetch from "node-fetch";
 import Razorpay from "razorpay";
 import { CURRENCY } from "../../src/constants";
 import { PayPalAccessToken } from "../src/types/paypalConfig";
+import { sendInvoice, sendPaymentFailedEmail } from "./invoice";
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 const db = admin.firestore();
 
-const razorpayKeyId = defineSecret("RAZORPAY_KEY_ID");
-const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
+const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
+const RAZORPAY_SECRET_KEY = defineSecret("RAZORPAY_KEY_SECRET");
+const BREVO_API_KEY = defineSecret("BREVO_API_KEY");
 
 function validateAmount(amount: any): number {
   if (typeof amount !== "number" || isNaN(amount)) {
@@ -52,7 +54,7 @@ const idempotencyCache = new Map<string, any>();
 
 // ------------------ Create Order ------------------
 export const createOrder = onRequest(
-  { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
+  { region: "us-central1", secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY] },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET , POST, OPTIONS");
@@ -110,8 +112,8 @@ export const createOrder = onRequest(
       const currency = validateCurrency(rawcurrency);
 
       const instance = new Razorpay({
-        key_id: razorpayKeyId.value(),
-        key_secret: razorpayKeySecret.value(),
+        key_id: RAZORPAY_KEY_ID.value(),
+        key_secret: RAZORPAY_SECRET_KEY.value(),
       });
 
       const order = await instance.orders.create({
@@ -126,7 +128,7 @@ export const createOrder = onRequest(
       const response = {
         success: true,
         order,
-        key_id: razorpayKeyId.value(),
+        key_id: RAZORPAY_KEY_ID.value(),
       };
 
       // Cache response for this idempotency key
@@ -149,7 +151,7 @@ export const createOrder = onRequest(
 // ------------------ Verify Payment ------------------
 
 export const verifyPayment = onRequest(
-  { region: "us-central1", secrets: [razorpayKeyId, razorpayKeySecret] },
+  { region: "us-central1", secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY, BREVO_API_KEY] },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -177,7 +179,7 @@ export const verifyPayment = onRequest(
       // Step 1: Validate HMAC signature
       const body = `${razorpay_order_id}|${razorpay_payment_id}`;
       const expectedSignature = crypto
-        .createHmac("sha256", razorpayKeySecret.value())
+        .createHmac("sha256", RAZORPAY_SECRET_KEY.value())
         .update(body)
         .digest("hex");
 
@@ -213,10 +215,28 @@ export const verifyPayment = onRequest(
         return;
       }
 
-      // Step 3: Cross-check with Razorpay API
+      // Step 3. Get User Details
+      const userRef = db.collection("Users").doc(txn.userId);
+      const userSnap = await userRef.get();
+
+      if (!userSnap.exists) {
+        res.status(400).json({ success: false, error: "Something wrong with userID" });
+        return;
+      }
+
+      const userData = userSnap.data();
+      if (!userData) {
+        res.status(400).json({ success: false, error: "User data is missing" });
+        return;
+      }
+
+      const firstName = userData.firstName;
+      const email = userData.email;
+
+      // Step 4: Cross-check with Razorpay API
       const instance = new Razorpay({
-        key_id: razorpayKeyId.value(),
-        key_secret: razorpayKeySecret.value(),
+        key_id: RAZORPAY_KEY_ID.value(),
+        key_secret: RAZORPAY_SECRET_KEY.value(),
       });
 
       let payment;
@@ -225,6 +245,7 @@ export const verifyPayment = onRequest(
         console.log("✅ Razorpay payment fetched:", payment);
       } catch (fetchErr) {
         console.error("❌ Razorpay fetch failed:", fetchErr);
+        await sendPaymentFailedEmail({ email, name: firstName }, BREVO_API_KEY.value());
         res.status(400).json({ success: false, error: "Invalid payment ID" });
         return;
       }
@@ -234,7 +255,7 @@ export const verifyPayment = onRequest(
         return;
       }
 
-      // Step 4: Update transaction as completed
+      // Step 5: Update transaction as completed
       // await txnRef.update({
       //   status: "COMPLETED",
       //   razorpay_order_id,
@@ -242,6 +263,35 @@ export const verifyPayment = onRequest(
       //   razorpay_signature,
       //   completedAt: Date.now(),
       // });
+
+      // Step: 6 Send Email
+      console.time("sendInvoice");
+      await sendInvoice({
+        email: email,
+        name: firstName,
+        amount: 1000,
+        billTo: {
+          name: "Gyanendra Singh",
+          address: {
+            city: "Indore",
+            line1: "G",
+            country: "India",
+            postalCode: "486220",
+            state: "Madhya Pradesh",
+          }
+        },
+        shipTo: {
+          name: "Gyanendra Singh",
+          address: {
+            city: "Indore",
+            line1: "G",
+            country: "India",
+            postalCode: "486220",
+            state: "Madhya Pradesh",
+          }
+        }
+      }, BREVO_API_KEY.value());
+      console.timeEnd("sendInvoice");
 
       console.log("✅ Transaction updated to COMPLETED:", transaction_id);
       res.json({ success: true, transaction_id });
