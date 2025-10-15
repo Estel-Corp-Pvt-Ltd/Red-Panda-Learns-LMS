@@ -9,6 +9,8 @@ import ProductsSection from "./ProductsSection";
 import ResearchSection from "./ResearchSection";
 import AICoursesSection from "./AICoursesSection";
 import CorporatesSection from "./CorporatesSection";
+import  Footer  from "./Footer";
+import  TestimonialsSection  from "./TestimonialsSection";
 
 const LandingPage = () => {
   return (
@@ -24,7 +26,9 @@ const LandingPage = () => {
       <CorporatesSection />
       {/* <AudienceSection /> */}
       <TeamSection />
+      <TestimonialsSection />
       <NewsletterSection />
+      <Footer /> 
     </div>
   );
 };
