@@ -19,7 +19,7 @@ const philosophyItems = [
   {
     icon: Brain,
     title: "Research",
-    description: "We are trying to push the boundaries of AI through research.",
+    description: "We are trying to push the boundaries of AI through research and innovation.",
     color: "#ff00ff",
     gradient: "from-[#ff00ff] to-[#cc00cc]",
   },
@@ -257,10 +257,10 @@ const PhilosophySection = () => {
       <section className="relative py-24 px-6 overflow-hidden">
         {/* Gradient Background with floating blobs */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20"></div>
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-400/20 rounded-full blur-3xl animate-blob-float-1"></div>
-          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-400/20 rounded-full blur-3xl animate-blob-float-2"></div>
-          <div className="absolute bottom-0 left-1/3 w-[550px] h-[550px] bg-pink-400/15 rounded-full blur-3xl animate-blob-float-3"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/10"></div>
+          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-blob-float-1"></div>
+          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-3xl animate-blob-float-2"></div>
+          <div className="absolute bottom-0 left-1/3 w-[550px] h-[550px] bg-pink-400/15 dark:bg-pink-600/10 rounded-full blur-3xl animate-blob-float-3"></div>
         </div>
 
         <div className="container relative mx-auto max-w-6xl">
@@ -276,7 +276,7 @@ const PhilosophySection = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 items-stretch">
             {philosophyItems.map((item, index) => {
               const isRevealed = revealedCards.includes(index);
               const isHovered = hoveredCard === index;
@@ -285,7 +285,7 @@ const PhilosophySection = () => {
               return (
                 <div
                   key={index}
-                  className="relative philosophy-card opacity-0 animate-fade-in-up"
+                  className="relative philosophy-card opacity-0 animate-fade-in-up h-full flex"
                   style={{ animationDelay: `${200 + index * 200}ms` }}
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
@@ -305,8 +305,8 @@ const PhilosophySection = () => {
                       />
                     ))}
 
-                  <div className="relative p-8 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl">
-                    <div className="flex flex-col items-center text-center">
+                  <div className="relative w-full p-8 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col">
+                    <div className="flex flex-col items-center text-center h-full">
                       <div className="relative mb-6">
                         {/* Orbital particles on hover */}
                         {isHovered && (
@@ -379,7 +379,7 @@ const PhilosophySection = () => {
                       >
                         {item.title}
                       </h3>
-                      <p className="text-foreground/70 leading-relaxed font-light">
+                      <p className="text-foreground/70 leading-relaxed font-light flex-grow">
                         {item.description}
                       </p>
                     </div>
