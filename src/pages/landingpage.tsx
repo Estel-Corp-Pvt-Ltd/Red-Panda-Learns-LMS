@@ -4,8 +4,8 @@ import { ServicesSection } from "@/components/ServicesSection";
 import { AudienceSection } from "@/components/AudienceSection";
 import { TeamSection } from "@/components/Team";
 import { NewsletterSection } from "@/components/NewsletterSection";
-// import { PhilosophySection } from "./PhilosophySection";
 import PhilosophySection from "./PhilosophySection";
+import ProductsSection from "./ProductsSection";
 
 const LandingPage = () => {
   return (
@@ -13,6 +13,7 @@ const LandingPage = () => {
       <Header />
       <HeroSection />
       <PhilosophySection />
+      <ProductsSection/>
       {/* <ServicesSection /> */}
       <AudienceSection />
       <TeamSection />
