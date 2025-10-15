@@ -1,18 +1,4 @@
-import { useCallback, useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Play,
-  BookOpen,
-  Share2,
-  Bookmark,
-} from "lucide-react";
-import { formatDate } from "@/utils/date-time";
 import { Header } from "@/components/Header";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { ErrorState } from "@/components/ui/error-state";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -20,18 +6,31 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { CART_ACTION } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   useCourseQuery,
 } from "@/hooks/useCaching";
-import { useAuth } from "@/contexts/AuthContext";
-import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { cn } from "@/lib/utils";
-import { Topic } from "@/types/course";
-import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 import { enrollmentService } from "@/services/dummyEnrollmentService";
-import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/hooks/use-toast";
-import { CART_ACTION } from "@/constants";
+import { Topic } from "@/types/course";
+import { formatDate } from "@/utils/date-time";
+import {
+  ArrowLeft,
+  Bookmark,
+  BookOpen,
+  Lock,
+  Play,
+  Share2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -39,19 +38,9 @@ export default function CourseDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isEnrolled } = useEnrollment();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
-  const handleLessonCount = useCallback(
-    (topicId: string, count: number) =>
-      setLessonCountByTopic((prev) => {
-        // no update needed – prevents redundant renders
-        if (prev[topicId] === count) return prev;
-        return { ...prev, [topicId]: count };
-      }),
-    []
-  );
 
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
@@ -66,7 +55,6 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading;
   const isError = courseError;
 
-
   useEffect(() => {
     const checkEnrollment = async () => {
       if (user && courseId) {
@@ -78,7 +66,6 @@ export default function CourseDetailPage() {
 
     checkEnrollment();
   }, [user, courseId]);
-
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -109,24 +96,19 @@ export default function CourseDetailPage() {
   };
 
   const handleCheckout = async () => {
-    // cartDispatch({
-    //   type: "ADD",
-    //   item: { courseId },
-    // })
     navigate(`/checkout/${courseId}`);
-  }
+  };
 
   const handleContinueLearning = () => {
-    // Find first lesson to navigate to
     if (course.topics && course.topics.length > 0) {
       const firstTopic = course.topics[0];
-      // console.log("CourseDetailPage - Continue Learning:", {
-      //   courseId,
-      //   firstTopicId,
-      //   navigationUrl: `/course/${courseId}/topic/${firstTopicId}/lesson/1`,
-      // });
-      console.log("clicked continue")
       navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+    } else {
+      toast({
+        title: "No content to display",
+        description: `This course has no topics and lessons.`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -166,8 +148,6 @@ export default function CourseDetailPage() {
       </div>
     );
   }
-
-  const progressPercentage = 0; // This would come from user progress data
 
   const totalLessons = Object.values(lessonCountByTopic).reduce(
     (sum: number, count: any) => sum + (Number(count) || 0),
@@ -285,54 +265,54 @@ export default function CourseDetailPage() {
                   lessons
                 </p>
               </CardHeader>
-          <CardContent>
-  {(course.topics.length > 0 || course.cohorts?.length > 0) ? (
-    <Accordion
-      type="multiple"
-      value={expandedTopics}
-      onValueChange={setExpandedTopics}
-    >
-      {/* 1. Render top-level course topics (if any) */}
-      {course.topics.length > 0 &&
-        course.topics.map((topic, index) => (
-          <TopicAccordion
-            key={`course-topic-${topic.id}`}
-            courseId={courseId!}
-            topic={topic}
-            index={index}
-            topicId={topic.id.toString()}
-            isEnrolled={true}
-          />
-        ))}
+              <CardContent>
+                {(course.topics.length > 0 || course.cohorts?.length > 0) ? (
+                  <Accordion
+                    type="multiple"
+                    value={expandedTopics}
+                    onValueChange={setExpandedTopics}
+                  >
+                    {/* 1. Render top-level course topics (if any) */}
+                    {course.topics.length > 0 &&
+                      course.topics.map((topic, index) => (
+                        <TopicAccordion
+                          key={`course-topic-${topic.id}`}
+                          courseId={courseId!}
+                          topic={topic}
+                          index={index}
+                          topicId={topic.id.toString()}
+                          isEnrolled={userIsEnrolled}
+                        />
+                      ))}
 
-      {/* 2. Render cohorts with their topics */}
-      {course.cohorts?.map((cohort, cohortIndex) => (
-        <div key={`cohort-${cohortIndex}`} className="mt-6">
-          {/* Optional: Display cohort title */}
-          <h3 className="text-lg font-semibold mb-2">
-            {cohort.title || `Cohort ${cohortIndex + 1}`}
-          </h3>
+                    {/* 2. Render cohorts with their topics */}
+                    {/* {course.cohorts?.map((cohort, cohortIndex) => (
+                      <div key={`cohort-${cohortIndex}`} className="mt-6"> */}
+                    {/* Optional: Display cohort title */}
+                    {/* <h3 className="text-lg font-semibold mb-2">
+                          {cohort.title || `Cohort ${cohortIndex + 1}`}
+                        </h3> */}
 
-          {cohort.topics?.map((topic, topicIndex) => (
-            <TopicAccordion
-              key={`cohort-topic-${topic.id}`}
-              courseId={courseId!}
-              topic={topic}
-              index={topicIndex}
-              topicId={topic.id.toString()}
-              isEnrolled={true}
-            />
-          ))}
-        </div>
-      ))}
-    </Accordion>
-  ) : (
-    <div className="text-center py-8 text-muted-foreground">
-      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-      <p>No curriculum available yet.</p>
-    </div>
-  )}
-</CardContent>
+                    {/* {cohort.topics?.map((topic, topicIndex) => (
+                          <TopicAccordion
+                            key={`cohort-topic-${topic.id}`}
+                            courseId={courseId!}
+                            topic={topic}
+                            index={topicIndex}
+                            topicId={topic.id.toString()}
+                            isEnrolled={true}
+                          />
+                        ))} */}
+                    {/* </div>
+                    ))} */}
+                  </Accordion>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No curriculum available yet.</p>
+                  </div>
+                )}
+              </CardContent>
 
             </Card>
           </div>
@@ -469,21 +449,6 @@ function TopicAccordion({
 }) {
   const lessons = topic.items;
 
-  // Debug logging for lesson URLs
-  // useEffect(() => {
-  //   if (lessons && lessons.length > 0) {
-  //     console.log("TopicAccordion - Lesson URLs:", {
-  //       courseId,
-  //       topicId,
-  //       sampleLessonUrl: `/course/${courseId}/topic/${topicId}/lesson/${
-  //         lessons[0].ID || lessons[0].id
-  //       }`,
-  //       isEnrolled,
-  //       lessonsCount: lessons.length,
-  //     });
-  //   }
-  // }, [lessons, courseId, topicId, isEnrolled]);
-
   return (
     <AccordionItem value={topicId}>
       <AccordionTrigger className="text-left hover:no-underline">
@@ -513,11 +478,7 @@ function TopicAccordion({
                   key={lesson.id}
                   to={isEnrolled ? lessonUrl : "#"}
                   className={cn(
-                    "block p-3 rounded-lg border border-transparent transition-colors",
-                    isEnrolled
-                      ? "hover:bg-muted/50 hover:border-border"
-                      : "cursor-not-allowed opacity-60"
-                  )}
+                    "block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border")}
                   onClick={(e) => {
                     if (!isEnrolled) {
                       e.preventDefault();
@@ -528,9 +489,14 @@ function TopicAccordion({
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs">
-                      {lessonIndex + 1}
-                    </div>
+                    {
+                      isEnrolled ?
+                        <div className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs">
+                          {lessonIndex + 1}
+                        </div>
+                        :
+                        <Lock size={15} className="text-primary" />
+                    }
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">
                         {lesson.title || (lesson as any).title}

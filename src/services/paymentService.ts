@@ -1,10 +1,10 @@
-import { Course } from '@/types/course';
-import { currencyService } from './currencyService';
-import { transactionService } from './transactionService';
+import { Course } from "@/types/course";
+import { currencyService } from "./currencyService";
+import { transactionService } from "./transactionService";
+import { razorpayProvider } from "./providers/razorpayProvider";
+import { paypalProvider } from "./providers/paypalProvider";
+import { Currency, PaymentProvider } from "@/types/general";
 import { enrollmentService } from './dummyEnrollmentService';
-import { razorpayProvider } from './providers/razorpayProvider';
-import { paypalProvider } from './providers/paypalProvider';
-import { Currency, PaymentProvider } from '@/types/general';
 import { CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
 
 export type PaymentProviderOption = {
@@ -27,50 +27,66 @@ class PaymentService {
   private providers: PaymentProviderOption[] = [
     {
       id: PAYMENT_PROVIDER.RAZORPAY,
-      name: 'razorpay',
-      displayName: 'Razorpay',
-      currency: 'INR',
+      name: "razorpay",
+      displayName: "Razorpay",
+      currency: "INR",
       isAvailable: !!import.meta.env.VITE_RAZORPAY_KEY_ID,
-      description: 'Pay with Cards, UPI, Net Banking & Wallets',
+      description: "Pay with Cards, UPI, Net Banking & Wallets",
     },
     {
       id: PAYMENT_PROVIDER.PAYPAL,
-      name: 'paypal',
-      displayName: 'PayPal',
-      currency: 'USD',
+      name: "paypal",
+      displayName: "PayPal",
+      currency: "USD",
       isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
-      description: 'Pay securely with PayPal',
+      description: "Pay securely with PayPal",
     },
   ];
 
   getAvailableProviders(): PaymentProviderOption[] {
-    return this.providers.filter(provider => provider.isAvailable);
+    return this.providers.filter((p) => p.isAvailable);
   }
 
-  async calculatePricing(salePrice: number, targetCurrency: Currency) {
+  // ✅ Only PayPal adds its service charge. No tax for either.
+  async calculatePricing(
+    salePrice: number,
+    targetCurrency: Currency,
+    provider?: PaymentProvider,
+    baseCurrency: Currency = CURRENCY.INR
+  ) {
     const basePrice = salePrice || 0;
-    const baseCurrency: Currency = CURRENCY.INR; // Assuming course prices are in INR
 
-    if (baseCurrency === targetCurrency) {
-      return {
-        amount: basePrice,
-        currency: targetCurrency,
-        originalAmount: basePrice,
-        originalCurrency: baseCurrency,
-        exchangeRate: 1,
-        formattedPrice: currencyService.formatCurrency(basePrice, targetCurrency),
-      };
+    let convertedAmount = basePrice;
+    let exchangeRate = 1;
+
+    // Convert only if needed
+    if (baseCurrency !== targetCurrency) {
+      const conversion = await currencyService.convertAmount(
+        basePrice,
+        baseCurrency,
+        targetCurrency
+      );
+      convertedAmount = conversion.convertedAmount;
+      exchangeRate = conversion.exchangeRate;
     }
 
-    const conversion = await currencyService.convertAmount(basePrice, baseCurrency, targetCurrency);
+    // For PayPal, adjust so seller receives the base price after fees
+    let total = convertedAmount;
+    if (provider === PAYMENT_PROVIDER.PAYPAL) {
+      const percent = 0.0349; // PayPal ~3.49%
+      const fixed = 0.49; // flat fee in selected currency
+      total = (convertedAmount + fixed) / (1 - percent);
+    }
 
     return {
-      amount: conversion.convertedAmount,
+      amount: total,
+      baseAmount: salePrice,
       currency: targetCurrency,
-      originalAmount: conversion.originalAmount,
-      originalCurrency: conversion.originalCurrency,
-      exchangeRate: conversion.exchangeRate,
-      formattedPrice: currencyService.formatCurrency(conversion.convertedAmount, targetCurrency),
+      originalAmount: basePrice,
+      originalCurrency: baseCurrency,
+      exchangeRate,
+      formattedPrice: currencyService.formatCurrency(convertedAmount, targetCurrency),
+      formattedTotal: currencyService.formatCurrency(total, targetCurrency),
     };
   }
 
@@ -78,26 +94,21 @@ class PaymentService {
     provider: PaymentProvider,
     course: Course,
     userEmail: string,
-    userId: string
+    userId: string,
+    selectedCurrency: Currency,
+    baseCurrency: Currency
   ): Promise<PaymentResult> {
     try {
-      console.log('PaymentService - Processing payment:', {
+      const providerOption = this.providers.find((p) => p.id === provider);
+      if (!providerOption)
+        return { success: false, error: "Unsupported payment provider" };
+
+      const pricing = await this.calculatePricing(
+        course.salePrice,
+        selectedCurrency,
         provider,
-        courseId: course.id,
-        userId,
-        userEmail,
-        course
-      });
-
-      const providerOption = this.providers.find(p => p.id === provider);
-      if (!providerOption) {
-        return {
-          success: false,
-          error: 'Unsupported payment provider',
-        };
-      }
-
-      const pricing = await this.calculatePricing(course.salePrice, providerOption.currency);
+        baseCurrency
+      );
 
       const transactionId = await transactionService.createTransaction({
         userId,
@@ -110,66 +121,57 @@ class PaymentService {
         exchangeRate: pricing.exchangeRate,
         paymentProvider: provider,
         status: TRANSACTION_STATUS.PENDING,
-        paymentDetails: {
-          orderId: "",
-          paymentId: "",
-        },
-        metadata: {
-          userEmail,
-          courseTitle: course.title,
-          userAgent: navigator.userAgent,
-          paymentAttempts: 1
-        }
+        paymentDetails: { orderId: "", paymentId: "" },
+
+metadata: {
+  userEmail,
+  courseTitle: course.title,
+  userAgent: navigator.userAgent,
+  paymentAttempts: 1
+}
       });
 
-      console.log('PaymentService - Transaction created:', transactionId);
-
-      // Process payment with the specific provider
       let result: PaymentResult;
-
       if (provider === PAYMENT_PROVIDER.RAZORPAY) {
-        result = await razorpayProvider.processPayment(course, userEmail, transactionId, pricing.amount, userId);
+        result = await razorpayProvider.processPayment(
+          course,
+          userEmail,
+          transactionId,
+          pricing.amount,
+          userId,
+          selectedCurrency
+        );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
-        result = await paypalProvider.processPayment(course, userEmail, transactionId, pricing.amount, userId);
+        result = await paypalProvider.processPayment(
+          course,
+          userEmail,
+          transactionId,
+          pricing.amount,
+          userId,
+          selectedCurrency
+        );
       } else {
-        result = {
-          success: false,
-          error: 'Unsupported payment provider',
-        };
+        result = { success: false, error: "Unsupported payment provider" };
       }
 
-      // Handle successful payment
       if (result.success) {
         result.transactionId = transactionId;
-        console.log('PaymentService - Payment successful, enrolling user:', {
-          transactionId,
-          paymentId: result.paymentId,
-          courseId: course.id,
-          userId
-        });
-
-        // Enroll user immediately after successful payment
         try {
           await enrollmentService.enrollUser(
             userId,
             course.id,
             ENROLLED_PROGRAM_TYPE.COURSE
           );
-          console.log('PaymentService - User enrolled successfully after payment');
-        } catch (enrollmentError) {
-          console.error('PaymentService - Enrollment failed after payment:', enrollmentError);
-          // Don't fail the payment, but log the error
+        } catch (err) {
+          console.error("Enrollment failed after payment:", err);
         }
-      } else {
-        console.log('PaymentService - Payment failed:', result.error);
       }
-
       return result;
     } catch (error) {
-      console.error('PaymentService - Payment processing failed:', error);
+      console.error(error);
       return {
         success: false,
-        error: 'Payment processing failed. Please try again.',
+        error: "Payment processing failed. Please try again.",
       };
     }
   }
@@ -178,202 +180,9 @@ class PaymentService {
     return transactionService.getUserTransactions(userId);
   }
 
-  async getTransactionDetails(transactionId: string) {
-    return transactionService.getTransaction(transactionId);
+  async getTransactionDetails(id: string) {
+    return transactionService.getTransaction(id);
   }
-
-  // Bundle payment processing
-  // async processBundlePayment(
-  //   provider: PaymentProvider,
-  //   bundle: Bundle,
-  //   userEmail: string,
-  //   userId: string
-  // ): Promise<PaymentResult> {
-  //   try {
-  //     console.log('PaymentService - Processing bundle payment:', {
-  //       provider,
-  //       bundleId: bundle.id,
-  //       userId,
-  //       userEmail
-  //     });
-
-  //     const providerOption = this.providers.find(p => p.id === provider);
-  //     if (!providerOption) {
-  //       return {
-  //         success: false,
-  //         error: 'Unsupported payment provider',
-  //       };
-  //     }
-
-  //     // For bundles, convert bundle price to provider currency
-  //     const conversion = await currencyService.convertAmount(
-  //       bundle.salePrice,
-  //       'USD', // Assuming bundle prices are in USD
-  //       providerOption.currency
-  //     );
-
-  //     // Create transaction record
-  //     const transactionId = await transactionService.createTransaction(
-  //       userId,
-  //       { ID: bundle?.id, course_price: bundle.salePrice.toString() } as Course,
-  //       provider,
-  //       providerOption.currency,
-  //       conversion.convertedAmount,
-  //       userEmail,
-  //       {
-  //         userAgent: navigator.userAgent,
-  //         paymentAttempts: 1,
-  //       }
-  //     );
-
-  //     // Process payment (same as course payment)
-  //     let result: PaymentResult;
-  //     if (provider === 'razorpay') {
-  //       result = await razorpayProvider.processPayment(
-  //         { ID: bundle?.id, course_price: conversion.convertedAmount.toString() } as Course,
-  //         userEmail,
-  //         transactionId,
-  //         conversion.convertedAmount,
-  //         userId
-  //       );
-  //     } else if (provider === 'paypal') {
-  //       result = await paypalProvider.processPayment(
-  //         { ID: parseInt(bundle.id), course_price: conversion.convertedAmount.toString() } as Course,
-  //         userEmail,
-  //         transactionId,
-  //         conversion.convertedAmount,
-  //         userId
-  //       );
-  //     } else {
-  //       result = { success: false, error: 'Unsupported payment provider' };
-  //     }
-
-  //     // Handle successful payment
-  //     if (result.success) {
-  //       result.transactionId = transactionId;
-  //       console.log('PaymentService - Bundle payment successful, enrolling user in bundle', {
-  //         userId,
-  //         bundle,
-  //         result,
-  //         provider
-  //       });
-
-  //       try {
-  //         await enrollmentService.enrollUserInBundle(
-  //           userId,
-  //           bundle,
-  //           result.paymentId || result?.transactionId,
-  //           provider
-  //         );
-  //         console.log('PaymentService - User enrolled in bundle successfully');
-  //       } catch (enrollmentError) {
-  //         console.error('PaymentService - Bundle enrollment failed after payment:', enrollmentError);
-  //       }
-  //     }
-
-  //     return result;
-  //   } catch (error) {
-  //     console.error('PaymentService - Bundle payment processing failed:', error);
-  //     return {
-  //       success: false,
-  //       error: 'Bundle payment processing failed. Please try again.',
-  //     };
-  //   }
-  // }
-
-  // Cohort payment processing
-  // async processCohortPayment(
-  //   provider: PaymentProvider,
-  //   cohort: Cohort,
-  //   userEmail: string,
-  //   userId: string
-  // ): Promise<PaymentResult> {
-  //   try {
-  //     console.log('PaymentService - Processing cohort payment:', {
-  //       provider,
-  //       cohortId: cohort.id,
-  //       userId,
-  //       userEmail
-  //     });
-
-  //     const providerOption = this.providers.find(p => p.id === provider);
-  //     if (!providerOption) {
-  //       return {
-  //         success: false,
-  //         error: 'Unsupported payment provider',
-  //       };
-  //     }
-
-  //     // Convert cohort price to provider currency
-  //     const conversion = await currencyService.convertAmount(
-  //       cohort.price,
-  //       cohort.currency,
-  //       providerOption.currency
-  //     );
-
-  //     // Create transaction record
-  //     const transactionId = await transactionService.createTransaction(
-  //       userId,
-  //       { ID: parseInt(cohort.id), course_price: cohort.price.toString(), post_title: cohort.name } as Course,
-  //       provider,
-  //       providerOption.currency,
-  //       conversion.convertedAmount,
-  //       userEmail,
-  //       {
-  //         userAgent: navigator.userAgent,
-  //         paymentAttempts: 1,
-  //       }
-  //     );
-
-  //     // Process payment
-  //     let result: PaymentResult;
-  //     if (provider === 'razorpay') {
-  //       result = await razorpayProvider.processPayment(
-  //         { ID: cohort.id, course_price: conversion.convertedAmount.toString(), post_title: cohort.name } as Course,
-  //         userEmail,
-  //         transactionId,
-  //         conversion.convertedAmount,
-  //         userId
-  //       );
-  //     } else if (provider === 'paypal') {
-  //       result = await paypalProvider.processPayment(
-  //         { ID: cohort.id, course_price: conversion.convertedAmount.toString(), post_title: cohort.name } as Course,
-  //         userEmail,
-  //         transactionId,
-  //         conversion.convertedAmount,
-  //         userId
-  //       );
-  //     } else {
-  //       result = { success: false, error: 'Unsupported payment provider' };
-  //     }
-
-  //     // Handle successful payment
-  //     if (result.success) {
-  //       result.transactionId = transactionId;
-  //       console.log('PaymentService - Cohort payment successful, enrolling user in cohort');
-
-  //       try {
-  //         await cohortService.enrollUserInCohort(
-  //           userId,
-  //           cohort.id,
-  //           result.paymentId || result.transactionId,
-  //           provider
-  //         );
-  //         console.log('PaymentService - User enrolled in cohort successfully');
-  //       } catch (enrollmentError) {
-  //         console.error('PaymentService - Cohort enrollment failed after payment:', enrollmentError);
-  //       }
-  //     }
-
-  //     return result;
-  //   } catch (error) {
-  //     console.error('PaymentService - Cohort payment processing failed:', error);
-  //     return {
-  //       success: false,
-  //       error: 'Cohort payment processing failed. Please try again.',
-  //     };
-  //   }
-  // }
 }
 
 export const paymentService = new PaymentService();

@@ -1,6 +1,7 @@
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { CART_ACTION } from "@/constants";
+import { Link } from "react-router-dom";
 
 const CartItemCard = ({ item }) => {
   const { cartDispatch } = useCart();
@@ -25,7 +26,7 @@ const CartItemCard = ({ item }) => {
 
   return (
     <div className="flex items-center justify-between p-4 border rounded-lg shadow-sm bg-white">
-      <div className="flex items-center space-x-4">
+      <Link to={`/course/${item.id}`} className="flex items-center space-x-4">
         {/* Thumbnail or Placeholder */}
         {item.thumbnail ? (
           <img
@@ -68,7 +69,7 @@ const CartItemCard = ({ item }) => {
             )}
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Remove Button */}
       <button

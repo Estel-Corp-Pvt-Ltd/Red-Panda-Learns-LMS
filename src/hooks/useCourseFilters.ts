@@ -14,7 +14,7 @@ export function useCourseFilters(courses: Course[] = []) {
 
   // Extract unique instructors from courses
   const uniqueInstructors = useMemo(() => {
-    const instructors = courses.map(course => course.authorId);
+    const instructors = courses.map(course => course.authorName);
     return [...new Set(instructors)].sort();
   }, [courses]);
 

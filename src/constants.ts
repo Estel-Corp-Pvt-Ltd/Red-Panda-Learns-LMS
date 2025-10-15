@@ -103,8 +103,10 @@ export const PAYMENT_PROVIDER = {
 } as const;
 
 export const CURRENCY = {
-    INR: "INR",
-    USD: "USD"
+    INR: "INR",   // Indian Rupee
+    USD: "USD",   // United States Dollar
+    EUR: "EUR",   // Euro
+    GBP: "GBP"    // Pound Sterling
 } as const;
 
 export const LEARNING_UNIT = {
@@ -332,6 +334,7 @@ export const COLLECTION = {
     ORGANIZATIONS: 'Organizations',
     CONFIG: 'Config',
     ATTRIBUTES: 'Attributes',
+    FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -349,6 +352,19 @@ export const CONFIG_DOCS = {
     PAYPAL_ACCESS_TOKEN: 'paypal_access_token',
 } as const;
 
+export const FALLBACK_CURRENCY_RATE: Record<string, number> = {
+  // INR to/from
+  USD_INR: 83.5,
+  INR_USD: 0.012,
+  EUR_INR: 90.0,
+  INR_EUR: 0.011,
+  GBP_INR: 100.0,
+  INR_GBP: 0.01,
+
+  // Cross foreign
+  USD_EUR: 0.92,
+  EUR_USD: 1.09,
+};
 export const CART_ACTION = {
     ADD: "ADD",
     REMOVE: "REMOVE",

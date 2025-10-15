@@ -1,17 +1,21 @@
-import { User, Menu, LogOut, ShoppingCart } from "lucide-react";
+import { LogOut, Menu, ShoppingCart, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link, useNavigate } from "react-router-dom";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
+
+import { cn } from "@/lib/utils";
+import { USER_ROLE } from "@/constants";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -95,15 +99,18 @@ export function Header({
 
           {user ? (
             <div className="flex items-center">
-              <Link to="/cart" className="relative mr-3">
-                <ShoppingCart className="w-6 h-6" />
+              {
+                user.role !== USER_ROLE.ADMIN &&
+                <Link to="/cart" className="relative mr-3">
+                  <ShoppingCart className="w-6 h-6" />
 
-                {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {cart.length}
-                  </span>
-                )}
-              </Link>
+                  {cart.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {cart.length}
+                    </span>
+                  )}
+                </Link>
+              }
               {/* // 🔓 Logged-in dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
