@@ -369,6 +369,7 @@ export const COLLECTION = {
   ATTRIBUTES: "Attributes",
   FALLBACK_CURRENCY_RATES: "FallbackCurrencyRates",
   POPUPS: "PopUps",
+  ORDERS:"Orders",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
