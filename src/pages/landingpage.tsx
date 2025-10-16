@@ -4,16 +4,31 @@ import { ServicesSection } from "@/components/ServicesSection";
 import { AudienceSection } from "@/components/AudienceSection";
 import { TeamSection } from "@/components/Team";
 import { NewsletterSection } from "@/components/NewsletterSection";
+import PhilosophySection from "./PhilosophySection";
+import ProductsSection from "./ProductsSection";
+import ResearchSection from "./ResearchSection";
+import AICoursesSection from "./AICoursesSection";
+import CorporatesSection from "./CorporatesSection";
+import  Footer  from "./Footer";
+import  TestimonialsSection  from "./TestimonialsSection";
 
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <HeroSection />
-      <ServicesSection />
-      <AudienceSection />
+      <PhilosophySection />
+      <ProductsSection/>
+      {/* <ServicesSection /> */}
+
+      <ResearchSection /> 
+      <AICoursesSection />
+      <CorporatesSection />
+      {/* <AudienceSection /> */}
       <TeamSection />
+      <TestimonialsSection />
       <NewsletterSection />
+      <Footer /> 
     </div>
   );
 };
