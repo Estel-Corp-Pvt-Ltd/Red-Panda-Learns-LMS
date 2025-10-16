@@ -5,30 +5,72 @@ const philosophyItems = [
   {
     icon: Layers,
     title: "Foundations",
-    description: "Deep foundational knowledge wins over fluff and shortcuts. Timeless knowledge sustains over latest fad.",
+    description:
+      "Deep foundational knowledge wins over fluff and shortcuts. Timeless knowledge sustains over latest fad.",
     color: "#fbb03b",
     gradient: "from-[#fbb03b] to-[#ff9500]",
   },
   {
     icon: Code2,
     title: "Practicals",
-    description: "Hands-on experience and building from scratch is the best way to master AI concepts and models.",
+    description:
+      "Hands-on experience and building from scratch is the best way to master AI concepts and models.",
     color: "#29abe2",
     gradient: "from-[#29abe2] to-[#0088cc]",
   },
   {
     icon: Brain,
     title: "Research",
-    description: "We are trying to push the boundaries of AI through research and innovation.",
+    description:
+      "We are trying to push the boundaries of AI through research and innovation.",
     color: "#ff00ff",
     gradient: "from-[#ff00ff] to-[#cc00cc]",
   },
 ];
 
+const foundationSnippet = `Forward pass (dense layer):
+z = W x + b
+a = f(z)
+
+Softmax + cross-entropy:
+p_i = exp(z_i) / Σ_j exp(z_j)
+L = - Σ_i y_i log p_i
+
+Backprop to logits (softmax + CE):
+∂L/∂z = p - y
+
+Gradients for dense layer:
+∂L/∂W = (∂L/∂z) xᵀ
+∂L/∂b = ∂L/∂z
+∂L/∂x = Wᵀ (∂L/∂z)`;
+
+const attentionSnippet = `# Imports
+import math
+import torch
+import torch.nn as nn
+
+# Scaled dot-product attention
+def sdpa(q, k, v, mask=None):
+    d = q.size(-1)
+    scores = (q @ k.transpose(-2, -1)) / math.sqrt(d)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, -1e9)
+    attn = torch.softmax(scores, dim=-1)
+    return attn @ v, attn`;
+
+const researchRef = {
+  title: "Attention Is All You Need",
+  authors: "Vaswani et al.",
+  venue: "NeurIPS 2017",
+  link: "https://arxiv.org/abs/1706.03762",
+};
+
 const PhilosophySection = () => {
   const [revealedCards, setRevealedCards] = useState([]);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [pulses, setPulses] = useState([]);
+  const [typedText, setTypedText] = useState(["", "", ""]);
+  const [isTypingComplete, setIsTypingComplete] = useState([false, false, false]);
 
   useEffect(() => {
     philosophyItems.forEach((_, index) => {
@@ -37,7 +79,6 @@ const PhilosophySection = () => {
       }, index * 200);
     });
 
-    // Continuous pulse effect
     const interval = setInterval(() => {
       philosophyItems.forEach((_, index) => {
         setTimeout(() => {
@@ -49,10 +90,42 @@ const PhilosophySection = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Progressive typing effect for code snippets
+  useEffect(() => {
+    const snippets = [foundationSnippet, attentionSnippet, ""];
+    
+    snippets.forEach((snippet, cardIndex) => {
+      if (snippet && revealedCards.includes(cardIndex)) {
+        let currentIndex = 0;
+        const typingSpeed = 15; // milliseconds per character
+
+        const typeInterval = setInterval(() => {
+          if (currentIndex <= snippet.length) {
+            setTypedText(prev => {
+              const newText = [...prev];
+              newText[cardIndex] = snippet.substring(0, currentIndex);
+              return newText;
+            });
+            currentIndex++;
+          } else {
+            clearInterval(typeInterval);
+            setIsTypingComplete(prev => {
+              const newComplete = [...prev];
+              newComplete[cardIndex] = true;
+              return newComplete;
+            });
+          }
+        }, typingSpeed);
+
+        return () => clearInterval(typeInterval);
+      }
+    });
+  }, [revealedCards]);
+
   const createPulse = (cardIndex) => {
     const pulseId = Date.now() + cardIndex;
     setPulses((prev) => [...prev, { id: pulseId, cardIndex }]);
-    
+
     setTimeout(() => {
       setPulses((prev) => prev.filter((p) => p.id !== pulseId));
     }, 1500);
@@ -150,15 +223,9 @@ const PhilosophySection = () => {
           }
         }
 
-        @keyframes pulse-wave {
-          0% {
-            transform: translate(-50%, -50%) scale(0.8);
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(2);
-            opacity: 0;
-          }
+        @keyframes cursor-blink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
         }
         
         .animate-blob-float-1 {
@@ -190,17 +257,9 @@ const PhilosophySection = () => {
           pointer-events: none;
         }
 
-        .glow-ring-1 {
-          animation: glow-ring 1.5s ease-out infinite;
-        }
-
-        .glow-ring-2 {
-          animation: glow-ring 1.5s ease-out infinite 0.3s;
-        }
-
-        .glow-ring-3 {
-          animation: glow-ring 1.5s ease-out infinite 0.6s;
-        }
+        .glow-ring-1 { animation: glow-ring 1.5s ease-out infinite; }
+        .glow-ring-2 { animation: glow-ring 1.5s ease-out infinite 0.3s; }
+        .glow-ring-3 { animation: glow-ring 1.5s ease-out infinite 0.6s; }
 
         .orbital-particle {
           position: absolute;
@@ -225,37 +284,17 @@ const PhilosophySection = () => {
           border-radius: 50%;
         }
 
-        .sparkle-1 {
-          top: -15px;
-          left: 50%;
-          animation: sparkle 1.5s ease-in-out infinite;
-        }
+        .sparkle-1 { top: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite; }
+        .sparkle-2 { bottom: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
+        .sparkle-3 { top: 50%; left: -15px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
+        .sparkle-4 { top: 50%; right: -15px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
 
-        .sparkle-2 {
-          bottom: -15px;
-          left: 50%;
-          animation: sparkle 1.5s ease-in-out infinite 0.375s;
-        }
-
-        .sparkle-3 {
-          top: 50%;
-          left: -15px;
-          animation: sparkle 1.5s ease-in-out infinite 0.75s;
-        }
-
-        .sparkle-4 {
-          top: 50%;
-          right: -15px;
-          animation: sparkle 1.5s ease-in-out infinite 1.125s;
-        }
-
-        .pulse-wave {
-          animation: pulse-wave 1.5s ease-out;
+        .typing-cursor {
+          animation: cursor-blink 1s step-end infinite;
         }
       `}</style>
-      
+
       <section className="relative py-24 px-6 overflow-hidden">
-        {/* Gradient Background with floating blobs */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/10"></div>
           <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-blob-float-1"></div>
@@ -264,9 +303,9 @@ const PhilosophySection = () => {
         </div>
 
         <div className="container relative mx-auto max-w-6xl">
-          <div 
+          <div
             className="text-center mb-16 opacity-0 animate-fade-in-up"
-            style={{ animationDelay: '0ms' }}
+            style={{ animationDelay: "0ms" }}
           >
             <h2 className="text-5xl md:text-6xl font-semibold leading-tight tracking-tight text-foreground mb-4">
               Our Philosophy
@@ -275,7 +314,7 @@ const PhilosophySection = () => {
               At Vizuara, internally we call this the F-P-R approach
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 items-stretch">
             {philosophyItems.map((item, index) => {
               const isRevealed = revealedCards.includes(index);
@@ -290,7 +329,6 @@ const PhilosophySection = () => {
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
                 >
-                  {/* Ripple effect */}
                   {pulses
                     .filter((p) => p.cardIndex === index)
                     .map((pulse) => (
@@ -299,7 +337,7 @@ const PhilosophySection = () => {
                         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
                         style={{
                           border: `2px solid ${item.color}`,
-                          animation: 'ripple-expand 1.5s ease-out',
+                          animation: "ripple-expand 1.5s ease-out",
                           zIndex: 0,
                         }}
                       />
@@ -308,34 +346,65 @@ const PhilosophySection = () => {
                   <div className="relative w-full p-8 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col">
                     <div className="flex flex-col items-center text-center h-full">
                       <div className="relative mb-6">
-                        {/* Orbital particles on hover */}
                         {isHovered && (
                           <>
                             <div
                               className="orbital-particle orbital-1"
-                              style={{ background: item.color, boxShadow: `0 0 10px ${item.color}` }}
+                              style={{
+                                background: item.color,
+                                boxShadow: `0 0 10px ${item.color}`,
+                              }}
                             />
                             <div
                               className="orbital-particle orbital-2"
-                              style={{ background: item.color, boxShadow: `0 0 10px ${item.color}` }}
+                              style={{
+                                background: item.color,
+                                boxShadow: `0 0 10px ${item.color}`,
+                              }}
                             />
                             <div
                               className="orbital-particle orbital-3"
-                              style={{ background: item.color, boxShadow: `0 0 10px ${item.color}` }}
+                              style={{
+                                background: item.color,
+                                boxShadow: `0 0 10px ${item.color}`,
+                              }}
                             />
                             <div
                               className="orbital-particle orbital-4"
-                              style={{ background: item.color, boxShadow: `0 0 10px ${item.color}` }}
+                              style={{
+                                background: item.color,
+                                boxShadow: `0 0 10px ${item.color}`,
+                              }}
                             />
                           </>
                         )}
 
-                        {/* Glow rings on hover */}
                         {isHovered && (
                           <>
-                            <div className="glow-ring glow-ring-1" style={{ borderColor: item.color, width: '60px', height: '60px' }} />
-                            <div className="glow-ring glow-ring-2" style={{ borderColor: item.color, width: '60px', height: '60px' }} />
-                            <div className="glow-ring glow-ring-3" style={{ borderColor: item.color, width: '60px', height: '60px' }} />
+                            <div
+                              className="glow-ring glow-ring-1"
+                              style={{
+                                borderColor: item.color,
+                                width: "60px",
+                                height: "60px",
+                              }}
+                            />
+                            <div
+                              className="glow-ring glow-ring-2"
+                              style={{
+                                borderColor: item.color,
+                                width: "60px",
+                                height: "60px",
+                              }}
+                            />
+                            <div
+                              className="glow-ring glow-ring-3"
+                              style={{
+                                borderColor: item.color,
+                                width: "60px",
+                                height: "60px",
+                              }}
+                            />
                           </>
                         )}
 
@@ -345,10 +414,9 @@ const PhilosophySection = () => {
                             boxShadow: isHovered
                               ? `0 0 30px ${item.color}, 0 8px 24px ${item.color}80`
                               : `0 4px 12px ${item.color}60`,
-                            transform: isHovered ? 'scale(1.2)' : 'scale(1)',
+                            transform: isHovered ? "scale(1.2)" : "scale(1)",
                           }}
                         >
-                          {/* Inner glow */}
                           <div
                             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-full pointer-events-none"
                             style={{
@@ -358,30 +426,112 @@ const PhilosophySection = () => {
 
                           <Icon className="card-icon w-8 h-8 text-white relative z-10" />
 
-                          {/* Sparkles on hover */}
                           {isHovered && (
                             <>
-                              <div className="sparkle sparkle-1" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
-                              <div className="sparkle sparkle-2" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
-                              <div className="sparkle sparkle-3" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
-                              <div className="sparkle sparkle-4" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
+                              <div
+                                className="sparkle sparkle-1"
+                                style={{
+                                  background: item.color,
+                                  boxShadow: `0 0 8px ${item.color}`,
+                                }}
+                              />
+                              <div
+                                className="sparkle sparkle-2"
+                                style={{
+                                  background: item.color,
+                                  boxShadow: `0 0 8px ${item.color}`,
+                                }}
+                              />
+                              <div
+                                className="sparkle sparkle-3"
+                                style={{
+                                  background: item.color,
+                                  boxShadow: `0 0 8px ${item.color}`,
+                                }}
+                              />
+                              <div
+                                className="sparkle sparkle-4"
+                                style={{
+                                  background: item.color,
+                                  boxShadow: `0 0 8px ${item.color}`,
+                                }}
+                              />
                             </>
                           )}
                         </div>
                       </div>
 
-                      <h3 
+                      <h3
                         className="text-xl font-semibold mb-4 transition-all duration-300"
                         style={{
-                          color: isHovered ? item.color : 'var(--foreground)',
-                          textShadow: isHovered ? `0 2px 8px ${item.color}40` : 'none',
+                          color: isHovered ? item.color : "var(--foreground)",
+                          textShadow: isHovered
+                            ? `0 2px 8px ${item.color}40`
+                            : "none",
                         }}
                       >
                         {item.title}
                       </h3>
-                      <p className="text-foreground/70 leading-relaxed font-light flex-grow">
+                      <p className="text-foreground/70 leading-relaxed font-light">
                         {item.description}
                       </p>
+
+                      <div className="mt-6 w-full">
+                        <div
+                          className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden"
+                          style={{ boxShadow: `0 4px 18px ${item.color}22` }}
+                        >
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-foreground/10">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full"
+                                style={{ background: "#ff5f56" }}
+                              />
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full"
+                                style={{ background: "#ffbd2e" }}
+                              />
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full"
+                                style={{ background: "#27c93f" }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="p-4">
+                            {index === 2 ? (
+                              <div className="text-left">
+                                <div className="text-sm leading-relaxed">
+                                  <div className="font-medium">
+                                    {researchRef.title}
+                                  </div>
+                                  <div className="text-foreground/60">
+                                    {researchRef.authors} — {researchRef.venue}
+                                  </div>
+                                  <a
+                                    href={researchRef.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 mt-2 text-foreground/80 hover:text-foreground underline underline-offset-4 decoration-dotted"
+                                    style={{ color: item.color }}
+                                  >
+                                    View paper ↗
+                                  </a>
+                                </div>
+                              </div>
+                            ) : (
+                              <pre className="text-left text-[13px] leading-relaxed font-mono text-foreground/80 whitespace-pre-wrap overflow-auto max-h-56">
+                                <code>
+                                  {typedText[index]}
+                                  {!isTypingComplete[index] && (
+                                    <span className="typing-cursor">|</span>
+                                  )}
+                                </code>
+                              </pre>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
