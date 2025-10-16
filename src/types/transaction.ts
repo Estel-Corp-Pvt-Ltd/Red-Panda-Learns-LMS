@@ -57,7 +57,7 @@ export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
 
 export interface Transaction {
   id: string; // internal transaction ID (UUID)
-  orderNumber: number;
+  orderNumber: string;
   userId: string;
   courseId: string;
   parentTransactionId?: string; // if refund, points to original payment

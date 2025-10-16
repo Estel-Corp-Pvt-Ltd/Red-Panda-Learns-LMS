@@ -21,7 +21,8 @@ import { enrollmentService } from "@/services/dummyEnrollmentService";
 
 import { Currency, PaymentProvider } from "@/types/general";
 import { CURRENCY, PAYMENT_PROVIDER } from "@/constants";
-
+import { Address } from "@/types/order";
+import { Input } from "@/components/ui/input";
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: ["INR", "USD", "EUR", "GBP"],
   PAYPAL: ["USD", "EUR", "GBP"],
@@ -58,6 +59,22 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const { refreshEnrollments, isEnrolled } = useEnrollment();
   const { toast } = useToast();
+  // Example: CheckoutPage.tsx
+
+const [billingAddress, setBillingAddress] = useState<Address>({
+  fullName: "",
+  line1: "",
+  line2: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  country: "",
+  phone: "",
+  landmark: "",
+  type: "BILLING",
+});
+const [shippingAddress, setShippingAddress] = useState<Address | undefined>();
+
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
     PAYMENT_PROVIDER.RAZORPAY
@@ -295,6 +312,121 @@ export default function CheckoutPage() {
               )}
             </CardContent>
           </Card>
+
+              {/* Billing Address */}
+<Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6">
+  <CardHeader>
+    <CardTitle>Billing Address</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="fullName">Full Name</Label>
+        <Input
+          id="fullName"
+          value={billingAddress.fullName}
+          onChange={(e) =>
+            setBillingAddress({ ...billingAddress, fullName: e.target.value })
+          }
+          placeholder="John Doe"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input
+          id="phone"
+          type="tel"
+          value={billingAddress.phone}
+          onChange={(e) =>
+            setBillingAddress({ ...billingAddress, phone: e.target.value })
+          }
+          placeholder="+91 9876543210"
+        />
+      </div>
+    </div>
+
+    <div>
+      <Label htmlFor="line1">Address Line 1</Label>
+      <Input
+        id="line1"
+        value={billingAddress.line1}
+        onChange={(e) =>
+          setBillingAddress({ ...billingAddress, line1: e.target.value })
+        }
+        placeholder="Street, apartment, etc."
+      />
+    </div>
+
+    <div>
+      <Label htmlFor="line2">Address Line 2 (Optional)</Label>
+      <Input
+        id="line2"
+        value={billingAddress.line2 || ""}
+        onChange={(e) =>
+          setBillingAddress({ ...billingAddress, line2: e.target.value })
+        }
+        placeholder="Building, landmark, etc."
+      />
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="city">City</Label>
+        <Input
+          id="city"
+          value={billingAddress.city}
+          onChange={(e) =>
+            setBillingAddress({ ...billingAddress, city: e.target.value })
+          }
+          placeholder="City"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="state">State</Label>
+        <Input
+          id="state"
+          value={billingAddress.state}
+          onChange={(e) =>
+            setBillingAddress({ ...billingAddress, state: e.target.value })
+          }
+          placeholder="State"
+        />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="postalCode">Postal Code</Label>
+        <Input
+          id="postalCode"
+          value={billingAddress.postalCode}
+          onChange={(e) =>
+            setBillingAddress({
+              ...billingAddress,
+              postalCode: e.target.value,
+            })
+          }
+          placeholder="e.g. 110001"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="country">Country</Label>
+        <Input
+          id="country"
+          value={billingAddress.country}
+          onChange={(e) =>
+            setBillingAddress({ ...billingAddress, country: e.target.value })
+          }
+          placeholder="India"
+        />
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
 
           {/* Payment Providers (structure like "before") */}
           <Card className="bg-card text-card-foreground border border-border rounded-xl shadow-sm">

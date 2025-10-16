@@ -14,18 +14,39 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebaseConfig.ts";
 import { OrderStatus } from "../types/general.ts";
-import { ORDER_STATUS } from "../constants.ts";
+// import { ORDER_STATUS } from "../constants.ts";
 import { Order } from "@/types/order.ts";
-import { v4 as uuidv4 } from "uuid";
-import { promise } from "zod";
+
 
 class OrderService {
   private async generateOrderId(): Promise<{ orderId: string }> {
-    const orderId = `order_${uuidv4()}`;
-    return {
-      orderId,
-    };
-  }
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const dateStr = `${yyyy}${mm}${dd}`;
+
+  const counterRef = doc(db, 'counters','orderCounters');
+
+  // Use Firestore transaction to increment safely
+  const dailySequence = await runTransaction(db, async (tx) => {
+    const snapshot = await tx.get(counterRef);
+    let seq = 1;
+
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      seq = (data?.seq || 0) + 1;
+    }
+
+    tx.set(counterRef, { seq }, { merge: true });
+    return seq;
+  });
+
+  const paddedSeq = String(dailySequence).padStart(3, "0");
+  const orderId = `ORD-${dateStr}-${paddedSeq}`;
+  return { orderId };
+}
+
 
   async createOrder(
     data: Omit<Order, "orderId" | "createdAt" | "completedAt">,
@@ -56,6 +77,8 @@ class OrderService {
         currency: data.currency,
         transactionId: data.transactionId || null,
         metadata: data.metadata || {},
+        billingAddress:data.billingAddress,
+        shippingAddress:data.shippingAddress || null,
         createdAt: serverTimestamp(),
       };
 

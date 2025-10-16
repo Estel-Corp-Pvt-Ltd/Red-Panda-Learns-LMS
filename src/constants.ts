@@ -152,6 +152,13 @@ export const REFUND_INITIATOR = {
   SYSTEM: "SYSTEM",
 } as const;
 
+
+// constants/order.ts
+export const ADDRESS_TYPE = {
+  BILLING: "BILLING",
+  SHIPPING: "SHIPPING"
+} as const;
+
 // --- PAYPAL WEBHOOK EVENTS ---
 
 export const PAYPAL_WEBHOOK_EVENT = {

@@ -124,6 +124,16 @@ class PaymentService {
         courseIds: [course.id],
         amount: pricing.amount,
         currency: pricing.currency,
+        billingAddress: {
+          fullName: "John Doe",
+          line1: "123 BHK Apartments, 5th Floor",
+          city: "Bangalore",
+          state: "Karnataka",
+          postalCode: "560102",
+          country: "India",
+          phone: "+91-9876543210",
+          type: "BILLING", 
+        },
         metadata: {
           userEmail,
           courseTitle: course.title,
@@ -133,6 +143,7 @@ class PaymentService {
       });
 
       const transactionId = await transactionService.createTransaction({
+        orderNumber: orderId,
         userId,
         courseId: course.id,
         type: TRANSACTION_TYPE.PAYMENT,

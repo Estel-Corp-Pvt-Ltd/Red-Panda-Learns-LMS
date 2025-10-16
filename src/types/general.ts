@@ -20,7 +20,8 @@ import {
     TRANSACTION_TYPE,
     USER_ROLE,
     USER_STATUS,
-    ORDER_STATUS
+    ORDER_STATUS,
+    ADDRESS_TYPE
 } from "@/constants";
 
 export type AttributeType = typeof ATTRIBUTE_TYPE[keyof typeof ATTRIBUTE_TYPE];
@@ -37,6 +38,7 @@ export type Currency = typeof CURRENCY[keyof typeof CURRENCY];
 export type LearningUnit = typeof LEARNING_UNIT[keyof typeof LEARNING_UNIT];
 export type TransactionStatus = typeof TRANSACTION_STATUS[keyof typeof TRANSACTION_STATUS];
 export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
+export type AddressType = typeof ADDRESS_TYPE[keyof typeof ADDRESS_TYPE];
 export type PaymentAttemptStatus = typeof PAYMENT_ATTEMPT_STATUS[keyof typeof PAYMENT_ATTEMPT_STATUS];
 export type TransactionType = typeof TRANSACTION_TYPE[keyof typeof TRANSACTION_TYPE];
 export type RefundInitiator = typeof REFUND_INITIATOR[keyof typeof REFUND_INITIATOR];

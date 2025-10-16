@@ -21,6 +21,7 @@ import {
 import { TransactionStatus } from '../types/general.ts';
 import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { v4 as uuidv4 } from 'uuid';
+import { Transaction as FirebaseTransaction } from 'firebase-admin/firestore';
 
 class TransactionService {
 
@@ -35,37 +36,24 @@ class TransactionService {
    *   orderNumber: 20000037
    * }
    */
-  private async generateTransactionId(): Promise<{ transactionId: string; orderNumber: number }> {
+  private async generateTransactionId(): Promise<{ transactionId: string; }> {
     const counterRef = doc(db, 'counters', 'transactionCounter');
 
-    const orderNumber = await runTransaction(db, async (transaction) => {
-    const counterDoc = await transaction.get(counterRef);
-
-      let lastNumber = 20000000;
-      if (counterDoc.exists()) {
-        lastNumber = counterDoc.data().lastNumber;
-      }
-
-      const nextNumber = lastNumber + 1; // strictly sequential for readability
-      transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
-
-      return nextNumber;
-    });
+   
 
     const transactionId = `tnx_${uuidv4()}`;
 
     return {
       transactionId,
-      orderNumber,
+    
     };
   }
 async createTransaction(
-  data: Omit<Transaction, "id" | "orderNumber" | "createdAt" | "updatedAt">,
+  data: Omit<Transaction, "id" |   "createdAt" | "updatedAt">,
   providedTransactionId?: string // <-- add this
 ): Promise<string> {
   try {
     let transactionId = providedTransactionId;
-    let orderNumber: number;
     
     if (transactionId) {
       // 🔎 If caller gave us one, check DB first
@@ -77,17 +65,16 @@ async createTransaction(
 
       // need a new orderNumber for human-friendly readability
       const ids = await this.generateTransactionId();
-      orderNumber = ids.orderNumber;
+     
     } else {
       // If no transactionId provided → create new
       const ids = await this.generateTransactionId();
       transactionId = ids.transactionId;
-      orderNumber = ids.orderNumber;
     }
 
     const transaction: Transaction = {
       id: transactionId,
-      orderNumber,
+      orderNumber : data.orderNumber,
       userId: data.userId,
       courseId: data.courseId || null,
       type: data.type,
@@ -106,8 +93,7 @@ async createTransaction(
     };
 
     await setDoc(doc(db, 'Transactions', transactionId), transaction);
-
-    console.log('Transaction created:', transactionId);
+    console.log('Transaction created:', transaction);
     return transactionId;
   } catch (error) {
     console.error('Error creating transaction:', error);
