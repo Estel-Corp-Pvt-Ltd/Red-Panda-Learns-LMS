@@ -49,7 +49,7 @@ class OrderService {
 
 
   async createOrder(
-    data: Omit<Order, "orderId" | "createdAt" | "completedAt">,
+    data: Omit<Order, "orderId" | "createdAt" | "completedAt" | "updatedAt">,
     providedOrderId?: string // optional idempotent orderId
   ): Promise<string> {
     try {
@@ -80,6 +80,7 @@ class OrderService {
         billingAddress:data.billingAddress,
         shippingAddress:data.shippingAddress || null,
         createdAt: serverTimestamp(),
+        updatedAt:serverTimestamp(),
       };
 
       await setDoc(doc(db, "Orders", orderId), order);

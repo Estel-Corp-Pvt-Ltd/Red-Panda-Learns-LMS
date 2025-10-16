@@ -23,11 +23,12 @@ export interface Order {
   bundleId?: string | null;               
   status: OrderStatus;                   
   amount: number;                        
-  createdAt: Timestamp | FieldValue;      
+  createdAt: Timestamp | FieldValue;   
+  updatedAt : Timestamp | FieldValue ;
   completedAt?: Timestamp | FieldValue;   
   transactionId?: string | null;          
   currency: Currency;         
-  metadata?: Record<string, any>;         // Flexible key-value store for extra info                 
+  metadata?: Record<string, any>;                      
   billingAddress:Address;
   shippingAddress?:Address;
 }
