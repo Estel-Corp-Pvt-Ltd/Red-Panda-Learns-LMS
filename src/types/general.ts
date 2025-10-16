@@ -1,27 +1,26 @@
 import {
-    COURSE_STATUS,
-    PRICING_MODEL,
-    BUNDLE_STATUS,
-    USER_STATUS,
-    ENROLLMENT_STATUS,
-    USER_ROLE,
-    ENROLLED_PROGRAM_TYPE,
-    PAYMENT_STATUS,
-    PAYMENT_PROVIDER,
-    CURRENCY,
-    LEARNING_UNIT,
-    TRANSACTION_STATUS,
-    PAYMENT_ATTEMPT_STATUS,
-    TRANSACTION_TYPE,
-    REFUND_INITIATOR,
-    RAZORPAY_WEBHOOK_EVENT,
-    PAYPAL_WEBHOOK_EVENT,
     ATTRIBUTE_TYPE,
-    ORGANIZATION ,
+    BUNDLE_STATUS,
     COUPON_STATUS,
-    
+    COURSE_STATUS,
+    CURRENCY,
+    ENROLLED_PROGRAM_TYPE,
+    ENROLLMENT_STATUS,
+    LEARNING_UNIT,
+    ORGANIZATION,
+    PAYMENT_ATTEMPT_STATUS,
+    PAYMENT_PROVIDER,
+    PAYMENT_STATUS,
+    PAYPAL_WEBHOOK_EVENT,
+    POPUP_COURSE_TYPE,
+    PRICING_MODEL,
+    RAZORPAY_WEBHOOK_EVENT,
+    REFUND_INITIATOR,
+    TRANSACTION_STATUS,
+    TRANSACTION_TYPE,
+    USER_ROLE,
+    USER_STATUS,
 } from "@/constants";
-
 
 export type AttributeType = typeof ATTRIBUTE_TYPE[keyof typeof ATTRIBUTE_TYPE];
 export type UserRole = typeof USER_ROLE[keyof typeof USER_ROLE];
@@ -30,7 +29,7 @@ export type CourseStatus = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
 export type BundleStatus = typeof BUNDLE_STATUS[keyof typeof BUNDLE_STATUS];
 export type UserStatus = typeof USER_STATUS[keyof typeof USER_STATUS];
 export type EnrollmentStatus = typeof ENROLLMENT_STATUS[keyof typeof ENROLLMENT_STATUS];
-export type  EnrolledProgramType = typeof ENROLLED_PROGRAM_TYPE[keyof typeof ENROLLED_PROGRAM_TYPE];
+export type EnrolledProgramType = typeof ENROLLED_PROGRAM_TYPE[keyof typeof ENROLLED_PROGRAM_TYPE];
 export type PaymentStatus = typeof PAYMENT_STATUS[keyof typeof PAYMENT_STATUS];
 export type PaymentProvider = typeof PAYMENT_PROVIDER[keyof typeof PAYMENT_PROVIDER];
 export type Currency = typeof CURRENCY[keyof typeof CURRENCY];
@@ -43,3 +42,4 @@ export type RazorpayWebhookEvent = typeof RAZORPAY_WEBHOOK_EVENT[keyof typeof RA
 export type PayPalWebhookEvent = typeof PAYPAL_WEBHOOK_EVENT[keyof typeof PAYPAL_WEBHOOK_EVENT];
 export type CouponStatus = typeof COUPON_STATUS[keyof typeof COUPON_STATUS];
 export type OrganizationType = typeof ORGANIZATION[keyof typeof ORGANIZATION];
+export type PopUpCourseType = typeof POPUP_COURSE_TYPE[keyof typeof POPUP_COURSE_TYPE];
