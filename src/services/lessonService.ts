@@ -83,7 +83,7 @@ class LessonService {
                 scope: data.scope,
                 durationSeconds: data.durationSeconds ?? 0,
                 createdAt: serverTimestamp(),
-                updatedAt:serverTimestamp(),
+                updatedAt: serverTimestamp(),
             };
 
             await setDoc(doc(db, 'Lessons', lessonId), lesson);
@@ -144,36 +144,36 @@ class LessonService {
             console.log("LessonService - Lesson updated successfully:", lessonId);
 
             // 🔹 If scope is APP, update all courses where this lesson exists
-            if (lessonData.scope === LESSON_SCOPE.APP && updates.title) {
-                const coursesSnapshot = await getDocs(collection(db, "Courses"));
+            // if (lessonData.scope === LESSON_SCOPE.APP && updates.title) {
+            //     const coursesSnapshot = await getDocs(collection(db, "Courses"));
 
-                const updatePromises: Promise<void>[] = [];
+            //     const updatePromises: Promise<void>[] = [];
 
-                coursesSnapshot.forEach((courseDoc) => {
-                    const courseData = courseDoc.data() as any;
+            //     coursesSnapshot.forEach((courseDoc) => {
+            //         const courseData = courseDoc.data() as any;
 
-                    let hasLesson = false;
+            //         let hasLesson = false;
 
-                    // loop through topics and lessonRefs
-                    courseData.topics = courseData.topics.map((topic: any) => {
-                        topic.lessons = topic.lessons.map((lesson: any) => {
-                            if (lesson.id === lessonId) {
-                                hasLesson = true;
-                                return { ...lesson, title: updates.title }; // update title
-                            }
-                            return lesson;
-                        });
-                        return topic;
-                    });
+            //         // loop through topics and lessonRefs
+            //         courseData.topics = courseData.topics.map((topic: any) => {
+            //             topic.lessons = topic.lessons.map((lesson: any) => {
+            //                 if (lesson.id === lessonId) {
+            //                     hasLesson = true;
+            //                     return { ...lesson, title: updates.title }; // update title
+            //                 }
+            //                 return lesson;
+            //             });
+            //             return topic;
+            //         });
 
-                    if (hasLesson) {
-                        updatePromises.push(updateDoc(courseDoc.ref, { topics: courseData.topics }));
-                    }
-                });
+            //         if (hasLesson) {
+            //             updatePromises.push(updateDoc(courseDoc.ref, { topics: courseData.topics }));
+            //         }
+            //     });
 
-                await Promise.all(updatePromises);
-                console.log("Updated lesson title in all relevant courses");
-            }
+            //     await Promise.all(updatePromises);
+            //     console.log("Updated lesson title in all relevant courses");
+            // }
         } catch (error) {
             console.error("LessonService - Error updating lesson:", error);
             throw new Error("Failed to update lesson");
@@ -209,7 +209,7 @@ class LessonService {
                 createdAt: doc.data().createdAt.toDate(),
                 updatedAt: doc.data().updatedAt.toDate(),
             })) as Lesson[];
-    
+
             console.log('LessonService - Fetched lessons:', lessons.length);
             return lessons;
         } catch (error) {

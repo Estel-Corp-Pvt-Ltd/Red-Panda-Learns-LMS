@@ -45,6 +45,8 @@ import CartPage from "./pages/CartPage";
 import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
 import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
+import EditAssignmentPage from "./pages/admin/EditAssignmentPage";
+import SubmissionDetailPage from "./pages/admin/SubmissionDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +125,22 @@ const App = () => (
                       element={
                         <AuthGuard requireAdmin>
                           <EditLessonPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/admin/edit-assignment/:assignmentId"
+                      element={
+                        <AuthGuard requireAdmin>
+                          <EditAssignmentPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/admin/assignments/:assignmentId/submissions"
+                      element={
+                        <AuthGuard requireAdmin>
+                          <SubmissionDetailPage />
                         </AuthGuard>
                       }
                     />

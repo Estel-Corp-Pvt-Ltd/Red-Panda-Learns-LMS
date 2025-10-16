@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   DndContext,
   closestCenter,
@@ -29,6 +29,8 @@ import {
   Users,
   ArrowLeft,
   ChevronDown,
+  NotepadText,
+  NotebookPen,
 } from "lucide-react";
 import {
   Popover,
@@ -47,7 +49,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { courseService } from "@/services/courseService";
-import { Course, Topic, Cohort } from "@/types/course";
+import { Course, Topic, Cohort, TopicItem } from "@/types/course";
 import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
 import { Lesson } from "@/types/lesson";
 import CohortImporterModal from "@/components/admin/CohortImporterModel";
@@ -74,11 +76,13 @@ import { AttributeType } from "@/types/general";
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
 type DraggableItemType = LearningUnit;
 import { serverTimestamp } from "firebase/firestore";
-import { imageService } from "@/services/imageService";
+import { fileService } from "@/services/fileService";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { CreateLessonModal } from "@/components/admin/AddLesson";
+import AssignmentModal, { AssignmentFormData } from "@/components/AssignmentModal";
+import { Assignment } from "@/types/assignment";
 
 type SortableItemProps = {
   id: string;
@@ -95,11 +99,8 @@ type DraggableItem = {
   depth: number;
   parentId: string | null;
   originalData?: Cohort | Topic;
-  lessonRefId?: string; // real lesson id for lessons
+  refId?: string; // real id for lessons, assignments
 };
-
-const mkLessonInstanceId = (lessonRefId: string, topicId: string) =>
-  `lesson_${lessonRefId}__topic_${topicId}`;
 
 const ensureUniqueId = (baseId: string, taken: Set<string>) => {
   if (!taken.has(baseId)) return baseId;
@@ -174,12 +175,12 @@ const CurriculumBuilderPage = () => {
   const [authorId, setAuthorId] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
+  const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -224,7 +225,7 @@ const CurriculumBuilderPage = () => {
   }, [courseId]);
 
 
-  
+
   const loadCourseData = async () => {
     if (!courseId) return;
     try {
@@ -312,12 +313,11 @@ const CurriculumBuilderPage = () => {
       return;
     }
 
-    setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
-    setTimeout(() => uploadThumbnail(), 100);
+    uploadThumbnail(file);
   };
 
-  const uploadThumbnail = async () => {
+  const uploadThumbnail = async (selectedFile: File) => {
     if (!selectedFile) return;
 
     // Check file size (3MB limit)
@@ -331,7 +331,7 @@ const CurriculumBuilderPage = () => {
       return;
     }
 
-    const uploadTask = imageService.uploadImage(
+    const uploadTask = fileService.uploadFileChunk(
       `/courses/${courseId}/thumbnail.png`,
       selectedFile
     );
@@ -450,12 +450,13 @@ const CurriculumBuilderPage = () => {
         originalData: topic,
       });
 
-      (topic.items || []).forEach((lesson) => {
+      (topic.items || []).forEach((item) => {
+        const isAssignment = item.type === "ASSIGNMENT";
         flatList.push({
-          id: mkLessonInstanceId(lesson.id, topic.id), // instance id
-          lessonRefId: lesson.id, // real lesson id
-          title: lesson.title,
-          type: LEARNING_UNIT.LESSON,
+          id: item.id,
+          refId: item.id, // real item id
+          title: item.title,
+          type: isAssignment ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
           depth: 1,
           parentId: topic.id,
         });
@@ -482,12 +483,13 @@ const CurriculumBuilderPage = () => {
           parentId: cohort.id,
         });
 
-        (topic.items || []).forEach((lesson) => {
+        (topic.items || []).forEach((item) => {
+          const isAssignment = item.type === "ASSIGNMENT";
           flatList.push({
-            id: mkLessonInstanceId(lesson.id, topic.id), // instance id
-            lessonRefId: lesson.id, // real lesson id
-            title: lesson.title,
-            type: LEARNING_UNIT.LESSON,
+            id: item.id,
+            refId: item.id, // real item id
+            title: item.title,
+            type: isAssignment ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
             depth: 2,
             parentId: topic.id,
           });
@@ -541,11 +543,11 @@ const CurriculumBuilderPage = () => {
         );
 
         lessons.forEach((lesson) => {
-          const refId = lesson.lessonRefId ?? lesson.id;
+          const refId = lesson.refId ?? lesson.id;
           const newLesson: DraggableItem = {
             ...lesson,
-            id: mkLessonInstanceId(refId, newTopicId),
-            lessonRefId: refId,
+            id: refId,
+            refId: refId,
             parentId: newTopicId,
             depth: 2,
           };
@@ -585,7 +587,7 @@ const CurriculumBuilderPage = () => {
           i.parentId &&
           topicIdsInCohort.has(i.parentId)
         ) {
-          usedLessonIds.add(i.lessonRefId ?? i.id);
+          usedLessonIds.add(i.refId ?? i.id);
         }
       });
       return Array.from(usedLessonIds);
@@ -596,7 +598,7 @@ const CurriculumBuilderPage = () => {
     const usedLessonIds = new Set<string>();
     curriculum.forEach((i) => {
       if (i.type === LEARNING_UNIT.LESSON) {
-        usedLessonIds.add(i.lessonRefId ?? i.id);
+        usedLessonIds.add(i.refId ?? i.id);
       }
     });
     return Array.from(usedLessonIds);
@@ -615,6 +617,8 @@ const CurriculumBuilderPage = () => {
         i.type === LEARNING_UNIT.TOPIC;
       const isLesson = (i: (typeof list)[number]) =>
         i.type === LEARNING_UNIT.LESSON;
+      const isAssignment = (i: (typeof list)[number]) =>
+        i.type === LEARNING_UNIT.ASSIGNMENT;
 
       const idxActive = list.findIndex((i) => i.id === active.id);
       const idxOver = list.findIndex((i) => i.id === over.id);
@@ -625,7 +629,7 @@ const CurriculumBuilderPage = () => {
       const getCohortIdFor = (item: (typeof list)[number]): string | null => {
         if (isCohort(item)) return item.id;
         if (isTopic(item)) return item.parentId ?? null;
-        if (isLesson(item)) {
+        if (isLesson(item) || isAssignment(item)) {
           const topic = item.parentId ? itemMap.get(item.parentId) : undefined;
           return topic && isTopic(topic) ? topic.parentId ?? null : null;
         }
@@ -643,11 +647,11 @@ const CurriculumBuilderPage = () => {
         if (isTopic(activeItem)) {
           if (isCohort(overItem)) return overItem.id; // Topic into that cohort
           if (isTopic(overItem)) return overItem.parentId ?? null; // Topic among topics of same cohort
-          if (isLesson(overItem)) return getCohortIdFor(overItem); // Topic near a lesson => adopt that lesson's cohort
+          if (isLesson(overItem) || isAssignment(overItem)) return getCohortIdFor(overItem); // Topic near a lesson => adopt that lesson's cohort
           return undefined;
         }
 
-        if (isLesson(activeItem)) {
+        if (isLesson(activeItem) || isAssignment(activeItem)) {
           if (isTopic(overItem)) return overItem.id; // Lesson into that topic
           if (isLesson(overItem)) return overItem.parentId ?? null; // Lesson among lessons of same topic
           if (isCohort(overItem)) return undefined; // Don't reparent off a cohort
@@ -677,7 +681,7 @@ const CurriculumBuilderPage = () => {
 
           const cIdx = out.findIndex(isCohort);
           const tIdx = out.findIndex(isTopic);
-          const lIdx = out.findIndex(isLesson);
+          const lIdx = out.findIndex(isLesson) || out.findIndex(isAssignment);
 
           if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
             // Move earliest cohort to just before the earliest topic
@@ -687,7 +691,7 @@ const CurriculumBuilderPage = () => {
 
           // Recompute after potential move
           const tIdx2 = out.findIndex(isTopic);
-          const lIdx2 = out.findIndex(isLesson);
+          const lIdx2 = out.findIndex(isLesson) || out.findIndex(isAssignment);
 
           if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
             // Move earliest topic to just before the earliest lesson
@@ -717,7 +721,7 @@ const CurriculumBuilderPage = () => {
             ? finalMap.get(item.parentId)
             : undefined;
           d = parent && isCohort(parent) ? depthOf(parent) + 1 : 1; // fallback to level 1
-        } else if (isLesson(item)) {
+        } else if (isLesson(item) || isAssignment(item)) {
           const parent = item.parentId
             ? finalMap.get(item.parentId)
             : undefined;
@@ -847,6 +851,74 @@ const CurriculumBuilderPage = () => {
     });
   };
 
+  const handleAssignment = (assignment: Assignment) => {
+    console.log("handleAssignment called:", { assignment, activeParentId });
+
+    if (!activeParentId) {
+      console.error("No activeParentId set");
+      return;
+    }
+
+    const parentIndex = curriculum.findIndex(item => item.id === activeParentId);
+    if (parentIndex === -1) {
+      console.error("Parent not found in curriculum:", activeParentId);
+      return;
+    }
+
+    console.log("Parent found at index:", parentIndex, curriculum[parentIndex]);
+
+    // Check duplicate
+    const assignmentExists = curriculum.some(item =>
+      item.type === LEARNING_UNIT.ASSIGNMENT &&
+      item.parentId === activeParentId &&
+      (item.refId === assignment.id || item.refId === assignment.id)
+    );
+
+    if (assignmentExists) {
+      console.log("Assignment already exists");
+      toast({
+        title: "Duplicate Assignment",
+        description: "Assignment already exists in this topic",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create assignment item
+    const newItem: DraggableItem = {
+      id: `assignment-${assignment.id}-${activeParentId}`,
+      refId: assignment.id,
+      title: assignment.title,
+      type: LEARNING_UNIT.ASSIGNMENT,
+      depth: curriculum[parentIndex].depth + 1,
+      parentId: activeParentId,
+    };
+
+    console.log("Adding new assignment item:", newItem);
+
+    setCurriculum(prev => {
+      const updated = [...prev];
+
+      // Find insertion point after parent
+      let insertIndex = parentIndex + 1;
+      for (let i = parentIndex + 1; i < updated.length; i++) {
+        if (updated[i].depth <= curriculum[parentIndex].depth) break;
+        insertIndex = i + 1;
+      }
+
+      updated.splice(insertIndex, 0, newItem);
+      console.log("Curriculum after adding assignment:", updated);
+      return updated;
+    });
+
+    setIsAssignmentModelOpen(false);
+    setActiveParentId(null); // Reset active parent
+    toast({
+      title: "Success",
+      description: "Assignment added to curriculum"
+    });
+  };
+
   const saveCurriculumStructure = async () => {
     if (!courseId || !course) {
       toast({
@@ -858,6 +930,7 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
+      console.log("Current curriculum:", curriculum);
       showOverlay("Saving Curriculum.");
 
       const newRootTopics: Topic[] = [];
@@ -886,11 +959,12 @@ const CurriculumBuilderPage = () => {
 
             const cohortTopics: Topic[] = cohortTopicItems.map((topicItem) => {
               const lessonItems = (childrenMap.get(topicItem.id) || [])
-                .filter((l) => l.type === LEARNING_UNIT.LESSON)
+                .filter((l) => l.type === LEARNING_UNIT.LESSON || l.type === LEARNING_UNIT.ASSIGNMENT)
                 .map((lessonItem) => ({
-                  id: (lessonItem as any).lessonRefId ?? lessonItem.id, // prefer real lesson id if present
+                  id: (lessonItem.refId ?? lessonItem.id) as string, // handle both lessons and assignments
                   title: lessonItem.title,
-                }));
+                  type: lessonItem.type as ("ASSIGNMENT" | "LESSON") || "LESSON"
+                })) as TopicItem[];
 
               return {
                 id: topicItem.id,
@@ -910,10 +984,11 @@ const CurriculumBuilderPage = () => {
           } else if (item.type === LEARNING_UNIT.TOPIC) {
             // Root topic
             const lessonItems = (childrenMap.get(item.id) || [])
-              .filter((l) => l.type === LEARNING_UNIT.LESSON)
+              .filter((l) => l.type === LEARNING_UNIT.LESSON || l.type === LEARNING_UNIT.ASSIGNMENT)
               .map((lessonItem) => ({
-                id: (lessonItem as any).lessonRefId ?? lessonItem.id, // align with cohort-lesson behavior
+                id: lessonItem.refId ?? lessonItem.id, // handle both lessons and assignments
                 title: lessonItem.title,
+                type: lessonItem.type as ("ASSIGNMENT" | "LESSON")
               }));
             newRootTopics.push({
               id: item.id,
@@ -931,7 +1006,6 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, updates);
 
       toast({ title: "Success", description: "Curriculum saved!" });
-      console.log("Curriculum saved with:", updates);
     } catch (error) {
       toast({
         title: "Error",
@@ -1441,16 +1515,16 @@ const CurriculumBuilderPage = () => {
                   {!curriculum.some(
                     (item) => item.type === LEARNING_UNIT.COHORT
                   ) && (
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        addItem(LEARNING_UNIT.TOPIC);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      Add Topic
-                    </Button>
-                  )}
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          addItem(LEARNING_UNIT.TOPIC);
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        Add Topic
+                      </Button>
+                    )}
 
                   <Button
                     size="sm"
@@ -1463,13 +1537,11 @@ const CurriculumBuilderPage = () => {
                   <Button
                     size="sm"
                     onClick={() => setIsCreateLessonOpen(true)}
-                  
                     className="flex items-center gap-1"
                   >
                     <Plus className="h-4 w-4" />
-                    {"Add lesson"}
+                    Add lesson
                   </Button>
-                 
 
                 </div>
               </CardHeader>
@@ -1506,6 +1578,9 @@ const CurriculumBuilderPage = () => {
                               {item.type === LEARNING_UNIT.COHORT && (
                                 <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
                               )}
+                              {item.type === LEARNING_UNIT.ASSIGNMENT && (
+                                <NotepadText className="h-4 w-4 text-red-500 flex-shrink-0" />
+                              )}
 
                               {/* Title – inline edit */}
                               {editingItemId === item.id ? (
@@ -1525,7 +1600,7 @@ const CurriculumBuilderPage = () => {
                                   className="flex-1 min-w-0"
                                   autoFocus
                                 />
-                              ) : (
+                              ) : item.type === LEARNING_UNIT.ASSIGNMENT || item.type == LEARNING_UNIT.LESSON ? (<Link to={`/admin/edit-${item.type.toLowerCase()}/${item.id}`}>{item.title}</Link>) : (
                                 <span className="flex-1 truncate cursor-pointer hover:underline">
                                   {item.title}
                                 </span>
@@ -1597,7 +1672,18 @@ const CurriculumBuilderPage = () => {
                                   >
                                     <Plus className="h-4 w-4" />
                                   </Button>
-
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setIsAssignmentModelOpen(true);
+                                      setActiveParentId(item.id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Add Assignment"
+                                  >
+                                    <NotebookPen className="h-4 w-4" />
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -1624,7 +1710,7 @@ const CurriculumBuilderPage = () => {
                               )}
 
                               {/* Lesson actions */}
-                              {item.type === LEARNING_UNIT.LESSON && (
+                              {(item.type === LEARNING_UNIT.LESSON || item.type == LEARNING_UNIT.ASSIGNMENT) && (
                                 <>
                                   <Button
                                     variant="ghost"
@@ -1634,7 +1720,7 @@ const CurriculumBuilderPage = () => {
                                       setNewItemName(item.title);
                                     }}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Rename Lesson"
+                                    title="Rename"
                                   >
                                     <Edit2 className="h-4 w-4" />
                                   </Button>
@@ -1644,7 +1730,7 @@ const CurriculumBuilderPage = () => {
                                     size="sm"
                                     onClick={() => deleteItem(item.id)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                    title="Delete Lesson"
+                                    title="Delete"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1696,7 +1782,7 @@ const CurriculumBuilderPage = () => {
                 i.parentId &&
                 topicIdsInCohort.has(i.parentId)
               ) {
-                usedInCohort.add(i.lessonRefId ?? i.id);
+                usedInCohort.add(i.refId ?? i.id);
               }
             });
           }
@@ -1719,8 +1805,8 @@ const CurriculumBuilderPage = () => {
           }
 
           const newItems: DraggableItem[] = filtered.map((lesson) => ({
-            id: mkLessonInstanceId(lesson.id, activeParentId), // instance id
-            lessonRefId: lesson.id, // real id
+            id: lesson.id, // instance id
+            refId: lesson.id, // real id
             title: lesson.title,
             type: LEARNING_UNIT.LESSON,
             depth: parentDepth + 1,
@@ -1743,15 +1829,17 @@ const CurriculumBuilderPage = () => {
         }}
         excludedLessonIds={excludedLessonIdsForActiveParent}
       />
-      
+
       <CreateLessonModal
-  isOpen={isCreateLessonOpen}
-  onClose={() => setIsCreateLessonOpen(false)}
-  onLessonCreated={() => {
-    // Refresh list or trigger your parent logic
- 
-  }}
-/>
+        isOpen={isCreateLessonOpen}
+        onClose={() => setIsCreateLessonOpen(false)}
+        onLessonCreated={() => {
+          // Refresh list or trigger your parent logic
+
+        }}
+      />
+
+      {isAssignmentModelOpen && <AssignmentModal onCancel={() => setIsAssignmentModelOpen(false)} onSave={handleAssignment} />}
     </div>
   );
 };

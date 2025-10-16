@@ -108,6 +108,7 @@ export const CURRENCY = {
 } as const;
 
 export const LEARNING_UNIT = {
+    ASSIGNMENT: "ASSIGNMENT",
     LESSON: "LESSON",
     TOPIC: "TOPIC",
     COHORT: "COHORT"
@@ -321,6 +322,8 @@ export const COUPON_STATUS = {
 } as const;
 
 export const COLLECTION = {
+    ASSIGNMENTS: "Assignment",
+    SUBMISSIONS: 'Submissions',
     COURSES: 'Courses',
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',

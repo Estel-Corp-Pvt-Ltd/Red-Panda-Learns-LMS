@@ -3,6 +3,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export interface TopicItem {
   id: string;
+  type: "LESSON" | "ASSIGNMENT";
   title: string;
 };
 
