@@ -4,9 +4,15 @@ import { transactionService } from "./transactionService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { paypalProvider } from "./providers/paypalProvider";
 import { Currency, PaymentProvider } from "@/types/general";
-import { enrollmentService } from './dummyEnrollmentService';
-import { CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
-
+import { enrollmentService } from "./dummyEnrollmentService";
+import {
+  CURRENCY,
+  ENROLLED_PROGRAM_TYPE,
+  PAYMENT_PROVIDER,
+  TRANSACTION_STATUS,
+  TRANSACTION_TYPE,
+} from "@/constants";
+import { orderService } from "./orderService";
 export type PaymentProviderOption = {
   id: PaymentProvider;
   name: string;
@@ -85,7 +91,10 @@ class PaymentService {
       originalAmount: basePrice,
       originalCurrency: baseCurrency,
       exchangeRate,
-      formattedPrice: currencyService.formatCurrency(convertedAmount, targetCurrency),
+      formattedPrice: currencyService.formatCurrency(
+        convertedAmount,
+        targetCurrency
+      ),
       formattedTotal: currencyService.formatCurrency(total, targetCurrency),
     };
   }
@@ -110,6 +119,19 @@ class PaymentService {
         baseCurrency
       );
 
+      const orderId = await orderService.createOrder({
+        userId,
+        courseIds: [course.id],
+        amount: pricing.amount,
+        currency: pricing.currency,
+        metadata: {
+          userEmail,
+          courseTitle: course.title,
+          userAgent: navigator.userAgent,
+        },
+        status: "PENDING",
+      });
+
       const transactionId = await transactionService.createTransaction({
         userId,
         courseId: course.id,
@@ -123,12 +145,13 @@ class PaymentService {
         status: TRANSACTION_STATUS.PENDING,
         paymentDetails: { orderId: "", paymentId: "" },
 
-metadata: {
-  userEmail,
-  courseTitle: course.title,
-  userAgent: navigator.userAgent,
-  paymentAttempts: 1
-}
+        metadata: {
+          orderId,
+          userEmail,
+          courseTitle: course.title,
+          userAgent: navigator.userAgent,
+          paymentAttempts: 1,
+        },
       });
 
       let result: PaymentResult;
@@ -156,6 +179,11 @@ metadata: {
 
       if (result.success) {
         result.transactionId = transactionId;
+        await orderService.updateOrder(
+          orderId,
+          result.success ? "SUCCESS" : "FAILED",
+          transactionId
+        );
         try {
           await enrollmentService.enrollUser(
             userId,

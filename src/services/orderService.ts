@@ -36,18 +36,18 @@ class OrderService {
 
       if (orderId) {
         // 🔎 If caller gave an orderId, check DB first
-        const existing = await getDoc(doc(db, "orders", orderId));
+        const existing = await getDoc(doc(db, "Orders", orderId));
         if (existing.exists()) {
           console.log("♻️ Returning existing order:", orderId);
           return orderId; // idempotent return
         }
       } else {
-        // If no orderId provided → create new Firestore doc
-        orderId = doc(collection(db, "orders")).id;
+ const generated = await this.generateOrderId();        // If no orderId provided → create new Firestore doc
+        orderId = generated.orderId
       }
-
+      
       const order: Order = {
-        orderId,
+        orderId ,
         userId: data.userId,
         courseIds: data.courseIds,
         bundleId: data.bundleId || null,
@@ -59,7 +59,7 @@ class OrderService {
         createdAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, "orders", orderId), order);
+      await setDoc(doc(db, "Orders", orderId), order);
 
       console.log("Order created:", orderId);
       return orderId;
@@ -76,7 +76,7 @@ class OrderService {
     metadataUpdates?: Record<string, any>
   ): Promise<void> {
     try {
-      const orderRef = doc(db, "orders", orderId);
+      const orderRef = doc(db, "Orders", orderId);
       const snapshot = await getDoc(orderRef);
 
       if (!snapshot.exists()) {
@@ -115,3 +115,5 @@ class OrderService {
     }
   }
 }
+
+export const orderService = new OrderService();

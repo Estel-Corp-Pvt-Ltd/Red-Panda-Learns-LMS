@@ -42,6 +42,7 @@ export type PayPalPaymentDetails = {
 };
 
 export type TransactionMetadata = {
+  orderId:string;
   userEmail: string;
   courseTitle: string;
   userAgent?: string;
