@@ -13,6 +13,8 @@ import {
   TRANSACTION_TYPE,
 } from "@/constants";
 import { orderService } from "./orderService";
+import { Address } from "@/types/order";
+
 export type PaymentProviderOption = {
   id: PaymentProvider;
   name: string;
@@ -105,7 +107,10 @@ class PaymentService {
     userEmail: string,
     userId: string,
     selectedCurrency: Currency,
-    baseCurrency: Currency
+    baseCurrency: Currency,
+    billingAddress:Address,
+    shippingAddress:Address
+
   ): Promise<PaymentResult> {
     try {
       const providerOption = this.providers.find((p) => p.id === provider);
@@ -124,16 +129,8 @@ class PaymentService {
         courseIds: [course.id],
         amount: pricing.amount,
         currency: pricing.currency,
-        billingAddress: {
-          fullName: "John Doe",
-          line1: "123 BHK Apartments, 5th Floor",
-          city: "Bangalore",
-          state: "Karnataka",
-          postalCode: "560102",
-          country: "India",
-          phone: "+91-9876543210",
-          type: "BILLING", 
-        },
+        billingAddress,
+        shippingAddress,
         metadata: {
           userEmail,
           courseTitle: course.title,

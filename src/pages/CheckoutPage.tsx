@@ -73,7 +73,20 @@ const [billingAddress, setBillingAddress] = useState<Address>({
   landmark: "",
   type: "BILLING",
 });
-const [shippingAddress, setShippingAddress] = useState<Address | undefined>();
+
+const [shippingAddress, setShippingAddress] = useState<Address>({
+  fullName: "",
+  line1: "",
+  line2: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  country: "",
+  phone: "",
+  landmark: "",
+  type: "SHIPPING",
+});
+
 
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
@@ -171,7 +184,9 @@ const [shippingAddress, setShippingAddress] = useState<Address | undefined>();
         user.email!,
         user.id,
         selectedCurrency,
-        CURRENCY.INR
+        CURRENCY.INR,
+        billingAddress,
+        shippingAddress,
       );
 
       if (result.success && result.transactionId) {
@@ -426,6 +441,125 @@ const [shippingAddress, setShippingAddress] = useState<Address | undefined>();
     </div>
   </CardContent>
 </Card>
+
+{/* Shipping Address */}
+<Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6">
+  <CardHeader className="flex justify-between items-center">
+    <CardTitle>Shipping Address</CardTitle>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setShippingAddress({ ...billingAddress, type: "SHIPPING" })}
+    >
+      Same as Billing
+    </Button>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="shipFullName">Full Name</Label>
+        <Input
+          id="shipFullName"
+          value={shippingAddress.fullName}
+          onChange={(e) =>
+            setShippingAddress({ ...shippingAddress, fullName: e.target.value })
+          }
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="shipPhone">Phone</Label>
+        <Input
+          id="shipPhone"
+          type="tel"
+          value={shippingAddress.phone}
+          onChange={(e) =>
+            setShippingAddress({ ...shippingAddress, phone: e.target.value })
+          }
+          placeholder="+91 9876543210"
+        />
+      </div>
+    </div>
+
+    <div>
+      <Label htmlFor="shipLine1">Address Line 1</Label>
+      <Input
+        id="shipLine1"
+        value={shippingAddress.line1}
+        onChange={(e) =>
+          setShippingAddress({ ...shippingAddress, line1: e.target.value })
+        }
+        placeholder="Street, apartment, etc."
+      />
+    </div>
+
+    <div>
+      <Label htmlFor="shipLine2">Address Line 2 (Optional)</Label>
+      <Input
+        id="shipLine2"
+        value={shippingAddress.line2}
+        onChange={(e) =>
+          setShippingAddress({ ...shippingAddress, line2: e.target.value })
+        }
+        placeholder="Building, landmark, etc."
+      />
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="shipCity">City</Label>
+        <Input
+          id="shipCity"
+          value={shippingAddress.city}
+          onChange={(e) =>
+            setShippingAddress({ ...shippingAddress, city: e.target.value })
+          }
+          placeholder="City"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="shipState">State</Label>
+        <Input
+          id="shipState"
+          value={shippingAddress.state}
+          onChange={(e) =>
+            setShippingAddress({ ...shippingAddress, state: e.target.value })
+          }
+          placeholder="State"
+        />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="shipPostalCode">Postal Code</Label>
+        <Input
+          id="shipPostalCode"
+          value={shippingAddress.postalCode}
+          onChange={(e) =>
+            setShippingAddress({ ...shippingAddress, postalCode: e.target.value })
+          }
+          placeholder="e.g. 110001"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="shipCountry">Country</Label>
+        <Input
+          id="shipCountry"
+          value={shippingAddress.country}
+          onChange={(e) =>
+            setShippingAddress({ ...shippingAddress, country: e.target.value })
+          }
+          placeholder="India"
+        />
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
+
 
 
           {/* Payment Providers (structure like "before") */}
