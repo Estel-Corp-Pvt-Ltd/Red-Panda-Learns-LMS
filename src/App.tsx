@@ -44,6 +44,7 @@ import Signup from "./pages/auth/Signup";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
+import PopUpContainer from "./components/PopUpContainer";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
           <CartProvider>
             <TooltipProvider>
               <LoadingOverlayProvider>
+                <PopUpContainer />
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>

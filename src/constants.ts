@@ -8,8 +8,6 @@ export const USER_ROLE = {
 export const LESSON_TYPE = {
     SLIDE_DECK: 'SLIDE DECK',
     VIDEO_LECTURE: 'VIDEO LECTURE',
-    ASSIGNMENT: 'ASSIGNMENT',
-    QUIZ: 'QUIZ',
     INTERACTIVE_PROJECT: 'INTERACTIVE PROJECT'
 } as const;
 
@@ -335,6 +333,7 @@ export const COLLECTION = {
     CONFIG: 'Config',
     ATTRIBUTES: 'Attributes',
     FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
+    POPUPS: "PopUps"
 } as const;
 
 export const ATTRIBUTE_TYPE = {

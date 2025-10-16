@@ -1,21 +1,10 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PopUpCourseType } from "@/types/general";
 import { POPUP_COURSE_TYPE } from "@/constants";
+import { PopUp } from "@/types/PopUp";
 
-interface PopUpProps {
-    icon?: React.ReactNode;
-    title: string;
-    description: string;
-    type: PopUpCourseType;
-    ctaText: string;
-    ctaLink: string;
-    autoClose?: boolean;
-    duration?: number;
-};
-
-const PopUp = ({
+const PopUpElement = ({
     icon,
     title,
     description,
@@ -24,7 +13,7 @@ const PopUp = ({
     ctaLink,
     autoClose = false,
     duration = 5000,
-}: PopUpProps) => {
+}: Partial<PopUp>) => {
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
@@ -42,7 +31,7 @@ const PopUp = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 50 }}
                     transition={{ duration: 0.3 }}
-                    className="fixed bottom-6 right-6 z-50 w-80"
+                    className="z-50 w-80"
                 >
                     {/* Animated border wrapper */}
                     <div className="relative rounded-2xl p-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient">
@@ -103,4 +92,4 @@ const PopUp = ({
     );
 };
 
-export default PopUp;
+export default PopUpElement;
