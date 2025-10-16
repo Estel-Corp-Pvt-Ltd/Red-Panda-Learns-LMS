@@ -9,12 +9,44 @@ import {
 import { useState, useEffect, useRef } from "react";
 
 const AIForAllAnimation = () => {
-  const [revealedNodes, setRevealedNodes] = useState([]);
-  const [pulses, setPulses] = useState([]);
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const containerRef = useRef(null);
-  const centerRef = useRef(null);
+  const [revealedNodes, setRevealedNodes] = useState<number[]>([]);
+  const [pulses, setPulses] = useState<
+    { id: number; deltaX: number; deltaY: number; color: string }[]
+  >([]);
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const centerRef = useRef<HTMLDivElement | null>(null);
   const pulseIdRef = useRef(0);
+
+  // Responsive container size
+  const BASE = 800; // logical coordinate system
+  const [size, setSize] = useState(600); // actual px size of container
+
+  // Ratios relative to container size (tweak these if you want a different look)
+  const CENTER_DIAM_RATIO = 0.2; // 120px on 600px base
+  const DOT_DIAM_RATIO = 0.08;   // 48px on 600px base
+  const ORBIT_RAD_RATIO = 0.07;  // 42px on 600px base
+
+  useEffect(() => {
+    const computeTargetSize = () => {
+      const vmin = Math.min(window.innerWidth, window.innerHeight);
+      // Scales with viewport, bounded for sanity
+      const target = Math.round(Math.max(360, Math.min(1120, vmin * 0.8)));
+      setSize(target);
+    };
+    computeTargetSize();
+    window.addEventListener("resize", computeTargetSize);
+    return () => window.removeEventListener("resize", computeTargetSize);
+  }, []);
+
+  // Derived sizes
+  const centerDiameterPx = size * CENTER_DIAM_RATIO;
+  const nodeDotDiameterPx = size * DOT_DIAM_RATIO;
+
+  // Convert visual sizes back into base units for line geometry
+  const centerRadiusBase = (CENTER_DIAM_RATIO * BASE) / 2;
+  const nodeRadiusBase = (DOT_DIAM_RATIO * BASE) / 2;
 
   // Brand colors
   const brandMagenta = "#ff00ff";
@@ -48,7 +80,7 @@ const AIForAllAnimation = () => {
     },
     {
       id: 4,
-      label: "Businesses",
+      label: "School Students",
       delay: 1.6,
       icon: Building,
       color: brandOrange,
@@ -64,7 +96,7 @@ const AIForAllAnimation = () => {
     },
     {
       id: 6,
-      label: "Students",
+      label: "Businesses",
       delay: 2.4,
       icon: Users,
       color: brandMagenta,
@@ -72,10 +104,12 @@ const AIForAllAnimation = () => {
     },
   ];
 
-  const getNodePosition = (nodeId) => {
+  const centerPos = { x: 400, y: 400 }; // base coords
+
+  const getNodePosition = (nodeId: number) => {
     const centerX = 400;
     const centerY = 400;
-    const radius = 280;
+    const radius = 280; // stays constant in base coords, scales with container via percentages
 
     const angleOffset = -90;
     const angleStep = 60;
@@ -87,11 +121,7 @@ const AIForAllAnimation = () => {
     };
   };
 
-  const centerPos = { x: 400, y: 400 };
-  const centerRadius = 60;
-  const nodeRadius = 26;
-
-  const getLinePoints = (nodeId) => {
+  const getLinePoints = (nodeId: number) => {
     const nodePos = getNodePosition(nodeId);
     const dx = nodePos.x - centerPos.x;
     const dy = nodePos.y - centerPos.y;
@@ -100,16 +130,16 @@ const AIForAllAnimation = () => {
     const ux = dx / distance;
     const uy = dy / distance;
 
-    const startX = centerPos.x + ux * centerRadius;
-    const startY = centerPos.y + uy * centerRadius;
+    const startX = centerPos.x + ux * centerRadiusBase;
+    const startY = centerPos.y + uy * centerRadiusBase;
 
-    const endX = nodePos.x - ux * nodeRadius;
-    const endY = nodePos.y - uy * nodeRadius;
+    const endX = nodePos.x - ux * nodeRadiusBase;
+    const endY = nodePos.y - uy * nodeRadiusBase;
 
     return { startX, startY, endX, endY };
   };
 
-  const createPulse = (nodeId) => {
+  const createPulse = (nodeId: number) => {
     const node = nodes.find((n) => n.id === nodeId);
     const nodePos = getNodePosition(nodeId);
     const deltaX = nodePos.x - centerPos.x;
@@ -148,7 +178,7 @@ const AIForAllAnimation = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleNodeHover = (nodeId, isEntering) => {
+  const handleNodeHover = (nodeId: number, isEntering: boolean) => {
     if (isEntering) {
       setHoveredNode(nodeId);
       for (let i = 0; i < 8; i++) {
@@ -157,6 +187,13 @@ const AIForAllAnimation = () => {
     } else {
       setHoveredNode(null);
     }
+  };
+
+  const strokeW = (hover: boolean) => {
+    // Scales slightly with container size; keeps similar visual weight
+    const base = hover ? 4 : 2;
+    const scaled = Math.round(size * (hover ? 0.004 : 0.0025));
+    return Math.max(base, scaled);
   };
 
   return (
@@ -171,7 +208,18 @@ const AIForAllAnimation = () => {
     >
       <div
         ref={containerRef}
-        style={{ position: "relative", width: "600px", height: "600px" }}
+        style={
+          {
+            position: "relative",
+            width: `${size}px`,
+            height: `${size}px`,
+            // CSS vars used by animations and sizes
+            "--size": `${size}px`,
+            "--center-d": `${centerDiameterPx}px`,
+            "--dot-d": `${nodeDotDiameterPx}px`,
+            "--orbit-r": `${size * ORBIT_RAD_RATIO}px`,
+          } as React.CSSProperties
+        }
       >
         {/* Ripples */}
         {[0, 1, 2, 3].map((i) => (
@@ -200,11 +248,11 @@ const AIForAllAnimation = () => {
             height: "100%",
             zIndex: 1,
           }}
-          viewBox="0 0 800 800"
+          viewBox={`0 0 ${BASE} ${BASE}`}
           preserveAspectRatio="xMidYMid meet"
         >
           {revealedNodes.map((nodeId) => {
-            const node = nodes.find((n) => n.id === nodeId);
+            const node = nodes.find((n) => n.id === nodeId)!;
             const { startX, startY, endX, endY } = getLinePoints(nodeId);
             const isHovered = hoveredNode === nodeId;
             return (
@@ -215,13 +263,13 @@ const AIForAllAnimation = () => {
                 x2={endX}
                 y2={endY}
                 stroke={isHovered ? node.color : `${node.color}60`}
-                strokeWidth={isHovered ? "4" : "2"}
+                strokeWidth={strokeW(isHovered)}
                 strokeLinecap="round"
                 style={{
                   animation: "line-draw 0.6s ease-out forwards",
                   transition: "all 0.3s ease",
                   filter: isHovered
-                    ? `drop-shadow(0 0 8px ${node.color})`
+                    ? `drop-shadow(0 0 10px ${node.color})`
                     : "none",
                 }}
               />
@@ -237,8 +285,8 @@ const AIForAllAnimation = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "120px",
-            height: "120px",
+            width: "var(--center-d)",
+            height: "var(--center-d)",
             background: "linear-gradient(135deg, #d946ef 0%, #3b82f6 100%)",
             borderRadius: "50%",
             display: "flex",
@@ -252,17 +300,18 @@ const AIForAllAnimation = () => {
         >
           <div
             style={{
-              fontSize: "32px",
+              fontSize: `calc(var(--size) * 0.053)`, // ~32px at 600px
               fontWeight: 700,
               color: "#fff",
               letterSpacing: "2px",
+              lineHeight: 1,
             }}
           >
             AI
           </div>
           <div
             style={{
-              fontSize: "11px",
+              fontSize: `calc(var(--size) * 0.018)`, // ~11px at 600px
               color: "rgba(255, 255, 255, 0.9)",
               letterSpacing: "3px",
               marginTop: "2px",
@@ -286,8 +335,8 @@ const AIForAllAnimation = () => {
               onMouseLeave={() => handleNodeHover(node.id, false)}
               style={{
                 position: "absolute",
-                left: `${(pos.x / 800) * 100}%`,
-                top: `${(pos.y / 800) * 100}%`,
+                left: `${(pos.x / BASE) * 100}%`,
+                top: `${(pos.y / BASE) * 100}%`,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -355,8 +404,8 @@ const AIForAllAnimation = () => {
                 <div
                   className={`ai-node-dot bg-gradient-to-br ${node.gradient}`}
                   style={{
-                    width: "48px",
-                    height: "48px",
+                    width: "var(--dot-d)",
+                    height: "var(--dot-d)",
                     borderRadius: "50%",
                     boxShadow: isHovered
                       ? `0 0 30px ${node.color}, 0 8px 24px ${node.color}80`
@@ -382,12 +431,12 @@ const AIForAllAnimation = () => {
                     className="ai-node-icon"
                     style={{
                       color: "#fff",
-                      width: "24px",
-                      height: "24px",
+                      width: `calc(var(--dot-d) * 0.5)`, // ~24px at 48px dot
+                      height: `calc(var(--dot-d) * 0.5)`,
                     }}
                   />
 
-                  {/* Sparkle effects on hover */}
+                  {/* Sparkles on hover */}
                   {isHovered && (
                     <>
                       <div
@@ -413,7 +462,9 @@ const AIForAllAnimation = () => {
 
               <div
                 style={{
-                  fontSize: isHovered ? "15px" : "14px",
+                  fontSize: isHovered
+                    ? `calc(var(--size) * 0.025)`
+                    : `calc(var(--size) * 0.023)`, // ~14px baseline
                   color: isHovered ? node.color : "var(--foreground)",
                   fontWeight: isHovered ? 700 : 600,
                   whiteSpace: "pre-line",
@@ -425,7 +476,7 @@ const AIForAllAnimation = () => {
                   position: "absolute",
                   top: "100%",
                   left: "50%",
-                  transform: isHovered 
+                  transform: isHovered
                     ? "translate(-50%, 4px) scale(1.05)"
                     : "translate(-50%, 4px) scale(1)",
                   marginTop: "0px",
@@ -445,11 +496,14 @@ const AIForAllAnimation = () => {
           const ux = dx / distance;
           const uy = dy / distance;
 
-          const startOffsetX = ux * centerRadius;
-          const startOffsetY = uy * centerRadius;
+          const startOffsetX = ux * centerRadiusBase;
+          const startOffsetY = uy * centerRadiusBase;
 
-          const targetX = ((dx - startOffsetX) / 800) * 600;
-          const targetY = ((dy - startOffsetY) / 800) * 600;
+          // Convert base units to actual px using container size
+          const pxStartX = (startOffsetX / BASE) * size;
+          const pxStartY = (startOffsetY / BASE) * size;
+          const targetX = ((dx - startOffsetX) / BASE) * size;
+          const targetY = ((dy - startOffsetY) / BASE) * size;
 
           return (
             <div
@@ -462,12 +516,10 @@ const AIForAllAnimation = () => {
                 height: "8px",
                 background: pulse.color,
                 borderRadius: "50%",
-                transform: `translate(calc(-50% + ${
-                  (startOffsetX / 800) * 600
-                }px), calc(-50% + ${(startOffsetY / 800) * 600}px))`,
+                transform: `translate(calc(-50% + ${pxStartX}px), calc(-50% + ${pxStartY}px))`,
                 boxShadow: `0 0 16px ${pulse.color}, 0 0 24px ${pulse.color}80`,
                 animation: "pulse-to-node 1.2s ease-out forwards",
-                // @ts-ignore
+                // @ts-ignore custom props for keyframes
                 "--target-x": `calc(-50% + ${targetX}px)`,
                 "--target-y": `calc(-50% + ${targetY}px)`,
                 pointerEvents: "none",
@@ -480,17 +532,15 @@ const AIForAllAnimation = () => {
         <style>{`
           @keyframes ripple-expand {
             0% {
-              width: 120px;
-              height: 120px;
+              width: var(--center-d);
+              height: var(--center-d);
               opacity: 0.6;
               border-width: 3px;
             }
-            50% {
-              opacity: 0.2;
-            }
+            50% { opacity: 0.2; }
             100% {
-              width: 600px;
-              height: 600px;
+              width: var(--size);
+              height: var(--size);
               opacity: 0;
               border-width: 1px;
             }
@@ -506,12 +556,8 @@ const AIForAllAnimation = () => {
           }
 
           @keyframes node-reveal {
-            0% {
-              opacity: 0;
-            }
-            100% {
-              opacity: 1;
-            }
+            0% { opacity: 0; }
+            100% { opacity: 1; }
           }
 
           @keyframes pulse-to-node {
@@ -519,9 +565,7 @@ const AIForAllAnimation = () => {
               opacity: 0;
               transform: translate(-50%, -50%) scale(1);
             }
-            10% {
-              opacity: 1;
-            }
+            10% { opacity: 1; }
             100% {
               opacity: 0;
               transform: translate(var(--target-x), var(--target-y)) scale(2.5);
@@ -529,12 +573,8 @@ const AIForAllAnimation = () => {
           }
 
           @keyframes line-draw {
-            from {
-              opacity: 0;
-            }
-            to {
-              opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
           }
 
           @keyframes glow-ring {
@@ -549,12 +589,8 @@ const AIForAllAnimation = () => {
           }
 
           @keyframes orbital {
-            0% {
-              transform: rotate(0deg) translateX(42px) rotate(0deg);
-            }
-            100% {
-              transform: rotate(360deg) translateX(42px) rotate(-360deg);
-            }
+            0%   { transform: rotate(0deg) translateX(var(--orbit-r)) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(var(--orbit-r)) rotate(-360deg); }
           }
 
           @keyframes sparkle {
@@ -569,12 +605,8 @@ const AIForAllAnimation = () => {
           }
 
           @keyframes icon-spin {
-            0% {
-              transform: rotate(0deg);
-            }
-            100% {
-              transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
 
           .ai-node:hover .ai-node-icon {
@@ -597,25 +629,17 @@ const AIForAllAnimation = () => {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 48px;
-            height: 48px;
+            width: var(--dot-d);
+            height: var(--dot-d);
             border: 2px solid;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
           }
 
-          .ai-node-glow-ring-1 {
-            animation: glow-ring 1.5s ease-out infinite;
-          }
-
-          .ai-node-glow-ring-2 {
-            animation: glow-ring 1.5s ease-out infinite 0.3s;
-          }
-
-          .ai-node-glow-ring-3 {
-            animation: glow-ring 1.5s ease-out infinite 0.6s;
-          }
+          .ai-node-glow-ring-1 { animation: glow-ring 1.5s ease-out infinite; }
+          .ai-node-glow-ring-2 { animation: glow-ring 1.5s ease-out infinite 0.3s; }
+          .ai-node-glow-ring-3 { animation: glow-ring 1.5s ease-out infinite 0.6s; }
 
           .orbital-particle {
             position: absolute;
@@ -630,21 +654,10 @@ const AIForAllAnimation = () => {
             margin-top: -3px;
           }
 
-          .orbital-1 {
-            animation: orbital 3s linear infinite;
-          }
-
-          .orbital-2 {
-            animation: orbital 3s linear infinite 0.75s;
-          }
-
-          .orbital-3 {
-            animation: orbital 3s linear infinite 1.5s;
-          }
-
-          .orbital-4 {
-            animation: orbital 3s linear infinite 2.25s;
-          }
+          .orbital-1 { animation: orbital 3s linear infinite; }
+          .orbital-2 { animation: orbital 3s linear infinite 0.75s; }
+          .orbital-3 { animation: orbital 3s linear infinite 1.5s; }
+          .orbital-4 { animation: orbital 3s linear infinite 2.25s; }
 
           .sparkle {
             position: absolute;
@@ -655,29 +668,10 @@ const AIForAllAnimation = () => {
             box-shadow: 0 0 8px var(--sparkle-color);
           }
 
-          .sparkle-1 {
-            top: -10px;
-            left: 50%;
-            animation: sparkle 1.5s ease-in-out infinite;
-          }
-
-          .sparkle-2 {
-            bottom: -10px;
-            left: 50%;
-            animation: sparkle 1.5s ease-in-out infinite 0.375s;
-          }
-
-          .sparkle-3 {
-            top: 50%;
-            left: -10px;
-            animation: sparkle 1.5s ease-in-out infinite 0.75s;
-          }
-
-          .sparkle-4 {
-            top: 50%;
-            right: -10px;
-            animation: sparkle 1.5s ease-in-out infinite 1.125s;
-          }
+          .sparkle-1 { top: -10px; left: 50%; animation: sparkle 1.5s ease-in-out infinite; }
+          .sparkle-2 { bottom: -10px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
+          .sparkle-3 { top: 50%; left: -10px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
+          .sparkle-4 { top: 50%; right: -10px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
         `}</style>
       </div>
     </div>
