@@ -74,6 +74,7 @@ const PopUpTab = () => {
   const [type, setType] = useState<PopUpCourseType>(POPUP_COURSE_TYPE.LIVE);
   const [autoClose, setAutoClose] = useState(false);
   const [duration, setDuration] = useState(5000);
+  const [active, setActive] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -115,6 +116,7 @@ const PopUpTab = () => {
           type,
           ctaText,
           ctaLink,
+          active,
           autoClose,
           duration,
         });
@@ -165,7 +167,8 @@ const PopUpTab = () => {
     setDescription("");
     setCtaText("");
     setCtaLink("");
-    setType("LIVE");
+    setType(POPUP_COURSE_TYPE.LIVE);
+    setActive(false);
     setAutoClose(false);
     setDuration(5000);
     setIsEditing(false);
@@ -222,6 +225,15 @@ const PopUpTab = () => {
           placeholder="CTA link"
           className="border p-2 rounded w-48"
         />
+
+        <select
+          value={active ? "true" : "false"}
+          onChange={(e) => setActive(e.target.value === "true")}
+          className="border p-2 rounded w-32"
+        >
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
 
         <div className="flex items-center gap-2">
           <label className="text-sm">
@@ -310,6 +322,7 @@ const PopUpTab = () => {
                         setDescription(pop.description);
                         setType(pop.type);
                         setCtaText(pop.ctaText);
+                        setActive(pop.active);
                         setCtaLink(pop.ctaLink);
                         setAutoClose(pop.autoClose ?? false);
                         setDuration(pop.duration ?? 5000);
