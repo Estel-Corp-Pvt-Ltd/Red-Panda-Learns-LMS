@@ -16,6 +16,7 @@ import { db } from "../firebaseConfig.ts";
 import { OrderStatus } from "../types/general.ts";
 // import { ORDER_STATUS } from "../constants.ts";
 import { Order } from "@/types/order.ts";
+import { ORDER_STATUS } from "@/constants.ts";
 
 
 class OrderService {
@@ -72,7 +73,7 @@ class OrderService {
         userId: data.userId,
         courseIds: data.courseIds,
         bundleId: data.bundleId || null,
-        status: data.status || "PENDING",
+        status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         currency: data.currency,
         transactionId: data.transactionId || null,
@@ -127,7 +128,7 @@ class OrderService {
       }
 
       // Set completedAt if order is marked SUCCESS
-      if (status === "SUCCESS") {
+      if (status === ORDER_STATUS.SUCCESS) {
         updateData.completedAt = serverTimestamp();
       }
 

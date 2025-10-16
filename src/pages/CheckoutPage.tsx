@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, CreditCard, Shield, Lock, RefreshCw } from "lucide-react";
+import { ArrowLeft, CreditCard, Shield, Lock, RefreshCw , Copy} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -266,7 +266,7 @@ const [shippingAddress, setShippingAddress] = useState<Address>({
 
           <h1 className="text-3xl font-bold mb-2">Complete Your Enrollment</h1>
           <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
-            You’re just one step away from accessing this course
+            You're just one step away from accessing this course
           </p>
 
           {/* Course Summary (layout like "before", functionality from "after") */}
@@ -328,239 +328,297 @@ const [shippingAddress, setShippingAddress] = useState<Address>({
             </CardContent>
           </Card>
 
-              {/* Billing Address */}
-<Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6">
-  <CardHeader>
-    <CardTitle>Billing Address</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="fullName">Full Name</Label>
-        <Input
-          id="fullName"
-          value={billingAddress.fullName}
-          onChange={(e) =>
-            setBillingAddress({ ...billingAddress, fullName: e.target.value })
-          }
-          placeholder="John Doe"
-        />
-      </div>
+          {/* Billing Address */}
+          <Card className="bg-gradient-to-br from-white to-indigo-50/30 dark:from-zinc-900 dark:to-indigo-950/20 border border-indigo-100 dark:border-zinc-800 rounded-xl shadow-sm mb-6 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border-b border-indigo-100 dark:border-zinc-800">
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">1</span>
+                </div>
+                Billing Address
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="fullName" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="fullName"
+                    value={billingAddress.fullName}
+                    onChange={(e) =>
+                      setBillingAddress({ ...billingAddress, fullName: e.target.value })
+                    }
+                    placeholder="Enter your full name"
+                    className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
 
-      <div>
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          type="tel"
-          value={billingAddress.phone}
-          onChange={(e) =>
-            setBillingAddress({ ...billingAddress, phone: e.target.value })
-          }
-          placeholder="+91 9876543210"
-        />
-      </div>
-    </div>
+                <div>
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={billingAddress.phone}
+                    onChange={(e) =>
+                      setBillingAddress({ ...billingAddress, phone: e.target.value })
+                    }
+                    placeholder="Enter your phone number"
+                    className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
 
-    <div>
-      <Label htmlFor="line1">Address Line 1</Label>
-      <Input
-        id="line1"
-        value={billingAddress.line1}
-        onChange={(e) =>
-          setBillingAddress({ ...billingAddress, line1: e.target.value })
-        }
-        placeholder="Street, apartment, etc."
-      />
-    </div>
+              <div>
+                <Label htmlFor="line1" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Street Address <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="line1"
+                  value={billingAddress.line1}
+                  onChange={(e) =>
+                    setBillingAddress({ ...billingAddress, line1: e.target.value })
+                  }
+                  placeholder="Enter your street address"
+                  className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
 
-    <div>
-      <Label htmlFor="line2">Address Line 2 (Optional)</Label>
-      <Input
-        id="line2"
-        value={billingAddress.line2 || ""}
-        onChange={(e) =>
-          setBillingAddress({ ...billingAddress, line2: e.target.value })
-        }
-        placeholder="Building, landmark, etc."
-      />
-    </div>
+              <div>
+                <Label htmlFor="line2" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Apartment, Suite, etc. <span className="text-gray-400 text-xs">(Optional)</span>
+                </Label>
+                <Input
+                  id="line2"
+                  value={billingAddress.line2 || ""}
+                  onChange={(e) =>
+                    setBillingAddress({ ...billingAddress, line2: e.target.value })
+                  }
+                  placeholder="Apartment number, suite, unit, building, floor, etc."
+                  className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="city">City</Label>
-        <Input
-          id="city"
-          value={billingAddress.city}
-          onChange={(e) =>
-            setBillingAddress({ ...billingAddress, city: e.target.value })
-          }
-          placeholder="City"
-        />
-      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    City <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="city"
+                    value={billingAddress.city}
+                    onChange={(e) =>
+                      setBillingAddress({ ...billingAddress, city: e.target.value })
+                    }
+                    placeholder="Enter your city"
+                    className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
 
-      <div>
-        <Label htmlFor="state">State</Label>
-        <Input
-          id="state"
-          value={billingAddress.state}
-          onChange={(e) =>
-            setBillingAddress({ ...billingAddress, state: e.target.value })
-          }
-          placeholder="State"
-        />
-      </div>
-    </div>
+                <div>
+                  <Label htmlFor="state" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    State/Province <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="state"
+                    value={billingAddress.state}
+                    onChange={(e) =>
+                      setBillingAddress({ ...billingAddress, state: e.target.value })
+                    }
+                    placeholder="Enter your state or province"
+                    className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="postalCode">Postal Code</Label>
-        <Input
-          id="postalCode"
-          value={billingAddress.postalCode}
-          onChange={(e) =>
-            setBillingAddress({
-              ...billingAddress,
-              postalCode: e.target.value,
-            })
-          }
-          placeholder="e.g. 110001"
-        />
-      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="postalCode" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    ZIP/Postal Code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="postalCode"
+                    value={billingAddress.postalCode}
+                    onChange={(e) =>
+                      setBillingAddress({
+                        ...billingAddress,
+                        postalCode: e.target.value,
+                      })
+                    }
+                    placeholder="Enter ZIP or postal code"
+                    className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
 
-      <div>
-        <Label htmlFor="country">Country</Label>
-        <Input
-          id="country"
-          value={billingAddress.country}
-          onChange={(e) =>
-            setBillingAddress({ ...billingAddress, country: e.target.value })
-          }
-          placeholder="India"
-        />
-      </div>
-    </div>
-  </CardContent>
-</Card>
+                <div>
+                  <Label htmlFor="country" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    Country <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="country"
+                    value={billingAddress.country}
+                    onChange={(e) =>
+                      setBillingAddress({ ...billingAddress, country: e.target.value })
+                    }
+                    placeholder="Enter your country"
+                    className="bg-white dark:bg-zinc-800/50 border-indigo-200 dark:border-zinc-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-{/* Shipping Address */}
-<Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6">
-  <CardHeader className="flex justify-between items-center">
-    <CardTitle>Shipping Address</CardTitle>
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setShippingAddress({ ...billingAddress, type: "SHIPPING" })}
-    >
-      Same as Billing
-    </Button>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="shipFullName">Full Name</Label>
-        <Input
-          id="shipFullName"
-          value={shippingAddress.fullName}
-          onChange={(e) =>
-            setShippingAddress({ ...shippingAddress, fullName: e.target.value })
-          }
-        />
-      </div>
+          {/* Shipping Address */}
+          <Card className="bg-gradient-to-br from-white to-blue-50/30 dark:from-zinc-900 dark:to-blue-950/20 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm mb-6 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-zinc-800 flex flex-row justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">2</span>
+                </div>
+                Shipping Address
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShippingAddress({ ...billingAddress, type: "SHIPPING" })}
+                className="border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400"
+              >
+                <Copy className="h-3 w-3 mr-2" />
+                Same as Billing
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="shipFullName" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="shipFullName"
+                    value={shippingAddress.fullName}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, fullName: e.target.value })
+                    }
+                    placeholder="Enter recipient's full name"
+                    className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
 
-      <div>
-        <Label htmlFor="shipPhone">Phone</Label>
-        <Input
-          id="shipPhone"
-          type="tel"
-          value={shippingAddress.phone}
-          onChange={(e) =>
-            setShippingAddress({ ...shippingAddress, phone: e.target.value })
-          }
-          placeholder="+91 9876543210"
-        />
-      </div>
-    </div>
+                <div>
+                  <Label htmlFor="shipPhone" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="shipPhone"
+                    type="tel"
+                    value={shippingAddress.phone}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, phone: e.target.value })
+                    }
+                    placeholder="Enter contact phone number"
+                    className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
 
-    <div>
-      <Label htmlFor="shipLine1">Address Line 1</Label>
-      <Input
-        id="shipLine1"
-        value={shippingAddress.line1}
-        onChange={(e) =>
-          setShippingAddress({ ...shippingAddress, line1: e.target.value })
-        }
-        placeholder="Street, apartment, etc."
-      />
-    </div>
+              <div>
+                <Label htmlFor="shipLine1" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Street Address <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="shipLine1"
+                  value={shippingAddress.line1}
+                  onChange={(e) =>
+                    setShippingAddress({ ...shippingAddress, line1: e.target.value })
+                  }
+                  placeholder="Enter delivery street address"
+                  className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
 
-    <div>
-      <Label htmlFor="shipLine2">Address Line 2 (Optional)</Label>
-      <Input
-        id="shipLine2"
-        value={shippingAddress.line2}
-        onChange={(e) =>
-          setShippingAddress({ ...shippingAddress, line2: e.target.value })
-        }
-        placeholder="Building, landmark, etc."
-      />
-    </div>
+              <div>
+                <Label htmlFor="shipLine2" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Apartment, Suite, etc. <span className="text-gray-400 text-xs">(Optional)</span>
+                </Label>
+                <Input
+                  id="shipLine2"
+                  value={shippingAddress.line2}
+                  onChange={(e) =>
+                    setShippingAddress({ ...shippingAddress, line2: e.target.value })
+                  }
+                  placeholder="Apartment number, suite, unit, building, floor, etc."
+                  className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="shipCity">City</Label>
-        <Input
-          id="shipCity"
-          value={shippingAddress.city}
-          onChange={(e) =>
-            setShippingAddress({ ...shippingAddress, city: e.target.value })
-          }
-          placeholder="City"
-        />
-      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="shipCity" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    City <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="shipCity"
+                    value={shippingAddress.city}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, city: e.target.value })
+                    }
+                    placeholder="Enter delivery city"
+                    className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
 
-      <div>
-        <Label htmlFor="shipState">State</Label>
-        <Input
-          id="shipState"
-          value={shippingAddress.state}
-          onChange={(e) =>
-            setShippingAddress({ ...shippingAddress, state: e.target.value })
-          }
-          placeholder="State"
-        />
-      </div>
-    </div>
+                <div>
+                  <Label htmlFor="shipState" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    State/Province <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="shipState"
+                    value={shippingAddress.state}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, state: e.target.value })
+                    }
+                    placeholder="Enter state or province"
+                    className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="shipPostalCode">Postal Code</Label>
-        <Input
-          id="shipPostalCode"
-          value={shippingAddress.postalCode}
-          onChange={(e) =>
-            setShippingAddress({ ...shippingAddress, postalCode: e.target.value })
-          }
-          placeholder="e.g. 110001"
-        />
-      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="shipPostalCode" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    ZIP/Postal Code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="shipPostalCode"
+                    value={shippingAddress.postalCode}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, postalCode: e.target.value })
+                    }
+                    placeholder="Enter ZIP or postal code"
+                    className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
 
-      <div>
-        <Label htmlFor="shipCountry">Country</Label>
-        <Input
-          id="shipCountry"
-          value={shippingAddress.country}
-          onChange={(e) =>
-            setShippingAddress({ ...shippingAddress, country: e.target.value })
-          }
-          placeholder="India"
-        />
-      </div>
-    </div>
-  </CardContent>
-</Card>
-
-
-
+                <div>
+                  <Label htmlFor="shipCountry" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                    Country <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="shipCountry"
+                    value={shippingAddress.country}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, country: e.target.value })
+                    }
+                    placeholder="Enter delivery country"
+                    className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Payment Providers (structure like "before") */}
           <Card className="bg-card text-card-foreground border border-border rounded-xl shadow-sm">
