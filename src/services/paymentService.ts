@@ -117,6 +117,7 @@ class PaymentService {
       if (!providerOption)
         return { success: false, error: "Unsupported payment provider" };
 
+      //Here the course.salePrice is being passed through the Course Object We received from Process Payment
       const pricing = await this.calculatePricing(
         course.salePrice,
         selectedCurrency,

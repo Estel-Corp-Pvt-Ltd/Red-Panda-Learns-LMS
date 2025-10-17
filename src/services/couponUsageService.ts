@@ -12,7 +12,7 @@ import { db } from '@/firebaseConfig';
 import { CouponUsage } from '@/types/coupon'
 import { couponService } from '@/services/couponService';
 import { COUPON_STATUS } from '@/constants';
-
+import { formatDate, toDateSafe } from '@/utils/date-time';
 class CouponUsageService {
   /**
    * Returns the total number of times a coupon has been used.
@@ -51,6 +51,7 @@ class CouponUsageService {
   }
 
 async isCouponApplicable(
+  userId:string,
   couponId: string,
   courseId?: string,
   bundleId?: string,
@@ -66,25 +67,31 @@ async isCouponApplicable(
     // console.log("➡️ courseId:", courseId);
     // console.log("➡️ bundleId:", bundleId);
     // console.log("➡️ cohortId:", cohortId);
-
+  
     const coupon = await couponService.getCouponById(couponId);
     // console.log("🎫 Fetched coupon:", coupon);
-
+   
     if (!coupon) {
       console.warn("⚠️ Coupon not found");
       return { isApplicable: false, reason: 'Coupon not found' };
     }
 
+    const alreadyUsed = await this.hasUserUsedCoupon(userId,couponId)
+    console.log("Log File of alreay used ", alreadyUsed)
+    if(alreadyUsed){
+      return{isApplicable : false , reason: 'You have already used this coupon'}
+    }
+
     // Check coupon status
-    if (coupon.status !== CouponStatus.ACTIVE) {
+    if (coupon.status !== COUPON_STATUS.ACTIVE) {
       console.warn("⚠️ Coupon is inactive");
       return { isApplicable: false, reason: 'Coupon is inactive' };
     }
 
     // Check coupon expiry
     const now = new Date();
-    const expiryDate = coupon.expiryDate?.toDate?.() || coupon.expiryDate;
-    // console.log("📆 Coupon expiry date:", expiryDate);
+    const expiryDate = toDateSafe(coupon.expiryDate);
+  
     if (expiryDate < now) {
       console.warn("⚠️ Coupon has expired");
       return { isApplicable: false, reason: 'Coupon has expired' };
@@ -137,6 +144,7 @@ async isCouponApplicable(
       console.log("🧮 Universal coupon result:", isLinked);
     }
 
+    return { isApplicable : true}
     } catch (error) {
       console.error("💥 Error checking coupon applicability:", error);
       return { isApplicable: false, reason: 'Error validating coupon' };

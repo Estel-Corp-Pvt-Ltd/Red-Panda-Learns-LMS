@@ -18,11 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { paymentService } from "@/services/paymentService";
 import { enrollmentService } from "@/services/dummyEnrollmentService";
-
+import { couponService } from "@/services/couponService";
+import { couponUsageService } from "@/services/couponUsageService";
 import { Currency, PaymentProvider } from "@/types/general";
 import { CURRENCY, PAYMENT_PROVIDER } from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
+import { Coupon } from "@/types/coupon";
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: ["INR", "USD", "EUR", "GBP"],
   PAYPAL: ["USD", "EUR", "GBP"],
@@ -106,12 +108,20 @@ const [shippingAddress, setShippingAddress] = useState<Address>({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paypalClicked, setPaypalClicked] = useState(false);
   const [agreed, setAgreed] = useState(false);
-
+  const [appliedCoupon,setAppliedCoupon] = useState< Coupon | null>(null);
   // keep "after" functionality
   const [isUserEnrolled, setUserIsEnrolled] = useState(false);
 
   const providers = paymentService.getAvailableProviders();
   const { data: course, isLoading } = useCourseQuery(courseId!);
+
+  const [promoCode, setPromoCode] = useState('');
+  const [isCouponValid, setIsCouponValid] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [finalPrice, setFinalPrice] = useState<number>(0);
+  const [couponMessage, setCouponMessage] = useState('');
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -148,16 +158,18 @@ const [shippingAddress, setShippingAddress] = useState<Address>({
   useEffect(() => {
     if (course && selectedCurrency) loadPricing();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course, selectedCurrency, selectedProvider]);
+  }, [course, selectedCurrency, selectedProvider , discountAmount ]);
 
- const loadPricing = async () => {
+const loadPricing = async () => {
   if (!course) return;
   setLoadingPricing(true);
   try {
+    const basePrice = course.salePrice || 0;
+    const effectivePrice = Math.max(0, basePrice - discountAmount); // <- use discountAmount, clamp
     const data = await paymentService.calculatePricing(
-      course.salePrice,
+      effectivePrice,
       selectedCurrency,
-      selectedProvider,  
+      selectedProvider,
       CURRENCY.INR
     );
     setPricing(data);
@@ -171,6 +183,101 @@ const [shippingAddress, setShippingAddress] = useState<Address>({
     setLoadingPricing(false);
   }
 };
+
+
+const calcDiscount = (originalPrice: number, coupon?: Coupon) => {
+  if (!coupon) return 0;
+  const pct = coupon.discountPercentage ?? 0;
+  // clamp to [0, originalPrice]
+  return Math.max(0, Math.min(originalPrice, (originalPrice * pct) / 100));
+};
+
+const clearCoupon = () => {
+  setAppliedCoupon(null);
+  setIsCouponValid(false);
+  setDiscountAmount(0);
+  setCouponMessage('');
+};
+
+// Auto-clear when input becomes empty (immediately updates price)
+useEffect(() => {
+  if (promoCode.trim() === '' && (appliedCoupon || discountAmount > 0)) {
+    clearCoupon();
+  }
+}, [promoCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+ const handleCoupon = async () => {
+  setIsValidatingCoupon(true);
+  setCouponMessage('');
+  setIsCouponValid(false);
+
+  try {
+    const code = promoCode.trim();
+    if (!code) {
+      clearCoupon();
+      return;
+    }
+
+    const coupon = await couponService.getCouponByCode(code);
+    if (!coupon) {
+      clearCoupon();
+      setCouponMessage("Wrong Promo Code");
+      return;
+    }
+
+    setAppliedCoupon(coupon); // set for later reference (not required for calc)
+
+    const applicability = await couponUsageService.isCouponApplicable(
+      user!.id,
+      coupon.id,
+      courseId!,
+      null,
+      null
+    );
+
+    if (!applicability.isApplicable) {
+      clearCoupon();
+      setCouponMessage(applicability.reason ?? "Coupon not applicable");
+      return;
+    }
+
+    // Compute discount from the coupon object we have (no state race)
+    const originalPrice = course!.salePrice || 0;
+    const d = calcDiscount(originalPrice, coupon);
+    setDiscountAmount(d);
+    setIsCouponValid(true);
+    setCouponMessage("Coupon is valid, Happy Shopping");
+  } catch (error) {
+    console.error("Error During Handling Coupon", error);
+    clearCoupon();
+    setCouponMessage("Error applying coupon. Please try again.");
+  } finally {
+    setIsValidatingCoupon(false);
+  }
+};
+
+
+const applyDiscount = async () => {
+  try {
+    if (!appliedCoupon) {
+      setCouponMessage("No coupon applied.");
+      return;
+    }
+
+    const discountPercentage = appliedCoupon.discountPercentage || 0;
+    const originalPrice = course.salePrice || 0;
+
+    const discountAmount = (originalPrice * discountPercentage) / 100;
+    const afterDiscount = originalPrice - discountAmount;
+
+    setDiscountAmount(discountAmount); // or afterDiscount if you're storing final price
+
+    console.log("The amount after discount is", afterDiscount);
+  } catch (error) {
+    console.log("Error in Applying Discount", error);
+  }
+};
+
 
   const handlePayment = async () => {
     if (!course || !user || !pricing) return;
@@ -325,6 +432,45 @@ const [shippingAddress, setShippingAddress] = useState<Address>({
                   <span className="text-sm">Loading pricing...</span>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+
+ <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm mb-6 mt-6">
+            <CardHeader>
+              <CardTitle>Coupon</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <h3 className="font-semibold text-lg">{course.title}</h3>
+              <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
+                {course.description}
+              </p>
+                 <div className="space-y-2">
+  <Label htmlFor="promoCode">Have a promo code?</Label>
+  <div className="flex gap-2">
+   <Input
+  id="promoCode"
+  type="text"
+  placeholder="Enter code"
+  value={promoCode}
+  onChange={(e) => setPromoCode(e.target.value)}
+  onKeyDown={(e) => { if (e.key === 'Enter') handleCoupon(); }}
+  disabled={isValidatingCoupon || isProcessing}
+/>
+<Button
+  type="button"
+  onClick={handleCoupon}
+  disabled={!promoCode || isValidatingCoupon}
+>
+  {isValidatingCoupon ? 'Checking...' : 'Apply'}
+</Button>
+</div>
+{couponMessage && (
+  <p className={`text-sm ${isCouponValid ? 'text-success' : 'text-destructive'}`}>
+    {couponMessage}
+  </p>
+)}
+</div>
             </CardContent>
           </Card>
 
