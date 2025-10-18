@@ -25,6 +25,8 @@ import { CURRENCY, PAYMENT_PROVIDER } from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
 import { Coupon } from "@/types/coupon";
+import { Timestamp } from "firebase/firestore";
+
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: ["INR", "USD", "EUR", "GBP"],
   PAYPAL: ["USD", "EUR", "GBP"],
@@ -256,7 +258,20 @@ useEffect(() => {
   }
 };
 
-
+const handleUseCoupon = async()=>{
+  try{
+    const usageDate = {
+        userId : user?.id,
+        couponId: appliedCoupon.id,
+        usedAt : Timestamp.now(),
+    }
+    await couponUsageService.recordCouponUsage(usageDate)
+    console.log("Recorded Coupon uses" ,usageDate)
+  }
+  catch(error){
+    console.log("The Error ",error)
+  }
+}
 
 
 
@@ -279,13 +294,14 @@ useEffect(() => {
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
-
+        await handleUseCoupon;
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
           if (isEnrolled(course.id)) {
             enrollmentVerified = true;
             break;
           }
+          
           await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
         }
 
