@@ -220,28 +220,36 @@ useEffect(() => {
       return;
     }
 
-    const coupon = await couponService.getCouponByCode(code);
-    if (!coupon) {
-      clearCoupon();
-      setCouponMessage("Wrong Promo Code");
-      return;
-    }
+    const couponResult = await couponService.getCouponByCode(code);
+
+      if (!couponResult.success || !couponResult.data) {
+        clearCoupon();
+        setCouponMessage("Invalid promo code");
+        return;
+      }
+
+      const coupon = couponResult.data;
+      setAppliedCoupon(coupon);
 
     setAppliedCoupon(coupon); // set for later reference (not required for calc)
 
-    const applicability = await couponUsageService.isCouponApplicable(
+    const applicabilityResult = await couponUsageService.isCouponApplicable(
       user!.id,
       coupon.id,
       courseId!,
       null,
       null
     );
-
-    if (!applicability.isApplicable) {
-      clearCoupon();
-      setCouponMessage(applicability.reason ?? "Coupon not applicable");
-      return;
-    }
+  if (
+        !applicabilityResult.success ||
+        !applicabilityResult.data?.isApplicable
+      ) {
+        clearCoupon();
+        setCouponMessage(
+          applicabilityResult.data?.reason ?? "Coupon not applicable"
+        );
+        return;
+      }
 
     // Compute discount from the coupon object we have (no state race)
     const originalPrice = course!.salePrice || 0;
@@ -294,7 +302,7 @@ const handleUseCoupon = async()=>{
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
-        await handleUseCoupon;
+        await handleUseCoupon();
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
           if (isEnrolled(course.id)) {

@@ -21,6 +21,7 @@ import { Coupon } from '@/types/coupon';
 import { CouponStatus } from '@/types/general';
 import { toDateSafe } from '@/utils/date-time';
 import { Timestamp } from 'firebase/firestore';
+import { logError } from '@/utils/logger';
 const createCouponSchema = z.object({
   code: z.string().min(3, 'Coupon code is required'),
   discountPercentage: z.number().min(1).max(100, '1–100% allowed'),
@@ -87,7 +88,8 @@ useEffect(() => {
 
   const loadCoupon = async () => {
     try {
-      const coupon = await couponService.getCouponById(couponId);
+      const couponDate = await couponService.getCouponById(couponId);
+      const coupon = couponDate.data
       if (!coupon) {
         toast({
           title: 'Error',
@@ -155,16 +157,20 @@ useEffect(() => {
         return;
       }
 
-      try {
-        const allCoupons = await couponService.getAllCoupons();
-        const duplicate = allCoupons.find(c =>
-          c.code === codeValue.trim() && c.id !== couponId
-        );
-        setExistingCoupon(duplicate || null);
-      } catch (error) {
-        console.error('Error checking duplicate coupon:', error);
-        setExistingCoupon(null);
-      }
+     try {
+  const allCouponsResult = await couponService.getAllCoupons();
+
+  const duplicate = allCouponsResult.success
+    ? allCouponsResult.data?.find(
+        (c) => c.code === codeValue.trim() && c.id !== couponId
+      )
+    : null;
+
+  setExistingCoupon(duplicate || null);
+} catch (error: any) {
+  logError("CheckDuplicateCoupon", error);
+  setExistingCoupon(null);
+}
     };
 
     checkDuplicate();
