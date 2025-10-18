@@ -104,6 +104,7 @@ class PaymentService {
   async processPayment(
     provider: PaymentProvider,
     course: Course,
+    finalPrice:number,
     userEmail: string,
     userId: string,
     selectedCurrency: Currency,
@@ -119,7 +120,7 @@ class PaymentService {
 
       //Here the course.salePrice is being passed through the Course Object We received from Process Payment
       const pricing = await this.calculatePricing(
-        course.salePrice,
+        finalPrice,
         selectedCurrency,
         provider,
         baseCurrency

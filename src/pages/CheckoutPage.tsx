@@ -168,8 +168,9 @@ const loadPricing = async () => {
   try {
     const basePrice = course.salePrice || 0;
     const effectivePrice = Math.max(0, basePrice - discountAmount); // <- use discountAmount, clamp
+    setFinalPrice(effectivePrice)
     const data = await paymentService.calculatePricing(
-      effectivePrice,
+      finalPrice,
       selectedCurrency,
       selectedProvider,
       CURRENCY.INR
@@ -292,6 +293,7 @@ const handleUseCoupon = async()=>{
       const result = await paymentService.processPayment(
         selectedProvider,
         course,
+        finalPrice,
         user.email!,
         user.id,
         selectedCurrency,
