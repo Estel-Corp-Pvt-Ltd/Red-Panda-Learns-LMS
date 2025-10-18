@@ -65,35 +65,41 @@ const researchRef = {
   link: "https://arxiv.org/abs/1706.03762",
 };
 
-// Decrypted Text Component
-const DecryptedText = ({ text, className = "", speed = 50, sequential = false }) => {
+// Decrypted Line Component
+const DecryptedLine = ({ text, delay = 0, onComplete }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+  const [hasStarted, setHasStarted] = useState(false);
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(){}[]<>?/\\|=-+";
 
   useEffect(() => {
+    const startTimeout = setTimeout(() => {
+      setHasStarted(true);
+    }, delay);
+
+    return () => clearTimeout(startTimeout);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
     if (currentIndex >= text.length) {
       setDisplayedText(text);
+      if (onComplete) onComplete();
       return;
     }
 
-    const interval = setInterval(() => {
-      setDisplayedText((prev) => {
+    const scrambleInterval = setInterval(() => {
+      setDisplayedText(() => {
         let result = "";
         
         for (let i = 0; i < text.length; i++) {
           if (i < currentIndex) {
-            // Already decrypted
             result += text[i];
-          } else if (i === currentIndex) {
-            // Currently decrypting - show random characters briefly
-            result += characters[Math.floor(Math.random() * characters.length)];
-          } else if (!sequential && i < currentIndex + 3) {
-            // Show upcoming characters as scrambled (for parallel effect)
-            result += characters[Math.floor(Math.random() * characters.length)];
+          } else if (text[i] === " ") {
+            result += " ";
           } else {
-            // Not yet reached
-            result += text[i] === " " ? " " : characters[Math.floor(Math.random() * characters.length)];
+            result += characters[Math.floor(Math.random() * characters.length)];
           }
         }
         
@@ -101,34 +107,81 @@ const DecryptedText = ({ text, className = "", speed = 50, sequential = false })
       });
     }, 30);
 
-    const progressInterval = setInterval(() => {
+    const progressTimeout = setTimeout(() => {
       setCurrentIndex((prev) => prev + 1);
-    }, speed);
+    }, 25);
 
     return () => {
-      clearInterval(interval);
-      clearInterval(progressInterval);
+      clearInterval(scrambleInterval);
+      clearTimeout(progressTimeout);
     };
-  }, [currentIndex, text, speed, sequential]);
+  }, [currentIndex, text, hasStarted, characters]);
 
-  return <span className={className}>{displayedText}</span>;
+  return <>{displayedText}</>;
+};
+
+// Decrypted Code Component (Line by Line)
+const DecryptedCodeLineByLine = ({ text, lineDelay = 200 }) => {
+  const [visibleLines, setVisibleLines] = useState(0);
+  const lines = text.split('\n');
+
+  useEffect(() => {
+    setVisibleLines(0);
+  }, [text]);
+
+  const handleLineComplete = (lineIndex) => {
+    if (lineIndex < lines.length - 1) {
+      setTimeout(() => {
+        setVisibleLines(lineIndex + 2);
+      }, lineDelay);
+    }
+  };
+
+  useEffect(() => {
+    if (visibleLines === 0) {
+      setVisibleLines(1);
+    }
+  }, []);
+
+  return (
+    <>
+      {lines.map((line, index) => (
+        <div key={index}>
+          {index < visibleLines ? (
+            <DecryptedLine 
+              text={line || " "} 
+              delay={0}
+              onComplete={() => handleLineComplete(index)}
+            />
+          ) : (
+            <span style={{ opacity: 0 }}>{line || " "}</span>
+          )}
+        </div>
+      ))}
+    </>
+  );
 };
 
 const PhilosophySection = () => {
   const [revealedCards, setRevealedCards] = useState([]);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [pulses, setPulses] = useState([]);
-  const [typedText, setTypedText] = useState(["", "", ""]);
-  const [isTypingComplete, setIsTypingComplete] = useState([false, false, false]);
-  const [startDecryption, setStartDecryption] = useState(false);
+  const [startCodeDecryption, setStartCodeDecryption] = useState([false, false, false]);
 
   useEffect(() => {
-    // Start decryption effect immediately
-    setStartDecryption(true);
-
     philosophyItems.forEach((_, index) => {
       setTimeout(() => {
         setRevealedCards((prev) => [...prev, index]);
+        // Start code decryption when card is revealed
+        if (index < 2) {
+          setTimeout(() => {
+            setStartCodeDecryption((prev) => {
+              const newState = [...prev];
+              newState[index] = true;
+              return newState;
+            });
+          }, 400);
+        }
       }, index * 200);
     });
 
@@ -142,38 +195,6 @@ const PhilosophySection = () => {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Progressive typing effect for code snippets
-  useEffect(() => {
-    const snippets = [foundationSnippet, attentionSnippet, ""];
-    
-    snippets.forEach((snippet, cardIndex) => {
-      if (snippet && revealedCards.includes(cardIndex)) {
-        let currentIndex = 0;
-        const typingSpeed = 15;
-
-        const typeInterval = setInterval(() => {
-          if (currentIndex <= snippet.length) {
-            setTypedText(prev => {
-              const newText = [...prev];
-              newText[cardIndex] = snippet.substring(0, currentIndex);
-              return newText;
-            });
-            currentIndex++;
-          } else {
-            clearInterval(typeInterval);
-            setIsTypingComplete(prev => {
-              const newComplete = [...prev];
-              newComplete[cardIndex] = true;
-              return newComplete;
-            });
-          }
-        }, typingSpeed);
-
-        return () => clearInterval(typeInterval);
-      }
-    });
-  }, [revealedCards]);
 
   const createPulse = (cardIndex) => {
     const pulseId = Date.now() + cardIndex;
@@ -275,11 +296,6 @@ const PhilosophySection = () => {
             transform: scale(1);
           }
         }
-
-        @keyframes cursor-blink {
-          0%, 49% { opacity: 1; }
-          50%, 100% { opacity: 0; }
-        }
         
         .animate-blob-float-1 {
           animation: blob-float-1 20s ease-in-out infinite;
@@ -341,15 +357,6 @@ const PhilosophySection = () => {
         .sparkle-2 { bottom: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
         .sparkle-3 { top: 50%; left: -15px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
         .sparkle-4 { top: 50%; right: -15px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
-
-        .typing-cursor {
-          animation: cursor-blink 1s step-end infinite;
-        }
-
-        .decrypted-text {
-          font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
-          letter-spacing: 0.02em;
-        }
       `}</style>
 
       <section className="relative py-24 px-6 overflow-hidden">
@@ -366,26 +373,10 @@ const PhilosophySection = () => {
             style={{ animationDelay: "0ms" }}
           >
             <h2 className="text-5xl md:text-6xl font-semibold leading-tight tracking-tight text-foreground mb-4">
-              {startDecryption ? (
-                <DecryptedText 
-                  text="Our Philosophy" 
-                  speed={40}
-                  className="decrypted-text"
-                />
-              ) : (
-                "Our Philosophy"
-              )}
+              Our Philosophy
             </h2>
             <p className="text-lg text-foreground/70 max-w-2xl mx-auto font-light">
-              {startDecryption ? (
-                <DecryptedText 
-                  text="At Vizuara, internally we call this the F-P-R approach" 
-                  speed={25}
-                  className="decrypted-text"
-                />
-              ) : (
-                "At Vizuara, internally we call this the F-P-R approach"
-              )}
+              At Vizuara, internally we call this the F-P-R approach
             </p>
           </div>
 
@@ -544,14 +535,7 @@ const PhilosophySection = () => {
                             : "none",
                         }}
                       >
-                        {isRevealed ? (
-                          <DecryptedText 
-                            text={item.title} 
-                            speed={30}
-                          />
-                        ) : (
-                          item.title
-                        )}
+                        {item.title}
                       </h3>
                       <p className="text-foreground/70 leading-relaxed font-light">
                         {item.description}
@@ -601,12 +585,14 @@ const PhilosophySection = () => {
                                 </div>
                               </div>
                             ) : (
-                              <pre className="text-left text-[13px] leading-relaxed font-mono text-foreground/80 whitespace-pre-wrap overflow-auto max-h-56">
+                              <pre className="text-left text-[13px] leading-relaxed font-mono text-foreground/80 whitespace-pre-wrap overflow-visible">
                                 <code>
-                                  {typedText[index]}
-                                  {!isTypingComplete[index] && (
-                                    <span className="typing-cursor">|</span>
-                                  )}
+                                  {startCodeDecryption[index] ? (
+                                    <DecryptedCodeLineByLine 
+                                      text={index === 0 ? foundationSnippet : attentionSnippet}
+                                      lineDelay={150}
+                                    />
+                                  ) : null}
                                 </code>
                               </pre>
                             )}
