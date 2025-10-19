@@ -15,7 +15,7 @@ import { AttributeType } from "@/types/general";
 
 export class AttributeService {
   private collectionName = COLLECTION.ATTRIBUTES;
-  y;
+
   async getAttributes(type: AttributeType): Promise<Attribute[]> {
     try {
       const q = query(

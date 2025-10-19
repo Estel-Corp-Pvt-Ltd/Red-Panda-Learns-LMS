@@ -1,6 +1,5 @@
 import { EnrolledProgramType, UserRole, UserStatus } from "./general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
-
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 export interface User {
     id: string;

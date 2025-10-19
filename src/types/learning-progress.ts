@@ -1,15 +1,24 @@
-import { doc, getDoc, serverTimestamp, updateDoc , Timestamp, FieldValue } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  updateDoc,
+  Timestamp,
+  FieldValue
+} from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { EnrollmentStatus, PaymentStatus, PaymentProvider, Currency } from "./general";
+import {
+  EnrollmentStatus,
+  PaymentStatus,
+  PaymentProvider,
+  Currency
+} from "./general";
 
-/**
- * Learning progress interface
- */
 export interface LearningProgress {
-  id?: string;
+  id: string;
   courseId?: string;
   currentLessonId?: string | null;
-  lastAccessed?: Timestamp | FieldValue ;
+  lastAccessed?: Timestamp | FieldValue;
 
   completedLessons: number;
   lessonHistory: string[];
@@ -18,12 +27,12 @@ export interface LearningProgress {
 
   certification: {
     issued: boolean;
-    issuedAt?: Timestamp | FieldValue ;
+    issuedAt?: Timestamp | FieldValue;
     certificateId?: string;
   };
 
   completionDate?: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue ;
+  updatedAt: Timestamp | FieldValue;
   grade?: number | string | null;
 }
 
@@ -46,9 +55,9 @@ export interface EnrollmentPaymentDetails {
  */
 export async function updateProgress(
   progressId: string,
-  lessonId?: string,  
-  additionalUpdates: Partial<LearningProgress> = {} 
-): Promise<{ id: string; updatedAt: Timestamp | FieldValue  }> {
+  lessonId?: string,
+  additionalUpdates: Partial<LearningProgress> = {}
+): Promise<{ id: string; updatedAt: Timestamp | FieldValue }> {
   const docRef = doc(db, "LearningProgress", progressId);
   const snapshot = await getDoc(docRef);
 
@@ -63,7 +72,7 @@ export async function updateProgress(
     updatedAt,
   };
 
-  
+
   if (lessonId) {
     const completed = (data.completedLessons ?? 0) + 1;
     const total = data.totalLessons ?? 0;
@@ -74,10 +83,10 @@ export async function updateProgress(
       completedLessons: completed,
       lessonHistory: [...(data.lessonHistory ?? []), lessonId],
       percentage,
-        completionDate: completed >= total
-    ? serverTimestamp() // ✅ Firestore server-side timestamp
-    : data.completionDate ?? null,
-  updatedAt: serverTimestamp(), 
+      completionDate: completed >= total
+        ? serverTimestamp() // ✅ Firestore server-side timestamp
+        : data.completionDate ?? null,
+      updatedAt: serverTimestamp(),
     };
   }
 
@@ -93,7 +102,7 @@ export async function updateCertification(
   progressId: string,
   issued: boolean,
   certificateId?: string
-): Promise<{ id: string; updatedAt: Timestamp | FieldValue  }> {
+): Promise<{ id: string; updatedAt: Timestamp | FieldValue }> {
   const docRef = doc(db, "LearningProgress", progressId);
   const snapshot = await getDoc(docRef);
 
@@ -124,7 +133,7 @@ export async function updateCertification(
 export async function updateGrade(
   progressId: string,
   grade: number | string | null
-): Promise<{ id: string; grade: number | string | null; updatedAt: Timestamp | FieldValue  }> {
+): Promise<{ id: string; grade: number | string | null; updatedAt: Timestamp | FieldValue }> {
   const docRef = doc(db, "learningProgress", progressId);
   const snapshot = await getDoc(docRef);
   if (!snapshot.exists()) throw new Error("Progress not found");
@@ -151,7 +160,7 @@ export async function updatePayment(
   enrollmentId: string,
   paymentId: string,
   payment: Partial<EnrollmentPaymentDetails>
-): Promise<{ id: string; updatedAt: Timestamp | FieldValue  }> {
+): Promise<{ id: string; updatedAt: Timestamp | FieldValue }> {
   const docRef = doc(db, "Enrollments", enrollmentId);
   const snapshot = await getDoc(docRef);
   if (!snapshot.exists()) throw new Error("Enrollment not found");
@@ -163,7 +172,7 @@ export async function updatePayment(
   const updatedPayment: EnrollmentPaymentDetails = {
     ...(original.payment || {}),
     ...payment,
-    transactionId: paymentId, 
+    transactionId: paymentId,
   };
 
   await updateDoc(docRef, {

@@ -37,7 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Header } from "@/components/Header";
 
-import { authorService } from "@/services/authorService";
+import { instructorService } from "@/services/instructorService";
 import { bundleService } from "@/services/bundleService";
 import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
@@ -52,9 +52,9 @@ import { Organization } from "@/types/organization";
 import { User } from "@/types/user";
 import { Cohort, Course } from "@/types/course";
 import { Coupon } from "@/types/coupon";
-import { OrganizationType } from "@/types/general";
+import { OrganizationType, PopUpCourseType } from "@/types/general";
 
-import { ORGANIZATION } from "@/constants";
+import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
@@ -62,6 +62,291 @@ import {
   USER_ROLE,
   USER_STATUS,
 } from "@/constants";
+import { PopUp } from "@/types/pop-up";
+import { popUpService } from "@/services/popupService";
+
+const PopUpTab = () => {
+  const [popUps, setPopUps] = useState<PopUp[]>([]);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [ctaLink, setCtaLink] = useState("");
+  const [type, setType] = useState<PopUpCourseType>(POPUP_COURSE_TYPE.LIVE);
+  const [autoClose, setAutoClose] = useState(false);
+  const [duration, setDuration] = useState(5000);
+  const [active, setActive] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadPopUps();
+  }, []);
+
+  const loadPopUps = async () => {
+    const res = await popUpService.getAllPopUps();
+    if (res) setPopUps(res.data);
+    else
+      toast({
+        title: "Error",
+        description: "Failed to load pop-ups",
+        variant: "destructive",
+      });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!title.trim() || !description.trim()) {
+      toast({
+        title: "Validation",
+        description: "Title and description are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEditing && editingId) {
+        await popUpService.updatePopUp(editingId, {
+          title,
+          description,
+          type,
+          ctaText,
+          ctaLink,
+          active,
+          autoClose,
+          duration,
+        });
+        toast({ title: "Updated", description: "Pop-up updated successfully." });
+      } else {
+        await popUpService.createPopUp({
+          title,
+          description,
+          type,
+          ctaText,
+          ctaLink,
+          autoClose,
+          duration,
+        });
+        toast({ title: "Created", description: "Pop-up created successfully." });
+      }
+
+      resetForm();
+      await loadPopUps();
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to save pop-up",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this pop-up?")) return;
+    const res = await popUpService.deletePopUp(id);
+    if (res) {
+      toast({ title: "Deleted", description: "Pop-up deleted successfully." });
+      await loadPopUps();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete pop-up.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function resetForm() {
+    setTitle("");
+    setDescription("");
+    setCtaText("");
+    setCtaLink("");
+    setType(POPUP_COURSE_TYPE.LIVE);
+    setActive(false);
+    setAutoClose(false);
+    setDuration(5000);
+    setIsEditing(false);
+    setEditingId(null);
+  }
+
+  return (
+    <div>
+      {/* Add / Edit form */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-wrap gap-3 items-end mb-6"
+      >
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Pop-up title"
+          className="border p-2 rounded w-48"
+        />
+
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description"
+          className="border p-2 rounded w-64"
+        />
+
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as PopUpCourseType)}
+          className="border p-2 rounded"
+        >
+          {Object.values(POPUP_COURSE_TYPE).map((val) => (
+            <option key={val} value={val}>
+              {val}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          value={ctaText}
+          onChange={(e) => setCtaText(e.target.value)}
+          placeholder="CTA text"
+          className="border p-2 rounded w-40"
+        />
+
+        <input
+          type="text"
+          value={ctaLink}
+          onChange={(e) => setCtaLink(e.target.value)}
+          placeholder="CTA link"
+          className="border p-2 rounded w-48"
+        />
+
+        <select
+          value={active ? "true" : "false"}
+          onChange={(e) => setActive(e.target.value === "true")}
+          className="border p-2 rounded w-32"
+        >
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm">
+            <input
+              type="checkbox"
+              checked={autoClose}
+              onChange={(e) => setAutoClose(e.target.checked)}
+              className="mr-1"
+            />
+            Auto-close
+          </label>
+        </div>
+
+        <input
+          type="number"
+          value={duration}
+          onChange={(e) => setDuration(Number(e.target.value))}
+          placeholder="Duration (ms)"
+          className="border p-2 rounded w-32"
+        />
+
+        <Button type="submit" disabled={saving}>
+          {isEditing ? "Update Pop-up" : "Add Pop-up"}
+        </Button>
+
+        {isEditing && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={resetForm}
+          >
+            Cancel
+          </Button>
+        )}
+      </form>
+
+      {/* Table list */}
+      {popUps.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No pop-ups found.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>CTA</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead>Auto Close</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {popUps.map((pop) => (
+              <TableRow key={pop.id}>
+                <TableCell>{pop.title}</TableCell>
+                <TableCell>{pop.description}</TableCell>
+                <TableCell>{pop.type}</TableCell>
+                <TableCell>
+                  {pop.ctaText ? (
+                    <a
+                      href={pop.ctaLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 underline"
+                    >
+                      {pop.ctaText}
+                    </a>
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
+                <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
+                <TableCell>{pop.duration ?? 5000}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setEditingId(pop.id);
+                        setTitle(pop.title);
+                        setDescription(pop.description);
+                        setType(pop.type);
+                        setCtaText(pop.ctaText);
+                        setActive(pop.active);
+                        setCtaLink(pop.ctaLink);
+                        setAutoClose(pop.autoClose ?? false);
+                        setDuration(pop.duration ?? 5000);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(pop.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+};
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -72,10 +357,9 @@ export function AdminDashboard() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [authors, setAuthors] = useState<User[]>([]);
+  const [instructors, setInstructors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  // Loading states
   const [loading, setLoading] = useState(true);
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
@@ -87,13 +371,12 @@ export function AdminDashboard() {
       loadCohorts();
       loadBundles();
       loadLessons();
-      loadAuthors();
+      loadInstructors();
       loadUsers();
       loadCoupons();
     }
   }, [location.pathname]);
 
-  // 🔹 Load USERS
   const loadUsers = async () => {
     const response = await userService.getAllUsers();
     if (response.success) {
@@ -202,24 +485,23 @@ export function AdminDashboard() {
     }
   };
 
-  // 🔹 Load AUTHORS
-  const loadAuthors = async () => {
-    try {
-      const authorsList = await authorService.getAllAuthors();
-      setAuthors(authorsList);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load authors",
-        variant: "destructive"
-      });
+  const loadInstructors = async () => {
+    const result = await instructorService.getAllInstructors();
+    if (result.success) {
+      setInstructors(result.data);
+      return;
     }
+    toast({
+      title: "Error",
+      description: "Failed to load instructors",
+      variant: "destructive"
+    });
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD"
+      currency: CURRENCY.USD
     }).format(amount);
   };
 
@@ -466,14 +748,14 @@ export function AdminDashboard() {
                           setType(org.type);
                         }}
                       >
-                        Edit
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(org.id)}
                       >
-                        Delete
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -557,8 +839,8 @@ export function AdminDashboard() {
               <TabsTrigger value="cohorts" className="flex-shrink-0">
                 Cohorts
               </TabsTrigger>
-              <TabsTrigger value="authors" className="flex-shrink-0">
-                Authors
+              <TabsTrigger value="instructors" className="flex-shrink-0">
+                Instructors
               </TabsTrigger>
               <TabsTrigger value="users" className="flex-shrink-0">
                 Users
@@ -568,6 +850,9 @@ export function AdminDashboard() {
               </TabsTrigger>
               <TabsTrigger value="organizations" className="flex-shrink-0">
                 Organizations
+              </TabsTrigger>
+              <TabsTrigger value="pop-ups" className="flex-shrink-0">
+                Pop-Ups
               </TabsTrigger>
             </TabsList>
 
@@ -919,19 +1204,19 @@ export function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="authors">
+            <TabsContent value="instructors">
               <Card>
                 <CardHeader>
-                  <CardTitle>Authors</CardTitle>
+                  <CardTitle>Instructors</CardTitle>
                   <CardDescription>
-                    Manage all authors.
+                    Manage all instructors.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {authors.length === 0 ? (
+                  {instructors.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No authors</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No Instructors</h3>
                     </div>
                   ) : (
                     <Table>
@@ -945,20 +1230,20 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {authors.map((author) => (
-                          <TableRow key={author.id}>
+                        {instructors.map((instructor) => (
+                          <TableRow key={instructor.id}>
                             <TableCell>
-                              {author.firstName} {author.middleName} {author.lastName}
+                              {instructor.firstName} {instructor.middleName} {instructor.lastName}
                             </TableCell>
-                            <TableCell>{author.email}</TableCell>
+                            <TableCell>{instructor.email}</TableCell>
                             <TableCell>
-                              <Badge variant={author.role === USER_ROLE.ADMIN ? "destructive" : "default"}>
-                                {author.role}
+                              <Badge variant={instructor.role === USER_ROLE.ADMIN ? "destructive" : "default"}>
+                                {instructor.role}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={author.status === USER_STATUS.ACTIVE ? "default" : "secondary"}>
-                                {author.status}
+                              <Badge variant={instructor.status === USER_STATUS.ACTIVE ? "default" : "secondary"}>
+                                {instructor.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
@@ -1160,17 +1445,31 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
+
             <TabsContent value="organizations">
               <Card>
                 <CardHeader>
                   <CardTitle>Organizations</CardTitle>
                   <CardDescription>
-                    Manage all organizations in your system.
+                    Manage all organizations.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Organization CRUD */}
                   <OrganizationTab />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="pop-ups">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pop-Ups</CardTitle>
+                  <CardDescription>
+                    Manage all pop-ups.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PopUpTab />
                 </CardContent>
               </Card>
             </TabsContent>

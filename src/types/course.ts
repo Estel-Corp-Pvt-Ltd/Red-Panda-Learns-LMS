@@ -1,5 +1,5 @@
+import { FieldValue, Timestamp } from "firebase/firestore";
 import { CourseStatus, PricingModel } from "./general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export interface TopicItem {
   id: string;
@@ -42,13 +42,14 @@ export interface Course {
   salePrice: number;
   pricingModel: PricingModel;
   tags: string[];
-  authorId: string;
-  authorName: string;
+  instructorId: string;
+  instructorName: string;
   status: CourseStatus;
   certificateTemplateId?: string;
   cohorts: Cohort[];
   topics: Topic[];
   isEnrollmentPaused: boolean;
+  durationSeconds?: number;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

@@ -1,18 +1,13 @@
-import { useState, useEffect } from "react";
+import { Header } from "@/components/Header";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { courseService } from "@/services/courseService";
-import { authorService } from "@/services/authorService";
-import { Header } from "@/components/Header";
 import {
   Select,
   SelectContent,
@@ -20,16 +15,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
+import { getFullName } from "@/utils/name";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-interface CourseFormData {
+type CourseFormData = {
   title: string;
   description: string;
-  authorName: string;
-  authorId: string;
-}
+  instructorName: string;
+  instructorId: string;
+};
 
-type AuthorOption = {
+type InstructorOption = {
   id: string;
   name: string;
 };
@@ -41,11 +42,11 @@ const CreateCoursePage = () => {
   const [formData, setFormData] = useState<CourseFormData>({
     title: "",
     description: "",
-    authorName: "",
-    authorId: "",
+    instructorName: "",
+    instructorId: "",
   });
 
-  const [authors, setAuthors] = useState<AuthorOption[]>([]);
+  const [instructors, setInstructors] = useState<InstructorOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof CourseFormData, value: string) => {
@@ -53,11 +54,10 @@ const CreateCoursePage = () => {
   };
 
   const handleCreateCourse = async () => {
-    // Required field checks
     const requiredFields: { field: keyof CourseFormData; label: string }[] = [
       { field: "title", label: "Course Title" },
       { field: "description", label: "Course Description" },
-      { field: "authorId", label: "Author" },
+      { field: "instructorId", label: "Instructor" },
     ];
 
     for (const { field, label } of requiredFields) {
@@ -76,8 +76,8 @@ const CreateCoursePage = () => {
       const courseData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        authorId: formData.authorId,
-        authorName: formData.authorName,
+        instructorId: formData.instructorId,
+        instructorName: formData.instructorName,
       };
 
       const courseId = await courseService.createCourse(courseData);
@@ -100,42 +100,43 @@ const CreateCoursePage = () => {
     }
   };
 
-  const handleAuthorSelect = (authorId: string) => {
-    const selected = authors.find((a) => a.id === authorId);
+  const handleInstructorSelect = (instructorId: string) => {
+    const selected = instructors.find((instructor) => instructor.id === instructorId);
     setFormData((prev) => ({
       ...prev,
-      authorId: selected?.id || "",
-      authorName: selected?.name || "",
+      instructorId: selected?.id || "",
+      instructorName: selected?.name || "",
     }));
   };
 
   useEffect(() => {
-    const fetchAuthors = async () => {
-      try {
-        const data = await authorService.getAllAuthors();
-        setAuthors(
-          data.map((author) => ({
-            id: author.id,
-            name: [author.firstName, author.middleName, author.lastName]
-              .filter(Boolean)
-              .join(" "),
-          }))
-        );
-      } catch (error) {
-        console.error("Failed to fetch authors:", error);
+    const fetchInstructors = async () => {
+      const result = await instructorService.getAllInstructors();
+
+      if (result.success) {
+        const formattedInstructors = result
+          .data
+          .map((instructor) => ({
+            id: instructor.id,
+            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
+          }));
+
+        setInstructors(formattedInstructors);
+
+      } else {
+        console.error("Failed to fetch instructors:", result.error);
         toast({
           title: "Error",
-          description: "Could not load authors list.",
+          description: "Could not load instructors' list.",
           variant: "destructive",
         });
       }
     };
-    fetchAuthors();
+    fetchInstructors();
   }, [toast]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* ✅ Shared Header */}
       <Header />
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -186,20 +187,19 @@ const CreateCoursePage = () => {
                 />
               </div>
 
-              {/* Author Selection */}
               <div className="space-y-2">
-                <Label>Author *</Label>
+                <Label>Instructor *</Label>
                 <Select
-                  value={formData.authorId}
-                  onValueChange={handleAuthorSelect}
+                  value={formData.instructorId}
+                  onValueChange={handleInstructorSelect}
                 >
                   <SelectTrigger className="w-full bg-background text-foreground">
-                    <SelectValue placeholder="Select an author" />
+                    <SelectValue placeholder="Select an instructor" />
                   </SelectTrigger>
                   <SelectContent className="bg-card text-card-foreground">
-                    {authors.map((author) => (
-                      <SelectItem key={author.id} value={author.id}>
-                        {author.name}
+                    {instructors.map((instructor) => (
+                      <SelectItem key={instructor.id} value={instructor.id}>
+                        {instructor.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

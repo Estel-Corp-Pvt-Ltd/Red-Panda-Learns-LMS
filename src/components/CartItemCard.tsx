@@ -44,8 +44,8 @@ const CartItemCard = ({ item }) => {
           <h3 className="text-lg font-semibold text-gray-800">
             {item.title}
           </h3>
-          {item.authorName && (
-            <p className="text-sm text-gray-500">by {item.authorName}</p>
+          {item.instructorName && (
+            <p className="text-sm text-gray-500">by {item.instructorName}</p>
           )}
 
           {/* Price Display */}

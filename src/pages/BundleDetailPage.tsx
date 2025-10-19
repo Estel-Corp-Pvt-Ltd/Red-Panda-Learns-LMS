@@ -10,7 +10,7 @@ import { useBundleQuery, useBundleCoursesQuery } from '@/hooks/useBundleApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { ArrowLeft, BookOpen, CheckCircle, Star, DollarSign } from 'lucide-react';
-import { CourseCard } from '@/components/course/CourseCard';
+import CourseCard from '@/components/course/CourseCard';
 
 export default function BundleDetailPage() {
   const { bundleId } = useParams<{ bundleId: string }>();
@@ -112,59 +112,59 @@ export default function BundleDetailPage() {
 
             {/* Stats Row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-gray-700">
-  <div className="flex items-center gap-2">
-    <BookOpen className="h-5 w-5" />
-    <span>{bundle.courses.length} Courses</span>
-  </div>
-  <div className="flex items-center gap-2">
-    <DollarSign className="h-5 w-5" />
-    <span>Save ${(bundle.regularPrice - bundle.salePrice)}</span>
-  </div>
-  <div className="flex items-center gap-2">
-    <Star className="h-5 w-5" />
-    <span>Expert Instructors</span>
-  </div>
-</div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                <span>{bundle.courses.length} Courses</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                <span>Save ${(bundle.regularPrice - bundle.salePrice)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                <span>Expert Instructors</span>
+              </div>
+            </div>
 
             {/* Pricing + CTA */}
-           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-  {/* ✅ Price block */}
-  <div className="flex flex-col">
-    {/* prices side by side */}
-    <div className="flex items-baseline gap-3">
-      <div className="text-3xl font-bold">
-        ${(bundle.salePrice).toFixed(2)}
-      </div>
-      <div className="text-lg line-through text-gray-500">
-        ${(bundle.regularPrice).toFixed(2)}
-      </div>
-    </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* ✅ Price block */}
+              <div className="flex flex-col">
+                {/* prices side by side */}
+                <div className="flex items-baseline gap-3">
+                  <div className="text-3xl font-bold">
+                    ${(bundle.salePrice).toFixed(2)}
+                  </div>
+                  <div className="text-lg line-through text-gray-500">
+                    ${(bundle.regularPrice).toFixed(2)}
+                  </div>
+                </div>
 
-    {/* ✅ Badge now BELOW prices on phone */}
-    <Badge
-      variant="outline"
-      className="mt-2 self-start text-green-600 border-green-600"
-    >
-      Save {Math.round(((bundle.regularPrice - bundle.salePrice) / bundle.regularPrice) * 100)}%
-    </Badge>
-  </div>
+                {/* ✅ Badge now BELOW prices on phone */}
+                <Badge
+                  variant="outline"
+                  className="mt-2 self-start text-green-600 border-green-600"
+                >
+                  Save {Math.round(((bundle.regularPrice - bundle.salePrice) / bundle.regularPrice) * 100)}%
+                </Badge>
+              </div>
 
-  {/* CTA button still aligns right on desktop */}
-  <Button
-    onClick={handleEnrollment}
-    size="lg"
-    className="w-full sm:w-auto bg-black text-white hover:bg-gray-800"
-  >
-    {isEnrolled ? (
-      <>
-        <CheckCircle className="h-5 w-5 mr-2" />
-        Access Bundle
-      </>
-    ) : (
-      <>Buy Bundle for ${(bundle.salePrice).toFixed(2)}</>
-    )}
-  </Button>
-</div>
+              {/* CTA button still aligns right on desktop */}
+              <Button
+                onClick={handleEnrollment}
+                size="lg"
+                className="w-full sm:w-auto bg-black text-white hover:bg-gray-800"
+              >
+                {isEnrolled ? (
+                  <>
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Access Bundle
+                  </>
+                ) : (
+                  <>Buy Bundle for ${(bundle.salePrice).toFixed(2)}</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
