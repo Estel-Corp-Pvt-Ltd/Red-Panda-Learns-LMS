@@ -1,4 +1,4 @@
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { Timestamp, FieldValue } from "firebase/firestore";
 
 export interface Topic {
   id: string;

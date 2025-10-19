@@ -1,5 +1,5 @@
 import { ATTACHMENT_TYPE, LESSON_SCOPE, LESSON_TYPE, VIDEO_SOURCE } from "@/constants";
-import { Timestamp , FieldValue} from "firebase-admin/firestore";
+import { Timestamp , FieldValue} from "firebase/firestore";
 
 export type Attachment = typeof ATTACHMENT_TYPE[keyof typeof ATTACHMENT_TYPE];
 export type LessonType = typeof LESSON_TYPE[keyof typeof LESSON_TYPE];

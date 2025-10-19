@@ -1,5 +1,5 @@
 import { OrganizationType } from "@/types/general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 /**
  * Represents a single organization document stored in Firestore.
