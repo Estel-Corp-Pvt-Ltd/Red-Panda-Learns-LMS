@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { assignmentService } from '@/services/assignmentService';
-import { Submission, Assignment } from '@/types/assignment';
+import { AssignmentSubmission, Assignment } from '@/types/assignment';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,20 +27,20 @@ import {
   Trash2,
   Filter
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { Header } from '@/components/Header';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDate } from '@/utils/date-time';
 
 const AssignmentSubmissionsPage = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([]);
+  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [filteredSubmissions, setFilteredSubmissions] = useState<AssignmentSubmission[]>([]);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [gradingFilter, setGradingFilter] = useState<'all' | 'graded' | 'ungraded'>('all');
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [marks, setMarks] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -57,20 +57,16 @@ const AssignmentSubmissionsPage = () => {
 
   const loadAssignmentAndSubmissions = async () => {
     if (!assignmentId) return;
-    try {
-      setLoading(true);
-      const [assignmentData, submissionsData] = await Promise.all([
-        assignmentService.getAssignmentById(assignmentId),
-        assignmentService.getSubmissionsByAssignment(assignmentId)
-      ]);
-      setAssignment(assignmentData);
-      setSubmissions(submissionsData || []);
-      console.log("SubmissionData", submissionsData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const assignmentResult = await assignmentService.getAssignmentById(assignmentId);
+    if (assignmentResult.success) {
+      setAssignment(assignmentResult.data);
     }
+    const submissionsResult = await assignmentService.getSubmissionsByAssignment(assignmentId);
+    if (submissionsResult.success) {
+      setSubmissions(submissionsResult.data || []);
+    }
+    setLoading(false);
   };
 
   const filterSubmissions = () => {
@@ -94,7 +90,7 @@ const AssignmentSubmissionsPage = () => {
     setFilteredSubmissions(filtered);
   };
 
-  const openGradeModal = (submission: Submission) => {
+  const openGradeModal = (submission: AssignmentSubmission) => {
     setSelectedSubmission(submission);
     setMarks(submission.marks?.toString() || '');
     setFeedback(submission.feedback || '');
@@ -155,21 +151,13 @@ const AssignmentSubmissionsPage = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'PPpp');
-    } catch {
-      return 'Invalid date';
-    }
-  };
-
-  const getGradeText = (submission: Submission) => {
+  const getGradeText = (submission: AssignmentSubmission) => {
     return submission.marks !== undefined && submission.marks !== null
       ? `${submission.marks}/${assignment?.totalPoints}`
       : 'Not Graded';
   };
 
-  const getGradeColor = (submission: Submission) => {
+  const getGradeColor = (submission: AssignmentSubmission) => {
     if (submission.marks !== undefined && submission.marks !== null) {
       const isPassing = submission.marks >= (assignment?.minimumPassPoint || 0);
       return isPassing
@@ -330,7 +318,7 @@ const AssignmentSubmissionsPage = () => {
                         <TableCell>
                           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            {formatDate(submission.submittedAt)}
+                            {formatDate(submission.updatedAt)}
                           </div>
                         </TableCell>
                         <TableCell>

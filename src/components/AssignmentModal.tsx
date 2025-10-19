@@ -15,21 +15,23 @@ import { fileService } from '@/services/fileService';
 import { assignmentService } from '@/services/assignmentService';
 import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
+import { Timestamp } from 'firebase/firestore';
 
 export interface AssignmentFormData {
   title: string;
   content: string;
-  duration: number;
+  deadline: string | null;
   fileUploadLimit: number;
   maximumUploadSize: number;
   totalPoints: number;
   minimumPassPoint: number;
-  attachments: File[]; // store File objects before upload
+  attachments: File[];
 }
 
 interface FormErrors {
   title?: string;
   content?: string;
+  deadline?: string;
 }
 
 interface AssignmentModalProps {
@@ -37,13 +39,13 @@ interface AssignmentModalProps {
   onCancel: () => void;
 }
 
-type FormField = keyof Omit<AssignmentFormData, 'attachments'>;
+type FormField = keyof Omit<Assignment, 'attachments'>;
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) => {
   const [formData, setFormData] = useState<AssignmentFormData>({
     title: '',
     content: '',
-    duration: 60,
+    deadline: null,
     fileUploadLimit: 5,
     maximumUploadSize: 10,
     totalPoints: 100,
@@ -54,9 +56,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (field: FormField, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +81,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
   };
 
   const handleTextInputChange =
-    (field: FormField) =>
+    (field: string) =>
       (e: ChangeEvent<HTMLInputElement>) =>
         handleInputChange(field, e.target.value);
 
@@ -96,37 +100,35 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     try {
       setIsSubmitting(true);
       setIsUploadingAttachment(true);
+
       const uploadedUrls: string[] = [];
 
-      // Upload attachments
       for (const file of formData.attachments) {
-        try {
-          const url = await fileService.uploadAttachment('assignments', file);
-          uploadedUrls.push(url);
-        } catch (uploadError) {
-          logError('Error uploading file', uploadError);
-          throw new Error('Attachment upload failed — assignment not created.');
+        const result = await fileService.uploadAttachment('assignments', file);
+        if (result.success) {
+          uploadedUrls.push(result.data);
         }
       }
 
       setIsUploadingAttachment(false);
 
-      // Create assignment
       const newAssignmentData = {
         title: formData.title,
         content: formData.content,
-        duration: formData.duration,
+        deadline: formData.deadline
+          ? Timestamp.fromDate(new Date(formData.deadline))
+          : null,
         fileUploadLimit: formData.fileUploadLimit,
         maximumUploadSize: formData.maximumUploadSize,
         totalPoints: formData.totalPoints,
         minimumPassPoint: formData.minimumPassPoint,
         attachments: uploadedUrls,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
-      const savedAssignment = await assignmentService.createAssignment(newAssignmentData);
-      onSave({ ...newAssignmentData, id: savedAssignment });
+      const result = await assignmentService.createAssignment(newAssignmentData);
+      if (result.success) {
+        onSave({ ...newAssignmentData, id: result.data });
+      }
     } catch (error) {
       logError('Error creating assignment', error);
       alert('Failed to create assignment. Please try again.');
@@ -176,7 +178,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.title ? 'border-red-500' : 'border-gray-300'
                   }`}
               />
-              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
+              {errors.title && (
+                <p className="text-sm text-red-500 mt-1">{errors.title}</p>
+              )}
             </div>
 
             {/* Markdown Content */}
@@ -185,17 +189,28 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
                 Assignment Content *
               </label>
               <div
-                data-color-mode={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                className={`border rounded-lg ${errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
+                data-color-mode={
+                  document.documentElement.classList.contains('dark')
+                    ? 'dark'
+                    : 'light'
+                }
+                className={`border rounded-lg ${errors.content
+                  ? 'border-red-500'
+                  : 'border-gray-300 dark:border-gray-700'
+                  }`}
               >
                 <MDEditor
                   value={formData.content}
-                  onChange={(value) => handleInputChange('content', value || '')}
+                  onChange={(value) =>
+                    handleInputChange('content', value || '')
+                  }
                   height={350}
                   preview="edit"
                 />
               </div>
-              {errors.content && <p className="text-sm text-red-500 mt-1">{errors.content}</p>}
+              {errors.content && (
+                <p className="text-sm text-red-500 mt-1">{errors.content}</p>
+              )}
             </div>
           </div>
 
@@ -244,7 +259,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400 italic">No files uploaded</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  No files uploaded
+                </p>
               )}
 
               {isUploadingAttachment && (
@@ -259,9 +276,31 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
                 Assignment Settings
               </h3>
+
+              {/* Deadline */}
+              <div>
+                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                  Deadline *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.deadline || ''}
+                  onChange={(e) =>
+                    handleInputChange('deadline', e.target.value)
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.deadline ? 'border-red-500' : ''
+                    }`}
+                />
+                {errors.deadline && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {errors.deadline}
+                  </p>
+                )}
+              </div>
+
+              {/* Other Numeric Fields */}
               {(
                 [
-                  ['duration', 'Time Limit (minutes)'],
                   ['fileUploadLimit', 'File Upload Limit'],
                   ['maximumUploadSize', 'Maximum File Size (MB)'],
                   ['totalPoints', 'Total Points'],
@@ -274,8 +313,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
                   </label>
                   <input
                     type="number"
-                    value={formData[key]}
-                    onChange={e => handleInputChange(key, Number(e.target.value))}
+                    value={formData[key] as number}
+                    onChange={(e) =>
+                      handleInputChange(key, Number(e.target.value))
+                    }
                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
@@ -294,7 +335,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
               <button
                 type="submit"
                 disabled={isSubmitting || isUploadingAttachment}
-                className="px-6 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2 rounded-lg bg-primary text-white flex items-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting || isUploadingAttachment ? (
                   <>

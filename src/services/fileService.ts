@@ -1,28 +1,30 @@
 import { storage } from "@/firebaseConfig";
+import { logError } from "@/utils/logger";
+import { ok, Result } from "@/utils/response";
 import { getDownloadURL, ref, uploadBytes, uploadBytesResumable, UploadTask } from "firebase/storage";
 
 
 class FileService {
-  uploadFileChunk(uploadPath: string, file: File): UploadTask | null {
+  startResumableUpload(uploadPath: string, file: File): Result<UploadTask | null> {
     try {
       const storageRef = ref(storage, uploadPath);
       const uploadTask = uploadBytesResumable(storageRef, file);
-      return uploadTask;
+      return ok(uploadTask);
     } catch (error) {
-      console.error("Error starting upload:", error);
-      return null;
+      logError("Error starting upload:", error);
+      return fail(null);
     }
   }
 
-  async uploadAttachment(uploadPath: string, file: File,): Promise<string> {
+  async uploadAttachment(uploadPath: string, file: File,): Promise<Result<string>> {
     try {
       const fileRef = ref(storage, `${uploadPath}/${Date.now()}_${file.name}`);
       await uploadBytes(fileRef, file);
       const downloadUrl = await getDownloadURL(fileRef);
-      return downloadUrl;
+      return ok(downloadUrl);
     } catch (error) {
-      console.error('Error uploading file:', error);
-      throw new Error('File upload failed');
+      logError('Error uploading file:', error);
+      return fail(null);
     }
   }
 }

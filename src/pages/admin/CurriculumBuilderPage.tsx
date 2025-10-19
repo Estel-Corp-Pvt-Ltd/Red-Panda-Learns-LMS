@@ -51,7 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { courseService } from "@/services/courseService";
 import { Course, Topic, Cohort, TopicItem } from "@/types/course";
 import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
-import { Lesson } from "@/types/lesson";
+import { LearningContentType, Lesson } from "@/types/lesson";
 import CohortImporterModal from "@/components/admin/CohortImporterModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COURSE_STATUS, LEARNING_UNIT } from "@/constants";
@@ -83,6 +83,7 @@ import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { CreateLessonModal } from "@/components/admin/AddLesson";
 import AssignmentModal, { AssignmentFormData } from "@/components/AssignmentModal";
 import { Assignment } from "@/types/assignment";
+import { logError } from "@/utils/logger";
 
 type SortableItemProps = {
   id: string;
@@ -331,11 +332,11 @@ const CurriculumBuilderPage = () => {
       return;
     }
 
-    const uploadTask = fileService.uploadFileChunk(
+    const uploadResult = fileService.startResumableUpload(
       `/courses/${courseId}/thumbnail.png`,
       selectedFile
     );
-    if (!uploadTask) {
+    if (!uploadResult.success) {
       toast({
         title: "Upload Failed",
         description: "Unable to upload the file. Please try again.",
@@ -344,7 +345,7 @@ const CurriculumBuilderPage = () => {
       return;
     }
 
-    uploadTask.on(
+    uploadResult.data.on(
       "state_changed",
       (snapshot) => {
         setUploadingThumbnail(true);
@@ -365,7 +366,7 @@ const CurriculumBuilderPage = () => {
         try {
           setProgress(100);
           setUploadingThumbnail(false);
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          const url = await getDownloadURL(uploadResult.data.snapshot.ref);
           setThumbnailUrl(url);
           toast({
             title: "Thumbnail Uploaded",
@@ -378,7 +379,7 @@ const CurriculumBuilderPage = () => {
             description: "Something went wrong",
             variant: "destructive",
           });
-          console.error("Error getting download URL:", error);
+          logError("Error getting download URL:", error);
         }
       }
     );
@@ -886,7 +887,7 @@ const CurriculumBuilderPage = () => {
 
     // Create assignment item
     const newItem: DraggableItem = {
-      id: `assignment-${assignment.id}-${activeParentId}`,
+      id: assignment.id,
       refId: assignment.id,
       title: assignment.title,
       type: LEARNING_UNIT.ASSIGNMENT,
@@ -963,7 +964,7 @@ const CurriculumBuilderPage = () => {
                 .map((lessonItem) => ({
                   id: (lessonItem.refId ?? lessonItem.id) as string, // handle both lessons and assignments
                   title: lessonItem.title,
-                  type: lessonItem.type as ("ASSIGNMENT" | "LESSON") || "LESSON"
+                  type: lessonItem.type as LearningContentType
                 })) as TopicItem[];
 
               return {
@@ -988,7 +989,7 @@ const CurriculumBuilderPage = () => {
               .map((lessonItem) => ({
                 id: lessonItem.refId ?? lessonItem.id, // handle both lessons and assignments
                 title: lessonItem.title,
-                type: lessonItem.type as ("ASSIGNMENT" | "LESSON")
+                type: lessonItem.type as LearningContentType
               }));
             newRootTopics.push({
               id: item.id,

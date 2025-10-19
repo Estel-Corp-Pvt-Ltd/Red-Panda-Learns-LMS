@@ -1,6 +1,6 @@
 import React, { useEffect, useState, ChangeEvent, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { NotepadText, FileText, FileUp, Trash2, X, Save } from 'lucide-react';
+import { NotepadText, FileText, FileUp, Trash2, Save } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
@@ -10,6 +10,8 @@ import { fileService } from '@/services/fileService';
 import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
 import { Header } from '@/components/Header';
+import { Timestamp } from 'firebase/firestore';
+import { formatDate } from '@/utils/date-time';
 
 const EditAssignmentPage: React.FC = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -23,16 +25,12 @@ const EditAssignmentPage: React.FC = () => {
 
   useEffect(() => {
     const fetchAssignment = async () => {
-      try {
-        if (!assignmentId) return;
-        const data = await assignmentService.getAssignmentById(assignmentId);
-        setAssignment(data);
-      } catch (error) {
-        logError('Error loading assignment', error);
-        alert('Failed to load assignment.');
-      } finally {
-        setIsLoading(false);
+      if (!assignmentId) return;
+      const result = await assignmentService.getAssignmentById(assignmentId);
+      if (result.success) {
+        setAssignment(result.data);
       }
+      setIsLoading(false);
     };
     fetchAssignment();
   }, [assignmentId]);
@@ -70,20 +68,26 @@ const EditAssignmentPage: React.FC = () => {
       if (newFiles.length > 0) {
         setIsUploading(true);
         for (const file of newFiles) {
-          const url = await fileService.uploadAttachment('assignments', file);
-          uploadedUrls.push(url);
+          const result = await fileService.uploadAttachment('assignments', file);
+          if (result.success) {
+            uploadedUrls.push(result.data);
+          }
         }
         setIsUploading(false);
       }
 
+      // Convert deadline back to Firestore Timestamp
       const updatedData = {
         ...assignment,
+        deadline: assignment.deadline
+          ? Timestamp.fromDate(new Date(assignment.deadline as any))
+          : null,
         attachments: [...assignment.attachments, ...uploadedUrls],
-        updatedAt: new Date().toISOString(),
       };
 
       await assignmentService.updateAssignment(assignment.id, updatedData);
       alert('Assignment updated successfully!');
+      navigate(-1);
     } catch (error) {
       logError('Error updating assignment', error);
       alert('Failed to update assignment.');
@@ -110,7 +114,8 @@ const EditAssignmentPage: React.FC = () => {
   }
 
   const colorMode =
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+    typeof document !== 'undefined' &&
+      document.documentElement.classList.contains('dark')
       ? 'dark'
       : 'light';
 
@@ -126,11 +131,16 @@ const EditAssignmentPage: React.FC = () => {
             </h1>
           </div>
 
-          <Link to={`/admin/assignments/${assignmentId}/submissions`}>Submissions</Link>
+          <Link to={`/admin/assignments/${assignmentId}/submissions`}>
+            Submissions
+          </Link>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8 bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-8 bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md"
+        >
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -155,7 +165,7 @@ const EditAssignmentPage: React.FC = () => {
             >
               <MDEditor
                 value={assignment.content}
-                onChange={(value) => handleChange('content', value || '')}
+                onChange={value => handleChange('content', value || '')}
                 height={350}
                 preview="live"
               />
@@ -193,7 +203,12 @@ const EditAssignmentPage: React.FC = () => {
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-primary-500" />
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                      >
                         Attachment {idx + 1}
                       </a>
                     </div>
@@ -235,16 +250,30 @@ const EditAssignmentPage: React.FC = () => {
 
             {(isUploading || newFiles.length > 0) && (
               <p className="text-xs text-blue-500 mt-2 animate-pulse">
-                {isUploading ? 'Uploading attachments...' : 'New files ready for upload'}
+                {isUploading
+                  ? 'Uploading attachments...'
+                  : 'New files ready for upload'}
               </p>
             )}
           </div>
 
           {/* Settings */}
           <div className="grid grid-cols-2 gap-4">
+            {/* Deadline */}
+            <div>
+              <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                Deadline
+              </label>
+              <input
+                type="datetime-local"
+                value={formatDate(assignment.deadline)}
+                onChange={e => handleChange('deadline', e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+              />
+            </div>
+
             {(
               [
-                ['duration', 'Duration (minutes)'],
                 ['fileUploadLimit', 'File Upload Limit'],
                 ['maximumUploadSize', 'Max File Size (MB)'],
                 ['totalPoints', 'Total Points'],
@@ -252,11 +281,15 @@ const EditAssignmentPage: React.FC = () => {
               ] as [keyof Assignment, string][]
             ).map(([key, label]) => (
               <div key={key}>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                  {label}
+                </label>
                 <input
                   type="number"
                   value={assignment[key] as number}
-                  onChange={e => handleChange(key, Number(e.target.value))}
+                  onChange={e =>
+                    handleChange(key, Number(e.target.value))
+                  }
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
               </div>
@@ -275,7 +308,7 @@ const EditAssignmentPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSaving || isUploading}
-              className="px-6 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2 rounded-lg bg-primary text-white flex items-center gap-2 disabled:opacity-50"
             >
               {isSaving || isUploading ? (
                 <>

@@ -5,6 +5,11 @@ export const USER_ROLE = {
     ADMIN: 'ADMIN'
 } as const;
 
+export const LEARNING_CONTENT = {
+    LESSON: "LESSON",
+    ASSIGNMENT: "ASSIGNMENT",
+} as const;
+
 export const LESSON_TYPE = {
     SLIDE_DECK: 'SLIDE DECK',
     VIDEO_LECTURE: 'VIDEO LECTURE',
@@ -322,8 +327,8 @@ export const COUPON_STATUS = {
 } as const;
 
 export const COLLECTION = {
-    ASSIGNMENTS: "Assignment",
-    SUBMISSIONS: 'Submissions',
+    ASSIGNMENTS: "Assignments",
+    ASSIGNMENT_SUBMISSIONS: 'Submissions',
     COURSES: 'Courses',
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',

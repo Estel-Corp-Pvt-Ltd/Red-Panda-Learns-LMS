@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 import { assignmentService } from '@/services/assignmentService';
 import { fileService } from '@/services/fileService';
-import { Assignment, Submission } from '@/types/assignment';
+import { Assignment, AssignmentSubmission } from '@/types/assignment';
 import { logError } from '@/utils/logger';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/utils/date-time';
 
 type AssignmentProps = {
   assignmentId: string;
@@ -36,15 +37,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   // ✅ Load assignment by ID
   useEffect(() => {
     const fetchAssignment = async () => {
-      try {
-        if (!assignmentId) return;
-        const data = await assignmentService.getAssignmentById(assignmentId);
-        setAssignment(data);
-      } catch (error) {
-        logError('Error loading assignment', error);
-      } finally {
-        setIsLoading(false);
+      setIsLoading(true);
+      if (!assignmentId) return;
+      const result = await assignmentService.getAssignmentById(assignmentId);
+      if (result.success) {
+        setAssignment(result.data);
       }
+      setIsLoading(false);
     };
     fetchAssignment();
   }, [assignmentId]);
@@ -76,17 +75,18 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
       // Upload files
       const uploadedUrls: string[] = [];
       for (const file of submissionFiles) {
-        const url = await fileService.uploadAttachment(`submissions/${assignmentId}`, file);
-        uploadedUrls.push(url);
+        const result = await fileService.uploadAttachment(`submissions/${assignmentId}`, file);
+        if (result.success) {
+          uploadedUrls.push(result.data);
+        }
       }
 
       // Save submission record
-      const submission: Submission = {
+      const submission = {
         assignmentId,
         studentId: user.id,
         studentName: user.firstName + " " + user.lastName,
         submissionFiles: uploadedUrls,
-        submittedAt: new Date().toISOString(),
       };
 
       await assignmentService.createSubmission(submission);
@@ -134,7 +134,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
         <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400 mb-6">
           <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4 text-primary-500" /> {assignment.duration} min
+            <Clock className="h-4 w-4 text-primary-500" /> {formatDate(assignment.deadline)}
           </div>
           <div className="flex items-center gap-1">
             <Star className="h-4 w-4 text-yellow-500" /> {assignment.totalPoints} pts
@@ -257,7 +257,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
       {/* Submission Section */}
       <div className="mt-10 bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Upload className="h-5 w-5 text-primary-500" /> Submit Your Work
+          <Upload className="h-5 w-5 text-primary" /> Submit Your Work
         </h2>
 
         <label
@@ -299,7 +299,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || uploading}
-          className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 disabled:opacity-50"
+          className="px-6 py-2 bg-primary text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
         >
           {isSubmitting ? (
             <>

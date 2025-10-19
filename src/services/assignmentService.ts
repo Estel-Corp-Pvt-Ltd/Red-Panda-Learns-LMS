@@ -15,7 +15,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { COLLECTION } from '@/constants';
-import { Assignment, Submission } from '@/types/assignment';
+import { Assignment, AssignmentSubmission } from '@/types/assignment';
+import { ok, Result } from '@/utils/response';
+import { logError } from '@/utils/logger';
 
 /**
  * Firestore-based service for managing Assignments.
@@ -53,7 +55,7 @@ class AssignmentService {
    * @param data - Partial assignment fields; required fields: title, content, courseId.
    * @returns The generated assignment ID.
    */
-  async createAssignment(data: Omit<Assignment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async createAssignment(data: Omit<Assignment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<string | null>> {
     try {
       const assignmentId = await this.generateAssignmentId();
 
@@ -62,11 +64,11 @@ class AssignmentService {
         title: data.title,
         content: data.content,
         attachments: data.attachments || [],
-        duration: data.duration || 60,
+        deadline: data.deadline,
         fileUploadLimit: data.fileUploadLimit || 5,
         maximumUploadSize: data.maximumUploadSize || 10,
         totalPoints: data.totalPoints || 100,
-        minimumPassPoint: data.minimumPassPoint || 60,
+        minimumPassPoint: data.minimumPassPoint || 30,
         authorId: data.authorId || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -75,10 +77,10 @@ class AssignmentService {
       await setDoc(doc(db, COLLECTION.ASSIGNMENTS, assignmentId), assignment);
       console.log('AssignmentService - Assignment created successfully:', assignmentId);
 
-      return assignmentId;
+      return ok(assignmentId);
     } catch (error) {
       console.error('AssignmentService - Error creating assignment:', error);
-      throw new Error('Failed to create assignment');
+      return fail(null);
     }
   }
 
@@ -115,7 +117,7 @@ class AssignmentService {
    * @param assignmentId - The assignment document ID.
    * @returns The assignment object or null.
    */
-  async getAssignmentById(assignmentId: string): Promise<Assignment | null> {
+  async getAssignmentById(assignmentId: string): Promise<Result<Assignment | null>> {
     try {
       const assignmentDoc = await getDoc(doc(db, COLLECTION.ASSIGNMENTS, assignmentId));
       if (!assignmentDoc.exists()) {
@@ -124,14 +126,14 @@ class AssignmentService {
       }
 
       const data = assignmentDoc.data();
-      return {
+      return ok({
         ...data,
         createdAt: data.createdAt?.toDate(),
         updatedAt: data.updatedAt?.toDate(),
-      } as Assignment;
+      } as Assignment);
     } catch (error) {
       console.error('AssignmentService - Error fetching assignment:', error);
-      return null;
+      return fail(null);
     }
   }
 
@@ -219,13 +221,14 @@ class AssignmentService {
  * @param submission - The submission data including assignmentId, studentId, and submissionFiles
  * @returns The generated submission ID
  */
-  async createSubmission(submission: Omit<Submission, 'id' | 'submittedAt'>): Promise<string> {
+  async createSubmission(submission: Omit<AssignmentSubmission, 'id'>): Promise<string> {
     try {
       // Validate that the assignment exists
-      const assignment = await this.getAssignmentById(submission.assignmentId);
-      if (!assignment) {
+      const result = await this.getAssignmentById(submission.assignmentId);
+      if (!result.success) {
         throw new Error('Assignment not found');
       }
+      const assignment = result.data;
 
       // Check if student has already submitted
       const existingSubmission = await this.getSubmissionByStudentAndAssignment(
@@ -242,12 +245,13 @@ class AssignmentService {
         throw new Error(`Exceeds maximum file upload limit of ${assignment.fileUploadLimit}`);
       }
 
-      const submissionData: Submission = {
+      const submissionData = {
         ...submission,
-        submittedAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
-      const ref = collection(db, COLLECTION.SUBMISSIONS);
+      const ref = collection(db, COLLECTION.ASSIGNMENT_SUBMISSIONS);
       const docRef = await addDoc(ref, {
         ...submissionData,
         createdAt: serverTimestamp(),
@@ -267,16 +271,16 @@ class AssignmentService {
  * @param submissionId - The ID of the submission to update.
  * @param updates - Partial submission fields to update.
  */
-  async updateSubmission(submissionId: string, updates: Partial<Omit<Submission, 'id' | 'assignmentId' | 'studentId' | 'submittedAt'>>): Promise<void> {
+  async updateSubmission(submissionId: string, updates: Partial<Omit<AssignmentSubmission, 'id' | 'assignmentId' | 'studentId' | 'createdAt' | 'updatedAt'>>): Promise<Result<null>> {
     try {
       console.log('AssignmentService - Updating submission:', submissionId, updates);
 
-      const submissionRef = doc(db, COLLECTION.SUBMISSIONS, submissionId);
+      const submissionRef = doc(db, COLLECTION.ASSIGNMENT_SUBMISSIONS, submissionId);
       const submissionDoc = await getDoc(submissionRef);
 
       if (!submissionDoc.exists()) {
-        console.error('AssignmentService - Submission not found:', submissionId);
-        throw new Error('Submission not found');
+        logError('AssignmentService - Submission not found:', submissionId);
+        return fail(null);
       }
 
       // Prepare update data
@@ -285,18 +289,12 @@ class AssignmentService {
         updatedAt: serverTimestamp(),
       };
 
-      console.log('AssignmentService - Update data:', updateData);
-
       await updateDoc(submissionRef, updateData);
 
-      console.log('AssignmentService - Submission updated successfully:', submissionId);
+      return ok(null);
     } catch (error) {
-      console.error('AssignmentService - Error updating submission:', error);
-      // Log more detailed error information
-      if (error instanceof Error) {
-        console.error('Error details:', error.message, error.stack);
-      }
-      throw error instanceof Error ? error : new Error('Failed to update submission');
+      logError('AssignmentService - Error updating submission:', error);
+      return fail(null);
     }
   }
 
@@ -305,21 +303,21 @@ class AssignmentService {
  *
  * @param submissionId - The ID of the submission to delete.
  */
-  async deleteSubmission(submissionId: string): Promise<void> {
+  async deleteSubmission(submissionId: string): Promise<Result<null>> {
     try {
-      const submissionRef = doc(db, COLLECTION.SUBMISSIONS, submissionId);
+      const submissionRef = doc(db, COLLECTION.ASSIGNMENT_SUBMISSIONS, submissionId);
       const submissionDoc = await getDoc(submissionRef);
 
       if (!submissionDoc.exists()) {
-        throw new Error('Submission not found');
+        return fail(null);
       }
 
       await deleteDoc(submissionRef);
 
-      console.log('AssignmentService - Submission deleted successfully:', submissionId);
+      return ok(null);
     } catch (error) {
       console.error('AssignmentService - Error deleting submission:', error);
-      throw error instanceof Error ? error : new Error('Failed to delete submission');
+      return fail(null);
     }
   }
 
@@ -330,10 +328,10 @@ class AssignmentService {
    * @param assignmentId - The assignment ID
    * @returns The submission object or null if not found
    */
-  async getSubmissionByStudentAndAssignment(studentId: string, assignmentId: string): Promise<Submission | null> {
+  async getSubmissionByStudentAndAssignment(studentId: string, assignmentId: string): Promise<Result<AssignmentSubmission | null>> {
     try {
       const q = query(
-        collection(db, COLLECTION.SUBMISSIONS),
+        collection(db, COLLECTION.ASSIGNMENT_SUBMISSIONS),
         where('studentId', '==', studentId),
         where('assignmentId', '==', assignmentId)
       );
@@ -348,60 +346,58 @@ class AssignmentService {
       const doc = querySnapshot.docs[0];
       const data = doc.data();
 
-      return {
+      return ok({
         id: doc.id,
         assignmentId: data.assignmentId,
         studentId: data.studentId,
         studentName: data.studentName,
         submissionFiles: data.submissionFiles || [],
-        submittedAt: data.submittedAt,
+        updatedAt: data.updatedAt,
         createdAt: data.createdAt?.toDate(),
-      } as Submission;
+      });
     } catch (error) {
       console.error('AssignmentService - Error fetching submission by student and assignment:', error);
-      return null;
+      return fail(null);
     }
   }
 
   /**
  * Gets a specific submission by its ID
  */
-  async getSubmittedAssignmentById(submissionId: string): Promise<Submission | null> {
+  async getSubmittedAssignmentById(submissionId: string): Promise<Result<AssignmentSubmission | null>> {
     try {
-      const submissionDoc = await getDoc(doc(db, COLLECTION.SUBMISSIONS, submissionId));
+      const submissionDoc = await getDoc(doc(db, COLLECTION.ASSIGNMENT_SUBMISSIONS, submissionId));
 
       if (!submissionDoc.exists()) {
         console.log('AssignmentService - Submission not found:', submissionId);
-        return null;
+        return fail(null);
       }
 
       const data = submissionDoc.data();
-      return {
+      return ok({
         id: submissionDoc.id,
         assignmentId: data.assignmentId,
         studentId: data.studentId,
         studentName: data.studentName,
         submissionFiles: data.submissionFiles || [],
-        submittedAt: data.submittedAt,
+        updatedAt: data.updatedAt,
         marks: data.marks,
         feedback: data.feedback,
-        gradedAt: data.gradedAt,
         createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
-      } as Submission;
+      });
     } catch (error) {
-      console.error('AssignmentService - Error fetching submission:', error);
-      return null;
+      logError('AssignmentService - Error fetching submission:', error);
+      return fail(null);
     }
   }
 
   /**
    * Gets all submissions for a specific assignment
    */
-  async getSubmissionsByAssignment(assignmentId: string): Promise<Submission[]> {
+  async getSubmissionsByAssignment(assignmentId: string): Promise<Result<AssignmentSubmission[]>> {
     try {
       const q = query(
-        collection(db, COLLECTION.SUBMISSIONS),
+        collection(db, COLLECTION.ASSIGNMENT_SUBMISSIONS),
         where('assignmentId', '==', assignmentId)
       );
 
@@ -415,20 +411,18 @@ class AssignmentService {
           studentId: data.studentId,
           studentName: data.studentName,
           submissionFiles: data.submissionFiles || [],
-          submittedAt: data.submittedAt,
           marks: data.marks,
           feedback: data.feedback,
           gradedAt: data.gradedAt,
           createdAt: data.createdAt?.toDate(),
           updatedAt: data.updatedAt?.toDate(),
-        } as Submission;
-      });
+        };
+      }) as AssignmentSubmission[];
 
-      console.log('AssignmentService - Fetched submissions for assignment:', submissions.length);
-      return submissions;
+      return ok(submissions);
     } catch (error) {
       console.error('AssignmentService - Error fetching submissions by assignment:', error);
-      return [];
+      return ok([]);
     }
   }
 
@@ -438,10 +432,10 @@ class AssignmentService {
    * @param studentId - The student ID
    * @returns Array of submissions by the student
    */
-  async getSubmissionsByStudent(studentId: string): Promise<Submission[]> {
+  async getSubmissionsByStudent(studentId: string): Promise<Result<AssignmentSubmission[]>> {
     try {
       const q = query(
-        collection(db, COLLECTION.SUBMISSIONS),
+        collection(db, COLLECTION.ASSIGNMENT_SUBMISSIONS),
         where('studentId', '==', studentId)
       );
 
@@ -457,14 +451,14 @@ class AssignmentService {
           submissionFiles: data.submissionFiles || [],
           submittedAt: data.submittedAt,
           createdAt: data.createdAt?.toDate(),
-        } as Submission;
+        } as AssignmentSubmission;
       });
 
       console.log('AssignmentService - Fetched submissions by student:', submissions.length);
-      return submissions;
+      return ok(submissions);
     } catch (error) {
       console.error('AssignmentService - Error fetching submissions by student:', error);
-      return [];
+      return ok([]);
     }
   }
 }
