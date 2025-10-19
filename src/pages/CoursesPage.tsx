@@ -25,7 +25,7 @@ import { useCourseFilters } from "@/hooks/useCourseFilters";
 
 import { cn } from "@/lib/utils";
 
-import { SORT_OPTIONS } from "@/types/courseFilters";
+import { SORT_OPTIONS } from "@/types/course-filters";
 
 export default function CoursesPage() {
 

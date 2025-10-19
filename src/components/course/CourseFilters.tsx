@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { CourseFilters as CourseFiltersType, PRICE_RANGE_OPTIONS, ENROLLMENT_STATUS_OPTIONS, DURATION_OPTIONS } from '@/types/courseFilters';
+import { CourseFilters as CourseFiltersType, PRICE_RANGE_OPTIONS, ENROLLMENT_STATUS_OPTIONS, DURATION_OPTIONS } from '@/types/course-filters';
 
 interface CourseFiltersProps {
   filters: CourseFiltersType;

@@ -16,7 +16,7 @@ import {
 
 import { COLLECTION } from "@/constants";
 import { db } from "@/firebaseConfig";
-import { PopUp } from "@/types/PopUp";
+import { PopUp } from "@/types/pop-up";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 

@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { Header } from "@/components/Header";
 import { paymentService } from "@/services/paymentService";
-import { enrollmentService } from "@/services/dummyEnrollmentService";
+import { enrollmentService } from "@/services/enrollmentService";
 
 import { Currency, PaymentProvider } from "@/types/general";
 import { CURRENCY, PAYMENT_PROVIDER } from "@/constants";

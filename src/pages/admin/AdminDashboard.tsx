@@ -62,7 +62,7 @@ import {
   USER_ROLE,
   USER_STATUS,
 } from "@/constants";
-import { PopUp } from "@/types/PopUp";
+import { PopUp } from "@/types/pop-up";
 import { popUpService } from "@/services/popupService";
 
 const PopUpTab = () => {

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { enrollmentService } from '@/services/dummyEnrollmentService';
+import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
 import { ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '@/constants';
 

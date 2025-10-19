@@ -1,5 +1,5 @@
+import { FieldValue, Timestamp } from "firebase/firestore";
 import { CourseStatus, PricingModel } from "./general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export interface TopicItem {
   id: string;

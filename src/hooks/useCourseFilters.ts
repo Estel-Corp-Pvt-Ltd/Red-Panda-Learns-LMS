@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Course } from '@/types/course';
-import { CourseFilters } from '@/types/courseFilters';
+import { CourseFilters } from '@/types/course-filters';
 
 export function useCourseFilters(courses: Course[] = []) {
   const [filters, setFilters] = useState<CourseFilters>({

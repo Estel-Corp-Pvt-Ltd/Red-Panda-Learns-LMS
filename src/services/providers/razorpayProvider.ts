@@ -1,7 +1,7 @@
 // RazorpayProvider.ts
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
-import { enrollmentService } from '../dummyEnrollmentService';
+import { enrollmentService } from '../enrollmentService';
 import { CURRENCY, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
 import type { Currency } from '@/types/general';

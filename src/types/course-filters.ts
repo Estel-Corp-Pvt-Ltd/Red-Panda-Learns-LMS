@@ -1,5 +1,3 @@
-// Course filtering types and utilities
-
 export interface CourseFilters {
   searchTerm: string;
   priceRange: PriceRange;
@@ -7,7 +5,7 @@ export interface CourseFilters {
   enrollmentStatus: EnrollmentStatus;
   duration: DurationRange;
   sortBy: SortOption;
-}
+};
 
 export type PriceRange = 'all' | 'free' | 'under-1000' | '1000-5000' | 'above-5000';
 export type EnrollmentStatus = 'all' | 'enrolled' | 'not-enrolled';
@@ -18,7 +16,7 @@ export interface FilterOption {
   value: string;
   label: string;
   count?: number;
-}
+};
 
 export const PRICE_RANGE_OPTIONS: FilterOption[] = [
   { value: 'all', label: 'All Prices' },
