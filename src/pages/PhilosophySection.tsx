@@ -1,7 +1,31 @@
-import { Layers, Code2, Brain } from "lucide-react";
-import { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Layers, Code2, Brain, type LucideIcon } from "lucide-react";
 
-const philosophyItems = [
+// Types
+interface PhilosophyItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  color: string;
+  gradient: string;
+}
+
+interface DecryptedLineProps {
+  text: string;
+  delay?: number;
+  onComplete?: () => void;
+}
+
+interface DecryptedCodeLineByLineProps {
+  text: string;
+  lineDelay?: number;
+}
+
+// Constants
+const CHARS =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(){}[]<>?/\\|=-+";
+
+const philosophyItems: PhilosophyItem[] = [
   {
     icon: Layers,
     title: "Foundations",
@@ -65,77 +89,178 @@ const researchRef = {
   link: "https://arxiv.org/abs/1706.03762",
 };
 
-const PhilosophySection = () => {
-  const [revealedCards, setRevealedCards] = useState([]);
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [pulses, setPulses] = useState([]);
-  const [typedText, setTypedText] = useState(["", "", ""]);
-  const [isTypingComplete, setIsTypingComplete] = useState([false, false, false]);
+// Decrypted Line (typed, cleaned deps, onComplete once)
+const DecryptedLine: React.FC<DecryptedLineProps> = ({
+  text,
+  delay = 0,
+  onComplete,
+}) => {
+  const [displayedText, setDisplayedText] = useState<string>("");
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
+
+  const initialDelayRef = useRef<number>(delay); // run once with initial delay
+  const onCompleteRef = useRef<() => void>(() => {});
+  const didCompleteRef = useRef<boolean>(false);
 
   useEffect(() => {
-    philosophyItems.forEach((_, index) => {
-      setTimeout(() => {
-        setRevealedCards((prev) => [...prev, index]);
-      }, index * 200);
-    });
+    onCompleteRef.current = onComplete ?? (() => {});
+  }, [onComplete]);
 
-    const interval = setInterval(() => {
-      philosophyItems.forEach((_, index) => {
-        setTimeout(() => {
-          createPulse(index);
-        }, index * 300);
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
+  useEffect(() => {
+    const t = window.setTimeout(
+      () => setHasStarted(true),
+      initialDelayRef.current
+    );
+    return () => window.clearTimeout(t);
   }, []);
 
-  // Progressive typing effect for code snippets
   useEffect(() => {
-    const snippets = [foundationSnippet, attentionSnippet, ""];
-    
-    snippets.forEach((snippet, cardIndex) => {
-      if (snippet && revealedCards.includes(cardIndex)) {
-        let currentIndex = 0;
-        const typingSpeed = 15; // milliseconds per character
+    if (!hasStarted) return;
 
-        const typeInterval = setInterval(() => {
-          if (currentIndex <= snippet.length) {
-            setTypedText(prev => {
-              const newText = [...prev];
-              newText[cardIndex] = snippet.substring(0, currentIndex);
-              return newText;
-            });
-            currentIndex++;
-          } else {
-            clearInterval(typeInterval);
-            setIsTypingComplete(prev => {
-              const newComplete = [...prev];
-              newComplete[cardIndex] = true;
-              return newComplete;
-            });
-          }
-        }, typingSpeed);
-
-        return () => clearInterval(typeInterval);
+    // Done? render final text and call onComplete once
+    if (currentIndex >= text.length) {
+      setDisplayedText(text);
+      if (!didCompleteRef.current) {
+        didCompleteRef.current = true;
+        onCompleteRef.current();
       }
-    });
-  }, [revealedCards]);
+      return;
+    }
 
-  const createPulse = (cardIndex) => {
-    const pulseId = Date.now() + cardIndex;
-    setPulses((prev) => [...prev, { id: pulseId, cardIndex }]);
+    const scrambleInterval = window.setInterval(() => {
+      setDisplayedText(() => {
+        let result = "";
+        for (let i = 0; i < text.length; i++) {
+          if (i < currentIndex) {
+            result += text[i];
+          } else if (text[i] === " ") {
+            result += " ";
+          } else {
+            result += CHARS[Math.floor(Math.random() * CHARS.length)];
+          }
+        }
+        return result;
+      });
+    }, 30);
 
-    setTimeout(() => {
-      setPulses((prev) => prev.filter((p) => p.id !== pulseId));
-    }, 1500);
+    const progressTimeout = window.setTimeout(() => {
+      setCurrentIndex((prev) => prev + 1);
+    }, 25);
+
+    return () => {
+      window.clearInterval(scrambleInterval);
+      window.clearTimeout(progressTimeout);
+    };
+  }, [hasStarted, currentIndex]); // no `text`, no `CHARS`
+
+  return <>{displayedText}</>;
+};
+
+// Decrypted Code (line-by-line, start at 1, no extra effect)
+const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
+  text,
+  lineDelay = 200,
+}) => {
+  // Reviewer: "Why not set to 1 at declaration?" → Done
+  const [visibleLines, setVisibleLines] = useState<number>(1);
+  const lines = text.split("\n");
+
+  const handleLineComplete = (lineIndex: number) => {
+    if (lineIndex < lines.length - 1) {
+      window.setTimeout(() => {
+        setVisibleLines(lineIndex + 2);
+      }, lineDelay);
+    }
   };
 
-  const handleCardHover = (index, isEntering) => {
+  return (
+    <>
+      {lines.map((line, index) => (
+        <div key={index}>
+          {index < visibleLines ? (
+            <DecryptedLine
+              text={line || " "}
+              delay={0}
+              onComplete={() => handleLineComplete(index)}
+            />
+          ) : (
+            <span style={{ opacity: 0 }}>{line || " "}</span>
+          )}
+        </div>
+      ))}
+    </>
+  );
+};
+
+const PhilosophySection: React.FC = () => {
+  const [revealedCards, setRevealedCards] = useState<number[]>([]);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [pulses, setPulses] = useState<
+    Array<{ id: number; cardIndex: number }>
+  >([]);
+  const [startCodeDecryption, setStartCodeDecryption] = useState<boolean[]>(
+    Array.from({ length: philosophyItems.length }, () => false)
+  );
+
+  const timeoutsRef = useRef<number[]>([]);
+  const intervalsRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    // Staggered reveal + start code decryption for first two cards
+    philosophyItems.forEach((_, index) => {
+      const t = window.setTimeout(() => {
+        setRevealedCards((prev) => [...prev, index]);
+        if (index < 2) {
+          const t2 = window.setTimeout(() => {
+            setStartCodeDecryption((prev) => {
+              const next = [...prev];
+              next[index] = true;
+              return next;
+            });
+          }, 400);
+          timeoutsRef.current.push(t2);
+        }
+      }, index * 200);
+      timeoutsRef.current.push(t);
+    });
+
+    // Periodic pulses across cards
+    const intervalId = window.setInterval(() => {
+      philosophyItems.forEach((_, index) => {
+        const t = window.setTimeout(() => {
+          createPulse(index);
+        }, index * 300);
+        timeoutsRef.current.push(t);
+      });
+    }, 4000);
+    intervalsRef.current.push(intervalId);
+
+    return () => {
+      // Cleanup
+      intervalsRef.current.forEach((id) => window.clearInterval(id));
+      timeoutsRef.current.forEach((id) => window.clearTimeout(id));
+      intervalsRef.current = [];
+      timeoutsRef.current = [];
+    };
+  }, []);
+
+  const createPulse = (cardIndex: number) => {
+    const pulseId = Date.now() + cardIndex + Math.floor(Math.random() * 1000);
+    setPulses((prev) => [...prev, { id: pulseId, cardIndex }]);
+
+    const t = window.setTimeout(() => {
+      setPulses((prev) => prev.filter((p) => p.id !== pulseId));
+    }, 1500);
+    timeoutsRef.current.push(t);
+  };
+
+  const handleCardHover = (index: number, isEntering: boolean) => {
     if (isEntering) {
       setHoveredCard(index);
       for (let i = 0; i < 3; i++) {
-        setTimeout(() => createPulse(index), i * 150);
+        const t = window.setTimeout(() => createPulse(index), i * 150);
+        timeoutsRef.current.push(t);
       }
     } else {
       setHoveredCard(null);
@@ -150,148 +275,59 @@ const PhilosophySection = () => {
           33% { transform: translate(30px, -50px) scale(1.1); }
           66% { transform: translate(-20px, 20px) scale(0.9); }
         }
-        
         @keyframes blob-float-2 {
           0%, 100% { transform: translate(0, 0) scale(1); }
           33% { transform: translate(-40px, 30px) scale(0.95); }
           66% { transform: translate(30px, -30px) scale(1.05); }
         }
-        
         @keyframes blob-float-3 {
           0%, 100% { transform: translate(0, 0) scale(1); }
           33% { transform: translate(50px, 40px) scale(1.08); }
           66% { transform: translate(-30px, -20px) scale(0.92); }
         }
-        
         @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes ripple-expand {
-          0% {
-            width: 60px;
-            height: 60px;
-            opacity: 0.8;
-          }
-          100% {
-            width: 200px;
-            height: 200px;
-            opacity: 0;
-          }
+          0% { width: 60px; height: 60px; opacity: 0.8; }
+          100% { width: 200px; height: 200px; opacity: 0; }
         }
-
         @keyframes icon-spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-
         @keyframes glow-ring {
-          0% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 0.6;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(2.5);
-            opacity: 0;
-          }
+          0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+          100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
         }
-
         @keyframes orbital {
-          0% {
-            transform: rotate(0deg) translateX(50px) rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg) translateX(50px) rotate(-360deg);
-          }
+          0% { transform: rotate(0deg) translateX(50px) rotate(0deg); }
+          100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
         }
-
         @keyframes sparkle {
-          0%, 100% {
-            opacity: 0;
-            transform: scale(0);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1);
-          }
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1); }
         }
-
-        @keyframes cursor-blink {
-          0%, 49% { opacity: 1; }
-          50%, 100% { opacity: 0; }
-        }
-        
-        .animate-blob-float-1 {
-          animation: blob-float-1 20s ease-in-out infinite;
-        }
-        
-        .animate-blob-float-2 {
-          animation: blob-float-2 18s ease-in-out infinite;
-        }
-        
-        .animate-blob-float-3 {
-          animation: blob-float-3 22s ease-in-out infinite;
-        }
-        
-        .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out forwards;
-        }
-
-        .philosophy-card:hover .card-icon {
-          animation: icon-spin 2s linear infinite;
-        }
-
-        .glow-ring {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          border-radius: 50%;
-          border: 2px solid;
-          pointer-events: none;
-        }
-
+        .animate-blob-float-1 { animation: blob-float-1 20s ease-in-out infinite; }
+        .animate-blob-float-2 { animation: blob-float-2 18s ease-in-out infinite; }
+        .animate-blob-float-3 { animation: blob-float-3 22s ease-in-out infinite; }
+        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; }
+        .philosophy-card:hover .card-icon { animation: icon-spin 2s linear infinite; }
+        .glow-ring { position: absolute; top: 50%; left: 50%; border-radius: 50%; border: 2px solid; pointer-events: none; }
         .glow-ring-1 { animation: glow-ring 1.5s ease-out infinite; }
         .glow-ring-2 { animation: glow-ring 1.5s ease-out infinite 0.3s; }
         .glow-ring-3 { animation: glow-ring 1.5s ease-out infinite 0.6s; }
-
-        .orbital-particle {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          margin-left: -3px;
-          margin-top: -3px;
-        }
-
+        .orbital-particle { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; border-radius: 50%; margin-left: -3px; margin-top: -3px; }
         .orbital-1 { animation: orbital 3s linear infinite; }
         .orbital-2 { animation: orbital 3s linear infinite 0.75s; }
         .orbital-3 { animation: orbital 3s linear infinite 1.5s; }
         .orbital-4 { animation: orbital 3s linear infinite 2.25s; }
-
-        .sparkle {
-          position: absolute;
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-        }
-
+        .sparkle { position: absolute; width: 4px; height: 4px; border-radius: 50%; }
         .sparkle-1 { top: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite; }
         .sparkle-2 { bottom: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
         .sparkle-3 { top: 50%; left: -15px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
         .sparkle-4 { top: 50%; right: -15px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
-
-        .typing-cursor {
-          animation: cursor-blink 1s step-end infinite;
-        }
       `}</style>
 
       <section className="relative py-24 px-6 overflow-hidden">
@@ -317,7 +353,6 @@ const PhilosophySection = () => {
 
           <div className="grid md:grid-cols-3 gap-8 items-stretch">
             {philosophyItems.map((item, index) => {
-              const isRevealed = revealedCards.includes(index);
               const isHovered = hoveredCard === index;
               const Icon = item.icon;
 
@@ -423,9 +458,7 @@ const PhilosophySection = () => {
                               background: `radial-gradient(circle, ${item.color}40 0%, transparent 70%)`,
                             }}
                           />
-
                           <Icon className="card-icon w-8 h-8 text-white relative z-10" />
-
                           {isHovered && (
                             <>
                               <div
@@ -472,6 +505,7 @@ const PhilosophySection = () => {
                       >
                         {item.title}
                       </h3>
+
                       <p className="text-foreground/70 leading-relaxed font-light">
                         {item.description}
                       </p>
@@ -520,12 +554,18 @@ const PhilosophySection = () => {
                                 </div>
                               </div>
                             ) : (
-                              <pre className="text-left text-[13px] leading-relaxed font-mono text-foreground/80 whitespace-pre-wrap overflow-auto max-h-56">
+                              <pre className="text-left text-[13px] leading-relaxed font-mono text-foreground/80 whitespace-pre-wrap overflow-visible">
                                 <code>
-                                  {typedText[index]}
-                                  {!isTypingComplete[index] && (
-                                    <span className="typing-cursor">|</span>
-                                  )}
+                                  {startCodeDecryption[index] ? (
+                                    <DecryptedCodeLineByLine
+                                      text={
+                                        index === 0
+                                          ? foundationSnippet
+                                          : attentionSnippet
+                                      }
+                                      lineDelay={150}
+                                    />
+                                  ) : null}
                                 </code>
                               </pre>
                             )}
