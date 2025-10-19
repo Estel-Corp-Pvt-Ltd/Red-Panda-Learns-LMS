@@ -13,6 +13,7 @@ import { COLLECTION, COUPON_STATUS } from "@/constants";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 import { toDateSafe } from "@/utils/date-time";
+import { Coupon } from "@/types/coupon";
 
 import { couponService } from "@/services/couponService";
 
@@ -32,13 +33,13 @@ class CouponUsageService {
   async getUsageCountByCoupon(couponId: string): Promise<Result<number>> {
     try {
       const q = query(
-        collection(db, COLLECTION.COUPON_USAGE),
-        where("couponId", "==", couponId)
+        collection(db, COLLECTION.COUPON_USAGES),
+        where("couponId", "==", couponId),
       );
       const snapshot = await getDocs(q);
 
       return ok(snapshot.size);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponUsageService.getUsageCountByCoupon", error);
       return fail("Failed to get coupon usage count", error.code);
     }
@@ -53,18 +54,18 @@ class CouponUsageService {
    */
   async hasUserUsedCoupon(
     userId: string,
-    couponId: string
+    couponId: string,
   ): Promise<Result<boolean>> {
     try {
       const q = query(
-        collection(db, COLLECTION.COUPON_USAGE),
+        collection(db, COLLECTION.COUPON_USAGES),
         where("userId", "==", userId),
-        where("couponId", "==", couponId)
+        where("couponId", "==", couponId),
       );
       const snapshot = await getDocs(q);
 
       return ok(!snapshot.empty);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponUsageService.hasUserUsedCoupon", error);
       return fail("Failed to check user coupon usage", error.code);
     }
@@ -86,7 +87,7 @@ class CouponUsageService {
     couponId: string,
     courseId?: string,
     bundleId?: string,
-    cohortId?: string
+    cohortId?: string,
   ): Promise<Result<{ isApplicable: boolean; reason?: string }>> {
     try {
       const couponResult = await couponService.getCouponById(couponId);
@@ -134,7 +135,7 @@ class CouponUsageService {
         coupon,
         courseId,
         bundleId,
-        cohortId
+        cohortId,
       );
 
       if (!isLinked) {
@@ -145,7 +146,7 @@ class CouponUsageService {
       }
 
       return ok({ isApplicable: true });
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponUsageService.isCouponApplicable", error);
       return fail("Error validating coupon", error.code);
     }
@@ -162,10 +163,10 @@ class CouponUsageService {
    * @returns Boolean indicating if the coupon is linked.
    */
   private checkLinkedItems(
-    coupon: any,
+    coupon: Coupon,
     courseId?: string,
     bundleId?: string,
-    cohortId?: string
+    cohortId?: string,
   ): boolean {
     const linkedCourses = coupon.linkedCourseIds || [];
     const linkedBundles = coupon.linkedBundleIds || [];
@@ -207,10 +208,10 @@ class CouponUsageService {
    * @returns A Result object containing the created usage record ID on success.
    */
   async recordCouponUsage(
-    usageData: Omit<CouponUsage, "id">
+    usageData: Omit<CouponUsage, "id">,
   ): Promise<Result<string>> {
     try {
-      const usageRef = doc(collection(db, COLLECTION.COUPON_USAGE));
+      const usageRef = doc(collection(db, COLLECTION.COUPON_USAGES));
 
       const newUsage: CouponUsage = {
         ...usageData,
@@ -221,7 +222,7 @@ class CouponUsageService {
       await setDoc(usageRef, newUsage);
 
       return ok(usageRef.id);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponUsageService.recordCouponUsage", error);
       return fail("Failed to record coupon usage", error.code);
     }

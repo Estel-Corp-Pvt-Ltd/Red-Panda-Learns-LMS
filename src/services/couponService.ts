@@ -41,8 +41,9 @@ class CouponService {
 
     const newId = await runTransaction(db, async (transaction) => {
       const gap =
-        Math.floor(Math.random() * (this.COUPON_GAP_MAX - this.COUPON_GAP_MIN + 1)) +
-        this.COUPON_GAP_MIN;
+        Math.floor(
+          Math.random() * (this.COUPON_GAP_MAX - this.COUPON_GAP_MIN + 1),
+        ) + this.COUPON_GAP_MIN;
 
       const counterDoc = await transaction.get(counterRef);
 
@@ -67,7 +68,7 @@ class CouponService {
    * @returns A Result object containing the created coupon ID on success, or an error message on failure.
    */
   async createCoupon(
-    data: Omit<Coupon, "id" | "createdAt" | "updatedAt">
+    data: Omit<Coupon, "id" | "createdAt" | "updatedAt">,
   ): Promise<Result<string>> {
     try {
       const couponId = await this.generateCouponId();
@@ -82,7 +83,7 @@ class CouponService {
       await setDoc(doc(db, COLLECTION.COUPONS, couponId), newCoupon);
 
       return ok(couponId);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.createCoupon", error);
       return fail("Failed to create coupon", error.code);
     }
@@ -97,7 +98,7 @@ class CouponService {
    */
   async updateCoupon(
     couponId: string,
-    updates: Partial<Coupon>
+    updates: Partial<Coupon>,
   ): Promise<Result<void>> {
     try {
       const couponRef = doc(db, COLLECTION.COUPONS, couponId);
@@ -113,7 +114,7 @@ class CouponService {
       });
 
       return ok(undefined);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.updateCoupon", error);
       return fail("Failed to update coupon", error.code);
     }
@@ -135,7 +136,7 @@ class CouponService {
 
       const coupon = docSnap.data() as Coupon;
       return ok(coupon);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.getCouponById", error);
       return fail("Failed to fetch coupon", error.code);
     }
@@ -151,7 +152,7 @@ class CouponService {
     try {
       const q = query(
         collection(db, COLLECTION.COUPONS),
-        where("code", "==", code)
+        where("code", "==", code),
       );
       const snapshot = await getDocs(q);
 
@@ -162,7 +163,7 @@ class CouponService {
       // Assuming codes are unique, take the first doc
       const coupon = snapshot.docs[0].data() as Coupon;
       return ok(coupon);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.getCouponByCode", error);
       return fail("Failed to fetch coupon by code", error.code);
     }
@@ -179,7 +180,7 @@ class CouponService {
       const coupons = snapshot.docs.map((doc) => doc.data() as Coupon);
 
       return ok(coupons);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.getAllCoupons", error);
       return fail("Failed to fetch coupons", error.code);
     }
@@ -192,7 +193,7 @@ class CouponService {
    * @returns A Result object containing an array of filtered Coupon objects.
    */
   async getFilteredCoupons(
-    filters?: { field: keyof Coupon; op: WhereFilterOp; value: any }[]
+    filters?: { field: keyof Coupon; op: WhereFilterOp; value }[],
   ): Promise<Result<Coupon[]>> {
     try {
       const ref = collection(db, COLLECTION.COUPONS);
@@ -201,7 +202,7 @@ class CouponService {
       if (filters && filters.length > 0) {
         const q = query(
           ref,
-          ...filters.map((f) => where(f.field as string, f.op, f.value))
+          ...filters.map((f) => where(f.field as string, f.op, f.value)),
         );
         snapshot = await getDocs(q);
       } else {
@@ -210,7 +211,7 @@ class CouponService {
 
       const coupons = snapshot.docs.map((doc) => doc.data() as Coupon);
       return ok(coupons);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.getFilteredCoupons", error);
       return fail("Failed to filter coupons", error.code);
     }
@@ -227,7 +228,7 @@ class CouponService {
       await deleteDoc(doc(db, COLLECTION.COUPONS, couponId));
 
       return ok(undefined);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.deleteCoupon", error);
       return fail("Failed to delete coupon", error.code);
     }
@@ -241,11 +242,11 @@ class CouponService {
    */
   async createCouponUsage(usage: CouponUsage): Promise<Result<void>> {
     try {
-      const usageRef = doc(db, COLLECTION.COUPON_USAGE, usage.id);
+      const usageRef = doc(db, COLLECTION.COUPON_USAGES, usage.id);
       await setDoc(usageRef, usage);
 
       return ok(undefined);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.createCouponUsage", error);
       return fail("Failed to create coupon usage", error.code);
     }
@@ -260,14 +261,14 @@ class CouponService {
   async getCouponUsagesByUser(userId: string): Promise<Result<CouponUsage[]>> {
     try {
       const q = query(
-        collection(db, COLLECTION.COUPON_USAGE),
-        where("userId", "==", userId)
+        collection(db, COLLECTION.COUPON_USAGES),
+        where("userId", "==", userId),
       );
       const snapshot = await getDocs(q);
       const usages = snapshot.docs.map((doc) => doc.data() as CouponUsage);
 
       return ok(usages);
-    } catch (error: any) {
+    } catch (error) {
       logError("CouponService.getCouponUsagesByUser", error);
       return fail("Failed to fetch coupon usage", error.code);
     }
