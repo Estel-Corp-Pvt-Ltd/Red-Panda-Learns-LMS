@@ -1,8 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
-import { ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '@/constants';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 interface EnrollmentContextType {
   enrollments: Enrollment[];
@@ -40,7 +40,7 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     setLoading(true);
 
     try {
-    
+
       const userEnrollments = await enrollmentService.getUserEnrollments(user.id);
       setEnrollments(userEnrollments);
     } catch (err: any) {
@@ -51,35 +51,33 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     }
   }, [user]);
 
- const isEnrolled = useCallback(
-  (courseId: string): boolean => {
-    console.log("Checking enrollment for courseId:", courseId);
-    console.log("Current enrollments:", enrollments);
+  const isEnrolled = useCallback(
+    (courseId: string): boolean => {
+      console.log("Checking enrollment for courseId:", courseId);
+      console.log("Current enrollments:", enrollments);
 
-    const result = enrollments.some(
-      (enrollment) => {
-        const match = String(enrollment.targetId) === String(courseId);
-        const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
+      const result = enrollments.some(
+        (enrollment) => {
+          const match = String(enrollment.targetId) === String(courseId);
+          const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
 
-        console.log("Checking enrollment:", {
-          targetId: enrollment.targetId,
-          courseId,
-          match,
-          status: enrollment.status,
-          statusOk,
-        });
+          console.log("Checking enrollment:", {
+            targetId: enrollment.targetId,
+            courseId,
+            match,
+            status: enrollment.status,
+            statusOk,
+          });
 
-        return match && statusOk;
-      }
-    );
+          return match && statusOk;
+        }
+      );
 
-    console.log("Final result for", courseId, "=>", result);
-    return result;
-  },
-  [enrollments]
-);
-
-  console.log("THis is isEnrolled hiya",isEnrolled('course_20000955'))
+      console.log("Final result for", courseId, "=>", result);
+      return result;
+    },
+    [enrollments]
+  );
 
   const enrollInCourse = useCallback(
     async (courseId: string, paymentId?: string, paymentProvider?: string) => {

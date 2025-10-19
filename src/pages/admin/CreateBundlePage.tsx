@@ -16,10 +16,11 @@ import { bundleService } from "@/services/bundleService";
 import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
 import { PricingModel } from "@/types/general";
-import { Header } from "@/components/Header"; 
+import { Header } from "@/components/Header";
 import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
-import { authorService } from "@/services/authorService";
+import { instructorService } from "@/services/instructorService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFullName } from "@/utils/name";
 
 export default function CreateBundlePage() {
   const navigate = useNavigate();
@@ -31,30 +32,34 @@ export default function CreateBundlePage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
-  const [authorId, setAuthorId] = useState("");
-  const [authorName, setAuthorName] = useState("");
-  const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [instructorId, setInstructorId] = useState("");
+  const [instructorName, setInstructorName] = useState("");
+  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    const fetchAuthors = async () => {
-      try {
-        const data = await authorService.getAllAuthors();
-        setAuthors(
-          data.map(author => ({
-            name: author.firstName + " " + author.middleName + " " + author.lastName,
-            id: author.id
-          }))
-        );
-      } catch (error) {
-        console.error("Failed to fetch authors:", error);
+    const fetchInstructors = async () => {
+      const result = await instructorService.getAllInstructors();
+
+      if (result.success) {
+        const formattedInstructors = result
+          .data
+          .map((instructor) => ({
+            id: instructor.id,
+            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
+          }));
+
+        setInstructors(formattedInstructors);
+
+      } else {
+        console.error("Failed to fetch instructors:", result.error);
         toast({
           title: "Error",
-          description: "Could not load authors list.",
+          description: "Could not load instructors' list.",
           variant: "destructive",
         });
       }
     };
-    fetchAuthors();
+    fetchInstructors();
   }, [toast]);
 
   const [bundleData, setBundleData] = useState({
@@ -176,8 +181,8 @@ export default function CreateBundlePage() {
         regularPrice,
         salePrice,
         pricingModel: bundleData.pricingModel,
-        authorId,
-        authorName,
+        instructorId: instructorId,
+        instructorName: instructorName,
         categories,
         tags,
         status: bundleData.status,
@@ -235,8 +240,8 @@ export default function CreateBundlePage() {
         regularPrice,
         salePrice,
         pricingModel: bundleData.pricingModel,
-        authorId,
-        authorName,
+        instructorId: instructorId,
+        instructorName: instructorName,
         categories,
         tags,
         status: BUNDLE_STATUS.PUBLISHED,
@@ -275,30 +280,30 @@ export default function CreateBundlePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <Header />
-    <header className="border-b bg-card">
-  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      {/* Back Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => navigate("/admin")}
-        className="w-full sm:w-auto"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Admin
-      </Button>
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Back Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin")}
+              className="w-full sm:w-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
 
-      {/* Title Section */}
-      <div className="flex items-center gap-2">
-        <Package className="h-6 w-6 text-primary" />
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
-          Create Course Bundle
-        </h1>
-      </div>
-    </div>
-  </div>
-</header>
+            {/* Title Section */}
+            <div className="flex items-center gap-2">
+              <Package className="h-6 w-6 text-primary" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                Create Course Bundle
+              </h1>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <main className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -431,22 +436,22 @@ export default function CreateBundlePage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Author</CardTitle>
+                    <CardTitle>Instructor</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Select
-                      value={authorName}
+                      value={instructorName}
                       onValueChange={(val) => {
-                        const selected = authors.find((a) => a.name === val);
-                        setAuthorId(selected?.id || "");
-                        setAuthorName(val);
+                        const selected = instructors.find((a) => a.name === val);
+                        setInstructorId(selected?.id || "");
+                        setInstructorName(val);
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select an author" />
+                        <SelectValue placeholder="Select an instructor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {authors.map((a) => (
+                        {instructors.map((a) => (
                           <SelectItem key={a.id} value={a.name}>
                             {a.name}
                           </SelectItem>
@@ -460,58 +465,58 @@ export default function CreateBundlePage() {
             </Card>
 
             {/* Course Selection */}
-           <Card>
-  <CardHeader>
-    <CardTitle>
-      Select Courses ({selectedCourseIds.length} selected)
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    {courses.length === 0 ? (
-      <div className="text-center py-8">
-        <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">No courses available</h3>
-        <p className="text-muted-foreground mb-4">
-          You need published courses to create a bundle.
-        </p>
-        <Button onClick={() => navigate("/admin/create-course")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create First Course
-        </Button>
-      </div>
-    ) : (
-      <div className="space-y-3">
-        {courses.map((course) => (
-          <div
-            key={course.id}
-            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50"
-          >
-            <div className="flex items-start sm:items-center gap-3 flex-1">
-              <Checkbox
-                checked={selectedCourseIds.includes(course.id!)}
-                onCheckedChange={() => handleCourseToggle(course.id!)}
-              />
-              <div className="flex-1">
-                <h4 className="font-medium">{course.title}</h4>
-                <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
-                  {course.description}
-                </p>
-              </div>
-            </div>
-            <div className="text-left sm:text-right">
-              <p className="font-semibold">
-                {formatCurrency(course.salePrice || course.regularPrice)}
-              </p>
-              <Badge variant="outline" className="text-xs">
-                {course.status}
-              </Badge>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </CardContent>
-</Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Select Courses ({selectedCourseIds.length} selected)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {courses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No courses available</h3>
+                    <p className="text-muted-foreground mb-4">
+                      You need published courses to create a bundle.
+                    </p>
+                    <Button onClick={() => navigate("/admin/create-course")}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create First Course
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {courses.map((course) => (
+                      <div
+                        key={course.id}
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50"
+                      >
+                        <div className="flex items-start sm:items-center gap-3 flex-1">
+                          <Checkbox
+                            checked={selectedCourseIds.includes(course.id!)}
+                            onCheckedChange={() => handleCourseToggle(course.id!)}
+                          />
+                          <div className="flex-1">
+                            <h4 className="font-medium">{course.title}</h4>
+                            <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
+                              {course.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <p className="font-semibold">
+                            {formatCurrency(course.salePrice || course.regularPrice)}
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {course.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Pricing & Preview */}

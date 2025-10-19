@@ -189,14 +189,14 @@ export default function CourseDetailPage() {
                   <Avatar className="h-8 w-8">
                     <AvatarImage
                       src=""
-                      alt={course?.authorName}
+                      alt={course?.instructorName}
                     />
                     <AvatarFallback className="bg-accent text-background">
-                      {course?.authorName?.charAt(0)}
+                      {course?.instructorName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium">
-                    {course?.authorName}
+                    {course?.instructorName}
                   </span>
                 </div>
 

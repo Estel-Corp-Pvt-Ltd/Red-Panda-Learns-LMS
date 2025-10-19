@@ -1,8 +1,12 @@
-import { useState, useMemo } from 'react';
+import { instructorService } from '@/services/instructorService';
 import { Course } from '@/types/course';
 import { CourseFilters } from '@/types/course-filters';
+import { compareDates, parseDuration } from '@/utils/date-time';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from './use-toast';
+import { getFullName } from '@/utils/name';
 
-export function useCourseFilters(courses: Course[] = []) {
+export function useCourseFilters(courses: Course[] = [], enrolledCourseIds: string[]) {
   const [filters, setFilters] = useState<CourseFilters>({
     searchTerm: '',
     priceRange: 'all',
@@ -12,27 +16,38 @@ export function useCourseFilters(courses: Course[] = []) {
     sortBy: 'recent',
   });
 
-  // Extract unique instructors from courses
-  const uniqueInstructors = useMemo(() => {
-    const instructors = courses.map(course => course.authorName);
-    return [...new Set(instructors)].sort();
-  }, [courses]);
+  // TODO: Should have only the required amount of data
+  const [uniqueInstructors, setUniqueInstructors] = useState<string[]>([]);
 
-  // Filter and sort courses based on current filters
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      const result = await instructorService.getAllInstructors();
+
+      if (result.success) {
+        setUniqueInstructors(result.data.map(instructor => getFullName(instructor.firstName, instructor.middleName, instructor.lastName)));
+      } else {
+        toast({
+          title: "Failed to fetch instructors!",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchInstructors();
+  }, []);
+
   const filteredCourses = useMemo(() => {
     let filtered = courses;
 
-    // Search filter
     if (filters.searchTerm) {
       const searchLower = filters.searchTerm.toLowerCase();
       filtered = filtered?.filter(course =>
-        course?.title.toLowerCase().includes(searchLower) ||
-        course?.description.toLowerCase().includes(searchLower) ||
-        course?.authorId.toLowerCase().includes(searchLower)
+        course.title?.toLowerCase().includes(searchLower) ||
+        course.description?.toLowerCase().includes(searchLower) ||
+        course.instructorName?.toLowerCase().includes(searchLower)
       );
     }
 
-    // Price range filter
     if (filters.priceRange !== 'all') {
       filtered = filtered.filter(course => {
         const price = course.regularPrice || 0;
@@ -51,49 +66,43 @@ export function useCourseFilters(courses: Course[] = []) {
       });
     }
 
-    // Instructor filter
     if (filters.instructors.length > 0) {
       filtered = filtered.filter(course =>
-        filters.instructors.includes(course.authorId)
+        filters.instructors.includes(course.instructorName)
       );
     }
 
-    // Enrollment status filter
-    // if (filters.enrollmentStatus !== 'all') {
-    //   filtered = filtered.filter(course => {
-    //     switch (filters.enrollmentStatus) {
-    //       case 'enrolled':
-    //         return course.is_enrolled;
-    //       case 'not-enrolled':
-    //         return !course.is_enrolled;
-    //       default:
-    //         return true;
-    //     }
-    //   });
-    // }
+    if (filters.enrollmentStatus !== 'all') {
+      filtered = filtered.filter(course => {
+        switch (filters.enrollmentStatus) {
+          case 'enrolled':
+            return enrolledCourseIds.includes(course.id);
+          case 'not-enrolled':
+            return !enrolledCourseIds.includes(course.id);
+          default:
+            return true;
+        }
+      });
+    }
 
-    // Duration filter
-    // if (filters.duration !== 'all') {
-    //   filtered = filtered.filter(course => {
-    //     const duration = parseDuration(course.course_duration);
-    //     switch (filters.duration) {
-    //       case 'short':
-    //         return duration < 2;
-    //       case 'medium':
-    //         return duration >= 2 && duration <= 8;
-    //       case 'long':
-    //         return duration > 8;
-    //       default:
-    //         return true;
-    //     }
-    //   });
-    // }
+    if (filters.duration !== 'all') {
+      filtered = filtered.filter(course => {
+        const { hours } = parseDuration(course.durationSeconds);
+        switch (filters.duration) {
+          case 'short':
+            return hours < 2;
+          case 'medium':
+            return hours >= 2 && hours <= 8;
+          case 'long':
+            return hours > 8;
+          default:
+            return true;
+        }
+      });
+    }
 
-    // Sort courses
     const sorted = [...filtered].sort((a, b) => {
       switch (filters.sortBy) {
-        // case 'popular':
-        //   return (b.total_students || 0) - (a.total_students || 0);
         case 'price-low':
           return (a.salePrice || 0) - (b.salePrice || 0);
         case 'price-high':
@@ -102,14 +111,13 @@ export function useCourseFilters(courses: Course[] = []) {
           return a.title.localeCompare(b.title);
         case 'recent':
         default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return compareDates(b.createdAt, a.createdAt);
       }
     });
 
     return sorted;
   }, [courses, filters]);
 
-  // Update individual filter values
   const updateFilter = <K extends keyof CourseFilters>(
     key: K,
     value: CourseFilters[K]
@@ -117,7 +125,6 @@ export function useCourseFilters(courses: Course[] = []) {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setFilters({
       searchTerm: '',
@@ -129,7 +136,6 @@ export function useCourseFilters(courses: Course[] = []) {
     });
   };
 
-  // Get active filter count
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.searchTerm) count++;
@@ -148,18 +154,4 @@ export function useCourseFilters(courses: Course[] = []) {
     clearFilters,
     activeFilterCount,
   };
-}
-
-// Helper function to parse duration string
-function parseDuration(duration: string): number {
-  if (!duration) return 0;
-
-  // Extract hours from duration string (e.g., "2h 30m" -> 2.5)
-  const hourMatch = duration.match(/(\d+)h/);
-  const minuteMatch = duration.match(/(\d+)m/);
-
-  const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
-  const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 0;
-
-  return hours + minutes / 60;
-}
+};

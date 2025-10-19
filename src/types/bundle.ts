@@ -28,8 +28,8 @@ export interface Bundle {
   pricingModel: PricingModel;
   categories: string[];
   tags: string[];
-  authorId: string;
-  authorName: string;
+  instructorId: string;
+  instructorName: string;
   status: BundleStatus;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;

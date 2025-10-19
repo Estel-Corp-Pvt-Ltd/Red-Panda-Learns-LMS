@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { BookOpen, CheckCircle, Clock, Grid, Layers, List, TrendingUp, Users } from "lucide-react";
+import { useState } from "react";
 
 import { Header } from "@/components/Header";
 import { BundleCard } from "@/components/bundle/BundleCard";
-import { CourseCard } from "@/components/course/CourseCard";
-import { CourseFilters } from "@/components/course/CourseFilters";
-import { CourseListView } from "@/components/course/CourseListView";
+import CourseCard from "@/components/course/CourseCard";
+import CourseFilters from "@/components/course/CourseFilters";
+import CourseListView from "@/components/course/CourseListView";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,15 +19,17 @@ import {
   SelectValue
 } from "@/components/ui/select";
 
+import { useCourseFilters } from "@/hooks/use-course-filters";
 import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
 import { useCohortsQuery, useCoursesQuery } from "@/hooks/useCaching";
-import { useCourseFilters } from "@/hooks/useCourseFilters";
 
 import { cn } from "@/lib/utils";
 
 import { SORT_OPTIONS } from "@/types/course-filters";
+import { useEnrollment } from "@/contexts/EnrollmentContext";
 
-export default function CoursesPage() {
+const CoursesPage = () => {
+  const { enrollments } = useEnrollment();
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -39,21 +41,20 @@ export default function CoursesPage() {
     refetch
   } = useCoursesQuery();
 
-  // Fetch published bundles
   const {
     data: bundles,
     isLoading: bundlesLoading,
     isError: bundlesError
   } = usePublishedBundlesQuery();
 
-  // Fetch active cohorts
   const {
     data: cohorts,
     isLoading: cohortsLoading,
     isError: cohortsError
   } = useCohortsQuery();
 
-  // Use course filters hook
+  const enrolledCourseIds = enrollments.map(enrollment => enrollment.targetId);
+
   const {
     filters,
     filteredCourses,
@@ -61,12 +62,11 @@ export default function CoursesPage() {
     updateFilter,
     clearFilters,
     activeFilterCount,
-  } = useCourseFilters(courses || []);
+  } = useCourseFilters(courses || [], enrolledCourseIds);
 
   const stats = {
     total: courses?.length || 0,
-    // enrolled: courses?.filter(c => c.is_enrolled).length || 0,
-    completed: 0, // This would come from user progress data
+    completed: 0,
     bundles: bundles?.length || 0,
     cohorts: cohorts?.length || 0,
     filtered: filteredCourses.length,
@@ -76,13 +76,11 @@ export default function CoursesPage() {
     window.location.href = `/bundle/${bundleId}`;
   };
 
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="container px-4 py-8">
-        {/* Hero Section */}
         {/* Hero Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-hero p-8 md:p-12 mb-8">
           <div className="relative z-10 max-w-2xl">
@@ -105,7 +103,7 @@ export default function CoursesPage() {
                 className="text-sm bg-background/80 text-foreground border border-border"
               >
                 <Clock className="h-3 w-3 mr-1" />
-                New Content Weekly
+                New Content Frequently
               </Badge>
               <Badge
                 variant="secondary"
@@ -169,7 +167,6 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {/* Enhanced Filters and Search */}
         <div className="bg-card rounded-xl p-6 border shadow-sm mb-8">
           <CourseFilters
             filters={filters}
@@ -342,7 +339,10 @@ export default function CoursesPage() {
                   ))}
                 </div>
               ) : (
-                <CourseListView courses={filteredCourses} />
+                <CourseListView
+                  courses={filteredCourses}
+                  enrolledCourseIds={enrolledCourseIds}
+                />
               )}
             </div>
           </div>
@@ -350,4 +350,6 @@ export default function CoursesPage() {
       </main>
     </div>
   );
-}
+};
+
+export default CoursesPage;

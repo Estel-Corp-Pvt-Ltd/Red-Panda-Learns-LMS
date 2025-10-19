@@ -11,7 +11,7 @@ import { useBundleQuery, useBundleCoursesQuery } from '@/hooks/useBundleApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { ArrowLeft, BookOpen, Clock, Trophy, PlayCircle, CheckCircle, Star } from 'lucide-react';
-import { CourseCard } from '@/components/course/CourseCard';
+import CourseCard from '@/components/course/CourseCard';
 
 export default function BundleDashboardPage() {
   const { bundleId } = useParams<{ bundleId: string }>();

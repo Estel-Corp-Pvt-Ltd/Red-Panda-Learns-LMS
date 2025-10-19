@@ -57,29 +57,9 @@ class CourseService {
  *               (like `tags`, and `topics`) and will be defaulted if not provided.
  * @returns A promise that resolves to the generated course ID if creation is successful.
  * @throws An error if the course could not be created in Firestore.
- *
- * @example
- * ```ts
- * const courseId = await courseService.createCourse({
- *   title: 'Intro to Machine Learning',
- *   url: 'intro-to-ml',
- *   description: 'A beginner-friendly course on ML concepts.',
- *   regularPrice: 100,
- *   salePrice: 80,
- *   pricingModel: 'one-time',
- *   tags: ['ML', 'AI', 'Beginner'],
- *   category: 'Technology',
- *   authorId: 'author123',
- *   status: 'published',
- *   topics: ['Regression', 'Classification'],
- *   isEnrollmentPaused: false,
- *   certificateTemplateId: 'template456'
- * });
- * console.log(courseId); // Outputs the generated course ID
- * ```
  */
 
-  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts'>): Promise<string> {
+  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds'>): Promise<string> {
     try {
       const courseId = await this.generateCourseId();
 
@@ -92,11 +72,9 @@ class CourseService {
         salePrice: 0,
         pricingModel: PRICING_MODEL.PAID,
         tags: [],
-        // categories: [],
-
-        categoryIds: data.categoryIds || [],
-        targetAudienceIds: data.targetAudienceIds || [],
-        authorId: data.authorId,
+        categoryIds: [],
+        targetAudienceIds: [],
+        instructorName: data.instructorName,
         status: COURSE_STATUS.DRAFT,
         certificateTemplateId: data.certificateTemplateId || '',
         topics: [],
@@ -166,8 +144,8 @@ class CourseService {
       if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.status) updateData.status = updates.status;
-      if (updates.authorId) updateData.authorId = updates.authorId;
-      if (updates.authorName) updateData.authorName = updates.authorName;
+      if (updates.instructorName) updateData.instructorName = updates.instructorName;
+      if (updates.instructorId) updateData.instructorId = updates.instructorId;
       if (updates.pricingModel) updateData.pricingModel = updates.pricingModel;
       if (updates.topics) updateData.topics = updates.topics;
       if (updates.isEnrollmentPaused !== undefined) updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
