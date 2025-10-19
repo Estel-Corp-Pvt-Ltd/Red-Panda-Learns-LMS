@@ -1,7 +1,6 @@
-import { FieldValue,Timestamp } from "firebase-admin/firestore";
-import { OrderStatus,Currency } from "./general";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { OrderStatus, Currency } from "./general";
 import { AddressType } from "./general";
-
 
 export interface Address {
   fullName: string;
@@ -13,22 +12,22 @@ export interface Address {
   country: string;
   phone?: string;
   landmark?: string;
-  type: AddressType; 
+  type: AddressType;
 }
 
 export interface Order {
-   orderId: string;                        
-  userId: string;                        
-  courseIds: string[];                    
-  bundleId?: string | null;               
-  status: OrderStatus;                   
-  amount: number;                        
-  createdAt: Timestamp | FieldValue;   
-  updatedAt : Timestamp | FieldValue ;
-  completedAt?: Timestamp | FieldValue;   
-  transactionId?: string | null;          
-  currency: Currency;         
-  metadata?: Record<string, any>;                      
-  billingAddress:Address;
-  shippingAddress?:Address;
+  orderId: string;
+  userId: string;
+  courseIds: string[];
+  bundleIds?: string[];
+  status: OrderStatus;
+  amount: number;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+  completedAt?: Timestamp | FieldValue;
+  transactionId?: string | null;
+  currency: Currency;
+  metadata?: Record<string, any>;
+  billingAddress: Address;
+  shippingAddress?: Address;
 }
