@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { enrollmentService } from '@/services/dummyEnrollmentService';
+import { enrollmentService } from '@/services/enrollmentService';
 import { useCourseQuery } from '@/hooks/useCaching';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { collection, query, where, getDocs } from 'firebase/firestore';

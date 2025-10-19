@@ -1,21 +1,21 @@
 import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
   collection,
-  query,
-  where,
-  getDocs,
   deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
   runTransaction,
-  WhereFilterOp,
-  serverTimestamp
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+  WhereFilterOp
 } from 'firebase/firestore';
 
+import { COLLECTION, COURSE_STATUS, PRICING_MODEL } from '@/constants';
 import { db } from '@/firebaseConfig';
 import { Course } from '@/types/course';
-import { COLLECTION, COURSE_STATUS, PRICING_MODEL } from '@/constants';
 
 class CourseService {
   /**

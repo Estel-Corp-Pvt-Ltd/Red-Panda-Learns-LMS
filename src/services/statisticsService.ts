@@ -1,8 +1,11 @@
-import { collection, doc, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where
+} from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { COURSE_STATUS, USER_STATUS } from "@/constants";
-import { Course } from "@/types/course";
-import { User } from "@/types/user";
+import { USER_STATUS } from "@/constants";
 
 /**
  * Type for the dashboard statistics response.

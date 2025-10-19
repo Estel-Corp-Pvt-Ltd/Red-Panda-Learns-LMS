@@ -1,7 +1,6 @@
 import { storage } from "@/firebaseConfig";
 import { ref, uploadBytesResumable, UploadTask } from "firebase/storage";
 
-
 class ImageService {
   uploadImage(uploadPath: string, file: File): UploadTask | null {
     try {

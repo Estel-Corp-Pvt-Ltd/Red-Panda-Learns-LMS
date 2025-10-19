@@ -18,7 +18,7 @@ import {
   useCourseQuery,
 } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
-import { enrollmentService } from "@/services/dummyEnrollmentService";
+import { enrollmentService } from "@/services/enrollmentService";
 import { Topic } from "@/types/course";
 import { formatDate } from "@/utils/date-time";
 import {

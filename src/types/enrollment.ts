@@ -1,6 +1,6 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 
-import { LearningProgress } from "./learningProgress";
+import { LearningProgress } from "./learning-progress";
 import {
     Currency,
     EnrolledProgramType,
@@ -36,4 +36,4 @@ export interface Enrollment {
         provider: PaymentProvider;
         paidAt?: Timestamp | FieldValue;
     };
-}
+};
