@@ -12,7 +12,7 @@ class FileService {
       return ok(uploadTask);
     } catch (error) {
       logError("Error starting upload:", error);
-      return fail(null);
+      return fail("Error starting upload");
     }
   }
 
@@ -24,7 +24,7 @@ class FileService {
       return ok(downloadUrl);
     } catch (error) {
       logError('Error uploading file:', error);
-      return fail(null);
+      return fail("Error uploading file");
     }
   }
 }

@@ -79,8 +79,8 @@ class AssignmentService {
 
       return ok(assignmentId);
     } catch (error) {
-      console.error('AssignmentService - Error creating assignment:', error);
-      return fail(null);
+      logError('AssignmentService - Error creating assignment:', error);
+      return fail("Error creating assignment");
     }
   }
 
@@ -132,8 +132,8 @@ class AssignmentService {
         updatedAt: data.updatedAt?.toDate(),
       } as Assignment);
     } catch (error) {
-      console.error('AssignmentService - Error fetching assignment:', error);
-      return fail(null);
+      logError('AssignmentService - Error fetching assignment:', error);
+      return fail("Error fetching assignment");
     }
   }
 
@@ -280,7 +280,7 @@ class AssignmentService {
 
       if (!submissionDoc.exists()) {
         logError('AssignmentService - Submission not found:', submissionId);
-        return fail(null);
+        return fail("Submission not found");
       }
 
       // Prepare update data
@@ -294,7 +294,7 @@ class AssignmentService {
       return ok(null);
     } catch (error) {
       logError('AssignmentService - Error updating submission:', error);
-      return fail(null);
+      return fail("Error updating submission");
     }
   }
 
@@ -309,7 +309,7 @@ class AssignmentService {
       const submissionDoc = await getDoc(submissionRef);
 
       if (!submissionDoc.exists()) {
-        return fail(null);
+        return fail("Submission not found");
       }
 
       await deleteDoc(submissionRef);
@@ -317,7 +317,7 @@ class AssignmentService {
       return ok(null);
     } catch (error) {
       console.error('AssignmentService - Error deleting submission:', error);
-      return fail(null);
+      return fail("Error deleting submission");
     }
   }
 
@@ -356,8 +356,8 @@ class AssignmentService {
         createdAt: data.createdAt?.toDate(),
       });
     } catch (error) {
-      console.error('AssignmentService - Error fetching submission by student and assignment:', error);
-      return fail(null);
+      logError('AssignmentService - Error fetching submission by student and assignment:', error);
+      return fail("Error fetching submission");
     }
   }
 
@@ -369,8 +369,8 @@ class AssignmentService {
       const submissionDoc = await getDoc(doc(db, COLLECTION.ASSIGNMENT_SUBMISSIONS, submissionId));
 
       if (!submissionDoc.exists()) {
-        console.log('AssignmentService - Submission not found:', submissionId);
-        return fail(null);
+        logError('AssignmentService - Submission not found:', submissionId);
+        return fail("Submission not found");
       }
 
       const data = submissionDoc.data();
@@ -387,7 +387,7 @@ class AssignmentService {
       });
     } catch (error) {
       logError('AssignmentService - Error fetching submission:', error);
-      return fail(null);
+      return fail("Error fetching submission");
     }
   }
 
