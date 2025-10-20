@@ -5,16 +5,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Course } from "@/types/course";
-import { Lesson } from "@/types/lesson";
-import { LEARNING_UNIT } from "@/constants";
-import { LearningUnit } from "@/types/general";
+import { Course, TopicItem } from "@/types/course";
 
 interface CourseNavigatorProps {
   course: Course;
-  currentLesson: Lesson;
+  currentLesson: TopicItem | null;
   className?: string;
-  onLessonClick: (lesson: { id: string; type: LearningUnit }) => void;
+  onLessonClick: (lesson: TopicItem) => void;
 }
 
 export function CourseNavigator({
@@ -83,7 +80,8 @@ export function CourseNavigator({
             )}
             onClick={() => onLessonClick({
               id: lessonItem.id,
-              type: LEARNING_UNIT.LESSON
+              type: lessonItem.type,
+              title: lessonItem.title
             })}
           >
             <div className="flex items-center gap-3">

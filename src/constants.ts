@@ -5,6 +5,11 @@ export const USER_ROLE = {
     ADMIN: 'ADMIN'
 } as const;
 
+export const LEARNING_CONTENT = {
+    LESSON: "LESSON",
+    ASSIGNMENT: "ASSIGNMENT",
+} as const;
+
 export const LESSON_TYPE = {
     SLIDE_DECK: 'SLIDE DECK',
     VIDEO_LECTURE: 'VIDEO LECTURE',
@@ -108,6 +113,7 @@ export const CURRENCY = {
 } as const;
 
 export const LEARNING_UNIT = {
+    ASSIGNMENT: "ASSIGNMENT",
     LESSON: "LESSON",
     TOPIC: "TOPIC",
     COHORT: "COHORT"
@@ -321,6 +327,8 @@ export const COUPON_STATUS = {
 } as const;
 
 export const COLLECTION = {
+    ASSIGNMENTS: "Assignments",
+    ASSIGNMENT_SUBMISSIONS: 'AssignmentSubmissions',
     COURSES: 'Courses',
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',

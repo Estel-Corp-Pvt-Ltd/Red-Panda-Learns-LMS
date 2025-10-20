@@ -30,10 +30,12 @@ import CreateCouponPage from "./pages/admin/CreateCouponPage";
 import CreateCoursePage from "./pages/admin/CreateCoursePage";
 import CreateLessonPage from "./pages/admin/CreateLessonPage";
 import CurriculumBuilderPage from "./pages/admin/CurriculumBuilderPage";
+import EditAssignmentPage from "./pages/admin/EditAssignmentPage";
 import EditBundlePage from "./pages/admin/EditBundle";
 import EditCouponPage from "./pages/admin/EditCouponPage";
 import EditLessonPage from "./pages/admin/EditLesson";
 import EditUserPage from "./pages/admin/EditUser";
+import SubmissionDetailPage from "./pages/admin/SubmissionDetailPage";
 import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -121,6 +123,22 @@ const App = () => (
                       element={
                         <AuthGuard requireAdmin>
                           <EditLessonPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/admin/edit-assignment/:assignmentId"
+                      element={
+                        <AuthGuard requireAdmin>
+                          <EditAssignmentPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/admin/assignments/:assignmentId/submissions"
+                      element={
+                        <AuthGuard requireAdmin>
+                          <SubmissionDetailPage />
                         </AuthGuard>
                       }
                     />

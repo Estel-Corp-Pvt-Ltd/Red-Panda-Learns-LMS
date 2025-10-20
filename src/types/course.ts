@@ -1,8 +1,10 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import { CourseStatus, PricingModel } from "./general";
+import { LearningContentType } from "./lesson";
 
 export interface TopicItem {
   id: string;
+  type: LearningContentType;
   title: string;
 };
 

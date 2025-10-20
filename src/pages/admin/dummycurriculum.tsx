@@ -73,7 +73,7 @@ import { AttributeType } from "@/types/general";
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
 type DraggableItemType = LearningUnit;
 import { serverTimestamp } from "firebase/firestore";
-import { imageService } from "@/services/imageService";
+import { imageService } from "@/services/fileService";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
 
