@@ -46,6 +46,7 @@ const AssignmentSubmissionsPage = () => {
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [submissionToDelete, setSubmissionToDelete] = useState<AssignmentSubmission | null>(null);
 
   useEffect(() => {
     assignmentId && loadAssignmentAndSubmissions();
@@ -132,6 +133,23 @@ const AssignmentSubmissionsPage = () => {
       setSaving(false);
     }
   };
+
+  const confirmDeleteSubmission = async () => {
+    if (!submissionToDelete) return;
+
+    try {
+      setDeleting(submissionToDelete.id!);
+      await assignmentService.deleteSubmission(submissionToDelete.id!);
+      setSubmissions(prev => prev.filter(sub => sub.id !== submissionToDelete.id));
+      setSubmissionToDelete(null); // Close modal
+    } catch (error) {
+      console.error('Error deleting submission:', error);
+      alert('Failed to delete submission');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
 
   const handleDeleteSubmission = async (submissionId: string) => {
     if (!confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
@@ -339,7 +357,7 @@ const AssignmentSubmissionsPage = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDeleteSubmission(submission.id!)}
+                              onClick={() => setSubmissionToDelete(submission)}
                               disabled={deleting === submission.id}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900"
                             >
@@ -413,6 +431,29 @@ const AssignmentSubmissionsPage = () => {
           </DialogContent>
         </Dialog>
       </div>
+      <Dialog open={!!submissionToDelete} onOpenChange={(open) => !open && setSubmissionToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the submission from <strong>{submissionToDelete?.studentName}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmissionToDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteSubmission}
+              disabled={deleting === submissionToDelete?.id}
+            >
+              {deleting === submissionToDelete?.id ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -328,7 +328,7 @@ export const COUPON_STATUS = {
 
 export const COLLECTION = {
     ASSIGNMENTS: "Assignments",
-    ASSIGNMENT_SUBMISSIONS: 'Submissions',
+    ASSIGNMENT_SUBMISSIONS: 'AssignmentSubmissions',
     COURSES: 'Courses',
     BUNDLES: 'Bundles',
     COHORTS: 'Cohorts',

@@ -116,7 +116,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         <p>Assignment not found.</p>
         <button
           onClick={() => navigate(-1)}
-          className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg"
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
         >
           Go Back
         </button>
@@ -262,7 +262,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
         <label
           htmlFor="submission-files"
-          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 cursor-pointer mb-4"
+          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer mb-4"
         >
           <Upload className="h-4 w-4 mr-2" /> Upload Files
         </label>
