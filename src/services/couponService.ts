@@ -113,7 +113,7 @@ class CouponService {
         updatedAt: Timestamp.now(),
       });
 
-      return ok(undefined);
+      return ok(null);
     } catch (error) {
       logError("CouponService.updateCoupon", error);
       return fail("Failed to update coupon", error.code);
@@ -227,7 +227,7 @@ class CouponService {
     try {
       await deleteDoc(doc(db, COLLECTION.COUPONS, couponId));
 
-      return ok(undefined);
+      return ok(null);
     } catch (error) {
       logError("CouponService.deleteCoupon", error);
       return fail("Failed to delete coupon", error.code);
@@ -245,7 +245,7 @@ class CouponService {
       const usageRef = doc(db, COLLECTION.COUPON_USAGES, usage.id);
       await setDoc(usageRef, usage);
 
-      return ok(undefined);
+      return ok(null);
     } catch (error) {
       logError("CouponService.createCouponUsage", error);
       return fail("Failed to create coupon usage", error.code);

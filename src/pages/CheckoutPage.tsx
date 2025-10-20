@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -28,12 +28,11 @@ import { enrollmentService } from "@/services/dummyEnrollmentService";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
 import { Currency, PaymentProvider } from "@/types/general";
-import { CURRENCY, PAYMENT_PROVIDER } from "@/constants";
+import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
 import { Coupon } from "@/types/coupon";
 import { Timestamp } from "firebase/firestore";
-import { set } from "zod";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: ["INR", "USD", "EUR", "GBP"],
@@ -71,7 +70,6 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const { refreshEnrollments, isEnrolled } = useEnrollment();
   const { toast } = useToast();
-  // Example: CheckoutPage.tsx
 
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
@@ -83,7 +81,7 @@ export default function CheckoutPage() {
     country: "",
     phone: "",
     landmark: "",
-    type: "BILLING",
+    type: ADDRESS_TYPE.BILLING,
   });
 
   const [shippingAddress, setShippingAddress] = useState<Address>({
@@ -96,7 +94,7 @@ export default function CheckoutPage() {
     country: "",
     phone: "",
     landmark: "",
-    type: "SHIPPING",
+    type: ADDRESS_TYPE.SHIPPING,
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
@@ -207,19 +205,19 @@ export default function CheckoutPage() {
     return Math.max(0, Math.min(originalPrice, (originalPrice * pct) / 100));
   };
 
-  const clearCoupon = () => {
+  const clearCoupon = useCallback(() => {
     setAppliedCoupon(null);
     setIsCouponValid(false);
     setDiscountAmount(0);
     setCouponMessage("");
-  };
+  }, []);
 
   // Auto-clear when input becomes empty (immediately updates price)
   useEffect(() => {
     if (promoCode.trim() === "" && (appliedCoupon || discountAmount > 0)) {
       clearCoupon();
     }
-  }, [promoCode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [promoCode, appliedCoupon, discountAmount, clearCoupon]);
 
   const handleCoupon = async () => {
     setIsValidatingCoupon(true);
@@ -235,7 +233,7 @@ export default function CheckoutPage() {
 
       const couponResult = await couponService.getCouponByCode(code);
 
-      if (!couponResult.success || !couponResult.data) {
+      if (!couponResult.success) {
         clearCoupon();
         setCouponMessage("Invalid promo code");
         return;
@@ -243,8 +241,6 @@ export default function CheckoutPage() {
 
       const coupon = couponResult.data;
       setAppliedCoupon(coupon);
-
-      setAppliedCoupon(coupon); // set for later reference (not required for calc)
 
       const applicabilityResult = await couponUsageService.isCouponApplicable(
         user!.id,
