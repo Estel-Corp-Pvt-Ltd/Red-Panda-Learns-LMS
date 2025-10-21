@@ -1,24 +1,24 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Package, Plus, Trash2, DollarSign, Info, X, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
+import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
-import { courseService } from "@/services/courseService";
-import { bundleService } from "@/services/bundleService";
 import { useBundlePricingQuery, useBundleQuery, useUpdateBundleMutation } from "@/hooks/useBundleApi";
+import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
 import { Course } from "@/types/course";
 import { PricingModel } from "@/types/general";
-import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
-import { authorService } from "@/services/authorService";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFullName } from "@/utils/name";
+import { ArrowLeft, DollarSign, Info, Loader2, Package, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function EditBundlePage() {
   const navigate = useNavigate();
@@ -32,9 +32,9 @@ export default function EditBundlePage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
-  const [authorId, setAuthorId] = useState("");
-  const [authorName, setAuthorName] = useState("");
-  const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [instructorId, setInstructorId] = useState("");
+  const [instructorName, setInstructorName] = useState("");
+  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
 
   // Fetch bundle data
   const { data: bundleData, isLoading: bundleLoading, error: bundleError } = useBundleQuery(bundleId!);
@@ -79,27 +79,30 @@ export default function EditBundlePage() {
     }
   }, [bundleError, navigate, toast]);
 
-  // Load authors
   useEffect(() => {
-    const fetchAuthors = async () => {
-      try {
-        const data = await authorService.getAllAuthors();
-        setAuthors(
-          data.map(author => ({
-            name: author.firstName + " " + author.middleName + " " + author.lastName,
-            id: author.id
-          }))
-        );
-      } catch (error) {
-        console.error("Failed to fetch authors:", error);
+    const fetchInstructors = async () => {
+      const result = await instructorService.getAllInstructors();
+
+      if (result.success) {
+        const formattedInstructors = result
+          .data
+          .map((instructor) => ({
+            id: instructor.id,
+            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
+          }));
+
+        setInstructors(formattedInstructors);
+
+      } else {
+        console.error("Failed to fetch instructors:", result.error);
         toast({
           title: "Error",
-          description: "Could not load authors list.",
+          description: "Could not load instructors' list.",
           variant: "destructive",
         });
       }
     };
-    fetchAuthors();
+    fetchInstructors();
   }, [toast]);
 
   // Load courses and bundle data
@@ -128,7 +131,7 @@ export default function EditBundlePage() {
         regularPrice: bundleData.regularPrice ? bundleData.regularPrice.toString() : "",
         salePrice: bundleData.salePrice ? bundleData.salePrice.toString() : "",
         pricingModel: bundleData.pricingModel || PRICING_MODEL.PAID,
-        status:  bundleData.status
+        status: bundleData.status
       });
 
       // Set selected courses
@@ -136,9 +139,8 @@ export default function EditBundlePage() {
         setSelectedCourses(bundleData.courses.map(course => course.id));
       }
 
-      // Set author
-      setAuthorId(bundleData.authorId || "");
-      setAuthorName(bundleData.authorName || "");
+      setInstructorId(bundleData.instructorId || "");
+      setInstructorName(bundleData.instructorName || "");
 
       // Set categories and tags
       setCategories(bundleData.categories || []);
@@ -229,46 +231,46 @@ export default function EditBundlePage() {
         ? parseFloat(formData.salePrice)
         : 0;
 
-    updateBundle(
-    {
-      bundleId: bundleId!,
-      updatedData: {
-        title: formData.title,
-        description: formData.description,
-        courses: courses
-          .filter(course => selectedCourseIds.includes(course.id!))
-          .map(course => ({ id: course.id, title: course.title })),
-        regularPrice,
-        salePrice,
-        pricingModel: formData.pricingModel,
-        authorId,
-        authorName,
-        categories,
-        tags,
-        status: formData.status,
-      },
-    },
-    {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Bundle updated successfully!",
-        });
-        navigate("/admin");
-      },
-      onError: (error) => {
-        console.error("Error updating bundle:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update bundle. Please try again.",
-          variant: "destructive",
-        });
-      },
-      onSettled: () => {
-        setLoading(false);
-      },
-    }
-  );
+      updateBundle(
+        {
+          bundleId: bundleId!,
+          updatedData: {
+            title: formData.title,
+            description: formData.description,
+            courses: courses
+              .filter(course => selectedCourseIds.includes(course.id!))
+              .map(course => ({ id: course.id, title: course.title })),
+            regularPrice,
+            salePrice,
+            pricingModel: formData.pricingModel,
+            instructorId,
+            instructorName,
+            categories,
+            tags,
+            status: formData.status,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Bundle updated successfully!",
+            });
+            navigate("/admin");
+          },
+          onError: (error) => {
+            console.error("Error updating bundle:", error);
+            toast({
+              title: "Error",
+              description: "Failed to update bundle. Please try again.",
+              variant: "destructive",
+            });
+          },
+          onSettled: () => {
+            setLoading(false);
+          },
+        }
+      );
     } catch (error) {
       console.error("Error updating bundle:", error);
       toast({
@@ -305,46 +307,46 @@ export default function EditBundlePage() {
       const salePrice = formData.salePrice
         ? parseFloat(formData.salePrice)
         : 0;
-updateBundle(
-    {
-      bundleId: bundleId!,
-      updatedData: {
-        title: formData.title,
-        description: formData.description,
-        courses: courses
-          .filter(course => selectedCourseIds.includes(course.id!))
-          .map(course => ({ id: course.id, title: course.title })),
-        regularPrice,
-        salePrice,
-        pricingModel: formData.pricingModel,
-        authorId,
-        authorName,
-        categories,
-        tags,
-        status: formData.status,
-      },
-    },
-    {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Bundle updated successfully!",
-        });
-        navigate("/admin");
-      },
-      onError: (error) => {
-        console.error("Error updating bundle:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update bundle. Please try again.",
-          variant: "destructive",
-        });
-      },
-      onSettled: () => {
-        setLoading(false);
-      },
-    }
-  );
+      updateBundle(
+        {
+          bundleId: bundleId!,
+          updatedData: {
+            title: formData.title,
+            description: formData.description,
+            courses: courses
+              .filter(course => selectedCourseIds.includes(course.id!))
+              .map(course => ({ id: course.id, title: course.title })),
+            regularPrice,
+            salePrice,
+            pricingModel: formData.pricingModel,
+            instructorId,
+            instructorName,
+            categories,
+            tags,
+            status: formData.status,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Bundle updated successfully!",
+            });
+            navigate("/admin");
+          },
+          onError: (error) => {
+            console.error("Error updating bundle:", error);
+            toast({
+              title: "Error",
+              description: "Failed to update bundle. Please try again.",
+              variant: "destructive",
+            });
+          },
+          onSettled: () => {
+            setLoading(false);
+          },
+        }
+      );
 
     } catch (error) {
       console.error("Error updating and publishing bundle:", error);
@@ -536,22 +538,22 @@ updateBundle(
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Author</CardTitle>
+                    <CardTitle>Instructor</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Select
-                      value={authorName}
+                      value={instructorName}
                       onValueChange={(val) => {
-                        const selected = authors.find((a) => a.name === val);
-                        setAuthorId(selected?.id || "");
-                        setAuthorName(val);
+                        const selected = instructors.find((a) => a.name === val);
+                        setInstructorId(selected?.id || "");
+                        setInstructorName(val);
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select an author" />
+                        <SelectValue placeholder="Select an instructor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {authors.map((a) => (
+                        {instructors.map((a) => (
                           <SelectItem key={a.id} value={a.name}>
                             {a.name}
                           </SelectItem>

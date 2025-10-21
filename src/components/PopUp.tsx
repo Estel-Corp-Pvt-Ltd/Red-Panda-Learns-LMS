@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { POPUP_COURSE_TYPE } from "@/constants";
-import { PopUp } from "@/types/PopUp";
+import { PopUp } from "@/types/pop-up";
 
 const PopUpElement = ({
     icon,
@@ -54,19 +54,19 @@ const PopUpElement = ({
                                     }
                                     <h3 className="font-semibold text-gray-900 w-fit">{title}</h3>
                                     {type === POPUP_COURSE_TYPE.LIVE && (
-                                        <div className="flex items-center bg-red-300 text-white text-sm border-red-500 border-2 px-1 rounded-md">
+                                        <div className="flex items-center bg-red-300 text-white text-sm border-red-500 border-2 px-1 rounded-md gap-1">
                                             <span>
                                                 {type}
                                             </span>
-                                            <span className="ml-1 mt-1 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                                            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
                                         </div>
                                     )}
                                     {type === POPUP_COURSE_TYPE.SELF_PACED && (
-                                        <div className="flex items-center bg-blue-300 text-white text-xs border-blue-500 border-2 px-1 rounded-md">
+                                        <div className="flex items-center bg-blue-300 text-white text-sm border-blue-500 border-2 px-1 rounded-md gap-1">
                                             <span>
                                                 {POPUP_COURSE_TYPE.SELF_PACED.split('-')[0]}
                                             </span>
-                                            <span className="ml-1 mt-1 h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
                                         </div>
                                     )}
                                 </div>

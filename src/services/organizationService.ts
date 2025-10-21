@@ -10,8 +10,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { COLLECTION, ORGANIZATION } from "@/constants";
-import { OrganizationType } from "@/types/general";
+import { COLLECTION } from "@/constants";
 import { Organization } from "@/types/organization";
 
 class OrganizationService {
@@ -66,7 +65,7 @@ class OrganizationService {
   /** Fetch all organizations */
   async getAllOrganizations(): Promise<Organization[]> {
     try {
-      const querySnapshot = await getDocs(collection(db, COLLECTION.ORGANIZATIONS));  
+      const querySnapshot = await getDocs(collection(db, COLLECTION.ORGANIZATIONS));
       const orgs = querySnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         return {

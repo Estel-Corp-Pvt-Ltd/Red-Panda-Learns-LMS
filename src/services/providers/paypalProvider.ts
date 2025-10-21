@@ -1,6 +1,6 @@
 import { Course } from "@/types/course";
 import { transactionService } from "../transactionService";
-import { enrollmentService } from "@/services/dummyEnrollmentService";
+import { enrollmentService } from "@/services/enrollmentService";
 import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
 import { PaymentDetails } from "@/types/transaction";
 import { Currency } from "@/types/general";

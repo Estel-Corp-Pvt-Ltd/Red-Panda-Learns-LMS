@@ -4,7 +4,7 @@ import { transactionService } from "./transactionService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { paypalProvider } from "./providers/paypalProvider";
 import { Currency, PaymentProvider } from "@/types/general";
-import { enrollmentService } from "./dummyEnrollmentService";
+import { enrollmentService } from "./enrollmentService";
 import {
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,

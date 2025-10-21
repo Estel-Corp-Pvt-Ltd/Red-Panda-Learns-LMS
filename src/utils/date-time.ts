@@ -76,3 +76,55 @@ export const formatTime = (
     minute: "2-digit",
   }).format(date);
 };
+
+/**
+ * Parses a duration in seconds into hours and minutes.
+ * @param durationInSeconds The total duration in seconds.
+ * @returns An object containing the calculated hours and minutes.
+ */
+export const parseDuration = (durationInSeconds: number): { hours: number; minutes: number } => {
+  if (typeof durationInSeconds !== 'number' || durationInSeconds < 0) {
+    return { hours: 0, minutes: 0 };
+  }
+
+  const totalMinutes = Math.floor(durationInSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return { hours, minutes };
+};
+
+type DateInput = Date | Timestamp | FieldValue;
+
+/**
+ * Compares two dates (either native Date objects or Firebase Timestamps) 
+ * to determine which one is chronologically greater (more recent).
+ * @param dateA The first date to compare.
+ * @param dateB The second date to compare.
+ * @returns 1 if dateA is greater (more recent), -1 if dateB is greater, 0 if they are equal.
+ */
+export function compareDates(dateA: DateInput, dateB: DateInput): 1 | -1 | 0 {
+  // Helper function to get the numeric timestamp in milliseconds
+  const getMs = (date: DateInput): number => {
+    if (date instanceof Date) {
+      // For native JavaScript Date objects
+      return date.getTime();
+    } else if (date instanceof Timestamp) {
+      // For Firebase Timestamp objects
+      return date.toMillis();
+    }
+    // Fallback for potentially null/undefined or unexpected inputs
+    return 0;
+  };
+
+  const msA = getMs(dateA);
+  const msB = getMs(dateB);
+
+  if (msA > msB) {
+    return 1; // dateA is more recent
+  } else if (msA < msB) {
+    return -1; // dateB is more recent
+  } else {
+    return 0; // The dates are equal
+  }
+};

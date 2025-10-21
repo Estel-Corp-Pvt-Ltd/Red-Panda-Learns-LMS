@@ -39,7 +39,19 @@ class TransactionService {
   private async generateTransactionId(): Promise<{ transactionId: string; }> {
     const counterRef = doc(db, 'counters', 'transactionCounter');
 
-   
+    const orderNumber = await runTransaction(db, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+
+      let lastNumber = 20000000;
+      if (counterDoc.exists()) {
+        lastNumber = counterDoc.data().lastNumber;
+      }
+
+      const nextNumber = lastNumber + 1; // strictly sequential for readability
+      transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
+
+      return nextNumber;
+    });
 
     const transactionId = `tnx_${uuidv4()}`;
 
@@ -99,7 +111,6 @@ async createTransaction(
     console.error('Error creating transaction:', error);
     throw new Error('Failed to create transaction');
   }
-}
 
 
   async updateTransactionStatus(

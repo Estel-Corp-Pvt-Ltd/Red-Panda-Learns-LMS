@@ -37,7 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Header } from "@/components/Header";
 
-import { authorService } from "@/services/authorService";
+import { instructorService } from "@/services/instructorService";
 import { bundleService } from "@/services/bundleService";
 import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
@@ -54,7 +54,7 @@ import { Cohort, Course } from "@/types/course";
 import { Coupon } from "@/types/coupon";
 import { OrganizationType, PopUpCourseType } from "@/types/general";
 
-import { ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
+import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
@@ -62,7 +62,7 @@ import {
   USER_ROLE,
   USER_STATUS,
 } from "@/constants";
-import { PopUp } from "@/types/PopUp";
+import { PopUp } from "@/types/pop-up";
 import { popUpService } from "@/services/popupService";
 
 const PopUpTab = () => {
@@ -74,6 +74,7 @@ const PopUpTab = () => {
   const [type, setType] = useState<PopUpCourseType>(POPUP_COURSE_TYPE.LIVE);
   const [autoClose, setAutoClose] = useState(false);
   const [duration, setDuration] = useState(5000);
+  const [active, setActive] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -115,6 +116,7 @@ const PopUpTab = () => {
           type,
           ctaText,
           ctaLink,
+          active,
           autoClose,
           duration,
         });
@@ -165,7 +167,8 @@ const PopUpTab = () => {
     setDescription("");
     setCtaText("");
     setCtaLink("");
-    setType("LIVE");
+    setType(POPUP_COURSE_TYPE.LIVE);
+    setActive(false);
     setAutoClose(false);
     setDuration(5000);
     setIsEditing(false);
@@ -222,6 +225,15 @@ const PopUpTab = () => {
           placeholder="CTA link"
           className="border p-2 rounded w-48"
         />
+
+        <select
+          value={active ? "true" : "false"}
+          onChange={(e) => setActive(e.target.value === "true")}
+          className="border p-2 rounded w-32"
+        >
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
 
         <div className="flex items-center gap-2">
           <label className="text-sm">
@@ -310,6 +322,7 @@ const PopUpTab = () => {
                         setDescription(pop.description);
                         setType(pop.type);
                         setCtaText(pop.ctaText);
+                        setActive(pop.active);
                         setCtaLink(pop.ctaLink);
                         setAutoClose(pop.autoClose ?? false);
                         setDuration(pop.duration ?? 5000);
@@ -344,10 +357,9 @@ export function AdminDashboard() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [authors, setAuthors] = useState<User[]>([]);
+  const [instructors, setInstructors] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  // Loading states
   const [loading, setLoading] = useState(true);
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
@@ -359,13 +371,12 @@ export function AdminDashboard() {
       loadCohorts();
       loadBundles();
       loadLessons();
-      loadAuthors();
+      loadInstructors();
       loadUsers();
       loadCoupons();
     }
   }, [location.pathname]);
 
-  // 🔹 Load USERS
   const loadUsers = async () => {
     const response = await userService.getAllUsers();
     if (response.success) {
@@ -474,24 +485,23 @@ export function AdminDashboard() {
     }
   };
 
-  // 🔹 Load AUTHORS
-  const loadAuthors = async () => {
-    try {
-      const authorsList = await authorService.getAllAuthors();
-      setAuthors(authorsList);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load authors",
-        variant: "destructive"
-      });
+  const loadInstructors = async () => {
+    const result = await instructorService.getAllInstructors();
+    if (result.success) {
+      setInstructors(result.data);
+      return;
     }
+    toast({
+      title: "Error",
+      description: "Failed to load instructors",
+      variant: "destructive"
+    });
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD"
+      currency: CURRENCY.USD
     }).format(amount);
   };
 
@@ -829,8 +839,8 @@ export function AdminDashboard() {
               <TabsTrigger value="cohorts" className="flex-shrink-0">
                 Cohorts
               </TabsTrigger>
-              <TabsTrigger value="authors" className="flex-shrink-0">
-                Authors
+              <TabsTrigger value="instructors" className="flex-shrink-0">
+                Instructors
               </TabsTrigger>
               <TabsTrigger value="users" className="flex-shrink-0">
                 Users
@@ -1194,19 +1204,19 @@ export function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="authors">
+            <TabsContent value="instructors">
               <Card>
                 <CardHeader>
-                  <CardTitle>Authors</CardTitle>
+                  <CardTitle>Instructors</CardTitle>
                   <CardDescription>
-                    Manage all authors.
+                    Manage all instructors.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {authors.length === 0 ? (
+                  {instructors.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No authors</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No Instructors</h3>
                     </div>
                   ) : (
                     <Table>
@@ -1220,20 +1230,20 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {authors.map((author) => (
-                          <TableRow key={author.id}>
+                        {instructors.map((instructor) => (
+                          <TableRow key={instructor.id}>
                             <TableCell>
-                              {author.firstName} {author.middleName} {author.lastName}
+                              {instructor.firstName} {instructor.middleName} {instructor.lastName}
                             </TableCell>
-                            <TableCell>{author.email}</TableCell>
+                            <TableCell>{instructor.email}</TableCell>
                             <TableCell>
-                              <Badge variant={author.role === USER_ROLE.ADMIN ? "destructive" : "default"}>
-                                {author.role}
+                              <Badge variant={instructor.role === USER_ROLE.ADMIN ? "destructive" : "default"}>
+                                {instructor.role}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={author.status === USER_STATUS.ACTIVE ? "default" : "secondary"}>
-                                {author.status}
+                              <Badge variant={instructor.status === USER_STATUS.ACTIVE ? "default" : "secondary"}>
+                                {instructor.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">

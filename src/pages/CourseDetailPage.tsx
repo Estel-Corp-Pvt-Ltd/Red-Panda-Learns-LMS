@@ -18,7 +18,7 @@ import {
   useCourseQuery,
 } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
-import { enrollmentService } from "@/services/dummyEnrollmentService";
+import { enrollmentService } from "@/services/enrollmentService";
 import { Topic } from "@/types/course";
 import { formatDate } from "@/utils/date-time";
 import {
@@ -100,8 +100,8 @@ export default function CourseDetailPage() {
   };
 
   const handleContinueLearning = () => {
-    if (course.topics && course.topics.length > 0) {
-      const firstTopic = course.topics[0];
+    if (course.cohorts[0].topics && course.cohorts[0].topics.length > 0) {
+      const firstTopic = course.cohorts[0].topics[0];
       navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
     } else {
       toast({
@@ -148,7 +148,7 @@ export default function CourseDetailPage() {
       </div>
     );
   }
-
+  console.log("Lesson Counnt by topic", lessonCountByTopic);
   const totalLessons = Object.values(lessonCountByTopic).reduce(
     (sum: number, count: any) => sum + (Number(count) || 0),
     0
@@ -189,14 +189,14 @@ export default function CourseDetailPage() {
                   <Avatar className="h-8 w-8">
                     <AvatarImage
                       src=""
-                      alt={course?.authorName}
+                      alt={course?.instructorName}
                     />
                     <AvatarFallback className="bg-accent text-background">
-                      {course?.authorName?.charAt(0)}
+                      {course?.instructorName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium">
-                    {course?.authorName}
+                    {course?.instructorName}
                   </span>
                 </div>
 

@@ -1,6 +1,5 @@
+import { FieldValue, Timestamp } from "firebase/firestore";
 import { BundleStatus, PricingModel } from "./general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
-
 
 export interface BundleEnrollment {
   id: string;
@@ -29,9 +28,9 @@ export interface Bundle {
   pricingModel: PricingModel;
   categories: string[];
   tags: string[];
-  authorId: string;
-  authorName: string;
+  instructorId: string;
+  instructorName: string;
   status: BundleStatus;
-  createdAt: Timestamp | FieldValue ;
+  createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

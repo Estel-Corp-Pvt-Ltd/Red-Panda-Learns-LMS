@@ -7,6 +7,7 @@ import { CohortProvider } from "@/contexts/CohortContext";
 import { EnrollmentProvider } from "@/contexts/EnrollmentContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import PopUpContainer from "./components/PopUpContainer";
 import { CartProvider } from "./contexts/CartContext";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
@@ -14,7 +15,6 @@ import BundleDashboardPage from "./pages/BundleDashboardPage";
 import BundleDetailPage from "./pages/BundleDetailPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
-import CohortCheckoutPage from "./pages/CohortCheckoutPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
 import CoursesPage from "./pages/CoursesPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -24,17 +24,18 @@ import PrivacyPage from "./pages/PrivacyPage";
 import RefundPage from "./pages/RefundPolicy";
 import TermsPage from "./pages/TermsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import CohortDetailPage from "./pages/admin/CohortDetailPage";
 import CreateBundlePage from "./pages/admin/CreateBundlePage";
 import CohortBuilderPage from "./pages/admin/CreateCohortPage";
 import CreateCouponPage from "./pages/admin/CreateCouponPage";
 import CreateCoursePage from "./pages/admin/CreateCoursePage";
 import CreateLessonPage from "./pages/admin/CreateLessonPage";
 import CurriculumBuilderPage from "./pages/admin/CurriculumBuilderPage";
+import EditAssignmentPage from "./pages/admin/EditAssignmentPage";
 import EditBundlePage from "./pages/admin/EditBundle";
 import EditCouponPage from "./pages/admin/EditCouponPage";
 import EditLessonPage from "./pages/admin/EditLesson";
 import EditUserPage from "./pages/admin/EditUser";
+import SubmissionDetailPage from "./pages/admin/SubmissionDetailPage";
 import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -44,7 +45,6 @@ import Signup from "./pages/auth/Signup";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
-import PopUpContainer from "./components/PopUpContainer";
 
 const queryClient = new QueryClient();
 
@@ -127,6 +127,22 @@ const App = () => (
                       }
                     />
                     <Route
+                      path="/admin/edit-assignment/:assignmentId"
+                      element={
+                        <AuthGuard requireAdmin>
+                          <EditAssignmentPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/admin/assignments/:assignmentId/submissions"
+                      element={
+                        <AuthGuard requireAdmin>
+                          <SubmissionDetailPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
                       path="/admin/edit-user/:userId"
                       element={
                         <AuthGuard requireAdmin>
@@ -175,15 +191,6 @@ const App = () => (
                       }
                     />
                     <Route
-                      path="/admin/cohort/:cohortId"
-                      element={
-                        <AuthGuard requireAdmin >
-                          <CohortDetailPage />
-                        </AuthGuard>
-                      }
-                    />
-
-                    <Route
                       path="/admin/edit-course/:courseId"
                       element={
                         <AuthGuard requireAdmin >
@@ -196,14 +203,6 @@ const App = () => (
                       element={
                         <AuthGuard requireAdmin >
                           <DummyCurriculumBuilderPage />
-                        </AuthGuard>
-                      }
-                    />
-                    <Route
-                      path="/cohort/:cohortId/checkout"
-                      element={
-                        <AuthGuard>
-                          <CohortCheckoutPage />
                         </AuthGuard>
                       }
                     />
