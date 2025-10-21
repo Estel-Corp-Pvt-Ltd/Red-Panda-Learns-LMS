@@ -21,32 +21,32 @@ import { ORDER_STATUS } from "@/constants.ts";
 
 class OrderService {
   private async generateOrderId(): Promise<{ orderId: string }> {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const dateStr = `${yyyy}${mm}${dd}`;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const dateStr = `${yyyy}${mm}${dd}`;
 
-  const counterRef = doc(db, 'counters','orderCounters');
+    const counterRef = doc(db, 'counters', 'orderCounters');
 
-  // Use Firestore transaction to increment safely
-  const dailySequence = await runTransaction(db, async (tx) => {
-    const snapshot = await tx.get(counterRef);
-    let seq = 1;
+    // Use Firestore transaction to increment safely
+    const dailySequence = await runTransaction(db, async (tx) => {
+      const snapshot = await tx.get(counterRef);
+      let seq = 1;
 
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      seq = (data?.seq || 0) + 1;
-    }
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        seq = (data?.seq || 0) + 1;
+      }
 
-    tx.set(counterRef, { seq }, { merge: true });
-    return seq;
-  });
+      tx.set(counterRef, { seq }, { merge: true });
+      return seq;
+    });
 
-  const paddedSeq = String(dailySequence).padStart(3, "0");
-  const orderId = `ORD-${dateStr}-${paddedSeq}`;
-  return { orderId };
-}
+    const paddedSeq = String(dailySequence).padStart(3, "0");
+    const orderId = `ORD-${dateStr}-${paddedSeq}`;
+    return { orderId };
+  }
 
 
   async createOrder(
@@ -64,24 +64,24 @@ class OrderService {
           return orderId; // idempotent return
         }
       } else {
- const generated = await this.generateOrderId();        // If no orderId provided → create new Firestore doc
+        const generated = await this.generateOrderId();        // If no orderId provided → create new Firestore doc
         orderId = generated.orderId
       }
-      
+
       const order: Order = {
-        orderId ,
+        orderId,
         userId: data.userId,
         courseIds: data.courseIds,
-        bundleId: data.bundleId || null,
+        bundleIds: data.bundleIds || null,
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         currency: data.currency,
         transactionId: data.transactionId || null,
         metadata: data.metadata || {},
-        billingAddress:data.billingAddress,
-        shippingAddress:data.shippingAddress || null,
+        billingAddress: data.billingAddress,
+        shippingAddress: data.shippingAddress || null,
         createdAt: serverTimestamp(),
-        updatedAt:serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, "Orders", orderId), order);

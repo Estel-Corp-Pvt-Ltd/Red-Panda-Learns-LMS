@@ -58,9 +58,8 @@ export default function CourseDetailPage() {
   useEffect(() => {
     const checkEnrollment = async () => {
       if (user && courseId) {
-        const enrolled = await enrollmentService.isUserEnrolled(user.id, courseId);
-        console.log("checkEnrollment", enrolled);
-        setUserIsEnrolled(enrolled)
+        const result = await enrollmentService.isUserEnrolled(user.id, courseId);
+        setUserIsEnrolled(result.success);
       }
     };
 

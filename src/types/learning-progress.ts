@@ -1,17 +1,7 @@
 import {
-  doc,
   FieldValue,
-  getDoc,
-  serverTimestamp,
-  Timestamp,
-  updateDoc
+  Timestamp
 } from "firebase/firestore";
-
-import { db } from "@/firebaseConfig";
-
-import {
-  EnrollmentStatus
-} from "./general";
 
 export interface LearningProgress {
   id: string;

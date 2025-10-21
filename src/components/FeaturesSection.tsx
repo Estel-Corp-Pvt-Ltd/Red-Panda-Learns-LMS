@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Clock, 
-  Zap, 
-  Download, 
-  Layers, 
-  Eye, 
+import {
+  Clock,
+  Zap,
+  Download,
+  Layers,
+  Eye,
   Code2,
   Settings,
   ArrowRight
@@ -123,7 +123,7 @@ export function FeaturesSection() {
                 </div>
               </div>
 
-              <Button variant="premium" size="lg" className="mt-8">
+              <Button variant="default" size="lg" className="mt-8">
                 Try It Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -178,7 +178,7 @@ function ProcessDiagram() {
         <rect x="30" y="155" width="60" height="15" rx="7" fill="hsl(45 95% 58%)">
           <animate attributeName="width" values="0;60;60" dur="3s" repeatCount="indefinite" />
         </rect>
-        
+
         <rect x="100" y="155" width="80" height="15" rx="7" fill="hsl(168 76% 42%)">
           <animate attributeName="width" values="0;80;80" dur="3s" begin="1s" repeatCount="indefinite" />
         </rect>

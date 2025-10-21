@@ -1,8 +1,6 @@
 import { bundleService } from '@/services/bundleService';
-import { doc,updateDoc , setDoc , getDoc  , Timestamp} from 'firebase/firestore';
 
-import { useMutation, useQueryClient ,useQuery } from "@tanstack/react-query";
-import { db } from '@/firebaseConfig';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 // Query keys for consistent caching
 export const bundleQueryKeys = {
   bundles: ['bundles'] as const,
@@ -64,7 +62,7 @@ export const useUpdateBundleMutation = () => {
     }: {
       bundleId: string;
       updatedData: Record<string, any>;
-    }) => bundleService.updateBundleQuery(bundleId, updatedData), 
+    }) => bundleService.updateBundleQuery(bundleId, updatedData),
 
     onSuccess: (_, { bundleId }) => {
       queryClient.invalidateQueries({ queryKey: bundleQueryKeys.bundles });
@@ -108,7 +106,7 @@ export const useBundleApiPrefetch = () => {
     });
   };
 
-  
+
 
   return {
     prefetchBundle,
