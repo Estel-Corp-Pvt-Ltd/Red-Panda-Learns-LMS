@@ -37,81 +37,64 @@ class TransactionService {
    * }
    */
   private async generateTransactionId(): Promise<{ transactionId: string; }> {
-    const counterRef = doc(db, 'counters', 'transactionCounter');
-
-    const orderNumber = await runTransaction(db, async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
-
-      let lastNumber = 20000000;
-      if (counterDoc.exists()) {
-        lastNumber = counterDoc.data().lastNumber;
-      }
-
-      const nextNumber = lastNumber + 1; // strictly sequential for readability
-      transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
-
-      return nextNumber;
-    });
-
     const transactionId = `tnx_${uuidv4()}`;
 
     return {
-      transactionId,
-    
+      transactionId
     };
   }
-async createTransaction(
-  data: Omit<Transaction, "id" |   "createdAt" | "updatedAt">,
-  providedTransactionId?: string // <-- add this
-): Promise<string> {
-  try {
-    let transactionId = providedTransactionId;
-    
-    if (transactionId) {
-      // 🔎 If caller gave us one, check DB first
-      const existing = await this.getTransaction(transactionId);
-      if (existing) {
-        console.log("♻️ Returning existing transaction:", transactionId);
-        return transactionId; // idempotent return
+  async createTransaction(
+    data: Omit<Transaction, "id" | "createdAt" | "updatedAt">,
+    providedTransactionId?: string // <-- add this
+  ): Promise<string> {
+    try {
+      let transactionId = providedTransactionId;
+
+      if (transactionId) {
+        // 🔎 If caller gave us one, check DB first
+        const existing = await this.getTransaction(transactionId);
+        if (existing) {
+          console.log("♻️ Returning existing transaction:", transactionId);
+          return transactionId; // idempotent return
+        }
+
+        // need a new orderNumber for human-friendly readability
+        const ids = await this.generateTransactionId();
+
+      } else {
+        // If no transactionId provided → create new
+        const ids = await this.generateTransactionId();
+        transactionId = ids.transactionId;
       }
 
-      // need a new orderNumber for human-friendly readability
-      const ids = await this.generateTransactionId();
-     
-    } else {
-      // If no transactionId provided → create new
-      const ids = await this.generateTransactionId();
-      transactionId = ids.transactionId;
+      const transaction: Transaction = {
+        id: transactionId,
+        orderNumber: data.orderNumber,
+        userId: data.userId,
+        courseId: data.courseId || null,
+        type: data.type,
+        amount: data.amount,
+        currency: data.currency,
+        originalAmount: data.originalAmount,
+        originalCurrency: data.originalCurrency,
+        exchangeRate: data.exchangeRate,
+        paymentProvider: data.paymentProvider,
+        status: TRANSACTION_STATUS.PENDING,
+        paymentDetails: {} as PaymentDetails,
+        metadata: data.metadata,
+        webhookEvents: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(doc(db, 'Transactions', transactionId), transaction);
+      console.log('Transaction created:', transaction);
+      return transactionId;
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      throw new Error('Failed to create transaction');
     }
-
-    const transaction: Transaction = {
-      id: transactionId,
-      orderNumber : data.orderNumber,
-      userId: data.userId,
-      courseId: data.courseId || null,
-      type: data.type,
-      amount: data.amount,
-      currency: data.currency,
-      originalAmount: data.originalAmount,
-      originalCurrency: data.originalCurrency,
-      exchangeRate: data.exchangeRate,
-      paymentProvider: data.paymentProvider,
-      status: TRANSACTION_STATUS.PENDING,
-      paymentDetails: {} as PaymentDetails,
-      metadata: data.metadata,
-      webhookEvents: [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(doc(db, 'Transactions', transactionId), transaction);
-    console.log('Transaction created:', transaction);
-    return transactionId;
-  } catch (error) {
-    console.error('Error creating transaction:', error);
-    throw new Error('Failed to create transaction');
   }
-
 
   async updateTransactionStatus(
     transactionId: string,

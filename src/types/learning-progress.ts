@@ -1,17 +1,16 @@
 import {
   doc,
+  FieldValue,
   getDoc,
   serverTimestamp,
-  updateDoc,
   Timestamp,
-  FieldValue
+  updateDoc
 } from "firebase/firestore";
+
 import { db } from "@/firebaseConfig";
+
 import {
-  EnrollmentStatus,
-  PaymentStatus,
-  PaymentProvider,
-  Currency
+  EnrollmentStatus
 } from "./general";
 
 export interface LearningProgress {
@@ -31,28 +30,12 @@ export interface LearningProgress {
     certificateId?: string;
   };
 
+  grade?: number | string | null;
+
   completionDate?: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-  grade?: number | string | null;
-}
+};
 
-/**
- * Enrollment payment details
- */
-export interface EnrollmentPaymentDetails {
-  status: PaymentStatus;
-  actualAmount: number;
-  currency: Currency;
-  amountPaid: number;
-  balance: number;
-  transactionId?: string;
-  provider: PaymentProvider;
-  paidAt?: Timestamp | FieldValue;
-}
-
-/**
- * Update course progress
- */
 export async function updateProgress(
   progressId: string,
   lessonId?: string,
@@ -151,36 +134,6 @@ export async function updateGrade(
   await updateDoc(docRef, updatedData);
 
   return { id: progressId, grade, updatedAt };
-}
-
-/**
- * Update payment
- */
-export async function updatePayment(
-  enrollmentId: string,
-  paymentId: string,
-  payment: Partial<EnrollmentPaymentDetails>
-): Promise<{ id: string; updatedAt: Timestamp | FieldValue }> {
-  const docRef = doc(db, "Enrollments", enrollmentId);
-  const snapshot = await getDoc(docRef);
-  if (!snapshot.exists()) throw new Error("Enrollment not found");
-
-  const original = snapshot.data();
-  const updatedAt = serverTimestamp();
-
-  // 🔑 Merge old payment data with the new updates
-  const updatedPayment: EnrollmentPaymentDetails = {
-    ...(original.payment || {}),
-    ...payment,
-    transactionId: paymentId,
-  };
-
-  await updateDoc(docRef, {
-    payment: updatedPayment,
-    updatedAt,
-  });
-
-  return { id: enrollmentId, updatedAt };
 }
 
 /**

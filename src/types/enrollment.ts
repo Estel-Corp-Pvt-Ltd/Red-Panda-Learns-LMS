@@ -15,15 +15,19 @@ export interface Enrollment {
     id: string;
     userId: string;
     targetId: string;                // courseId OR bundleId
-    targetType: EnrolledProgramType; // "course" or "bundle"
+    targetType: EnrolledProgramType;
     enrollmentDate: Timestamp | FieldValue;
     status: EnrollmentStatus;
     role: UserRole;
 
-    bundleProgress?: Array<{ courseId: string; progressId: string; }>;
-
     // Always track main progress (for course = course’s progress, for bundle = overall aggregate)
-    progress: LearningProgress;
+    progressId: string;
+    progressSummary?: {
+        completedLessons: number;
+        totalLessons: number;
+        percent: number;
+    };
+    bundleProgress?: Array<{ courseId: string; progressId: string; }>;
 
     pricingModel: PricingModel;
     payment?: {

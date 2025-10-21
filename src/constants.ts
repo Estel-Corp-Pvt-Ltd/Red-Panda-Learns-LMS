@@ -6,8 +6,8 @@ export const USER_ROLE = {
 } as const;
 
 export const LEARNING_CONTENT = {
-    LESSON: "LESSON",
-    ASSIGNMENT: "ASSIGNMENT",
+  LESSON: "LESSON",
+  ASSIGNMENT: "ASSIGNMENT",
 } as const;
 
 export const LESSON_TYPE = {
@@ -113,10 +113,10 @@ export const CURRENCY = {
 } as const;
 
 export const LEARNING_UNIT = {
-    ASSIGNMENT: "ASSIGNMENT",
-    LESSON: "LESSON",
-    TOPIC: "TOPIC",
-    COHORT: "COHORT"
+  ASSIGNMENT: "ASSIGNMENT",
+  LESSON: "LESSON",
+  TOPIC: "TOPIC",
+  COHORT: "COHORT"
 } as const;
 
 export const ENVIRONMENT = {
@@ -361,23 +361,25 @@ export const COUPON_STATUS = {
 } as const;
 
 export const COLLECTION = {
-    ASSIGNMENTS: "Assignments",
-    ASSIGNMENT_SUBMISSIONS: 'AssignmentSubmissions',
-    COURSES: 'Courses',
-    BUNDLES: 'Bundles',
-    COHORTS: 'Cohorts',
-    USERS: 'Users',
-    CARTS: 'Carts',
-    LESSONS: 'Lessons',
-    COUPONS: 'Coupons',
-    COUPON_USAGES: 'CouponUsages',
-    ORGANIZATIONS: 'Organizations',
-    CONFIG: 'Config',
-    ATTRIBUTES: 'Attributes',
-    FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
-    POPUPS: "PopUps",
-    ORDERS:"Orders",
-    COUNTERS:"Counters"
+  ASSIGNMENTS: "Assignments",
+  ASSIGNMENT_SUBMISSIONS: 'AssignmentSubmissions',
+  COURSES: 'Courses',
+  BUNDLES: 'Bundles',
+  COHORTS: 'Cohorts',
+  USERS: 'Users',
+  CARTS: 'Carts',
+  LESSONS: 'Lessons',
+  COUPONS: 'Coupons',
+  COUPON_USAGES: 'CouponUsages',
+  ORGANIZATIONS: 'Organizations',
+  CONFIG: 'Config',
+  ATTRIBUTES: 'Attributes',
+  FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
+  POPUPS: "PopUps",
+  ORDERS: "Orders",
+  COUNTERS: "Counters",
+  LEARNING_PROGRESS: "LearningProgress",
+  ENROLLMENTS: "Enrollments"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
