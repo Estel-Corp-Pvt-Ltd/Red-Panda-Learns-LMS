@@ -41,4 +41,7 @@ export interface Enrollment {
         provider: PaymentProvider;
         paidAt?: Timestamp | FieldValue;
     };
+
+    createdAt: Timestamp | FieldValue;
+    updatedAt: Timestamp | FieldValue;
 };
