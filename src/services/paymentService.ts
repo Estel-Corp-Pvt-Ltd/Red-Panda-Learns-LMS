@@ -4,8 +4,16 @@ import { transactionService } from "./transactionService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { paypalProvider } from "./providers/paypalProvider";
 import { Currency, PaymentProvider } from "@/types/general";
-import { enrollmentService } from './enrollmentService';
-import { CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER, TRANSACTION_STATUS, TRANSACTION_TYPE } from '@/constants';
+import { enrollmentService } from "./enrollmentService";
+import {
+  CURRENCY,
+  ENROLLED_PROGRAM_TYPE,
+  PAYMENT_PROVIDER,
+  TRANSACTION_STATUS,
+  TRANSACTION_TYPE,
+} from "@/constants";
+import { orderService } from "./orderService";
+import { Address } from "@/types/order";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -85,7 +93,10 @@ class PaymentService {
       originalAmount: basePrice,
       originalCurrency: baseCurrency,
       exchangeRate,
-      formattedPrice: currencyService.formatCurrency(convertedAmount, targetCurrency),
+      formattedPrice: currencyService.formatCurrency(
+        convertedAmount,
+        targetCurrency
+      ),
       formattedTotal: currencyService.formatCurrency(total, targetCurrency),
     };
   }
@@ -93,24 +104,45 @@ class PaymentService {
   async processPayment(
     provider: PaymentProvider,
     course: Course,
+    finalPrice:number,
     userEmail: string,
     userId: string,
     selectedCurrency: Currency,
-    baseCurrency: Currency
+    baseCurrency: Currency,
+    billingAddress:Address,
+    shippingAddress:Address
+
   ): Promise<PaymentResult> {
     try {
       const providerOption = this.providers.find((p) => p.id === provider);
       if (!providerOption)
         return { success: false, error: "Unsupported payment provider" };
 
+      //Here the course.salePrice is being passed through the Course Object We received from Process Payment
       const pricing = await this.calculatePricing(
-        course.salePrice,
+        finalPrice,
         selectedCurrency,
         provider,
         baseCurrency
       );
 
+      const orderId = await orderService.createOrder({
+        userId,
+        courseIds: [course.id],
+        amount: pricing.amount,
+        currency: pricing.currency,
+        billingAddress,
+        shippingAddress,
+        metadata: {
+          userEmail,
+          courseTitle: course.title,
+          userAgent: navigator.userAgent,
+        },
+        status: "PENDING",
+      });
+
       const transactionId = await transactionService.createTransaction({
+        orderNumber: orderId,
         userId,
         courseId: course.id,
         type: TRANSACTION_TYPE.PAYMENT,
@@ -123,12 +155,13 @@ class PaymentService {
         status: TRANSACTION_STATUS.PENDING,
         paymentDetails: { orderId: "", paymentId: "" },
 
-metadata: {
-  userEmail,
-  courseTitle: course.title,
-  userAgent: navigator.userAgent,
-  paymentAttempts: 1
-}
+        metadata: {
+          orderId,
+          userEmail,
+          courseTitle: course.title,
+          userAgent: navigator.userAgent,
+          paymentAttempts: 1,
+        },
       });
 
       let result: PaymentResult;
@@ -156,6 +189,11 @@ metadata: {
 
       if (result.success) {
         result.transactionId = transactionId;
+        await orderService.updateOrder(
+          orderId,
+          result.success ? "SUCCESS" : "FAILED",
+          transactionId
+        );
         try {
           await enrollmentService.enrollUser(
             userId,

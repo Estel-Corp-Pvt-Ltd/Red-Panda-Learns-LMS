@@ -1,158 +1,218 @@
 import {
-  doc,
-  setDoc,
   collection,
-  query,
-  where,
+  doc,
   getDocs,
+  query,
+  setDoc,
   Timestamp,
-} from 'firebase/firestore';
+  where,
+} from "firebase/firestore";
 
-import { db } from '@/firebaseConfig';
-import { CouponUsage } from '@/types/coupon'
-import { couponService } from '@/services/couponService';
-import { COUPON_STATUS } from '@/constants';
+import { db } from "@/firebaseConfig";
+import { COLLECTION, COUPON_STATUS } from "@/constants";
+import { logError } from "@/utils/logger";
+import { fail, ok, Result } from "@/utils/response";
+import { toDateSafe } from "@/utils/date-time";
+import { Coupon } from "@/types/coupon";
 
+import { couponService } from "@/services/couponService";
+
+import { CouponUsage } from "@/types/coupon";
+
+/**
+ * Service class for managing coupon usage tracking and validation.
+ * Handles usage count, user-specific checks, and applicability logic.
+ */
 class CouponUsageService {
   /**
    * Returns the total number of times a coupon has been used.
+   *
+   * @param couponId - The unique coupon ID.
+   * @returns A Result object containing the usage count.
    */
-
-  async getUsageCountByCoupon(couponId: string): Promise<number> {
+  async getUsageCountByCoupon(couponId: string): Promise<Result<number>> {
     try {
       const q = query(
-        collection(db, 'CouponUsage'),
-        where('couponId', '==', couponId)
+        collection(db, COLLECTION.COUPON_USAGES),
+        where("couponId", "==", couponId),
       );
       const snapshot = await getDocs(q);
-      return snapshot.size;
+
+      return ok(snapshot.size);
     } catch (error) {
-      console.error('Error getting coupon usage count:', error);
-      return 0;
+      logError("CouponUsageService.getUsageCountByCoupon", error);
+      return fail("Failed to get coupon usage count", error.code);
     }
   }
 
   /**
    * Checks if a user has already used a specific coupon.
+   *
+   * @param userId - The unique user ID.
+   * @param couponId - The unique coupon ID.
+   * @returns A Result object containing a boolean indicating prior usage.
    */
-  async hasUserUsedCoupon(userId: string, couponId: string): Promise<boolean> {
+  async hasUserUsedCoupon(
+    userId: string,
+    couponId: string,
+  ): Promise<Result<boolean>> {
     try {
       const q = query(
-        collection(db, 'CouponUsage'),
-        where('userId', '==', userId),
-        where('couponId', '==', couponId)
+        collection(db, COLLECTION.COUPON_USAGES),
+        where("userId", "==", userId),
+        where("couponId", "==", couponId),
       );
       const snapshot = await getDocs(q);
-      return !snapshot.empty;
+
+      return ok(!snapshot.empty);
     } catch (error) {
-      console.error('Error checking user coupon usage:', error);
-      return false;
+      logError("CouponUsageService.hasUserUsedCoupon", error);
+      return fail("Failed to check user coupon usage", error.code);
     }
   }
 
-async isCouponApplicable(
-  couponId: string,
-  courseId?: string,
-  bundleId?: string,
-  cohortId?: string
-): Promise<{
-  isApplicable: boolean;
-  reason?: string;
-}> {
-  try {
-    // console.log("🔍 Checking coupon applicability...");
-    // console.log("📥 Inputs:");
-    // console.log("➡️ couponId:", couponId);
-    // console.log("➡️ courseId:", courseId);
-    // console.log("➡️ bundleId:", bundleId);
-    // console.log("➡️ cohortId:", cohortId);
+  /**
+   * Validates whether a coupon is applicable for a given user and context.
+   * Checks status, expiry, usage limits, user history, and linked items.
+   *
+   * @param userId - The unique user ID.
+   * @param couponId - The unique coupon ID.
+   * @param courseId - Optional course ID for applicability check.
+   * @param bundleId - Optional bundle ID for applicability check.
+   * @param cohortId - Optional cohort ID for applicability check.
+   * @returns A Result object containing applicability status and optional reason for rejection.
+   */
+  async isCouponApplicable(
+    userId: string,
+    couponId: string,
+    courseId?: string,
+    bundleId?: string,
+    cohortId?: string,
+  ): Promise<Result<{ isApplicable: boolean; reason?: string }>> {
+    try {
+      const couponResult = await couponService.getCouponById(couponId);
 
-    const coupon = await couponService.getCouponById(couponId);
-    // console.log("🎫 Fetched coupon:", coupon);
+      if (!couponResult.success || !couponResult.data) {
+        return ok({ isApplicable: false, reason: "Coupon not found" });
+      }
 
-    if (!coupon) {
-      console.warn("⚠️ Coupon not found");
-      return { isApplicable: false, reason: 'Coupon not found' };
+      const coupon = couponResult.data;
+
+      // Check if user already used this coupon
+      const alreadyUsedResult = await this.hasUserUsedCoupon(userId, couponId);
+      if (alreadyUsedResult.success && alreadyUsedResult.data) {
+        return ok({
+          isApplicable: false,
+          reason: "You have already used this coupon",
+        });
+      }
+
+      // Check coupon status
+      if (coupon.status !== COUPON_STATUS.ACTIVE) {
+        return ok({ isApplicable: false, reason: "Coupon is inactive" });
+      }
+
+      // Check coupon expiry
+      const now = new Date();
+      const expiryDate = toDateSafe(coupon.expiryDate);
+
+      if (expiryDate < now) {
+        return ok({ isApplicable: false, reason: "Coupon has expired" });
+      }
+
+      // Check usage limit
+      const usageCountResult = await this.getUsageCountByCoupon(couponId);
+      if (usageCountResult.success) {
+        const usageCount = usageCountResult.data;
+
+        if (coupon.usageLimit > 0 && usageCount >= coupon.usageLimit) {
+          return ok({ isApplicable: false, reason: "Usage limit reached" });
+        }
+      }
+
+      // Check linked items (course, bundle, cohort)
+      const isLinked = this.checkLinkedItems(
+        coupon,
+        courseId,
+        bundleId,
+        cohortId,
+      );
+
+      if (!isLinked) {
+        return ok({
+          isApplicable: false,
+          reason: "Coupon not applicable to selected item",
+        });
+      }
+
+      return ok({ isApplicable: true });
+    } catch (error) {
+      logError("CouponUsageService.isCouponApplicable", error);
+      return fail("Error validating coupon", error.code);
     }
+  }
 
-    // Check coupon status
-    if (coupon.status !== CouponStatus.ACTIVE) {
-      console.warn("⚠️ Coupon is inactive");
-      return { isApplicable: false, reason: 'Coupon is inactive' };
-    }
-
-    // Check coupon expiry
-    const now = new Date();
-    const expiryDate = coupon.expiryDate?.toDate?.() || coupon.expiryDate;
-    // console.log("📆 Coupon expiry date:", expiryDate);
-    if (expiryDate < now) {
-      console.warn("⚠️ Coupon has expired");
-      return { isApplicable: false, reason: 'Coupon has expired' };
-    }
-
-    // Check usage limit
-    const usageCount = await this.getUsageCountByCoupon(couponId);
-    // console.log("🔢 Usage count:", usageCount, " / Limit:", coupon.usageLimit);
-   if (coupon.usageLimit > 0 && usageCount >= coupon.usageLimit) {
-  console.warn("⚠️ Usage limit reached");
-  return { isApplicable: false, reason: 'Usage limit reached' };
-}
-
-
-    // Start checking if coupon is linked to course, bundle, or cohort
-    let isLinked = false;
-    console.log("🔗 Checking linked items...");
-
+  /**
+   * Helper method to check if coupon is linked to the provided course, bundle, or cohort.
+   * Returns true if coupon is universal or matches one of the provided IDs.
+   *
+   * @param coupon - The coupon object.
+   * @param courseId - Optional course ID.
+   * @param bundleId - Optional bundle ID.
+   * @param cohortId - Optional cohort ID.
+   * @returns Boolean indicating if the coupon is linked.
+   */
+  private checkLinkedItems(
+    coupon: Coupon,
+    courseId?: string,
+    bundleId?: string,
+    cohortId?: string,
+  ): boolean {
     const linkedCourses = coupon.linkedCourseIds || [];
     const linkedBundles = coupon.linkedBundleIds || [];
     const linkedCohorts = coupon.linkedCohortIds || [];
 
-    const cleanCourseId = typeof courseId === 'string' ? courseId.trim() : '';
-    const cleanBundleId = typeof bundleId === 'string' ? bundleId.trim() : '';
-    const cleanCohortId = typeof cohortId === 'string' ? cohortId.trim() : '';
+    const cleanCourseId = courseId?.trim() || "";
+    const cleanBundleId = bundleId?.trim() || "";
+    const cleanCohortId = cohortId?.trim() || "";
 
-    // console.log("🧹 Cleaned IDs:");
-    // console.log("➡️ cleanCourseId:", cleanCourseId);
-    // console.log("➡️ cleanBundleId:", cleanBundleId);
-    // console.log("➡️ cleanCohortId:", cleanCohortId);
-
+    // Check if any provided ID matches linked IDs
     if (cleanCourseId && linkedCourses.includes(cleanCourseId)) {
-      console.log("✅ Matched courseId");
-      isLinked = true;
-    } else if (cleanBundleId && linkedBundles.includes(cleanBundleId)) {
-      // console.log("✅ Matched bundleId");
-      isLinked = true;
-    } else if (cleanCohortId && linkedCohorts.includes(cleanCohortId)) {
-      console.log("✅ Matched cohortId");
-      isLinked = true;
+      return true;
+    }
+
+    if (cleanBundleId && linkedBundles.includes(cleanBundleId)) {
+      return true;
+    }
+
+    if (cleanCohortId && linkedCohorts.includes(cleanCohortId)) {
+      return true;
     }
 
     // If no IDs provided, check if coupon is universal
     if (!cleanCourseId && !cleanBundleId && !cleanCohortId) {
-      console.log("🔎 No IDs provided — checking if coupon is universal...");
-      isLinked =
+      return (
         linkedCourses.length === 0 &&
         linkedBundles.length === 0 &&
-        linkedCohorts.length === 0;
-      console.log("🧮 Universal coupon result:", isLinked);
+        linkedCohorts.length === 0
+      );
     }
 
-    } catch (error) {
-      console.error("💥 Error checking coupon applicability:", error);
-      return { isApplicable: false, reason: 'Error validating coupon' };
-    }
+    return false;
   }
 
-
-
-
-
   /**
-   * Records a new coupon usage (call this when a user redeems a coupon).
+   * Records a new coupon usage when a user redeems a coupon.
+   *
+   * @param usageData - The coupon usage data without the generated ID.
+   * @returns A Result object containing the created usage record ID on success.
    */
-  async recordCouponUsage(usageData: Omit<CouponUsage, 'id'>): Promise<string> {
+  async recordCouponUsage(
+    usageData: Omit<CouponUsage, "id">,
+  ): Promise<Result<string>> {
     try {
-      const usageRef = doc(collection(db, 'CouponUsage'));
+      const usageRef = doc(collection(db, COLLECTION.COUPON_USAGES));
+
       const newUsage: CouponUsage = {
         ...usageData,
         id: usageRef.id,
@@ -160,12 +220,11 @@ async isCouponApplicable(
       };
 
       await setDoc(usageRef, newUsage);
-      console.log("Data for coupon Usage", newUsage)
-      console.log('Coupon usage recorded:', usageRef.id);
-      return usageRef.id;
+
+      return ok(usageRef.id);
     } catch (error) {
-      console.error('Error recording coupon usage:', error);
-      throw new Error('Failed to record coupon usage');
+      logError("CouponUsageService.recordCouponUsage", error);
+      return fail("Failed to record coupon usage", error.code);
     }
   }
 }

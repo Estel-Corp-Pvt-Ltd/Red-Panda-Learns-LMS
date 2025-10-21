@@ -21,6 +21,7 @@ import {
 import { TransactionStatus } from '../types/general.ts';
 import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { v4 as uuidv4 } from 'uuid';
+import { Transaction as FirebaseTransaction } from 'firebase-admin/firestore';
 
 class TransactionService {
 
@@ -35,7 +36,7 @@ class TransactionService {
    *   orderNumber: 20000037
    * }
    */
-  private async generateTransactionId(): Promise<{ transactionId: string; orderNumber: number }> {
+  private async generateTransactionId(): Promise<{ transactionId: string; }> {
     const counterRef = doc(db, 'counters', 'transactionCounter');
 
     const orderNumber = await runTransaction(db, async (transaction) => {
@@ -56,63 +57,59 @@ class TransactionService {
 
     return {
       transactionId,
-      orderNumber,
+    
     };
   }
-  async createTransaction(
-    data: Omit<Transaction, "id" | "orderNumber" | "createdAt" | "updatedAt">,
-    providedTransactionId?: string // <-- add this
-  ): Promise<string> {
-    try {
-      let transactionId = providedTransactionId;
-      let orderNumber: number;
-
-      if (transactionId) {
-        // 🔎 If caller gave us one, check DB first
-        const existing = await this.getTransaction(transactionId);
-        if (existing) {
-          console.log("♻️ Returning existing transaction:", transactionId);
-          return transactionId; // idempotent return
-        }
-
-        // need a new orderNumber for human-friendly readability
-        const ids = await this.generateTransactionId();
-        orderNumber = ids.orderNumber;
-      } else {
-        // If no transactionId provided → create new
-        const ids = await this.generateTransactionId();
-        transactionId = ids.transactionId;
-        orderNumber = ids.orderNumber;
+async createTransaction(
+  data: Omit<Transaction, "id" |   "createdAt" | "updatedAt">,
+  providedTransactionId?: string // <-- add this
+): Promise<string> {
+  try {
+    let transactionId = providedTransactionId;
+    
+    if (transactionId) {
+      // 🔎 If caller gave us one, check DB first
+      const existing = await this.getTransaction(transactionId);
+      if (existing) {
+        console.log("♻️ Returning existing transaction:", transactionId);
+        return transactionId; // idempotent return
       }
 
-      const transaction: Transaction = {
-        id: transactionId,
-        orderNumber,
-        userId: data.userId,
-        courseId: data.courseId || null,
-        type: data.type,
-        amount: data.amount,
-        currency: data.currency,
-        originalAmount: data.originalAmount,
-        originalCurrency: data.originalCurrency,
-        exchangeRate: data.exchangeRate,
-        paymentProvider: data.paymentProvider,
-        status: TRANSACTION_STATUS.PENDING,
-        paymentDetails: {} as PaymentDetails,
-        metadata: data.metadata,
-        webhookEvents: [],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-
-      await setDoc(doc(db, 'Transactions', transactionId), transaction);
-
-      console.log('Transaction created:', transactionId);
-      return transactionId;
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      throw new Error('Failed to create transaction');
+      // need a new orderNumber for human-friendly readability
+      const ids = await this.generateTransactionId();
+     
+    } else {
+      // If no transactionId provided → create new
+      const ids = await this.generateTransactionId();
+      transactionId = ids.transactionId;
     }
+
+    const transaction: Transaction = {
+      id: transactionId,
+      orderNumber : data.orderNumber,
+      userId: data.userId,
+      courseId: data.courseId || null,
+      type: data.type,
+      amount: data.amount,
+      currency: data.currency,
+      originalAmount: data.originalAmount,
+      originalCurrency: data.originalCurrency,
+      exchangeRate: data.exchangeRate,
+      paymentProvider: data.paymentProvider,
+      status: TRANSACTION_STATUS.PENDING,
+      paymentDetails: {} as PaymentDetails,
+      metadata: data.metadata,
+      webhookEvents: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await setDoc(doc(db, 'Transactions', transactionId), transaction);
+    console.log('Transaction created:', transaction);
+    return transactionId;
+  } catch (error) {
+    console.error('Error creating transaction:', error);
+    throw new Error('Failed to create transaction');
   }
 
 
