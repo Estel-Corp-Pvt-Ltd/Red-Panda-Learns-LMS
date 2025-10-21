@@ -9,6 +9,7 @@ import {
     setDoc,
     updateDoc,
     where,
+    writeBatch,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -58,6 +59,55 @@ class LearningProgressService {
         } catch (error: any) {
             logError("LearningProgressService.createLessonProgress", error);
             return fail("Failed to create lesson progress.", error.code || error.message);
+        }
+    }
+
+    /**
+     * Creates new LearningProgress documents for multiple courses using a Firestore batch write.
+     *
+     * @param courses - An array of objects, each containing a courseId and its totalLessons.
+     * @returns A Result object containing a mapping of course IDs to their created progress IDs on success, or an error on failure.
+     */
+    async createLessonProgressBatchAtomic(
+        courses: { courseId: string; totalLessons: number }[]
+    ): Promise<Result<Record<string, string>>> {
+        try {
+            const batch = writeBatch(db);
+            const progressMap: Record<string, string> = {};
+
+            courses.forEach(({ courseId, totalLessons }) => {
+                const progressRef = doc(collection(db, COLLECTION.LEARNING_PROGRESS));
+                const progressId = progressRef.id;
+
+                const newProgress: LearningProgress = {
+                    id: progressId,
+                    courseId,
+                    currentLessonId: null,
+                    lastAccessed: serverTimestamp(),
+                    completedLessons: 0,
+                    lessonHistory: [],
+                    totalLessons,
+                    percentage: 0,
+                    certification: { issued: false },
+                    grade: null,
+                    completionDate: null,
+                    updatedAt: serverTimestamp(),
+                };
+
+                batch.set(progressRef, newProgress);
+                progressMap[courseId] = progressId;
+            });
+
+            // Commit the batch (atomic)
+            await batch.commit();
+
+            return ok(progressMap);
+        } catch (error: any) {
+            logError("LearningProgressService.createLessonProgressBatchAtomic", error);
+            return fail(
+                "Failed to create lesson progresses for multiple courses.",
+                error.code || error.message
+            );
         }
     }
 
