@@ -803,38 +803,50 @@ export function AdminDashboard() {
           </div>
 
           {/*  Buttons stack on mobile, row on larger screens */}
-          <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               onClick={() => navigate("/admin/create-lesson")}
-              className="flex-shrink-0"
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Lesson
+              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Create New</span> Lesson
             </Button>
+
             <Button
               onClick={() => navigate("/admin/create-course")}
-              className="flex-shrink-0"
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Course
+              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Create</span> Course
             </Button>
+
             <Button
               onClick={() => navigate("/admin/create-bundle")}
-              className="flex-shrink-0"
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Course Bundle
+              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Course</span> Bundle
             </Button>
+
             <Button
               onClick={() => navigate("/admin/create-cohort")}
-              className="flex-shrink-0"
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <Calendar className="mr-2 h-4 w-4" />
-              Create New Cohort
+              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline"></span> Cohort
             </Button>
-            <Button onClick={() => navigate("/admin/create-coupon")}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Create New Coupon
+
+            <Button
+              onClick={() => navigate("/admin/create-coupon")}
+              size="sm"
+              className="text-xs sm:text-sm col-span-2 sm:col-span-1"
+            >
+              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">New</span> Coupon
             </Button>
           </div>
         </div>
