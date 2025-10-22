@@ -128,3 +128,22 @@ export function compareDates(dateA: DateInput, dateB: DateInput): 1 | -1 | 0 {
     return 0; // The dates are equal
   }
 };
+
+/**
+ * Converts a Firebase Timestamp or FieldValue to a native JavaScript Date.
+ * Returns null for null/undefined or FieldValue (serverTimestamp) placeholders.
+ * This function helps with TS compiler errors since we can use toDate() on Timestamp only but our date fields have the type Timestamp | FieldValue
+ * 
+ * @param value - A Firestore Timestamp, FieldValue, or null/undefined.
+ * @returns A native Date object, or null if conversion is not possible.
+ */
+export function convertToDate(value?: Timestamp | FieldValue | null): Date | null {
+  if (!value) return null;
+
+  if (value instanceof Timestamp) {
+    return value.toDate(); // Firestore Timestamp → Date
+  }
+
+  // If it's FieldValue.serverTimestamp() or any other non-Timestamp, return null
+  return null;
+};

@@ -1,6 +1,5 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 
-import { LearningProgress } from "./learning-progress";
 import {
     Currency,
     EnrolledProgramType,
@@ -15,15 +14,21 @@ export interface Enrollment {
     id: string;
     userId: string;
     targetId: string;                // courseId OR bundleId
-    targetType: EnrolledProgramType; // "course" or "bundle"
+    targetType: EnrolledProgramType;
     enrollmentDate: Timestamp | FieldValue;
     status: EnrollmentStatus;
     role: UserRole;
 
-    bundleProgress?: Array<{ courseId: string; progressId: string; }>;
-
     // Always track main progress (for course = course’s progress, for bundle = overall aggregate)
-    progress: LearningProgress;
+    progressId?: string;
+    progressSummary?: {
+        completedLessons?: number;
+        completedCourses?: number;
+        totalLessons?: number;
+        totalCourses?: number;
+        percent: number;
+    };
+    bundleProgress?: Array<{ courseId: string; progressId: string; }>;
 
     pricingModel: PricingModel;
     payment?: {
@@ -36,4 +41,7 @@ export interface Enrollment {
         provider: PaymentProvider;
         paidAt?: Timestamp | FieldValue;
     };
+
+    createdAt: Timestamp | FieldValue;
+    updatedAt: Timestamp | FieldValue;
 };

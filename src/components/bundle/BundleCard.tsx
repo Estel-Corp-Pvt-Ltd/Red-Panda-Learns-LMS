@@ -1,9 +1,9 @@
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users, Tag } from "lucide-react";
-import { Bundle } from "@/types/bundle";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Bundle } from "@/types/bundle";
+import { BookOpen, Tag, Users } from "lucide-react";
 
 interface BundleCardProps {
   bundle: Bundle;
@@ -51,10 +51,10 @@ export function BundleCard({
               </p>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {bundle.category && (
+                {bundle.categories.length && (
                   <div className="flex items-center gap-1">
                     <Tag className="h-3 w-3" />
-                    <span>{bundle.category}</span>
+                    <span>{bundle.categories[0]}</span>
                   </div>
                 )}
               </div>
@@ -81,7 +81,7 @@ export function BundleCard({
         </div>
       </Card>
     );
-  }
+  };
 
   return (
     <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group", className)}>
@@ -120,10 +120,10 @@ export function BundleCard({
             <Users className="h-4 w-4" />
             <span>All levels</span>
           </div>
-          {bundle.category && (
+          {bundle.categories.length && (
             <div className="flex items-center gap-1">
               <Tag className="h-4 w-4" />
-              <span>{bundle.category}</span>
+              <span>{bundle.categories[0]}</span>
             </div>
           )}
         </div>

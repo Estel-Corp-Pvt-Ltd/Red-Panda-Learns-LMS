@@ -1,18 +1,6 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import { BundleStatus, PricingModel } from "./general";
 
-export interface BundleEnrollment {
-  id: string;
-  userId: string;
-  bundleId: string;
-  enrolledAt: Timestamp | FieldValue;
-  paymentId?: string;
-  paymentProvider?: string;
-  amount: number;
-  status: 'active' | 'suspended' | 'completed';
-  enrolledCourseIds: string[]; // Individual course enrollments created
-}
-
 export type BundleCourseItem = {
   id: string;
   title: string;
@@ -30,6 +18,7 @@ export interface Bundle {
   tags: string[];
   instructorId: string;
   instructorName: string;
+  thumbnail?: string;
   status: BundleStatus;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;

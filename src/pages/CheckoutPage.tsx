@@ -145,11 +145,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     const checkEnrollment = async () => {
       if (user && courseId) {
-        const enrolled = await enrollmentService.isUserEnrolled(
+        const result = await enrollmentService.isUserEnrolled(
           user.id,
           courseId,
         );
-        setUserIsEnrolled(enrolled);
+
+        setUserIsEnrolled(result.success);
       }
     };
     checkEnrollment();
@@ -546,20 +547,18 @@ export default function CheckoutPage() {
                       <div
                         key={provider.id}
                         onClick={() => setSelectedProvider(provider.id)}
-                        className={`cursor-pointer p-4 rounded-xl border transition ${
-                          isSelected
+                        className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
                             ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
                             : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                           <div className="flex gap-3">
                             <div
-                              className={`w-4 h-4 mt-1 rounded-full border-2 ${
-                                isSelected
+                              className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
                                   ? "bg-blue-600 border-blue-600"
                                   : "border-gray-400 dark:border-[#555]"
-                              }`}
+                                }`}
                             />
                             <div>
                               <div className="flex items-center gap-2 font-medium">

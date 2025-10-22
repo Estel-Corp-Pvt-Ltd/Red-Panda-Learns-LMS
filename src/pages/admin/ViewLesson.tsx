@@ -20,7 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Lesson } from "@/types/lesson";
 import { lessonService } from "@/services/lessonService";
 import { LEARNING_UNIT, LESSON_TYPE } from "@/constants";
-import LmsVideoPlayer from "@/components/LMSVideoPlayer";
+import VideoPlayer from "@/components/VideoPlayer";
 import { toast } from "@/hooks/use-toast";
 
 export default function ViewLessonAdmin() {
@@ -161,7 +161,7 @@ export default function ViewLessonAdmin() {
         break;
       case LESSON_TYPE.VIDEO_LECTURE:
         container =
-          <LmsVideoPlayer url={selectedLesson.embedUrl} />
+          <VideoPlayer url={selectedLesson.embedUrl} />
         break;
       default: break;
     }

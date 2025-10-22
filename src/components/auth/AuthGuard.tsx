@@ -1,15 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation, useParams } from 'react-router-dom';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { COLLECTION, USER_ROLE } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { db } from '@/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Lock, Clock } from 'lucide-react';
-import { COLLECTION, USER_ROLE } from '@/constants';
 import { Enrollment } from '@/types/course';
+import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -19,7 +16,7 @@ interface AuthGuardProps {
   requireAdmin?: boolean;
   weekNumber?: number;
   message?: string;
-}
+};
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   children,
@@ -27,7 +24,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireEnrollment = false,
   requireCohortAccess = false,
   requireAdmin = false,
-  weekNumber,
   message = 'Please login to access this lesson.',
 }) => {
   const { user, loading: authLoading } = useAuth();
@@ -67,10 +63,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     }
   }, [requireEnrollment, user, courseId, enrollmentChecked, refreshEnrollments]);
 
-  // Find user's enrollment in the cohort
-  const userCohortEnrollment: Enrollment | undefined = cohortId
-  ? enrollments.find((enr: Enrollment) => enr.cohortId === cohortId && enr.status === 'active')
-  : undefined;
+  // // Find user's enrollment in the cohort
+  // const userCohortEnrollment: Enrollment | undefined = cohortId
+  // ? enrollments.find((enr: Enrollment) => enr.cohortId === cohortId && enr.status === 'active')
+  // : undefined;
 
   const userIsEnrolled = user && courseId ? isEnrolled(courseId) : false;
 
@@ -122,17 +118,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   }
 
   // Require cohort access
-  if (requireCohortAccess && cohortId && user) {
-    if (!userCohortEnrollment) {
-      return (
-        <Navigate
-          to={`/courses/${courseId}`}
-          state={{ from: location, message: 'You need to be enrolled in this cohort to access its content.' }}
-          replace
-        />
-      );
-    }
-  }
+  // if (requireCohortAccess && cohortId && user) {
+  //   if (!userCohortEnrollment) {
+  //     return (
+  //       <Navigate
+  //         to={`/courses/${courseId}`}
+  //         state={{ from: location, message: 'You need to be enrolled in this cohort to access its content.' }}
+  //         replace
+  //       />
+  //     );
+  //   }
+  // }
 
   // If you want to handle locked content per week later, you can add it here
 

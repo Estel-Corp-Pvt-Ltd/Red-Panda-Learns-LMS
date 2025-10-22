@@ -21,12 +21,6 @@ import { logError } from "@/utils/logger";
 
 class UserService {
     /**
-     * Generates a new user ID in the format `user_<number>`, starting from 10000000.
-     * Uses a random gap between 5 and 20 to avoid easy guessing.
-     */
-
-
-    /**
      * Creates a new user in Firestore.
      */
     async createUser(
