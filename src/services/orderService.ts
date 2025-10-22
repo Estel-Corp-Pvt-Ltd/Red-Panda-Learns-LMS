@@ -1,23 +1,15 @@
 import {
   doc,
-  setDoc,
   getDoc,
-  updateDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
-  serverTimestamp,
   runTransaction,
+  serverTimestamp,
+  setDoc,
+  updateDoc
 } from "firebase/firestore";
 import { db } from "../firebaseConfig.ts";
 import { OrderStatus } from "../types/general.ts";
-// import { ORDER_STATUS } from "../constants.ts";
-import { Order } from "@/types/order.ts";
 import { ORDER_STATUS } from "@/constants.ts";
-
+import { Order } from "@/types/order.ts";
 
 class OrderService {
   private async generateOrderId(): Promise<{ orderId: string }> {

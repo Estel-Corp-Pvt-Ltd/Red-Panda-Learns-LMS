@@ -1,43 +1,42 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
+  Copy,
   CreditCard,
-  Shield,
   Lock,
   RefreshCw,
-  Copy,
+  Shield,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
-import { useCourseQuery } from "@/hooks/useCaching";
 import { useToast } from "@/hooks/use-toast";
+import { useCourseQuery } from "@/hooks/useCaching";
 
 import { Header } from "@/components/Header";
-import { paymentService } from "@/services/paymentService";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
 import { enrollmentService } from "@/services/enrollmentService";
+import { paymentService } from "@/services/paymentService";
 
-import { Currency, PaymentProvider } from "@/types/general";
-import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
-import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
+import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
 import { Coupon } from "@/types/coupon";
+import { Currency, PaymentProvider } from "@/types/general";
+import { Address } from "@/types/order";
 import { Timestamp } from "firebase/firestore";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
-  RAZORPAY: ["INR", "USD", "EUR", "GBP"],
-  PAYPAL: ["USD", "EUR", "GBP"],
+  RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+  PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
 };
 
 const METHOD_LOGOS: Record<
@@ -548,16 +547,16 @@ export default function CheckoutPage() {
                         key={provider.id}
                         onClick={() => setSelectedProvider(provider.id)}
                         className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
-                            ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                            : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                          ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                          : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
                           }`}
                       >
                         <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                           <div className="flex gap-3">
                             <div
                               className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                  ? "bg-blue-600 border-blue-600"
-                                  : "border-gray-400 dark:border-[#555]"
+                                ? "bg-blue-600 border-blue-600"
+                                : "border-gray-400 dark:border-[#555]"
                                 }`}
                             />
                             <div>
