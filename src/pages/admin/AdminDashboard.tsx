@@ -461,7 +461,6 @@ export function AdminDashboard() {
     try {
       const couponsList = await couponService.getAllCoupons();
       setCoupons(couponsList.data);
-      console.log(couponsList);
     } catch (error) {
       toast({
         title: "Error",
