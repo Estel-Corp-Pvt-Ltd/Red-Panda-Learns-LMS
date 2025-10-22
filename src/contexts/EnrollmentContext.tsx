@@ -2,7 +2,13 @@ import { ENROLLMENT_STATUS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState
+} from 'react';
 
 interface EnrollmentContextType {
   enrollments: Enrollment[];
@@ -56,19 +62,10 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
           const match = String(enrollment.targetId) === String(courseId);
           const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
 
-          console.log("Checking enrollment:", {
-            targetId: enrollment.targetId,
-            courseId,
-            match,
-            status: enrollment.status,
-            statusOk,
-          });
-
           return match && statusOk;
         }
       );
 
-      console.log("Final result for", courseId, "=>", result);
       return result;
     },
     [enrollments]

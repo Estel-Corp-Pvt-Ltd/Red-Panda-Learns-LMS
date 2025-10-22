@@ -15,7 +15,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { BookOpen, Clock, PlayCircle, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const { data: course, isLoading } = useCourseQuery(enrollment.targetId);
@@ -39,9 +38,9 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
             <div className="space-y-3 mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span>Progress</span>
-                <span>{enrollment.progressSummary.percent}%</span>
+                <span>{enrollment.progressSummary?.percent ?? 0}%</span>
               </div>
-              <Progress value={enrollment.progressSummary.percent} />
+              <Progress value={enrollment.progressSummary?.percent ?? 0} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -111,9 +110,9 @@ export default function DashboardPage() {
 
   const stats = {
     totalCourses: enrollments.length,
-    completedCourses: enrollments.filter(e => e.progressSummary.percent === 100).length,
+    completedCourses: enrollments.filter(e => e.progressSummary?.percent === 100).length,
     averageProgress: enrollments.length > 0
-      ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary.percent, 0) / enrollments.length)
+      ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary?.percent, 0) / enrollments.length)
       : 0,
   };
 

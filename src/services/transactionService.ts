@@ -1,27 +1,25 @@
 import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
   collection,
-  query,
-  where,
+  doc,
+  getDoc,
   getDocs,
-  orderBy,
   limit,
+  orderBy,
+  query,
   serverTimestamp,
-  runTransaction
+  setDoc,
+  updateDoc,
+  where
 } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
+import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { db } from '../firebaseConfig.ts';
+import { TransactionStatus } from '../types/general.ts';
 import {
   PaymentDetails,
   Transaction,
   WebhookEvent
 } from '../types/transaction';
-import { TransactionStatus } from '../types/general.ts';
-import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
-import { v4 as uuidv4 } from 'uuid';
-import { Transaction as FirebaseTransaction } from 'firebase-admin/firestore';
 
 class TransactionService {
 
@@ -253,6 +251,8 @@ class TransactionService {
       return false;
     }
   }
+
+  // TODO: Create a method to handle refunds
 }
 
 export const transactionService = new TransactionService();

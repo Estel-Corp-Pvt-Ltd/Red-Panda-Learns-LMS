@@ -13,12 +13,12 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CART_ACTION } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   useCourseQuery,
 } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
-import { enrollmentService } from "@/services/enrollmentService";
 import { Topic } from "@/types/course";
 import { formatDate } from "@/utils/date-time";
 import {
@@ -37,6 +37,7 @@ export default function CourseDetailPage() {
   const { cart, cartDispatch } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isEnrolled } = useEnrollment();
   const { toast } = useToast();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
@@ -55,15 +56,15 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading;
   const isError = courseError;
 
+  // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
-    const checkEnrollment = async () => {
-      if (user && courseId) {
-        const result = await enrollmentService.isUserEnrolled(user.id, courseId);
-        setUserIsEnrolled(result.success);
+    if (user && courseId) {
+      if (isEnrolled(courseId)) {
+        setUserIsEnrolled(true);
+      } else {
+        setUserIsEnrolled(false);
       }
-    };
-
-    checkEnrollment();
+    }
   }, [user, courseId]);
 
   const handleAddToCart = async () => {
