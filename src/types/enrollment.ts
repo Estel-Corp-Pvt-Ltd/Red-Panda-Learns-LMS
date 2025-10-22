@@ -1,10 +1,8 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 import {
-    Currency,
     EnrolledProgramType,
     EnrollmentStatus,
-    PaymentProvider,
     PaymentStatus,
     PricingModel,
     UserRole
@@ -31,15 +29,12 @@ export interface Enrollment {
     bundleProgress?: Array<{ courseId: string; progressId: string; }>;
 
     pricingModel: PricingModel;
-    payment?: {
+    paymentSummary?: {
+        transactions?: string[]; // only include transaction IDs where status === SUCCESS
         status: PaymentStatus;
-        actualAmount: number;
-        currency: Currency;
-        amountPaid: number;
+        totalAmount: number;
+        totalPaid: number;
         balance: number;
-        transactionId?: string;
-        provider: PaymentProvider;
-        paidAt?: Timestamp | FieldValue;
     };
 
     createdAt: Timestamp | FieldValue;

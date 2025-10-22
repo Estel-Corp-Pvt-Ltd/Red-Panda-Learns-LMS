@@ -2,8 +2,7 @@ import { ENROLLMENT_STATUS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
-import React,
-{
+import React, {
   createContext,
   useCallback,
   useContext,

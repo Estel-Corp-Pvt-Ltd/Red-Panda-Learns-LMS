@@ -3,7 +3,6 @@ import { COLLECTION, USER_ROLE } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { db } from '@/firebaseConfig';
-import { Enrollment } from '@/types/course';
 import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';

@@ -1,14 +1,13 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cohortService } from '@/services/cohortService';
 import { Enrollment } from '@/types/course'; // Contains Enrollment interface
-import { Cohort } from '@/types/course';
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 interface CohortContextType {
   cohortEnrollments: Enrollment[];

@@ -15,7 +15,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { BookOpen, Clock, PlayCircle, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const { data: course, isLoading } = useCourseQuery(enrollment.targetId);

@@ -23,10 +23,10 @@ import {
   PRICING_MODEL,
   USER_ROLE
 } from "@/constants";
+import { convertToDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 import { learningProgressService } from "./learningProgressService";
-import { convertToDate } from "@/utils/date-time";
 
 class EnrollmentService {
   /**
