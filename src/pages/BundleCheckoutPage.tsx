@@ -1,296 +1,1174 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { ErrorState } from '@/components/ui/error-state';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { useBundleQuery, useBundleCoursesQuery } from '@/hooks/useBundleApi';
-import { useAuth } from '@/contexts/AuthContext';
-import { useEnrollment } from '@/contexts/EnrollmentContext';
-import { paymentService } from '@/services/paymentService';
-import { ArrowLeft, CreditCard, DollarSign, Package, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  CreditCard,
+  Shield,
+  Lock,
+  RefreshCw,
+  Copy,
+} from "lucide-react";
 
-type PaymentProvider = 'razorpay' | 'paypal';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { useToast } from "@/hooks/use-toast";
+
+import { Header } from "@/components/Header";
+import { paymentService } from "@/services/paymentService";
+import { couponService } from "@/services/couponService";
+import { couponUsageService } from "@/services/couponUsageService";
+
+import { Currency, PaymentProvider } from "@/types/general";
+import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
+import { Address } from "@/types/order";
+import { Input } from "@/components/ui/input";
+import { Coupon } from "@/types/coupon";
+import { Timestamp } from "firebase/firestore";
+
+// BUNDLE queries (only difference)
+import { useBundleQuery, useBundleCoursesQuery } from "@/hooks/useBundleApi";
+
+const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
+  RAZORPAY: ["INR", "USD", "EUR", "GBP"],
+  PAYPAL: ["USD", "EUR", "GBP"],
+};
+
+const METHOD_LOGOS: Record<
+  PaymentProvider,
+  { name: string; src: string; className?: string }[]
+> = {
+  RAZORPAY: [
+    { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
+    { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
+    {
+      name: "Mastercard",
+      src: "/mastercard.svg",
+      className: "h-[20px] w-[32px]",
+    },
+    { name: "RuPay", src: "/rupay.png", className: "h-[30px] w-[40px]" },
+  ],
+  PAYPAL: [
+    { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
+    {
+      name: "Mastercard",
+      src: "/mastercard.svg",
+      className: "h-[20px] w-[32px]",
+    },
+    { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
+  ],
+};
 
 export default function BundleCheckoutPage() {
   const { bundleId } = useParams<{ bundleId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshEnrollments } = useEnrollment();
-  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>('razorpay');
+  const { refreshEnrollments, isEnrolled } = useEnrollment();
+  const { toast } = useToast();
+
+  const [billingAddress, setBillingAddress] = useState<Address>({
+    fullName: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+    phone: "",
+    landmark: "",
+    type: ADDRESS_TYPE.BILLING,
+  });
+
+  const [shippingAddress, setShippingAddress] = useState<Address>({
+    fullName: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+    phone: "",
+    landmark: "",
+    type: ADDRESS_TYPE.SHIPPING,
+  });
+
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
+    PAYMENT_PROVIDER.RAZORPAY,
+  );
+
+  const [providerCurrencies, setProviderCurrencies] = useState<
+    Record<PaymentProvider, Currency>
+  >({
+    [PAYMENT_PROVIDER.RAZORPAY]: CURRENCY.INR,
+    [PAYMENT_PROVIDER.PAYPAL]: CURRENCY.USD,
+  });
+
+  const selectedCurrency = providerCurrencies[selectedProvider];
+
+  const [pricing, setPricing] = useState<any>(null);
+  const [loadingPricing, setLoadingPricing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paypalClicked, setPaypalClicked] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
-  const { data: bundle, isLoading, isError, error } = useBundleQuery(bundleId!);
-  const { data: courses, isLoading: coursesLoading } = useBundleCoursesQuery(bundleId!);
+  const providers = paymentService.getAvailableProviders();
 
+  // Only change: use bundle queries here
+  const { data: bundle, isLoading } = useBundleQuery(bundleId!);
+  const { data: courses } = useBundleCoursesQuery(bundleId!);
+
+  const [promoCode, setPromoCode] = useState("");
+  const [isCouponValid, setIsCouponValid] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [finalPrice, setFinalPrice] = useState<number>(0);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
-      navigate('/auth/login');
-      return;
-    }
-  }, [user, navigate]);
-
-  if (!user) {
-    return null;
-  }
-
-  if (isLoading || coursesLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container px-4 py-8">
-          <LoadingSkeleton variant="card" />
-        </main>
-      </div>
-    );
-  }
-
-  if (isError || !bundle) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container px-4 py-8">
-          <ErrorState 
-            error={error as Error}
-            onRetry={() => window.location.reload()}
-            className="my-12"
-          />
-        </main>
-      </div>
-    );
-  }
-
-  const handlePayment = async () => {
-    if (!user || !bundle) return;
-
-    setIsProcessing(true);
-    
-    try {
-      console.log('Processing bundle payment:', {
-        bundleId: bundle.id,
-        provider: selectedProvider,
-        amount: bundle.bundlePrice,
-        userEmail: user.email
+      navigate("/auth/login", {
+        state: {
+          from: `/bundle/${bundleId}/checkout`,
+          message: "Please login to proceed with purchase.",
+        },
       });
+    }
+  }, [user, navigate, bundleId]);
 
-      const result = await paymentService.processBundlePayment(
+  // Load pricing when bundle or currency/provider/discount changes
+  useEffect(() => {
+    if (bundle && selectedCurrency) loadPricing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundle, selectedCurrency, selectedProvider, discountAmount]);
+
+  // Initial load
+  useEffect(() => {
+    if (bundle && selectedCurrency) loadPricing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadPricing = async () => {
+    if (!bundle) return;
+    setLoadingPricing(true);
+    try {
+      // Try known bundle price fields; adjust if your schema differs
+      const basePrice =
+        Number(
+          (bundle as any).bundlePrice ??
+            (bundle as any).salePrice ??
+            (bundle as any).price ??
+            0,
+        ) || 0;
+
+      const effectivePrice = Math.max(0, basePrice - discountAmount);
+      setFinalPrice(effectivePrice);
+
+      const data = await paymentService.calculatePricing(
+        effectivePrice,
+        selectedCurrency,
         selectedProvider,
-        bundle,
-        user.email!,
-        user.uid
+        CURRENCY.INR,
       );
-
-      if (result.success) {
-        // Refresh enrollment status
-        await refreshEnrollments();
-        
-        toast.success('Payment successful! Welcome to your new courses!');
-        navigate(`/bundle/${bundleId}/dashboard`);
-      } else {
-        toast.error(result.error || 'Payment failed. Please try again.');
-      }
+      setPricing(data);
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to load pricing information",
+        variant: "destructive",
+      });
     } finally {
-      setIsProcessing(false);
+      setLoadingPricing(false);
     }
   };
 
+  const calcDiscount = (originalPrice: number, coupon?: Coupon) => {
+    if (!coupon) return 0;
+    const pct = coupon.discountPercentage ?? 0;
+    return Math.max(0, Math.min(originalPrice, (originalPrice * pct) / 100));
+  };
+
+  const clearCoupon = useCallback(() => {
+    setAppliedCoupon(null);
+    setIsCouponValid(false);
+    setDiscountAmount(0);
+    setCouponMessage("");
+  }, []);
+
+  // Auto-clear when promo becomes empty
+  useEffect(() => {
+    if (promoCode.trim() === "" && (appliedCoupon || discountAmount > 0)) {
+      clearCoupon();
+    }
+  }, [promoCode, appliedCoupon, discountAmount, clearCoupon]);
+
+  const handleCoupon = async () => {
+    setIsValidatingCoupon(true);
+    setCouponMessage("");
+    setIsCouponValid(false);
+
+    try {
+      const code = promoCode.trim();
+      if (!code) {
+        clearCoupon();
+        return;
+      }
+
+      const couponResult = await couponService.getCouponByCode(code);
+
+      if (!couponResult.success) {
+        clearCoupon();
+        setCouponMessage("Invalid promo code");
+        return;
+      }
+
+      const coupon = couponResult.data;
+      setAppliedCoupon(coupon);
+
+      // For bundles, pass bundleId (courseId=null, bundleId=bundleId)
+      const applicabilityResult = await couponUsageService.isCouponApplicable(
+        user!.id,
+        coupon.id,
+        null,
+        bundleId!,
+        null,
+      );
+
+      if (
+        !applicabilityResult.success ||
+        !applicabilityResult.data?.isApplicable
+      ) {
+        clearCoupon();
+        setCouponMessage(
+          applicabilityResult.data?.reason ?? "Coupon not applicable",
+        );
+        return;
+      }
+
+      const originalPrice =
+        Number(
+          (bundle as any).bundlePrice ??
+            (bundle as any).salePrice ??
+            (bundle as any).price ??
+            0,
+        ) || 0;
+
+      const d = calcDiscount(originalPrice, coupon);
+      setDiscountAmount(d);
+      setIsCouponValid(true);
+      setCouponMessage("Coupon is valid, Happy Shopping");
+    } catch (error) {
+      console.error("Error During Handling Coupon", error);
+      clearCoupon();
+      setCouponMessage("Error applying coupon. Please try again.");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleUseCoupon = async () => {
+    try {
+      if (!appliedCoupon) return;
+      const usageDate = {
+        userId: user?.id,
+        couponId: appliedCoupon.id,
+        usedAt: Timestamp.now(),
+      };
+      await couponUsageService.recordCouponUsage(usageDate);
+    } catch (error) {
+      console.log("Error recording coupon usage", error);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!bundle || !user || !pricing) return;
+    if (selectedProvider === PAYMENT_PROVIDER.PAYPAL) setPaypalClicked(true);
+    setIsProcessing(true);
+
+    toast({
+      title: "Processing your payment...",
+      description: "Please do not refresh or close this window.",
+    });
+
+    try {
+      // Using the generic processPayment to keep parity with reference structure
+      // If you have a dedicated processBundlePayment, swap it here with same args
+      const result = await paymentService.processPayment(
+        selectedProvider,
+        bundle,
+        finalPrice,
+        user.email!,
+        user.id,
+        selectedCurrency,
+        CURRENCY.INR,
+        billingAddress,
+        shippingAddress,
+      );
+
+      if (result.success && result.transactionId) {
+        let enrollmentVerified = false;
+        await handleUseCoupon();
+
+        // Try to verify that enrolled courses in the bundle are reflected
+        for (let i = 0; i < 5; i++) {
+          await refreshEnrollments();
+
+          if (Array.isArray(courses) && courses.length > 0) {
+            const allEnrolled = courses.every((c: any) => isEnrolled(c.id));
+            if (allEnrolled) {
+              enrollmentVerified = true;
+              break;
+            }
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+        }
+
+        if (enrollmentVerified) {
+          toast({
+            title: "Purchase Successful!",
+            description: `Your bundle "${(bundle as any).title}" is now unlocked.`,
+          });
+          navigate(`/bundle/${bundleId}/dashboard`);
+        } else {
+          toast({
+            title: "Payment Successful",
+            description:
+              "Your payment was processed. If you don't see the bundle immediately, please refresh the page.",
+          });
+          navigate(`/bundle/${bundleId}/dashboard`);
+        }
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: result.error || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      setPaypalClicked(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background dark:bg-[#0e0f11] p-6">
+        <div className="max-w-2xl mx-auto">
+          <LoadingSkeleton variant="text" lines={8} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!bundle) {
+    navigate("/");
+    return null;
+  }
+
+  const hasDiscount = discountAmount > 0;
+  const exchangeRate = Number(pricing?.exchangeRate ?? 1);
+  const formatMoney = (amount: number, cur: Currency) =>
+    new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: cur,
+    }).format(amount);
+
+  const baseBundlePrice =
+    Number(
+      (bundle as any).bundlePrice ??
+        (bundle as any).salePrice ??
+        (bundle as any).price ??
+        0,
+    ) || 0;
+
+  const originalConverted = baseBundlePrice * exchangeRate;
+  const discountConverted = discountAmount * exchangeRate;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col">
       <Header />
-      
-      <main className="container px-4 py-8 max-w-4xl">
-        {/* Back Navigation */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(`/bundle/${bundleId}`)}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Bundle
-        </Button>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Bundle Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{bundle.title}</h3>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    {bundle.description}
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Courses included:</span>
-                    <Badge variant="secondary">{bundle.totalCourses} courses</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Original price:</span>
-                    <span className="text-sm line-through text-muted-foreground">
-                      ${(bundle.originalPrice / 100).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Your savings:</span>
-                    <span className="text-sm text-success font-medium">
-                      -${((bundle.originalPrice - bundle.bundlePrice) / 100).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Total:</span>
-                  <span className="text-2xl font-bold text-primary">
-                    ${(bundle.bundlePrice / 100).toFixed(2)}
+      {/* Mobile sticky CTA */}
+      <div className="sticky top-0 z-40 lg:hidden bg-white/95 dark:bg-[#0e0f11]/95 border-b border-blue-100 dark:border-zinc-800 backdrop-blur">
+        <div className="px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Pay and unlock bundle
+            </span>
+            <div className="flex items-baseline gap-2">
+              {hasDiscount && pricing ? (
+                <>
+                  <span className="text-sm line-through text-gray-400">
+                    {formatMoney(originalConverted, selectedCurrency)}
                   </span>
-                </div>
-              </CardContent>
-            </Card>
+                  <span className="text-base font-semibold text-blue-700 dark:text-blue-400">
+                    {pricing.formattedTotal ?? pricing.formattedPrice}
+                  </span>
+                </>
+              ) : (
+                <span className="text-base font-semibold text-blue-700 dark:text-blue-400">
+                  {pricing?.formattedTotal ?? pricing?.formattedPrice ?? "--"}
+                </span>
+              )}
+            </div>
+          </div>
 
-            {/* Course List */}
-            {courses && courses.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Included Courses</CardTitle>
-                  <CardDescription>
-                    You'll get access to all of these courses
-                  </CardDescription>
+          <Button
+            onClick={handlePayment}
+            disabled={!agreed || isProcessing || loadingPricing || !pricing}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900"
+          >
+            {isProcessing ? "Processing..." : "Pay & Unlock"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white">
+          {/* Top bar */}
+          <div className="mb-4 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/bundle/${bundleId}`)}
+              className="flex items-center text-blue-600"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Bundle
+            </Button>
+          </div>
+
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">Complete Your Purchase</h1>
+            <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
+              You're just one step away from unlocking this bundle
+            </p>
+          </div>
+
+          {/* Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* RIGHT: Summary / Payment (sticky) */}
+            <div className="lg:col-span-5 space-y-6 sticky top-6 self-start">
+              {/* Bundle Summary */}
+              <Card className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                  <CardTitle>Bundle Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {courses.slice(0, 5).map((course) => (
-                      <div key={course.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                        <CheckCircle className="h-4 w-4 text-success" />
-                        <div>
-                          <p className="font-medium text-sm">{course.title || course.post_title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {course.description}
-                          </p>
+                  <h3 className="font-semibold text-lg">{(bundle as any).title}</h3>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
+                    {(bundle as any).description}
+                  </p>
+
+                  {pricing && !loadingPricing ? (
+                    <div className="space-y-3">
+                      {/* Price row with optional strike-through */}
+                      <div className="flex items-baseline justify-between text-sm">
+                        <span>Bundle Price:</span>
+                        <div className="flex items-baseline gap-2">
+                          {hasDiscount ? (
+                            <>
+                              <span className="line-through text-gray-400">
+                                {formatMoney(
+                                  originalConverted,
+                                  selectedCurrency,
+                                )}
+                              </span>
+                              <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                                You save{" "}
+                                {formatMoney(
+                                  discountConverted,
+                                  selectedCurrency,
+                                )}
+                              </Badge>
+                            </>
+                          ) : (
+                            <span className="font-medium">
+                              {formatMoney(originalConverted, selectedCurrency)}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    ))}
-                    {courses.length > 5 && (
-                      <div className="text-center py-2">
-                        <span className="text-sm text-muted-foreground">
-                          +{courses.length - 5} more courses
+
+                      {selectedProvider === PAYMENT_PROVIDER.PAYPAL && (
+                        <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                          <span>No hidden fees with PayPal</span>
+                          <span>✓</span>
+                        </div>
+                      )}
+
+                      <hr className="my-2 border-gray-200 dark:border-gray-700" />
+
+                      {/* Total */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-base font-semibold">Total:</span>
+                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                          {pricing.formattedTotal ?? pricing.formattedPrice}
                         </span>
                       </div>
+
+                      {pricing.originalCurrency !== pricing.currency && (
+                        <div className="text-xs text-muted-foreground dark:text-gray-400">
+                          Original: {pricing.originalAmount}{" "}
+                          {pricing.originalCurrency} (Rate:{" "}
+                          {Number(pricing.exchangeRate).toFixed(4)})
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                      <span className="text-sm">Loading pricing...</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Payment Providers */}
+              <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-blue-600" /> Select
+                    Payment Method
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {providers.map((provider) => {
+                    const isSelected = selectedProvider === provider.id;
+                    const currency = providerCurrencies[provider.id];
+
+                    return (
+                      <div
+                        key={provider.id}
+                        onClick={() => setSelectedProvider(provider.id)}
+                        className={`cursor-pointer p-4 rounded-xl border transition ${
+                          isSelected
+                            ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                            : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                        }`}
+                      >
+                        <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
+                          <div className="flex gap-3">
+                            <div
+                              className={`w-4 h-4 mt-1 rounded-full border-2 ${
+                                isSelected
+                                  ? "bg-blue-600 border-blue-600"
+                                  : "border-gray-400 dark:border-[#555]"
+                              }`}
+                            />
+                            <div>
+                              <div className="flex items-center gap-2 font-medium">
+                                <img
+                                  src={
+                                    provider.id === "RAZORPAY"
+                                      ? "/razorpay-icon.svg"
+                                      : "/paypal-icon.svg"
+                                  }
+                                  className="h-5"
+                                  alt={provider.id}
+                                />
+                              </div>
+                              <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
+                                {provider.description}
+                              </p>
+                              <div className="mt-2 flex gap-1.5 flex-wrap">
+                                {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
+                                  <img
+                                    key={m.name}
+                                    src={m.src}
+                                    alt={m.name}
+                                    title={m.name}
+                                    loading="lazy"
+                                    className={
+                                      m.className ?? "h-[20px] w-[32px]"
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2 sm:items-end">
+                            <select
+                              value={currency}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) =>
+                                setProviderCurrencies((prev) => ({
+                                  ...prev,
+                                  [provider.id]: e.target.value as Currency,
+                                }))
+                              }
+                              className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
+                            >
+                              {providerSupportedCurrencies[provider.id].map(
+                                (c) => (
+                                  <option key={c} value={c}>
+                                    {c}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                              >
+                                Secure
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+                        {/* Secure */}
+              <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium mb-1">Secure Payment</h4>
+                      <p className="text-sm text-muted-foreground dark:text-gray-400">
+                        All transactions are encrypted. Instant access after
+                        payment. 7‑day refund guarantee.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Agree + CTA (hidden on mobile to avoid duplicate with sticky bar) */}
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="agree"
+                    checked={agreed}
+                    onCheckedChange={(v) => setAgreed(!!v)}
+                  />
+                  <Label htmlFor="agree" className="text-sm leading-snug">
+                    I agree to the{" "}
+                    <Link
+                      to="/terms"
+                      className="underline text-blue-600 dark:text-blue-400"
+                    >
+                      Terms & Conditions
+                    </Link>
+                    ,{" "}
+                    <Link
+                      to="/privacy"
+                      className="underline text-blue-600 dark:text-blue-400"
+                    >
+                      Privacy Policy
+                    </Link>
+                    , and{" "}
+                    <Link
+                      to="/refund-policy"
+                      className="underline text-blue-600 dark:text-blue-400"
+                    >
+                      Refund Policy
+                    </Link>
+                    .
+                  </Label>
+                </div>
+
+                <div className="hidden lg:block">
+                  <Button
+                    onClick={handlePayment}
+                    disabled={
+                      !agreed || isProcessing || loadingPricing || !pricing
+                    }
+                    size="lg"
+                    className="w-full mt-1 bg-blue-600 hover:bg-blue-700 text-white dark:text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900"
+                  >
+                    {isProcessing ? (
+                      "Processing..."
+                    ) : loadingPricing ? (
+                      "Loading..."
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4 mr-2" />
+                        Pay {pricing?.formattedTotal ??
+                          pricing?.formattedPrice}{" "}
+                        & Enroll Now
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {selectedProvider === PAYMENT_PROVIDER.PAYPAL &&
+                  paypalClicked && (
+                    <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
+                      <CardContent className="pt-6">
+                        <div id="paypal-button-container"></div>
+                      </CardContent>
+                    </Card>
+                  )}
+              </div>
+            </div>
+            <div className="lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* Billing Address */}
+              <Card className="xl:col-span-1 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">1</span>
+                    </div>
+                    Billing Address
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="fullName"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        Full Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="fullName"
+                        value={billingAddress.fullName}
+                        onChange={(e) =>
+                          setBillingAddress({
+                            ...billingAddress,
+                            fullName: e.target.value,
+                          })
+                        }
+                        placeholder="Enter your full name"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="phone"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        Phone Number <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={billingAddress.phone}
+                        onChange={(e) =>
+                          setBillingAddress({
+                            ...billingAddress,
+                            phone: e.target.value,
+                          })
+                        }
+                        placeholder="Enter your phone number"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="line1"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                    >
+                      Street Address <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="line1"
+                      value={billingAddress.line1}
+                      onChange={(e) =>
+                        setBillingAddress({
+                          ...billingAddress,
+                          line1: e.target.value,
+                        })
+                      }
+                      placeholder="Enter your street address"
+                      className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="line2"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                    >
+                      Apartment, Suite, etc.{" "}
+                      <span className="text-gray-400 text-xs">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="line2"
+                      value={billingAddress.line2 || ""}
+                      onChange={(e) =>
+                        setBillingAddress({
+                          ...billingAddress,
+                          line2: e.target.value,
+                        })
+                      }
+                      placeholder="Apartment number, suite, unit, building, floor, etc."
+                      className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="city"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        City <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="city"
+                        value={billingAddress.city}
+                        onChange={(e) =>
+                          setBillingAddress({
+                            ...billingAddress,
+                            city: e.target.value,
+                          })
+                        }
+                        placeholder="Enter your city"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="state"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        State/Province <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="state"
+                        value={billingAddress.state}
+                        onChange={(e) =>
+                          setBillingAddress({
+                            ...billingAddress,
+                            state: e.target.value,
+                          })
+                        }
+                        placeholder="Enter your state or province"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="postalCode"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        ZIP/Postal Code <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="postalCode"
+                        value={billingAddress.postalCode}
+                        onChange={(e) =>
+                          setBillingAddress({
+                            ...billingAddress,
+                            postalCode: e.target.value,
+                          })
+                        }
+                        placeholder="Enter ZIP or postal code"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="country"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        Country <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="country"
+                        value={billingAddress.country}
+                        onChange={(e) =>
+                          setBillingAddress({
+                            ...billingAddress,
+                            country: e.target.value,
+                          })
+                        }
+                        placeholder="Enter your country"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Shipping Address */}
+              <Card className="xl:col-span-1 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+                <CardHeader className="border-b border-blue-100 dark:border-zinc-800 flex flex-row justify-between items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">2</span>
+                    </div>
+                    Shipping Address
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setShippingAddress({
+                        ...billingAddress,
+                        type: "SHIPPING",
+                      })
+                    }
+                    className="border-blue-300 dark:border-blue-700 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-950/30 text-blue-600 dark:text-blue-400"
+                  >
+                    <Copy className="h-3 w-3 mr-2" />
+                    Same as Billing
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="shipFullName"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        Full Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shipFullName"
+                        value={shippingAddress.fullName}
+                        onChange={(e) =>
+                          setShippingAddress({
+                            ...shippingAddress,
+                            fullName: e.target.value,
+                          })
+                        }
+                        placeholder="Enter recipient's full name"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="shipPhone"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        Phone Number <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shipPhone"
+                        type="tel"
+                        value={shippingAddress.phone}
+                        onChange={(e) =>
+                          setShippingAddress({
+                            ...shippingAddress,
+                            phone: e.target.value,
+                          })
+                        }
+                        placeholder="Enter contact phone number"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="shipLine1"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                    >
+                      Street Address <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="shipLine1"
+                      value={shippingAddress.line1}
+                      onChange={(e) =>
+                        setShippingAddress({
+                          ...shippingAddress,
+                          line1: e.target.value,
+                        })
+                      }
+                      placeholder="Enter delivery street address"
+                      className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="shipLine2"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                    >
+                      Apartment, Suite, etc.{" "}
+                      <span className="text-gray-400 text-xs">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="shipLine2"
+                      value={shippingAddress.line2}
+                      onChange={(e) =>
+                        setShippingAddress({
+                          ...shippingAddress,
+                          line2: e.target.value,
+                        })
+                      }
+                      placeholder="Apartment number, suite, unit, building, floor, etc."
+                      className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="shipCity"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        City <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shipCity"
+                        value={shippingAddress.city}
+                        onChange={(e) =>
+                          setShippingAddress({
+                            ...shippingAddress,
+                            city: e.target.value,
+                          })
+                        }
+                        placeholder="Enter delivery city"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="shipState"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        State/Province <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shipState"
+                        value={shippingAddress.state}
+                        onChange={(e) =>
+                          setShippingAddress({
+                            ...shippingAddress,
+                            state: e.target.value,
+                          })
+                        }
+                        placeholder="Enter state or province"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="shipPostalCode"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        ZIP/Postal Code <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shipPostalCode"
+                        value={shippingAddress.postalCode}
+                        onChange={(e) =>
+                          setShippingAddress({
+                            ...shippingAddress,
+                            postalCode: e.target.value,
+                          })
+                        }
+                        placeholder="Enter ZIP or postal code"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="shipCountry"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                      >
+                        Country <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shipCountry"
+                        value={shippingAddress.country}
+                        onChange={(e) =>
+                          setShippingAddress({
+                            ...shippingAddress,
+                            country: e.target.value,
+                          })
+                        }
+                        placeholder="Enter delivery country"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Coupon (full row) */}
+              <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
+                      %
+                    </span>
+                    Coupon
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <h3 className="font-semibold text-lg">{course.title}</h3>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
+                    {course.description}
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="promoCode">Have a promo code?</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="promoCode"
+                        type="text"
+                        placeholder="Enter code"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleCoupon();
+                        }}
+                        disabled={isValidatingCoupon || isProcessing}
+                        className="border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 dark:border-zinc-700 dark:focus:border-blue-500"
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleCoupon}
+                        disabled={!promoCode || isValidatingCoupon}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {isValidatingCoupon ? "Checking..." : "Apply"}
+                      </Button>
+                    </div>
+                    {couponMessage && (
+                      <p
+                        className={`text-sm ${isCouponValid ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      >
+                        {couponMessage}
+                      </p>
                     )}
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </div>
-
-          {/* Payment Form */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Payment Method
-                </CardTitle>
-                <CardDescription>
-                  Choose your preferred payment method
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <RadioGroup 
-                  value={selectedProvider} 
-                  onValueChange={(value) => setSelectedProvider(value as PaymentProvider)}
-                >
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <RadioGroupItem value="razorpay" id="razorpay" />
-                    <Label htmlFor="razorpay" className="flex-1 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                          <CreditCard className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Razorpay</p>
-                          <p className="text-sm text-muted-foreground">Cards, UPI, Wallets & More</p>
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <RadioGroupItem value="paypal" id="paypal" />
-                    <Label htmlFor="paypal" className="flex-1 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <DollarSign className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">PayPal</p>
-                          <p className="text-sm text-muted-foreground">Pay with PayPal account</p>
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <span>Secure payment processing</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <span>Instant access after payment</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <span>Lifetime access to courses</span>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                  size="lg"
-                  className="w-full"
-                >
-                  {isProcessing ? (
-                    'Processing...'
-                  ) : (
-                    `Complete Purchase - $${(bundle.bundlePrice / 100).toFixed(2)}`
-                  )}
-                </Button>
-                
-                {selectedProvider === 'razorpay' && (
-                  <div id="razorpay-button-container" className="mt-4"></div>
-                )}
-                
-                {selectedProvider === 'paypal' && (
-                  <div id="paypal-button-container" className="mt-4"></div>
-                )}
-              </CardContent>
-            </Card>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,8 @@ import {
   RazorpayWebhookEvent,
   RefundInitiator,
   TransactionStatus,
-  TransactionType
+  TransactionType,
+  EnrolledProgramType
 } from "./general";
 
 // TODO: Store a replica for each event
@@ -55,31 +56,31 @@ export type TransactionMetadata = {
 
 export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
 
+
+export interface TransactionLineItem {
+  itemId: string;            // The actual courseId or bundleId
+  itemType: EnrolledProgramType; // Helps you know which DB collection to look up later
+  name: string;              // Snapshot of the name at time of purchase (optional but useful)
+  amount: number;            // The price sold specifically for this item (after any item-specific discounts)
+  originalAmount?: number;   // The price before discounts (optional)
+}
 export interface Transaction {
   id: string; // internal transaction ID (UUID)
   orderNumber: string;
   userId: string;
-  courseId: string;
+  items: TransactionLineItem[]; 
   parentTransactionId?: string; // if refund, points to original payment
   type: TransactionType;
-
-  
-
   amount: number; // final charged amount
   currency: Currency;
   originalAmount?: number; // in original currency
   originalCurrency?: Currency;
   exchangeRate?: number;
-
   paymentProvider: PaymentProvider;
   status: TransactionStatus;
-
   paymentDetails: PaymentDetails;
-
   metadata: TransactionMetadata;
-
   webhookEvents?: WebhookEvent[];
-
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
   completedAt?: Timestamp | FieldValue;

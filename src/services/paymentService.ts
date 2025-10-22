@@ -1,4 +1,5 @@
 import { Course } from "@/types/course";
+import { Bundle } from "@/types/bundle";
 import { currencyService } from "./currencyService";
 import { transactionService } from "./transactionService";
 import { razorpayProvider } from "./providers/razorpayProvider";
@@ -101,18 +102,30 @@ class PaymentService {
     };
   }
 
-  async processPayment(
-    provider: PaymentProvider,
-    course: Course,
-    finalPrice:number,
-    userEmail: string,
-    userId: string,
-    selectedCurrency: Currency,
-    baseCurrency: Currency,
-    billingAddress:Address,
-    shippingAddress:Address
-
-  ): Promise<PaymentResult> {
+  async processPayment({
+  provider,
+  course,
+  bundle,
+  finalPrice,
+  userEmail,
+  userId,
+  selectedCurrency,
+  baseCurrency,
+  billingAddress,
+  shippingAddress
+}: {
+  provider: PaymentProvider,
+  course?: Course,
+  bundle?: Bundle,
+  finalPrice: number,
+  userEmail: string,
+  userId: string,
+  selectedCurrency: Currency,
+  baseCurrency: Currency,
+  billingAddress: Address,
+  shippingAddress: Address
+})
+: Promise<PaymentResult> {
     try {
       const providerOption = this.providers.find((p) => p.id === provider);
       if (!providerOption)
@@ -129,6 +142,7 @@ class PaymentService {
       const orderId = await orderService.createOrder({
         userId,
         courseIds: [course.id],
+        bundleIds:[bundle.id],
         amount: pricing.amount,
         currency: pricing.currency,
         billingAddress,
@@ -145,6 +159,7 @@ class PaymentService {
         orderNumber: orderId,
         userId,
         courseId: course.id,
+        bundleId:bundle.id,
         type: TRANSACTION_TYPE.PAYMENT,
         amount: pricing.amount,
         currency: pricing.currency,

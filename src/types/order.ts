@@ -18,7 +18,7 @@ export interface Address {
 export interface Order {
   orderId: string;
   userId: string;
-  courseIds: string[];
+  courseIds?: string[];
   bundleIds?: string[];
   status: OrderStatus;
   amount: number;

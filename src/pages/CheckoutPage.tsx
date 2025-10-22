@@ -301,17 +301,17 @@ export default function CheckoutPage() {
     });
 
     try {
-      const result = await paymentService.processPayment(
-        selectedProvider,
-        course,
-        finalPrice,
-        user.email!,
-        user.id,
-        selectedCurrency,
-        CURRENCY.INR,
-        billingAddress,
-        shippingAddress,
-      );
+      const result = await paymentService.processPayment({
+         provider: selectedProvider,
+  course: course, // here you can explicitly name it
+  finalPrice,
+  userEmail: user.email!,
+  userId: user.id,
+  selectedCurrency,
+  baseCurrency: CURRENCY.INR,
+  billingAddress,
+  shippingAddress,
+     });
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
