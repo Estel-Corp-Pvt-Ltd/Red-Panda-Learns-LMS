@@ -11,15 +11,17 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
-import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { db } from '../firebaseConfig.ts';
-import { TransactionStatus } from '../types/general.ts';
+
 import {
   PaymentDetails,
   Transaction,
   WebhookEvent
 } from '../types/transaction';
+import { TransactionStatus } from '../types/general.ts';
+import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
+import { v4 as uuidv4 } from 'uuid';
+
 
 class TransactionService {
 
@@ -64,14 +66,12 @@ class TransactionService {
         const ids = await this.generateTransactionId();
         transactionId = ids.transactionId;
       }
-        
 
-        
       const transaction: Transaction = {
         id: transactionId,
         orderNumber: data.orderNumber,
         userId: data.userId,
-        courseId: data.courseId || null,
+       items : data.items,
         type: data.type,
         amount: data.amount,
         currency: data.currency,

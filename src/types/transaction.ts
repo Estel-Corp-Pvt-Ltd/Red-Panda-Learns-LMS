@@ -45,7 +45,9 @@ export type PayPalPaymentDetails = {
 export type TransactionMetadata = {
   orderId:string;
   userEmail: string;
-  courseTitle: string;
+  itemTitles: string[];
+  displayTitle:string;
+  subtotal:number;
   userAgent?: string;
   paymentAttempts: number;
   reasonForRefund?: string;

@@ -27,12 +27,13 @@ import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
 
 import { Currency, PaymentProvider } from "@/types/general";
-import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
+import { ADDRESS_TYPE, CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER } from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
 import { Coupon } from "@/types/coupon";
 import { Timestamp } from "firebase/firestore";
-
+import { TransactionLineItem } from "@/types/transaction";
+import { EnrolledProgramType } from "@/types/general";
 // BUNDLE queries (only difference)
 import { useBundleQuery, useBundleCoursesQuery } from "@/hooks/useBundleApi";
 
@@ -300,18 +301,29 @@ export default function BundleCheckoutPage() {
 
     try {
       // Using the generic processPayment to keep parity with reference structure
-      // If you have a dedicated processBundlePayment, swap it here with same args
-      const result = await paymentService.processPayment(
-        selectedProvider,
-        bundle,
-        finalPrice,
-        user.email!,
-        user.id,
-        selectedCurrency,
-        CURRENCY.INR,
-        billingAddress,
-        shippingAddress,
-      );
+     
+           const items: TransactionLineItem[] = [
+       {
+         itemId: bundle.id,
+         itemType: ENROLLED_PROGRAM_TYPE.BUNDLE ,  // or "BUNDLE" if course.isBundle
+         name: bundle.title,
+         amount: finalPrice,
+         originalAmount: bundle.salePrice, // optional
+       }
+     ];
+     
+     
+           const result = await paymentService.processPayment({
+              provider: selectedProvider,
+       items, // here you can explicitly name it
+       finalPrice,
+       userEmail: user.email!,
+       userId: user.id,
+       selectedCurrency,
+       baseCurrency: CURRENCY.INR,
+       billingAddress,
+       shippingAddress,
+          });
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
@@ -1127,9 +1139,9 @@ export default function BundleCheckoutPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <h3 className="font-semibold text-lg">{course.title}</h3>
+                  <h3 className="font-semibold text-lg">{bundle.title}</h3>
                   <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
-                    {course.description}
+                    {bundle.description}
                   </p>
                   <div className="space-y-2">
                     <Label htmlFor="promoCode">Have a promo code?</Label>

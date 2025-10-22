@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { ErrorState } from '@/components/ui/error-state';
-import { useBundleQuery, useBundleCoursesQuery } from '@/hooks/useBundleApi';
+import { useBundleQuery, useBundleCoursesQuery, bundleQueryKeys } from '@/hooks/useBundleApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { ArrowLeft, BookOpen, Clock, Trophy, PlayCircle, CheckCircle, Star } from 'lucide-react';
@@ -277,3 +277,5 @@ export default function BundleDashboardPage() {
     </div>
   );
 }
+
+

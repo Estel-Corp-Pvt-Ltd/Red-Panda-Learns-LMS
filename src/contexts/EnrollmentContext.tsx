@@ -13,6 +13,7 @@ import React, {
 interface EnrollmentContextType {
   enrollments: Enrollment[];
   isEnrolled: (courseId: string) => boolean;
+  isEnrolledInBundle:(bundleId : string) => boolean;
   refreshEnrollments: () => Promise<void>;
   loading: boolean;
 };
@@ -71,6 +72,21 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     [enrollments]
   );
 
+   const isEnrolledInBundle = useCallback(
+    (bundleId: string): boolean => {
+      const result = enrollments.some(
+        (enrollment) => {
+          const match = String(enrollment.targetId) === String(bundleId);
+          const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
+
+          return match && statusOk;
+        }
+      );
+
+      return result;
+    },
+    [enrollments]
+  );
   useEffect(() => {
     refreshEnrollments();
   }, [user]);
@@ -78,6 +94,7 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
   const value = {
     enrollments,
     isEnrolled,
+    isEnrolledInBundle,
     refreshEnrollments,
     loading,
   };

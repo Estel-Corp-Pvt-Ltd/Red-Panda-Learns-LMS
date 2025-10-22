@@ -8,14 +8,13 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-
+import { paymentService } from "@/services/paymentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
@@ -24,15 +23,17 @@ import { useCourseQuery } from "@/hooks/useCaching";
 import { Header } from "@/components/Header";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
-import { paymentService } from "@/services/paymentService";
+import { enrollmentService } from "@/services/enrollmentService";
+import { TransactionLineItem } from "@/types/transaction";
 
+import { ADDRESS_TYPE, CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER } from "@/constants";
+import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
-import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
 import { Coupon } from "@/types/coupon";
 import { Currency, PaymentProvider } from "@/types/general";
-import { Address } from "@/types/order";
-import { Timestamp } from "firebase/firestore";
 
+import { Timestamp } from "firebase/firestore";
+import { EnrolledProgramType } from "@/types/general";
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
   PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -286,9 +287,21 @@ export default function CheckoutPage() {
     });
 
     try {
+
+      const items: TransactionLineItem[] = [
+  {
+    itemId: course.id,
+    itemType: ENROLLED_PROGRAM_TYPE.COURSE,  // or "BUNDLE" if course.isBundle
+    name: course.title,
+    amount: finalPrice,
+    originalAmount: course.salePrice, // optional
+  }
+];
+
+
       const result = await paymentService.processPayment({
          provider: selectedProvider,
-  course: course, // here you can explicitly name it
+  items, // here you can explicitly name it
   finalPrice,
   userEmail: user.email!,
   userId: user.id,
