@@ -3,7 +3,7 @@ import { CheckCircle, Video, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import LmsVideoPlayer from "@/components/LMSVideoPlayer";
+import VideoPlayer from "@/components/VideoPlayer";
 import { Lesson } from "@/types/lesson";
 import { LESSON_TYPE } from "@/constants";
 import { toast } from "@/hooks/use-toast";
@@ -95,7 +95,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
           />
         );
       case LESSON_TYPE.VIDEO_LECTURE:
-        return <LmsVideoPlayer url={lesson.embedUrl} />;
+        return <VideoPlayer url={lesson.embedUrl} />;
       default:
         return lesson.description ? (
           <div

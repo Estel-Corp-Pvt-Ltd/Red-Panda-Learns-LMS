@@ -11,7 +11,7 @@ type LmsVideoPlayerProps = {
     className?: string;
 };
 
-export default function LmsVideoPlayer({
+export default function VideoPlayer({
     url,
     title = "Video Player",
     playing = false,

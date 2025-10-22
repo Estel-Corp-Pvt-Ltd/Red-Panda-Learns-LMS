@@ -8,12 +8,11 @@ export const couponsApi = {
    * @returns A Coupon object or null
    */
   getCouponByCode: async (code: string): Promise<Coupon | null> => {
-    try {
-      return await couponService.getCouponByCode(code);
-    } catch (error) {
-      console.error('couponsApi - Error fetching coupon by code:', error);
-      return null;
+    const result = await couponService.getCouponByCode(code);
+    if (result.success) {
+      return result.data;
     }
+    return null;
   },
 
   /**
@@ -22,12 +21,11 @@ export const couponsApi = {
    * @returns A Coupon object or null
    */
   getCouponById: async (couponId: string): Promise<Coupon | null> => {
-    try {
-      return await couponService.getCouponById(couponId);
-    } catch (error) {
-      console.error('couponsApi - Error fetching coupon by ID:', error);
-      return null;
+    const result = await couponService.getCouponById(couponId);
+    if (result.success) {
+      return result.data;
     }
+    return null;
   },
 
   /**
@@ -35,12 +33,11 @@ export const couponsApi = {
    * @returns All coupons
    */
   getAllCoupons: async (): Promise<Coupon[]> => {
-    try {
-      return await couponService.getAllCoupons();
-    } catch (error) {
-      console.error('couponsApi - Error fetching all coupons:', error);
-      return [];
+    const result = await couponService.getAllCoupons();
+    if (result.success) {
+      return result.data;
     }
+    return [];
   },
 
   /**
@@ -49,12 +46,11 @@ export const couponsApi = {
    * @returns ID of newly created coupon
    */
   createCoupon: async (data: Omit<Coupon, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-    try {
-      return await couponService.createCoupon(data);
-    } catch (error) {
-      console.error('couponsApi - Error creating coupon:', error);
-      return null;
+    const result = await couponService.createCoupon(data);
+    if (result.success) {
+      return result.data;
     }
+    return null;
   },
 
   /**
@@ -63,13 +59,11 @@ export const couponsApi = {
    * @param updates Partial update object
    */
   updateCoupon: async (couponId: string, updates: Partial<Coupon>): Promise<boolean> => {
-    try {
-      await couponService.updateCoupon(couponId, updates);
+    const result = couponService.updateCoupon(couponId, updates);
+    if ((await result).success) {
       return true;
-    } catch (error) {
-      console.error('couponsApi - Error updating coupon:', error);
-      return false;
     }
+    return false;
   },
 
   /**
@@ -77,12 +71,10 @@ export const couponsApi = {
    * @param couponId Coupon document ID
    */
   deleteCoupon: async (couponId: string): Promise<boolean> => {
-    try {
-      await couponService.deleteCoupon(couponId);
+    const result = await couponService.deleteCoupon(couponId);
+    if (result.success) {
       return true;
-    } catch (error) {
-      console.error('couponsApi - Error deleting coupon:', error);
-      return false;
     }
+    return false;
   }
 };

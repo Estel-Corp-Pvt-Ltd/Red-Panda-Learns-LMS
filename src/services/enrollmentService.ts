@@ -1,28 +1,32 @@
 import {
-  doc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
   arrayUnion,
+  collection,
+  deleteDoc,
+  doc,
   getDoc,
+  getDocs,
+  query,
   serverTimestamp,
+  setDoc,
   updateDoc,
-  deleteDoc
+  where
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
 import { Enrollment } from "@/types/enrollment";
-import { EnrolledProgramType } from "@/types/general";
-import { LearningProgress } from "@/types/learning-progress";
+import { EnrolledProgramType, EnrollmentStatus } from "@/types/general";
 
 import {
+  COLLECTION,
   ENROLLED_PROGRAM_TYPE,
   ENROLLMENT_STATUS,
   PRICING_MODEL,
   USER_ROLE
 } from "@/constants";
+import { convertToDate } from "@/utils/date-time";
+import { logError } from "@/utils/logger";
+import { fail, ok, Result } from "@/utils/response";
+import { learningProgressService } from "./learningProgressService";
 
 class EnrollmentService {
   /**
@@ -33,47 +37,34 @@ class EnrollmentService {
   }
 
   /**
-   * Creates a fresh course-level progress object
-   */
-  private initCourseProgress(
-    courseId: string,
-    currentLessonId: string = ""
-  ): LearningProgress {
-    return {
-      id: `${courseId}_${Date.now()}`, // unique progress id
-      courseId,
-      currentLessonId: currentLessonId || null,
-      lastAccessed: serverTimestamp(),
-      completedLessons: 0,
-      lessonHistory: [],
-      totalLessons: 0,
-      percentage: 0,
-      updatedAt: serverTimestamp(),
-      certification: {
-        issued: false
-      }
-    };
-  }
-
-  /**
-   * Enroll a user into a course or bundle.
-   */
+ * Enroll a user into a course or bundle.
+ *
+ * @param userId - The ID of the user to enroll.
+ * @param targetId - The course or bundle ID.
+ * @param programType - Type of enrollment (COURSE or BUNDLE).
+ * @param bundleCourseIds - Optional list of course IDs if enrolling into a bundle.
+ * @returns Result containing the enrollment ID on success, or an error on failure.
+ */
   async enrollUser(
     userId: string,
     targetId: string,
     programType: EnrolledProgramType,
-    currentLessonId: string = "",
     bundleCourseIds: string[] = []
-  ): Promise<string> {
+  ): Promise<Result<string>> {
     try {
       const enrollmentId = this.generateEnrollmentId(userId, targetId);
-      let enrollment: Enrollment;
 
       if (programType === ENROLLED_PROGRAM_TYPE.COURSE) {
         // Single course enrollment
-        const progress = this.initCourseProgress(targetId, currentLessonId);
+        const progressResult = await learningProgressService.createLessonProgress(targetId, 0);
+        if (!progressResult.success) {
+          return fail(
+            "Failed to create progress for single course enrollment.",
+            progressResult.error.message
+          );
+        }
 
-        enrollment = {
+        const enrollment: Enrollment = {
           id: enrollmentId,
           userId,
           targetId,
@@ -81,17 +72,39 @@ class EnrollmentService {
           enrollmentDate: serverTimestamp(),
           status: ENROLLMENT_STATUS.ACTIVE,
           role: USER_ROLE.STUDENT,
-          progress,
-          pricingModel: PRICING_MODEL.PAID
-        } as unknown as Enrollment;
+          progressId: progressResult.data.progressId,
+          progressSummary: {
+            completedLessons: 0,
+            totalLessons: 0,
+            percent: 0
+          },
+          pricingModel: PRICING_MODEL.PAID,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), enrollment);
+
       } else {
         // Bundle enrollment
-        const bundleProgress = bundleCourseIds.map((courseId) => {
-          const progress = this.initCourseProgress(courseId);
-          return { courseId: progress.courseId, progressId: progress.id };
-        });
+        const courses = bundleCourseIds.map((courseId) => ({
+          courseId,
+          totalLessons: 0
+        }));
 
-        enrollment = {
+        const batchResult = await learningProgressService.createLessonProgressBatchAtomic(courses);
+        if (!batchResult.success) {
+          return fail(
+            "Failed to create progress documents for bundle enrollment.",
+            batchResult.error.message
+          );
+        }
+
+        const bundleProgress = Object.entries(batchResult.data).map(
+          ([courseId, progressId]) => ({ courseId, progressId })
+        );
+
+        const enrollment: Enrollment = {
           id: enrollmentId,
           userId,
           targetId,
@@ -99,129 +112,127 @@ class EnrollmentService {
           enrollmentDate: serverTimestamp(),
           status: ENROLLMENT_STATUS.ACTIVE,
           role: USER_ROLE.STUDENT,
-          progress: {
-            completedLessons: 0,
-            lessonHistory: [],
-            totalLessons: 0,
-            percentage: 0,
-            certification: { issued: false },
-            updatedAt: serverTimestamp()
-          },
           bundleProgress,
-          pricingModel: PRICING_MODEL.PAID
-        } as unknown as Enrollment;
+          progressSummary: {
+            completedCourses: 0,
+            totalCourses: bundleCourseIds.length,
+            percent: 0
+          },
+          pricingModel: PRICING_MODEL.PAID,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), enrollment);
       }
 
-      // Save enrollment
-      console.log("📝 Writing enrollment doc:", enrollmentId);
-      await setDoc(doc(db, "Enrollments", enrollmentId), enrollment);
-      console.log("✅ Enrollment doc written:", enrollmentId);
-
-      // Update user with new enrollment
-      const userDocRef = doc(db, "Users", userId);
-      console.log("🔄 Updating user doc with enrollment:", {
-        userId,
-        targetId,
-        programType
+      const userDocRef = doc(db, COLLECTION.USERS, userId);
+      await updateDoc(userDocRef, {
+        enrollments: arrayUnion({ targetId, targetType: programType })
       });
 
-      await updateDoc(
-        userDocRef,
-        { enrollments: arrayUnion({ targetId, targetType: programType }) },
+      return ok(enrollmentId);
 
-      );
-
-      console.log("✅ User doc updated:", userId);
-
-      return enrollmentId;
     } catch (error: any) {
-      console.error(
-        "❌ EnrollmentService - Error enrolling user:",
-        error?.message,
-        error
-      );
-      throw new Error(error?.message || "Failed to enroll user");
+      logError("EnrollmentService.enrollUser", error);
+      return fail("Failed to enroll user.", error.code || error.message);
     }
   }
 
-
-  async isUserEnrolled(userId: string, targetId: string): Promise<boolean> {
+  async isUserEnrolled(userId: string, targetId: string): Promise<Result<boolean>> {
     try {
+      // Check direct enrollment
       const enrollmentId = this.generateEnrollmentId(userId, targetId);
       const enrollmentDoc = await getDoc(doc(db, "Enrollments", enrollmentId));
+      if (enrollmentDoc.exists()) return ok(true);
 
-      console.log("EnrollmentDoc snapshot:", enrollmentDoc);
-
-      if (enrollmentDoc.exists()) {
-        console.log("EnrollmentDoc data:", enrollmentDoc.data());
-        return true; // ✅ only return true if enrollmentDoc exists
-      } else {
-        console.log("No enrollment found for id:", enrollmentId);
-      }
-
-      // If not, check if part of a bundle
+      // Check bundles
       const q = query(
-        collection(db, "Enrollments"),
+        collection(db, COLLECTION.ENROLLMENTS),
         where("userId", "==", userId),
         where("targetType", "==", ENROLLED_PROGRAM_TYPE.BUNDLE),
-        where("status", "==", ENROLLMENT_STATUS.ACTIVE),
-        where("bundleCourseIds", "array-contains", targetId)
-      );
-
-      const bundleSnapshot = await getDocs(q);
-      return !bundleSnapshot.empty;
-    } catch (err) {
-      console.error("EnrollmentService - Error checking enrollment:", err);
-      return false;
-    }
-  }
-
-
-  /**
-   * Gets all active enrollments for a user.
-   */
-  async getUserEnrollments(userId: string): Promise<Enrollment[]> {
-    try {
-      const q = query(
-        collection(db, "Enrollments"),
-        where("userId", "==", userId),
         where("status", "==", ENROLLMENT_STATUS.ACTIVE)
       );
+      const snapshot = await getDocs(q);
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        // console.log("It the data",data)
-        return {
-          ...data,
-          enrollmentDate: data.enrollmentDate?.toDate?.() || null,
-          updatedAt: data.updatedAt?.toDate?.() || null,
-          lastAccessed: data.lastAccessed?.toDate?.() || null,
-          completionDate: data.completionDate?.toDate?.() || null
-        };
-      }) as unknown as Enrollment[];
-    } catch (error) {
-      console.error(
-        "EnrollmentService - Error fetching user enrollments:",
-        error
+      const isEnrolledInBundle = snapshot.docs.some(doc =>
+        doc.data().bundleProgress?.some((bp: any) => bp.courseId === targetId)
       );
-      return [];
+
+      return ok(isEnrolledInBundle);
+
+    } catch (error: any) {
+      logError("EnrollmentService.isUserEnrolled", error);
+      return fail("Failed to check user enrollment.", error.code || error.message);
     }
   }
 
   /**
-   * Deletes an enrollment by ID.
+   * Fetches enrollments for a given user.
+   *
+   * @param userId - The ID of the user.
+   * @param statusFilter - Optional. If provided, filters enrollments by this status. Pass "ALL" to ignore status filtering. Defaults to active enrollments.
+   * @returns A Result object containing an array of Enrollment objects on success, or an error on failure.
    */
-  async deleteEnrollment(enrollmentId: string): Promise<void> {
+  async getUserEnrollments(
+    userId: string,
+    statusFilter: EnrollmentStatus | "ALL" = ENROLLMENT_STATUS.ACTIVE
+  ): Promise<Result<Enrollment[]>> {
     try {
-      await deleteDoc(doc(db, "Enrollments", enrollmentId));
-      console.log(
-        "EnrollmentService - Enrollment deleted successfully:",
-        enrollmentId
+      let q;
+
+      if (statusFilter === "ALL") {
+        q = query(
+          collection(db, COLLECTION.ENROLLMENTS),
+          where("userId", "==", userId)
+        );
+      } else {
+        q = query(
+          collection(db, COLLECTION.ENROLLMENTS),
+          where("userId", "==", userId),
+          where("status", "==", statusFilter)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+
+      const enrollments: Enrollment[] = querySnapshot.docs.map((docSnap) => {
+        const data = docSnap.data() as Enrollment;
+        return {
+          ...data,
+          enrollmentDate: convertToDate(data.enrollmentDate),
+          createdAt: convertToDate(data.createdAt),
+          updatedAt: convertToDate(data.updatedAt),
+        };
+      }) as unknown as Enrollment[];
+
+      return ok(enrollments);
+    } catch (error: any) {
+      logError("EnrollmentService.getUserEnrollments", error);
+      return fail(
+        "Failed to fetch enrollments for the user.",
+        error.code || error.message
       );
-    } catch (error) {
-      console.error("EnrollmentService - Error deleting enrollment:", error);
-      throw new Error("Failed to delete enrollment");
+    }
+  }
+
+  /**
+ * Deletes an enrollment by its ID.
+ *
+ * @param enrollmentId - The unique ID of the enrollment to delete.
+ * @returns A Result object indicating success or failure.
+ */
+  async deleteEnrollment(enrollmentId: string): Promise<Result<void>> {
+    try {
+      await deleteDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId));
+
+      return ok(null); // ✅ standard success response
+    } catch (error: any) {
+      logError("EnrollmentService.deleteEnrollment", error);
+      return fail(
+        "Failed to delete enrollment.",
+        error.code || error.message
+      );
     }
   }
 }

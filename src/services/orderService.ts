@@ -1,51 +1,49 @@
 import {
   doc,
-  setDoc,
   getDoc,
-  updateDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
+  runTransaction,
   serverTimestamp,
-  runTransaction
-} from 'firebase/firestore';
-import { db } from '../firebaseConfig.ts';
-import {
-  PaymentDetails,
-  Transaction,
-  WebhookEvent
-} from '../types/transaction';
-import { TransactionStatus } from '../types/general.ts';
-import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
-import { v4 as uuidv4 } from 'uuid';
-import { Transaction as FirebaseTransaction } from 'firebase-admin/firestore';
+  setDoc,
+  updateDoc
+} from "firebase/firestore";
+import { db } from "../firebaseConfig.ts";
+import { OrderStatus } from "../types/general.ts";
+import { ORDER_STATUS } from "@/constants.ts";
+import { Order } from "@/types/order.ts";
 
-class TransactionService {
+class OrderService {
+  private async generateOrderId(): Promise<{ orderId: string }> {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const dateStr = `${yyyy}${mm}${dd}`;
 
-  /**
-   * Generates a new transaction record with:
-   * - UUID-based transactionId (globally unique, safe for DB).
-   * - Sequential orderNumber (human-friendly, starts from 20000000).
-   * 
-   * Example:
-   * {
-   *   transactionId: "transaction_550e8400-e29b-41d4-a716-446655440000",
-   *   orderNumber: 20000037
-   * }
-   */
-  private async generateTransactionId(): Promise<{ transactionId: string; }> {
-    const transactionId = `tnx_${uuidv4()}`;
+    const counterRef = doc(db, 'counters', 'orderCounters');
 
-    return {
-      transactionId
-    };
+    // Use Firestore transaction to increment safely
+    const dailySequence = await runTransaction(db, async (tx) => {
+      const snapshot = await tx.get(counterRef);
+      let seq = 1;
+
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        seq = (data?.seq || 0) + 1;
+      }
+
+      tx.set(counterRef, { seq }, { merge: true });
+      return seq;
+    });
+
+    const paddedSeq = String(dailySequence).padStart(3, "0");
+    const orderId = `ORD-${dateStr}-${paddedSeq}`;
+    return { orderId };
   }
-  async createTransaction(
-    data: Omit<Transaction, "id" | "createdAt" | "updatedAt">,
-    providedTransactionId?: string // <-- add this
+
+
+  async createOrder(
+    data: Omit<Order, "orderId" | "createdAt" | "completedAt" | "updatedAt">,
+    providedOrderId?: string // optional idempotent orderId
   ): Promise<string> {
     try {
       let transactionId = providedTransactionId;
@@ -62,27 +60,22 @@ class TransactionService {
         const ids = await this.generateTransactionId();
 
       } else {
-        // If no transactionId provided → create new
-        const ids = await this.generateTransactionId();
-        transactionId = ids.transactionId;
+        const generated = await this.generateOrderId();        // If no orderId provided → create new Firestore doc
+        orderId = generated.orderId
       }
 
-      const transaction: Transaction = {
-        id: transactionId,
-        orderNumber: data.orderNumber,
+      const order: Order = {
+        orderId,
         userId: data.userId,
-        courseId: data.courseId || null,
-        type: data.type,
+        courseIds: data.courseIds,
+        bundleIds: data.bundleIds || null,
+        status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         currency: data.currency,
-        originalAmount: data.originalAmount,
-        originalCurrency: data.originalCurrency,
-        exchangeRate: data.exchangeRate,
-        paymentProvider: data.paymentProvider,
-        status: TRANSACTION_STATUS.PENDING,
-        paymentDetails: {} as PaymentDetails,
-        metadata: data.metadata,
-        webhookEvents: [],
+        transactionId: data.transactionId || null,
+        metadata: data.metadata || {},
+        billingAddress: data.billingAddress,
+        shippingAddress: data.shippingAddress || null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -253,6 +246,8 @@ class TransactionService {
       return false;
     }
   }
+
+  // TODO: Add method for refunds
 }
 
 export const transactionService = new TransactionService();

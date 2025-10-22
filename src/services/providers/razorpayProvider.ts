@@ -2,7 +2,7 @@
 import { Course } from '@/types/course';
 import { transactionService } from '../transactionService';
 import { enrollmentService } from '../enrollmentService';
-import { CURRENCY, TRANSACTION_STATUS } from '@/constants';
+import { CURRENCY, ENROLLED_PROGRAM_TYPE, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
 import type { Currency } from '@/types/general';
 
@@ -146,8 +146,7 @@ class RazorpayProvider {
                   await enrollmentService.enrollUser(
                     userId,
                     course.id,
-                    response.razorpay_payment_id,
-                    'razorpay'
+                    ENROLLED_PROGRAM_TYPE.COURSE
                   );
                 } catch (enrollmentError) {
                   console.error('RazorpayProvider - Enrollment failed:', enrollmentError);

@@ -1,43 +1,41 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
+  Copy,
   CreditCard,
-  Shield,
   Lock,
   RefreshCw,
-  Copy,
+  Shield,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
-import { useCourseQuery } from "@/hooks/useCaching";
 import { useToast } from "@/hooks/use-toast";
+import { useCourseQuery } from "@/hooks/useCaching";
 
 import { Header } from "@/components/Header";
-import { paymentService } from "@/services/paymentService";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
-import { enrollmentService } from "@/services/enrollmentService";
+import { paymentService } from "@/services/paymentService";
 
-import { Currency, PaymentProvider } from "@/types/general";
-import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
-import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
+import { ADDRESS_TYPE, CURRENCY, PAYMENT_PROVIDER } from "@/constants";
 import { Coupon } from "@/types/coupon";
+import { Currency, PaymentProvider } from "@/types/general";
+import { Address } from "@/types/order";
 import { Timestamp } from "firebase/firestore";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
-  RAZORPAY: ["INR", "USD", "EUR", "GBP"],
-  PAYPAL: ["USD", "EUR", "GBP"],
+  RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+  PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
 };
 
 const METHOD_LOGOS: Record<
@@ -129,7 +127,6 @@ export default function CheckoutPage() {
   const [couponMessage, setCouponMessage] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
       navigate("/auth/login", {
@@ -143,50 +140,40 @@ export default function CheckoutPage() {
 
   // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
-    const checkEnrollment = async () => {
-      if (user && courseId) {
-        const enrolled = await enrollmentService.isUserEnrolled(
-          user.id,
-          courseId,
-        );
-        setUserIsEnrolled(enrolled);
+    if (user && courseId) {
+      if (isEnrolled(courseId)) {
+        setUserIsEnrolled(true);
+      } else {
+        setUserIsEnrolled(false);
       }
-    };
-    checkEnrollment();
+    }
   }, [user, courseId]);
 
-  // Navigate away if already enrolled
   useEffect(() => {
     if (isUserEnrolled) navigate(`/course/${courseId}`);
   }, [isUserEnrolled, navigate, courseId]);
 
-  // Load pricing when course or currency/provider changes
   useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (course && selectedCurrency)
+      loadPricing();
   }, [course, selectedCurrency, selectedProvider, discountAmount]);
-
-  // Load pricing on component mount
-  useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const loadPricing = async () => {
     if (!course) return;
     setLoadingPricing(true);
+
     try {
       const basePrice = course.salePrice || 0;
       const effectivePrice = Math.max(0, basePrice - discountAmount);
       setFinalPrice(effectivePrice);
-      console.log("Effective Price:", effectivePrice);
 
       const data = await paymentService.calculatePricing(
         effectivePrice,
         selectedCurrency,
-        selectedProvider,
         CURRENCY.INR,
+        selectedProvider,
       );
+
       setPricing(data);
     } catch (error) {
       toast({
@@ -194,24 +181,26 @@ export default function CheckoutPage() {
         description: "Failed to load pricing information",
         variant: "destructive",
       });
+
     } finally {
       setLoadingPricing(false);
     }
   };
 
-  const calcDiscount = (originalPrice: number, coupon?: Coupon) => {
+  const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
-    const pct = coupon.discountPercentage ?? 0;
-    // clamp to [0, originalPrice]
-    return Math.max(0, Math.min(originalPrice, (originalPrice * pct) / 100));
+    const discountPercentage = coupon.discountPercentage ?? 0;
+
+    // Protects against scenarios where discountPercentage might accidently have been set greater than 100
+    return Math.max(0, Math.min(originalPrice, (originalPrice * discountPercentage) / 100));
   };
 
-  const clearCoupon = useCallback(() => {
+  const clearCoupon = () => {
     setAppliedCoupon(null);
     setIsCouponValid(false);
     setDiscountAmount(0);
     setCouponMessage("");
-  }, []);
+  };
 
   // Auto-clear when input becomes empty (immediately updates price)
   useEffect(() => {
@@ -225,69 +214,65 @@ export default function CheckoutPage() {
     setCouponMessage("");
     setIsCouponValid(false);
 
-    try {
-      const code = promoCode.trim();
-      if (!code) {
-        clearCoupon();
-        return;
-      }
-
-      const couponResult = await couponService.getCouponByCode(code);
-
-      if (!couponResult.success) {
-        clearCoupon();
-        setCouponMessage("Invalid promo code");
-        return;
-      }
-
-      const coupon = couponResult.data;
-      setAppliedCoupon(coupon);
-
-      const applicabilityResult = await couponUsageService.isCouponApplicable(
-        user!.id,
-        coupon.id,
-        courseId!,
-        null,
-        null,
-      );
-      if (
-        !applicabilityResult.success ||
-        !applicabilityResult.data?.isApplicable
-      ) {
-        clearCoupon();
-        setCouponMessage(
-          applicabilityResult.data?.reason ?? "Coupon not applicable",
-        );
-        return;
-      }
-
-      // Compute discount from the coupon object we have (no state race)
-      const originalPrice = course!.salePrice || 0;
-      const d = calcDiscount(originalPrice, coupon);
-      setDiscountAmount(d);
-      setIsCouponValid(true);
-      setCouponMessage("Coupon is valid, Happy Shopping");
-    } catch (error) {
-      console.error("Error During Handling Coupon", error);
+    const code = promoCode.trim();
+    if (!code) {
       clearCoupon();
-      setCouponMessage("Error applying coupon. Please try again.");
-    } finally {
-      setIsValidatingCoupon(false);
+      return;
     }
+
+    const couponResult = await couponService.getCouponByCode(code);
+
+    if (!couponResult.success) {
+      clearCoupon();
+      setCouponMessage("Invalid promo code");
+      return;
+    }
+
+    const coupon = couponResult.data;
+    setAppliedCoupon(coupon);
+
+    const applicabilityResult = await couponUsageService.isCouponApplicable(
+      user!.id,
+      coupon.id,
+      courseId!,
+      null,
+      null,
+    );
+    if (
+      !applicabilityResult.success ||
+      !applicabilityResult.data?.isApplicable
+    ) {
+      clearCoupon();
+      setCouponMessage(
+        applicabilityResult.data?.reason ?? "Coupon not applicable",
+      );
+      return;
+    }
+
+    // Compute discount from the coupon object we have (no state race)
+    const originalPrice = course!.salePrice || 0;
+    setDiscountAmount(calculateDiscount(originalPrice, coupon));
+    setIsCouponValid(true);
+    setCouponMessage("Coupon is valid, Happy Learning!");
+    setIsValidatingCoupon(false);
   };
 
   const handleUseCoupon = async () => {
-    try {
-      const usageDate = {
-        userId: user?.id,
-        couponId: appliedCoupon.id,
-        usedAt: Timestamp.now(),
-      };
-      await couponUsageService.recordCouponUsage(usageDate);
-      console.log("Recorded Coupon uses", usageDate);
-    } catch (error) {
-      console.log("The Error ", error);
+    const usageDate = {
+      userId: user?.id,
+      couponId: appliedCoupon.id,
+      usedAt: Timestamp.now(),
+    };
+    const result = await couponUsageService.recordCouponUsage(usageDate);
+    if (result.success) {
+      toast({
+        title: "Coupon successfully applied!"
+      });
+      return;
     }
+    toast({
+      title: "Failed to apply coupon!"
+    });
   };
 
   const handlePayment = async () => {
@@ -546,20 +531,18 @@ export default function CheckoutPage() {
                       <div
                         key={provider.id}
                         onClick={() => setSelectedProvider(provider.id)}
-                        className={`cursor-pointer p-4 rounded-xl border transition ${
-                          isSelected
-                            ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                            : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                        }`}
+                        className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
+                          ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                          : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                          }`}
                       >
                         <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                           <div className="flex gap-3">
                             <div
-                              className={`w-4 h-4 mt-1 rounded-full border-2 ${
-                                isSelected
-                                  ? "bg-blue-600 border-blue-600"
-                                  : "border-gray-400 dark:border-[#555]"
-                              }`}
+                              className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
+                                ? "bg-blue-600 border-blue-600"
+                                : "border-gray-400 dark:border-[#555]"
+                                }`}
                             />
                             <div>
                               <div className="flex items-center gap-2 font-medium">

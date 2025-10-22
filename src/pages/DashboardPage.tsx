@@ -1,23 +1,20 @@
-
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { BookOpen, Clock, Trophy, PlayCircle } from 'lucide-react';
 import { Header } from '@/components/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { enrollmentService } from '@/services/enrollmentService';
-import { useCourseQuery } from '@/hooks/useCaching';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { useNavigate } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
 import { COLLECTION, USER_ROLE } from '@/constants';
-import { formatDate } from '@/utils/date-time';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/firebaseConfig';
+import { useCourseQuery } from '@/hooks/useCaching';
+import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
-
+import { formatDate } from '@/utils/date-time';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { BookOpen, Clock, PlayCircle, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const { data: course, isLoading } = useCourseQuery(enrollment.targetId);
@@ -41,9 +38,9 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
             <div className="space-y-3 mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span>Progress</span>
-                <span>{enrollment.progress.percentage}%</span>
+                <span>{enrollment.progressSummary?.percent ?? 0}%</span>
               </div>
-              <Progress value={enrollment.progress.percentage} />
+              <Progress value={enrollment.progressSummary?.percent ?? 0} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -82,40 +79,40 @@ export default function DashboardPage() {
     const checkAdminAndFetchEnrollments = async () => {
       if (!user || !user.email) return;
 
-      try {
-        // Query users collection where email == current user's email
-        const usersRef = collection(db, COLLECTION.USERS);
-        const q = query(usersRef, where('email', '==', user.email));
-        const querySnapshot = await getDocs(q);
+      // Query users collection where email == current user's email
+      const usersRef = collection(db, COLLECTION.USERS);
+      const q = query(usersRef, where('email', '==', user.email));
+      const querySnapshot = await getDocs(q);
 
-        if (!querySnapshot.empty) {
-          const userData = querySnapshot.docs[0].data();
-          if (userData.role === USER_ROLE.ADMIN) {
-            navigate('/admin');
-            return; // Skip loading enrollments
-          }
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+        if (userData.role === USER_ROLE.ADMIN) {
+          navigate('/admin');
+          return; // Skip loading enrollments
         }
-
-        // If not admin, fetch enrollments
-        const userEnrollments = await enrollmentService.getUserEnrollments(user.id);
-        setEnrollments(userEnrollments);
-      } catch (error) {
-        console.error('Error checking admin or fetching enrollments:', error);
-      } finally {
-        setIsLoading(false);
       }
+
+      // If not admin, fetch enrollments
+      const result = await enrollmentService.getUserEnrollments(user.id);
+
+      if (result.success) {
+        setEnrollments(result.data);
+      } else {
+        setEnrollments([]);
+        // TODO: Add a toast here
+      }
+
+      setIsLoading(false);
     };
 
     checkAdminAndFetchEnrollments();
   }, [user, navigate]);
 
-
-
   const stats = {
     totalCourses: enrollments.length,
-    completedCourses: enrollments.filter(e => e.progress.percentage === 100).length,
+    completedCourses: enrollments.filter(e => e.progressSummary?.percent === 100).length,
     averageProgress: enrollments.length > 0
-      ? Math.round(enrollments.reduce((sum, e) => sum + e.progress.percentage, 0) / enrollments.length)
+      ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary?.percent, 0) / enrollments.length)
       : 0,
   };
 

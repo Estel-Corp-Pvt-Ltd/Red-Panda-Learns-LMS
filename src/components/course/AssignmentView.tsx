@@ -1,28 +1,27 @@
-import React, { useEffect, useState, ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import {
-  FileText,
-  Clock,
-  Star,
-  ArrowLeft,
-  FileDown,
-  Award,
-  Upload,
-  Trash2,
-  Send,
-} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { assignmentService } from '@/services/assignmentService';
 import { fileService } from '@/services/fileService';
-import { Assignment, AssignmentSubmission } from '@/types/assignment';
-import { logError } from '@/utils/logger';
-import { useAuth } from '@/contexts/AuthContext';
+import { Assignment } from '@/types/assignment';
 import { formatDate } from '@/utils/date-time';
+import { logError } from '@/utils/logger';
+import {
+  Award,
+  Clock,
+  FileDown,
+  FileText,
+  Send,
+  Star,
+  Trash2,
+  Upload
+} from 'lucide-react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 
 type AssignmentProps = {
   assignmentId: string;
   onComplete: () => void
-}
+};
 
 const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete }) => {
   const { user } = useAuth();
