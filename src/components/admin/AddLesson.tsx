@@ -24,8 +24,9 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
-import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";
+import { useToast } from "@/hooks/use-toast";
+import { logError } from "@/utils/logger";
 
 type CreateLessonModalProps = {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const CreateLessonModal = ({
   onClose,
   onLessonCreated,
 }: CreateLessonModalProps) => {
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [lesson, setLesson] = useState({
     title: "",
@@ -75,32 +77,32 @@ export const CreateLessonModal = ({
   const handleSave = async () => {
     try {
       if (!lesson.title.trim()) {
-        toast.error("Lesson title is required");
+        toast({ title: "Lesson title is required", variant: "destructive" });
         return;
       }
       if (!lesson.description.trim()) {
-        toast.error("Lesson description is required");
+        toast({ title: "Lesson description is required", variant: "destructive" });
         return;
       }
       if (!lesson.embedUrl.trim()) {
-        toast.error("Embed URL is required");
+        toast({ title: "Embed URL is required", variant: "destructive" });
         return;
       }
       if (lesson.durationSeconds <= 0) {
-        toast.error("Duration must be greater than 0");
+        toast({ title: "Duration must be greater than 0", variant: "destructive" });
         return;
       }
 
       setSaving(true);
       await lessonService.createLesson(lesson);
-      toast.success("Lesson created successfully!");
+      toast({ title: "Lesson created successfully!" });
 
       onLessonCreated?.();
       resetForm();
       onClose();
     } catch (err) {
-      console.error("Error creating lesson:", err);
-      toast.error("Failed to create lesson");
+      logError("Error creating lesson:", err);
+      toast({ title: "Failed to create lesson", variant: "destructive" });
     } finally {
       setSaving(false);
     }

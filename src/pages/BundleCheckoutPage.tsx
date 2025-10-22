@@ -14,11 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { paymentService } from '@/services/paymentService';
 import { ArrowLeft, CreditCard, DollarSign, Package, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { logError } from '@/utils/logger';
 
 type PaymentProvider = 'razorpay' | 'paypal';
 
 export default function BundleCheckoutPage() {
+  const { toast } = useToast();
   const { bundleId } = useParams<{ bundleId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -56,7 +58,7 @@ export default function BundleCheckoutPage() {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container px-4 py-8">
-          <ErrorState 
+          <ErrorState
             error={error as Error}
             onRetry={() => window.location.reload()}
             className="my-12"
@@ -70,12 +72,11 @@ export default function BundleCheckoutPage() {
     if (!user || !bundle) return;
 
     setIsProcessing(true);
-    
+
     try {
-      console.log('Processing bundle payment:', {
+      logError('Processing bundle payment:', {
         bundleId: bundle.id,
         provider: selectedProvider,
-        amount: bundle.bundlePrice,
         userEmail: user.email
       });
 
@@ -89,15 +90,15 @@ export default function BundleCheckoutPage() {
       if (result.success) {
         // Refresh enrollment status
         await refreshEnrollments();
-        
-        toast.success('Payment successful! Welcome to your new courses!');
+
+        toast({ title: 'Payment successful! Welcome to your new courses!' });
         navigate(`/bundle/${bundleId}/dashboard`);
       } else {
-        toast.error(result.error || 'Payment failed. Please try again.');
+        toast({ title: result.error || 'Payment failed. Please try again.', variant: 'destructive' });
       }
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
+      logError('Payment error:', error);
+      toast({ title: 'Payment failed. Please try again.', variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }
@@ -106,11 +107,11 @@ export default function BundleCheckoutPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container px-4 py-8 max-w-4xl">
         {/* Back Navigation */}
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => navigate(`/bundle/${bundleId}`)}
           className="mb-6"
         >
@@ -135,7 +136,7 @@ export default function BundleCheckoutPage() {
                     {bundle.description}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Courses included:</span>
@@ -154,9 +155,9 @@ export default function BundleCheckoutPage() {
                     </span>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Total:</span>
                   <span className="text-2xl font-bold text-primary">
@@ -214,8 +215,8 @@ export default function BundleCheckoutPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <RadioGroup 
-                  value={selectedProvider} 
+                <RadioGroup
+                  value={selectedProvider}
                   onValueChange={(value) => setSelectedProvider(value as PaymentProvider)}
                 >
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -232,7 +233,7 @@ export default function BundleCheckoutPage() {
                       </div>
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                     <RadioGroupItem value="paypal" id="paypal" />
                     <Label htmlFor="paypal" className="flex-1 cursor-pointer">
@@ -266,7 +267,7 @@ export default function BundleCheckoutPage() {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   onClick={handlePayment}
                   disabled={isProcessing}
                   size="lg"
@@ -278,11 +279,11 @@ export default function BundleCheckoutPage() {
                     `Complete Purchase - $${(bundle.bundlePrice / 100).toFixed(2)}`
                   )}
                 </Button>
-                
+
                 {selectedProvider === 'razorpay' && (
                   <div id="razorpay-button-container" className="mt-4"></div>
                 )}
-                
+
                 {selectedProvider === 'paypal' && (
                   <div id="paypal-button-container" className="mt-4"></div>
                 )}

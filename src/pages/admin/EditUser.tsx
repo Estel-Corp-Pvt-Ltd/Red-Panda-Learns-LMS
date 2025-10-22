@@ -18,13 +18,14 @@ import {
 import { Label } from "@radix-ui/react-dropdown-menu";
 import { Header } from "@/components/Header";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 import { userService } from "@/services/userService";
 import { User } from "@/types/user";
 import { UserRole, UserStatus } from "@/types/general";
 import { USER_ROLE, USER_STATUS } from "@/constants";
+import { useToast } from "@/hooks/use-toast";
 
 const EditUserPage = () => {
+    const { toast } = useToast();
     const { userId } = useParams<{ userId: string }>();
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<Partial<User>>({
@@ -48,7 +49,7 @@ const EditUserPage = () => {
             if (response.success) {
                 setUser(response.data);
             } else {
-                toast.error("User not found");
+                toast({ title: "User not found" });
                 navigate("/admin");
             }
             setLoading(false);
@@ -63,24 +64,24 @@ const EditUserPage = () => {
 
     const handleUpdateUser = async () => {
         if (!user.firstName?.trim()) {
-            toast.error("First name is required");
+            toast({ title: "First name is required", variant: "destructive" });
             return;
         }
         if (!user.lastName?.trim()) {
-            toast.error("Last name is required");
+            toast({ title: "Last name is required", variant: "destructive" });
             return;
         }
         if (!user.email?.trim()) {
-            toast.error("Email is required");
+            toast({ title: "Email is required", variant: "destructive" });
             return;
         }
 
         const response = await userService.updateUser(userId!, user);
         if (response.success) {
-            toast.success("User updated successfully!");
+            toast({ title: "User updated successfully!" });
             navigate("/admin");
         } else {
-            toast.error("Failed to update user");
+            toast({ title: "Failed to update user", variant: "destructive" });
         }
     };
 

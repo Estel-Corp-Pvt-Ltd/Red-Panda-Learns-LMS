@@ -20,11 +20,13 @@ import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
 import { Label } from "@radix-ui/react-dropdown-menu";
 import { Header } from "@/components/Header";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
+import { useToast } from "@/hooks/use-toast";
+import { logError } from "@/utils/logger";
 
 const EditLessonPage = () => {
+    const { toast } = useToast();
     const { lessonId } = useParams<{ lessonId: string }>();
     const [loading, setLoading] = useState(true);
     const [lesson, setLesson] = useState<Partial<Lesson>>({
@@ -45,14 +47,14 @@ const EditLessonPage = () => {
                 if (!lessonId) return;
                 const data = await lessonService.getLessonById(lessonId);
                 if (!data) {
-                    toast.error("Lesson not found");
+                    toast({ title: "Lesson not found", variant: "destructive" });
                     navigate("/admin");
                     return;
                 }
                 setLesson(data);
             } catch (error) {
                 console.error("Error loading lesson:", error);
-                toast.error("Failed to load lesson");
+                toast({ title: "Failed to load lesson", variant: "destructive" });
             } finally {
                 setLoading(false);
             }
@@ -77,32 +79,32 @@ const EditLessonPage = () => {
     const handleUpdateLesson = async () => {
         try {
             if (!lesson.title.trim()) {
-                toast.error("Lesson title is required");
+                toast({ title: "Lesson title is required", variant: "destructive" });
                 return;
             }
             if (!lesson.description.trim()) {
-                toast.error("Lesson description is required");
+                toast({ title: "Lesson description is required", variant: "destructive" });
                 return;
             }
             if (!lesson.type) {
-                toast.error("Lesson type is required");
+                toast({ title: "Lesson type is required", variant: "destructive" });
                 return;
             }
             if (!lesson.embedUrl.trim()) {
-                toast.error("Embed URL is required");
+                toast({ title: "Embed URL is required", variant: "destructive" });
                 return;
             }
             if (lesson.durationSeconds <= 0) {
-                toast.error("Duration must be greater than 0 seconds");
+                toast({ title: "Duration must be greater than 0 seconds", variant: "destructive" });
                 return;
             }
 
             await lessonService.updateLesson(lessonId!, lesson);
-            toast.success("Lesson updated successfully!");
+            toast({ title: "Lesson updated successfully!", variant: "default" });
             navigate("/admin");
         } catch (error) {
-            console.error("Error updating lesson:", error);
-            toast.error("Failed to update lesson");
+            logError("Error updating lesson:", error);
+            toast({ title: "Failed to update lesson", variant: "destructive" });
         }
     };
 
