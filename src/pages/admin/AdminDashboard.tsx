@@ -842,39 +842,69 @@ export function AdminDashboard() {
         <div className="space-y-8">
           <Tabs defaultValue="courses" className="space-y-4">
             <TabsList
-              className="overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
-    whitespace-nowrap
-    gap-2 sm:gap-4
-    no-scrollbar 
-    w-full
-    justify-start sm:justify-center lg:justify-start /* flex behavior by screen size */
+              className="
+    grid grid-cols-2
+    sm:flex sm:flex-wrap
+    h-auto w-full
+    gap-2 md:gap-3
+    justify-center md:justify-start
+    p-2
+    rounded-xl
+    border border-primary/10 bg-primary/5
   "
             >
-              <TabsTrigger value="courses" className="flex-shrink-0">
+              <TabsTrigger
+                value="courses"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Courses
               </TabsTrigger>
-              <TabsTrigger value="lessons" className="flex-shrink-0">
+              <TabsTrigger
+                value="lessons"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Lessons
               </TabsTrigger>
-              <TabsTrigger value="bundles" className="flex-shrink-0">
+              <TabsTrigger
+                value="bundles"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Bundles
               </TabsTrigger>
-              <TabsTrigger value="cohorts" className="flex-shrink-0">
+              <TabsTrigger
+                value="cohorts"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Cohorts
               </TabsTrigger>
-              <TabsTrigger value="instructors" className="flex-shrink-0">
+              <TabsTrigger
+                value="instructors"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Instructors
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex-shrink-0">
+              <TabsTrigger
+                value="users"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Users
               </TabsTrigger>
-              <TabsTrigger value="coupons" className="flex-shrink-0">
+              <TabsTrigger
+                value="coupons"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Coupon
               </TabsTrigger>
-              <TabsTrigger value="organizations" className="flex-shrink-0">
+              <TabsTrigger
+                value="organizations"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Organizations
               </TabsTrigger>
-              <TabsTrigger value="pop-ups" className="flex-shrink-0">
+              <TabsTrigger
+                value="pop-ups"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Pop-Ups
               </TabsTrigger>
             </TabsList>
