@@ -22,7 +22,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -93,7 +93,7 @@ const PopUpTab = () => {
         description: "Failed to load pop-ups",
         variant: "destructive",
       });
-  }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,7 +120,10 @@ const PopUpTab = () => {
           autoClose,
           duration,
         });
-        toast({ title: "Updated", description: "Pop-up updated successfully." });
+        toast({
+          title: "Updated",
+          description: "Pop-up updated successfully.",
+        });
       } else {
         await popUpService.createPopUp({
           title,
@@ -131,7 +134,10 @@ const PopUpTab = () => {
           autoClose,
           duration,
         });
-        toast({ title: "Created", description: "Pop-up created successfully." });
+        toast({
+          title: "Created",
+          description: "Pop-up created successfully.",
+        });
       }
 
       resetForm();
@@ -260,11 +266,7 @@ const PopUpTab = () => {
         </Button>
 
         {isEditing && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={resetForm}
-          >
+          <Button type="button" variant="ghost" onClick={resetForm}>
             Cancel
           </Button>
         )}
@@ -385,7 +387,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load users",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -396,13 +398,13 @@ export function AdminDashboard() {
       setUsers((prev) => prev.filter((user) => user.id !== userId));
       toast({
         title: "Success",
-        description: "User deleted successfully"
+        description: "User deleted successfully",
       });
     } else {
       toast({
         title: "Error",
         description: "Failed to delete user",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -416,7 +418,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load courses",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -432,7 +434,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load cohorts",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setCohortsLoading(false);
@@ -448,7 +450,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load bundles",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setBundlesLoading(false);
@@ -459,7 +461,6 @@ export function AdminDashboard() {
     try {
       const couponsList = await couponService.getAllCoupons();
       setCoupons(couponsList.data);
-      console.log(couponsList)
     } catch (error) {
       toast({
         title: "Error",
@@ -469,7 +470,6 @@ export function AdminDashboard() {
     }
   };
 
-
   const loadLessons = async () => {
     try {
       const lessonsList = await lessonService.getAllLessons();
@@ -478,7 +478,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load lessons",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLessonsLoading(false);
@@ -494,14 +494,14 @@ export function AdminDashboard() {
     toast({
       title: "Error",
       description: "Failed to load instructors",
-      variant: "destructive"
+      variant: "destructive",
     });
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: CURRENCY.USD
+      currency: CURRENCY.USD,
     }).format(amount);
   };
 
@@ -511,13 +511,13 @@ export function AdminDashboard() {
       setCourses((prev) => prev.filter((course) => course.id !== courseId));
       toast({
         title: "Success",
-        description: "Course deleted successfully"
+        description: "Course deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete course",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -525,19 +525,16 @@ export function AdminDashboard() {
   const deleteCoupon = async (couponId: string) => {
     try {
       await couponService.deleteCoupon(couponId);
-      setCoupons((prev) => prev.filter((coupon) => couponId !== couponId));
+      setCoupons((prev) => prev.filter((coupon) => coupon.id !== couponId));
       toast({
         title: "Success",
-        description: "Coupon Deleted Successfully"
-      })
-
-    }
-    catch {
-
+        description: "Coupon Deleted Successfully",
+      });
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete Coupon",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -548,13 +545,13 @@ export function AdminDashboard() {
       setCohorts((prev) => prev.filter((cohort) => cohort.id !== cohortId));
       toast({
         title: "Success",
-        description: "Cohort deleted successfully"
+        description: "Cohort deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete cohort",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -565,13 +562,13 @@ export function AdminDashboard() {
       setBundles((prev) => prev.filter((bundle) => bundle.id !== bundleId));
       toast({
         title: "Success",
-        description: "Bundle deleted successfully"
+        description: "Bundle deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete bundle",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -582,13 +579,13 @@ export function AdminDashboard() {
       setLessons((prev) => prev.filter((lesson) => lesson.id !== lessonId));
       toast({
         title: "Success",
-        description: "Lesson deleted successfully"
+        description: "Lesson deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete lesson",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -633,11 +630,20 @@ export function AdminDashboard() {
       setSaving(true);
       try {
         if (isEditing && editingOrgId) {
-          await organizationService.updateOrganization(editingOrgId, { name, type });
-          toast({ title: "Updated", description: "Organization updated successfully." });
+          await organizationService.updateOrganization(editingOrgId, {
+            name,
+            type,
+          });
+          toast({
+            title: "Updated",
+            description: "Organization updated successfully.",
+          });
         } else {
           await organizationService.createOrganization({ name, type });
-          toast({ title: "Created", description: "Organization created successfully." });
+          toast({
+            title: "Created",
+            description: "Organization created successfully.",
+          });
         }
 
         setName("");
@@ -657,10 +663,14 @@ export function AdminDashboard() {
     }
 
     async function handleDelete(id: string) {
-      if (!confirm("Are you sure you want to delete this organization?")) return;
+      if (!confirm("Are you sure you want to delete this organization?"))
+        return;
       try {
         await organizationService.deleteOrganization(id);
-        toast({ title: "Deleted", description: "Organization deleted successfully." });
+        toast({
+          title: "Deleted",
+          description: "Organization deleted successfully.",
+        });
         await loadOrganizations();
       } catch (error) {
         console.error("Error deleting organization:", error);
@@ -721,7 +731,9 @@ export function AdminDashboard() {
 
         {/* Table list */}
         {organizations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No organizations found.</p>
+          <p className="text-sm text-muted-foreground">
+            No organizations found.
+          </p>
         ) : (
           <Table>
             <TableHeader>
@@ -780,7 +792,6 @@ export function AdminDashboard() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
       <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
@@ -793,19 +804,31 @@ export function AdminDashboard() {
 
           {/*  Buttons stack on mobile, row on larger screens */}
           <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-            <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
+            <Button
+              onClick={() => navigate("/admin/create-lesson")}
+              className="flex-shrink-0"
+            >
               <PlusCircle className="mr-2 h-4 w-4" />
               Create New Lesson
             </Button>
-            <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
+            <Button
+              onClick={() => navigate("/admin/create-course")}
+              className="flex-shrink-0"
+            >
               <PlusCircle className="mr-2 h-4 w-4" />
               Create New Course
             </Button>
-            <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
+            <Button
+              onClick={() => navigate("/admin/create-bundle")}
+              className="flex-shrink-0"
+            >
               <PlusCircle className="mr-2 h-4 w-4" />
               Create Course Bundle
             </Button>
-            <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
+            <Button
+              onClick={() => navigate("/admin/create-cohort")}
+              className="flex-shrink-0"
+            >
               <Calendar className="mr-2 h-4 w-4" />
               Create New Cohort
             </Button>
@@ -868,12 +891,16 @@ export function AdminDashboard() {
                   {lessons.length === 0 ? (
                     <div className="text-center py-8">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No lessons</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No lessons
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first lesson.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-lesson")}>
+                        <Button
+                          onClick={() => navigate("/admin/create-lesson")}
+                        >
                           <PlusCircle className="mr-2 h-4 w-4" />
                           Create Lesson
                         </Button>
@@ -890,12 +917,13 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-
                         {lessons.map((lesson) => (
                           <TableRow key={lesson.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{lesson.title}</div>
+                                <div className="font-medium">
+                                  {lesson.title}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {lesson.description}
                                 </div>
@@ -904,7 +932,9 @@ export function AdminDashboard() {
                             <TableCell>{lesson.type}</TableCell>
                             <TableCell>
                               {lesson.durationSeconds
-                                ? `${Math.floor(lesson.durationSeconds / 60)} min`
+                                ? `${Math.floor(
+                                    lesson.durationSeconds / 60
+                                  )} min`
                                 : "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
@@ -938,7 +968,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/edit-lesson/${lesson.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-lesson/${lesson.id}`)
+                                  }
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -972,12 +1004,16 @@ export function AdminDashboard() {
                   {courses.length === 0 ? (
                     <div className="text-center py-8">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No courses</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No courses
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first course.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-course")}>
+                        <Button
+                          onClick={() => navigate("/admin/create-course")}
+                        >
                           <PlusCircle className="mr-2 h-4 w-4" />
                           Create Course
                         </Button>
@@ -995,29 +1031,40 @@ export function AdminDashboard() {
                       </TableHeader>
                       <TableBody>
                         {courses.map((course) => (
-
                           <TableRow key={course.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{course.title}</div>
+                                <div className="font-medium">
+                                  {course.title}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {course.description}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  course.status === COURSE_STATUS.PUBLISHED
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {course.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>{formatCurrency(course.regularPrice)}</TableCell>
+                            <TableCell>
+                              {formatCurrency(course.regularPrice)}
+                            </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   // onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
-                                  onClick={() => navigate(`/admin/edit-course/${course.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-course/${course.id}`)
+                                  }
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -1051,12 +1098,16 @@ export function AdminDashboard() {
                   {bundles.length === 0 ? (
                     <div className="text-center py-8">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No bundles</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No bundles
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first course bundle.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-bundle")}>
+                        <Button
+                          onClick={() => navigate("/admin/create-bundle")}
+                        >
                           <PlusCircle className="mr-2 h-4 w-4" />
                           Create Bundle
                         </Button>
@@ -1078,7 +1129,9 @@ export function AdminDashboard() {
                           <TableRow key={bundle.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{bundle.title}</div>
+                                <div className="font-medium">
+                                  {bundle.title}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {bundle.description}
                                 </div>
@@ -1086,19 +1139,30 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{bundle.courses.map(c => c.title).join(" | ")}</div>
+                                <div className="font-medium">
+                                  {bundle.courses
+                                    .map((c) => c.title)
+                                    .join(" | ")}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
                                 {formatCurrency(bundle.salePrice)}
                                 <div className="text-xs text-muted-foreground">
-                                  Original: {formatCurrency(bundle.regularPrice)}
+                                  Original:{" "}
+                                  {formatCurrency(bundle.regularPrice)}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  bundle.status === BUNDLE_STATUS.PUBLISHED
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {bundle.status}
                               </Badge>
                             </TableCell>
@@ -1107,7 +1171,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`edit-bundle/${bundle.id}`)}
+                                  onClick={() =>
+                                    navigate(`edit-bundle/${bundle.id}`)
+                                  }
                                   title="Edit Bundle"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1115,7 +1181,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/bundle/${bundle.id}`)}
+                                  onClick={() =>
+                                    navigate(`/bundle/${bundle.id}`)
+                                  }
                                   title="View Bundle"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1151,12 +1219,16 @@ export function AdminDashboard() {
                   {cohorts.length === 0 ? (
                     <div className="text-center py-8">
                       <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No cohorts</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No cohorts
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first cohort.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-cohort")}>
+                        <Button
+                          onClick={() => navigate("/admin/create-cohort")}
+                        >
                           <PlusCircle className="mr-2 h-4 w-4" />
                           Create Cohort
                         </Button>
@@ -1171,13 +1243,17 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {cohorts.map(cohort => (
+                        {cohorts.map((cohort) => (
                           <TableRow key={cohort.id}>
                             {/* Cohort title & description */}
                             <TableCell>
                               <div>
-                                <div className="font-medium">{cohort.title}</div>
-                                <div className="text-sm text-muted-foreground">{cohort.description || "-"}</div>
+                                <div className="font-medium">
+                                  {cohort.title}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {cohort.description || "-"}
+                                </div>
                               </div>
                             </TableCell>
 
@@ -1197,7 +1273,6 @@ export function AdminDashboard() {
                           </TableRow>
                         ))}
                       </TableBody>
-
                     </Table>
                   )}
                 </CardContent>
@@ -1208,15 +1283,15 @@ export function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Instructors</CardTitle>
-                  <CardDescription>
-                    Manage all instructors.
-                  </CardDescription>
+                  <CardDescription>Manage all instructors.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {instructors.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No Instructors</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No Instructors
+                      </h3>
                     </div>
                   ) : (
                     <Table>
@@ -1233,16 +1308,29 @@ export function AdminDashboard() {
                         {instructors.map((instructor) => (
                           <TableRow key={instructor.id}>
                             <TableCell>
-                              {instructor.firstName} {instructor.middleName} {instructor.lastName}
+                              {instructor.firstName} {instructor.middleName}{" "}
+                              {instructor.lastName}
                             </TableCell>
                             <TableCell>{instructor.email}</TableCell>
                             <TableCell>
-                              <Badge variant={instructor.role === USER_ROLE.ADMIN ? "destructive" : "default"}>
+                              <Badge
+                                variant={
+                                  instructor.role === USER_ROLE.ADMIN
+                                    ? "destructive"
+                                    : "default"
+                                }
+                              >
                                 {instructor.role}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={instructor.status === USER_STATUS.ACTIVE ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  instructor.status === USER_STATUS.ACTIVE
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {instructor.status}
                               </Badge>
                             </TableCell>
@@ -1272,7 +1360,9 @@ export function AdminDashboard() {
                   {users.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No users</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No users
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by inviting or creating a user.
                       </p>
@@ -1307,8 +1397,8 @@ export function AdminDashboard() {
                                   user.role === USER_ROLE.ADMIN
                                     ? "destructive"
                                     : user.role === USER_ROLE.STUDENT
-                                      ? "default"
-                                      : "secondary"
+                                    ? "default"
+                                    : "secondary"
                                 }
                               >
                                 {user.role}
@@ -1320,8 +1410,8 @@ export function AdminDashboard() {
                                   user.status === USER_STATUS.ACTIVE
                                     ? "default"
                                     : user.status === USER_STATUS.INACTIVE
-                                      ? "secondary"
-                                      : "outline"
+                                    ? "secondary"
+                                    : "outline"
                                 }
                               >
                                 {user.status}
@@ -1332,7 +1422,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/edit-user/${user.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-user/${user.id}`)
+                                  }
                                   title="Edit User"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1368,12 +1460,16 @@ export function AdminDashboard() {
                   {coupons.length === 0 && !loading ? (
                     <div className="text-center py-8">
                       <Gift className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No coupons
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating a coupon code.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-coupon")}>
+                        <Button
+                          onClick={() => navigate("/admin/create-coupon")}
+                        >
                           <Plus className="mr-2 h-4 w-4" />
                           Create Coupon
                         </Button>
@@ -1394,25 +1490,27 @@ export function AdminDashboard() {
                       <TableBody>
                         {coupons.map((coupon) => (
                           <TableRow key={coupon.id}>
-                            <TableCell className="font-medium">{coupon.code}</TableCell>
+                            <TableCell className="font-medium">
+                              {coupon.code}
+                            </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
                                   coupon.status === COUPON_STATUS.ACTIVE
                                     ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                      ? "secondary"
-                                      : "outline"
+                                    ? "secondary"
+                                    : "outline"
                                 }
                               >
                                 {coupon.status}
                               </Badge>
                             </TableCell>
+                            <TableCell>{coupon.discountPercentage}</TableCell>
                             <TableCell>
-                              {coupon.discountPercentage}
-                            </TableCell>
-                            <TableCell>
-                              {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
+                              {coupon.usageLimit === 0
+                                ? "Unlimited (∞)"
+                                : coupon.usageLimit}
                             </TableCell>
                             <TableCell>
                               {formatDate(coupon.expiryDate)}
@@ -1422,7 +1520,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-coupon/${coupon.id}`)
+                                  }
                                   title="Edit Coupon"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1430,7 +1530,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => { deleteCoupon(coupon.id) }}
+                                  onClick={() => {
+                                    deleteCoupon(coupon.id);
+                                  }}
                                   title="Delete Coupon"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -1450,9 +1552,7 @@ export function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Organizations</CardTitle>
-                  <CardDescription>
-                    Manage all organizations.
-                  </CardDescription>
+                  <CardDescription>Manage all organizations.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <OrganizationTab />
@@ -1464,9 +1564,7 @@ export function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Pop-Ups</CardTitle>
-                  <CardDescription>
-                    Manage all pop-ups.
-                  </CardDescription>
+                  <CardDescription>Manage all pop-ups.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <PopUpTab />
@@ -1478,6 +1576,6 @@ export function AdminDashboard() {
       </div>
     </div>
   );
-};
+}
 
 export default AdminDashboard;
