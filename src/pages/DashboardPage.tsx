@@ -39,9 +39,9 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
             <div className="space-y-3 mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span>Progress</span>
-                <span>{enrollment.progressSummary.percent}%</span>
+                <span>{enrollment.progressSummary?.percent ?? 0}%</span>
               </div>
-              <Progress value={enrollment.progressSummary.percent} />
+              <Progress value={enrollment.progressSummary?.percent ?? 0} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -111,9 +111,9 @@ export default function DashboardPage() {
 
   const stats = {
     totalCourses: enrollments.length,
-    completedCourses: enrollments.filter(e => e.progressSummary.percent === 100).length,
+    completedCourses: enrollments.filter(e => e.progressSummary?.percent === 100).length,
     averageProgress: enrollments.length > 0
-      ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary.percent, 0) / enrollments.length)
+      ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary?.percent, 0) / enrollments.length)
       : 0,
   };
 

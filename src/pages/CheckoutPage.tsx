@@ -6,7 +6,7 @@ import {
   RefreshCw,
   Shield,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ import { useCourseQuery } from "@/hooks/useCaching";
 import { Header } from "@/components/Header";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
-import { enrollmentService } from "@/services/enrollmentService";
 import { paymentService } from "@/services/paymentService";
 
 import { Input } from "@/components/ui/input";
@@ -190,16 +189,18 @@ export default function CheckoutPage() {
 
   const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
-    const pct = coupon.discountPercentage ?? 0;
-    return Math.max(0, Math.min(originalPrice, (originalPrice * pct) / 100));
+    const discountPercentage = coupon.discountPercentage ?? 0;
+
+    // Protects against scenarios where discountPercentage might accidently have been set greater than 100
+    return Math.max(0, Math.min(originalPrice, (originalPrice * discountPercentage) / 100));
   };
 
-  const clearCoupon = useCallback(() => {
+  const clearCoupon = () => {
     setAppliedCoupon(null);
     setIsCouponValid(false);
     setDiscountAmount(0);
     setCouponMessage("");
-  }, []);
+  };
 
   // Auto-clear when input becomes empty (immediately updates price)
   useEffect(() => {
@@ -213,69 +214,65 @@ export default function CheckoutPage() {
     setCouponMessage("");
     setIsCouponValid(false);
 
-    try {
-      const code = promoCode.trim();
-      if (!code) {
-        clearCoupon();
-        return;
-      }
-
-      const couponResult = await couponService.getCouponByCode(code);
-
-      if (!couponResult.success) {
-        clearCoupon();
-        setCouponMessage("Invalid promo code");
-        return;
-      }
-
-      const coupon = couponResult.data;
-      setAppliedCoupon(coupon);
-
-      const applicabilityResult = await couponUsageService.isCouponApplicable(
-        user!.id,
-        coupon.id,
-        courseId!,
-        null,
-        null,
-      );
-      if (
-        !applicabilityResult.success ||
-        !applicabilityResult.data?.isApplicable
-      ) {
-        clearCoupon();
-        setCouponMessage(
-          applicabilityResult.data?.reason ?? "Coupon not applicable",
-        );
-        return;
-      }
-
-      // Compute discount from the coupon object we have (no state race)
-      const originalPrice = course!.salePrice || 0;
-      const d = calculateDiscount(originalPrice, coupon);
-      setDiscountAmount(d);
-      setIsCouponValid(true);
-      setCouponMessage("Coupon is valid, Happy Shopping");
-    } catch (error) {
-      console.error("Error During Handling Coupon", error);
+    const code = promoCode.trim();
+    if (!code) {
       clearCoupon();
-      setCouponMessage("Error applying coupon. Please try again.");
-    } finally {
-      setIsValidatingCoupon(false);
+      return;
     }
+
+    const couponResult = await couponService.getCouponByCode(code);
+
+    if (!couponResult.success) {
+      clearCoupon();
+      setCouponMessage("Invalid promo code");
+      return;
+    }
+
+    const coupon = couponResult.data;
+    setAppliedCoupon(coupon);
+
+    const applicabilityResult = await couponUsageService.isCouponApplicable(
+      user!.id,
+      coupon.id,
+      courseId!,
+      null,
+      null,
+    );
+    if (
+      !applicabilityResult.success ||
+      !applicabilityResult.data?.isApplicable
+    ) {
+      clearCoupon();
+      setCouponMessage(
+        applicabilityResult.data?.reason ?? "Coupon not applicable",
+      );
+      return;
+    }
+
+    // Compute discount from the coupon object we have (no state race)
+    const originalPrice = course!.salePrice || 0;
+    setDiscountAmount(calculateDiscount(originalPrice, coupon));
+    setIsCouponValid(true);
+    setCouponMessage("Coupon is valid, Happy Learning!");
+    setIsValidatingCoupon(false);
   };
 
   const handleUseCoupon = async () => {
-    try {
-      const usageDate = {
-        userId: user?.id,
-        couponId: appliedCoupon.id,
-        usedAt: Timestamp.now(),
-      };
-      await couponUsageService.recordCouponUsage(usageDate);
-      console.log("Recorded Coupon uses", usageDate);
-    } catch (error) {
-      console.log("The Error ", error);
+    const usageDate = {
+      userId: user?.id,
+      couponId: appliedCoupon.id,
+      usedAt: Timestamp.now(),
+    };
+    const result = await couponUsageService.recordCouponUsage(usageDate);
+    if (result.success) {
+      toast({
+        title: "Coupon successfully applied!"
+      });
+      return;
     }
+    toast({
+      title: "Failed to apply coupon!"
+    });
   };
 
   const handlePayment = async () => {

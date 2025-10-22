@@ -131,6 +131,8 @@ class OrderService {
       throw new Error("Failed to update order");
     }
   }
+
+  // TODO: Add method for refunds
 }
 
 export const orderService = new OrderService();
