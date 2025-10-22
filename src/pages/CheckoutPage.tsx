@@ -128,7 +128,6 @@ export default function CheckoutPage() {
   const [couponMessage, setCouponMessage] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
       navigate("/auth/login", {
@@ -142,51 +141,40 @@ export default function CheckoutPage() {
 
   // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
-    const checkEnrollment = async () => {
-      if (user && courseId) {
-        const result = await enrollmentService.isUserEnrolled(
-          user.id,
-          courseId,
-        );
-
-        setUserIsEnrolled(result.success);
+    if (user && courseId) {
+      if (isEnrolled(courseId)) {
+        setUserIsEnrolled(true);
+      } else {
+        setUserIsEnrolled(false);
       }
-    };
-    checkEnrollment();
+    }
   }, [user, courseId]);
 
-  // Navigate away if already enrolled
   useEffect(() => {
     if (isUserEnrolled) navigate(`/course/${courseId}`);
   }, [isUserEnrolled, navigate, courseId]);
 
-  // Load pricing when course or currency/provider changes
   useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (course && selectedCurrency)
+      loadPricing();
   }, [course, selectedCurrency, selectedProvider, discountAmount]);
-
-  // Load pricing on component mount
-  useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const loadPricing = async () => {
     if (!course) return;
     setLoadingPricing(true);
+
     try {
       const basePrice = course.salePrice || 0;
       const effectivePrice = Math.max(0, basePrice - discountAmount);
       setFinalPrice(effectivePrice);
-      console.log("Effective Price:", effectivePrice);
 
       const data = await paymentService.calculatePricing(
         effectivePrice,
         selectedCurrency,
-        selectedProvider,
         CURRENCY.INR,
+        selectedProvider,
       );
+
       setPricing(data);
     } catch (error) {
       toast({
@@ -194,15 +182,15 @@ export default function CheckoutPage() {
         description: "Failed to load pricing information",
         variant: "destructive",
       });
+
     } finally {
       setLoadingPricing(false);
     }
   };
 
-  const calcDiscount = (originalPrice: number, coupon?: Coupon) => {
+  const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
     const pct = coupon.discountPercentage ?? 0;
-    // clamp to [0, originalPrice]
     return Math.max(0, Math.min(originalPrice, (originalPrice * pct) / 100));
   };
 
@@ -263,7 +251,7 @@ export default function CheckoutPage() {
 
       // Compute discount from the coupon object we have (no state race)
       const originalPrice = course!.salePrice || 0;
-      const d = calcDiscount(originalPrice, coupon);
+      const d = calculateDiscount(originalPrice, coupon);
       setDiscountAmount(d);
       setIsCouponValid(true);
       setCouponMessage("Coupon is valid, Happy Shopping");
