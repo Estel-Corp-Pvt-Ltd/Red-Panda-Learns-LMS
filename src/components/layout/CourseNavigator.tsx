@@ -108,7 +108,7 @@ export function CourseNavigator({
 
   return (
     <div className={cn("w-80 border-r bg-card/50 backdrop-blur-sm", className)}>
-      <ScrollArea className="h-full p-4">
+      <ScrollArea className="h-full p-4 overflow-y-scroll">
         <div className="space-y-6">
 
           {/* === Top-level course topics === */}

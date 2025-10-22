@@ -107,8 +107,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
