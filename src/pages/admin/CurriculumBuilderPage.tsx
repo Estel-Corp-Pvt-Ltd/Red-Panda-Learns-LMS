@@ -249,6 +249,18 @@ const CurriculumBuilderPage = () => {
     }
   };
 
+  // auto-save when curriculum changes
+  useEffect(() => {
+    if (curriculum.length > 0 && courseId) {
+      // Debounce auto-save to avoid too many requests
+      const timeoutId = setTimeout(() => {
+        saveCurriculumStructure();
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [curriculum]); // This will run whenever curriculum changes
+
   useEffect(() => {
     const fetchInstructors = async () => {
       const result = await instructorService.getAllInstructors();
@@ -967,7 +979,6 @@ const CurriculumBuilderPage = () => {
       updated.splice(insertIndex, 0, ...newItems);
       return updated;
     });
-    saveCurriculumStructure();
     setIsLessonSelectorModalOpen(false);
     setActiveParentId(null); // Reset active parent
   };
@@ -1810,7 +1821,6 @@ const CurriculumBuilderPage = () => {
         isOpen={isLessonSelectorModalOpen}
         onClose={() => {
           setIsLessonSelectorModalOpen(false);
-          saveBasics()
         }}
         onConfirm={addLessonsToParent}
         excludedLessonIds={excludedLessonIdsForActiveParent}
@@ -1822,7 +1832,6 @@ const CurriculumBuilderPage = () => {
         isOpen={isCreateLessonOpen}
         onClose={() => {
           setIsCreateLessonOpen(false);
-          saveCurriculumStructure()
         }}
         onLessonCreated={(lesson) => addLessonsToParent([lesson])}
       />

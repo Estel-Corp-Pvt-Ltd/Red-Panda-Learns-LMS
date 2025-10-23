@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
 import { logError } from "@/utils/logger";
 import { LoadingSkeleton } from "../ui/loading-skeleton";
-import ReactMarkdown from "react-markdown";
+import MarkdownViewer from "../MarkdownViewer";
 
 interface LessonViewProps {
   lessonId: string;
@@ -141,75 +141,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       </div>
 
       {/* Lesson Description */}
-      <ReactMarkdown
-        components={{
-          h2: ({ children }) => (
-            <>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1 mt-5">
-                {children}
-              </h2>
-              <hr className="my-2 mb-4 border-gray-300 dark:border-gray-600" />
-            </>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-4">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => (
-            <p className="mb-2 text-gray-600 dark:text-gray-400 leading-relaxed">
-              {children}
-            </p>
-          ),
-          ul: ({ children }) => (
-            <ul className="list-disc pl-4 mb-3 ml-3 space-y-0.5">
-              {children}
-            </ul>
-          ),
-          li: ({ children }) => (
-            <li className="text-gray-600 dark:text-gray-400 text-sm">
-              {children}
-            </li>
-          ),
-          strong: ({ children }) => (
-            <strong className="font-medium text-gray-800 dark:text-gray-200">
-              {children}
-            </strong>
-          ),
-          em: ({ children }) => (
-            <em className="italic text-gray-700 dark:text-gray-400">
-              {children}
-            </em>
-          ),
-          img: ({ src, alt }) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={src}
-              alt={alt || "Markdown image"}
-              className="my-6 mb-8 rounded-lg max-w-full min-h-72 h-auto m-auto"
-            />
-          ),
-          code: ({ children }) => (
-            <div className="my-6 mb-8 rounded-lg max-w-full h-auto p-4 bg-gray-900 text-gray-100 overflow-x-auto">
-              <code className="text-gray-100 px-1 rounded font-mono">
-                {children}
-              </code>
-            </div>
-          ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              className="text-primary underline hover:text-primary/80 transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {lesson.description || '_No content provided._'}
-      </ReactMarkdown>
+      <MarkdownViewer value={lesson.description || '_No content provided._'} />
 
       {/* Progress Indicator */}
       <Card className="bg-muted/30">

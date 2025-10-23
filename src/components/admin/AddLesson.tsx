@@ -96,16 +96,8 @@ export const CreateLessonModal = ({
         toast.error("Lesson title is required");
         return;
       }
-      if (!lesson.description.trim()) {
-        toast.error("Lesson description is required");
-        return;
-      }
       if (!lesson.embedUrl.trim()) {
         toast.error("Embed URL is required");
-        return;
-      }
-      if (lesson.durationSeconds <= 0) {
-        toast.error("Duration must be greater than 0");
         return;
       }
 
@@ -131,7 +123,7 @@ export const CreateLessonModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-5xl bg-card text-card-foreground">
+      <DialogContent className="sm:max-w-5xl bg-card text-card-foreground overflow-y-scroll max-h-screen">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create Lesson</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
