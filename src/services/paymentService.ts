@@ -3,6 +3,7 @@ import { TransactionLineItem } from "@/types/transaction";
 import {
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,
+  ORDER_STATUS,
   PAYMENT_PROVIDER,
   TRANSACTION_STATUS,
   TRANSACTION_TYPE,
@@ -16,6 +17,7 @@ import { orderService } from "./orderService";
 import { paypalProvider } from "./providers/paypalProvider";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { transactionService } from "./transactionService";
+
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -191,7 +193,7 @@ class PaymentService {
         subtotal,
         displayTitle,
       },
-      status: "PENDING",
+      status: ORDER_STATUS.PENDING,
     });
 
     // Create Transaction (now uses items[])
@@ -254,7 +256,7 @@ class PaymentService {
 
       await orderService.updateOrder(
         orderId,
-        result.success ? "SUCCESS" : "FAILED",
+        result.success ? ORDER_STATUS.SUCCESS : ORDER_STATUS.FAILED,
         transactionId
       );
 
@@ -276,7 +278,7 @@ class PaymentService {
       }
     } else {
       // Mark order as failed so it doesn’t linger in PENDING
-      await orderService.updateOrder(orderId, "FAILED", transactionId);
+      await orderService.updateOrder(orderId, ORDER_STATUS.FAILED, transactionId);
     }
 
     return result;
