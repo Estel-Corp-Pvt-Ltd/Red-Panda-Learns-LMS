@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Topic } from "@/types/course";
 import { formatDate } from "@/utils/date-time";
+import { getCourseStructureCounts } from "@/utils/course"; // Import with alias
 import {
   ArrowLeft,
   Bookmark,
@@ -40,7 +41,6 @@ export default function CourseDetailPage() {
   const { isEnrolled } = useEnrollment();
   const { toast } = useToast();
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
-  const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
 
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
@@ -56,7 +56,10 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading;
   const isError = courseError;
 
-  // Check if user already enrolled (keep "after" behavior)
+  // Get course structure counts using the utility function
+  const courseCounts = course ? getCourseStructureCounts(course) : { cohortCount: 0, topicCount: 0, lessonCount: 0 };
+
+  // Check if user already enrolled
   useEffect(() => {
     if (user && courseId) {
       if (isEnrolled(courseId)) {
@@ -65,7 +68,7 @@ export default function CourseDetailPage() {
         setUserIsEnrolled(false);
       }
     }
-  }, [user, courseId]);
+  }, [user, courseId, isEnrolled]);
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -79,11 +82,10 @@ export default function CourseDetailPage() {
     }
 
     if (userIsEnrolled) {
-      if (course.topics && course.topics.length > 0) {
-        const firstTopic = course.topics[0];
-        navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
-      }
+      handleContinueLearning();
+      return;
     }
+
     if (!course) return;
     cartDispatch({
       type: CART_ACTION.ADD,
@@ -100,13 +102,34 @@ export default function CourseDetailPage() {
   };
 
   const handleContinueLearning = () => {
-    if (course.cohorts[0].topics && course.cohorts[0].topics.length > 0) {
-      const firstTopic = course.cohorts[0].topics[0];
-      navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+    if (!course) return;
+
+    // Get first lesson based on course structure
+    let firstLessonId: string | null = null;
+
+    if (course.cohorts && course.cohorts.length > 0) {
+      // Course has cohorts structure
+      const firstCohort = course.cohorts[0];
+      if (firstCohort.topics && firstCohort.topics.length > 0) {
+        const firstTopic = firstCohort.topics[0];
+        if (firstTopic.items && firstTopic.items.length > 0) {
+          firstLessonId = firstTopic.items[0].id;
+        }
+      }
+    } else if (course.topics && course.topics.length > 0) {
+      // Course has direct topics structure
+      const firstTopic = course.topics[0];
+      if (firstTopic.items && firstTopic.items.length > 0) {
+        firstLessonId = firstTopic.items[0].id;
+      }
+    }
+
+    if (firstLessonId) {
+      navigate(`/course/${courseId}/lesson/${firstLessonId}`);
     } else {
       toast({
-        title: "No content to display",
-        description: `This course has no topics and lessons.`,
+        title: "No content available",
+        description: `This course has no lessons available yet.`,
         variant: "destructive"
       });
     }
@@ -148,11 +171,6 @@ export default function CourseDetailPage() {
       </div>
     );
   }
-  console.log("Lesson Counnt by topic", lessonCountByTopic);
-  const totalLessons = Object.values(lessonCountByTopic).reduce(
-    (sum: number, count: any) => sum + (Number(count) || 0),
-    0
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -201,41 +219,14 @@ export default function CourseDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {(totalLessons as number) > 0 && (
+                  {courseCounts.lessonCount > 0 && (
                     <div className="flex items-center gap-1">
                       <BookOpen className="h-4 w-4" />
-                      <span>{totalLessons as number} lessons</span>
+                      <span>{courseCounts.lessonCount} lessons</span>
                     </div>
                   )}
-                  {/* {course.total_students > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{course.total_students} students</span>
-                    </div>
-                  )}
-                  {course.course_duration && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{course.course_duration}</span>
-                    </div>
-                  )} */}
                 </div>
               </div>
-
-              {/* Progress (if enrolled) */}
-              {/* {userIsEnrolled && (
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Your Progress</span>
-                      <span className="text-sm text-muted-foreground">
-                        {progressPercentage}% complete
-                      </span>
-                    </div>
-                    <Progress value={progressPercentage} className="h-2" />
-                  </CardContent>
-                </Card>
-              )} */}
             </div>
 
             {/* Course Description */}
@@ -261,20 +252,42 @@ export default function CourseDetailPage() {
                   Course Curriculum
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {course.cohorts.length || 0} topics • {totalLessons as number}{" "}
-                  lessons
+                  {courseCounts.cohortCount > 0 && `${courseCounts.cohortCount} cohorts • `}
+                  {courseCounts.topicCount} topics • {courseCounts.lessonCount} lessons
                 </p>
               </CardHeader>
               <CardContent>
-                {(course.topics.length > 0 || course.cohorts?.length > 0) ? (
+                {(courseCounts.topicCount > 0) ? (
                   <Accordion
                     type="multiple"
                     value={expandedTopics}
                     onValueChange={setExpandedTopics}
                   >
-                    {/* 1. Render top-level course topics (if any) */}
-                    {course.topics.length > 0 &&
-                      course.topics.map((topic, index) => (
+                    {/* Render based on course structure */}
+                    {course.cohorts && course.cohorts.length > 0 ? (
+                      // Course has cohorts
+                      course.cohorts.map((cohort, cohortIndex) => (
+                        <div key={`cohort-${cohortIndex}`} className="mt-6">
+                          {cohort.title && (
+                            <h3 className="text-lg font-semibold mb-2">
+                              {cohort.title}
+                            </h3>
+                          )}
+                          {cohort.topics?.map((topic, topicIndex) => (
+                            <TopicAccordion
+                              key={`cohort-topic-${topic.id}`}
+                              courseId={courseId!}
+                              topic={topic}
+                              index={topicIndex}
+                              topicId={`cohort-${cohortIndex}-topic-${topic.id}`}
+                              isEnrolled={userIsEnrolled}
+                            />
+                          ))}
+                        </div>
+                      ))
+                    ) : (
+                      // Course has direct topics
+                      course.topics?.map((topic, index) => (
                         <TopicAccordion
                           key={`course-topic-${topic.id}`}
                           courseId={courseId!}
@@ -283,28 +296,8 @@ export default function CourseDetailPage() {
                           topicId={topic.id.toString()}
                           isEnrolled={userIsEnrolled}
                         />
-                      ))}
-
-                    {/* 2. Render cohorts with their topics */}
-                    {/* {course.cohorts?.map((cohort, cohortIndex) => (
-                      <div key={`cohort-${cohortIndex}`} className="mt-6"> */}
-                    {/* Optional: Display cohort title */}
-                    {/* <h3 className="text-lg font-semibold mb-2">
-                          {cohort.title || `Cohort ${cohortIndex + 1}`}
-                        </h3> */}
-
-                    {/* {cohort.topics?.map((topic, topicIndex) => (
-                          <TopicAccordion
-                            key={`cohort-topic-${topic.id}`}
-                            courseId={courseId!}
-                            topic={topic}
-                            index={topicIndex}
-                            topicId={topic.id.toString()}
-                            isEnrolled={true}
-                          />
-                        ))} */}
-                    {/* </div>
-                    ))} */}
+                      ))
+                    )}
                   </Accordion>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
@@ -313,7 +306,6 @@ export default function CourseDetailPage() {
                   </div>
                 )}
               </CardContent>
-
             </Card>
           </div>
 
@@ -322,21 +314,6 @@ export default function CourseDetailPage() {
             {/* Course Preview/Enroll Card */}
             <Card className="sticky top-24">
               <CardContent className="p-6">
-                {/* Course thumbnail */}
-                {/* <div className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden">
-                  {course.thumbnail_url ? (
-                    <img
-                      src={course.thumbnail_url}
-                      alt={course.post_title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                      <Play className="h-12 w-12 text-primary-foreground" />
-                    </div>
-                  )}
-                </div> */}
-
                 {/* Price and actions */}
                 <div className="space-y-4">
                   {course.salePrice && (
@@ -346,35 +323,35 @@ export default function CourseDetailPage() {
                   )}
 
                   <div className="space-y-2">
-                    {
-                      userIsEnrolled
-                        ? (
+                    {userIsEnrolled ? (
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={handleContinueLearning}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Continue Learning
+                      </Button>
+                    ) : (
+                      <>
+                        {isAddedToCart ? (
+                          <Link to="/cart">
+                            <Button className="w-full">Go to Cart</Button>
+                          </Link>
+                        ) : (
                           <Button
                             className="w-full"
                             size="lg"
-                            onClick={handleContinueLearning}
+                            onClick={handleAddToCart}
                           >
-                            <Play className="h-4 w-4 mr-2" />
-                            Continue Learning
+                            Add to Cart
                           </Button>
-                        ) : (
-                          <>
-                            {isAddedToCart ? (
-                              <Link to="/cart">
-                                <Button className="w-full">Go to Cart</Button>
-                              </Link>
-                            ) :
-                              <Button
-                                className="w-full"
-                                size="lg"
-                                onClick={handleAddToCart}
-                              >
-                                Add to Cart
-                              </Button>
-                            }
-                            <Button className="w-full" onClick={handleCheckout}>Go To Checkout</Button>
-                          </>
                         )}
+                        <Button className="w-full" onClick={handleCheckout}>
+                          Go To Checkout
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
@@ -399,28 +376,13 @@ export default function CourseDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Lessons</span>
                     <span className="font-medium">
-                      {totalLessons as number}
+                      {courseCounts.lessonCount}
                     </span>
                   </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-muted-foreground">Students</span>
-                    <span className="font-medium">{course.total_students}</span>
-                  </div> */}
-                  {/* {course.course_duration && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration</span>
-                      <span className="font-medium">
-                        {course.course_duration}
-                      </span>
-                    </div>
-                  )} */}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">
-                      <span className="font-medium">
-                        {formatDate(course.updatedAt)}
-                      </span>
-
+                      {formatDate(course.updatedAt)}
                     </span>
                   </div>
                 </div>
@@ -433,7 +395,7 @@ export default function CourseDetailPage() {
   );
 }
 
-// Topic Accordion Component
+// Topic Accordion Component (remains the same)
 function TopicAccordion({
   topic,
   courseId,
@@ -470,53 +432,34 @@ function TopicAccordion({
         <div className="ml-11 space-y-2">
           {lessons && lessons.length > 0 ? (
             lessons.map((lesson, lessonIndex) => {
-              const lessonUrl = `/course/${courseId}/lesson/${lesson.id
-                }`;
+              const lessonUrl = `/course/${courseId}/lesson/${lesson.id}`;
 
               return (
                 <Link
                   key={lesson.id}
                   to={isEnrolled ? lessonUrl : "#"}
                   className={cn(
-                    "block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border")}
+                    "block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border"
+                  )}
                   onClick={(e) => {
                     if (!isEnrolled) {
                       e.preventDefault();
-                      console.log("Lesson click blocked - user not enrolled");
-                    } else {
-                      console.log("Navigating to lesson:", lessonUrl);
                     }
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    {
-                      isEnrolled ?
-                        <div className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs">
-                          {lessonIndex + 1}
-                        </div>
-                        :
-                        <Lock size={15} className="text-primary" />
-                    }
+                    {isEnrolled ? (
+                      <div className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs">
+                        {lessonIndex + 1}
+                      </div>
+                    ) : (
+                      <Lock size={15} className="text-primary" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">
                         {lesson.title || (lesson as any).title}
                       </p>
-                      {/* {lesson.duration && (
-                        <p className="text-xs text-muted-foreground">
-                          {lesson.lesson_duration}
-                        </p>
-                      )} */}
                     </div>
-                    {/* {lesson.is_preview && (
-                      <Badge variant="secondary" className="text-xs">
-                        Preview
-                      </Badge>
-                    )} */}
-                    {/* {!isEnrolled && !lesson.is_preview && (
-                      <Badge variant="outline" className="text-xs">
-                        Locked
-                      </Badge>
-                    )} */}
                   </div>
                 </Link>
               );
@@ -530,4 +473,4 @@ function TopicAccordion({
       </AccordionContent>
     </AccordionItem>
   );
-};
+}
