@@ -819,11 +819,16 @@ export function AdminDashboard() {
         {/* Add / Edit form */}
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-2 items-end"
+          className="
+          grid grid-cols-1
+          sm:grid-cols-[max-content_max-content_max-content]
+          items-end
+          gap-1.5 sm:gap-2
+        "
         >
           {/* Organization Name */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Organization Name
             </label>
             <input
@@ -831,20 +836,22 @@ export function AdminDashboard() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Organization name"
-              className={`${inputBase} w-full sm:w-64`}
+              className={`${inputBase} h-11 w-full sm:w-64`}
             />
           </div>
 
           {/* Type */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Type
             </label>
             <Select
               value={type}
               onValueChange={(v) => setType(v as OrganizationType)}
             >
-              <SelectTrigger className={`${selectTriggerBase} w-full sm:w-64`}>
+              <SelectTrigger
+                className={`${selectTriggerBase} h-11 w-full sm:w-64`}
+              >
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
 
@@ -857,7 +864,7 @@ export function AdminDashboard() {
                   <SelectItem
                     key={val}
                     value={val}
-                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[state=checked]:bg-transparent data-[state=checked]:text-slate-700 dark:data-[state=checked]:text-slate-200`}
                   >
                     {val}
                   </SelectItem>
@@ -867,7 +874,7 @@ export function AdminDashboard() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center sm:items-start gap-2">
+          <div className="flex items-end gap-1.5">
             <Button
               type="submit"
               disabled={saving}
@@ -905,7 +912,7 @@ export function AdminDashboard() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -913,8 +920,8 @@ export function AdminDashboard() {
                 <TableRow key={org.id}>
                   <TableCell>{org.name}</TableCell>
                   <TableCell>{org.type}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <TableCell>
+                    <div className="flex justify-end gap-1.5">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -976,7 +983,7 @@ export function AdminDashboard() {
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Lesson
             </Button>
 
@@ -985,7 +992,7 @@ export function AdminDashboard() {
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Course
             </Button>
 
@@ -994,7 +1001,7 @@ export function AdminDashboard() {
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Course</span> Bundle
             </Button>
 
@@ -1012,7 +1019,7 @@ export function AdminDashboard() {
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Coupon
             </Button>
           </div>
@@ -1110,7 +1117,7 @@ export function AdminDashboard() {
                         <Button
                           onClick={() => navigate("/admin/create-lesson")}
                         >
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Lesson
                         </Button>
                       </div>
@@ -1223,7 +1230,7 @@ export function AdminDashboard() {
                         <Button
                           onClick={() => navigate("/admin/create-course")}
                         >
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Course
                         </Button>
                       </div>
@@ -1317,7 +1324,7 @@ export function AdminDashboard() {
                         <Button
                           onClick={() => navigate("/admin/create-bundle")}
                         >
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Bundle
                         </Button>
                       </div>
@@ -1438,7 +1445,7 @@ export function AdminDashboard() {
                         <Button
                           onClick={() => navigate("/admin/create-cohort")}
                         >
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Cohort
                         </Button>
                       </div>
@@ -1577,7 +1584,7 @@ export function AdminDashboard() {
                       </p>
                       <div className="mt-6">
                         <Button onClick={() => navigate("/admin/create-user")}>
-                          <UserPlus className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Add User
                         </Button>
                       </div>
@@ -1679,7 +1686,7 @@ export function AdminDashboard() {
                         <Button
                           onClick={() => navigate("/admin/create-coupon")}
                         >
-                          <Plus className="mr-2 h-4 w-4" />
+                          <Plus className="mr-1 h-4 w-4" />
                           Create Coupon
                         </Button>
                       </div>
