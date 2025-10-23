@@ -70,7 +70,7 @@ class LessonService {
  * @throws Error if lesson creation fails.
  */
 
-    async createLesson(data: Omit<Lesson, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    async createLesson(data: Omit<Lesson, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lesson> {
         try {
             const lessonId = await this.generateLessonId();
 
@@ -89,7 +89,7 @@ class LessonService {
             await setDoc(doc(db, 'Lessons', lessonId), lesson);
             console.log('LessonService - Lesson created successfully:', lessonId);
 
-            return lessonId;
+            return lesson;
         } catch (error) {
             console.error('LessonService - Error creating lesson:', error);
             throw new Error('Failed to create lesson');

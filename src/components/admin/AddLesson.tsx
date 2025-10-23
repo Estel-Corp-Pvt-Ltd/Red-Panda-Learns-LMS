@@ -26,11 +26,12 @@ import { Label } from "@/components/ui/label";
 import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
 import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";
+import { Lesson } from "@/types/lesson";
 
 type CreateLessonModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onLessonCreated?: () => void;
+  onLessonCreated?: (lesson: Lesson) => void;
 };
 
 export const CreateLessonModal = ({
@@ -92,10 +93,10 @@ export const CreateLessonModal = ({
       }
 
       setSaving(true);
-      await lessonService.createLesson(lesson);
+      const newLesson = await lessonService.createLesson(lesson);
       toast.success("Lesson created successfully!");
 
-      onLessonCreated?.();
+      onLessonCreated?.(newLesson);
       resetForm();
       onClose();
     } catch (err) {

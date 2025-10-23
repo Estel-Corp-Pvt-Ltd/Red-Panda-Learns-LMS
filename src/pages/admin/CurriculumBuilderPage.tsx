@@ -164,7 +164,6 @@ const CurriculumBuilderPage = () => {
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1509,17 +1508,6 @@ const CurriculumBuilderPage = () => {
                     <Save className="h-4 w-4" />
                     Save
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setIsCreateLessonOpen(true)}
-
-                    className="flex items-center gap-1"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add lesson
-                  </Button>
-
-
                 </div >
               </CardHeader >
 
@@ -1805,15 +1793,6 @@ const CurriculumBuilderPage = () => {
           setIsLessonSelectorModalOpen(false);
         }}
         excludedLessonIds={excludedLessonIdsForActiveParent}
-      />
-
-      <CreateLessonModal
-        isOpen={isCreateLessonOpen}
-        onClose={() => setIsCreateLessonOpen(false)}
-        onLessonCreated={() => {
-          // Refresh list or trigger your parent logic
-
-        }}
       />
       {isAssignmentModelOpen && <AssignmentModal onCancel={() => setIsAssignmentModelOpen(false)} onSave={handleAssignment} />}
     </div >

@@ -50,7 +50,7 @@ export function CourseNavigator({
     const lessonIndex = findLessonIndex(allLessons, lessonId);
     const currentLessonIndex = findLessonIndex(allLessons, currentLesson.id);
     console.log({ lessonIndex, currentLessonIndex });
-    return lessonIndex !== -1 && lessonIndex <= currentLessonIndex;
+    return lessonIndex !== -1 && lessonIndex < currentLessonIndex;
   }
 
   // Reusable rendering for topics
