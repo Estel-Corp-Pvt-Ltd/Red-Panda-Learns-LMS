@@ -810,7 +810,7 @@ export function AdminDashboard() {
               className="text-xs sm:text-sm"
             >
               <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Create New</span> Lesson
+              <span className="hidden xs:inline">New</span> Lesson
             </Button>
 
             <Button
@@ -819,7 +819,7 @@ export function AdminDashboard() {
               className="text-xs sm:text-sm"
             >
               <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Create</span> Course
+              <span className="hidden xs:inline">New</span> Course
             </Button>
 
             <Button
@@ -831,19 +831,19 @@ export function AdminDashboard() {
               <span className="hidden xs:inline">Course</span> Bundle
             </Button>
 
-            <Button
-              onClick={() => navigate("/admin/create-cohort")}
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline"></span> Cohort
-            </Button>
+            {/* <Button
+    onClick={() => navigate("/admin/create-cohort")}
+    size="sm"
+    className="text-xs sm:text-sm"
+  >
+    <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+    <span className="hidden xs:inline">New</span> Cohort
+  </Button> */}
 
             <Button
               onClick={() => navigate("/admin/create-coupon")}
               size="sm"
-              className="text-xs sm:text-sm col-span-2 sm:col-span-1"
+              className="text-xs sm:text-sm"
             >
               <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Coupon
