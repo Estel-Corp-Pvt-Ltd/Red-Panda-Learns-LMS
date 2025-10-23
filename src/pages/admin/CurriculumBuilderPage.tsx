@@ -31,6 +31,7 @@ import {
   ChevronDown,
   NotepadText,
   NotebookPen,
+  Search,
 } from "lucide-react";
 import {
   Popover,
@@ -164,6 +165,7 @@ const CurriculumBuilderPage = () => {
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -891,6 +893,83 @@ const CurriculumBuilderPage = () => {
       title: "Success",
       description: "Assignment added to curriculum"
     });
+    saveBasics();
+  };
+
+  const addLessonsToParent = (lessons: Lesson[]) => {
+    if (!activeParentId) return;
+
+    const parentIndex = curriculum.findIndex(
+      (i) => i.id === activeParentId
+    );
+    const parentDepth = curriculum[parentIndex]?.depth || 0;
+    const parentTopic = curriculum[parentIndex];
+
+    // if topic has a cohort, collect used lesson ids in that cohort
+    let usedInCohort = new Set<string>();
+    const cohortId = parentTopic?.parentId ?? null;
+
+    if (cohortId) {
+      const topicIdsInCohort = new Set(
+        curriculum
+          .filter(
+            (i) =>
+              i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId
+          )
+          .map((i) => i.id)
+      );
+
+      curriculum.forEach((i) => {
+        if (
+          i.type === LEARNING_UNIT.LESSON &&
+          i.parentId &&
+          topicIdsInCohort.has(i.parentId)
+        ) {
+          usedInCohort.add(i.refId ?? i.id);
+        }
+      });
+    }
+
+    // Filter: remove duplicates already present in cohort AND duplicates within selection
+    const seenInSelection = new Set<string>();
+    const filtered = lessons.filter((l) => {
+      if (cohortId && usedInCohort.has(l.id)) return false;
+      if (seenInSelection.has(l.id)) return false;
+      seenInSelection.add(l.id);
+      return true;
+    });
+
+    const skippedCount = lessons.length - filtered.length;
+    if (skippedCount > 0) {
+      toast({
+        title: "Skipped duplicates",
+        description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
+      });
+    }
+
+    const newItems: DraggableItem[] = filtered.map((lesson) => ({
+      id: lesson.id, // instance id
+      refId: lesson.id, // real id
+      title: lesson.title,
+      type: LEARNING_UNIT.LESSON,
+      depth: parentDepth + 1,
+      parentId: activeParentId,
+    }));
+
+    setCurriculum((prev) => {
+      let insertIndex = parentIndex + 1;
+      for (let i = parentIndex + 1; i < prev.length; i++) {
+        if (prev[i].depth <= parentDepth) break;
+        insertIndex = i + 1;
+      }
+
+      const updated = [...prev];
+      updated.splice(insertIndex, 0, ...newItems);
+      return updated;
+    });
+    saveCurriculumStructure();
+    setIsLessonSelectorModalOpen(false);
+    setActiveParentId(null); // Reset active parent
   };
 
   const saveCurriculumStructure = async () => {
@@ -1631,11 +1710,23 @@ const CurriculumBuilderPage = () => {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => addLessonToParent(item.id)}
+                                    onClick={() => {
+                                      setIsCreateLessonOpen(true);
+                                      setActiveParentId(item.id);
+                                    }}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                                     title="Add Lesson"
                                   >
                                     <Plus className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => addLessonToParent(item.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Add Lesson"
+                                  >
+                                    <Search className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -1715,86 +1806,26 @@ const CurriculumBuilderPage = () => {
       </main >
 
       {/* Lesson Selector */}
-      < LessonSelectorModal
+      <LessonSelectorModal
         isOpen={isLessonSelectorModalOpen}
-        onClose={() => setIsLessonSelectorModalOpen(false)}
-        onConfirm={(lessons: Lesson[]) => {
-          if (!activeParentId) return;
-
-          const parentIndex = curriculum.findIndex(
-            (i) => i.id === activeParentId
-          );
-          const parentDepth = curriculum[parentIndex]?.depth || 0;
-          const parentTopic = curriculum[parentIndex];
-
-          // if topic has a cohort, collect used lesson ids in that cohort
-          let usedInCohort = new Set<string>();
-          const cohortId = parentTopic?.parentId ?? null;
-
-          if (cohortId) {
-            const topicIdsInCohort = new Set(
-              curriculum
-                .filter(
-                  (i) =>
-                    i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId
-                )
-                .map((i) => i.id)
-            );
-
-            curriculum.forEach((i) => {
-              if (
-                i.type === LEARNING_UNIT.LESSON &&
-                i.parentId &&
-                topicIdsInCohort.has(i.parentId)
-              ) {
-                usedInCohort.add(i.refId ?? i.id);
-              }
-            });
-          }
-
-          // Filter: remove duplicates already present in cohort AND duplicates within selection
-          const seenInSelection = new Set<string>();
-          const filtered = lessons.filter((l) => {
-            if (cohortId && usedInCohort.has(l.id)) return false;
-            if (seenInSelection.has(l.id)) return false;
-            seenInSelection.add(l.id);
-            return true;
-          });
-
-          const skippedCount = lessons.length - filtered.length;
-          if (skippedCount > 0) {
-            toast({
-              title: "Skipped duplicates",
-              description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
-            });
-          }
-
-          const newItems: DraggableItem[] = filtered.map((lesson) => ({
-            id: lesson.id, // instance id
-            refId: lesson.id, // real id
-            title: lesson.title,
-            type: LEARNING_UNIT.LESSON,
-            depth: parentDepth + 1,
-            parentId: activeParentId,
-          }));
-
-          setCurriculum((prev) => {
-            let insertIndex = parentIndex + 1;
-            for (let i = parentIndex + 1; i < prev.length; i++) {
-              if (prev[i].depth <= parentDepth) break;
-              insertIndex = i + 1;
-            }
-
-            const updated = [...prev];
-            updated.splice(insertIndex, 0, ...newItems);
-            return updated;
-          });
-
+        onClose={() => {
           setIsLessonSelectorModalOpen(false);
+          saveBasics()
         }}
+        onConfirm={addLessonsToParent}
         excludedLessonIds={excludedLessonIdsForActiveParent}
       />
-      {isAssignmentModelOpen && <AssignmentModal onCancel={() => setIsAssignmentModelOpen(false)} onSave={handleAssignment} />}
+      {isAssignmentModelOpen && <AssignmentModal onCancel={() => {
+        setIsAssignmentModelOpen(false);
+      }} onSave={handleAssignment} />}
+      <CreateLessonModal
+        isOpen={isCreateLessonOpen}
+        onClose={() => {
+          setIsCreateLessonOpen(false);
+          saveCurriculumStructure()
+        }}
+        onLessonCreated={(lesson) => addLessonsToParent([lesson])}
+      />
     </div >
   );
 };

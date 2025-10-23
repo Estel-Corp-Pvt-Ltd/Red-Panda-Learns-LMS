@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,22 @@ export const CreateLessonModal = ({
     durationSeconds: 0,
     scope: LESSON_SCOPE.APP,
   });
+
+  // Add scroll management
+  useEffect(() => {
+    if (isOpen) {
+      // When modal opens, store the current scroll position
+      document.body.style.overflow = 'hidden';
+    } else {
+      // When modal closes, restore scrolling
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const colorMode =
     typeof document !== "undefined" &&
@@ -99,7 +115,7 @@ export const CreateLessonModal = ({
 
       onLessonCreated?.(newLesson);
       resetForm();
-      onClose();
+      onClose(); // Call onClose after everything else
     } catch (err) {
       console.error("Error creating lesson:", err);
       toast.error("Failed to create lesson");
@@ -108,9 +124,14 @@ export const CreateLessonModal = ({
     }
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-5xl  bg-card text-card-foreground">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-5xl bg-card text-card-foreground">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create Lesson</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -209,7 +230,7 @@ export const CreateLessonModal = ({
 
             {/* Footer buttons */}
             <div className="flex justify-end gap-2 mt-8 border-t pt-4 dark:border-neutral-700">
-              <Button variant="outline" onClick={onClose} disabled={saving}>
+              <Button variant="outline" onClick={handleClose} disabled={saving}>
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={saving}>
