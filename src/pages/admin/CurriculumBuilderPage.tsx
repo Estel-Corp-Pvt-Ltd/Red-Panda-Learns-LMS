@@ -1547,16 +1547,16 @@ const CurriculumBuilderPage = () => {
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               {/* Icon */}
                               {item.type === LEARNING_UNIT.TOPIC && (
-                                <FolderOpen className="h-5 w-5 text-primary flex-shrink-0" />
+                                <FolderOpen className="h-6 w-6 text-primary flex-shrink-0" />
                               )}
                               {item.type === LEARNING_UNIT.LESSON && (
-                                <BookOpen className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                <BookOpen className="h-6 w-6 text-red-500 flex-shrink-0" />
                               )}
                               {item.type === LEARNING_UNIT.COHORT && (
-                                <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
+                                <Users className="h-6 w-6 text-green-600 flex-shrink-0" />
                               )}
                               {item.type === LEARNING_UNIT.ASSIGNMENT && (
-                                <NotepadText className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                <NotepadText className="h-6 w-6 text-blue-500 flex-shrink-0" />
                               )}
 
                               {/* Title – inline edit */}
