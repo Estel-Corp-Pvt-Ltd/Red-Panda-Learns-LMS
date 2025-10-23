@@ -1,4 +1,4 @@
-import { ENROLLMENT_STATUS } from '@/constants';
+import { ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
@@ -56,21 +56,24 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     setLoading(false);
   }, [user]);
 
-  const isEnrolled = useCallback(
-    (courseId: string): boolean => {
-      const result = enrollments.some(
-        (enrollment) => {
-          const match = String(enrollment.targetId) === String(courseId);
-          const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
+ const isEnrolled = useCallback(
+  (courseId: string): boolean => {
+    const direct = enrollments.some(
+      e => e.targetId === courseId && e.status === ENROLLMENT_STATUS.ACTIVE
+    );
 
-          return match && statusOk;
-        }
-      );
+    if (direct) return true;
 
-      return result;
-    },
-    [enrollments]
-  );
+    // check if part of an active bundle
+    return enrollments.some(
+      e =>
+        e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE  &&
+        e.status === ENROLLMENT_STATUS.ACTIVE &&
+        e.bundleProgress?.some(bp => bp.courseId === courseId)
+    );
+  },
+  [enrollments]
+);
 
    const isEnrolledInBundle = useCallback(
     (bundleId: string): boolean => {

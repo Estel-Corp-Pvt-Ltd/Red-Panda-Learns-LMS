@@ -94,7 +94,6 @@ if (!bundle) {
 
  const bundleCourseIds = bundle.courses.map(c => c.id);
 
-  // 1️⃣ Create progress for each course inside the bundle
   const progressInput = bundleCourseIds.map(courseId => ({
     courseId,
     totalLessons: 0
@@ -134,35 +133,7 @@ if (!bundle) {
 
   await setDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), bundleEnrollment);
 
-  // 3️⃣ Create individual course enrollments inside the bundle
-  for (const courseId of bundleCourseIds) {
-    const progressId = batchResult.data[courseId];
-    const enrollmentId = this.generateEnrollmentId(userId, courseId);
-    
-
-    const courseEnrollment: Enrollment = {
-      id: enrollmentId,
-      userId,
-      targetId: courseId, // <- the specific course in this bundle
-      targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-      enrollmentDate: serverTimestamp(),
-      status: ENROLLMENT_STATUS.ACTIVE,
-      role: USER_ROLE.STUDENT,
-      progressId,
-      progressSummary: {
-        completedLessons: 0,
-        totalLessons: 0,
-        percent: 0
-      },
-      pricingModel: PRICING_MODEL.PAID,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), courseEnrollment);
-  }
       }
-
       const userDocRef = doc(db, COLLECTION.USERS, userId);
       await updateDoc(userDocRef, {
         enrollments: arrayUnion({ targetId, targetType: programType })
@@ -180,7 +151,7 @@ if (!bundle) {
     try {
       // Check direct enrollment
       const enrollmentId = this.generateEnrollmentId(userId, targetId);
-      const enrollmentDoc = await getDoc(doc(db, "Enrollments", enrollmentId));
+      const enrollmentDoc = await getDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId));
       if (enrollmentDoc.exists()) return ok(true);
 
       // Check bundles
@@ -262,7 +233,6 @@ if (!bundle) {
   async deleteEnrollment(enrollmentId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId));
-
       return ok(null); // ✅ standard success response
     } catch (error: any) {
       logError("EnrollmentService.deleteEnrollment", error);
