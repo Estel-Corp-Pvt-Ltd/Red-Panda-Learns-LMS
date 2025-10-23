@@ -122,7 +122,7 @@ class PaymentService {
   selectedCurrency,
   baseCurrency,
   billingAddress,
-  shippingAddress,
+
 }: {
     provider: PaymentProvider;
   items: TransactionLineItem[];
@@ -132,7 +132,7 @@ class PaymentService {
   selectedCurrency: Currency;
   baseCurrency: Currency;
   billingAddress: Address;
-  shippingAddress: Address;
+ 
 })
 : Promise<PaymentResult> {
     try {
@@ -177,7 +177,7 @@ class PaymentService {
       amount: pricing.amount,
       currency: pricing.currency,
       billingAddress,
-      shippingAddress,
+  
       metadata: {
         userEmail,
         userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
