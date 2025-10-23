@@ -43,7 +43,6 @@ export type PayPalPaymentDetails = {
 };
 
 export type TransactionMetadata = {
-  orderId:string;
   userEmail: string;
   itemTitles: string[];
   displayTitle:string;

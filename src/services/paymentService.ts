@@ -211,7 +211,6 @@ class PaymentService {
       status: TRANSACTION_STATUS.PENDING,
       paymentDetails: { orderId: "", paymentId: "" },
       metadata: {
-        orderId,
         userEmail,
         itemTitles: itemNames,
         displayTitle,
@@ -233,9 +232,6 @@ class PaymentService {
         selectedCurrency,
         orderId,
       );
-
-      console.log("checking what is being passed in items",items)
-     
     } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
       result = await paypalProvider.processPayment(
         items,

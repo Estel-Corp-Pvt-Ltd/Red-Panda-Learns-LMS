@@ -11,7 +11,7 @@ import { OrderStatus } from "../types/general.ts";
 // import { ORDER_STATUS } from "../constants.ts";
 import { Order } from "@/types/order.ts";
 import { ORDER_STATUS } from "@/constants.ts";
-
+import { COLLECTION } from "@/constants.ts";
 
 class OrderService {
   private async generateOrderId(): Promise<{ orderId: string }> {
@@ -21,7 +21,7 @@ class OrderService {
   const dd = String(today.getDate()).padStart(2, "0");
   const dateStr = `${yyyy}${mm}${dd}`;
 
-  const counterRef = doc(db, 'counters',`orderCounters_${dateStr}`);
+  const counterRef = doc(db, COLLECTION.COUNTERS,`orderCounters_${dateStr}`);
 
   // Use Firestore transaction to increment safely
   const dailySequence = await runTransaction(db, async (tx) => {
@@ -68,7 +68,7 @@ class OrderService {
         updatedAt:serverTimestamp(),
       };
 
-      await setDoc(doc(db, "Orders", orderId), order);
+      await setDoc(doc(db, COLLECTION.ORDERS, orderId), order);
 
       console.log("Order created:", orderId);
       return orderId;
@@ -85,7 +85,7 @@ class OrderService {
     metadataUpdates?: Record<string, any>
   ): Promise<void> {
     try {
-      const orderRef = doc(db, "Orders", orderId);
+      const orderRef = doc(db, COLLECTION.ORDERS, orderId);
       const snapshot = await getDoc(orderRef);
 
       if (!snapshot.exists()) {
