@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+  inputBase,
+  selectTriggerBase,
+  selectItemBase,
+  selectContentBase,
+} from "../../components/ui/styles";
+import {
   PlusCircle,
   Edit,
   Trash2,
@@ -10,9 +16,17 @@ import {
   Loader2,
   Calendar,
   Eye,
+  Check,
   Plus,
   Gift,
 } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 import { formatDate } from "@/utils/date-time";
 import { useToast } from "@/hooks/use-toast";
@@ -182,169 +196,287 @@ const PopUpTab = () => {
   }
 
   return (
-    <div>
-      {/* Add / Edit form */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-wrap gap-3 items-end mb-6"
-      >
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Pop-up title"
-          className="border p-2 rounded w-48"
-        />
-
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description"
-          className="border p-2 rounded w-64"
-        />
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as PopUpCourseType)}
-          className="border p-2 rounded"
+    <div className="space-y-4">
+      {/* Form wrapper */}
+      <div className="rounded-2xl bg-white/70 p-3 sm:p-4 backdrop-blur dark:bg-slate-900/40">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 items-end"
         >
-          {Object.values(POPUP_COURSE_TYPE).map((val) => (
-            <option key={val} value={val}>
-              {val}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="text"
-          value={ctaText}
-          onChange={(e) => setCtaText(e.target.value)}
-          placeholder="CTA text"
-          className="border p-2 rounded w-40"
-        />
-
-        <input
-          type="text"
-          value={ctaLink}
-          onChange={(e) => setCtaLink(e.target.value)}
-          placeholder="CTA link"
-          className="border p-2 rounded w-48"
-        />
-
-        <select
-          value={active ? "true" : "false"}
-          onChange={(e) => setActive(e.target.value === "true")}
-          className="border p-2 rounded w-32"
-        >
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-
-        <div className="flex items-center gap-2">
-          <label className="text-sm">
+          {/* Title */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Title
+            </label>
             <input
-              type="checkbox"
-              checked={autoClose}
-              onChange={(e) => setAutoClose(e.target.checked)}
-              className="mr-1"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Pop-up title"
+              className={`${inputBase} h-11 w-full`}
             />
-            Auto-close
-          </label>
-        </div>
+          </div>
 
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          placeholder="Duration (ms)"
-          className="border p-2 rounded w-32"
-        />
+          {/* Description */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Description
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
 
-        <Button type="submit" disabled={saving}>
-          {isEditing ? "Update Pop-up" : "Add Pop-up"}
-        </Button>
+          {/* Type */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Type
+            </label>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as PopUpCourseType)}
+            >
+              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent
+                side="bottom"
+                align="start"
+                className={selectContentBase}
+              >
+                {Object.values(POPUP_COURSE_TYPE).map((val) => (
+                  <SelectItem
+                    key={val}
+                    value={val}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                  >
+                    {val}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {isEditing && (
-          <Button type="button" variant="ghost" onClick={resetForm}>
-            Cancel
-          </Button>
-        )}
-      </form>
+          {/* CTA Text */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              CTA Text
+            </label>
+            <input
+              type="text"
+              value={ctaText}
+              onChange={(e) => setCtaText(e.target.value)}
+              placeholder="CTA text"
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
 
-      {/* Table list */}
+          {/* CTA Link */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              CTA Link
+            </label>
+            <input
+              type="text"
+              value={ctaLink}
+              onChange={(e) => setCtaLink(e.target.value)}
+              placeholder="https://..."
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Status
+            </label>
+            <Select
+              value={active ? "true" : "false"}
+              onValueChange={(v) => setActive(v === "true")}
+            >
+              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent
+                side="bottom"
+                align="start"
+                className={selectContentBase}
+              >
+                {[
+                  { label: "Active", value: "true" },
+                  { label: "Inactive", value: "false" },
+                ].map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Auto-close */}
+          <div className="flex items-center gap-2 h-11">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={autoClose}
+                onChange={(e) => setAutoClose(e.target.checked)}
+                className="mr-1 accent-purple-600 dark:accent-purple-500"
+              />
+              Auto-close
+            </label>
+          </div>
+
+          {/* Duration (ms) */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Duration (ms)
+            </label>
+            <input
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              placeholder="5000"
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 col-span-full sm:col-span-2 lg:col-span-3 xl:col-span-4">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="h-10 rounded-xl px-5 bg-[#ff00ff] text-white hover:bg-[#e600e6] focus-visible:ring-2 focus-visible:ring-[#ff00ff]/50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isEditing ? "Update Pop-up" : "Add Pop-up"}
+            </Button>
+
+            {isEditing && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={resetForm}
+                className="h-10 rounded-xl px-5 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* Table */}
       {popUps.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No pop-ups found.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          No pop-ups found.
+        </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>CTA</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Auto Close</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {popUps.map((pop) => (
-              <TableRow key={pop.id}>
-                <TableCell>{pop.title}</TableCell>
-                <TableCell>{pop.description}</TableCell>
-                <TableCell>{pop.type}</TableCell>
-                <TableCell>
-                  {pop.ctaText ? (
-                    <a
-                      href={pop.ctaLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 underline"
-                    >
-                      {pop.ctaText}
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-                <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
-                <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
-                <TableCell>{pop.duration ?? 5000}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditing(true);
-                        setEditingId(pop.id);
-                        setTitle(pop.title);
-                        setDescription(pop.description);
-                        setType(pop.type);
-                        setCtaText(pop.ctaText);
-                        setActive(pop.active);
-                        setCtaLink(pop.ctaLink);
-                        setAutoClose(pop.autoClose ?? false);
-                        setDuration(pop.duration ?? 5000);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(pop.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto rounded-2xl bg-white/70 backdrop-blur dark:bg-slate-900/40">
+          <Table className="min-w-[720px]">
+            <TableHeader className="bg-slate-50/80 dark:bg-slate-900/60">
+              <TableRow>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Title
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Description
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Type
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  CTA
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Active
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Auto Close
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Duration
+                </TableHead>
+                <TableHead className="text-right text-slate-600 dark:text-slate-300">
+                  Actions
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {popUps.map((pop) => (
+                <TableRow
+                  key={pop.id}
+                  className="hover:bg-slate-50/70 dark:hover:bg-white/5"
+                >
+                  <TableCell className="max-w-[200px] truncate">
+                    {pop.title}
+                  </TableCell>
+                  <TableCell className="max-w-[280px] truncate">
+                    {pop.description}
+                  </TableCell>
+                  <TableCell className="capitalize">{pop.type}</TableCell>
+                  <TableCell>
+                    {pop.ctaText ? (
+                      <a
+                        href={pop.ctaLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-purple-600 hover:underline dark:text-purple-400"
+                      >
+                        {pop.ctaText}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500">
+                        -
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                  <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
+                  <TableCell>{pop.duration ?? 5000}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
+                        onClick={() => {
+                          setIsEditing(true);
+                          setEditingId(pop.id);
+                          setTitle(pop.title);
+                          setDescription(pop.description);
+                          setType(pop.type);
+                          setCtaText(pop.ctaText);
+                          setActive(pop.active);
+                          setCtaLink(pop.ctaLink);
+                          setAutoClose(pop.autoClose ?? false);
+                          setDuration(pop.duration ?? 5000);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
+                        onClick={() => handleDelete(pop.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
@@ -683,53 +815,86 @@ export function AdminDashboard() {
     }
 
     return (
-      <div>
+      <div className="space-y-3">
         {/* Add / Edit form */}
         <form
           onSubmit={handleSubmit}
-          className="flex flex-wrap gap-3 items-end mb-6"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-2 items-end"
         >
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Organization name"
-            className="border p-2 rounded"
-          />
+          {/* Organization Name */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Organization Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Organization name"
+              className={`${inputBase} w-full sm:w-64`}
+            />
+          </div>
 
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as OrganizationType)}
-            className="border p-2 rounded"
-          >
-            {Object.values(ORGANIZATION).map((val) => (
-              <option key={val} value={val}>
-                {val}
-              </option>
-            ))}
-          </select>
-
-          <Button type="submit" disabled={saving}>
-            {isEditing ? "Update Organization" : "Add Organization"}
-          </Button>
-
-          {isEditing && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setIsEditing(false);
-                setEditingOrgId(null);
-                setName("");
-                setType(ORGANIZATION.INDUSTRY);
-              }}
+          {/* Type */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Type
+            </label>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as OrganizationType)}
             >
-              Cancel
+              <SelectTrigger className={`${selectTriggerBase} w-full sm:w-64`}>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+
+              <SelectContent
+                side="bottom"
+                align="start"
+                className={selectContentBase}
+              >
+                {Object.values(ORGANIZATION).map((val) => (
+                  <SelectItem
+                    key={val}
+                    value={val}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                  >
+                    {val}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center sm:items-start gap-2">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="rounded-xl h-10 py-2 px-5"
+            >
+              {isEditing ? "Update Organization" : "Add Organization"}
             </Button>
-          )}
+
+            {isEditing && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-full h-10 px-5"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingOrgId(null);
+                  setName("");
+                  setType(ORGANIZATION.INDUSTRY);
+                }}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
 
-        {/* Table list */}
+        {/* Table List */}
         {organizations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No organizations found.
@@ -753,6 +918,7 @@ export function AdminDashboard() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="rounded-full"
                         onClick={() => {
                           setIsEditing(true);
                           setEditingOrgId(org.id);
@@ -765,6 +931,7 @@ export function AdminDashboard() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="rounded-full"
                         onClick={() => handleDelete(org.id)}
                       >
                         <Trash2 className="h-4 w-4" />
