@@ -84,8 +84,6 @@ export default function CheckoutPage() {
     type: ADDRESS_TYPE.BILLING,
   });
 
- 
-
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
     PAYMENT_PROVIDER.RAZORPAY,
   );
@@ -188,6 +186,7 @@ export default function CheckoutPage() {
   const clearCoupon = () => {
     setAppliedCoupon(null);
     setIsCouponValid(false);
+    setPromoCode("");
     setDiscountAmount(0);
     setCouponMessage("");
   };
@@ -199,14 +198,16 @@ export default function CheckoutPage() {
     }
   }, [promoCode, appliedCoupon, discountAmount, clearCoupon]);
 
-  const handleCoupon = async () => {
-    setIsValidatingCoupon(true);
-    setCouponMessage("");
-    setIsCouponValid(false);
+ const handleCoupon = async () => {
+  setIsValidatingCoupon(true);
+  setCouponMessage("");
+  setIsCouponValid(false);
 
+  try {
     const code = promoCode.trim();
     if (!code) {
       clearCoupon();
+      setCouponMessage("Please enter a valid promo code");
       return;
     }
 
@@ -215,6 +216,7 @@ export default function CheckoutPage() {
     if (!couponResult.success) {
       clearCoupon();
       setCouponMessage("Invalid promo code");
+      setPromoCode(""); // 👈 optional UX improvement: clear field
       return;
     }
 
@@ -228,6 +230,7 @@ export default function CheckoutPage() {
       null,
       null,
     );
+
     if (
       !applicabilityResult.success ||
       !applicabilityResult.data?.isApplicable
@@ -236,17 +239,23 @@ export default function CheckoutPage() {
       setCouponMessage(
         applicabilityResult.data?.reason ?? "Coupon not applicable",
       );
+      setPromoCode(""); 
       return;
     }
 
-    // Compute discount from the coupon object we have (no state race)
     const originalPrice = course!.salePrice || 0;
     setDiscountAmount(calculateDiscount(originalPrice, coupon));
     setIsCouponValid(true);
     setCouponMessage("Coupon is valid, Happy Learning!");
+  } catch (err) {
+    clearCoupon();
+    setCouponMessage("Error validating coupon. Please try again.");
+    setPromoCode("");
+  } finally {
+   
     setIsValidatingCoupon(false);
-  };
-
+  }
+};
   const handleUseCoupon = async () => {
     const usageDate = {
       userId: user?.id,
@@ -372,345 +381,346 @@ export default function CheckoutPage() {
   const originalConverted = course ? (course.salePrice || 0) * exchangeRate : 0;
   const discountConverted = discountAmount * exchangeRate;
 
-  return (
-    <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col">
-      <Header />
+ return (
+  <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col justify-start">
+    <Header />
 
-      {/* Mobile sticky CTA (attention-drawing, always on top) */}
-      <div className="sticky top-0 z-40 lg:hidden bg-white/95 dark:bg-[#0e0f11]/95 border-b border-blue-100 dark:border-zinc-800 backdrop-blur">
-        <div className="px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Pay and enroll
-            </span>
-            <div className="flex items-baseline gap-2">
-              {hasDiscount && pricing ? (
-                <>
-                  <span className="text-sm line-through text-gray-400">
-                    {formatMoney(originalConverted, selectedCurrency)}
-                  </span>
-                  <span className="text-base font-semibold text-blue-700 dark:text-blue-400">
-                    {pricing.formattedTotal ?? pricing.formattedPrice}
-                  </span>
-                </>
-              ) : (
-                <span className="text-base font-semibold text-blue-700 dark:text-blue-400">
-                  {pricing?.formattedTotal ?? pricing?.formattedPrice ?? "--"}
-                </span>
+    {/* main container */}
+    <div className="flex-1 px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white pt-8">
+        {/* Top bar */}
+        <div className="mb-6 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/course/${courseId}`)}
+            className="flex items-center text-blue-600"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Course
+          </Button>
+        </div>
+
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">
+            Complete Your Enrollment
+          </h1>
+          <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
+            You're just one step away from accessing this course
+          </p>
+        </div>
+
+        {/* Bento layout without any sticky */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* RIGHT: Payment & Summary (focus area) */}
+          <div className="order-1 lg:order-2 lg:col-span-5 space-y-6">
+            {/* Course Summary */}
+            <Card className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+              <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                <CardTitle>Course Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <h3 className="font-semibold text-lg">{course.title}</h3>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
+                  {course.description}
+                </p>
+
+                {pricing && !loadingPricing ? (
+                  <div className="space-y-3">
+                    <div className="flex items-baseline justify-between text-sm">
+                      <span>Course Price:</span>
+                      <div className="flex items-baseline gap-2">
+                        {hasDiscount ? (
+                          <>
+                            <span className="line-through text-gray-400">
+                              {formatMoney(originalConverted, selectedCurrency)}
+                            </span>
+                            <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                              You save{" "}
+                              {formatMoney(
+                                discountConverted,
+                                selectedCurrency
+                              )}
+                            </Badge>
+                          </>
+                        ) : (
+                          <span className="font-medium">
+                            {formatMoney(originalConverted, selectedCurrency)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {selectedProvider === PAYMENT_PROVIDER.PAYPAL && (
+                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                        <span>No hidden fees with PayPal</span>
+                        <span>✓</span>
+                      </div>
+                    )}
+
+                    <hr className="my-2 border-gray-200 dark:border-gray-700" />
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-base font-semibold">Total:</span>
+                      <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                        {pricing.formattedTotal ?? pricing.formattedPrice}
+                      </span>
+                    </div>
+
+                    {pricing.originalCurrency !== pricing.currency && (
+                      <div className="text-xs text-muted-foreground dark:text-gray-400">
+                        Original: {pricing.originalAmount}{" "}
+                        {pricing.originalCurrency} (Rate:{" "}
+                        {Number(pricing.exchangeRate).toFixed(4)})
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                    <span className="text-sm">Loading pricing...</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Payment Providers */}
+            <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+              <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-blue-600" /> Select
+                  Payment Method
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {providers.map((provider) => {
+                  const isSelected = selectedProvider === provider.id;
+
+                  return (
+                    <div
+                      key={provider.id}
+                      onClick={() => setSelectedProvider(provider.id)}
+                      className={`cursor-pointer p-4 rounded-xl border transition ${
+                        isSelected
+                          ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                          : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                      }`}
+                    >
+                      <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
+                        <div className="flex gap-3">
+                          <div
+                            className={`w-4 h-4 mt-1 rounded-full border-2 ${
+                              isSelected
+                                ? "bg-blue-600 border-blue-600"
+                                : "border-gray-400 dark:border-[#555]"
+                            }`}
+                          />
+                          <div>
+                            <div className="flex items-center gap-2 font-medium">
+                              <img
+                                src={
+                                  provider.id === "RAZORPAY"
+                                    ? "/razorpay-icon.svg"
+                                    : "/paypal-icon.svg"
+                                }
+                                className="h-5"
+                                alt={provider.id}
+                              />
+                            </div>
+                            <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
+                              {provider.description}
+                            </p>
+                            <div className="mt-2 flex gap-1.5 flex-wrap">
+                              {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
+                                <img
+                                  key={m.name}
+                                  src={m.src}
+                                  alt={m.name}
+                                  title={m.name}
+                                  loading="lazy"
+                                  className={m.className ?? "h-[20px] w-[32px]"}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:items-end">
+                          <select
+                            value={providerCurrencies[provider.id]}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) =>
+                              setProviderCurrencies((prev) => ({
+                                ...prev,
+                                [provider.id]: e.target.value as Currency,
+                              }))
+                            }
+                            className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
+                          >
+                            {providerSupportedCurrencies[provider.id].map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                          <Badge
+                            variant="secondary"
+                            className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                          >
+                            Secure
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* Secure */}
+            <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium mb-1">Secure Payment</h4>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400">
+                      All transactions are encrypted. Instant access after
+                      payment. 7‑day refund guarantee.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Agree + CTA */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="agree"
+                  checked={agreed}
+                  onCheckedChange={(v) => setAgreed(!!v)}
+                />
+                <Label htmlFor="agree" className="text-sm leading-snug">
+                  I agree to the{" "}
+                  <Link
+                    to="/terms"
+                    className="underline text-blue-600 dark:text-blue-400"
+                  >
+                    Terms & Conditions
+                  </Link>
+                  ,{" "}
+                  <Link
+                    to="/privacy"
+                    className="underline text-blue-600 dark:text-blue-400"
+                  >
+                    Privacy Policy
+                  </Link>
+                  , and{" "}
+                  <Link
+                    to="/refund-policy"
+                    className="underline text-blue-600 dark:text-blue-400"
+                  >
+                    Refund Policy
+                  </Link>
+                  .
+                </Label>
+              </div>
+
+              <Button
+                onClick={handlePayment}
+                disabled={!agreed || isProcessing || loadingPricing || !pricing}
+                size="lg"
+                className="w-full mt-1 bg-blue-600 hover:bg-blue-700 text-white dark:text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900"
+              >
+                {isProcessing ? (
+                  "Processing..."
+                ) : loadingPricing ? (
+                  "Loading..."
+                ) : (
+                  <>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Pay {pricing?.formattedTotal ?? pricing?.formattedPrice} &
+                    Enroll Now
+                  </>
+                )}
+              </Button>
+
+              {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
+                <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
+                  <CardContent className="pt-6">
+                    <div id="paypal-button-container"></div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </div>
 
-          <Button
-            onClick={handlePayment}
-            disabled={!agreed || isProcessing || loadingPricing || !pricing}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900"
-          >
-            {isProcessing ? "Processing..." : "Pay & Enroll"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex-1 px-4 sm:px-6 lg:px-8">
-        <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white">
-          {/* Top bar */}
-          <div className="mb-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/course/${courseId}`)}
-              className="flex items-center text-blue-600"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Course
-            </Button>
-          </div>
-
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">
-              Complete Your Enrollment
-            </h1>
-            <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
-              You're just one step away from accessing this course
-            </p>
-          </div>
-
-          {/* Landscape / bento grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* LEFT: Forms and Coupon */}
-
-            {/* RIGHT: Summary / Payment (sticky) */}
-            <div className="lg:col-span-5 space-y-6 sticky top-6 self-start">
-              {/* Course Summary */}
-              <Card className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
-                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                  <CardTitle>Course Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="font-semibold text-lg">{course.title}</h3>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
-                    {course.description}
-                  </p>
-
-                  {pricing && !loadingPricing ? (
-                    <div className="space-y-3">
-                      {/* Course Price row with optional strike-through */}
-                      <div className="flex items-baseline justify-between text-sm">
-                        <span>Course Price:</span>
-                        <div className="flex items-baseline gap-2">
-                          {hasDiscount ? (
-                            <>
-                              <span className="line-through text-gray-400">
-                                {formatMoney(
-                                  originalConverted,
-                                  selectedCurrency,
-                                )}
-                              </span>
-                              <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                                You save{" "}
-                                {formatMoney(
-                                  discountConverted,
-                                  selectedCurrency,
-                                )}
-                              </Badge>
-                            </>
-                          ) : (
-                            <span className="font-medium">
-                              {formatMoney(originalConverted, selectedCurrency)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {selectedProvider === PAYMENT_PROVIDER.PAYPAL && (
-                        <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
-                          <span>No hidden fees with PayPal</span>
-                          <span>✓</span>
-                        </div>
-                      )}
-
-                      <hr className="my-2 border-gray-200 dark:border-gray-700" />
-
-                      {/* Total */}
-                      <div className="flex justify-between items-center">
-                        <span className="text-base font-semibold">Total:</span>
-                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                          {pricing.formattedTotal ?? pricing.formattedPrice}
-                        </span>
-                      </div>
-
-                      {pricing.originalCurrency !== pricing.currency && (
-                        <div className="text-xs text-muted-foreground dark:text-gray-400">
-                          Original: {pricing.originalAmount}{" "}
-                          {pricing.originalCurrency} (Rate:{" "}
-                          {Number(pricing.exchangeRate).toFixed(4)})
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-                      <span className="text-sm">Loading pricing...</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Payment Providers */}
-              <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
-                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-blue-600" /> Select
-                    Payment Method
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {providers.map((provider) => {
-                    const isSelected = selectedProvider === provider.id;
-                    const currency = providerCurrencies[provider.id];
-
-                    return (
-                      <div
-                        key={provider.id}
-                        onClick={() => setSelectedProvider(provider.id)}
-                        className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
-                          ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                          : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                          }`}
-                      >
-                        <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
-                          <div className="flex gap-3">
-                            <div
-                              className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-400 dark:border-[#555]"
-                                }`}
-                            />
-                            <div>
-                              <div className="flex items-center gap-2 font-medium">
-                                <img
-                                  src={
-                                    provider.id === "RAZORPAY"
-                                      ? "/razorpay-icon.svg"
-                                      : "/paypal-icon.svg"
-                                  }
-                                  className="h-5"
-                                  alt={provider.id}
-                                />
-                              </div>
-                              <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
-                                {provider.description}
-                              </p>
-                              <div className="mt-2 flex gap-1.5 flex-wrap">
-                                {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
-                                  <img
-                                    key={m.name}
-                                    src={m.src}
-                                    alt={m.name}
-                                    title={m.name}
-                                    loading="lazy"
-                                    className={
-                                      m.className ?? "h-[20px] w-[32px]"
-                                    }
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-2 sm:items-end">
-                            <select
-                              value={providerCurrencies[provider.id]}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                setProviderCurrencies((prev) => ({
-                                  ...prev,
-                                  [provider.id]: e.target.value as Currency,
-                                }))
-                              }
-                              className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
-                            >
-                              {providerSupportedCurrencies[provider.id].map(
-                                (c) => (
-                                  <option key={c} value={c}>
-                                    {c}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                            <div className="flex items-center gap-2">
-                              {/* Removed duplicate currency badge to reduce clutter */}
-                              <Badge
-                                variant="secondary"
-                                className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
-                              >
-                                Secure
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-
-              {/* Secure */}
-              <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-3">
-                    <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium mb-1">Secure Payment</h4>
-                      <p className="text-sm text-muted-foreground dark:text-gray-400">
-                        All transactions are encrypted. Instant access after
-                        payment. 7‑day refund guarantee.
-                      </p>
-                    </div>
+          {/* LEFT: Coupon first, Address second */}
+          <div className="order-2 lg:order-1 lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Coupon */}
+            <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+              <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
+                    %
+                  </span>
+                  Coupon
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="promoCode">Have a promo code?</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="promoCode"
+                      type="text"
+                      placeholder="Enter code"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCoupon();
+                      }}
+                      disabled={isValidatingCoupon || isProcessing}
+                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 dark:border-zinc-700 dark:focus:border-blue-500"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleCoupon}
+                      disabled={!promoCode || isValidatingCoupon}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {isValidatingCoupon ? "Checking..." : "Apply"}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Agree + CTA (hidden on mobile to avoid duplicate with sticky bar) */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="agree"
-                    checked={agreed}
-                    onCheckedChange={(v) => setAgreed(!!v)}
-                  />
-                  <Label htmlFor="agree" className="text-sm leading-snug">
-                    I agree to the{" "}
-                    <Link
-                      to="/terms"
-                      className="underline text-blue-600 dark:text-blue-400"
+                  {couponMessage && (
+                    <p
+                      className={`text-sm ${
+                        isCouponValid
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-600 dark:text-red-400"
+                      }`}
                     >
-                      Terms & Conditions
-                    </Link>
-                    ,{" "}
-                    <Link
-                      to="/privacy"
-                      className="underline text-blue-600 dark:text-blue-400"
-                    >
-                      Privacy Policy
-                    </Link>
-                    , and{" "}
-                    <Link
-                      to="/refund-policy"
-                      className="underline text-blue-600 dark:text-blue-400"
-                    >
-                      Refund Policy
-                    </Link>
-                    .
-                  </Label>
-                </div>
-
-                <div className="hidden lg:block">
-                  <Button
-                    onClick={handlePayment}
-                    disabled={
-                      !agreed || isProcessing || loadingPricing || !pricing
-                    }
-                    size="lg"
-                    className="w-full mt-1 bg-blue-600 hover:bg-blue-700 text-white dark:text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900"
-                  >
-                    {isProcessing ? (
-                      "Processing..."
-                    ) : loadingPricing ? (
-                      "Loading..."
-                    ) : (
-                      <>
-                        <Lock className="h-4 w-4 mr-2" />
-                        Pay {pricing?.formattedTotal ??
-                          pricing?.formattedPrice}{" "}
-                        & Enroll Now
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {selectedProvider === PAYMENT_PROVIDER.PAYPAL &&
-                  paypalClicked && (
-                    <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
-                      <CardContent className="pt-6">
-                        <div id="paypal-button-container"></div>
-                      </CardContent>
-                    </Card>
+                      {couponMessage}
+                    </p>
                   )}
-              </div>
-            </div>
-            <div className="lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* Billing Address */}
-              <Card className="xl:col-span-1 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
-                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">1</span>
-                    </div>
-                    Billing Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-6">
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Billing Address */}
+            <Card className="xl:col-span-2 bg-white/90 dark:bg-zinc-950 border border-blue-50 dark:border-zinc-900 rounded-xl shadow-sm overflow-hidden">
+              <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">1</span>
+                  </div>
+                  Billing Address
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                {/* address fields unchanged */}
+                {/* ... all your Input and Label elements as before ... */}
+                
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label
@@ -888,60 +898,10 @@ export default function CheckoutPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Coupon (full row) */}
-              <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
-                <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
-                      %
-                    </span>
-                    Coupon
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="font-semibold text-lg">{course.title}</h3>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
-                    {course.description}
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="promoCode">Have a promo code?</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="promoCode"
-                        type="text"
-                        placeholder="Enter code"
-                        value={promoCode}
-                        onChange={(e) => setPromoCode(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleCoupon();
-                        }}
-                        disabled={isValidatingCoupon || isProcessing}
-                        className="border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 dark:border-zinc-700 dark:focus:border-blue-500"
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleCoupon}
-                        disabled={!promoCode || isValidatingCoupon}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        {isValidatingCoupon ? "Checking..." : "Apply"}
-                      </Button>
-                    </div>
-                    {couponMessage && (
-                      <p
-                        className={`text-sm ${isCouponValid ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                      >
-                        {couponMessage}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
