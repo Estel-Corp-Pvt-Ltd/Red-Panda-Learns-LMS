@@ -325,8 +325,18 @@ export default function CartCheckoutPage() {
 
       if (result.success && result.transactionId) {
         // Apply coupon if used
-        if (appliedCoupon) {
-          await handleUseCoupon();
+         if (isCouponValid) {
+          try {
+            await handleUseCoupon(); 
+          } catch (error) {
+            console.error("Error applying coupon:", error);
+            toast({
+              title: "Coupon Error",
+              description:
+                "There was an issue applying the coupon. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
 
         // Verify enrollment for all courses

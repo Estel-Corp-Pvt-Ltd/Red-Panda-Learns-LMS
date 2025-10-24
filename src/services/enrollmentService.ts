@@ -10,7 +10,8 @@ import {
   setDoc,
   updateDoc,
   where,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -36,13 +37,20 @@ interface VerifyBundleEnrollmentOptions {
   timeoutMs?: number; 
 }
 
+type EnrollmentItem = {
+  itemId: string;
+  itemType: EnrolledProgramType;
+};
+
 class EnrollmentService {
   /**
    * Generates a unique enrollment ID in the format: <targetId>_<userId>
    */
-  private generateEnrollmentId(userId: string, targetId: string): string {
-    return `${userId}_${targetId}`; // instead of targetId_userId
-  }
+ private async generateEnrollmentId(userId: string, targetId: string) {
+  return `${userId}_${targetId}`;
+}
+
+
 
   /**
  * Enroll a user into a course or bundle.
@@ -53,37 +61,72 @@ class EnrollmentService {
  * @param bundleCourseIds - Optional list of course IDs if enrolling into a bundle.
  * @returns Result containing the enrollment ID on success, or an error on failure.
  */
-  async enrollUser(
-    userId: string,
-    targetId: string,
-    programType: EnrolledProgramType,
-    bundleCourseIds: string[] = []
-  ): Promise<Result<string>> {
-    try {
-      const enrollmentId = this.generateEnrollmentId(userId, targetId);
+ async  enrollUser(
+  userId: string,
+  items: EnrollmentItem[]
+): Promise<Result<string[]>> {
+  if (!items || items.length === 0) return ok([]);
 
-      if (programType === ENROLLED_PROGRAM_TYPE.COURSE) {
-        // Single course enrollment
-        const progressResult = await learningProgressService.createLessonProgress(targetId, 0);
+  const batch = writeBatch(db);
+  const enrollmentIds: string[] = [];
+
+  try {
+    for (const item of items) {
+      const enrollmentId =  await this.generateEnrollmentId(userId, item.itemId);
+      enrollmentIds.push(enrollmentId);
+
+      if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE) {
+        // 1️⃣ Create progress for single course
+        const progressResult = await learningProgressService.createLessonProgress(item.itemId, 0);
         if (!progressResult.success) {
-          return fail(
-            "Failed to create progress for single course enrollment.",
-            progressResult.error.message
-          );
+          return fail("Failed to create progress for single course.", progressResult.error.message);
         }
 
-        const enrollment: Enrollment = {
+        const enrollment = {
           id: enrollmentId,
           userId,
-          targetId,
-          targetType: programType,
+          targetId: item.itemId,
+          targetType: item.itemType,
           enrollmentDate: serverTimestamp(),
           status: ENROLLMENT_STATUS.ACTIVE,
           role: USER_ROLE.STUDENT,
           progressId: progressResult.data.progressId,
+          progressSummary: { completedLessons: 0, totalLessons: 0, percent: 0 },
+          pricingModel: PRICING_MODEL.PAID,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        batch.set(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), enrollment);
+
+      } else if (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE) {
+        // 2️⃣ Bundle enrollment
+        const bundle = await bundleService.getBundleById(item.itemId);
+        if (!bundle) return fail("Bundle not found.", "NotFound");
+
+        const bundleCourseIds = bundle.courses.map(c => c.id);
+
+        const progressInput = bundleCourseIds.map(courseId => ({ courseId, totalLessons: 0 }));
+        const batchResult = await learningProgressService.createLessonProgressBatchAtomic(progressInput);
+
+        if (!batchResult.success) {
+          return fail("Failed to create progress documents for bundle.", batchResult.error.message);
+        }
+
+        const bundleProgress = Object.entries(batchResult.data).map(([courseId, progressId]) => ({ courseId, progressId }));
+
+        const bundleEnrollment = {
+          id: enrollmentId,
+          userId,
+          targetId: item.itemId,
+          targetType: item.itemType,
+          enrollmentDate: serverTimestamp(),
+          status: ENROLLMENT_STATUS.ACTIVE,
+          role: USER_ROLE.STUDENT,
+          bundleProgress,
           progressSummary: {
-            completedLessons: 0,
-            totalLessons: 0,
+            completedCourses: 0,
+            totalCourses: bundleCourseIds.length,
             percent: 0
           },
           pricingModel: PRICING_MODEL.PAID,
@@ -91,74 +134,33 @@ class EnrollmentService {
           updatedAt: serverTimestamp(),
         };
 
-        await setDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), enrollment);
+        batch.set(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), bundleEnrollment);
+      }
 
-      } else {
-        // Bundle enrollment
-      const bundle = await bundleService.getBundleById(targetId);
-if (!bundle) {
-  return fail("Bundle not found.", "NotFound");
+      // 3️⃣ Update user document
+      const userDocRef = doc(db, COLLECTION.USERS, userId);
+      batch.update(userDocRef, {
+        enrollments: arrayUnion({ targetId: item.itemId, targetType: item.itemType })
+      });
+    }
+
+    // 4️⃣ Commit the batch
+    await batch.commit();
+
+    return ok(enrollmentIds);
+
+  } catch (error: any) {
+    logError("EnrollmentService.enrollMultipleItemsBatch", error);
+    return fail("Batch enrollment failed.", error.code || error.message);
+  }
 }
 
- const bundleCourseIds = bundle.courses.map(c => c.id);
 
-  const progressInput = bundleCourseIds.map(courseId => ({
-    courseId,
-    totalLessons: 0
-  }));
-
-  const batchResult = await learningProgressService.createLessonProgressBatchAtomic(progressInput);
-  if (!batchResult.success) {
-    return fail(
-      "Failed to create progress documents for bundle enrollment.",
-      batchResult.error.message
-    );
-  }
-
-  const bundleProgress = Object.entries(batchResult.data).map(
-    ([courseId, progressId]) => ({ courseId, progressId })
-  );
-
-  // 2️⃣ Create main bundle enrollment document
-  const bundleEnrollment: Enrollment = {
-    id: enrollmentId,
-    userId,
-    targetId,
-    targetType: programType,
-    enrollmentDate: serverTimestamp(),
-    status: ENROLLMENT_STATUS.ACTIVE,
-    role: USER_ROLE.STUDENT,
-    bundleProgress,
-    progressSummary: {
-      completedCourses: 0,
-      totalCourses: bundleCourseIds.length,
-      percent: 0
-    },
-    pricingModel: PRICING_MODEL.PAID,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), bundleEnrollment);
-
-      }
-      const userDocRef = doc(db, COLLECTION.USERS, userId);
-      await updateDoc(userDocRef, {
-        enrollments: arrayUnion({ targetId, targetType: programType })
-      });
-
-      return ok(enrollmentId);
-
-    } catch (error: any) {
-      logError("EnrollmentService.enrollUser", error);
-      return fail("Failed to enroll user.", error.code || error.message);
-    }
-  }
 
   async isUserEnrolled(userId: string, targetId: string): Promise<Result<boolean>> {
     try {
       // Check direct enrollment
-      const enrollmentId = this.generateEnrollmentId(userId, targetId);
+      const enrollmentId = await this.generateEnrollmentId(userId, targetId);
       const enrollmentDoc = await getDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId));
       if (enrollmentDoc.exists()) return ok(true);
 

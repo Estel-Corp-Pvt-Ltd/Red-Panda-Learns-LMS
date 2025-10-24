@@ -259,8 +259,7 @@ class PaymentService {
             // If your enrollmentService can handle both types via itemType:
             await enrollmentService.enrollUser(
               userId,
-              item.itemId,
-              item.itemType
+              items
             );
 
             // If you need special handling for bundles, do this instead:
