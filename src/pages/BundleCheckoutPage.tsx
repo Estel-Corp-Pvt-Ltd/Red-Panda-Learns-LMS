@@ -305,7 +305,19 @@ export default function BundleCheckoutPage() {
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
-        await handleUseCoupon();
+         if (isCouponValid) {
+          try {
+            await handleUseCoupon(); 
+          } catch (error) {
+            console.error("Error applying coupon:", error);
+            toast({
+              title: "Coupon Error",
+              description:
+                "There was an issue applying the coupon. Please try again.",
+              variant: "destructive",
+            });
+          }
+        }
 
         const checkEnrollments = async () => {
           try {

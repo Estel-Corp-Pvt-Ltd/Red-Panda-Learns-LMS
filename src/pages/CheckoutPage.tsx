@@ -90,7 +90,7 @@ export default function CheckoutPage() {
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
-    PAYMENT_PROVIDER.RAZORPAY,
+    PAYMENT_PROVIDER.RAZORPAY
   );
   const [providerCurrencies, setProviderCurrencies] = useState<
     Record<PaymentProvider, Currency>
@@ -163,7 +163,7 @@ export default function CheckoutPage() {
         effectivePrice,
         selectedCurrency,
         CURRENCY.INR,
-        selectedProvider,
+        selectedProvider
       );
 
       setPricing(data);
@@ -185,7 +185,7 @@ export default function CheckoutPage() {
     // Protects against scenarios where discountPercentage might accidently have been set greater than 100
     return Math.max(
       0,
-      Math.min(originalPrice, (originalPrice * discountPercentage) / 100),
+      Math.min(originalPrice, (originalPrice * discountPercentage) / 100)
     );
   };
 
@@ -234,7 +234,7 @@ export default function CheckoutPage() {
         coupon.id,
         courseId!,
         null,
-        null,
+        null
       );
 
       if (
@@ -243,7 +243,7 @@ export default function CheckoutPage() {
       ) {
         clearCoupon();
         setCouponMessage(
-          applicabilityResult.data?.reason ?? "Coupon not applicable",
+          applicabilityResult.data?.reason ?? "Coupon not applicable"
         );
         setPromoCode("");
         return;
@@ -313,7 +313,20 @@ export default function CheckoutPage() {
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
-        await handleUseCoupon();
+        if (isCouponValid) {
+          try {
+            await handleUseCoupon(); 
+          } catch (error) {
+            console.error("Error applying coupon:", error);
+            toast({
+              title: "Coupon Error",
+              description:
+                "There was an issue applying the coupon. Please try again.",
+              variant: "destructive",
+            });
+          }
+        }
+
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
           if (isEnrolled(course.id)) {
@@ -436,14 +449,14 @@ export default function CheckoutPage() {
                               <span className="line-through text-gray-400">
                                 {formatMoney(
                                   originalConverted,
-                                  selectedCurrency,
+                                  selectedCurrency
                                 )}
                               </span>
                               <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                                 You save{" "}
                                 {formatMoney(
                                   discountConverted,
-                                  selectedCurrency,
+                                  selectedCurrency
                                 )}
                               </Badge>
                             </>
@@ -568,7 +581,7 @@ export default function CheckoutPage() {
                                   <option key={c} value={c}>
                                     {c}
                                   </option>
-                                ),
+                                )
                               )}
                             </select>
                             <Badge
