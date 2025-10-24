@@ -13,6 +13,7 @@ interface AuthGuardProps {
   requireEnrollment?: boolean;
   requireCohortAccess?: boolean;
   requireAdmin?: boolean;
+  requireEnrollmentOrAdmin?: boolean;
   weekNumber?: number;
   message?: string;
 };
@@ -23,6 +24,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireEnrollment = false,
   requireCohortAccess = false,
   requireAdmin = false,
+  requireEnrollmentOrAdmin = false,
   message = 'Please login to access this lesson.',
 }) => {
   const { user, loading: authLoading } = useAuth();
@@ -100,6 +102,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       <Navigate
         to="/dashboard"
         state={{ from: location, message: 'You must be an admin to access this page.' }}
+        replace
+      />
+    );
+  }
+
+  // Require enrollment or admin
+  if (requireEnrollmentOrAdmin && courseId && user && !userIsEnrolled && !isAdmin) {
+    return (
+      <Navigate
+        to={`/checkout/${courseId}`}
+        state={{ from: location, message: 'You need to enroll in this course to access its content.' }}
         replace
       />
     );

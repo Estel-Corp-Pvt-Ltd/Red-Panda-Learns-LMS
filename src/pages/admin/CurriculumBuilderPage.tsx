@@ -32,6 +32,7 @@ import {
   NotepadText,
   NotebookPen,
   Search,
+  Eye,
 } from "lucide-react";
 import {
   Popover,
@@ -1084,6 +1085,13 @@ const CurriculumBuilderPage = () => {
     }
   };
 
+  const firstLessonId = useMemo(() => {
+    const firstLesson = curriculum.find(
+      (i) => i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
+    );
+    return firstLesson ? (firstLesson.refId ?? firstLesson.id) : null;
+  }, [curriculum]);
+
   if (loading) return <div>Loading...</div>;
   if (!course) return <div>Course not found.</div>;
 
@@ -1601,6 +1609,15 @@ const CurriculumBuilderPage = () => {
                     <Save className="h-4 w-4" />
                     Save
                   </Button>
+                  <Link to={`/course/${courseId}/lesson/${firstLessonId}`} target="_blank">
+                    <Button
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Preview Course
+                    </Button>
+                  </Link>
                 </div >
               </CardHeader >
 
