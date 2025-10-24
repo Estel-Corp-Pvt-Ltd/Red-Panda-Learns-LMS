@@ -253,25 +253,15 @@ class PaymentService {
           transactionId
         );
 
-        // Enroll for each item
-        for (const item of items) {
           try {
-            // If your enrollmentService can handle both types via itemType:
             await enrollmentService.enrollUser(
               userId,
               items
             );
-
-            // If you need special handling for bundles, do this instead:
-            // if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE) {
-            //   await enrollmentService.enrollUser(userId, item.itemId, ENROLLED_PROGRAM_TYPE.COURSE);
-            // } else if (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE) {
-            //   await enrollmentService.enrollBundle(userId, item.itemId);
-            // }
           } catch (err) {
-            console.error("Enrollment failed for item:", item, err);
+            console.error("Enrollment failed for item:", items, err);
           }
-        }
+        
       } else {
         // Mark order as failed so it doesn’t linger in PENDING
         await orderService.updateOrder(

@@ -364,14 +364,14 @@ export default function CartCheckoutPage() {
             title: "Enrollment Successful!",
             description: `You are now enrolled in ${cartCourses.length} course(s)`,
           });
-          navigate("/dashboard/courses");
+          navigate("/dashboard");
         } else {
           toast({
             title: "Payment Successful",
             description:
               "Your payment was processed. If you don't see the courses immediately, please refresh the page.",
           });
-          navigate("/dashboard/courses");
+          navigate("/dashboard");
         }
       } else {
         toast({
