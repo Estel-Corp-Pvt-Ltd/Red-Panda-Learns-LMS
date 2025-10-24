@@ -148,16 +148,11 @@ export default function CartCheckoutPage() {
       const enrolledCourses = cartCourses.filter(course => isEnrolled(course.id));
       
       if (enrolledCourses.length > 0) {
-        // Remove enrolled courses from cart
-        enrolledCourses.forEach(course => {
-          cartDispatch({
-            type: CART_ACTION.CLEAR,
-          });
-        });
+  
         
         toast({
           title: "Already Enrolled",
-          description: `You are already enrolled in ${enrolledCourses.length} course(s). They have been removed from your cart.`,
+         description: `You are already enrolled in ${enrolledCourses.length} course(s). Please remove them from your cart before proceeding.`,
           variant: "default",
         });
       }
