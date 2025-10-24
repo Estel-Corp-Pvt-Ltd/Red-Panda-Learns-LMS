@@ -167,6 +167,7 @@ const CurriculumBuilderPage = () => {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
+  const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -251,11 +252,12 @@ const CurriculumBuilderPage = () => {
 
   // auto-save when curriculum changes
   useEffect(() => {
-    if (curriculum.length > 0 && courseId) {
+    if (isTopicItemAdded && curriculum.length > 0 && courseId) {
       // Debounce auto-save to avoid too many requests
       const timeoutId = setTimeout(() => {
         saveCurriculumStructure();
       }, 1000);
+      setIsTopicItemAdded(false);
 
       return () => clearTimeout(timeoutId);
     }
@@ -905,7 +907,7 @@ const CurriculumBuilderPage = () => {
       title: "Success",
       description: "Assignment added to curriculum"
     });
-    saveBasics();
+    setIsTopicItemAdded(true);
   };
 
   const addLessonsToParent = (lessons: Lesson[]) => {
@@ -981,6 +983,7 @@ const CurriculumBuilderPage = () => {
     });
     setIsLessonSelectorModalOpen(false);
     setActiveParentId(null); // Reset active parent
+    setIsTopicItemAdded(true);
   };
 
   const saveCurriculumStructure = async () => {
