@@ -14,11 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { paymentService } from '@/services/paymentService';
 import { ArrowLeft, CreditCard, DollarSign, Package, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { logError } from '@/utils/logger';
 
 type PaymentProvider = 'razorpay' | 'paypal';
 
 export default function BundleCheckoutPage() {
+  const { toast } = useToast();
   const { bundleId } = useParams<{ bundleId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -72,10 +74,9 @@ export default function BundleCheckoutPage() {
     setIsProcessing(true);
 
     try {
-      console.log('Processing bundle payment:', {
+      logError('Processing bundle payment:', {
         bundleId: bundle.id,
         provider: selectedProvider,
-        amount: bundle.bundlePrice,
         userEmail: user.email
       });
 
@@ -93,11 +94,11 @@ export default function BundleCheckoutPage() {
         toast.success('Payment successful! Welcome to your new courses!');
         navigate(`/bundle/${bundleId}/dashboard`);
       } else {
-        toast.error(result.error || 'Payment failed. Please try again.');
+        toast({ title: result.error || 'Payment failed. Please try again.', variant: 'destructive' });
       }
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
+      logError('Payment error:', error);
+      toast({ title: 'Payment failed. Please try again.', variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }

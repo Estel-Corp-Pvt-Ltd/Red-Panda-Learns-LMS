@@ -1,5 +1,4 @@
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -58,7 +57,6 @@ const App = () => (
               <LoadingOverlayProvider>
                 <PopUpContainer />
                 <Toaster />
-                <Sonner />
                 <BrowserRouter>
                   <Routes>
                     <Route path="/" element={<LandingPage />} />

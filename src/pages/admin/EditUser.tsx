@@ -13,13 +13,14 @@ import {
 import { Label } from "@radix-ui/react-dropdown-menu";
 import { Header } from "@/components/Header";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 import { userService } from "@/services/userService";
 import { User } from "@/types/user";
 import { UserRole, UserStatus } from "@/types/general";
 import { USER_ROLE, USER_STATUS } from "@/constants";
+import { useToast } from "@/hooks/use-toast";
 
 const EditUserPage = () => {
+  const { toast } = useToast();
   const { userId } = useParams<{ userId: string }>();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<Partial<User>>({

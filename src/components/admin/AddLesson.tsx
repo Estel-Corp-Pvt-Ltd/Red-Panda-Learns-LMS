@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
-import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";
+import { useToast } from "@/hooks/use-toast";
+import { logError } from "@/utils/logger";
 import { Lesson } from "@/types/lesson";
 import MDEditor from "@uiw/react-md-editor";
 
@@ -34,6 +35,7 @@ export const CreateLessonModal = ({
   onClose,
   onLessonCreated,
 }: CreateLessonModalProps) => {
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [lesson, setLesson] = useState({
     title: "",
@@ -93,7 +95,7 @@ export const CreateLessonModal = ({
   const handleSave = async () => {
     try {
       if (!lesson.title.trim()) {
-        toast.error("Lesson title is required");
+        toast({ title: "Lesson title is required", variant: "destructive" });
         return;
       }
       if (!lesson.description.trim() && !lesson.embedUrl.trim()) {
@@ -101,7 +103,7 @@ export const CreateLessonModal = ({
         return;
       }
       if (!lesson.embedUrl.trim()) {
-        toast.error("Embed URL is required");
+        toast({ title: "Embed URL is required", variant: "destructive" });
         return;
       }
       if (lesson.durationSeconds < 0) {
@@ -117,8 +119,8 @@ export const CreateLessonModal = ({
       resetForm();
       onClose(); // Call onClose after everything else
     } catch (err) {
-      console.error("Error creating lesson:", err);
-      toast.error("Failed to create lesson");
+      logError("Error creating lesson:", err);
+      toast({ title: "Failed to create lesson", variant: "destructive" });
     } finally {
       setSaving(false);
     }
