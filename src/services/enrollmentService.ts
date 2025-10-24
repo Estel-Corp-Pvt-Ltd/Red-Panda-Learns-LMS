@@ -239,28 +239,63 @@ if (!bundle) {
 /**
  * Resolves when all courses are enrolled, or rejects after timeout
  */
+/**
+ * Waits until all given courseIds are enrolled (either directly or via bundles).
+ * Resolves when all are found, or rejects after timeout.
+ */
 async waitForAllEnrollments({
   userId,
   courseIds,
   timeoutMs = 30000,
-}: VerifyBundleEnrollmentOptions): Promise<void> {
+}: {
+  userId: string;
+  courseIds: string[];
+  timeoutMs?: number;
+}): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!userId || !courseIds.length) return resolve();
 
     let enrollmentVerified = false;
 
-    const enrollmentsRef = collection(db, COLLECTION.ENROLLMENTS, userId, COLLECTION.COURSES);
+    // 🔹 Real-time listener on all enrollments of the user
+    const q = query(
+      collection(db, COLLECTION.ENROLLMENTS),
+      where("userId", "==", userId),
+      where("status", "==", ENROLLMENT_STATUS.ACTIVE)
+    );
 
     const unsubscribe = onSnapshot(
-      enrollmentsRef,
+      q,
       (snapshot) => {
-        const enrolledCourseIds = snapshot.docs.map((doc) => doc.id);
+        const enrolledCourseIds: string[] = [];
 
-        const allEnrolled = courseIds.every((id) => enrolledCourseIds.includes(id));
+        snapshot.docs.forEach((docSnap) => {
+          const data = docSnap.data();
+
+          // Direct course enrollment
+          if (data.targetType === ENROLLED_PROGRAM_TYPE.COURSE) {
+            enrolledCourseIds.push(data.targetId);
+          }
+
+          // Bundle enrollment — collect courseIds from bundleProgress
+          if (
+            data.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE &&
+            Array.isArray(data.bundleProgress)
+          ) {
+            for (const bp of data.bundleProgress) {
+              if (bp.courseId) enrolledCourseIds.push(bp.courseId);
+            }
+          }
+        });
+
+        // ✅ Check if all desired courses are enrolled
+        const allEnrolled = courseIds.every((id) =>
+          enrolledCourseIds.includes(id)
+        );
 
         if (allEnrolled && !enrollmentVerified) {
           enrollmentVerified = true;
-          unsubscribe(); 
+          unsubscribe();
           resolve();
         }
       },
@@ -270,15 +305,22 @@ async waitForAllEnrollments({
       }
     );
 
-    // fallback timeout
-    setTimeout(() => {
-  if (!enrollmentVerified) {
-    unsubscribe();
-    reject(new Error("Timeout: not all courses enrolled in time"));
-  }
-}, timeoutMs);
+    // 🕒 Timeout fallback
+    const timer = setTimeout(() => {
+      if (!enrollmentVerified) {
+        unsubscribe();
+        reject(new Error("Timeout: not all courses enrolled in time"));
+      }
+    }, timeoutMs);
+
+    // Cleanup timer if resolved early
+    const stop = () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   });
 }
+
 
   /**
  * Deletes an enrollment by its ID.

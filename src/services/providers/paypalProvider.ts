@@ -132,21 +132,21 @@ class PayPalProvider {
                     }
                   );
 
-                  try {
-                  for (const item of items) {
-                try {
-                  await enrollmentService.enrollUser(
-                    userId,
-                    item.itemId,
-                    item.itemType
-                  );
-                } catch (enrollmentError) {
-                  console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
-                }
-              }
-                  } catch (e) {
-                    console.error("Enrollment failed after PayPal payment:", e);
-                  }
+              //     try {
+              //     for (const item of items) {
+              //   try {
+              //     await enrollmentService.enrollUser(
+              //       userId,
+              //       item.itemId,
+              //       item.itemType
+              //     );
+              //   } catch (enrollmentError) {
+              //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
+              //   }
+              // }
+              //     } catch (e) {
+              //       console.error("Enrollment failed after PayPal payment:", e);
+              //     }
 
                   resolve({
                     success: true,
