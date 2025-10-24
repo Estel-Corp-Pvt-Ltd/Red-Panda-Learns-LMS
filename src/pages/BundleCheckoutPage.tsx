@@ -27,7 +27,12 @@ import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
 
 import { Currency, PaymentProvider } from "@/types/general";
-import { ADDRESS_TYPE, CURRENCY, ENROLLED_PROGRAM_TYPE, PAYMENT_PROVIDER } from "@/constants";
+import {
+  ADDRESS_TYPE,
+  CURRENCY,
+  ENROLLED_PROGRAM_TYPE,
+  PAYMENT_PROVIDER,
+} from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
 import { Coupon } from "@/types/coupon";
@@ -38,8 +43,8 @@ import { EnrolledProgramType } from "@/types/general";
 import { useBundleQuery, useBundleCoursesQuery } from "@/hooks/useBundleApi";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
-  RAZORPAY: ["INR", "USD", "EUR", "GBP"],
-  PAYPAL: ["USD", "EUR", "GBP"],
+  RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+  PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
 };
 
 const METHOD_LOGOS: Record<
@@ -86,7 +91,6 @@ export default function BundleCheckoutPage() {
     landmark: "",
     type: ADDRESS_TYPE.BILLING,
   });
-
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
     PAYMENT_PROVIDER.RAZORPAY,
@@ -140,24 +144,17 @@ export default function BundleCheckoutPage() {
   }, [bundle, selectedCurrency, selectedProvider, discountAmount]);
 
   // Initial load
-  useEffect(() => {
-    if (bundle && selectedCurrency) loadPricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // useEffect(() => {
+  //   if (bundle && selectedCurrency) loadPricing();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   const loadPricing = async () => {
     if (!bundle) return;
     setLoadingPricing(true);
     try {
       // Try known bundle price fields; adjust if your schema differs
-      const basePrice =
-        Number(
-          (bundle as any).bundlePrice ??
-            (bundle as any).salePrice ??
-            (bundle as any).price ??
-            0,
-        ) || 0;
-
+      const basePrice = bundle.salePrice || 0;
       const effectivePrice = Math.max(0, basePrice - discountAmount);
       setFinalPrice(effectivePrice);
 
@@ -166,7 +163,6 @@ export default function BundleCheckoutPage() {
         selectedCurrency,
         CURRENCY.INR,
         selectedProvider,
-      
       );
       setPricing(data);
     } catch (error) {
@@ -243,13 +239,7 @@ export default function BundleCheckoutPage() {
         return;
       }
 
-      const originalPrice =
-        Number(
-          (bundle as any).bundlePrice ??
-            (bundle as any).salePrice ??
-            (bundle as any).price ??
-            0,
-        ) || 0;
+      const originalPrice = bundle.salePrice || 0;
 
       const d = calcDiscount(originalPrice, coupon);
       setDiscountAmount(d);
@@ -290,29 +280,27 @@ export default function BundleCheckoutPage() {
 
     try {
       // Using the generic processPayment to keep parity with reference structure
-     
-           const items: TransactionLineItem[] = [
-       {
-         itemId: bundle.id,
-         itemType: ENROLLED_PROGRAM_TYPE.BUNDLE ,  // or "BUNDLE" if course.isBundle
-         name: bundle.title,
-         amount: finalPrice,
-         originalAmount: bundle.salePrice, // optional
-       }
-     ];
-     
-     
-           const result = await paymentService.processPayment({
-              provider: selectedProvider,
-       items, // here you can explicitly name it
-       finalPrice,
-       userEmail: user.email!,
-       userId: user.id,
-       selectedCurrency,
-       baseCurrency: CURRENCY.INR,
-       billingAddress,
-     
-          });
+
+      const items: TransactionLineItem[] = [
+        {
+          itemId: bundle.id,
+          itemType: ENROLLED_PROGRAM_TYPE.BUNDLE,
+          name: bundle.title,
+          amount: finalPrice,
+          originalAmount: bundle.salePrice,
+        },
+      ];
+
+      const result = await paymentService.processPayment({
+        provider: selectedProvider,
+        items,
+        finalPrice,
+        userEmail: user.email!,
+        userId: user.id,
+        selectedCurrency,
+        baseCurrency: CURRENCY.INR,
+        billingAddress,
+      });
 
       if (result.success && result.transactionId) {
         let enrollmentVerified = false;
@@ -336,7 +324,7 @@ export default function BundleCheckoutPage() {
         if (enrollmentVerified) {
           toast({
             title: "Purchase Successful!",
-            description: `Your bundle "${(bundle as any).title}" is now unlocked.`,
+            description: `Your bundle "${bundle.title}" is now unlocked.`,
           });
           navigate(`/bundle/${bundleId}/dashboard`);
         } else {
@@ -389,15 +377,7 @@ export default function BundleCheckoutPage() {
       currency: cur,
     }).format(amount);
 
-  const baseBundlePrice =
-    Number(
-      (bundle as any).bundlePrice ??
-        (bundle as any).salePrice ??
-        (bundle as any).price ??
-        0,
-    ) || 0;
-
-  const originalConverted = baseBundlePrice * exchangeRate;
+  const originalConverted = bundle ? (bundle.salePrice || 0) * exchangeRate : 0;
   const discountConverted = discountAmount * exchangeRate;
 
   return (
@@ -471,7 +451,9 @@ export default function BundleCheckoutPage() {
                   <CardTitle>Bundle Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <h3 className="font-semibold text-lg">{(bundle as any).title}</h3>
+                  <h3 className="font-semibold text-lg">
+                    {(bundle as any).title}
+                  </h3>
                   <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
                     {(bundle as any).description}
                   </p>
@@ -640,7 +622,7 @@ export default function BundleCheckoutPage() {
                 </CardContent>
               </Card>
 
-                        {/* Secure */}
+              {/* Secure */}
               <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3">
@@ -913,8 +895,6 @@ export default function BundleCheckoutPage() {
                   </div>
                 </CardContent>
               </Card>
-
-             
 
               {/* Coupon (full row) */}
               <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
