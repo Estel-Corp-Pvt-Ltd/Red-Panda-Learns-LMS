@@ -12,6 +12,7 @@ import { Assignment } from '@/types/assignment';
 import { Header } from '@/components/Header';
 import { Timestamp } from 'firebase/firestore';
 import { formatDate } from '@/utils/date-time';
+import { Button } from '@/components/ui/button';
 
 const EditAssignmentPage: React.FC = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -132,7 +133,7 @@ const EditAssignmentPage: React.FC = () => {
           </div>
 
           <Link to={`/admin/assignments/${assignmentId}/submissions`}>
-            Submissions
+            <Button>View Submissions</Button>
           </Link>
         </div>
 
