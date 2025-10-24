@@ -83,10 +83,9 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ value }) => {
           </del>
         ),
         img: ({ src, alt }) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={src}
-            alt={alt || "Markdown image"}
+            alt={alt || ""}
             className="my-6 mb-8 rounded-lg max-w-full min-h-72 h-auto m-auto"
           />
         ),
