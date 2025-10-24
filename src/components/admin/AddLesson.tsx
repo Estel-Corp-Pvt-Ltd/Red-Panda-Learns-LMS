@@ -96,8 +96,16 @@ export const CreateLessonModal = ({
         toast.error("Lesson title is required");
         return;
       }
+      if (!lesson.description.trim() && !lesson.embedUrl.trim()) {
+        toast.error("Fill description or embed.");
+        return;
+      }
       if (!lesson.embedUrl.trim()) {
         toast.error("Embed URL is required");
+        return;
+      }
+      if (lesson.durationSeconds <= 0) {
+        toast.error("Duration must be greater than 0 seconds");
         return;
       }
 
