@@ -133,7 +133,7 @@ const bundleCourses = bundles.flatMap(bundle => {
 } 
  else {
         setEnrollments([]);
-        // TODO: Add a toast here
+       
      toast({
         title: "You are not enrolled into any course ",
         description: "Enroll in any course ",
