@@ -104,7 +104,7 @@ export const CreateLessonModal = ({
         toast.error("Embed URL is required");
         return;
       }
-      if (lesson.durationSeconds >= 0) {
+      if (lesson.durationSeconds < 0) {
         toast.error("Duration must be greater than 0 seconds");
         return;
       }
