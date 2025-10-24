@@ -1,12 +1,10 @@
 import { Button } from "@/components/ui/button";
-import dynarouteLogo from "../../public/dynaroute-logo.png";
-import vizzAiLogo from "../../public/vizlogo.png";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 const products = [
   {
-    logo: dynarouteLogo,
+    logo: "/dynaroute-logo.png",
     title: "DynaRoute",
     description:
       "Route your queries to the most appropriate model based on complexity, cost, and performance requirements.",
@@ -16,7 +14,7 @@ const products = [
     bgClass: "bg-black dark:bg-gray-900",
   },
   {
-    logo: vizzAiLogo,
+    logo: "/vizlogo.png",
     title: "Vizz-AI",
     description: "Your Personalized AI Tutor for Every Vizuara's Course",
     link: "https://vizz.vizuara.ai/",
@@ -46,15 +44,15 @@ const ProductsSection = () => {
             <Sparkles className="w-4 h-4 text-foreground/70" />
             <span className="text-sm font-medium text-foreground/70">Our AI Products</span>
           </div>
-          
+
           <h2 className="text-5xl md:text-6xl font-semibold text-foreground">
             AI Products
           </h2>
-          
+
           <p className="text-center text-foreground/60 text-lg max-w-2xl mx-auto">
             Accessible AI tools and platforms for all users
           </p>
-          
+
           <p className="text-center text-foreground/70 text-base max-w-3xl mx-auto">
             Our AI tools are built from real research and hands-on experience, designed to solve actual problems you face
             in learning and development.
@@ -65,7 +63,7 @@ const ProductsSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {products.map((product, index) => {
             const isHovered = hoveredCard === index;
-            
+
             return (
               <div
                 key={index}
@@ -110,7 +108,7 @@ const ProductsSection = () => {
                       >
                         {product.title}
                       </h3>
-                      
+
                       <p className="text-foreground/70 dark:text-foreground/60 text-sm leading-relaxed flex-grow">
                         {product.description}
                       </p>
