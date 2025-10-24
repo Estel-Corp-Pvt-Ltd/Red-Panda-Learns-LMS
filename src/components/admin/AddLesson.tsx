@@ -123,7 +123,7 @@ export const CreateLessonModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-5xl bg-card text-card-foreground overflow-y-scroll max-h-screen">
+      <DialogContent className="w-[90%] sm:max-w-5xl bg-card text-card-foreground overflow-y-scroll max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create Lesson</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -161,7 +161,7 @@ export const CreateLessonModal = ({
                       onChange={(value) =>
                         handleFieldChange("description", value || "")
                       }
-                      height={450}
+                      height={250}
                       preview="live"
                       className="!bg-transparent dark:!bg-neutral-900"
                     />

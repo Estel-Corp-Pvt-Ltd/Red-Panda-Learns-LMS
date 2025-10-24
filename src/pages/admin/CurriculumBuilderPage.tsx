@@ -1513,7 +1513,7 @@ const CurriculumBuilderPage = () => {
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  Course Curriculum & Cohorts
+                  {title} - Curriculum
                 </CardTitle>
 
                 <div className="flex flex-wrap gap-2">
