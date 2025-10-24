@@ -66,7 +66,7 @@ class RazorpayProvider {
 
   // CHANGED: accept payCurrency + optional quoteId
   async processPayment(
-  courseOrItems: Course | TransactionLineItem[],
+  items: TransactionLineItem[],
   userEmail: string,
   transactionId: string,
   amount: number,               // should be the final total in selected currency
@@ -76,21 +76,7 @@ class RazorpayProvider {
 ): Promise<{ success: boolean; transactionId?: string; paymentId?: string; error?: string }> {
   return new Promise(async (resolve) => {
     try {
-      // ✅ Normalize to items[]
-      const items: TransactionLineItem[] = Array.isArray(courseOrItems)
-        ? courseOrItems
-        : [{
-            itemId: courseOrItems.id,
-            itemType: (courseOrItems as any).isBundle ? ENROLLED_PROGRAM_TYPE.BUNDLE : ENROLLED_PROGRAM_TYPE.COURSE,
-            name: courseOrItems.title,
-            amount,
-          }];
-
-      const displayName =
-        items.length === 1
-          ? items[0].name
-          : `${items.length} items (${items.map(i => i.name).join(", ")})`;
-
+     
       console.log("RazorpayProvider - Starting payment process:", {
         transactionId,
         amount,
@@ -128,7 +114,7 @@ class RazorpayProvider {
         currency: order.currency,  // matches payCurrency
         order_id: order.id,
         name: "Vizuara AI Labs",
-        description: `Enrollment for ${displayName}`,
+        description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
         prefill: { email: userEmail },
         theme: { color: "#3b82f6" },
         handler: async (response: any) => {

@@ -52,7 +52,7 @@ class PayPalProvider {
 
   /** Launches the PayPal payment flow. */
   async processPayment(
-    courseOrItems: Course | TransactionLineItem[],
+    items: TransactionLineItem[],
     userEmail: string,
     transactionId: string,
     amount: number,
@@ -65,23 +65,10 @@ class PayPalProvider {
     error?: string;
   }> {
     try {
-      // ✅ Normalize to items[]
-      const items: TransactionLineItem[] = Array.isArray(courseOrItems)
-        ? courseOrItems
-        : [{
-            itemId: courseOrItems.id,
-            itemType: (courseOrItems as any).isBundle ? ENROLLED_PROGRAM_TYPE.BUNDLE : ENROLLED_PROGRAM_TYPE.COURSE,
-            name: courseOrItems.title,
-            amount,
-          }];
-
-      const displayName =
-        items.length === 1
-          ? items[0].name
-          : `${items.length} items (${items.map(i => i.name).join(", ")})`;
+      
 
       console.log("PayPalProvider - Starting payment:", {
-       items : items,
+       items,
         transactionId,
         amount,
         currency,
@@ -118,7 +105,7 @@ class PayPalProvider {
                         currency_code: currency,
                         value: amount.toFixed(2),
                       },
-                      description: `Enrollment for ${displayName}`,
+                     description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
                       custom_id: transactionId,
                     },
                   ],
