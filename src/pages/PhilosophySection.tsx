@@ -1,31 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Layers, Code2, Brain, type LucideIcon } from "lucide-react";
-
-// Types
-interface PhilosophyItem {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  color: string;
-  gradient: string;
-}
-
-interface DecryptedLineProps {
-  text: string;
-  delay?: number;
-  onComplete?: () => void;
-}
-
-interface DecryptedCodeLineByLineProps {
-  text: string;
-  lineDelay?: number;
-}
+import { Layers, Code2, Brain } from "lucide-react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 // Constants
 const CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(){}[]<>?/\\|=-+";
 
-const philosophyItems: PhilosophyItem[] = [
+const philosophyItems = [
   {
     icon: Layers,
     title: "Foundations",
@@ -52,21 +34,20 @@ const philosophyItems: PhilosophyItem[] = [
   },
 ];
 
-const foundationSnippet = `Forward pass (dense layer):
-z = W x + b
-a = f(z)
-
-Softmax + cross-entropy:
-p_i = exp(z_i) / Σ_j exp(z_j)
-L = - Σ_i y_i log p_i
-
-Backprop to logits (softmax + CE):
-∂L/∂z = p - y
-
-Gradients for dense layer:
-∂L/∂W = (∂L/∂z) xᵀ
-∂L/∂b = ∂L/∂z
-∂L/∂x = Wᵀ (∂L/∂z)`;
+const foundationLatexLines = [
+  String.raw`\textbf{Forward pass (dense layer)}`,
+  String.raw`\mathbf{z} = \mathbf{W}\mathbf{x} + \mathbf{b}`,
+  String.raw`\mathbf{a} = f(\mathbf{z})`,
+  String.raw`\textbf{Softmax + cross-entropy}`,
+  String.raw`p_i = \frac{e^{z_i}}{\sum_{j} e^{z_j}}`,
+  String.raw`\mathcal{L} = - \sum_{i} y_i \log p_i`,
+  String.raw`\textbf{Backprop to logits (softmax + CE)}`,
+  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{z}} = \mathbf{p} - \mathbf{y}`,
+  String.raw`\textbf{Gradients for dense layer}`,
+  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{W}} = \left(\frac{\partial \mathcal{L}}{\partial \mathbf{z}}\right) \mathbf{x}^\top`,
+  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{b}} = \frac{\partial \mathcal{L}}{\partial \mathbf{z}}`,
+  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{x}} = \mathbf{W}^\top \left(\frac{\partial \mathcal{L}}{\partial \mathbf{z}}\right)`,
+];
 
 const attentionSnippet = `# Imports
 import math
@@ -89,19 +70,14 @@ const researchRef = {
   link: "https://arxiv.org/abs/1706.03762",
 };
 
-// Decrypted Line (typed, cleaned deps, onComplete once)
-const DecryptedLine: React.FC<DecryptedLineProps> = ({
-  text,
-  delay = 0,
-  onComplete,
-}) => {
-  const [displayedText, setDisplayedText] = useState<string>("");
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [hasStarted, setHasStarted] = useState<boolean>(false);
+const DecryptedLine = ({ text, delay = 0, onComplete }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
 
-  const initialDelayRef = useRef<number>(delay); // run once with initial delay
-  const onCompleteRef = useRef<() => void>(() => {});
-  const didCompleteRef = useRef<boolean>(false);
+  const initialDelayRef = useRef(delay);
+  const onCompleteRef = useRef(() => {});
+  const didCompleteRef = useRef(false);
 
   useEffect(() => {
     onCompleteRef.current = onComplete ?? (() => {});
@@ -118,7 +94,6 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
   useEffect(() => {
     if (!hasStarted) return;
 
-    // Done? render final text and call onComplete once
     if (currentIndex >= text.length) {
       setDisplayedText(text);
       if (!didCompleteRef.current) {
@@ -142,31 +117,26 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
         }
         return result;
       });
-    }, 30);
+    }, 8);
 
     const progressTimeout = window.setTimeout(() => {
       setCurrentIndex((prev) => prev + 1);
-    }, 25);
+    }, 6);
 
     return () => {
       window.clearInterval(scrambleInterval);
       window.clearTimeout(progressTimeout);
     };
-  }, [hasStarted, currentIndex]); // no `text`, no `CHARS`
+  }, [hasStarted, currentIndex, text]);
 
   return <>{displayedText}</>;
 };
 
-// Decrypted Code (line-by-line, start at 1, no extra effect)
-const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
-  text,
-  lineDelay = 200,
-}) => {
-  // Reviewer: "Why not set to 1 at declaration?" → Done
-  const [visibleLines, setVisibleLines] = useState<number>(1);
+const DecryptedCodeLineByLine = ({ text, lineDelay = 50 }) => {
+  const [visibleLines, setVisibleLines] = useState(1);
   const lines = text.split("\n");
 
-  const handleLineComplete = (lineIndex: number) => {
+  const handleLineComplete = (lineIndex) => {
     if (lineIndex < lines.length - 1) {
       window.setTimeout(() => {
         setVisibleLines(lineIndex + 2);
@@ -193,24 +163,138 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
   );
 };
 
-const PhilosophySection: React.FC = () => {
-  const [revealedCards, setRevealedCards] = useState<number[]>([]);
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  const [pulses, setPulses] = useState<
-    Array<{ id: number; cardIndex: number }>
-  >([]);
-  const [startCodeDecryption, setStartCodeDecryption] = useState<boolean[]>(
+// New component for decrypted math with character-by-character reveal
+const DecryptedMathLine = ({ latex, delay = 0, onComplete }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+
+  const initialDelayRef = useRef(delay);
+  const onCompleteRef = useRef(() => {});
+  const didCompleteRef = useRef(false);
+  const renderedRef = useRef(null);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete ?? (() => {});
+  }, [onComplete]);
+
+  useEffect(() => {
+    const t = window.setTimeout(
+      () => setHasStarted(true),
+      initialDelayRef.current
+    );
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    if (currentIndex >= latex.length) {
+      setDisplayedText(latex);
+      setIsComplete(true);
+      if (!didCompleteRef.current) {
+        didCompleteRef.current = true;
+        onCompleteRef.current();
+      }
+      return;
+    }
+
+    const scrambleInterval = window.setInterval(() => {
+      setDisplayedText(() => {
+        let result = "";
+        for (let i = 0; i < latex.length; i++) {
+          if (i < currentIndex) {
+            result += latex[i];
+          } else if (latex[i] === " ") {
+            result += " ";
+          } else {
+            result += CHARS[Math.floor(Math.random() * CHARS.length)];
+          }
+        }
+        return result;
+      });
+    }, 8);
+
+    const progressTimeout = window.setTimeout(() => {
+      setCurrentIndex((prev) => prev + 1);
+    }, 6);
+
+    return () => {
+      window.clearInterval(scrambleInterval);
+      window.clearTimeout(progressTimeout);
+    };
+  }, [hasStarted, currentIndex, latex]);
+
+  // Render KaTeX only when complete
+  useEffect(() => {
+    if (!isComplete || !renderedRef.current) return;
+    try {
+      katex.render(latex, renderedRef.current, {
+        displayMode: true,
+        throwOnError: false,
+        strict: "ignore",
+        trust: true,
+      });
+    } catch {
+      if (renderedRef.current) renderedRef.current.textContent = latex;
+    }
+  }, [isComplete, latex]);
+
+  if (isComplete) {
+    return <div ref={renderedRef} className="katex-wrapper text-foreground" />;
+  }
+
+  return (
+    <div className="font-mono text-[13px] text-foreground/80">
+      {displayedText}
+    </div>
+  );
+};
+
+const DecryptedMathLineByLine = ({ lines, lineDelay = 50 }) => {
+  const [visibleLines, setVisibleLines] = useState(1);
+
+  const handleLineComplete = (lineIndex) => {
+    if (lineIndex < lines.length - 1) {
+      window.setTimeout(() => {
+        setVisibleLines(lineIndex + 2);
+      }, lineDelay);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      {lines.map((latex, index) => (
+        <div key={index}>
+          {index < visibleLines ? (
+            <DecryptedMathLine
+              latex={latex}
+              delay={0}
+              onComplete={() => handleLineComplete(index)}
+            />
+          ) : (
+            <div style={{ opacity: 0, height: "1.5rem" }}>&nbsp;</div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const PhilosophySection = () => {
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [pulses, setPulses] = useState([]);
+  const [startCodeDecryption, setStartCodeDecryption] = useState(
     Array.from({ length: philosophyItems.length }, () => false)
   );
 
-  const timeoutsRef = useRef<number[]>([]);
-  const intervalsRef = useRef<number[]>([]);
+  const timeoutsRef = useRef([]);
+  const intervalsRef = useRef([]);
 
   useEffect(() => {
-    // Staggered reveal + start code decryption for first two cards
     philosophyItems.forEach((_, index) => {
       const t = window.setTimeout(() => {
-        setRevealedCards((prev) => [...prev, index]);
         if (index < 2) {
           const t2 = window.setTimeout(() => {
             setStartCodeDecryption((prev) => {
@@ -218,26 +302,24 @@ const PhilosophySection: React.FC = () => {
               next[index] = true;
               return next;
             });
-          }, 400);
+          }, 200);
           timeoutsRef.current.push(t2);
         }
-      }, index * 200);
+      }, index * 150);
       timeoutsRef.current.push(t);
     });
 
-    // Periodic pulses across cards
     const intervalId = window.setInterval(() => {
       philosophyItems.forEach((_, index) => {
         const t = window.setTimeout(() => {
           createPulse(index);
-        }, index * 300);
+        }, index * 250);
         timeoutsRef.current.push(t);
       });
     }, 4000);
     intervalsRef.current.push(intervalId);
 
     return () => {
-      // Cleanup
       intervalsRef.current.forEach((id) => window.clearInterval(id));
       timeoutsRef.current.forEach((id) => window.clearTimeout(id));
       intervalsRef.current = [];
@@ -245,7 +327,7 @@ const PhilosophySection: React.FC = () => {
     };
   }, []);
 
-  const createPulse = (cardIndex: number) => {
+  const createPulse = (cardIndex) => {
     const pulseId = Date.now() + cardIndex + Math.floor(Math.random() * 1000);
     setPulses((prev) => [...prev, { id: pulseId, cardIndex }]);
 
@@ -255,11 +337,11 @@ const PhilosophySection: React.FC = () => {
     timeoutsRef.current.push(t);
   };
 
-  const handleCardHover = (index: number, isEntering: boolean) => {
+  const handleCardHover = (index, isEntering) => {
     if (isEntering) {
       setHoveredCard(index);
       for (let i = 0; i < 3; i++) {
-        const t = window.setTimeout(() => createPulse(index), i * 150);
+        const t = window.setTimeout(() => createPulse(index), i * 120);
         timeoutsRef.current.push(t);
       }
     } else {
@@ -328,6 +410,20 @@ const PhilosophySection: React.FC = () => {
         .sparkle-2 { bottom: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
         .sparkle-3 { top: 50%; left: -15px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
         .sparkle-4 { top: 50%; right: -15px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
+
+        .katex { 
+          color: inherit; 
+          font-size: 13px !important;
+        }
+        .katex-display { 
+          margin: 0.25rem 0; 
+        }
+        .katex .mord, .katex .mbin, .katex .mrel, .katex .mop {
+          font-weight: 400 !important;
+        }
+        .katex .text {
+          font-weight: 500 !important;
+        }
       `}</style>
 
       <section className="relative py-24 px-6 overflow-hidden">
@@ -360,7 +456,7 @@ const PhilosophySection: React.FC = () => {
                 <div
                   key={index}
                   className="relative philosophy-card opacity-0 animate-fade-in-up h-full flex"
-                  style={{ animationDelay: `${200 + index * 200}ms` }}
+                  style={{ animationDelay: `${200 + index * 150}ms` }}
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
                 >
@@ -553,17 +649,22 @@ const PhilosophySection: React.FC = () => {
                                   </a>
                                 </div>
                               </div>
+                            ) : index === 0 ? (
+                              <div className="text-left">
+                                {startCodeDecryption[index] ? (
+                                  <DecryptedMathLineByLine
+                                    lines={foundationLatexLines}
+                                    lineDelay={50}
+                                  />
+                                ) : null}
+                              </div>
                             ) : (
-                              <pre className="text-left text-[13px] leading-relaxed font-mono text-foreground/80 whitespace-pre-wrap overflow-visible">
+                              <pre className="text-left text-[13px] leading-relaxed font-mono font-normal text-foreground/80 whitespace-pre-wrap overflow-visible">
                                 <code>
                                   {startCodeDecryption[index] ? (
                                     <DecryptedCodeLineByLine
-                                      text={
-                                        index === 0
-                                          ? foundationSnippet
-                                          : attentionSnippet
-                                      }
-                                      lineDelay={150}
+                                      text={attentionSnippet}
+                                      lineDelay={50}
                                     />
                                   ) : null}
                                 </code>
