@@ -99,7 +99,6 @@ const App = () => (
                         </AuthGuard>
                       }
                     />
-                    <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
                     <Route
                       path="/admin/course/:courseId/lesson/:lessonId"
                       element={

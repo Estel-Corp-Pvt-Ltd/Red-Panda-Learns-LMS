@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
 import { logError } from "@/utils/logger";
 import { LoadingSkeleton } from "../ui/loading-skeleton";
+import MarkdownViewer from "../MarkdownViewer";
 
 interface LessonViewProps {
   lessonId: string;
@@ -107,8 +108,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -141,12 +141,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       </div>
 
       {/* Lesson Description */}
-      {lesson.description && (
-        <div
-          className="prose prose-sm max-w-none dark:prose-invert leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: lesson.description }}
-        />
-      )}
+      <MarkdownViewer value={lesson.description || '_No content provided._'} />
 
       {/* Progress Indicator */}
       <Card className="bg-muted/30">

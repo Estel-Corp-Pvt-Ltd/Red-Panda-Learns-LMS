@@ -35,20 +35,9 @@ export default function ViewLessonAdmin() {
     null
   );
 
-  console.log("courseId param:", courseId);
   const { data: course, isLoading: courseLoading } = useCourseQuery(courseId!);
 
-  useEffect(() => {
-    console.log('Course data:', course);
-  }, [course]);
-
   const isLoading = courseLoading;
-
-  useEffect(() => {
-    if (!isLoading) {
-      console.log(course)
-    }
-  }, [isLoading]);
 
   const loadLessons = async () => {
     if (!course?.topics) {

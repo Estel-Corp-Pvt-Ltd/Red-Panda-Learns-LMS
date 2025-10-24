@@ -1,10 +1,3 @@
-import { Course } from "@/types/course";
-import { currencyService } from "./currencyService";
-import { transactionService } from "./transactionService";
-import { razorpayProvider } from "./providers/razorpayProvider";
-import { paypalProvider } from "./providers/paypalProvider";
-import { Currency, PaymentProvider } from "@/types/general";
-import { enrollmentService } from "./enrollmentService";
 import {
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,
@@ -12,8 +5,15 @@ import {
   TRANSACTION_STATUS,
   TRANSACTION_TYPE,
 } from "@/constants";
-import { orderService } from "./orderService";
+import { Course } from "@/types/course";
+import { Currency, PaymentProvider } from "@/types/general";
 import { Address } from "@/types/order";
+import { currencyService } from "./currencyService";
+import { enrollmentService } from "./enrollmentService";
+import { orderService } from "./orderService";
+import { paypalProvider } from "./providers/paypalProvider";
+import { razorpayProvider } from "./providers/razorpayProvider";
+import { transactionService } from "./transactionService";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -59,8 +59,8 @@ class PaymentService {
   async calculatePricing(
     salePrice: number,
     targetCurrency: Currency,
-    provider?: PaymentProvider,
-    baseCurrency: Currency = CURRENCY.INR
+    baseCurrency: Currency = CURRENCY.INR,
+    provider?: PaymentProvider
   ) {
     const basePrice = salePrice || 0;
 
@@ -77,12 +77,22 @@ class PaymentService {
       convertedAmount = conversion.convertedAmount;
       exchangeRate = conversion.exchangeRate;
     }
-
-    // For PayPal, adjust so seller receives the base price after fees
+    
     let total = convertedAmount;
+    
+    // TODO: Document this step properly
+    // For PayPal, adjust so seller receives the base price after fees
+    // Buyer pays total amount
+    // We receive convertedAmount
+    // PayPal keeps 3.49% of total + 0.49$ (fixed amount, will change based on currency)
+    // total = convertedAmount + 3.49% of total + 0.49$ (fixed amount, will change based on currency) 
+    // total = convertedAmount + percent * total + fixed
+    // total - percent * total = convertedAmount + fixed
+    // total * (1 - percent) = convertedAmount + fixed
+    // total = (convertedAmount + fixed) / (1 - percent)
     if (provider === PAYMENT_PROVIDER.PAYPAL) {
-      const percent = 0.0349; // PayPal ~3.49%
-      const fixed = 0.49; // flat fee in selected currency
+      const percent = 0.0349;
+      const fixed = 0.49;
       total = (convertedAmount + fixed) / (1 - percent);
     }
 
@@ -104,13 +114,13 @@ class PaymentService {
   async processPayment(
     provider: PaymentProvider,
     course: Course,
-    finalPrice:number,
+    finalPrice: number,
     userEmail: string,
     userId: string,
     selectedCurrency: Currency,
     baseCurrency: Currency,
-    billingAddress:Address,
-    shippingAddress:Address
+    billingAddress: Address,
+    shippingAddress: Address
 
   ): Promise<PaymentResult> {
     try {
@@ -122,8 +132,8 @@ class PaymentService {
       const pricing = await this.calculatePricing(
         finalPrice,
         selectedCurrency,
+        baseCurrency,
         provider,
-        baseCurrency
       );
 
       const orderId = await orderService.createOrder({

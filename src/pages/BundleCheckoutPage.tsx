@@ -91,7 +91,7 @@ export default function BundleCheckoutPage() {
         // Refresh enrollment status
         await refreshEnrollments();
 
-        toast({ title: 'Payment successful! Welcome to your new courses!' });
+        toast.success('Payment successful! Welcome to your new courses!');
         navigate(`/bundle/${bundleId}/dashboard`);
       } else {
         toast({ title: result.error || 'Payment failed. Please try again.', variant: 'destructive' });

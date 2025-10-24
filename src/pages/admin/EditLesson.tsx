@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Select,
@@ -17,13 +16,14 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
-import { Label } from "@radix-ui/react-dropdown-menu";
+import { Label } from "@/components/ui/label";
 import { Header } from "@/components/Header";
 import { useNavigate, useParams } from "react-router-dom";
 import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
 import { useToast } from "@/hooks/use-toast";
 import { logError } from "@/utils/logger";
+import MDEditor from "@uiw/react-md-editor";
 
 const EditLessonPage = () => {
     const { toast } = useToast();
@@ -39,6 +39,13 @@ const EditLessonPage = () => {
     });
 
     const navigate = useNavigate();
+
+    // Detect dark/light mode for MDEditor
+    const colorMode =
+        typeof document !== "undefined" &&
+            document.documentElement.classList.contains("dark")
+            ? "dark"
+            : "light";
 
     // Load lesson data
     useEffect(() => {
@@ -119,7 +126,7 @@ const EditLessonPage = () => {
     return (
         <div className="min-h-screen">
             <Header />
-            <div className="max-w-4xl mx-auto py-8">
+            <div className="max-w-6xl mx-auto py-8">
                 <Card>
                     <CardHeader>
                         <div className="flex items-center w-full justify-between">
@@ -129,98 +136,128 @@ const EditLessonPage = () => {
                             </Button>
                         </div>
                     </CardHeader>
+
                     <CardContent>
-                        <Tabs defaultValue="details">
-                            <TabsList className="mb-4">
-                                <TabsTrigger value="details">Lesson Details</TabsTrigger>
-                            </TabsList>
+                        {/* Two-column layout */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* LEFT COLUMN */}
+                            <div className="space-y-6">
+                                {/* Title */}
+                                <div className="space-y-2">
+                                    <Label>Lesson Title</Label>
+                                    <Input
+                                        placeholder="e.g. Introduction to Algebra"
+                                        value={lesson.title}
+                                        onChange={(e) =>
+                                            handleFieldChange("title", e.target.value)
+                                        }
+                                        className="dark:bg-neutral-800 dark:border-neutral-700"
+                                    />
+                                </div>
 
-                            <TabsContent
-                                value="details"
-                                className="p-6 bg-white rounded-lg shadow-sm"
-                            >
-                                <div className="space-y-6">
-                                    {/* Title */}
-                                    <div className="space-y-2">
-                                        <Label>Lesson Title</Label>
-                                        <Input
-                                            placeholder="e.g. Introduction to Algebra"
-                                            value={lesson.title}
-                                            onChange={(e) =>
-                                                handleFieldChange("title", e.target.value)
-                                            }
-                                        />
-                                    </div>
-
-                                    {/* Description */}
-                                    <div className="space-y-2">
-                                        <Label>Description</Label>
-                                        <Textarea
-                                            placeholder="Describe what this lesson covers..."
+                                {/* Description */}
+                                <div className="space-y-2">
+                                    <Label>Description</Label>
+                                    <div
+                                        data-color-mode={colorMode}
+                                        className="border rounded-lg dark:border-neutral-700"
+                                    >
+                                        <MDEditor
                                             value={lesson.description}
-                                            onChange={(e) =>
-                                                handleFieldChange("description", e.target.value)
+                                            onChange={(value) =>
+                                                handleFieldChange("description", value || "")
                                             }
-                                        />
-                                    </div>
-
-                                    {/* Type */}
-                                    <div className="space-y-2">
-                                        <Label>Lesson Type</Label>
-                                        <Select
-                                            value={lesson.type}
-                                            onValueChange={(val) => handleFieldChange("type", val)}
-                                        >
-                                            <SelectTrigger className="w-[180px]">
-                                                <SelectValue placeholder="Select type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(LESSON_TYPE).map(([key, val]) => (
-                                                    <SelectItem key={key} value={val}>
-                                                        {val}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Embed URL */}
-                                    <div className="space-y-2">
-                                        <Label>Embed URL</Label>
-                                        <Input
-                                            placeholder="Enter embed URL for the lesson content"
-                                            value={lesson.embedUrl}
-                                            onChange={(e) =>
-                                                handleFieldChange("embedUrl", e.target.value)
-                                            }
-                                        />
-                                    </div>
-
-                                    {/* Duration */}
-                                    <div className="space-y-2">
-                                        <Label>Duration (seconds)</Label>
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            placeholder="e.g. 300"
-                                            value={lesson.durationSeconds || 0}
-                                            onChange={(e) =>
-                                                handleFieldChange(
-                                                    "durationSeconds",
-                                                    parseInt(e.target.value)
-                                                )
-                                            }
-                                            className="w-[120px]"
+                                            height={350}
+                                            preview="live"
+                                            className="!bg-transparent dark:!bg-neutral-900"
                                         />
                                     </div>
                                 </div>
-                            </TabsContent>
-                        </Tabs>
+                            </div>
 
-                        {/* Save button */}
-                        <div className="flex justify-end mt-6">
-                            <Button onClick={handleUpdateLesson} className="w-full md:w-auto">
+                            {/* RIGHT COLUMN */}
+                            <div className="space-y-6">
+                                {/* Lesson Type */}
+                                <div className="space-y-2">
+                                    <Label>Lesson Type</Label>
+                                    <Select
+                                        value={lesson.type}
+                                        onValueChange={(val) =>
+                                            handleFieldChange("type", val)
+                                        }
+                                    >
+                                        <SelectTrigger className="w-[200px] dark:bg-neutral-800 dark:border-neutral-700">
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(LESSON_TYPE).map(([key, val]) => (
+                                                <SelectItem key={key} value={val}>
+                                                    {val}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Embed URL */}
+                                <div className="space-y-2">
+                                    <Label>Embed URL</Label>
+                                    <Input
+                                        placeholder="Enter embed URL for the lesson content"
+                                        value={lesson.embedUrl}
+                                        onChange={(e) =>
+                                            handleFieldChange("embedUrl", e.target.value)
+                                        }
+                                        className="dark:bg-neutral-800 dark:border-neutral-700"
+                                    />
+                                </div>
+
+                                {/* Duration */}
+                                <div className="space-y-2">
+                                    <Label>Duration (seconds)</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        placeholder="e.g. 300"
+                                        value={lesson.durationSeconds || 0}
+                                        onChange={(e) =>
+                                            handleFieldChange(
+                                                "durationSeconds",
+                                                parseInt(e.target.value)
+                                            )
+                                        }
+                                        className="w-[160px] dark:bg-neutral-800 dark:border-neutral-700"
+                                    />
+                                </div>
+
+                                {/* Scope */}
+                                <div className="space-y-2">
+                                    <Label>Lesson Scope</Label>
+                                    <Select
+                                        value={lesson.scope}
+                                        onValueChange={(val) =>
+                                            handleFieldChange("scope", val)
+                                        }
+                                    >
+                                        <SelectTrigger className="w-[200px] dark:bg-neutral-800 dark:border-neutral-700">
+                                            <SelectValue placeholder="Select scope" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(LESSON_SCOPE).map(([key, val]) => (
+                                                <SelectItem key={key} value={val}>
+                                                    {val}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Update Button moved to bottom */}
+                        <div className="pt-8 flex justify-end">
+                            <Button onClick={handleUpdateLesson}>
                                 Update Lesson
                             </Button>
                         </div>

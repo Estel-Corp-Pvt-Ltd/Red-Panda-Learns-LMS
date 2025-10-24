@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+  inputBase,
+  selectTriggerBase,
+  selectItemBase,
+  selectContentBase,
+} from "../../components/ui/styles";
+import {
   PlusCircle,
   Edit,
   Trash2,
@@ -10,9 +16,17 @@ import {
   Loader2,
   Calendar,
   Eye,
+  Check,
   Plus,
   Gift,
 } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 import { formatDate } from "@/utils/date-time";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +36,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +45,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -93,7 +107,7 @@ const PopUpTab = () => {
         description: "Failed to load pop-ups",
         variant: "destructive",
       });
-  }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,7 +134,10 @@ const PopUpTab = () => {
           autoClose,
           duration,
         });
-        toast({ title: "Updated", description: "Pop-up updated successfully." });
+        toast({
+          title: "Updated",
+          description: "Pop-up updated successfully.",
+        });
       } else {
         await popUpService.createPopUp({
           title,
@@ -131,7 +148,10 @@ const PopUpTab = () => {
           autoClose,
           duration,
         });
-        toast({ title: "Created", description: "Pop-up created successfully." });
+        toast({
+          title: "Created",
+          description: "Pop-up created successfully.",
+        });
       }
 
       resetForm();
@@ -176,173 +196,287 @@ const PopUpTab = () => {
   }
 
   return (
-    <div>
-      {/* Add / Edit form */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-wrap gap-3 items-end mb-6"
-      >
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Pop-up title"
-          className="border p-2 rounded w-48"
-        />
-
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description"
-          className="border p-2 rounded w-64"
-        />
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as PopUpCourseType)}
-          className="border p-2 rounded"
+    <div className="space-y-4">
+      {/* Form wrapper */}
+      <div className="rounded-2xl bg-white/70 p-3 sm:p-4 backdrop-blur dark:bg-slate-900/40">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 items-end"
         >
-          {Object.values(POPUP_COURSE_TYPE).map((val) => (
-            <option key={val} value={val}>
-              {val}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="text"
-          value={ctaText}
-          onChange={(e) => setCtaText(e.target.value)}
-          placeholder="CTA text"
-          className="border p-2 rounded w-40"
-        />
-
-        <input
-          type="text"
-          value={ctaLink}
-          onChange={(e) => setCtaLink(e.target.value)}
-          placeholder="CTA link"
-          className="border p-2 rounded w-48"
-        />
-
-        <select
-          value={active ? "true" : "false"}
-          onChange={(e) => setActive(e.target.value === "true")}
-          className="border p-2 rounded w-32"
-        >
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-
-        <div className="flex items-center gap-2">
-          <label className="text-sm">
+          {/* Title */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Title
+            </label>
             <input
-              type="checkbox"
-              checked={autoClose}
-              onChange={(e) => setAutoClose(e.target.checked)}
-              className="mr-1"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Pop-up title"
+              className={`${inputBase} h-11 w-full`}
             />
-            Auto-close
-          </label>
-        </div>
+          </div>
 
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          placeholder="Duration (ms)"
-          className="border p-2 rounded w-32"
-        />
+          {/* Description */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Description
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
 
-        <Button type="submit" disabled={saving}>
-          {isEditing ? "Update Pop-up" : "Add Pop-up"}
-        </Button>
+          {/* Type */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Type
+            </label>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as PopUpCourseType)}
+            >
+              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent
+                side="bottom"
+                align="start"
+                className={selectContentBase}
+              >
+                {Object.values(POPUP_COURSE_TYPE).map((val) => (
+                  <SelectItem
+                    key={val}
+                    value={val}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                  >
+                    {val}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {isEditing && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={resetForm}
-          >
-            Cancel
-          </Button>
-        )}
-      </form>
+          {/* CTA Text */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              CTA Text
+            </label>
+            <input
+              type="text"
+              value={ctaText}
+              onChange={(e) => setCtaText(e.target.value)}
+              placeholder="CTA text"
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
 
-      {/* Table list */}
+          {/* CTA Link */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              CTA Link
+            </label>
+            <input
+              type="text"
+              value={ctaLink}
+              onChange={(e) => setCtaLink(e.target.value)}
+              placeholder="https://..."
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Status
+            </label>
+            <Select
+              value={active ? "true" : "false"}
+              onValueChange={(v) => setActive(v === "true")}
+            >
+              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent
+                side="bottom"
+                align="start"
+                className={selectContentBase}
+              >
+                {[
+                  { label: "Active", value: "true" },
+                  { label: "Inactive", value: "false" },
+                ].map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Auto-close */}
+          <div className="flex items-center gap-2 h-11">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={autoClose}
+                onChange={(e) => setAutoClose(e.target.checked)}
+                className="mr-1 accent-purple-600 dark:accent-purple-500"
+              />
+              Auto-close
+            </label>
+          </div>
+
+          {/* Duration (ms) */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Duration (ms)
+            </label>
+            <input
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              placeholder="5000"
+              className={`${inputBase} h-11 w-full`}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 col-span-full sm:col-span-2 lg:col-span-3 xl:col-span-4">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="h-10 rounded-xl px-5 bg-[#ff00ff] text-white hover:bg-[#e600e6] focus-visible:ring-2 focus-visible:ring-[#ff00ff]/50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isEditing ? "Update Pop-up" : "Add Pop-up"}
+            </Button>
+
+            {isEditing && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={resetForm}
+                className="h-10 rounded-xl px-5 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* Table */}
       {popUps.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No pop-ups found.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          No pop-ups found.
+        </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>CTA</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Auto Close</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {popUps.map((pop) => (
-              <TableRow key={pop.id}>
-                <TableCell>{pop.title}</TableCell>
-                <TableCell>{pop.description}</TableCell>
-                <TableCell>{pop.type}</TableCell>
-                <TableCell>
-                  {pop.ctaText ? (
-                    <a
-                      href={pop.ctaLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 underline"
-                    >
-                      {pop.ctaText}
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-                <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
-                <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
-                <TableCell>{pop.duration ?? 5000}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditing(true);
-                        setEditingId(pop.id);
-                        setTitle(pop.title);
-                        setDescription(pop.description);
-                        setType(pop.type);
-                        setCtaText(pop.ctaText);
-                        setActive(pop.active);
-                        setCtaLink(pop.ctaLink);
-                        setAutoClose(pop.autoClose ?? false);
-                        setDuration(pop.duration ?? 5000);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(pop.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto rounded-2xl bg-white/70 backdrop-blur dark:bg-slate-900/40">
+          <Table className="min-w-[720px]">
+            <TableHeader className="bg-slate-50/80 dark:bg-slate-900/60">
+              <TableRow>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Title
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Description
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Type
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  CTA
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Active
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Auto Close
+                </TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-300">
+                  Duration
+                </TableHead>
+                <TableHead className="text-right text-slate-600 dark:text-slate-300">
+                  Actions
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {popUps.map((pop) => (
+                <TableRow
+                  key={pop.id}
+                  className="hover:bg-slate-50/70 dark:hover:bg-white/5"
+                >
+                  <TableCell className="max-w-[200px] truncate">
+                    {pop.title}
+                  </TableCell>
+                  <TableCell className="max-w-[280px] truncate">
+                    {pop.description}
+                  </TableCell>
+                  <TableCell className="capitalize">{pop.type}</TableCell>
+                  <TableCell>
+                    {pop.ctaText ? (
+                      <a
+                        href={pop.ctaLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-purple-600 hover:underline dark:text-purple-400"
+                      >
+                        {pop.ctaText}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500">
+                        -
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                  <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
+                  <TableCell>{pop.duration ?? 5000}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
+                        onClick={() => {
+                          setIsEditing(true);
+                          setEditingId(pop.id);
+                          setTitle(pop.title);
+                          setDescription(pop.description);
+                          setType(pop.type);
+                          setCtaText(pop.ctaText);
+                          setActive(pop.active);
+                          setCtaLink(pop.ctaLink);
+                          setAutoClose(pop.autoClose ?? false);
+                          setDuration(pop.duration ?? 5000);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
+                        onClick={() => handleDelete(pop.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
@@ -385,7 +519,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load users",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -396,13 +530,13 @@ export function AdminDashboard() {
       setUsers((prev) => prev.filter((user) => user.id !== userId));
       toast({
         title: "Success",
-        description: "User deleted successfully"
+        description: "User deleted successfully",
       });
     } else {
       toast({
         title: "Error",
         description: "Failed to delete user",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -416,7 +550,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load courses",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -432,7 +566,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load cohorts",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setCohortsLoading(false);
@@ -448,7 +582,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load bundles",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setBundlesLoading(false);
@@ -459,7 +593,6 @@ export function AdminDashboard() {
     try {
       const couponsList = await couponService.getAllCoupons();
       setCoupons(couponsList.data);
-      console.log(couponsList)
     } catch (error) {
       toast({
         title: "Error",
@@ -469,7 +602,6 @@ export function AdminDashboard() {
     }
   };
 
-
   const loadLessons = async () => {
     try {
       const lessonsList = await lessonService.getAllLessons();
@@ -478,7 +610,7 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load lessons",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLessonsLoading(false);
@@ -494,14 +626,14 @@ export function AdminDashboard() {
     toast({
       title: "Error",
       description: "Failed to load instructors",
-      variant: "destructive"
+      variant: "destructive",
     });
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: CURRENCY.USD
+      currency: CURRENCY.USD,
     }).format(amount);
   };
 
@@ -511,13 +643,13 @@ export function AdminDashboard() {
       setCourses((prev) => prev.filter((course) => course.id !== courseId));
       toast({
         title: "Success",
-        description: "Course deleted successfully"
+        description: "Course deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete course",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -525,19 +657,16 @@ export function AdminDashboard() {
   const deleteCoupon = async (couponId: string) => {
     try {
       await couponService.deleteCoupon(couponId);
-      setCoupons((prev) => prev.filter((coupon) => couponId !== couponId));
+      setCoupons((prev) => prev.filter((coupon) => coupon.id !== couponId));
       toast({
         title: "Success",
-        description: "Coupon Deleted Successfully"
-      })
-
-    }
-    catch {
-
+        description: "Coupon Deleted Successfully",
+      });
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete Coupon",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -548,13 +677,13 @@ export function AdminDashboard() {
       setCohorts((prev) => prev.filter((cohort) => cohort.id !== cohortId));
       toast({
         title: "Success",
-        description: "Cohort deleted successfully"
+        description: "Cohort deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete cohort",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -565,13 +694,13 @@ export function AdminDashboard() {
       setBundles((prev) => prev.filter((bundle) => bundle.id !== bundleId));
       toast({
         title: "Success",
-        description: "Bundle deleted successfully"
+        description: "Bundle deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete bundle",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -582,13 +711,13 @@ export function AdminDashboard() {
       setLessons((prev) => prev.filter((lesson) => lesson.id !== lessonId));
       toast({
         title: "Success",
-        description: "Lesson deleted successfully"
+        description: "Lesson deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete lesson",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -633,11 +762,20 @@ export function AdminDashboard() {
       setSaving(true);
       try {
         if (isEditing && editingOrgId) {
-          await organizationService.updateOrganization(editingOrgId, { name, type });
-          toast({ title: "Updated", description: "Organization updated successfully." });
+          await organizationService.updateOrganization(editingOrgId, {
+            name,
+            type,
+          });
+          toast({
+            title: "Updated",
+            description: "Organization updated successfully.",
+          });
         } else {
           await organizationService.createOrganization({ name, type });
-          toast({ title: "Created", description: "Organization created successfully." });
+          toast({
+            title: "Created",
+            description: "Organization created successfully.",
+          });
         }
 
         setName("");
@@ -657,10 +795,14 @@ export function AdminDashboard() {
     }
 
     async function handleDelete(id: string) {
-      if (!confirm("Are you sure you want to delete this organization?")) return;
+      if (!confirm("Are you sure you want to delete this organization?"))
+        return;
       try {
         await organizationService.deleteOrganization(id);
-        toast({ title: "Deleted", description: "Organization deleted successfully." });
+        toast({
+          title: "Deleted",
+          description: "Organization deleted successfully.",
+        });
         await loadOrganizations();
       } catch (error) {
         console.error("Error deleting organization:", error);
@@ -673,62 +815,104 @@ export function AdminDashboard() {
     }
 
     return (
-      <div>
+      <div className="space-y-3">
         {/* Add / Edit form */}
         <form
           onSubmit={handleSubmit}
-          className="flex flex-wrap gap-3 items-end mb-6"
+          className="
+          grid grid-cols-1
+          sm:grid-cols-[max-content_max-content_max-content]
+          items-end
+          gap-1.5 sm:gap-2
+        "
         >
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Organization name"
-            className="border p-2 rounded"
-          />
+          {/* Organization Name */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Organization Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Organization name"
+              className={`${inputBase} h-11 w-full sm:w-64`}
+            />
+          </div>
 
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as OrganizationType)}
-            className="border p-2 rounded"
-          >
-            {Object.values(ORGANIZATION).map((val) => (
-              <option key={val} value={val}>
-                {val}
-              </option>
-            ))}
-          </select>
-
-          <Button type="submit" disabled={saving}>
-            {isEditing ? "Update Organization" : "Add Organization"}
-          </Button>
-
-          {isEditing && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setIsEditing(false);
-                setEditingOrgId(null);
-                setName("");
-                setType(ORGANIZATION.INDUSTRY);
-              }}
+          {/* Type */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Type
+            </label>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as OrganizationType)}
             >
-              Cancel
+              <SelectTrigger
+                className={`${selectTriggerBase} h-11 w-full sm:w-64`}
+              >
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+
+              <SelectContent
+                side="bottom"
+                align="start"
+                className={selectContentBase}
+              >
+                {Object.values(ORGANIZATION).map((val) => (
+                  <SelectItem
+                    key={val}
+                    value={val}
+                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[state=checked]:bg-transparent data-[state=checked]:text-slate-700 dark:data-[state=checked]:text-slate-200`}
+                  >
+                    {val}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-end gap-1.5">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="rounded-xl h-10 py-2 px-5"
+            >
+              {isEditing ? "Update Organization" : "Add Organization"}
             </Button>
-          )}
+
+            {isEditing && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-full h-10 px-5"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingOrgId(null);
+                  setName("");
+                  setType(ORGANIZATION.INDUSTRY);
+                }}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
 
-        {/* Table list */}
+        {/* Table List */}
         {organizations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No organizations found.</p>
+          <p className="text-sm text-muted-foreground">
+            No organizations found.
+          </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -736,11 +920,12 @@ export function AdminDashboard() {
                 <TableRow key={org.id}>
                   <TableCell>{org.name}</TableCell>
                   <TableCell>{org.type}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <TableCell>
+                    <div className="flex justify-end gap-1.5">
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="rounded-full"
                         onClick={() => {
                           setIsEditing(true);
                           setEditingOrgId(org.id);
@@ -753,6 +938,7 @@ export function AdminDashboard() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="rounded-full"
                         onClick={() => handleDelete(org.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -780,7 +966,6 @@ export function AdminDashboard() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
       <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
@@ -792,26 +977,50 @@ export function AdminDashboard() {
           </div>
 
           {/*  Buttons stack on mobile, row on larger screens */}
-          <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-            <Button onClick={() => navigate("/admin/create-lesson")} className="flex-shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Lesson
+          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => navigate("/admin/create-lesson")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">New</span> Lesson
             </Button>
-            <Button onClick={() => navigate("/admin/create-course")} className="flex-shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Course
+
+            <Button
+              onClick={() => navigate("/admin/create-course")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">New</span> Course
             </Button>
-            <Button onClick={() => navigate("/admin/create-bundle")} className="flex-shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Course Bundle
+
+            <Button
+              onClick={() => navigate("/admin/create-bundle")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Course</span> Bundle
             </Button>
-            <Button onClick={() => navigate("/admin/create-cohort")} className="flex-shrink-0">
-              <Calendar className="mr-2 h-4 w-4" />
-              Create New Cohort
-            </Button>
-            <Button onClick={() => navigate("/admin/create-coupon")}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Create New Coupon
+
+            {/* <Button
+    onClick={() => navigate("/admin/create-cohort")}
+    size="sm"
+    className="text-xs sm:text-sm"
+  >
+    <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+    <span className="hidden xs:inline">New</span> Cohort
+  </Button> */}
+
+            <Button
+              onClick={() => navigate("/admin/create-coupon")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">New</span> Coupon
             </Button>
           </div>
         </div>
@@ -819,39 +1028,69 @@ export function AdminDashboard() {
         <div className="space-y-8">
           <Tabs defaultValue="courses" className="space-y-4">
             <TabsList
-              className="overflow-x-auto sm:overflow-x-visible  /* allow scrolling only on small */
-    whitespace-nowrap
-    gap-2 sm:gap-4
-    no-scrollbar 
-    w-full
-    justify-start sm:justify-center lg:justify-start /* flex behavior by screen size */
+              className="
+    grid grid-cols-2
+    sm:flex sm:flex-wrap
+    h-auto w-full
+    gap-2 md:gap-3
+    justify-center md:justify-start
+    p-2
+    rounded-xl
+    border border-primary/10 bg-primary/5
   "
             >
-              <TabsTrigger value="courses" className="flex-shrink-0">
+              <TabsTrigger
+                value="courses"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Courses
               </TabsTrigger>
-              <TabsTrigger value="lessons" className="flex-shrink-0">
+              <TabsTrigger
+                value="lessons"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Lessons
               </TabsTrigger>
-              <TabsTrigger value="bundles" className="flex-shrink-0">
+              <TabsTrigger
+                value="bundles"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Bundles
               </TabsTrigger>
-              <TabsTrigger value="cohorts" className="flex-shrink-0">
+              <TabsTrigger
+                value="cohorts"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Cohorts
               </TabsTrigger>
-              <TabsTrigger value="instructors" className="flex-shrink-0">
+              <TabsTrigger
+                value="instructors"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Instructors
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex-shrink-0">
+              <TabsTrigger
+                value="users"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Users
               </TabsTrigger>
-              <TabsTrigger value="coupons" className="flex-shrink-0">
+              <TabsTrigger
+                value="coupons"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Coupon
               </TabsTrigger>
-              <TabsTrigger value="organizations" className="flex-shrink-0">
+              <TabsTrigger
+                value="organizations"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Organizations
               </TabsTrigger>
-              <TabsTrigger value="pop-ups" className="flex-shrink-0">
+              <TabsTrigger
+                value="pop-ups"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
                 Pop-Ups
               </TabsTrigger>
             </TabsList>
@@ -868,13 +1107,17 @@ export function AdminDashboard() {
                   {lessons.length === 0 ? (
                     <div className="text-center py-8">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No lessons</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No lessons
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first lesson.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-lesson")}>
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button
+                          onClick={() => navigate("/admin/create-lesson")}
+                        >
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Lesson
                         </Button>
                       </div>
@@ -890,12 +1133,13 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-
                         {lessons.map((lesson) => (
                           <TableRow key={lesson.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{lesson.title}</div>
+                                <div className="font-medium">
+                                  {lesson.title}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {lesson.description}
                                 </div>
@@ -904,7 +1148,9 @@ export function AdminDashboard() {
                             <TableCell>{lesson.type}</TableCell>
                             <TableCell>
                               {lesson.durationSeconds
-                                ? `${Math.floor(lesson.durationSeconds / 60)} min`
+                                ? `${Math.floor(
+                                    lesson.durationSeconds / 60
+                                  )} min`
                                 : "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
@@ -938,7 +1184,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/edit-lesson/${lesson.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-lesson/${lesson.id}`)
+                                  }
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -972,13 +1220,17 @@ export function AdminDashboard() {
                   {courses.length === 0 ? (
                     <div className="text-center py-8">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No courses</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No courses
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first course.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-course")}>
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button
+                          onClick={() => navigate("/admin/create-course")}
+                        >
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Course
                         </Button>
                       </div>
@@ -995,29 +1247,40 @@ export function AdminDashboard() {
                       </TableHeader>
                       <TableBody>
                         {courses.map((course) => (
-
                           <TableRow key={course.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{course.title}</div>
+                                <div className="font-medium">
+                                  {course.title}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {course.description}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={course.status === COURSE_STATUS.PUBLISHED ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  course.status === COURSE_STATUS.PUBLISHED
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {course.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>{formatCurrency(course.regularPrice)}</TableCell>
+                            <TableCell>
+                              {formatCurrency(course.regularPrice)}
+                            </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   // onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
-                                  onClick={() => navigate(`/admin/edit-course/${course.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-course/${course.id}`)
+                                  }
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -1051,13 +1314,17 @@ export function AdminDashboard() {
                   {bundles.length === 0 ? (
                     <div className="text-center py-8">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No bundles</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No bundles
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first course bundle.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-bundle")}>
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button
+                          onClick={() => navigate("/admin/create-bundle")}
+                        >
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Bundle
                         </Button>
                       </div>
@@ -1078,7 +1345,9 @@ export function AdminDashboard() {
                           <TableRow key={bundle.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{bundle.title}</div>
+                                <div className="font-medium">
+                                  {bundle.title}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {bundle.description}
                                 </div>
@@ -1086,19 +1355,30 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{bundle.courses.map(c => c.title).join(" | ")}</div>
+                                <div className="font-medium">
+                                  {bundle.courses
+                                    .map((c) => c.title)
+                                    .join(" | ")}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
                                 {formatCurrency(bundle.salePrice)}
                                 <div className="text-xs text-muted-foreground">
-                                  Original: {formatCurrency(bundle.regularPrice)}
+                                  Original:{" "}
+                                  {formatCurrency(bundle.regularPrice)}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={bundle.status === BUNDLE_STATUS.PUBLISHED ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  bundle.status === BUNDLE_STATUS.PUBLISHED
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {bundle.status}
                               </Badge>
                             </TableCell>
@@ -1107,7 +1387,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`edit-bundle/${bundle.id}`)}
+                                  onClick={() =>
+                                    navigate(`edit-bundle/${bundle.id}`)
+                                  }
                                   title="Edit Bundle"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1115,7 +1397,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/bundle/${bundle.id}`)}
+                                  onClick={() =>
+                                    navigate(`/bundle/${bundle.id}`)
+                                  }
                                   title="View Bundle"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1151,13 +1435,17 @@ export function AdminDashboard() {
                   {cohorts.length === 0 ? (
                     <div className="text-center py-8">
                       <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No cohorts</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No cohorts
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating your first cohort.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-cohort")}>
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button
+                          onClick={() => navigate("/admin/create-cohort")}
+                        >
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Create Cohort
                         </Button>
                       </div>
@@ -1171,13 +1459,17 @@ export function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {cohorts.map(cohort => (
+                        {cohorts.map((cohort) => (
                           <TableRow key={cohort.id}>
                             {/* Cohort title & description */}
                             <TableCell>
                               <div>
-                                <div className="font-medium">{cohort.title}</div>
-                                <div className="text-sm text-muted-foreground">{cohort.description || "-"}</div>
+                                <div className="font-medium">
+                                  {cohort.title}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {cohort.description || "-"}
+                                </div>
                               </div>
                             </TableCell>
 
@@ -1197,7 +1489,6 @@ export function AdminDashboard() {
                           </TableRow>
                         ))}
                       </TableBody>
-
                     </Table>
                   )}
                 </CardContent>
@@ -1208,15 +1499,15 @@ export function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Instructors</CardTitle>
-                  <CardDescription>
-                    Manage all instructors.
-                  </CardDescription>
+                  <CardDescription>Manage all instructors.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {instructors.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No Instructors</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No Instructors
+                      </h3>
                     </div>
                   ) : (
                     <Table>
@@ -1233,16 +1524,29 @@ export function AdminDashboard() {
                         {instructors.map((instructor) => (
                           <TableRow key={instructor.id}>
                             <TableCell>
-                              {instructor.firstName} {instructor.middleName} {instructor.lastName}
+                              {instructor.firstName} {instructor.middleName}{" "}
+                              {instructor.lastName}
                             </TableCell>
                             <TableCell>{instructor.email}</TableCell>
                             <TableCell>
-                              <Badge variant={instructor.role === USER_ROLE.ADMIN ? "destructive" : "default"}>
+                              <Badge
+                                variant={
+                                  instructor.role === USER_ROLE.ADMIN
+                                    ? "destructive"
+                                    : "default"
+                                }
+                              >
                                 {instructor.role}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={instructor.status === USER_STATUS.ACTIVE ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  instructor.status === USER_STATUS.ACTIVE
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {instructor.status}
                               </Badge>
                             </TableCell>
@@ -1272,13 +1576,15 @@ export function AdminDashboard() {
                   {users.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No users</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No users
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by inviting or creating a user.
                       </p>
                       <div className="mt-6">
                         <Button onClick={() => navigate("/admin/create-user")}>
-                          <UserPlus className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-1 h-4 w-4" />
                           Add User
                         </Button>
                       </div>
@@ -1307,8 +1613,8 @@ export function AdminDashboard() {
                                   user.role === USER_ROLE.ADMIN
                                     ? "destructive"
                                     : user.role === USER_ROLE.STUDENT
-                                      ? "default"
-                                      : "secondary"
+                                    ? "default"
+                                    : "secondary"
                                 }
                               >
                                 {user.role}
@@ -1320,8 +1626,8 @@ export function AdminDashboard() {
                                   user.status === USER_STATUS.ACTIVE
                                     ? "default"
                                     : user.status === USER_STATUS.INACTIVE
-                                      ? "secondary"
-                                      : "outline"
+                                    ? "secondary"
+                                    : "outline"
                                 }
                               >
                                 {user.status}
@@ -1332,7 +1638,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/edit-user/${user.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-user/${user.id}`)
+                                  }
                                   title="Edit User"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1368,13 +1676,17 @@ export function AdminDashboard() {
                   {coupons.length === 0 && !loading ? (
                     <div className="text-center py-8">
                       <Gift className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No coupons</h3>
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                        No coupons
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Get started by creating a coupon code.
                       </p>
                       <div className="mt-6">
-                        <Button onClick={() => navigate("/admin/create-coupon")}>
-                          <Plus className="mr-2 h-4 w-4" />
+                        <Button
+                          onClick={() => navigate("/admin/create-coupon")}
+                        >
+                          <Plus className="mr-1 h-4 w-4" />
                           Create Coupon
                         </Button>
                       </div>
@@ -1394,25 +1706,27 @@ export function AdminDashboard() {
                       <TableBody>
                         {coupons.map((coupon) => (
                           <TableRow key={coupon.id}>
-                            <TableCell className="font-medium">{coupon.code}</TableCell>
+                            <TableCell className="font-medium">
+                              {coupon.code}
+                            </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
                                   coupon.status === COUPON_STATUS.ACTIVE
                                     ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                      ? "secondary"
-                                      : "outline"
+                                    ? "secondary"
+                                    : "outline"
                                 }
                               >
                                 {coupon.status}
                               </Badge>
                             </TableCell>
+                            <TableCell>{coupon.discountPercentage}</TableCell>
                             <TableCell>
-                              {coupon.discountPercentage}
-                            </TableCell>
-                            <TableCell>
-                              {coupon.usageLimit === 0 ? "Unlimited (∞)" : coupon.usageLimit}
+                              {coupon.usageLimit === 0
+                                ? "Unlimited (∞)"
+                                : coupon.usageLimit}
                             </TableCell>
                             <TableCell>
                               {formatDate(coupon.expiryDate)}
@@ -1422,7 +1736,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/admin/edit-coupon/${coupon.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/edit-coupon/${coupon.id}`)
+                                  }
                                   title="Edit Coupon"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1430,7 +1746,9 @@ export function AdminDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => { deleteCoupon(coupon.id) }}
+                                  onClick={() => {
+                                    deleteCoupon(coupon.id);
+                                  }}
                                   title="Delete Coupon"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -1450,9 +1768,7 @@ export function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Organizations</CardTitle>
-                  <CardDescription>
-                    Manage all organizations.
-                  </CardDescription>
+                  <CardDescription>Manage all organizations.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <OrganizationTab />
@@ -1464,9 +1780,7 @@ export function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Pop-Ups</CardTitle>
-                  <CardDescription>
-                    Manage all pop-ups.
-                  </CardDescription>
+                  <CardDescription>Manage all pop-ups.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <PopUpTab />
@@ -1478,6 +1792,6 @@ export function AdminDashboard() {
       </div>
     </div>
   );
-};
+}
 
 export default AdminDashboard;

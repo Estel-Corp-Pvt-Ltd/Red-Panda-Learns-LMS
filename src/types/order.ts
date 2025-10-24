@@ -13,7 +13,7 @@ export interface Address {
   phone?: string;
   landmark?: string;
   type: AddressType;
-}
+};
 
 export interface Order {
   orderId: string;
@@ -22,12 +22,12 @@ export interface Order {
   bundleIds?: string[];
   status: OrderStatus;
   amount: number;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
   completedAt?: Timestamp | FieldValue;
   transactionId?: string | null;
   currency: Currency;
   metadata?: Record<string, any>;
   billingAddress: Address;
   shippingAddress?: Address;
-}
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+};
