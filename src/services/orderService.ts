@@ -55,8 +55,7 @@ class OrderService {
       const order: Order = {
         orderId ,
         userId: data.userId,
-        courseIds: data.courseIds,
-        bundleIds: data.bundleIds || null,
+        items:data.items,
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         currency: data.currency,

@@ -377,6 +377,7 @@ export const COLLECTION = {
   FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
   POPUPS: "PopUps",
   ORDERS: "Orders",
+  TRANSACTIONS : "Transactions",
   COUNTERS: "Counters",
   LEARNING_PROGRESS: "LearningProgress",
   ENROLLMENTS: "Enrollments"

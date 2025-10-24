@@ -12,7 +12,7 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig.ts';
-
+import { COLLECTION } from '../constants.ts';
 import {
   PaymentDetails,
   Transaction,
@@ -87,7 +87,7 @@ class TransactionService {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'Transactions', transactionId), transaction);
+      await setDoc(doc(db, COLLECTION.TRANSACTIONS, transactionId), transaction);
       console.log('Transaction created:', transaction);
       return transactionId;
     } catch (error) {
@@ -103,7 +103,7 @@ class TransactionService {
     reasonForFailure?: string
   ): Promise<void> {
     try {
-      const transactionRef = doc(db, "Transactions", transactionId);
+      const transactionRef = doc(db, COLLECTION.TRANSACTIONS, transactionId);
       const snapshot = await getDoc(transactionRef);
 
       if (!snapshot.exists()) {
@@ -144,7 +144,7 @@ class TransactionService {
 
   async getTransaction(transactionId: string): Promise<Transaction | null> {
     try {
-      const docRef = doc(db, 'Transactions', transactionId);
+      const docRef = doc(db, COLLECTION.TRANSACTIONS, transactionId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -167,7 +167,7 @@ class TransactionService {
   async getUserTransactions(userId: string, limitCount = 10): Promise<Transaction[]> {
     try {
       const q = query(
-        collection(db, 'Transactions'),
+        collection(db, COLLECTION.TRANSACTIONS),
         where('userId', '==', userId),
         orderBy('createdAt', 'desc'),
         limit(limitCount)
@@ -193,9 +193,9 @@ class TransactionService {
   async getCourseTransactions(courseId: string): Promise<Transaction[]> {
     try {
       const q = query(
-        collection(db, 'Transactions'),
+        collection(db, COLLECTION.TRANSACTIONS),
         where('courseId', '==', courseId),
-        where('status', '==', 'completed'),
+        where('status', '==', TRANSACTION_STATUS.COMPLETED),
         orderBy('createdAt', 'desc')
       );
 
@@ -227,7 +227,7 @@ class TransactionService {
         ...webhookEvent
       }];
 
-      await updateDoc(doc(db, 'Transactions', transactionId), {
+      await updateDoc(doc(db, COLLECTION.TRANSACTIONS, transactionId), {
         webhookData: updatedWebhookData,
         updatedAt: serverTimestamp(),
       });
