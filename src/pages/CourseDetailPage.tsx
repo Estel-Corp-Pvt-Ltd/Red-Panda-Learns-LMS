@@ -162,13 +162,12 @@ export default function CourseDetailPage() {
       <Collapsible key={id}>
         <CollapsibleTrigger
           className={cn(
-            "flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg bg-primary/50 text-white hover:no-underline transition-colors"
+            "group flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50",
           )}
         >
           <div className="flex items-center gap-3">
-            {/* Chevron icon (rotates when open) */}
             <ChevronRight
-              className="size-4 transition-transform duration-200 data-[state=open]:rotate-90"
+              className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
               aria-hidden="true"
             />
             <h4 className="text-lg truncate">{title}</h4>
