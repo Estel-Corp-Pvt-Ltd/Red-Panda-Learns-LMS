@@ -41,6 +41,7 @@ import { TransactionLineItem } from "@/types/transaction";
 import { EnrolledProgramType } from "@/types/general";
 // BUNDLE queries (only difference)
 import { useBundleQuery, useBundleCoursesQuery } from "@/hooks/useBundleApi";
+import { enrollmentService } from "@/services/enrollmentService";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -93,7 +94,7 @@ export default function BundleCheckoutPage() {
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
-    PAYMENT_PROVIDER.RAZORPAY,
+    PAYMENT_PROVIDER.RAZORPAY
   );
 
   const [providerCurrencies, setProviderCurrencies] = useState<
@@ -162,7 +163,7 @@ export default function BundleCheckoutPage() {
         effectivePrice,
         selectedCurrency,
         CURRENCY.INR,
-        selectedProvider,
+        selectedProvider
       );
       setPricing(data);
     } catch (error) {
@@ -225,7 +226,7 @@ export default function BundleCheckoutPage() {
         coupon.id,
         null,
         bundleId!,
-        null,
+        null
       );
 
       if (
@@ -234,7 +235,7 @@ export default function BundleCheckoutPage() {
       ) {
         clearCoupon();
         setCouponMessage(
-          applicabilityResult.data?.reason ?? "Coupon not applicable",
+          applicabilityResult.data?.reason ?? "Coupon not applicable"
         );
         return;
       }
@@ -306,21 +307,21 @@ export default function BundleCheckoutPage() {
         let enrollmentVerified = false;
         await handleUseCoupon();
 
-        // Try to verify that enrolled courses in the bundle are reflected
-        for (let i = 0; i < 5; i++) {
-          await refreshEnrollments();
-
-          if (Array.isArray(courses) && courses.length > 0) {
-            const allEnrolled = courses.every((c: any) => isEnrolled(c.id));
-            if (allEnrolled) {
-              enrollmentVerified = true;
-              break;
-            }
+        const checkEnrollments = async () => {
+          try {
+            await enrollmentService.waitForAllEnrollments({
+              userId: user.id,
+              courseIds: courses.map((c) => c.id),
+              timeoutMs: 30000,
+            });
+            console.log("✅ All courses enrolled!");
+            enrollmentVerified = true;
+          } catch (error) {
+            console.error("Failed to verify enrollments:", error);
           }
+        };
 
-          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
-        }
-
+        await checkEnrollments();
         if (enrollmentVerified) {
           toast({
             title: "Purchase Successful!",
@@ -469,14 +470,14 @@ export default function BundleCheckoutPage() {
                               <span className="line-through text-gray-400">
                                 {formatMoney(
                                   originalConverted,
-                                  selectedCurrency,
+                                  selectedCurrency
                                 )}
                               </span>
                               <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                                 You save{" "}
                                 {formatMoney(
                                   discountConverted,
-                                  selectedCurrency,
+                                  selectedCurrency
                                 )}
                               </Badge>
                             </>
@@ -603,7 +604,7 @@ export default function BundleCheckoutPage() {
                                   <option key={c} value={c}>
                                     {c}
                                   </option>
-                                ),
+                                )
                               )}
                             </select>
                             <div className="flex items-center gap-2">
@@ -937,7 +938,11 @@ export default function BundleCheckoutPage() {
                     </div>
                     {couponMessage && (
                       <p
-                        className={`text-sm ${isCouponValid ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                        className={`text-sm ${
+                          isCouponValid
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
                       >
                         {couponMessage}
                       </p>

@@ -9,7 +9,8 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  where
+  where,
+  onSnapshot
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -27,6 +28,13 @@ import { convertToDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 import { learningProgressService } from "./learningProgressService";
+
+
+interface VerifyBundleEnrollmentOptions {
+  userId: string;
+  courseIds: string[];
+  timeoutMs?: number; 
+}
 
 class EnrollmentService {
   /**
@@ -223,6 +231,54 @@ if (!bundle) {
       );
     }
   }
+
+
+  
+
+
+/**
+ * Resolves when all courses are enrolled, or rejects after timeout
+ */
+async waitForAllEnrollments({
+  userId,
+  courseIds,
+  timeoutMs = 30000,
+}: VerifyBundleEnrollmentOptions): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!userId || !courseIds.length) return resolve();
+
+    let enrollmentVerified = false;
+
+    const enrollmentsRef = collection(db, COLLECTION.ENROLLMENTS, userId, COLLECTION.COURSES);
+
+    const unsubscribe = onSnapshot(
+      enrollmentsRef,
+      (snapshot) => {
+        const enrolledCourseIds = snapshot.docs.map((doc) => doc.id);
+
+        const allEnrolled = courseIds.every((id) => enrolledCourseIds.includes(id));
+
+        if (allEnrolled && !enrollmentVerified) {
+          enrollmentVerified = true;
+          unsubscribe(); 
+          resolve();
+        }
+      },
+      (error) => {
+        unsubscribe();
+        reject(error);
+      }
+    );
+
+    // fallback timeout
+    setTimeout(() => {
+  if (!enrollmentVerified) {
+    unsubscribe();
+    reject(new Error("Timeout: not all courses enrolled in time"));
+  }
+}, timeoutMs);
+  });
+}
 
   /**
  * Deletes an enrollment by its ID.
