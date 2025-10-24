@@ -15,7 +15,9 @@ export interface RazorpayOrder {
 };
 
 class RazorpayProvider {
-  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === 'development' ?
+    import.meta.env.VITE_DEV_BACKEND_URL :
+    import.meta.env.VITE_PROD_BACKEND_URL;
 
   async createOrder(
     amount: number,                // final amount in display units (e.g., 12.34 USD)
