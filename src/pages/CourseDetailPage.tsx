@@ -19,7 +19,6 @@ import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
 import { formatDate } from "@/utils/date-time";
-import { getCourseStructureCounts } from "@/utils/course"; // Import with alias
 import {
   ArrowLeft,
   BookOpen,
@@ -82,8 +81,10 @@ export default function CourseDetailPage() {
     }
 
     if (userIsEnrolled) {
-      handleContinueLearning();
-      return;
+      if (course.topics && course.topics.length > 0) {
+        const firstTopic = course.topics[0];
+        navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+      }
     }
 
     if (!course) return;
@@ -321,8 +322,29 @@ export default function CourseDetailPage() {
                       <span>{course.total_students} students</span>
                     </div>
                   )}
+                  {course.course_duration && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{course.course_duration}</span>
+                    </div>
+                  )} */}
                 </div>
               </div>
+
+              {/* Progress (if enrolled) */}
+              {/* {userIsEnrolled && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Your Progress</span>
+                      <span className="text-sm text-muted-foreground">
+                        {progressPercentage}% complete
+                      </span>
+                    </div>
+                    <Progress value={progressPercentage} className="h-2" />
+                  </CardContent>
+                </Card>
+              )} */}
             </div>
 
             {/* Course Description */}
@@ -377,6 +399,21 @@ export default function CourseDetailPage() {
             {/* Course Preview/Enroll Card */}
             <Card className="sticky top-24">
               <CardContent className="p-6">
+                {/* Course thumbnail */}
+                {/* <div className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden">
+                  {course.thumbnail_url ? (
+                    <img
+                      src={course.thumbnail_url}
+                      alt={course.post_title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                      <Play className="h-12 w-12 text-primary-foreground" />
+                    </div>
+                  )}
+                </div> */}
+
                 {/* Price and actions */}
                 <div className="space-y-4">
                   {course.salePrice === 0 ?
@@ -447,10 +484,25 @@ export default function CourseDetailPage() {
                       {lessonCount as number}
                     </span>
                   </div>
+                  {/* <div className="flex justify-between">
+                    <span className="text-muted-foreground">Students</span>
+                    <span className="font-medium">{course.total_students}</span>
+                  </div> */}
+                  {/* {course.course_duration && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Duration</span>
+                      <span className="font-medium">
+                        {course.course_duration}
+                      </span>
+                    </div>
+                  )} */}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">
-                      {formatDate(course.updatedAt)}
+                      <span className="font-medium">
+                        {formatDate(course.updatedAt)}
+                      </span>
+
                     </span>
                   </div>
                 </div>
