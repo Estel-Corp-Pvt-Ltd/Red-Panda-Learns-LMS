@@ -44,7 +44,9 @@ const EditUserPage = () => {
       if (response.success) {
         setUser(response.data);
       } else {
-        toast.error("User not found");
+        toast({
+          title: "User not found",
+        });
         navigate("/admin");
       }
       setLoading(false);
@@ -59,24 +61,34 @@ const EditUserPage = () => {
 
   const handleUpdateUser = async () => {
     if (!user.firstName?.trim()) {
-      toast.error("First name is required");
+      toast({
+        title: "First name is required",
+      });
       return;
     }
     if (!user.lastName?.trim()) {
-      toast.error("Last name is required");
+      toast({
+        title: "Last name is required",
+      });
       return;
     }
     if (!user.email?.trim()) {
-      toast.error("Email is required");
+      toast({
+        title: "Email is required",
+      });
       return;
     }
 
     const response = await userService.updateUser(userId!, user);
     if (response.success) {
-      toast.success("User updated successfully!");
+      toast({
+        title: "User updated successfully!",
+      });
       navigate("/admin");
     } else {
-      toast.error("Failed to update user");
+      toast({
+        title: "Failed to update user",
+      });
     }
   };
 
