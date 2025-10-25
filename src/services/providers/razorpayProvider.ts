@@ -46,20 +46,26 @@ class RazorpayProvider {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      // Try to extract the real error
-      let message = 'Failed to create order';
-      try {
-        const err = await response.json();
-        message = err?.message || err?.error || message;
-        console.error('createOrder failed:', response.status, err);
-      } catch {
-        const text = await response.text();
-        console.error('createOrder failed (non-JSON):', response.status, text);
-        if (text) message = text;
-      }
-      throw new Error(message);
+ if (!response.ok) {
+  let message = 'Failed to create order';
+
+  try {
+    const text = await response.text(); // Read once
+    try {
+      const err = JSON.parse(text); // Try JSON first
+      message = err?.message || err?.error || message;
+      console.error('createOrder failed (JSON):', response.status, err);
+    } catch {
+      console.error('createOrder failed (text):', response.status, text);
+      if (text) message = text;
     }
+  } catch (err) {
+    console.error('createOrder failed (unknown):', response.status, err);
+  }
+
+  throw new Error(message);
+}
+
 
     return response.json();
   }
