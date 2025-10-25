@@ -19,6 +19,7 @@ import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
 import { formatDate } from "@/utils/date-time";
+import { getCourseStructureCounts } from "@/utils/course"; // Import with alias
 import {
   ArrowLeft,
   BookOpen,
@@ -81,11 +82,10 @@ export default function CourseDetailPage() {
     }
 
     if (userIsEnrolled) {
-      if (course.topics && course.topics.length > 0) {
-        const firstTopic = course.topics[0];
-        navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
-      }
+      handleContinueLearning();
+      return;
     }
+
     if (!course) return;
     cartDispatch({
       type: CART_ACTION.ADD,
@@ -139,13 +139,34 @@ export default function CourseDetailPage() {
   };
 
   const handleContinueLearning = () => {
-    if (course.cohorts[0].topics && course.cohorts[0].topics.length > 0) {
-      const firstTopic = course.cohorts[0].topics[0];
-      navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+    if (!course) return;
+
+    // Get first lesson based on course structure
+    let firstLessonId: string | null = null;
+
+    if (course.cohorts && course.cohorts.length > 0) {
+      // Course has cohorts structure
+      const firstCohort = course.cohorts[0];
+      if (firstCohort.topics && firstCohort.topics.length > 0) {
+        const firstTopic = firstCohort.topics[0];
+        if (firstTopic.items && firstTopic.items.length > 0) {
+          firstLessonId = firstTopic.items[0].id;
+        }
+      }
+    } else if (course.topics && course.topics.length > 0) {
+      // Course has direct topics structure
+      const firstTopic = course.topics[0];
+      if (firstTopic.items && firstTopic.items.length > 0) {
+        firstLessonId = firstTopic.items[0].id;
+      }
+    }
+
+    if (firstLessonId) {
+      navigate(`/course/${courseId}/lesson/${firstLessonId}`);
     } else {
       toast({
-        title: "No content to display",
-        description: `This course has no topics and lessons.`,
+        title: "No content available",
+        description: `This course has no lessons available yet.`,
         variant: "destructive"
       });
     }
@@ -300,29 +321,8 @@ export default function CourseDetailPage() {
                       <span>{course.total_students} students</span>
                     </div>
                   )}
-                  {course.course_duration && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{course.course_duration}</span>
-                    </div>
-                  )} */}
                 </div>
               </div>
-
-              {/* Progress (if enrolled) */}
-              {/* {userIsEnrolled && (
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Your Progress</span>
-                      <span className="text-sm text-muted-foreground">
-                        {progressPercentage}% complete
-                      </span>
-                    </div>
-                    <Progress value={progressPercentage} className="h-2" />
-                  </CardContent>
-                </Card>
-              )} */}
             </div>
 
             {/* Course Description */}
@@ -377,21 +377,6 @@ export default function CourseDetailPage() {
             {/* Course Preview/Enroll Card */}
             <Card className="sticky top-24">
               <CardContent className="p-6">
-                {/* Course thumbnail */}
-                {/* <div className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden">
-                  {course.thumbnail_url ? (
-                    <img
-                      src={course.thumbnail_url}
-                      alt={course.post_title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                      <Play className="h-12 w-12 text-primary-foreground" />
-                    </div>
-                  )}
-                </div> */}
-
                 {/* Price and actions */}
                 <div className="space-y-4">
                   {course.salePrice === 0 ?
@@ -462,25 +447,10 @@ export default function CourseDetailPage() {
                       {lessonCount as number}
                     </span>
                   </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-muted-foreground">Students</span>
-                    <span className="font-medium">{course.total_students}</span>
-                  </div> */}
-                  {/* {course.course_duration && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration</span>
-                      <span className="font-medium">
-                        {course.course_duration}
-                      </span>
-                    </div>
-                  )} */}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">
-                      <span className="font-medium">
-                        {formatDate(course.updatedAt)}
-                      </span>
-
+                      {formatDate(course.updatedAt)}
                     </span>
                   </div>
                 </div>
