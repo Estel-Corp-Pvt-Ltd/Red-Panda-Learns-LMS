@@ -22,7 +22,6 @@ export const BundleWrapper = ({
 }) => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const navigate = useNavigate();
-    console.log("chekcking enrollments in bundle",isEnrolled)
   useEffect(() => {
     const checkEnrollment = async () => {
       try {
@@ -32,10 +31,7 @@ export const BundleWrapper = ({
         setIsEnrolled(enrolled);
 
         const result: Result<boolean> = ok(enrolled);
-        console.log("BundleWrapper - Enrollment check:", {
-          bundleId: bundle.id,
-          result,
-        });
+       
       } catch (err) {
         logError("BundleWrapper.checkEnrollment", err);
         const failResult = fail(
