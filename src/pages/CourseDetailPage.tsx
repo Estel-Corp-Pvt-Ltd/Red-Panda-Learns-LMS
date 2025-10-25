@@ -45,7 +45,7 @@ export default function CourseDetailPage() {
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
-
+  const [enrollmentLoading, setEnrollmentLoading] = useState(true); 
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
   const {
@@ -60,15 +60,22 @@ export default function CourseDetailPage() {
   const isError = courseError;
 
   // Check if user already enrolled (keep "after" behavior)
-  useEffect(() => {
-    if (user && courseId) {
-      if (isEnrolled(courseId)) {
-        setUserIsEnrolled(true);
-      } else {
-        setUserIsEnrolled(false);
+useEffect(() => {
+    const checkEnrollment = async () => {
+      setEnrollmentLoading(true);
+      
+      if (user && courseId) {
+        // Add a small delay to ensure enrollment context is ready
+        // Or wait for enrollment data to be loaded
+        const enrolled = isEnrolled(courseId);
+        setUserIsEnrolled(enrolled);
       }
-    }
-  }, [user, courseId]);
+      
+      setEnrollmentLoading(false);
+    };
+    
+    checkEnrollment();
+  }, [user, courseId, isEnrolled]); // Add isEnrolled to dependencies
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -366,36 +373,44 @@ export default function CourseDetailPage() {
                   )}
 
                   <div className="space-y-2">
-                    {
-                      userIsEnrolled
-                        ? (
-                          <Button
-                            className="w-full"
-                            size="lg"
-                            onClick={handleContinueLearning}
-                          >
-                            <Play className="h-4 w-4 mr-2" />
-                            Continue Learning
-                          </Button>
-                        ) : (
-                          <>
-                            {isAddedToCart ? (
-                              <Link to="/cart">
-                                <Button className="w-full">Go to Cart</Button>
-                              </Link>
-                            ) :
-                              <Button
-                                className="w-full"
-                                size="lg"
-                                onClick={handleAddToCart}
-                              >
-                                Add to Cart
-                              </Button>
-                            }
-                            <Button className="w-full" onClick={handleCheckout}>Go To Checkout</Button>
-                          </>
-                        )}
-                  </div>
+    {enrollmentLoading ? (
+      // Show loading state while checking enrollment
+      <Button className="w-full" size="lg" disabled>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          Loading...
+        </div>
+      </Button>
+    ) : userIsEnrolled ? (
+      <Button
+        className="w-full"
+        size="lg"
+        onClick={handleContinueLearning}
+      >
+        <Play className="h-4 w-4 mr-2" />
+        Continue Learning
+      </Button>
+    ) : (
+      <>
+        {isAddedToCart ? (
+          <Link to="/cart">
+            <Button className="w-full">Go to Cart</Button>
+          </Link>
+        ) : (
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={handleAddToCart}
+          >
+            Add to Cart
+          </Button>
+        )}
+        <Button className="w-full" onClick={handleCheckout}>
+          Go To Checkout
+        </Button>
+      </>
+    )}
+  </div>
 
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="flex-1">

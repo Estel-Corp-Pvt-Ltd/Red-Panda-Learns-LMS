@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CART_ACTION } from "@/constants";
+import { useNavigate } from "react-router-dom";
 
 const CartPage: React.FC = () => {
   const { cartCourses, cartDispatch, loading } = useCart();
@@ -13,7 +14,7 @@ const CartPage: React.FC = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [regularTotal, setRegularTotal] = useState(0);
   const [savings, setSavings] = useState(0);
-
+  const navigate = useNavigate();
 
   // Calculate totals and savings
   useEffect(() => {
@@ -43,6 +44,10 @@ const CartPage: React.FC = () => {
     cartDispatch({ type: CART_ACTION.CLEAR })
   }
 
+  const handleCheckout = () =>{
+    navigate("checkout")
+  }
+  
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -89,7 +94,7 @@ const CartPage: React.FC = () => {
                 )}
               </div>
               <div>
-                <Button className="px-6 py-3 font-medium w-full sm:w-auto" disabled>
+                <Button className="px-6 py-3 font-medium w-full sm:w-auto" onClick={handleCheckout} >
                   Checkout
                 </Button>
               </div>

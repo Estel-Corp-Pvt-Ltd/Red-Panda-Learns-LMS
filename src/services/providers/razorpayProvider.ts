@@ -5,6 +5,7 @@ import { enrollmentService } from '../enrollmentService';
 import { CURRENCY, ENROLLED_PROGRAM_TYPE, TRANSACTION_STATUS } from '@/constants';
 import { PaymentDetails } from '@/types/transaction';
 import type { Currency } from '@/types/general';
+import { TransactionLineItem } from '@/types/transaction';
 
 export interface RazorpayOrder {
   id: string;
@@ -47,172 +48,187 @@ class RazorpayProvider {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      // Try to extract the real error
-      let message = 'Failed to create order';
-      try {
-        const err = await response.json();
-        message = err?.message || err?.error || message;
-        console.error('createOrder failed:', response.status, err);
-      } catch {
-        const text = await response.text();
-        console.error('createOrder failed (non-JSON):', response.status, text);
-        if (text) message = text;
-      }
-      throw new Error(message);
+ if (!response.ok) {
+  let message = 'Failed to create order';
+
+  try {
+    const text = await response.text(); // Read once
+    try {
+      const err = JSON.parse(text); // Try JSON first
+      message = err?.message || err?.error || message;
+      console.error('createOrder failed (JSON):', response.status, err);
+    } catch {
+      console.error('createOrder failed (text):', response.status, text);
+      if (text) message = text;
     }
+  } catch (err) {
+    console.error('createOrder failed (unknown):', response.status, err);
+  }
+
+  throw new Error(message);
+}
+
 
     return response.json();
   }
 
   // CHANGED: accept payCurrency + optional quoteId
   async processPayment(
-    course: Course,
-    userEmail: string,
-    transactionId: string,
-    amount: number,               // should be the final total in selected currency
-    userId: string,
-    payCurrency: Currency = CURRENCY.INR,
-    quoteId?: string              // to let backend verify pricing
-  ): Promise<{ success: boolean; transactionId?: string; paymentId?: string; error?: string }> {
-    return new Promise(async (resolve) => {
-      try {
-        console.log('RazorpayProvider - Starting payment process:', {
-          courseId: course.id,
-          transactionId,
-          amount,
-          payCurrency,
-          userId,
-        });
+  items: TransactionLineItem[],
+  userEmail: string,
+  transactionId: string,
+  amount: number,               // should be the final total in selected currency
+  userId: string,
+  payCurrency: Currency = CURRENCY.INR,
+  quoteId?: string              // to let backend verify pricing
+): Promise<{ success: boolean; transactionId?: string; paymentId?: string; error?: string }> {
+  return new Promise(async (resolve) => {
+    try {
+     
+      console.log("RazorpayProvider - Starting payment process:", {
+        transactionId,
+        amount,
+        payCurrency,
+        userId,
+        items,
+      });
 
-        // IMPORTANT: create order in the selected currency
-        const orderData = await this.createOrder(
-          amount,
-          payCurrency,
-          transactionId,
-          transactionId,
-          { quoteId, courseId: course.id, userId } // optional
-        );
+      // Create order on backend
+      const orderData = await this.createOrder(
+        amount,
+        payCurrency,
+        transactionId,
+        transactionId,
+        { quoteId, userId, itemIds: items.map(i => i.itemId).join(",") }
+      );
 
-        console.log("RazorpayProvider - Order Data", orderData);
-        if (!orderData.success) {
-          throw new Error(orderData.error || 'Order creation failed');
-        }
+      console.log("RazorpayProvider - Order Data", orderData);
 
-        const { order, key_id } = orderData;
+      if (!orderData.success) {
+        throw new Error(orderData.error || "Order creation failed");
+      }
 
-        await transactionService.updateTransactionStatus(
-          transactionId,
-          TRANSACTION_STATUS.PROCESSING,
-          { orderId: order.id }
-        );
+      const { order, key_id } = orderData;
 
-        const options = {
-          key: key_id,
-          amount: order.amount,      // subunits from backend
-          currency: order.currency,  // matches payCurrency
-          order_id: order.id,
-          name: 'Vizuara AI Labs',
-          description: `Enrollment for ${course.title}`,
-          prefill: { email: userEmail },
-          theme: { color: '#3b82f6' },
-          handler: async (response: any) => {
-            console.log('Razorpay payment successful:', response);
-            try {
-              const verificationResponse = await fetch(`${this.backendUrl}/verifyPayment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  transaction_id: transactionId,
-                  quote_id: quoteId, // let backend tie to same quote
-                }),
-              });
+      await transactionService.updateTransactionStatus(
+        transactionId,
+        TRANSACTION_STATUS.PROCESSING,
+        { orderId: order.id }
+      );
 
-              const verificationData = await verificationResponse.json();
+      const options = {
+        key: key_id,
+        amount: order.amount,      // subunits from backend
+        currency: order.currency,  // matches payCurrency
+        order_id: order.id,
+        name: "Vizuara AI Labs",
+        description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
+        prefill: { email: userEmail },
+        theme: { color: "#3b82f6" },
+        handler: async (response: any) => {
+          console.log("Razorpay payment successful:", response);
+          try {
+            const verificationResponse = await fetch(`${this.backendUrl}/verifyPayment`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                transaction_id: transactionId,
+                quote_id: quoteId, // let backend tie to same quote
+              }),
+            });
 
-              if (verificationData.success) {
-                await transactionService.updateTransactionStatus(
-                  transactionId,
-                  TRANSACTION_STATUS.COMPLETED,
-                  {
-                    orderId: order.id,
-                    paymentId: response.razorpay_payment_id,
-                    signature: response.razorpay_signature,
-                  }
-                );
+            const verificationData = await verificationResponse.json();
 
-                try {
-                  await enrollmentService.enrollUser(
-                    userId,
-                    course.id,
-                    ENROLLED_PROGRAM_TYPE.COURSE
-                  );
-                } catch (enrollmentError) {
-                  console.error('RazorpayProvider - Enrollment failed:', enrollmentError);
-                }
-
-                resolve({
-                  success: true,
-                  transactionId,
+            if (verificationData.success) {
+              await transactionService.updateTransactionStatus(
+                transactionId,
+                TRANSACTION_STATUS.COMPLETED,
+                {
+                  orderId: order.id,
                   paymentId: response.razorpay_payment_id,
-                });
-              } else {
-                console.log("RazorpayProvider - Payment verification failed");
-                throw new Error(verificationData.error || 'Payment verification failed');
-              }
-            } catch (error) {
-              console.error('RazorpayProvider - Payment verification failed:', error);
-              await transactionService.updateTransactionStatus(
-                transactionId,
-                TRANSACTION_STATUS.FAILED,
-                {} as PaymentDetails,
-                'Payment verification failed'
+                  signature: response.razorpay_signature,
+                }
               );
-              resolve({ success: false, error: 'Payment verification failed' });
-            }
-          },
-          modal: {
-            ondismiss: async () => {
-              console.log('RazorpayProvider - Payment dismissed by user');
-              await transactionService.updateTransactionStatus(
-                transactionId,
-                TRANSACTION_STATUS.CANCELLED,
-                {} as PaymentDetails,
-                'Payment cancelled by user'
-              );
-              resolve({ success: false, error: 'Payment cancelled by user' });
-            }
-          }
-        };
 
-        // @ts-ignore - Razorpay is loaded externally
-        if (typeof window !== 'undefined' && (window as any).Razorpay) {
-          const rzp = new (window as any).Razorpay(options);
-          rzp.open();
-        } else {
-          await transactionService.updateTransactionStatus(
-            transactionId,
-            TRANSACTION_STATUS.FAILED,
-            {} as PaymentDetails,
-            'Razorpay SDK not loaded'
-          );
-          resolve({ success: false, error: 'Razorpay SDK not loaded' });
-        }
-      } catch (error) {
-        console.error('RazorpayProvider - Payment failed:', error);
+              // // ✅ Handle enrollments for each purchased item
+              // for (const item of items) {
+              //   try {
+              //     await enrollmentService.enrollUser(
+              //       userId,
+              //       item.itemId,
+              //       item.itemType
+              //     );
+              //   } catch (enrollmentError) {
+              //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
+              //   }
+              // }
+
+              resolve({
+                success: true,
+                transactionId,
+                paymentId: response.razorpay_payment_id,
+              });
+            } else {
+              console.log("RazorpayProvider - Payment verification failed");
+              throw new Error(verificationData.error || "Payment verification failed");
+            }
+          } catch (error) {
+            console.error("RazorpayProvider - Payment verification failed:", error);
+            await transactionService.updateTransactionStatus(
+              transactionId,
+              TRANSACTION_STATUS.FAILED,
+              {} as PaymentDetails,
+              "Payment verification failed"
+            );
+            resolve({ success: false, error: "Payment verification failed" });
+          }
+        },
+        modal: {
+          ondismiss: async () => {
+            console.log("RazorpayProvider - Payment dismissed by user");
+            await transactionService.updateTransactionStatus(
+              transactionId,
+              TRANSACTION_STATUS.CANCELLED,
+              {} as PaymentDetails,
+              "Payment cancelled by user"
+            );
+            resolve({ success: false, error: "Payment cancelled by user" });
+          },
+        },
+      };
+
+      // Open Razorpay modal
+      if (typeof window !== "undefined" && (window as any).Razorpay) {
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
         await transactionService.updateTransactionStatus(
           transactionId,
           TRANSACTION_STATUS.FAILED,
           {} as PaymentDetails,
-          error instanceof Error ? error.message : 'Unknown error'
+          "Razorpay SDK not loaded"
         );
-        resolve({ success: false, error: error instanceof Error ? error.message : 'Payment failed. Please try again.' });
+        resolve({ success: false, error: "Razorpay SDK not loaded" });
       }
-    });
-  }
+    } catch (error) {
+      console.error("RazorpayProvider - Payment failed:", error);
+      await transactionService.updateTransactionStatus(
+        transactionId,
+        TRANSACTION_STATUS.FAILED,
+        {} as PaymentDetails,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      resolve({
+        success: false,
+        error: error instanceof Error ? error.message : "Payment failed. Please try again.",
+      });
+    }
+  });
+}
+
 }
 
 export const razorpayProvider = new RazorpayProvider();

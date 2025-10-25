@@ -1,10 +1,10 @@
 import { ENROLLED_PROGRAM_TYPE, ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
 import { enrollmentService } from "@/services/enrollmentService";
 import { Course } from "@/types/course";
-import { Currency } from "@/types/general";
 import { PaymentDetails } from "@/types/transaction";
 import { transactionService } from "../transactionService";
-
+import { Currency } from "@/types/general";
+import { TransactionLineItem } from "@/types/transaction";
 class PayPalProvider {
   private readonly environment =
     import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION
@@ -52,7 +52,7 @@ class PayPalProvider {
 
   /** Launches the PayPal payment flow. */
   async processPayment(
-    course: Course,
+    items: TransactionLineItem[],
     userEmail: string,
     transactionId: string,
     amount: number,
@@ -65,8 +65,10 @@ class PayPalProvider {
     error?: string;
   }> {
     try {
+      
+
       console.log("PayPalProvider - Starting payment:", {
-        courseId: course.id,
+       items,
         transactionId,
         amount,
         currency,
@@ -103,7 +105,7 @@ class PayPalProvider {
                         currency_code: currency,
                         value: amount.toFixed(2),
                       },
-                      description: `Enrollment for ${course.title}`,
+                     description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
                       custom_id: transactionId,
                     },
                   ],
@@ -130,15 +132,21 @@ class PayPalProvider {
                     }
                   );
 
-                  try {
-                    await enrollmentService.enrollUser(
-                      userId,
-                      course.id,
-                      ENROLLED_PROGRAM_TYPE.COURSE
-                    );
-                  } catch (e) {
-                    console.error("Enrollment failed after PayPal payment:", e);
-                  }
+              //     try {
+              //     for (const item of items) {
+              //   try {
+              //     await enrollmentService.enrollUser(
+              //       userId,
+              //       item.itemId,
+              //       item.itemType
+              //     );
+              //   } catch (enrollmentError) {
+              //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
+              //   }
+              // }
+              //     } catch (e) {
+              //       console.error("Enrollment failed after PayPal payment:", e);
+              //     }
 
                   resolve({
                     success: true,

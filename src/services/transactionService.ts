@@ -11,15 +11,17 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
-import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
 import { db } from '../firebaseConfig.ts';
-import { TransactionStatus } from '../types/general.ts';
+import { COLLECTION } from '../constants.ts';
 import {
   PaymentDetails,
   Transaction,
   WebhookEvent
 } from '../types/transaction';
+import { TransactionStatus } from '../types/general.ts';
+import { PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants.ts';
+import { v4 as uuidv4 } from 'uuid';
+
 
 class TransactionService {
 
@@ -69,7 +71,7 @@ class TransactionService {
         id: transactionId,
         orderNumber: data.orderNumber,
         userId: data.userId,
-        courseId: data.courseId || null,
+       items : data.items,
         type: data.type,
         amount: data.amount,
         currency: data.currency,
@@ -85,7 +87,7 @@ class TransactionService {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'Transactions', transactionId), transaction);
+      await setDoc(doc(db, COLLECTION.TRANSACTIONS, transactionId), transaction);
       console.log('Transaction created:', transaction);
       return transactionId;
     } catch (error) {
@@ -101,7 +103,7 @@ class TransactionService {
     reasonForFailure?: string
   ): Promise<void> {
     try {
-      const transactionRef = doc(db, "Transactions", transactionId);
+      const transactionRef = doc(db, COLLECTION.TRANSACTIONS, transactionId);
       const snapshot = await getDoc(transactionRef);
 
       if (!snapshot.exists()) {
@@ -142,7 +144,7 @@ class TransactionService {
 
   async getTransaction(transactionId: string): Promise<Transaction | null> {
     try {
-      const docRef = doc(db, 'Transactions', transactionId);
+      const docRef = doc(db, COLLECTION.TRANSACTIONS, transactionId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -165,7 +167,7 @@ class TransactionService {
   async getUserTransactions(userId: string, limitCount = 10): Promise<Transaction[]> {
     try {
       const q = query(
-        collection(db, 'Transactions'),
+        collection(db, COLLECTION.TRANSACTIONS),
         where('userId', '==', userId),
         orderBy('createdAt', 'desc'),
         limit(limitCount)
@@ -191,9 +193,9 @@ class TransactionService {
   async getCourseTransactions(courseId: string): Promise<Transaction[]> {
     try {
       const q = query(
-        collection(db, 'Transactions'),
+        collection(db, COLLECTION.TRANSACTIONS),
         where('courseId', '==', courseId),
-        where('status', '==', 'completed'),
+        where('status', '==', TRANSACTION_STATUS.COMPLETED),
         orderBy('createdAt', 'desc')
       );
 
@@ -225,7 +227,7 @@ class TransactionService {
         ...webhookEvent
       }];
 
-      await updateDoc(doc(db, 'Transactions', transactionId), {
+      await updateDoc(doc(db, COLLECTION.TRANSACTIONS, transactionId), {
         webhookData: updatedWebhookData,
         updatedAt: serverTimestamp(),
       });

@@ -43,6 +43,7 @@ import Signup from "./pages/auth/Signup";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
+import CartCheckoutPage from "./pages/cartCheckout";
 
 const queryClient = new QueryClient();
 
@@ -54,7 +55,7 @@ const App = () => (
           <CartProvider>
             <TooltipProvider>
               <LoadingOverlayProvider>
-                <PopUpContainer />
+                {/* <PopUpContainer /> */}
                 <Toaster />
                 <BrowserRouter>
                   <Routes>
@@ -232,11 +233,17 @@ const App = () => (
                       path="dummy/bundle/:bundleId/checkout"
                       element={<DummyBundleCheckoutPage />}
                     />
+                     <Route path="/cart" element={ <AuthGuard >
+                          <CartPage />
+                        </AuthGuard>} />
+                         <Route path="/cart/checkout" element={ <AuthGuard >
+                          <CartCheckoutPage />
+                        </AuthGuard>} />
                     <Route path="*" element={<NotFound />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
                     <Route path="/refund-policy" element={<RefundPage />} />
-                    <Route path="/cart" element={<CartPage />} />
+                   
 
                   </Routes>
                 </BrowserRouter>

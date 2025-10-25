@@ -8,37 +8,39 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebaseConfig.ts";
 import { OrderStatus } from "../types/general.ts";
-import { ORDER_STATUS } from "@/constants.ts";
+// import { ORDER_STATUS } from "../constants.ts";
 import { Order } from "@/types/order.ts";
+import { ORDER_STATUS } from "@/constants.ts";
+import { COLLECTION } from "@/constants.ts";
 
 class OrderService {
   private async generateOrderId(): Promise<{ orderId: string }> {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const dateStr = `${yyyy}${mm}${dd}`;
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const dateStr = `${yyyy}${mm}${dd}`;
 
-    const counterRef = doc(db, 'counters', 'orderCounters');
+  const counterRef = doc(db, COLLECTION.COUNTERS,`orderCounters_${dateStr}`);
 
-    // Use Firestore transaction to increment safely
-    const dailySequence = await runTransaction(db, async (tx) => {
-      const snapshot = await tx.get(counterRef);
-      let seq = 1;
+  // Use Firestore transaction to increment safely
+  const dailySequence = await runTransaction(db, async (tx) => {
+    const snapshot = await tx.get(counterRef);
+    let seq = 1;
 
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        seq = (data?.seq || 0) + 1;
-      }
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      seq = (data?.seq || 0) + 1;
+    }
 
-      tx.set(counterRef, { seq }, { merge: true });
-      return seq;
-    });
+    tx.set(counterRef, { seq }, { merge: true });
+    return seq;
+  });
 
-    const paddedSeq = String(dailySequence).padStart(3, "0");
-    const orderId = `ORD-${dateStr}-${paddedSeq}`;
-    return { orderId };
-  }
+  const paddedSeq = String(dailySequence).padStart(3, "0");
+  const orderId = `ORD-${dateStr}-${paddedSeq}`;
+  return { orderId };
+}
 
 
   async createOrder(
@@ -46,37 +48,26 @@ class OrderService {
     providedOrderId?: string // optional idempotent orderId
   ): Promise<string> {
     try {
-      let orderId = providedOrderId;
-
-      if (orderId) {
-        // 🔎 If caller gave an orderId, check DB first
-        const existing = await getDoc(doc(db, "Orders", orderId));
-        if (existing.exists()) {
-          console.log("♻️ Returning existing order:", orderId);
-          return orderId; // idempotent return
-        }
-      } else {
-        const generated = await this.generateOrderId();        // If no orderId provided → create new Firestore doc
-        orderId = generated.orderId
-      }
+      
+ const generated = await this.generateOrderId();        // If no orderId provided → create new Firestore doc
+        const orderId = generated.orderId
 
       const order: Order = {
-        orderId,
+        orderId ,
         userId: data.userId,
-        courseIds: data.courseIds,
-        bundleIds: data.bundleIds || null,
+        items:data.items,
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         currency: data.currency,
         transactionId: data.transactionId || null,
         metadata: data.metadata || {},
-        billingAddress: data.billingAddress,
-        shippingAddress: data.shippingAddress || null,
+        billingAddress:data.billingAddress,
+        shippingAddress:data.shippingAddress || null,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        updatedAt:serverTimestamp(),
       };
 
-      await setDoc(doc(db, "Orders", orderId), order);
+      await setDoc(doc(db, COLLECTION.ORDERS, orderId), order);
 
       console.log("Order created:", orderId);
       return orderId;
@@ -93,7 +84,7 @@ class OrderService {
     metadataUpdates?: Record<string, any>
   ): Promise<void> {
     try {
-      const orderRef = doc(db, "Orders", orderId);
+      const orderRef = doc(db, COLLECTION.ORDERS, orderId);
       const snapshot = await getDoc(orderRef);
 
       if (!snapshot.exists()) {
@@ -131,8 +122,6 @@ class OrderService {
       throw new Error("Failed to update order");
     }
   }
-
-  // TODO: Add method for refunds
 }
 
 export const orderService = new OrderService();
