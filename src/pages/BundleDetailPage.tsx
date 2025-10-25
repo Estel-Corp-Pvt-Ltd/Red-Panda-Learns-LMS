@@ -255,7 +255,7 @@ export default function BundleDetailPage() {
                       </div>
                       <div className="flex justify-between border-t pt-2">
                         <span className="font-medium">Your Savings:</span>
-                        <span className="font-bold text-success">${(bundle.regularPrice - bundle.salePrice)}</span>
+                        <span className="font-bold text-success">${(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
                       </div>
                     </div>
                   </CardContent>
