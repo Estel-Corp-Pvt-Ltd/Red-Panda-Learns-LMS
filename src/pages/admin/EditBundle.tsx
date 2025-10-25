@@ -14,11 +14,20 @@ import { useBundlePricingQuery, useBundleQuery, useUpdateBundleMutation } from "
 import { courseService } from "@/services/courseService";
 import { instructorService } from "@/services/instructorService";
 import { Course } from "@/types/course";
-import { PricingModel } from "@/types/general";
+import { BundleStatus, PricingModel } from "@/types/general";
 import { getFullName } from "@/utils/name";
 import { ArrowLeft, DollarSign, Info, Loader2, Package, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
+type EditBundleFormData = {
+  title: string;
+  description: string;
+  regularPrice: string;
+  salePrice: string;
+  pricingModel: PricingModel;
+  status: BundleStatus;
+};
 
 export default function EditBundlePage() {
   const navigate = useNavigate();
@@ -40,13 +49,12 @@ export default function EditBundlePage() {
   const { data: bundleData, isLoading: bundleLoading, error: bundleError } = useBundleQuery(bundleId!);
   const { mutate: updateBundle, } = useUpdateBundleMutation();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EditBundleFormData>({
     title: "",
     description: "",
-    url: "",
     regularPrice: "",
     salePrice: "",
-    pricingModel: PRICING_MODEL.PAID as PricingModel,
+    pricingModel: PRICING_MODEL.PAID,
     status: BUNDLE_STATUS.DRAFT,
   });
 
@@ -127,7 +135,6 @@ export default function EditBundlePage() {
       setFormData({
         title: bundleData.title || "",
         description: bundleData.description || "",
-
         regularPrice: bundleData.regularPrice ? bundleData.regularPrice.toString() : "",
         salePrice: bundleData.salePrice ? bundleData.salePrice.toString() : "",
         pricingModel: bundleData.pricingModel || PRICING_MODEL.PAID,

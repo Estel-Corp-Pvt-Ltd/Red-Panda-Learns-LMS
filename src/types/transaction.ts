@@ -57,14 +57,14 @@ export type TransactionMetadata = {
 
 export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
 
-
 export interface TransactionLineItem {
   itemId: string;            // The actual courseId or bundleId
   itemType: EnrolledProgramType; // Helps you know which DB collection to look up later
   name: string;              // Snapshot of the name at time of purchase (optional but useful)
   amount: number;            // The price sold specifically for this item (after any item-specific discounts)
   originalAmount?: number;   // The price before discounts (optional)
-}
+};
+
 export interface Transaction {
   id: string; // internal transaction ID (UUID)
   orderNumber: string;

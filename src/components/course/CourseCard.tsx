@@ -137,11 +137,19 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
               </div>
             </div>
 
-            {course.salePrice && (
-              <div className="font-semibold text-primary">
-                ₹{course.salePrice}
-              </div>
-            )}
+            {course.salePrice === 0 ?
+              (
+                <div className="font-semibold text-primary">
+                  FREE
+                </div>
+              )
+              :
+              (
+                <div className="font-semibold text-primary">
+                  ₹{course.salePrice}
+                </div>
+              )
+            }
           </div>
 
           {userIsEnrolled ? (

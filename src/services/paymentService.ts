@@ -249,7 +249,7 @@ class PaymentService {
 
         await orderService.updateOrder(
           orderId,
-          result.success ? ORDER_STATUS.SUCCESS : ORDER_STATUS.FAILED,
+          result.success ? ORDER_STATUS.COMPLETED : ORDER_STATUS.FAILED,
           transactionId
         );
 

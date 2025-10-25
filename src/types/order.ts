@@ -19,7 +19,7 @@ export interface Address {
 export interface Order {
   orderId: string;
   userId: string;
-  items:TransactionLineItem[];
+  items: TransactionLineItem[];
   status: OrderStatus;
   amount: number;
   completedAt?: Timestamp | FieldValue;
