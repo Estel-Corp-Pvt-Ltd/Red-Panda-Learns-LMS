@@ -1,17 +1,11 @@
 import { Header } from "@/components/Header";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { CART_ACTION } from "@/constants";
+import { CART_ACTION, CURRENCY, ENROLLED_PROGRAM_TYPE, ORDER_STATUS } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
@@ -20,17 +14,17 @@ import {
   useCourseQuery,
 } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
+import { enrollmentService } from "@/services/enrollmentService";
+import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
 import { formatDate } from "@/utils/date-time";
 import {
   ArrowLeft,
-  Bookmark,
   BookOpen,
   ChevronRight,
   Lock,
-  Play,
-  Share2,
+  Play
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -42,10 +36,8 @@ export default function CourseDetailPage() {
   const { user } = useAuth();
   const { isEnrolled } = useEnrollment();
   const { toast } = useToast();
-  const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
-  const [lessonCountByTopic, setLessonCountByTopic] = useState<{ [key: string]: number }>({});
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
-  const [enrollmentLoading, setEnrollmentLoading] = useState(true); 
+  const [enrollmentLoading, setEnrollmentLoading] = useState(true);
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
   const {
@@ -59,21 +51,21 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading;
   const isError = courseError;
 
-  // Check if user already enrolled (keep "after" behavior)
-useEffect(() => {
+  // Check if user already enrolled (keep "after" behavior) 
+  useEffect(() => {
     const checkEnrollment = async () => {
       setEnrollmentLoading(true);
-      
+
       if (user && courseId) {
         // Add a small delay to ensure enrollment context is ready
         // Or wait for enrollment data to be loaded
         const enrolled = isEnrolled(courseId);
         setUserIsEnrolled(enrolled);
       }
-      
+
       setEnrollmentLoading(false);
     };
-    
+
     checkEnrollment();
   }, [user, courseId, isEnrolled]); // Add isEnrolled to dependencies
 
@@ -106,6 +98,43 @@ useEffect(() => {
   };
 
   const handleCheckout = async () => {
+    if (course.salePrice === 0) {
+      // Enroll Directly
+      const enrollmentResult = await enrollmentService.enrollUserInFreeCourse(
+        user.id,
+        courseId,
+        lessonCount
+      );
+
+      const orderCreationResult = await orderService.createOrderForFreeCourse({
+        userId: user.id,
+        items: [{
+          itemId: courseId,
+          itemType: ENROLLED_PROGRAM_TYPE.COURSE,
+          name: course.title,
+          amount: 0,
+          originalAmount: course.regularPrice
+        }],
+        status: ORDER_STATUS.COMPLETED,
+        amount: 0,
+        currency: CURRENCY.INR,
+        billingAddress: null
+      });
+
+      if (enrollmentResult.success && orderCreationResult.success) {
+        toast({
+          title: "Enrollment Successful!",
+          description: "If you don't see the course, reload the page."
+        });
+      } else {
+        toast({
+          title: "Enrollment Successful!",
+          description: "If you don't see the course, reload the page."
+        });
+      }
+      navigate(`/course/${courseId}`);
+      return;
+    }
     navigate(`/checkout/${courseId}`);
   };
 
@@ -159,7 +188,7 @@ useEffect(() => {
     );
   }
 
-  const { cohortCount, topicCount, lessonCount } = getCourseStructureCounts(course);
+  const { topicCount, lessonCount } = getCourseStructureCounts(course);
 
   const renderTopic = (topic: Topic) => {
     const { id, title, items = [] } = topic;
@@ -211,7 +240,6 @@ useEffect(() => {
       </Collapsible>
     );
   };
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -366,61 +394,58 @@ useEffect(() => {
 
                 {/* Price and actions */}
                 <div className="space-y-4">
-                  {course.salePrice && (
-                    <div className="text-2xl font-bold text-foreground">
-                      ₹{course.salePrice}
-                    </div>
-                  )}
+                  {course.salePrice === 0 ?
+                    (
+                      <div className="font-semibold text-primary">
+                        FREE
+                      </div>
+                    )
+                    :
+                    (
+                      <div className="font-semibold text-primary">
+                        ₹{course.salePrice}
+                      </div>
+                    )
+                  }
 
                   <div className="space-y-2">
-    {enrollmentLoading ? (
-      // Show loading state while checking enrollment
-      <Button className="w-full" size="lg" disabled>
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Loading...
-        </div>
-      </Button>
-    ) : userIsEnrolled ? (
-      <Button
-        className="w-full"
-        size="lg"
-        onClick={handleContinueLearning}
-      >
-        <Play className="h-4 w-4 mr-2" />
-        Continue Learning
-      </Button>
-    ) : (
-      <>
-        {isAddedToCart ? (
-          <Link to="/cart">
-            <Button className="w-full">Go to Cart</Button>
-          </Link>
-        ) : (
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={handleAddToCart}
-          >
-            Add to Cart
-          </Button>
-        )}
-        <Button className="w-full" onClick={handleCheckout}>
-          Go To Checkout
-        </Button>
-      </>
-    )}
-  </div>
-
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Bookmark className="h-4 w-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Share
-                    </Button>
+                    {enrollmentLoading ? (
+                      // Show loading state while checking enrollment
+                      <Button className="w-full" size="lg" disabled>
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Loading...
+                        </div>
+                      </Button>
+                    ) : userIsEnrolled ? (
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={handleContinueLearning}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Continue Learning
+                      </Button>
+                    ) : (
+                      <>
+                        {isAddedToCart ? (
+                          <Link to="/cart">
+                            <Button className="w-full">Go to Cart</Button>
+                          </Link>
+                        ) : (
+                          <Button
+                            className="w-full"
+                            size="lg"
+                            onClick={handleAddToCart}
+                          >
+                            Add to Cart
+                          </Button>
+                        )}
+                        <Button className="w-full" onClick={handleCheckout}>
+                          Go To Checkout
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
