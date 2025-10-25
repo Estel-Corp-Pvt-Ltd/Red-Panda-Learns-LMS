@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { OrderStatus, Currency } from "./general";
 import { AddressType } from "./general";
+import { TransactionLineItem } from "./transaction";
 
 export interface Address {
   fullName: string;
@@ -18,8 +19,7 @@ export interface Address {
 export interface Order {
   orderId: string;
   userId: string;
-  courseIds: string[];
-  bundleIds?: string[];
+  items: TransactionLineItem[];
   status: OrderStatus;
   amount: number;
   completedAt?: Timestamp | FieldValue;

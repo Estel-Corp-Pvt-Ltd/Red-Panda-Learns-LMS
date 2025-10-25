@@ -15,10 +15,11 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { BookOpen, Clock, PlayCircle, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
+import { PRICING_MODEL,ENROLLED_PROGRAM_TYPE } from '@/constants';
+import { toast, useToast } from '@/hooks/use-toast';
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const { data: course, isLoading } = useCourseQuery(enrollment.targetId);
-
+  const { toast } = useToast();
   if (isLoading) {
     return <LoadingSkeleton className="h-48" />;
   }
@@ -95,11 +96,49 @@ export default function DashboardPage() {
       // If not admin, fetch enrollments
       const result = await enrollmentService.getUserEnrollments(user.id);
 
-      if (result.success) {
-        setEnrollments(result.data);
-      } else {
+     if (result.success) {
+  const data = result.data;
+
+  // Separate bundles and direct course enrollments
+  const bundles = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE);
+  const courses = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE);
+
+  // For each bundle, create virtual course enrollments
+const bundleCourses = bundles.flatMap(bundle => {
+  if (!bundle.bundleProgress) return [];
+  return bundle.bundleProgress.map(bp => ({
+    id: `${bundle.id}_${bp.courseId}_virtual`,
+    userId: bundle.userId,
+    targetId: bp.courseId,
+    targetType: ENROLLED_PROGRAM_TYPE.COURSE,
+    status: bundle.status,
+    role: bundle.role,
+    sourceBundleId: bundle.targetId,
+    pricingModel: bundle.pricingModel || PRICING_MODEL.PAID, 
+    enrollmentDate: bundle.enrollmentDate,
+    createdAt: bundle.createdAt,
+    updatedAt: bundle.updatedAt,
+    progressSummary: {
+      percent: 0,
+      completedCourses: 0,
+      totalCourses: 1
+    }
+  })) as Enrollment[]; 
+});
+
+  // Merge direct course enrollments + virtual course enrollments
+  const allCourses = [...courses, ...bundleCourses];
+
+  setEnrollments(allCourses);
+} 
+ else {
         setEnrollments([]);
-        // TODO: Add a toast here
+       
+     toast({
+        title: "You are not enrolled into any course ",
+        description: "Enroll in any course ",
+        variant: "destructive",
+      });
       }
 
       setIsLoading(false);

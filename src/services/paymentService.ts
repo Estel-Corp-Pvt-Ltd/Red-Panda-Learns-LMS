@@ -1,6 +1,9 @@
+import { Bundle } from "@/types/bundle";
+import { TransactionLineItem } from "@/types/transaction";
 import {
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,
+  ORDER_STATUS,
   PAYMENT_PROVIDER,
   TRANSACTION_STATUS,
   TRANSACTION_TYPE,
@@ -77,15 +80,15 @@ class PaymentService {
       convertedAmount = conversion.convertedAmount;
       exchangeRate = conversion.exchangeRate;
     }
-    
+
     let total = convertedAmount;
-    
+
     // TODO: Document this step properly
     // For PayPal, adjust so seller receives the base price after fees
     // Buyer pays total amount
     // We receive convertedAmount
     // PayPal keeps 3.49% of total + 0.49$ (fixed amount, will change based on currency)
-    // total = convertedAmount + 3.49% of total + 0.49$ (fixed amount, will change based on currency) 
+    // total = convertedAmount + 3.49% of total + 0.49$ (fixed amount, will change based on currency)
     // total = convertedAmount + percent * total + fixed
     // total - percent * total = convertedAmount + fixed
     // total * (1 - percent) = convertedAmount + fixed
@@ -111,50 +114,91 @@ class PaymentService {
     };
   }
 
-  async processPayment(
-    provider: PaymentProvider,
-    course: Course,
-    finalPrice: number,
-    userEmail: string,
-    userId: string,
-    selectedCurrency: Currency,
-    baseCurrency: Currency,
-    billingAddress: Address,
-    shippingAddress: Address
-
-  ): Promise<PaymentResult> {
+  async processPayment({
+    provider,
+    items,
+    finalPrice,
+    userEmail,
+    userId,
+    selectedCurrency,
+    baseCurrency,
+    billingAddress,
+  }: {
+    provider: PaymentProvider;
+    items: TransactionLineItem[];
+    finalPrice?: number;
+    userEmail: string;
+    userId: string;
+    selectedCurrency: Currency;
+    baseCurrency: Currency;
+    billingAddress: Address;
+  }): Promise<PaymentResult> {
     try {
-      const providerOption = this.providers.find((p) => p.id === provider);
-      if (!providerOption)
-        return { success: false, error: "Unsupported payment provider" };
+      if (!items || items.length === 0) {
+        return { success: false, error: "No items to purchase" };
+      }
 
-      //Here the course.salePrice is being passed through the Course Object We received from Process Payment
+      // Compute subtotal from items if not provided
+      const subtotal = items.reduce((sum, li) => sum + (li.amount ?? 0), 0);
+      const toCharge = typeof finalPrice === "number" ? finalPrice : subtotal;
+
+      // Price and currency conversion, fees, etc.
       const pricing = await this.calculatePricing(
-        finalPrice,
+        toCharge,
         selectedCurrency,
         baseCurrency,
-        provider,
+        provider
       );
+      // pricing: { amount, currency, originalAmount?, originalCurrency?, exchangeRate? }
 
+      // Extract IDs by type for Order
+      const courseIds = items
+        .filter((it) => it.itemType === ENROLLED_PROGRAM_TYPE.COURSE)
+        .map((it) => it.itemId);
+
+      const bundleIds = items
+        .filter((it) => it.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE)
+        .map((it) => it.itemId);
+
+      // Build a compact description for the provider/receipt
+      const itemNames = items.map((i) => i.name || i.itemId);
+      const displayTitle =
+        itemNames.length === 1
+          ? itemNames[0]
+          : `${itemNames[0]} + ${itemNames.length - 1} more`;
+
+      // Create Order
       const orderId = await orderService.createOrder({
         userId,
-        courseIds: [course.id],
+        items,
         amount: pricing.amount,
         currency: pricing.currency,
         billingAddress,
-        shippingAddress,
+
         metadata: {
           userEmail,
-          courseTitle: course.title,
-          userAgent: navigator.userAgent,
+          userAgent:
+            typeof navigator !== "undefined" ? navigator.userAgent : "",
+          itemsSnapshot: items.map(
+            ({ itemId, itemType, name, amount, originalAmount }) => ({
+              itemId,
+              itemType,
+              name,
+              amount,
+              originalAmount,
+            })
+          ),
+          subtotal,
+          displayTitle,
         },
-        status: "PENDING",
+        status: ORDER_STATUS.PENDING,
       });
 
+      // Create Transaction (now uses items[])
       const transactionId = await transactionService.createTransaction({
         orderNumber: orderId,
         userId,
-        courseId: course.id,
+        items, // <-- pass the line items
         type: TRANSACTION_TYPE.PAYMENT,
         amount: pricing.amount,
         currency: pricing.currency,
@@ -164,29 +208,31 @@ class PaymentService {
         paymentProvider: provider,
         status: TRANSACTION_STATUS.PENDING,
         paymentDetails: { orderId: "", paymentId: "" },
-
         metadata: {
-          orderId,
           userEmail,
-          courseTitle: course.title,
-          userAgent: navigator.userAgent,
+          itemTitles: itemNames,
+          displayTitle,
           paymentAttempts: 1,
+          subtotal,
         },
       });
 
+      // Call provider
       let result: PaymentResult;
       if (provider === PAYMENT_PROVIDER.RAZORPAY) {
+        // Suggested new provider input signature
         result = await razorpayProvider.processPayment(
-          course,
+          items,
           userEmail,
           transactionId,
           pricing.amount,
           userId,
-          selectedCurrency
+          selectedCurrency,
+          orderId
         );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
         result = await paypalProvider.processPayment(
-          course,
+          items,
           userEmail,
           transactionId,
           pricing.amount,
@@ -197,23 +243,34 @@ class PaymentService {
         result = { success: false, error: "Unsupported payment provider" };
       }
 
+      // Post-payment updates
       if (result.success) {
         result.transactionId = transactionId;
+
         await orderService.updateOrder(
           orderId,
-          result.success ? "SUCCESS" : "FAILED",
+          result.success ? ORDER_STATUS.COMPLETED : ORDER_STATUS.FAILED,
           transactionId
         );
-        try {
-          await enrollmentService.enrollUser(
-            userId,
-            course.id,
-            ENROLLED_PROGRAM_TYPE.COURSE
-          );
-        } catch (err) {
-          console.error("Enrollment failed after payment:", err);
-        }
+
+          try {
+            await enrollmentService.enrollUser(
+              userId,
+              items
+            );
+          } catch (err) {
+            console.error("Enrollment failed for item:", items, err);
+          }
+        
+      } else {
+        // Mark order as failed so it doesn’t linger in PENDING
+        await orderService.updateOrder(
+          orderId,
+          ORDER_STATUS.FAILED,
+          transactionId
+        );
       }
+
       return result;
     } catch (error) {
       console.error(error);

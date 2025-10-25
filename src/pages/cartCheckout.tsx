@@ -5,9 +5,10 @@ import {
   Lock,
   RefreshCw,
   Shield,
+  ShoppingCart,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,20 +18,20 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { paymentService } from "@/services/paymentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { useCourseQuery } from "@/hooks/useCaching";
 
 import { Header } from "@/components/Header";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
-import { enrollmentService } from "@/services/enrollmentService";
 import { TransactionLineItem } from "@/types/transaction";
 
-import {
-  ADDRESS_TYPE,
-  CURRENCY,
-  ENROLLED_PROGRAM_TYPE,
+import { 
+  ADDRESS_TYPE, 
+  CURRENCY, 
+  ENROLLED_PROGRAM_TYPE, 
   PAYMENT_PROVIDER,
+  CART_ACTION 
 } from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ import { Coupon } from "@/types/coupon";
 import { Currency, PaymentProvider } from "@/types/general";
 
 import { Timestamp } from "firebase/firestore";
-import { EnrolledProgramType } from "@/types/general";
+
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
   PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -69,11 +70,11 @@ const METHOD_LOGOS: Record<
   ],
 };
 
-export default function CheckoutPage() {
-  const { courseId } = useParams<{ courseId: string }>();
+export default function CartCheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshEnrollments, isEnrolled } = useEnrollment();
+  const { cartCourses, cartDispatch, loading: cartLoading } = useCart();
   const { toast } = useToast();
 
   const [billingAddress, setBillingAddress] = useState<Address>({
@@ -90,7 +91,7 @@ export default function CheckoutPage() {
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
-    PAYMENT_PROVIDER.RAZORPAY
+    PAYMENT_PROVIDER.RAZORPAY,
   );
   const [providerCurrencies, setProviderCurrencies] = useState<
     Record<PaymentProvider, Currency>
@@ -107,11 +108,8 @@ export default function CheckoutPage() {
   const [paypalClicked, setPaypalClicked] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  // keep "after" functionality
-  const [isUserEnrolled, setUserIsEnrolled] = useState(false);
 
   const providers = paymentService.getAvailableProviders();
-  const { data: course, isLoading } = useCourseQuery(courseId!);
 
   const [promoCode, setPromoCode] = useState("");
   const [isCouponValid, setIsCouponValid] = useState(false);
@@ -120,42 +118,66 @@ export default function CheckoutPage() {
   const [couponMessage, setCouponMessage] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
+  // Calculate subtotal from cart courses
+  const subtotal = cartCourses.reduce(
+    (sum, course) => sum + (course.salePrice || course.regularPrice || 0),
+    0
+  );
+
+  const regularTotal = cartCourses.reduce(
+    (sum, course) => sum + (course.regularPrice || 0),
+    0
+  );
+
+  const initialSavings = regularTotal - subtotal;
+
   useEffect(() => {
     if (!user) {
       navigate("/auth/login", {
         state: {
-          from: `/checkout/${courseId}`,
-          message: "Please login to proceed with enrollment.",
+          from: `/checkout`,
+          message: "Please login to proceed with checkout.",
         },
       });
     }
-  }, [user, navigate, courseId]);
+  }, [user, navigate]);
 
-  // Check if user already enrolled (keep "after" behavior)
+  // Check if any cart course is already enrolled
   useEffect(() => {
-    if (user && courseId) {
-      if (isEnrolled(courseId)) {
-        setUserIsEnrolled(true);
-      } else {
-        setUserIsEnrolled(false);
+    if (user && cartCourses.length > 0) {
+      const enrolledCourses = cartCourses.filter(course => isEnrolled(course.id));
+      
+      if (enrolledCourses.length > 0) {
+  
+        
+        toast({
+          title: "Already Enrolled",
+         description: `You are already enrolled in ${enrolledCourses.length} course(s). Please remove them from your cart before proceeding.`,
+          variant: "default",
+        });
       }
     }
-  }, [user, courseId]);
+  }, [user, cartCourses, isEnrolled, cartDispatch, toast]);
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (!cartLoading && cartCourses.length === 0) {
+      navigate("/cart");
+    }
+  }, [cartCourses, cartLoading, navigate]);
 
   useEffect(() => {
-    if (isUserEnrolled) navigate(`/course/${courseId}`);
-  }, [isUserEnrolled, navigate, courseId]);
-
-  useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-  }, [course, selectedCurrency, selectedProvider, discountAmount]);
+    if (cartCourses.length > 0 && selectedCurrency) {
+      loadPricing();
+    }
+  }, [cartCourses, selectedCurrency, selectedProvider, discountAmount]);
 
   const loadPricing = async () => {
-    if (!course) return;
+    if (cartCourses.length === 0) return;
     setLoadingPricing(true);
 
     try {
-      const basePrice = course.salePrice || 0;
+      const basePrice = subtotal;
       const effectivePrice = Math.max(0, basePrice - discountAmount);
       setFinalPrice(effectivePrice);
 
@@ -163,7 +185,7 @@ export default function CheckoutPage() {
         effectivePrice,
         selectedCurrency,
         CURRENCY.INR,
-        selectedProvider
+        selectedProvider,
       );
 
       setPricing(data);
@@ -181,106 +203,97 @@ export default function CheckoutPage() {
   const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
     const discountPercentage = coupon.discountPercentage ?? 0;
-
-    // Protects against scenarios where discountPercentage might accidently have been set greater than 100
-    return Math.max(
-      0,
-      Math.min(originalPrice, (originalPrice * discountPercentage) / 100)
-    );
+    return Math.max(0, Math.min(originalPrice, (originalPrice * discountPercentage) / 100));
   };
 
   const clearCoupon = () => {
     setAppliedCoupon(null);
     setIsCouponValid(false);
-    setPromoCode("");
     setDiscountAmount(0);
     setCouponMessage("");
   };
 
-  // Auto-clear when input becomes empty (immediately updates price)
   useEffect(() => {
     if (promoCode.trim() === "" && (appliedCoupon || discountAmount > 0)) {
       clearCoupon();
     }
-  }, [promoCode, appliedCoupon, discountAmount, clearCoupon]);
+  }, [promoCode, appliedCoupon, discountAmount]);
 
   const handleCoupon = async () => {
     setIsValidatingCoupon(true);
     setCouponMessage("");
     setIsCouponValid(false);
 
-    try {
-      const code = promoCode.trim();
-      if (!code) {
-        clearCoupon();
-        setCouponMessage("Please enter a valid promo code");
-        return;
-      }
-
-      const couponResult = await couponService.getCouponByCode(code);
-
-      if (!couponResult.success) {
-        clearCoupon();
-        setCouponMessage("Invalid promo code");
-        setPromoCode(""); // 👈 optional UX improvement: clear field
-        return;
-      }
-
-      const coupon = couponResult.data;
-      setAppliedCoupon(coupon);
-
-      const applicabilityResult = await couponUsageService.isCouponApplicable(
-        user!.id,
-        coupon.id,
-        courseId!,
-        null,
-        null
-      );
-
-      if (
-        !applicabilityResult.success ||
-        !applicabilityResult.data?.isApplicable
-      ) {
-        clearCoupon();
-        setCouponMessage(
-          applicabilityResult.data?.reason ?? "Coupon not applicable"
-        );
-        setPromoCode("");
-        return;
-      }
-
-      const originalPrice = course!.salePrice || 0;
-      setDiscountAmount(calculateDiscount(originalPrice, coupon));
-      setIsCouponValid(true);
-      setCouponMessage("Coupon is valid, Happy Learning!");
-    } catch (err) {
+    const code = promoCode.trim();
+    if (!code) {
       clearCoupon();
-      setCouponMessage("Error validating coupon. Please try again.");
-      setPromoCode("");
-    } finally {
       setIsValidatingCoupon(false);
+      return;
     }
+
+    const couponResult = await couponService.getCouponByCode(code);
+
+    if (!couponResult.success) {
+      clearCoupon();
+      setCouponMessage("Invalid promo code");
+      setIsValidatingCoupon(false);
+      return;
+    }
+
+    const coupon = couponResult.data;
+    setAppliedCoupon(coupon);
+
+    // Check coupon applicability for cart (you might need to adjust this based on your coupon rules)
+    const applicabilityResult = await couponUsageService.isCouponApplicable(
+      user!.id,
+      coupon.id,
+      null, // No specific courseId for cart
+      null,
+      null,
+    );
+    
+    if (!applicabilityResult.success || !applicabilityResult.data?.isApplicable) {
+      clearCoupon();
+      setCouponMessage(
+        applicabilityResult.data?.reason ?? "Coupon not applicable to cart",
+      );
+      setIsValidatingCoupon(false);
+      return;
+    }
+
+    // Calculate discount on subtotal
+    setDiscountAmount(calculateDiscount(subtotal, coupon));
+    setIsCouponValid(true);
+    setCouponMessage("Coupon applied successfully!");
+    setIsValidatingCoupon(false);
   };
+
   const handleUseCoupon = async () => {
+    if (!appliedCoupon) return;
+    
     const usageDate = {
       userId: user?.id,
       couponId: appliedCoupon.id,
       usedAt: Timestamp.now(),
     };
+    
     const result = await couponUsageService.recordCouponUsage(usageDate);
     if (result.success) {
       toast({
-        title: "Coupon successfully applied!",
+        title: "Coupon successfully applied!"
       });
       return;
     }
+    
     toast({
       title: "Failed to apply coupon!",
+      variant: "destructive"
     });
   };
 
   const handlePayment = async () => {
-    if (!course || !user || !pricing) return;
+    if (cartCourses.length === 0 || !user || !pricing) return;
+    
     if (selectedProvider === PAYMENT_PROVIDER.PAYPAL) setPaypalClicked(true);
     setIsProcessing(true);
 
@@ -290,15 +303,14 @@ export default function CheckoutPage() {
     });
 
     try {
-      const items: TransactionLineItem[] = [
-        {
-          itemId: course.id,
-          itemType: ENROLLED_PROGRAM_TYPE.COURSE, // Course --> Checkout Page for Course
-          name: course.title,
-          amount: finalPrice,
-          originalAmount: course.salePrice,
-        },
-      ];
+      // Transform cart courses into transaction line items
+      const items: TransactionLineItem[] = cartCourses.map(course => ({
+        itemId: course.id,
+        itemType: ENROLLED_PROGRAM_TYPE.COURSE,
+        name: course.title,
+        amount: course.salePrice || course.regularPrice || 0,
+        originalAmount: course.regularPrice,
+      }));
 
       const result = await paymentService.processPayment({
         provider: selectedProvider,
@@ -312,8 +324,8 @@ export default function CheckoutPage() {
       });
 
       if (result.success && result.transactionId) {
-        let enrollmentVerified = false;
-        if (isCouponValid) {
+        // Apply coupon if used
+         if (isCouponValid) {
           try {
             await handleUseCoupon(); 
           } catch (error) {
@@ -327,29 +339,39 @@ export default function CheckoutPage() {
           }
         }
 
+        // Verify enrollment for all courses
+        let allEnrolled = false;
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
-          if (isEnrolled(course.id)) {
-            enrollmentVerified = true;
+          
+          const enrolledCount = cartCourses.filter(course => 
+            isEnrolled(course.id)
+          ).length;
+          
+          if (enrolledCount === cartCourses.length) {
+            allEnrolled = true;
             break;
           }
 
           await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
         }
 
-        if (enrollmentVerified) {
+        // Clear cart after successful payment
+        cartDispatch({ type: CART_ACTION.CLEAR });
+
+        if (allEnrolled) {
           toast({
             title: "Enrollment Successful!",
-            description: `You are now enrolled in ${course.title}`,
+            description: `You are now enrolled in ${cartCourses.length} course(s)`,
           });
-          navigate(`/course/${courseId}`);
+          navigate("/dashboard");
         } else {
           toast({
             title: "Payment Successful",
             description:
-              "Your payment was processed. If you don't see the course immediately, please refresh the page.",
+              "Your payment was processed. If you don't see the courses immediately, please refresh the page.",
           });
-          navigate(`/course/${courseId}`);
+          navigate("/dashboard");
         }
       } else {
         toast({
@@ -370,7 +392,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isLoading) {
+  if (cartLoading) {
     return (
       <div className="min-h-screen bg-background dark:bg-[#0e0f11] p-6">
         <div className="max-w-2xl mx-auto">
@@ -378,11 +400,6 @@ export default function CheckoutPage() {
         </div>
       </div>
     );
-  }
-
-  if (!course) {
-    navigate("/");
-    return null;
   }
 
   const hasDiscount = discountAmount > 0;
@@ -393,25 +410,25 @@ export default function CheckoutPage() {
       currency: cur,
     }).format(amount);
 
-  const originalConverted = course ? (course.salePrice || 0) * exchangeRate : 0;
+  const originalConverted = subtotal * exchangeRate;
   const discountConverted = discountAmount * exchangeRate;
+  const totalSavings = initialSavings + discountAmount;
 
 return (
-  <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col justify-start">
+  <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col">
     <Header />
 
-    {/* main container */}
-    <div className="flex-1 px-4 sm:px-6 lg:px-8 pb-12">
-      <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white pt-8">
+    <div className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white">
         {/* Top bar */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/course/${courseId}`)}
+            onClick={() => navigate("/cart")}
             className="flex items-center text-blue-600"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Course
+            Back to Cart
           </Button>
         </div>
 
@@ -420,10 +437,11 @@ return (
             Complete Your Enrollment
           </h1>
           <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
-            You're just one step away from accessing this course
+            You're enrolling in {cartCourses.length} course(s)
           </p>
         </div>
 
+        {/* Define helper for address validation */}
         {(() => {
           const requiredFilled =
             billingAddress.fullName.trim() &&
@@ -433,74 +451,76 @@ return (
             billingAddress.state.trim() &&
             billingAddress.postalCode.trim() &&
             billingAddress.country.trim();
-
-          const canPay =
-            agreed && requiredFilled && pricing && !loadingPricing && !isProcessing;
-
-          const showMsg = !canPay;
+          const canPay = agreed && requiredFilled && pricing && !loadingPricing && !isProcessing;
+          const showMessage = !canPay;
 
           return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* RIGHT: Payment & Summary */}
-              <div className="order-1 lg:order-2 lg:col-span-5 space-y-6">
-                {/* Course Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
+              {/* LEFT: Payment Section */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Order Summary */}
                 <Card className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
                   <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                    <CardTitle>Course Summary</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      Order Summary ({cartCourses.length} courses)
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <h3 className="font-semibold text-lg">{course.title}</h3>
-                    <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
-                      {course.description}
-                    </p>
+                  <CardContent className="pt-6">
+                    <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                      {cartCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="flex justify-between items-start gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                        >
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium line-clamp-2">{course.title}</h4>
+                          </div>
+                          <div className="text-sm font-medium whitespace-nowrap">
+                            {course.salePrice !== course.regularPrice && (
+                              <span className="line-through text-gray-400 mr-2">
+                                ₹{course.regularPrice}
+                              </span>
+                            )}
+                            ₹{course.salePrice || course.regularPrice}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
                     {pricing && !loadingPricing ? (
                       <div className="space-y-3">
-                        <div className="flex items-baseline justify-between text-sm">
-                          <span>Course Price:</span>
-                          <div className="flex items-baseline gap-2">
-                            {hasDiscount ? (
-                              <>
-                                <span className="line-through text-gray-400">
-                                  {formatMoney(
-                                    originalConverted,
-                                    selectedCurrency
-                                  )}
-                                </span>
-                                <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                                  You save{" "}
-                                  {formatMoney(
-                                    discountConverted,
-                                    selectedCurrency
-                                  )}
-                                </Badge>
-                              </>
-                            ) : (
-                              <span className="font-medium">
-                                {formatMoney(
-                                  originalConverted,
-                                  selectedCurrency
-                                )}
-                              </span>
-                            )}
-                          </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Subtotal:</span>
+                          <span>{formatMoney(originalConverted, selectedCurrency)}</span>
                         </div>
-
+                        {hasDiscount && (
+                          <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                            <span>Discount:</span>
+                            <span>
+                              -{formatMoney(discountConverted, selectedCurrency)}
+                            </span>
+                          </div>
+                        )}
+                        {totalSavings > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span>Total Savings:</span>
+                            <Badge className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                              You save{" "}
+                              {formatMoney(totalSavings * exchangeRate, selectedCurrency)}
+                            </Badge>
+                          </div>
+                        )}
                         <hr className="my-2 border-gray-200 dark:border-gray-700" />
-
                         <div className="flex justify-between items-center">
-                          <span className="text-base font-semibold">
-                            Total:
-                          </span>
+                          <span className="text-base font-semibold">Total:</span>
                           <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                             {pricing.formattedTotal ?? pricing.formattedPrice}
                           </span>
                         </div>
-
                         {pricing.originalCurrency !== pricing.currency && (
                           <div className="text-xs text-muted-foreground dark:text-gray-400">
-                            Original: {pricing.originalAmount}{" "}
-                            {pricing.originalCurrency} (Rate:{" "}
+                            Original: {pricing.originalAmount} {pricing.originalCurrency} (Rate:{" "}
                             {Number(pricing.exchangeRate).toFixed(4)})
                           </div>
                         )}
@@ -518,14 +538,13 @@ return (
                 <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
                   <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                     <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-blue-600" /> Select
-                      Payment Method
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                      Select Payment Method
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 pt-6">
                     {providers.map((provider) => {
                       const isSelected = selectedProvider === provider.id;
-
                       return (
                         <div
                           key={provider.id}
@@ -561,20 +580,16 @@ return (
                                   {provider.description}
                                 </p>
                                 <div className="mt-2 flex gap-1.5 flex-wrap">
-                                  {(METHOD_LOGOS[provider.id] ?? []).map(
-                                    (m) => (
-                                      <img
-                                        key={m.name}
-                                        src={m.src}
-                                        alt={m.name}
-                                        title={m.name}
-                                        loading="lazy"
-                                        className={
-                                          m.className ?? "h-[20px] w-[32px]"
-                                        }
-                                      />
-                                    )
-                                  )}
+                                  {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
+                                    <img
+                                      key={m.name}
+                                      src={m.src}
+                                      alt={m.name}
+                                      title={m.name}
+                                      loading="lazy"
+                                      className={m.className ?? "h-[20px] w-[32px]"}
+                                    />
+                                  ))}
                                 </div>
                               </div>
                             </div>
@@ -591,13 +606,11 @@ return (
                                 }
                                 className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
                               >
-                                {providerSupportedCurrencies[provider.id].map(
-                                  (c) => (
-                                    <option key={c} value={c}>
-                                      {c}
-                                    </option>
-                                  )
-                                )}
+                                {providerSupportedCurrencies[provider.id].map((c) => (
+                                  <option key={c} value={c}>
+                                    {c}
+                                  </option>
+                                ))}
                               </select>
                               <Badge
                                 variant="secondary"
@@ -613,7 +626,7 @@ return (
                   </CardContent>
                 </Card>
 
-                {/* Secure */}
+                {/* Security */}
                 <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
@@ -621,8 +634,7 @@ return (
                       <div>
                         <h4 className="font-medium mb-1">Secure Payment</h4>
                         <p className="text-sm text-muted-foreground dark:text-gray-400">
-                          All transactions are encrypted. Instant access after
-                          payment. 7‑day refund guarantee.
+                          All transactions are encrypted. Instant access after payment. 7‑day refund guarantee.
                         </p>
                       </div>
                     </div>
@@ -630,7 +642,7 @@ return (
                 </Card>
 
                 {/* Agreement & CTA */}
-                <div className="space-y-3">
+                <div className="space-y-3 pt-2">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="agree"
@@ -639,33 +651,24 @@ return (
                     />
                     <Label htmlFor="agree" className="text-sm leading-snug">
                       I agree to the{" "}
-                      <Link
-                        to="/terms"
-                        className="underline text-blue-600 dark:text-blue-400"
-                      >
+                      <Link to="/terms" className="underline text-blue-600 dark:text-blue-400">
                         Terms & Conditions
                       </Link>
                       ,{" "}
-                      <Link
-                        to="/privacy"
-                        className="underline text-blue-600 dark:text-blue-400"
-                      >
+                      <Link to="/privacy" className="underline text-blue-600 dark:text-blue-400">
                         Privacy Policy
                       </Link>
                       , and{" "}
-                      <Link
-                        to="/refund-policy"
-                        className="underline text-blue-600 dark:text-blue-400"
-                      >
+                      <Link to="/refund-policy" className="underline text-blue-600 dark:text-blue-400">
                         Refund Policy
                       </Link>
                       .
                     </Label>
                   </div>
 
-                  {showMsg && (
+                  {showMessage && (
                     <div className="text-sm text-red-500 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-700">
-                      Please check “I agree” and fill all billing address fields before continuing.
+                      Please check "I agree" and fill all billing address fields before continuing.
                     </div>
                   )}
 
@@ -687,19 +690,18 @@ return (
                     )}
                   </Button>
 
-                  {selectedProvider === PAYMENT_PROVIDER.PAYPAL &&
-                    paypalClicked && (
-                      <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
-                        <CardContent className="pt-6">
-                          <div id="paypal-button-container"></div>
-                        </CardContent>
-                      </Card>
-                    )}
+                  {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
+                    <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
+                      <CardContent className="pt-6">
+                        <div id="paypal-button-container"></div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </div>
 
-              {/* LEFT: Coupon + Billing Address (unchanged structure) */}
-              <div className="order-2 lg:order-1 lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* RIGHT: Coupon + Billing Address */}
+              <div className="lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Coupon */}
                 <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
                   <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
@@ -707,10 +709,10 @@ return (
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
                         %
                       </span>
-                      Coupon
+                      Apply Promo Code
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <div className="space-y-2">
                       <Label htmlFor="promoCode">Have a promo code?</Label>
                       <div className="flex gap-2">
@@ -724,7 +726,7 @@ return (
                             if (e.key === "Enter") handleCoupon();
                           }}
                           disabled={isValidatingCoupon || isProcessing}
-                          className="border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 dark:border-zinc-700 dark:focus:border-blue-500"
+                          className="border-blue-200 focus:border-blue-500"
                         />
                         <Button
                           type="button"
@@ -750,8 +752,8 @@ return (
                   </CardContent>
                 </Card>
 
-                {/* Billing Address (kept intact) */}
-                <Card className="xl:col-span-2 bg-white/90 dark:bg-zinc-950 border border-blue-50 dark:border-zinc-900 rounded-xl shadow-sm overflow-hidden">
+                {/* Billing Address */}
+                <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
                   <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                     <CardTitle className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
@@ -761,184 +763,117 @@ return (
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
-                   
-              
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="fullName"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      >
-                        Full Name <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="fullName"
-                        value={billingAddress.fullName}
-                        onChange={(e) =>
-                          setBillingAddress({
-                            ...billingAddress,
-                            fullName: e.target.value,
-                          })
-                        }
-                        placeholder="Enter your full name"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="fullName">
+                          Full Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="fullName"
+                          value={billingAddress.fullName}
+                          onChange={(e) =>
+                            setBillingAddress({ ...billingAddress, fullName: e.target.value })
+                          }
+                          placeholder="Enter your full name"
+                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone">
+                          Phone Number <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={billingAddress.phone}
+                          onChange={(e) =>
+                            setBillingAddress({ ...billingAddress, phone: e.target.value })
+                          }
+                          placeholder="Enter your phone number"
+                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <Label
-                        htmlFor="phone"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      >
-                        Phone Number <span className="text-red-500">*</span>
+                      <Label htmlFor="line1">
+                        Street Address <span className="text-red-500">*</span>
                       </Label>
                       <Input
-                        id="phone"
-                        type="tel"
-                        value={billingAddress.phone}
+                        id="line1"
+                        value={billingAddress.line1}
                         onChange={(e) =>
-                          setBillingAddress({
-                            ...billingAddress,
-                            phone: e.target.value,
-                          })
+                          setBillingAddress({ ...billingAddress, line1: e.target.value })
                         }
-                        placeholder="Enter your phone number"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="line1"
-                      className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                    >
-                      Street Address <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="line1"
-                      value={billingAddress.line1}
-                      onChange={(e) =>
-                        setBillingAddress({
-                          ...billingAddress,
-                          line1: e.target.value,
-                        })
-                      }
-                      placeholder="Enter your street address"
-                      className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                    />
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="line2"
-                      className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                    >
-                      Apartment, Suite, etc.{" "}
-                      <span className="text-gray-400 text-xs">(Optional)</span>
-                    </Label>
-                    <Input
-                      id="line2"
-                      value={billingAddress.line2 || ""}
-                      onChange={(e) =>
-                        setBillingAddress({
-                          ...billingAddress,
-                          line2: e.target.value,
-                        })
-                      }
-                      placeholder="Apartment number, suite, unit, building, floor, etc."
-                      className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="city"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      >
-                        City <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="city"
-                        value={billingAddress.city}
-                        onChange={(e) =>
-                          setBillingAddress({
-                            ...billingAddress,
-                            city: e.target.value,
-                          })
-                        }
-                        placeholder="Enter your city"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
+                        placeholder="Enter your street address"
+                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
                       />
                     </div>
 
-                    <div>
-                      <Label
-                        htmlFor="state"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      >
-                        State/Province <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="state"
-                        value={billingAddress.state}
-                        onChange={(e) =>
-                          setBillingAddress({
-                            ...billingAddress,
-                            state: e.target.value,
-                          })
-                        }
-                        placeholder="Enter your state or province"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                      />
-                    </div>
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="city">
+                          City <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="city"
+                          value={billingAddress.city}
+                          onChange={(e) =>
+                            setBillingAddress({ ...billingAddress, city: e.target.value })
+                          }
+                          placeholder="Enter your city"
+                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="postalCode"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      >
-                        ZIP/Postal Code <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="postalCode"
-                        value={billingAddress.postalCode}
-                        onChange={(e) =>
-                          setBillingAddress({
-                            ...billingAddress,
-                            postalCode: e.target.value,
-                          })
-                        }
-                        placeholder="Enter ZIP or postal code"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                      />
+                      <div>
+                        <Label htmlFor="state">
+                          State/Province <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="state"
+                          value={billingAddress.state}
+                          onChange={(e) =>
+                            setBillingAddress({ ...billingAddress, state: e.target.value })
+                          }
+                          placeholder="Enter your state"
+                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <Label
-                        htmlFor="country"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      >
-                        Country <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="country"
-                        value={billingAddress.country}
-                        onChange={(e) =>
-                          setBillingAddress({
-                            ...billingAddress,
-                            country: e.target.value,
-                          })
-                        }
-                        placeholder="Enter your country"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="postalCode">
+                          ZIP/Postal Code <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="postalCode"
+                          value={billingAddress.postalCode}
+                          onChange={(e) =>
+                            setBillingAddress({ ...billingAddress, postalCode: e.target.value })
+                          }
+                          placeholder="Enter ZIP code"
+                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="country">
+                          Country <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="country"
+                          value={billingAddress.country}
+                          onChange={(e) =>
+                            setBillingAddress({ ...billingAddress, country: e.target.value })
+                          }
+                          placeholder="Enter your country"
+                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                        />
+                      </div>
                     </div>
-                  </div>
-             
                   </CardContent>
                 </Card>
               </div>

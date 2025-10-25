@@ -171,10 +171,10 @@ export default function LessonDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">
           <CourseNavigator
@@ -186,7 +186,7 @@ export default function LessonDetailPage() {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 max-w-4xl mx-auto p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-scroll">
           {!selectedItem ? (
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="text-center">
