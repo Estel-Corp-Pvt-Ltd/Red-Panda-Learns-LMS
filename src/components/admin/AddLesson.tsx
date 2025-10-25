@@ -99,25 +99,21 @@ export const CreateLessonModal = ({
         return;
       }
       if (!lesson.description.trim() && !lesson.embedUrl.trim()) {
-        toast.error("Fill description or embedUrl.");
-        return;
-      }
-      if (!lesson.embedUrl.trim()) {
-        toast({ title: "Embed URL is required", variant: "destructive" });
+        toast({ title: "Fill description or embedUrl.", variant: "destructive" });
         return;
       }
       if (lesson.durationSeconds < 0) {
-        toast.error("Duration must be greater than 0 seconds");
+        toast({ title: "Duration must be greater than 0 seconds", variant: "destructive" });
         return;
       }
 
       setSaving(true);
       const newLesson = await lessonService.createLesson(lesson);
-      toast.success("Lesson created successfully!");
+      toast({ title: "Lesson created successfully!" });
 
       onLessonCreated?.(newLesson);
       resetForm();
-      onClose(); // Call onClose after everything else
+      onClose();
     } catch (err) {
       logError("Error creating lesson:", err);
       toast({ title: "Failed to create lesson", variant: "destructive" });
