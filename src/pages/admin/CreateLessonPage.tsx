@@ -20,10 +20,12 @@ import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
 import { Label } from "@/components/ui/label"; // instead of @radix-ui/react-dropdown-menu
 import { Header } from "@/components/Header";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { lessonService } from "@/services/lessonService";
+import { useToast } from "@/hooks/use-toast";
+import { logError } from "@/utils/logger";
 
 const CreateLessonPage = () => {
+  const { toast } = useToast();
   const [lesson, setLesson] = useState({
     title: "",
     type: LESSON_TYPE.SLIDE_DECK,
@@ -51,28 +53,28 @@ const CreateLessonPage = () => {
   const handleSaveLesson = async () => {
     try {
       if (!lesson.title.trim()) {
-        toast.error("Lesson title is required");
+        toast({ title: "Lesson title is required", variant: "destructive" });
         return;
       }
       if (!lesson.description.trim()) {
-        toast.error("Lesson description is required");
+        toast({ title: "Lesson description is required", variant: "destructive" });
         return;
       }
       if (!lesson.type) {
-        toast.error("Lesson type is required");
+        toast({ title: "Lesson type is required", variant: "destructive" });
         return;
       }
       if (!lesson.embedUrl.trim()) {
-        toast.error("Embed URL is required");
+        toast({ title: "Embed URL is required", variant: "destructive" });
         return;
       }
       if (lesson.durationSeconds <= 0) {
-        toast.error("Duration must be greater than 0 seconds");
+        toast({ title: "Duration must be greater than 0 seconds", variant: "destructive" });
         return;
       }
 
       await lessonService.createLesson(lesson);
-      toast.success("Lesson created successfully!");
+      toast({ title: "Lesson created successfully!", variant: "default" });
 
       // Reset form
       setLesson({
@@ -84,8 +86,8 @@ const CreateLessonPage = () => {
         scope: LESSON_SCOPE.APP,
       });
     } catch (error) {
-      console.error("Error creating lesson:", error);
-      toast.error("Failed to create lesson");
+      logError("Error creating lesson:", error);
+      toast({ title: "Failed to create lesson", variant: "destructive" });
     }
   };
 

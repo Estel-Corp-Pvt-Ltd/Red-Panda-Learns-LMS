@@ -1,5 +1,4 @@
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -36,7 +35,6 @@ import EditCouponPage from "./pages/admin/EditCouponPage";
 import EditLessonPage from "./pages/admin/EditLesson";
 import EditUserPage from "./pages/admin/EditUser";
 import SubmissionDetailPage from "./pages/admin/SubmissionDetailPage";
-import ViewLessonAdmin from "./pages/admin/ViewLesson";
 import DummyCurriculumBuilderPage from "./pages/admin/dummycurriculum";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
@@ -59,7 +57,6 @@ const App = () => (
               <LoadingOverlayProvider>
                 {/* <PopUpContainer /> */}
                 <Toaster />
-                <Sonner />
                 <BrowserRouter>
                   <Routes>
                     <Route path="/" element={<LandingPage />} />
@@ -68,7 +65,7 @@ const App = () => (
                     <Route
                       path="/course/:courseId/lesson/:lessonId"
                       element={
-                        <AuthGuard requireAuth requireEnrollment>
+                        <AuthGuard requireAuth requireEnrollmentOrAdmin={true}>
                           <LessonDetailPage />
                         </AuthGuard>
                       }
@@ -99,15 +96,6 @@ const App = () => (
                       element={
                         <AuthGuard requireAuth requireAdmin>
                           <AdminDashboard />
-                        </AuthGuard>
-                      }
-                    />
-                    <Route path="/admin/course/:courseId/lesson/:lessonId" element={<ViewLessonAdmin />} />
-                    <Route
-                      path="/admin/course/:courseId/lesson/:lessonId"
-                      element={
-                        <AuthGuard requireAdmin >
-                          <ViewLessonAdmin />
                         </AuthGuard>
                       }
                     />

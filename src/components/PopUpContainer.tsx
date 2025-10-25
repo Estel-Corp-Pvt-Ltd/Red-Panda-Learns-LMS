@@ -17,6 +17,8 @@ const PopUpContainer = () => {
                     type={popUp.type}
                     ctaLink={popUp.ctaLink}
                     ctaText={popUp.ctaText}
+                    autoClose={popUp.autoClose}
+                    duration={popUp.duration}
                 />
             ))}
         </div>

@@ -74,6 +74,7 @@ const METHOD_LOGOS: Record<
 };
 
 export default function BundleCheckoutPage() {
+  const { toast } = useToast();
   const { bundleId } = useParams<{ bundleId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
