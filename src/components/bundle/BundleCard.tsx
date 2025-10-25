@@ -1,33 +1,47 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Bundle } from "@/types/bundle";
 import { BookOpen, Tag, Users } from "lucide-react";
 
 interface BundleCardProps {
   bundle: Bundle;
-  variant?: 'default' | 'compact';
+  variant?: "default" | "compact";
   onPurchase?: (bundleId: string) => void;
   className?: string;
-};
+  isEnrolled?: boolean; // 👈 optional flag
+  onAccess?: () => void; // 👈 optional click handler
+}
 
 export function BundleCard({
   bundle,
-  variant = 'default',
+  variant = "default",
   onPurchase,
-  className
+  className,
+  isEnrolled,
+  onAccess,
 }: BundleCardProps) {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
-
-  if (variant === 'compact') {
+  console.log("bundle card -->", isEnrolled);
+  if (variant === "compact") {
     return (
-      <Card className={cn("flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300", className)}>
+      <Card
+        className={cn(
+          "flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300",
+          className
+        )}
+      >
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
           {bundle.thumbnail ? (
             <img
@@ -70,21 +84,30 @@ export function BundleCard({
               </div>
 
               <Button
-                size="sm"
-                onClick={() => onPurchase?.(bundle.id)}
-                className="whitespace-nowrap"
+                className="w-full"
+                size="lg"
+                onClick={() =>
+                  isEnrolled ? onAccess?.() : onPurchase?.(bundle.id)
+                }
               >
-                Buy Bundle
+                {isEnrolled
+                  ? "Access Bundle"
+                  : `Buy Bundle - ${formatCurrency(bundle.regularPrice)}`}
               </Button>
             </div>
           </div>
         </div>
       </Card>
     );
-  };
+  }
 
   return (
-    <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden hover:shadow-lg transition-all duration-300 group",
+        className
+      )}
+    >
       <CardHeader className="p-0">
         <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
           {bundle.thumbnail ? (
@@ -156,11 +179,13 @@ export function BundleCard({
         <Button
           className="w-full"
           size="lg"
-          onClick={() => onPurchase?.(bundle.id)}
+          onClick={() => (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))}
         >
-          Buy Bundle - {formatCurrency(bundle.regularPrice)}
+          {isEnrolled
+            ? "Access Bundle"
+            : `Buy Bundle - ${formatCurrency(bundle.regularPrice)}`}
         </Button>
       </CardFooter>
     </Card>
   );
-};
+}
