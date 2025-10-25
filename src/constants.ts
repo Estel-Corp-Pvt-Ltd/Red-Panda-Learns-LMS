@@ -137,7 +137,7 @@ export const TRANSACTION_STATUS = {
 
 export const ORDER_STATUS = {
   PENDING: "PENDING",
-  SUCCESS: "SUCCESS",
+  COMPLETED: "COMPLETED",
   FAILED: "FAILED",
 } as const;
 
