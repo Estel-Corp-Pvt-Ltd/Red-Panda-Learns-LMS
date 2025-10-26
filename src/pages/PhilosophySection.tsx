@@ -1,13 +1,57 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Layers, Code2, Brain } from "lucide-react";
+import { Layers, Code2, Brain, LucideIcon } from "lucide-react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
-// Constants
+// Decryption config (shared by code + math)
+const DECRYPTION_CONFIG = {
+  SCRAMBLE_INTERVAL: 30, // how often scrambled glyphs update (ms)
+  TIME_PER_LINE: 800, // each line finishes in exactly this time (ms)
+  LINE_TRANSITION_DELAY: 150, // pause before the next line starts (ms)
+};
+
 const CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(){}[]<>?/\\|=-+";
 
-const philosophyItems = [
+// Types
+interface PhilosophyItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  color: string;
+  gradient: string;
+}
+
+interface Pulse {
+  id: number;
+  cardIndex: number;
+}
+
+interface DecryptedLineProps {
+  text: string;
+  delay?: number;
+  fixedDuration?: number;
+  onComplete?: () => void;
+}
+
+interface DecryptedCodeLineByLineProps {
+  text: string;
+  startTrigger: number;
+}
+
+interface DecryptedMathLineProps {
+  latex: string;
+  delay?: number;
+  fixedDuration?: number;
+  onComplete?: () => void;
+}
+
+interface DecryptedMathLineByLineProps {
+  lines: string[];
+  startTrigger: number;
+}
+
+const philosophyItems: PhilosophyItem[] = [
   {
     icon: Layers,
     title: "Foundations",
@@ -34,34 +78,24 @@ const philosophyItems = [
   },
 ];
 
+// 7 lines each to align the total animation time
 const foundationLatexLines = [
-  String.raw`\textbf{Forward pass (dense layer)}`,
+  String.raw`\textbf{Neural Network}`,
   String.raw`\mathbf{z} = \mathbf{W}\mathbf{x} + \mathbf{b}`,
-  String.raw`\mathbf{a} = f(\mathbf{z})`,
-  String.raw`\textbf{Softmax + cross-entropy}`,
-  String.raw`p_i = \frac{e^{z_i}}{\sum_{j} e^{z_j}}`,
-  String.raw`\mathcal{L} = - \sum_{i} y_i \log p_i`,
-  String.raw`\textbf{Backprop to logits (softmax + CE)}`,
-  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{z}} = \mathbf{p} - \mathbf{y}`,
-  String.raw`\textbf{Gradients for dense layer}`,
-  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{W}} = \left(\frac{\partial \mathcal{L}}{\partial \mathbf{z}}\right) \mathbf{x}^\top`,
-  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{b}} = \frac{\partial \mathcal{L}}{\partial \mathbf{z}}`,
-  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{x}} = \mathbf{W}^\top \left(\frac{\partial \mathcal{L}}{\partial \mathbf{z}}\right)`,
+  String.raw`\mathbf{a} = \sigma(\mathbf{z})`,
+  String.raw`\textbf{Loss Function}`,
+  String.raw`\mathcal{L} = - \sum_{i} y_i \log \hat{y}_i`,
+  String.raw`\textbf{Gradient}`,
+  String.raw`\frac{\partial \mathcal{L}}{\partial \mathbf{W}} = \delta \mathbf{x}^\top`,
 ];
 
-const attentionSnippet = `# Imports
-import math
-import torch
-import torch.nn as nn
-
-# Scaled dot-product attention
-def sdpa(q, k, v, mask=None):
+const attentionSnippet = `# Attention Mechanism
+def attention(q, k, v):
     d = q.size(-1)
-    scores = (q @ k.transpose(-2, -1)) / math.sqrt(d)
-    if mask is not None:
-        scores = scores.masked_fill(mask == 0, -1e9)
-    attn = torch.softmax(scores, dim=-1)
-    return attn @ v, attn`;
+    scores = q @ k.T / sqrt(d)
+    attn = softmax(scores)
+    out = attn @ v
+    return out`;
 
 const researchRef = {
   title: "Attention Is All You Need",
@@ -70,14 +104,25 @@ const researchRef = {
   link: "https://arxiv.org/abs/1706.03762",
 };
 
-const DecryptedLine = ({ text, delay = 0, onComplete }) => {
+// Unified decrypt line (used by code)
+const DecryptedLine: React.FC<DecryptedLineProps> = ({
+  text,
+  delay = 0,
+  fixedDuration,
+  onComplete,
+}) => {
   const [displayedText, setDisplayedText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
   const initialDelayRef = useRef(delay);
-  const onCompleteRef = useRef(() => {});
+  const onCompleteRef = useRef<() => void>(() => {});
   const didCompleteRef = useRef(false);
+
+  // derive per-character speed to hit the fixed duration
+  const charRevealSpeed = fixedDuration
+    ? Math.max(15, Math.floor(fixedDuration / Math.max(1, text.length)))
+    : 25;
 
   useEffect(() => {
     onCompleteRef.current = onComplete ?? (() => {});
@@ -98,7 +143,7 @@ const DecryptedLine = ({ text, delay = 0, onComplete }) => {
       setDisplayedText(text);
       if (!didCompleteRef.current) {
         didCompleteRef.current = true;
-        onCompleteRef.current();
+        window.setTimeout(() => onCompleteRef.current(), 50);
       }
       return;
     }
@@ -107,73 +152,52 @@ const DecryptedLine = ({ text, delay = 0, onComplete }) => {
       setDisplayedText(() => {
         let result = "";
         for (let i = 0; i < text.length; i++) {
-          if (i < currentIndex) {
-            result += text[i];
-          } else if (text[i] === " ") {
-            result += " ";
-          } else {
-            result += CHARS[Math.floor(Math.random() * CHARS.length)];
-          }
+          if (i < currentIndex) result += text[i];
+          else if (text[i] === " ") result += " ";
+          else result += CHARS[Math.floor(Math.random() * CHARS.length)];
         }
         return result;
       });
-    }, 8);
+    }, DECRYPTION_CONFIG.SCRAMBLE_INTERVAL);
 
     const progressTimeout = window.setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, 6);
+      setCurrentIndex((p) => p + 1);
+    }, charRevealSpeed);
 
     return () => {
       window.clearInterval(scrambleInterval);
       window.clearTimeout(progressTimeout);
     };
-  }, [hasStarted, currentIndex, text]);
-
-  return <>{displayedText}</>;
-};
-
-const DecryptedCodeLineByLine = ({ text, lineDelay = 50 }) => {
-  const [visibleLines, setVisibleLines] = useState(1);
-  const lines = text.split("\n");
-
-  const handleLineComplete = (lineIndex) => {
-    if (lineIndex < lines.length - 1) {
-      window.setTimeout(() => {
-        setVisibleLines(lineIndex + 2);
-      }, lineDelay);
-    }
-  };
+  }, [hasStarted, currentIndex, text, charRevealSpeed]);
 
   return (
-    <>
-      {lines.map((line, index) => (
-        <div key={index}>
-          {index < visibleLines ? (
-            <DecryptedLine
-              text={line || " "}
-              delay={0}
-              onComplete={() => handleLineComplete(index)}
-            />
-          ) : (
-            <span style={{ opacity: 0 }}>{line || " "}</span>
-          )}
-        </div>
-      ))}
-    </>
+    <div className="font-mono font-normal text-[13px] leading-[1.6] text-foreground/80 text-left">
+      {displayedText || " "}
+    </div>
   );
 };
 
-// New component for decrypted math with character-by-character reveal
-const DecryptedMathLine = ({ latex, delay = 0, onComplete }) => {
+// Math line (decrypts monospace, then renders KaTeX inline to keep alignment)
+const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
+  latex,
+  delay = 0,
+  fixedDuration,
+  onComplete,
+}) => {
   const [displayedText, setDisplayedText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const renderedRef = useRef<HTMLDivElement>(null);
 
   const initialDelayRef = useRef(delay);
-  const onCompleteRef = useRef(() => {});
+  const onCompleteRef = useRef<() => void>(() => {});
   const didCompleteRef = useRef(false);
-  const renderedRef = useRef(null);
+
+  // derive per-character speed to hit the fixed duration
+  const charRevealSpeed = fixedDuration
+    ? Math.max(15, Math.floor(fixedDuration / Math.max(1, latex.length)))
+    : 25;
 
   useEffect(() => {
     onCompleteRef.current = onComplete ?? (() => {});
@@ -195,7 +219,7 @@ const DecryptedMathLine = ({ latex, delay = 0, onComplete }) => {
       setIsComplete(true);
       if (!didCompleteRef.current) {
         didCompleteRef.current = true;
-        onCompleteRef.current();
+        window.setTimeout(() => onCompleteRef.current(), 50);
       }
       return;
     }
@@ -204,34 +228,30 @@ const DecryptedMathLine = ({ latex, delay = 0, onComplete }) => {
       setDisplayedText(() => {
         let result = "";
         for (let i = 0; i < latex.length; i++) {
-          if (i < currentIndex) {
-            result += latex[i];
-          } else if (latex[i] === " ") {
-            result += " ";
-          } else {
-            result += CHARS[Math.floor(Math.random() * CHARS.length)];
-          }
+          if (i < currentIndex) result += latex[i];
+          else if (latex[i] === " ") result += " ";
+          else result += CHARS[Math.floor(Math.random() * CHARS.length)];
         }
         return result;
       });
-    }, 8);
+    }, DECRYPTION_CONFIG.SCRAMBLE_INTERVAL);
 
     const progressTimeout = window.setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, 6);
+      setCurrentIndex((p) => p + 1);
+    }, charRevealSpeed);
 
     return () => {
       window.clearInterval(scrambleInterval);
       window.clearTimeout(progressTimeout);
     };
-  }, [hasStarted, currentIndex, latex]);
+  }, [hasStarted, currentIndex, latex, charRevealSpeed]);
 
-  // Render KaTeX only when complete
   useEffect(() => {
     if (!isComplete || !renderedRef.current) return;
     try {
+      // inline mode to keep the same line height/orientation as code
       katex.render(latex, renderedRef.current, {
-        displayMode: true,
+        displayMode: false,
         throwOnError: false,
         strict: "ignore",
         trust: true,
@@ -241,79 +261,126 @@ const DecryptedMathLine = ({ latex, delay = 0, onComplete }) => {
     }
   }, [isComplete, latex]);
 
-  if (isComplete) {
-    return <div ref={renderedRef} className="katex-wrapper text-foreground" />;
-  }
-
-  return (
-    <div className="font-mono text-[13px] text-foreground/80">
-      {displayedText}
+  // While decrypting, show monospace; when done, show KaTeX inline with same line box
+  return isComplete ? (
+    <div
+      ref={renderedRef}
+      className="katex-line font-mono font-normal text-[13px] leading-[1.6] text-left text-foreground"
+    />
+  ) : (
+    <div className="font-mono font-normal text-[13px] leading-[1.6] text-foreground/80 text-left">
+      {displayedText || " "}
     </div>
   );
 };
 
-const DecryptedMathLineByLine = ({ lines, lineDelay = 50 }) => {
-  const [visibleLines, setVisibleLines] = useState(1);
+const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
+  text,
+  startTrigger,
+}) => {
+  const [visibleLines, setVisibleLines] = useState(0);
+  const lines = text.split("\n");
+  const startedRef = useRef(false);
 
-  const handleLineComplete = (lineIndex) => {
-    if (lineIndex < lines.length - 1) {
-      window.setTimeout(() => {
-        setVisibleLines(lineIndex + 2);
-      }, lineDelay);
+  useEffect(() => {
+    if (startTrigger > 0 && !startedRef.current) {
+      startedRef.current = true;
+      setVisibleLines(1);
+    }
+  }, [startTrigger]);
+
+  const handleLineComplete = (index: number) => {
+    if (index < lines.length - 1) {
+      window.setTimeout(
+        () => setVisibleLines(index + 2),
+        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
+      );
     }
   };
 
   return (
-    <div className="space-y-1.5">
-      {lines.map((latex, index) => (
-        <div key={index}>
-          {index < visibleLines ? (
-            <DecryptedMathLine
-              latex={latex}
-              delay={0}
-              onComplete={() => handleLineComplete(index)}
-            />
-          ) : (
-            <div style={{ opacity: 0, height: "1.5rem" }}>&nbsp;</div>
-          )}
-        </div>
-      ))}
+    <>
+      {lines.map((line, i) =>
+        i < visibleLines ? (
+          <DecryptedLine
+            key={i}
+            text={line || " "}
+            fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
+            onComplete={() => handleLineComplete(i)}
+          />
+        ) : (
+          <div key={i} className="h-[1.6em]" />
+        )
+      )}
+    </>
+  );
+};
+
+const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
+  lines,
+  startTrigger,
+}) => {
+  const [visibleLines, setVisibleLines] = useState(0);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startTrigger > 0 && !startedRef.current) {
+      startedRef.current = true;
+      setVisibleLines(1);
+    }
+  }, [startTrigger]);
+
+  const handleLineComplete = (index: number) => {
+    if (index < lines.length - 1) {
+      window.setTimeout(
+        () => setVisibleLines(index + 2),
+        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
+      );
+    }
+  };
+
+  return (
+    <div>
+      {lines.map((latex, i) =>
+        i < visibleLines ? (
+          <DecryptedMathLine
+            key={i}
+            latex={latex}
+            fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
+            onComplete={() => handleLineComplete(i)}
+          />
+        ) : (
+          <div key={i} className="h-[1.6em]" />
+        )
+      )}
     </div>
   );
 };
 
-const PhilosophySection = () => {
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [pulses, setPulses] = useState([]);
-  const [startCodeDecryption, setStartCodeDecryption] = useState(
-    Array.from({ length: philosophyItems.length }, () => false)
-  );
+const PhilosophySection: React.FC = () => {
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [pulses, setPulses] = useState<Pulse[]>([]);
+  const [decryptionTrigger, setDecryptionTrigger] = useState(0);
 
-  const timeoutsRef = useRef([]);
-  const intervalsRef = useRef([]);
+  const timeoutsRef = useRef<number[]>([]);
+  const intervalsRef = useRef<number[]>([]);
 
   useEffect(() => {
+    // Start both math and code at the same time
+    const start = window.setTimeout(() => {
+      setDecryptionTrigger(Date.now());
+    }, 500);
+    timeoutsRef.current.push(start);
+
+    // Pulse visuals (non-layout affecting)
     philosophyItems.forEach((_, index) => {
-      const t = window.setTimeout(() => {
-        if (index < 2) {
-          const t2 = window.setTimeout(() => {
-            setStartCodeDecryption((prev) => {
-              const next = [...prev];
-              next[index] = true;
-              return next;
-            });
-          }, 200);
-          timeoutsRef.current.push(t2);
-        }
-      }, index * 150);
+      const t = window.setTimeout(() => createPulse(index), index * 250);
       timeoutsRef.current.push(t);
     });
 
     const intervalId = window.setInterval(() => {
       philosophyItems.forEach((_, index) => {
-        const t = window.setTimeout(() => {
-          createPulse(index);
-        }, index * 250);
+        const t = window.setTimeout(() => createPulse(index), index * 250);
         timeoutsRef.current.push(t);
       });
     }, 4000);
@@ -325,20 +392,21 @@ const PhilosophySection = () => {
       intervalsRef.current = [];
       timeoutsRef.current = [];
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const createPulse = (cardIndex) => {
-    const pulseId = Date.now() + cardIndex + Math.floor(Math.random() * 1000);
-    setPulses((prev) => [...prev, { id: pulseId, cardIndex }]);
-
-    const t = window.setTimeout(() => {
-      setPulses((prev) => prev.filter((p) => p.id !== pulseId));
-    }, 1500);
+  const createPulse = (cardIndex: number) => {
+    const id = Date.now() + cardIndex + Math.floor(Math.random() * 1000);
+    setPulses((prev) => [...prev, { id, cardIndex }]);
+    const t = window.setTimeout(
+      () => setPulses((prev) => prev.filter((p) => p.id !== id)),
+      1500
+    );
     timeoutsRef.current.push(t);
   };
 
-  const handleCardHover = (index, isEntering) => {
-    if (isEntering) {
+  const handleCardHover = (index: number, enter: boolean) => {
+    if (enter) {
       setHoveredCard(index);
       for (let i = 0; i < 3; i++) {
         const t = window.setTimeout(() => createPulse(index), i * 120);
@@ -352,94 +420,33 @@ const PhilosophySection = () => {
   return (
     <>
       <style>{`
-        @keyframes blob-float-1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        @keyframes blob-float-2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-40px, 30px) scale(0.95); }
-          66% { transform: translate(30px, -30px) scale(1.05); }
-        }
-        @keyframes blob-float-3 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(50px, 40px) scale(1.08); }
-          66% { transform: translate(-30px, -20px) scale(0.92); }
-        }
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes ripple-expand {
-          0% { width: 60px; height: 60px; opacity: 0.8; }
-          100% { width: 200px; height: 200px; opacity: 0; }
-        }
-        @keyframes icon-spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes glow-ring {
-          0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-          100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-        }
-        @keyframes orbital {
-          0% { transform: rotate(0deg) translateX(50px) rotate(0deg); }
-          100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
-        }
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        .animate-blob-float-1 { animation: blob-float-1 20s ease-in-out infinite; }
-        .animate-blob-float-2 { animation: blob-float-2 18s ease-in-out infinite; }
-        .animate-blob-float-3 { animation: blob-float-3 22s ease-in-out infinite; }
-        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; }
-        .philosophy-card:hover .card-icon { animation: icon-spin 2s linear infinite; }
-        .glow-ring { position: absolute; top: 50%; left: 50%; border-radius: 50%; border: 2px solid; pointer-events: none; }
-        .glow-ring-1 { animation: glow-ring 1.5s ease-out infinite; }
-        .glow-ring-2 { animation: glow-ring 1.5s ease-out infinite 0.3s; }
-        .glow-ring-3 { animation: glow-ring 1.5s ease-out infinite 0.6s; }
-        .orbital-particle { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; border-radius: 50%; margin-left: -3px; margin-top: -3px; }
-        .orbital-1 { animation: orbital 3s linear infinite; }
-        .orbital-2 { animation: orbital 3s linear infinite 0.75s; }
-        .orbital-3 { animation: orbital 3s linear infinite 1.5s; }
-        .orbital-4 { animation: orbital 3s linear infinite 2.25s; }
-        .sparkle { position: absolute; width: 4px; height: 4px; border-radius: 50%; }
-        .sparkle-1 { top: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite; }
-        .sparkle-2 { bottom: -15px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
-        .sparkle-3 { top: 50%; left: -15px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
-        .sparkle-4 { top: 50%; right: -15px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
-
+        /* keep KaTeX inline visually aligned with code and same weight */
         .katex { 
-          color: inherit; 
-          font-size: 13px !important;
-        }
-        .katex-display { 
-          margin: 0.25rem 0; 
-        }
-        .katex .mord, .katex .mbin, .katex .mrel, .katex .mop {
+          font-size: 13px !important; 
+          line-height: 1.6 !important; 
           font-weight: 400 !important;
         }
-        .katex .text {
-          font-weight: 500 !important;
+        .katex-display { margin: 0 !important; }
+        /* Normalize KaTeX internals to same weight as code */
+        .katex .mord, .katex .mbin, .katex .mrel, .katex .mop,
+        .katex .mopen, .katex .mclose, .katex .minner,
+        .katex .text, .katex .mathrm, .katex .mathit,
+        .katex .mathbf, .katex .textbf, .katex .bold {
+          font-weight: 400 !important;
+        }
+        /* clamp helper for equal description height */
+        .clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
 
       <section className="relative py-24 px-6 overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/10"></div>
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-blob-float-1"></div>
-          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-3xl animate-blob-float-2"></div>
-          <div className="absolute bottom-0 left-1/3 w-[550px] h-[550px] bg-pink-400/15 dark:bg-pink-600/10 rounded-full blur-3xl animate-blob-float-3"></div>
-        </div>
-
         <div className="container relative mx-auto max-w-6xl">
-          <div
-            className="text-center mb-16 opacity-0 animate-fade-in-up"
-            style={{ animationDelay: "0ms" }}
-          >
-            <h2 className="text-5xl md:text-6xl font-semibold leading-tight tracking-tight text-foreground mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl md:text-6xl font-semibold tracking-tight text-foreground mb-4">
               Our Philosophy
             </h2>
             <p className="text-lg text-foreground/70 max-w-2xl mx-auto font-light">
@@ -455,90 +462,14 @@ const PhilosophySection = () => {
               return (
                 <div
                   key={index}
-                  className="relative philosophy-card opacity-0 animate-fade-in-up h-full flex"
-                  style={{ animationDelay: `${200 + index * 150}ms` }}
+                  className="relative h-full flex"
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
                 >
-                  {pulses
-                    .filter((p) => p.cardIndex === index)
-                    .map((pulse) => (
-                      <div
-                        key={pulse.id}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-                        style={{
-                          border: `2px solid ${item.color}`,
-                          animation: "ripple-expand 1.5s ease-out",
-                          zIndex: 0,
-                        }}
-                      />
-                    ))}
-
-                  <div className="relative w-full p-8 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col">
-                    <div className="flex flex-col items-center text-center h-full">
+                  <div className="relative w-full p-8 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex flex-col items-center text-center">
                       <div className="relative mb-6">
-                        {isHovered && (
-                          <>
-                            <div
-                              className="orbital-particle orbital-1"
-                              style={{
-                                background: item.color,
-                                boxShadow: `0 0 10px ${item.color}`,
-                              }}
-                            />
-                            <div
-                              className="orbital-particle orbital-2"
-                              style={{
-                                background: item.color,
-                                boxShadow: `0 0 10px ${item.color}`,
-                              }}
-                            />
-                            <div
-                              className="orbital-particle orbital-3"
-                              style={{
-                                background: item.color,
-                                boxShadow: `0 0 10px ${item.color}`,
-                              }}
-                            />
-                            <div
-                              className="orbital-particle orbital-4"
-                              style={{
-                                background: item.color,
-                                boxShadow: `0 0 10px ${item.color}`,
-                              }}
-                            />
-                          </>
-                        )}
-
-                        {isHovered && (
-                          <>
-                            <div
-                              className="glow-ring glow-ring-1"
-                              style={{
-                                borderColor: item.color,
-                                width: "60px",
-                                height: "60px",
-                              }}
-                            />
-                            <div
-                              className="glow-ring glow-ring-2"
-                              style={{
-                                borderColor: item.color,
-                                width: "60px",
-                                height: "60px",
-                              }}
-                            />
-                            <div
-                              className="glow-ring glow-ring-3"
-                              style={{
-                                borderColor: item.color,
-                                width: "60px",
-                                height: "60px",
-                              }}
-                            />
-                          </>
-                        )}
-
                         <div
                           className={`relative p-4 bg-gradient-to-br ${item.gradient} rounded-full transition-all duration-500`}
                           style={{
@@ -548,50 +479,12 @@ const PhilosophySection = () => {
                             transform: isHovered ? "scale(1.2)" : "scale(1)",
                           }}
                         >
-                          <div
-                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-full pointer-events-none"
-                            style={{
-                              background: `radial-gradient(circle, ${item.color}40 0%, transparent 70%)`,
-                            }}
-                          />
-                          <Icon className="card-icon w-8 h-8 text-white relative z-10" />
-                          {isHovered && (
-                            <>
-                              <div
-                                className="sparkle sparkle-1"
-                                style={{
-                                  background: item.color,
-                                  boxShadow: `0 0 8px ${item.color}`,
-                                }}
-                              />
-                              <div
-                                className="sparkle sparkle-2"
-                                style={{
-                                  background: item.color,
-                                  boxShadow: `0 0 8px ${item.color}`,
-                                }}
-                              />
-                              <div
-                                className="sparkle sparkle-3"
-                                style={{
-                                  background: item.color,
-                                  boxShadow: `0 0 8px ${item.color}`,
-                                }}
-                              />
-                              <div
-                                className="sparkle sparkle-4"
-                                style={{
-                                  background: item.color,
-                                  boxShadow: `0 0 8px ${item.color}`,
-                                }}
-                              />
-                            </>
-                          )}
+                          <Icon className="w-8 h-8 text-white relative z-10" />
                         </div>
                       </div>
 
                       <h3
-                        className="text-xl font-semibold mb-4 transition-all duration-300"
+                        className="text-xl font-semibold mb-3"
                         style={{
                           color: isHovered ? item.color : "var(--foreground)",
                           textShadow: isHovered
@@ -602,75 +495,62 @@ const PhilosophySection = () => {
                         {item.title}
                       </h3>
 
-                      <p className="text-foreground/70 leading-relaxed font-light">
+                      {/* clamp to keep all three cards same height in header+desc */}
+                      <p className="text-foreground/70 leading-relaxed font-light clamp-2 min-h-[48px]">
                         {item.description}
                       </p>
+                    </div>
 
-                      <div className="mt-6 w-full">
-                        <div
-                          className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden"
-                          style={{ boxShadow: `0 4px 18px ${item.color}22` }}
-                        >
-                          <div className="flex items-center justify-between px-3 py-2 border-b border-foreground/10">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="inline-block h-2.5 w-2.5 rounded-full"
-                                style={{ background: "#ff5f56" }}
-                              />
-                              <span
-                                className="inline-block h-2.5 w-2.5 rounded-full"
-                                style={{ background: "#ffbd2e" }}
-                              />
-                              <span
-                                className="inline-block h-2.5 w-2.5 rounded-full"
-                                style={{ background: "#27c93f" }}
-                              />
-                            </div>
+                    {/* Content area (fixed height, left aligned) */}
+                    <div className="mt-6 w-full flex-1">
+                      <div
+                        className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden h-[200px]"
+                        style={{ boxShadow: `0 4px 18px ${item.color}22` }}
+                      >
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-foreground/10">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
                           </div>
+                        </div>
 
-                          <div className="p-4">
-                            {index === 2 ? (
-                              <div className="text-left">
-                                <div className="text-sm leading-relaxed">
-                                  <div className="font-medium">
-                                    {researchRef.title}
-                                  </div>
-                                  <div className="text-foreground/60">
-                                    {researchRef.authors} — {researchRef.venue}
-                                  </div>
-                                  <a
-                                    href={researchRef.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 mt-2 text-foreground/80 hover:text-foreground underline underline-offset-4 decoration-dotted"
-                                    style={{ color: item.color }}
-                                  >
-                                    View paper ↗
-                                  </a>
+                        <div className="p-4 h-[calc(200px-40px)] text-left">
+                          {index === 2 ? (
+                            <div className="text-left">
+                              <div className="text-sm leading-relaxed">
+                                <div className="font-medium">
+                                  {researchRef.title}
                                 </div>
+                                <div className="text-foreground/60 mt-1">
+                                  {researchRef.authors} — {researchRef.venue}
+                                </div>
+                                <a
+                                  href={researchRef.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-2 underline underline-offset-4 decoration-dotted"
+                                  style={{ color: item.color }}
+                                >
+                                  View paper ↗
+                                </a>
                               </div>
-                            ) : index === 0 ? (
-                              <div className="text-left">
-                                {startCodeDecryption[index] ? (
-                                  <DecryptedMathLineByLine
-                                    lines={foundationLatexLines}
-                                    lineDelay={50}
-                                  />
-                                ) : null}
-                              </div>
-                            ) : (
-                              <pre className="text-left text-[13px] leading-relaxed font-mono font-normal text-foreground/80 whitespace-pre-wrap overflow-visible">
-                                <code>
-                                  {startCodeDecryption[index] ? (
-                                    <DecryptedCodeLineByLine
-                                      text={attentionSnippet}
-                                      lineDelay={50}
-                                    />
-                                  ) : null}
-                                </code>
-                              </pre>
-                            )}
-                          </div>
+                            </div>
+                          ) : index === 0 ? (
+                            <DecryptedMathLineByLine
+                              lines={foundationLatexLines}
+                              startTrigger={decryptionTrigger}
+                            />
+                          ) : (
+                            <pre className="text-left font-mono font-normal text-[13px] leading-[1.6] text-foreground/80 whitespace-pre-wrap">
+                              <code>
+                                <DecryptedCodeLineByLine
+                                  text={attentionSnippet}
+                                  startTrigger={decryptionTrigger}
+                                />
+                              </code>
+                            </pre>
+                          )}
                         </div>
                       </div>
                     </div>
