@@ -3,13 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent,CardHeader,CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { useBundleQuery, useBundleCoursesQuery } from "@/hooks/useBundleApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
-import { ArrowLeft, BookOpen, CheckCircle, Star, DollarSign } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  CheckCircle,
+  Star,
+  IndianRupee,
+} from "lucide-react";
 import CourseCard from "@/components/course/CourseCard";
 import { ENROLLED_PROGRAM_TYPE, PRICING_MODEL } from "@/constants";
 import { ok, fail, type Result } from "@/utils/response";
@@ -23,8 +29,11 @@ export default function BundleDetailPage() {
   const { enrollments, isEnrolledInBundle, loading } = useEnrollment();
 
   const { data: bundle, isLoading, isError, error } = useBundleQuery(bundleId!);
-  const { data: courses, isLoading: coursesLoading, isError: coursesError } =
-    useBundleCoursesQuery(bundleId!);
+  const {
+    data: courses,
+    isLoading: coursesLoading,
+    isError: coursesError,
+  } = useBundleCoursesQuery(bundleId!);
 
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [ownedCoursesCount, setOwnedCoursesCount] = useState(0);
@@ -42,7 +51,7 @@ export default function BundleDetailPage() {
         // 2️⃣ Compute all courses owned (direct + via bundles)
         const directCourses =
           enrollments?.filter(
-            (e) => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE
+            (e) => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE,
           ) || [];
 
         const bundleCourses =
@@ -83,7 +92,7 @@ export default function BundleDetailPage() {
         // 4️⃣ Update state
         setOwnedCoursesCount(ownedCourses.length);
         setOwnsAllCourses(ownsAll);
-        setIsEnrolled(enrolledInBundle );
+        setIsEnrolled(enrolledInBundle);
         setEnrollmentChecked(true);
 
         const result: Result<boolean> = ok(enrolledInBundle);
@@ -91,7 +100,7 @@ export default function BundleDetailPage() {
       } catch (err) {
         logError("BundleDetailPage.checkEnrollment", err);
         const failResult = fail(
-          err instanceof Error ? err.message : "Unknown enrollment error"
+          err instanceof Error ? err.message : "Unknown enrollment error",
         );
         console.warn("BundleDetailPage - Enrollment failed:", {
           bundleId: bundle?.id,
@@ -180,9 +189,9 @@ export default function BundleDetailPage() {
                 <span>{bundle.courses.length} Courses</span>
               </div>
               <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <IndianRupee className="h-5 w-5" />
                 <span>
-                  Save ₹{(bundle.regularPrice - bundle.salePrice).toFixed(2)}
+                  Save {(bundle.regularPrice - bundle.salePrice).toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -210,7 +219,7 @@ export default function BundleDetailPage() {
                   {Math.round(
                     ((bundle.regularPrice - bundle.salePrice) /
                       bundle.regularPrice) *
-                      100
+                      100,
                   )}
                   %
                 </Badge>
@@ -240,7 +249,7 @@ export default function BundleDetailPage() {
                     "w-full sm:w-auto text-white",
                     ownsAllCourses
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-black hover:bg-gray-800"
+                      : "bg-black hover:bg-gray-800",
                   )}
                 >
                   {ownsAllCourses ? (
@@ -273,7 +282,11 @@ export default function BundleDetailPage() {
             {courses && courses.length > 0 ? (
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {courses.map((course) => (
-                  <CourseCard key={course.id} course={course} variant="default" />
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    variant="default"
+                  />
                 ))}
               </div>
             ) : (
@@ -286,70 +299,77 @@ export default function BundleDetailPage() {
               </Card>
             )}
 
-            
-              {/* Additional Information */}
-              <div className="grid md:grid-cols-2 gap-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-success" />
-                      What You'll Get
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Access to all {bundle.courses.length} courses</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Lifetime access to course materials</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Save ₹{(bundle.regularPrice - bundle.salePrice)} compared to individual purchases</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Expert instructor support</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Progress tracking across all courses</span>
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Additional Information */}
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    What You'll Get
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    <span>Access to all {bundle.courses.length} courses</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    <span>Lifetime access to course materials</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    <span>
+                      Save ₹{bundle.regularPrice - bundle.salePrice} compared to
+                      individual purchases
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    <span>Expert instructor support</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    <span>Progress tracking across all courses</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Star className="h-5 w-5 text-warning" />
-                      Bundle Benefits
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Course bundles are designed to provide a comprehensive learning path at a significant discount.
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Individual Course Prices:</span>
-                        <span className="font-medium">₹{(bundle.salePrice).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Bundle Price:</span>
-                        <span className="font-medium text-success">₹{(bundle.regularPrice).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between border-t pt-2">
-                        <span className="font-medium">Your Savings:</span>
-                        <span className="font-bold text-success">₹{(bundle.regularPrice - bundle.salePrice)}</span>
-                      </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-warning" />
+                    Bundle Benefits
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Course bundles are designed to provide a comprehensive
+                    learning path at a significant discount.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Individual Course Prices:</span>
+                      <span className="font-medium">
+                        ₹{bundle.salePrice.toFixed(2)}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-       
+                    <div className="flex justify-between">
+                      <span>Bundle Price:</span>
+                      <span className="font-medium text-success">
+                        ₹{bundle.regularPrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Your Savings:</span>
+                      <span className="font-bold text-success">
+                        ₹{bundle.regularPrice - bundle.salePrice}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-
           </div>
         </div>
       </main>

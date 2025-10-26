@@ -40,13 +40,13 @@ export function BundleCard({
   const totalCourses = bundle.courses?.length || 0;
   const showPartialOwnership =
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
-  const fullOwnership = ownedCoursesCount == totalCourses;
+  const fullOwnership = ownedCoursesCount === totalCourses;
   if (variant === "compact") {
     return (
       <Card
         className={cn(
           "flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300",
-          className
+          className,
         )}
       >
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
@@ -86,7 +86,7 @@ export function BundleCard({
                   variant="secondary"
                   className="text-xs bg-yellow-100 text-yellow-800"
                 >
-                  {ownedCoursesCount}/{totalCourses} courses owned 
+                  {ownedCoursesCount}/{totalCourses} courses owned
                 </Badge>
               )}
             </div>
@@ -95,7 +95,7 @@ export function BundleCard({
               <div className="text-right">
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-foreground">
-                    {formatCurrency(bundle.regularPrice)}
+                    {formatCurrency(bundle.salePrice ?? bundle.regularPrice)}
                   </span>
                 </div>
               </div>
@@ -117,8 +117,8 @@ export function BundleCard({
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
-                  ? "Access Bundle"
-                  : `Buy Bundle - ${formatCurrency(bundle.regularPrice)}`}
+                    ? "Access Bundle"
+                    : `Buy Bundle - ${formatCurrency(bundle.salePrice ?? bundle.regularPrice)}`}
               </Button>
             </div>
           </div>
@@ -131,7 +131,7 @@ export function BundleCard({
     <Card
       className={cn(
         "overflow-hidden hover:shadow-lg transition-all duration-300 group",
-        className
+        className,
       )}
     >
       <CardHeader className="p-0 relative">
@@ -201,7 +201,7 @@ export function BundleCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-foreground">
-              {formatCurrency(bundle.regularPrice)}
+              {formatCurrency(bundle.salePrice ?? bundle.regularPrice)}
             </span>
           </div>
         </div>
@@ -225,8 +225,8 @@ export function BundleCard({
           {fullOwnership
             ? "All Courses Owned"
             : isEnrolled
-            ? "Access Bundle"
-            : `Buy Bundle - ${formatCurrency(bundle.regularPrice)}`}
+              ? "Access Bundle"
+              : `Buy Bundle - ${formatCurrency(bundle.salePrice ?? bundle.regularPrice)}`}
         </Button>
       </CardFooter>
     </Card>
