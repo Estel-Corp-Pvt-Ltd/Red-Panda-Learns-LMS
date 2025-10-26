@@ -229,10 +229,7 @@ const App = () => (
                         <CoursesPage />
                       }
                     />
-                    <Route
-                      path="dummy/bundle/:bundleId/checkout"
-                      element={<DummyBundleCheckoutPage />}
-                    />
+                
                      <Route path="/cart" element={ <AuthGuard >
                           <CartPage />
                         </AuthGuard>} />

@@ -1,6 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { CURRENCY } from "@/constants";
 import { cn } from "@/lib/utils";
 import { Bundle } from "@/types/bundle";
@@ -11,8 +16,9 @@ interface BundleCardProps {
   variant?: "default" | "compact";
   onPurchase?: (bundleId: string) => void;
   className?: string;
-  isEnrolled?: boolean; // 👈 optional flag
-  onAccess?: () => void; // 👈 optional click handler
+  isEnrolled?: boolean;
+  onAccess?: () => void;
+  ownedCoursesCount?: number;
 }
 
 export function BundleCard({
@@ -22,15 +28,19 @@ export function BundleCard({
   className,
   isEnrolled,
   onAccess,
+  ownedCoursesCount = 0, // default 0
 }: BundleCardProps) {
-
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: CURRENCY.USD,
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY.INR,
     }).format(amount);
   };
-  console.log("bundle card -->", isEnrolled);
+
+  const totalCourses = bundle.courses?.length || 0;
+  const showPartialOwnership =
+    ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
+  const fullOwnership = ownedCoursesCount == totalCourses;
   if (variant === "compact") {
     return (
       <Card
@@ -62,13 +72,23 @@ export function BundleCard({
               </p>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {bundle.categories.length && bundle.categories.map((category) => (
-                  <div className="flex items-center gap-1">
-                    <Tag className="h-4 w-4" />
-                    <span>{category}</span>
-                  </div>
-                ))}
+                {bundle.categories.length &&
+                  bundle.categories.map((category) => (
+                    <div className="flex items-center gap-1" key={category}>
+                      <Tag className="h-4 w-4" />
+                      <span>{category}</span>
+                    </div>
+                  ))}
               </div>
+
+              {showPartialOwnership && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs bg-yellow-100 text-yellow-800"
+                >
+                  {ownedCoursesCount}/{totalCourses} courses owned 
+                </Badge>
+              )}
             </div>
 
             <div className="flex flex-col items-end gap-2 ml-4">
@@ -83,11 +103,20 @@ export function BundleCard({
               <Button
                 className="w-full"
                 size="lg"
+                disabled={fullOwnership}
+                title={
+                  fullOwnership
+                    ? `You already own all courses in ${bundle.title} bundle`
+                    : undefined
+                }
                 onClick={() =>
-                  isEnrolled ? onAccess?.() : onPurchase?.(bundle.id)
+                  !fullOwnership &&
+                  (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
                 }
               >
-                {isEnrolled
+                {fullOwnership
+                  ? "All Courses Owned"
+                  : isEnrolled
                   ? "Access Bundle"
                   : `Buy Bundle - ${formatCurrency(bundle.regularPrice)}`}
               </Button>
@@ -105,7 +134,7 @@ export function BundleCard({
         className
       )}
     >
-      <CardHeader className="p-0">
+      <CardHeader className="p-0 relative">
         <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
           {bundle.thumbnail ? (
             <img
@@ -123,6 +152,15 @@ export function BundleCard({
           >
             Bundle
           </Badge>
+
+          {showPartialOwnership && (
+            <Badge
+              variant="secondary"
+              className="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs"
+            >
+              {ownedCoursesCount}/{totalCourses} courses owned
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
@@ -136,12 +174,13 @@ export function BundleCard({
         </p>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {bundle.categories.length && bundle.categories.map((category) => (
-            <div className="flex items-center gap-1">
-              <Tag className="h-4 w-4" />
-              <span>{category}</span>
-            </div>
-          ))}
+          {bundle.categories.length &&
+            bundle.categories.map((category) => (
+              <div className="flex items-center gap-1" key={category}>
+                <Tag className="h-4 w-4" />
+                <span>{category}</span>
+              </div>
+            ))}
         </div>
 
         {bundle.tags && bundle.tags.length > 0 && (
@@ -172,9 +211,20 @@ export function BundleCard({
         <Button
           className="w-full"
           size="lg"
-          onClick={() => (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))}
+          disabled={fullOwnership}
+          title={
+            fullOwnership
+              ? `You already own all courses in ${bundle.title} bundle`
+              : undefined
+          }
+          onClick={() =>
+            !fullOwnership &&
+            (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
+          }
         >
-          {isEnrolled
+          {fullOwnership
+            ? "All Courses Owned"
+            : isEnrolled
             ? "Access Bundle"
             : `Buy Bundle - ${formatCurrency(bundle.regularPrice)}`}
         </Button>
