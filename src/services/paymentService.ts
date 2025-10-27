@@ -151,15 +151,6 @@ class PaymentService {
       );
       // pricing: { amount, currency, originalAmount?, originalCurrency?, exchangeRate? }
 
-      // Extract IDs by type for Order
-      const courseIds = items
-        .filter((it) => it.itemType === ENROLLED_PROGRAM_TYPE.COURSE)
-        .map((it) => it.itemId);
-
-      const bundleIds = items
-        .filter((it) => it.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE)
-        .map((it) => it.itemId);
-
       // Build a compact description for the provider/receipt
       const itemNames = items.map((i) => i.name || i.itemId);
       const displayTitle =
@@ -194,11 +185,10 @@ class PaymentService {
         status: ORDER_STATUS.PENDING,
       });
 
-      // Create Transaction (now uses items[])
       const transactionId = await transactionService.createTransaction({
         orderNumber: orderId,
         userId,
-        items, // <-- pass the line items
+        items,
         type: TRANSACTION_TYPE.PAYMENT,
         amount: pricing.amount,
         currency: pricing.currency,
@@ -253,15 +243,15 @@ class PaymentService {
           transactionId
         );
 
-          try {
-            await enrollmentService.enrollUser(
-              userId,
-              items
-            );
-          } catch (err) {
-            console.error("Enrollment failed for item:", items, err);
-          }
-        
+        try {
+          await enrollmentService.enrollUser(
+            userId,
+            items
+          );
+        } catch (err) {
+          console.error("Enrollment failed for item:", items, err);
+        }
+
       } else {
         // Mark order as failed so it doesn’t linger in PENDING
         await orderService.updateOrder(

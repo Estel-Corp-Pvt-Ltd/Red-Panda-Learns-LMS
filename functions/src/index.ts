@@ -120,7 +120,7 @@ export const createOrder = onRequest(
         amount,
         currency,
         receipt,
-        payment_capture: 1 as any,
+        payment_capture: true,
       });
 
       console.log("✅ Order created:", order);

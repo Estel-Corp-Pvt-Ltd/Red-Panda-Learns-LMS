@@ -149,19 +149,6 @@ class RazorpayProvider {
                   }
                 );
 
-                // // ✅ Handle enrollments for each purchased item
-                // for (const item of items) {
-                //   try {
-                //     await enrollmentService.enrollUser(
-                //       userId,
-                //       item.itemId,
-                //       item.itemType
-                //     );
-                //   } catch (enrollmentError) {
-                //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
-                //   }
-                // }
-
                 resolve({
                   success: true,
                   transactionId,
@@ -207,7 +194,7 @@ class RazorpayProvider {
             {} as PaymentDetails,
             "Razorpay SDK not loaded"
           );
-          resolve({ success: false, error: "Razorpay SDK not loaded" });
+          resolve({ success: false, error: "Could not load Razorpay Window" });
         }
       } catch (error) {
         console.error("RazorpayProvider - Payment failed:", error);
