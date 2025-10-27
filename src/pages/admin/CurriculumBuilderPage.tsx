@@ -403,7 +403,7 @@ const CurriculumBuilderPage = () => {
       });
       return;
     }
-    if (duration <= 0) {
+    if (duration < 0) {
       toast({
         title: "Invalid Duration",
         description: "Duration must be a positive number.",
