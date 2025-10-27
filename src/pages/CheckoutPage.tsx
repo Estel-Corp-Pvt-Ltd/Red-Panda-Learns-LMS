@@ -229,12 +229,8 @@ export default function CheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-    const usageDate = {
-      userId: user?.id,
-      couponId: appliedCoupon.id,
-      usedAt: Timestamp.now(),
-    };
-    const result = await couponUsageService.recordCouponUsage(usageDate);
+   
+   const result = await couponService.addUserCouponUsage(user?.id,appliedCoupon.id);
     if (result.success) {
       toast({
         title: "Coupon successfully applied!",

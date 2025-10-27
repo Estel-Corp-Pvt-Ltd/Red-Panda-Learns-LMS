@@ -1,4 +1,4 @@
-import { Timestamp , FieldValue} from "firebase/firestore";
+import { Timestamp, FieldValue } from "firebase/firestore";
 import { CouponStatus } from "./general";
 
 export interface Coupon {
@@ -13,9 +13,11 @@ export interface Coupon {
   linkedCohortIds: string[];
   createdById: string;
   createdbyMail: string;
+  currentUsageCount?: number;
+  usedByUserIds?: string[];
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-};
+}
 
 export interface CouponUsage {
   id: string;
@@ -25,4 +27,4 @@ export interface CouponUsage {
   courseId?: string;
   bundleId?: string;
   cohortId?: string;
-};
+}

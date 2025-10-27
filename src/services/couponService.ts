@@ -11,6 +11,8 @@ import {
   updateDoc,
   where,
   WhereFilterOp,
+  arrayUnion,
+  increment,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -273,6 +275,34 @@ class CouponService {
       return fail("Failed to fetch coupon usage", error.code);
     }
   }
+
+
+async  addUserCouponUsage(
+  userId: string,
+  couponId: string
+): Promise<Result<string>> {
+  const couponRef = doc(db, COLLECTION.COUPONS, couponId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      transaction.update(couponRef, {
+        currentUsageCount: increment(1),
+        usedByUserIds: arrayUnion(userId),
+        updatedAt: Timestamp.now(),
+      });
+    });
+
+    return ok("Coupon usage updated successfully!");
+  } catch (error: any) {
+    console.error("Failed to update coupon usage:", error);
+    return fail(
+      "Failed to update coupon usage",
+      error?.code,
+      error?.stack
+    );
+  }
+}
+
 }
 
 export const couponService = new CouponService();

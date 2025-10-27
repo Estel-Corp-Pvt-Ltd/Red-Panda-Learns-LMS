@@ -98,9 +98,10 @@ class CouponUsageService {
 
       const coupon = couponResult.data;
 
+      
       // Check if user already used this coupon
-      const alreadyUsedResult = await this.hasUserUsedCoupon(userId, couponId);
-      if (alreadyUsedResult.success && alreadyUsedResult.data) {
+      const alreadyUsedResult = coupon.usedByUserIds?.includes(userId);
+      if (alreadyUsedResult) {
         return ok({
           isApplicable: false,
           reason: "You have already used this coupon",
@@ -120,15 +121,13 @@ class CouponUsageService {
         return ok({ isApplicable: false, reason: "Coupon has expired" });
       }
 
-      // Check usage limit
-      const usageCountResult = await this.getUsageCountByCoupon(couponId);
-      if (usageCountResult.success) {
-        const usageCount = usageCountResult.data;
+     
+  
 
-        if (coupon.usageLimit > 0 && usageCount >= coupon.usageLimit) {
+        if (coupon.usageLimit > 0 && coupon.currentUsageCount >= coupon.usageLimit) {
           return ok({ isApplicable: false, reason: "Usage limit reached" });
         }
-      }
+      
 
       // Check linked items (course, bundle, cohort)
       const isLinked = this.checkLinkedItems(
