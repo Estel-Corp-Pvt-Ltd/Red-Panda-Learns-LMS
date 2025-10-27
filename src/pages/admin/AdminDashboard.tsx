@@ -1236,67 +1236,85 @@ export function AdminDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Course</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {courses.map((course) => (
-                          <TableRow key={course.id}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {course.title}
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[50%]">Course</TableHead>
+                            <TableHead className="w-[15%] whitespace-nowrap">
+                              Status
+                            </TableHead>
+                            <TableHead className="w-[15%] whitespace-nowrap">
+                              Price
+                            </TableHead>
+                            <TableHead className="w-[20%] text-right whitespace-nowrap">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {courses.map((course) => (
+                            <TableRow key={course.id}>
+                              <TableCell className="align-top">
+                                <div className="min-w-0 max-w-[560px] pr-4">
+                                  <div
+                                    className="font-medium truncate"
+                                    title={course.title}
+                                  >
+                                    {course.title}
+                                  </div>
+                                  <div
+                                    className="text-sm text-muted-foreground line-clamp-2 break-words"
+                                    title={course.description}
+                                  >
+                                    {course.description}
+                                  </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {course.description}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  course.status === COURSE_STATUS.PUBLISHED
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {course.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(course.regularPrice)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  // onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
-                                  onClick={() =>
-                                    navigate(`/admin/edit-course/${course.id}`)
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <Badge
+                                  variant={
+                                    course.status === COURSE_STATUS.PUBLISHED
+                                      ? "default"
+                                      : "secondary"
                                   }
                                 >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteCourse(course.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                                  {course.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {formatCurrency(course.regularPrice)}
+                              </TableCell>
+                              <TableCell className="text-right whitespace-nowrap w-[160px]">
+                                <div className="flex justify-end gap-1 sm:gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    // onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
+                                    onClick={() =>
+                                      navigate(
+                                        `/admin/edit-course/${course.id}`
+                                      )
+                                    }
+                                    aria-label={`Edit ${course.title}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteCourse(course.id)}
+                                    aria-label={`Delete ${course.title}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1330,94 +1348,121 @@ export function AdminDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Bundle</TableHead>
-                          <TableHead>Courses</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {bundles.map((bundle) => (
-                          <TableRow key={bundle.id}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {bundle.title}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {bundle.description}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {bundle.courses
-                                    .map((c) => c.title)
-                                    .join(" | ")}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                {formatCurrency(bundle.salePrice)}
-                                <div className="text-xs text-muted-foreground">
-                                  Original:{" "}
-                                  {formatCurrency(bundle.regularPrice)}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  bundle.status === BUNDLE_STATUS.PUBLISHED
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {bundle.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigate(`edit-bundle/${bundle.id}`)
-                                  }
-                                  title="Edit Bundle"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigate(`/bundle/${bundle.id}`)
-                                  }
-                                  title="View Bundle"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteBundle(bundle.id)}
-                                  title="Delete Bundle"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[32%]">Bundle</TableHead>
+                            <TableHead className="w-[34%]">Courses</TableHead>
+                            <TableHead className="w-[14%] whitespace-nowrap">
+                              Price
+                            </TableHead>
+                            <TableHead className="w-[10%] whitespace-nowrap">
+                              Status
+                            </TableHead>
+                            <TableHead className="w-[10%] text-right whitespace-nowrap">
+                              Actions
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {bundles.map((bundle) => {
+                            const courseTitles = (bundle.courses ?? [])
+                              .map((c) => c.title)
+                              .join(" | ");
+                            return (
+                              <TableRow key={bundle.id}>
+                                <TableCell className="align-top">
+                                  <div className="min-w-0 pr-4">
+                                    <div
+                                      className="font-medium truncate"
+                                      title={bundle.title}
+                                    >
+                                      {bundle.title}
+                                    </div>
+                                    <div
+                                      className="text-sm text-muted-foreground line-clamp-2 break-words"
+                                      title={bundle.description}
+                                    >
+                                      {bundle.description}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="align-top">
+                                  <div className="min-w-0 pr-4">
+                                    <div
+                                      className="text-sm text-muted-foreground line-clamp-2 break-words"
+                                      title={courseTitles}
+                                    >
+                                      {courseTitles}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="whitespace-nowrap align-top">
+                                  <div className="text-sm">
+                                    {formatCurrency(bundle.salePrice)}
+                                    <div className="text-xs text-muted-foreground">
+                                      Original:{" "}
+                                      {formatCurrency(bundle.regularPrice)}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="whitespace-nowrap align-top">
+                                  <Badge
+                                    variant={
+                                      bundle.status === BUNDLE_STATUS.PUBLISHED
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {bundle.status}
+                                  </Badge>
+                                </TableCell>
+
+                                <TableCell className="text-right whitespace-nowrap align-top w-[160px]">
+                                  <div className="flex justify-end gap-1 sm:gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        navigate(`edit-bundle/${bundle.id}`)
+                                      }
+                                      title="Edit Bundle"
+                                      aria-label={`Edit ${bundle.title}`}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        navigate(`/bundle/${bundle.id}`)
+                                      }
+                                      title="View Bundle"
+                                      aria-label={`View ${bundle.title}`}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteBundle(bundle.id)}
+                                      title="Delete Bundle"
+                                      aria-label={`Delete ${bundle.title}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1451,45 +1496,54 @@ export function AdminDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Cohort</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cohorts.map((cohort) => (
-                          <TableRow key={cohort.id}>
-                            {/* Cohort title & description */}
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {cohort.title}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {cohort.description || "-"}
-                                </div>
-                              </div>
-                            </TableCell>
-
-                            {/* Actions: view, edit, delete */}
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteCohort(cohort.id)}
-                                  title="Delete Cohort"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[80%]">Cohort</TableHead>
+                            <TableHead className="w-[20%] text-right whitespace-nowrap">
+                              Actions
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {cohorts.map((cohort) => (
+                            <TableRow key={cohort.id}>
+                              <TableCell className="align-top">
+                                <div className="min-w-0 pr-4">
+                                  <div
+                                    className="font-medium truncate"
+                                    title={cohort.title}
+                                  >
+                                    {cohort.title}
+                                  </div>
+                                  <div
+                                    className="text-sm text-muted-foreground line-clamp-2 break-words"
+                                    title={cohort.description || "-"}
+                                  >
+                                    {cohort.description || "-"}
+                                  </div>
+                                </div>
+                              </TableCell>
+
+                              <TableCell className="text-right whitespace-nowrap align-top w-[160px]">
+                                <div className="flex justify-end gap-1 sm:gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteCohort(cohort.id)}
+                                    title="Delete Cohort"
+                                    aria-label={`Delete ${cohort.title}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1510,55 +1564,92 @@ export function AdminDashboard() {
                       </h3>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {instructors.map((instructor) => (
-                          <TableRow key={instructor.id}>
-                            <TableCell>
-                              {instructor.firstName} {instructor.middleName}{" "}
-                              {instructor.lastName}
-                            </TableCell>
-                            <TableCell>{instructor.email}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  instructor.role === USER_ROLE.ADMIN
-                                    ? "destructive"
-                                    : "default"
-                                }
-                              >
-                                {instructor.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  instructor.status === USER_STATUS.ACTIVE
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {instructor.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                No actions available
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[32%]">Name</TableHead>
+                            <TableHead className="w-[32%]">Email</TableHead>
+                            <TableHead className="w-[14%] whitespace-nowrap">
+                              Role
+                            </TableHead>
+                            <TableHead className="w-[14%] whitespace-nowrap">
+                              Status
+                            </TableHead>
+                            <TableHead className="w-[8%] text-right whitespace-nowrap">
+                              Actions
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {instructors.map((instructor) => {
+                            const fullName = [
+                              instructor.firstName,
+                              instructor.middleName,
+                              instructor.lastName,
+                            ]
+                              .filter(Boolean)
+                              .join(" ");
+
+                            return (
+                              <TableRow key={instructor.id}>
+                                <TableCell className="align-top">
+                                  <div className="min-w-0 pr-4">
+                                    <div
+                                      className="font-medium truncate"
+                                      title={fullName || "-"}
+                                    >
+                                      {fullName || "-"}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="align-top">
+                                  <div className="min-w-0 pr-4">
+                                    <div
+                                      className="text-sm text-muted-foreground truncate"
+                                      title={instructor.email}
+                                    >
+                                      {instructor.email}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="whitespace-nowrap align-top">
+                                  <Badge
+                                    variant={
+                                      instructor.role === USER_ROLE.ADMIN
+                                        ? "destructive"
+                                        : "default"
+                                    }
+                                  >
+                                    {instructor.role}
+                                  </Badge>
+                                </TableCell>
+
+                                <TableCell className="whitespace-nowrap align-top">
+                                  <Badge
+                                    variant={
+                                      instructor.status === USER_STATUS.ACTIVE
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {instructor.status}
+                                  </Badge>
+                                </TableCell>
+
+                                <TableCell className="text-right whitespace-nowrap align-top">
+                                  <div className="flex justify-end gap-2 text-muted-foreground">
+                                    No actions available
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1590,75 +1681,117 @@ export function AdminDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>
-                              {user.firstName} {user.middleName} {user.lastName}
-                            </TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  user.role === USER_ROLE.ADMIN
-                                    ? "destructive"
-                                    : user.role === USER_ROLE.STUDENT
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {user.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  user.status === USER_STATUS.ACTIVE
-                                    ? "default"
-                                    : user.status === USER_STATUS.INACTIVE
-                                    ? "secondary"
-                                    : "outline"
-                                }
-                              >
-                                {user.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigate(`/admin/edit-user/${user.id}`)
-                                  }
-                                  title="Edit User"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteUser(user.id)}
-                                  title="Delete User"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[32%]">Name</TableHead>
+                            <TableHead className="w-[32%]">Email</TableHead>
+                            <TableHead className="w-[14%] whitespace-nowrap">
+                              Role
+                            </TableHead>
+                            <TableHead className="w-[14%] whitespace-nowrap">
+                              Status
+                            </TableHead>
+                            <TableHead className="w-[8%] text-right whitespace-nowrap">
+                              Actions
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => {
+                            const fullName = [
+                              user.firstName,
+                              user.middleName,
+                              user.lastName,
+                            ]
+                              .filter(Boolean)
+                              .join(" ");
+
+                            return (
+                              <TableRow key={user.id}>
+                                <TableCell className="align-top">
+                                  <div className="min-w-0 pr-4">
+                                    <div
+                                      className="font-medium truncate"
+                                      title={fullName || "-"}
+                                    >
+                                      {fullName || "-"}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="align-top">
+                                  <div className="min-w-0 pr-4">
+                                    <div
+                                      className="text-sm text-muted-foreground truncate"
+                                      title={user.email}
+                                    >
+                                      {user.email}
+                                    </div>
+                                  </div>
+                                </TableCell>
+
+                                <TableCell className="whitespace-nowrap align-top">
+                                  <Badge
+                                    variant={
+                                      user.role === USER_ROLE.ADMIN
+                                        ? "destructive"
+                                        : user.role === USER_ROLE.STUDENT
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {user.role}
+                                  </Badge>
+                                </TableCell>
+
+                                <TableCell className="whitespace-nowrap align-top">
+                                  <Badge
+                                    variant={
+                                      user.status === USER_STATUS.ACTIVE
+                                        ? "default"
+                                        : user.status === USER_STATUS.INACTIVE
+                                        ? "secondary"
+                                        : "outline"
+                                    }
+                                  >
+                                    {user.status}
+                                  </Badge>
+                                </TableCell>
+
+                                <TableCell className="text-right whitespace-nowrap align-top w-[160px]">
+                                  <div className="flex justify-end gap-1 sm:gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        navigate(`/admin/edit-user/${user.id}`)
+                                      }
+                                      title="Edit User"
+                                      aria-label={`Edit ${fullName || "user"}`}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteUser(user.id)}
+                                      title="Delete User"
+                                      aria-label={`Delete ${
+                                        fullName || "user"
+                                      }`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1692,73 +1825,101 @@ export function AdminDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Discount</TableHead>
-                          <TableHead>Usage</TableHead>
-                          <TableHead>Expires</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {coupons.map((coupon) => (
-                          <TableRow key={coupon.id}>
-                            <TableCell className="font-medium">
-                              {coupon.code}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  coupon.status === COUPON_STATUS.ACTIVE
-                                    ? "default"
-                                    : coupon.status === COUPON_STATUS.EXPIRED
-                                    ? "secondary"
-                                    : "outline"
-                                }
-                              >
-                                {coupon.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{coupon.discountPercentage}</TableCell>
-                            <TableCell>
-                              {coupon.usageLimit === 0
-                                ? "Unlimited (∞)"
-                                : coupon.usageLimit}
-                            </TableCell>
-                            <TableCell>
-                              {formatDate(coupon.expiryDate)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigate(`/admin/edit-coupon/${coupon.id}`)
-                                  }
-                                  title="Edit Coupon"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    deleteCoupon(coupon.id);
-                                  }}
-                                  title="Delete Coupon"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[30%]">Code</TableHead>
+                            <TableHead className="w-[14%] whitespace-nowrap">
+                              Status
+                            </TableHead>
+                            <TableHead className="w-[12%] whitespace-nowrap">
+                              Discount
+                            </TableHead>
+                            <TableHead className="w-[12%] whitespace-nowrap">
+                              Usage
+                            </TableHead>
+                            <TableHead className="w-[16%] whitespace-nowrap">
+                              Expires
+                            </TableHead>
+                            <TableHead className="w-[16%] text-right whitespace-nowrap">
+                              Actions
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {coupons.map((coupon) => (
+                            <TableRow key={coupon.id}>
+                              <TableCell className="align-top">
+                                <div
+                                  className="min-w-0 pr-4 font-medium truncate"
+                                  title={coupon.code}
+                                >
+                                  {coupon.code}
+                                </div>
+                              </TableCell>
+
+                              <TableCell className="whitespace-nowrap align-top">
+                                <Badge
+                                  variant={
+                                    coupon.status === COUPON_STATUS.ACTIVE
+                                      ? "default"
+                                      : coupon.status === COUPON_STATUS.EXPIRED
+                                      ? "secondary"
+                                      : "outline"
+                                  }
+                                >
+                                  {coupon.status}
+                                </Badge>
+                              </TableCell>
+
+                              <TableCell className="whitespace-nowrap align-top">
+                                {typeof coupon.discountPercentage === "number"
+                                  ? `${coupon.discountPercentage}%`
+                                  : coupon.discountPercentage}
+                              </TableCell>
+
+                              <TableCell className="whitespace-nowrap align-top">
+                                {coupon.usageLimit === 0
+                                  ? "Unlimited (∞)"
+                                  : coupon.usageLimit}
+                              </TableCell>
+
+                              <TableCell className="whitespace-nowrap align-top">
+                                {formatDate(coupon.expiryDate)}
+                              </TableCell>
+
+                              <TableCell className="text-right whitespace-nowrap align-top w-[160px]">
+                                <div className="flex justify-end gap-1 sm:gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      navigate(
+                                        `/admin/edit-coupon/${coupon.id}`
+                                      )
+                                    }
+                                    title="Edit Coupon"
+                                    aria-label={`Edit ${coupon.code}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteCoupon(coupon.id)}
+                                    title="Delete Coupon"
+                                    aria-label={`Delete ${coupon.code}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>

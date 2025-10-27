@@ -3,20 +3,45 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Header } from "@/components/Header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
+import {
+  BUNDLE_STATUS,
+  COURSE_STATUS,
+  CURRENCY,
+  PRICING_MODEL,
+} from "@/constants";
 import { useToast } from "@/hooks/use-toast";
-import { useBundlePricingQuery, useBundleQuery, useUpdateBundleMutation } from "@/hooks/useBundleApi";
+import {
+  useBundlePricingQuery,
+  useBundleQuery,
+  useUpdateBundleMutation,
+} from "@/hooks/useBundleApi";
 import { courseService } from "@/services/courseService";
 import { instructorService } from "@/services/instructorService";
 import { Course } from "@/types/course";
 import { BundleStatus, PricingModel } from "@/types/general";
 import { getFullName } from "@/utils/name";
-import { ArrowLeft, DollarSign, Info, Loader2, Package, Plus, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  DollarSign,
+  Info,
+  Loader2,
+  Package,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -43,11 +68,17 @@ export default function EditBundlePage() {
   const [newTag, setNewTag] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [instructorName, setInstructorName] = useState("");
-  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
+  const [instructors, setInstructors] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   // Fetch bundle data
-  const { data: bundleData, isLoading: bundleLoading, error: bundleError } = useBundleQuery(bundleId!);
-  const { mutate: updateBundle, } = useUpdateBundleMutation();
+  const {
+    data: bundleData,
+    isLoading: bundleLoading,
+    error: bundleError,
+  } = useBundleQuery(bundleId!);
+  const { mutate: updateBundle } = useUpdateBundleMutation();
 
   const [formData, setFormData] = useState<EditBundleFormData>({
     title: "",
@@ -92,15 +123,16 @@ export default function EditBundlePage() {
       const result = await instructorService.getAllInstructors();
 
       if (result.success) {
-        const formattedInstructors = result
-          .data
-          .map((instructor) => ({
-            id: instructor.id,
-            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
-          }));
+        const formattedInstructors = result.data.map((instructor) => ({
+          id: instructor.id,
+          name: getFullName(
+            instructor.firstName,
+            instructor.middleName,
+            instructor.lastName
+          ),
+        }));
 
         setInstructors(formattedInstructors);
-
       } else {
         console.error("Failed to fetch instructors:", result.error);
         toast({
@@ -135,15 +167,17 @@ export default function EditBundlePage() {
       setFormData({
         title: bundleData.title || "",
         description: bundleData.description || "",
-        regularPrice: bundleData.regularPrice ? bundleData.regularPrice.toString() : "",
+        regularPrice: bundleData.regularPrice
+          ? bundleData.regularPrice.toString()
+          : "",
         salePrice: bundleData.salePrice ? bundleData.salePrice.toString() : "",
         pricingModel: bundleData.pricingModel || PRICING_MODEL.PAID,
-        status: bundleData.status
+        status: bundleData.status,
       });
 
       // Set selected courses
       if (bundleData.courses) {
-        setSelectedCourses(bundleData.courses.map(course => course.id));
+        setSelectedCourses(bundleData.courses.map((course) => course.id));
       }
 
       setInstructorId(bundleData.instructorId || "");
@@ -159,7 +193,9 @@ export default function EditBundlePage() {
     try {
       const coursesData = await courseService.getAllCourses();
       setCourses(
-        coursesData.filter((course) => course.status === COURSE_STATUS.PUBLISHED)
+        coursesData.filter(
+          (course) => course.status === COURSE_STATUS.PUBLISHED
+        )
       );
     } catch (error) {
       console.error("Error loading courses:", error);
@@ -234,9 +270,7 @@ export default function EditBundlePage() {
       const regularPrice = formData.regularPrice
         ? parseFloat(formData.regularPrice)
         : 0;
-      const salePrice = formData.salePrice
-        ? parseFloat(formData.salePrice)
-        : 0;
+      const salePrice = formData.salePrice ? parseFloat(formData.salePrice) : 0;
 
       updateBundle(
         {
@@ -245,8 +279,8 @@ export default function EditBundlePage() {
             title: formData.title,
             description: formData.description,
             courses: courses
-              .filter(course => selectedCourseIds.includes(course.id!))
-              .map(course => ({ id: course.id, title: course.title })),
+              .filter((course) => selectedCourseIds.includes(course.id!))
+              .map((course) => ({ id: course.id, title: course.title })),
             regularPrice,
             salePrice,
             pricingModel: formData.pricingModel,
@@ -311,9 +345,7 @@ export default function EditBundlePage() {
       const regularPrice = formData.regularPrice
         ? parseFloat(formData.regularPrice)
         : 0;
-      const salePrice = formData.salePrice
-        ? parseFloat(formData.salePrice)
-        : 0;
+      const salePrice = formData.salePrice ? parseFloat(formData.salePrice) : 0;
       updateBundle(
         {
           bundleId: bundleId!,
@@ -321,8 +353,8 @@ export default function EditBundlePage() {
             title: formData.title,
             description: formData.description,
             courses: courses
-              .filter(course => selectedCourseIds.includes(course.id!))
-              .map(course => ({ id: course.id, title: course.title })),
+              .filter((course) => selectedCourseIds.includes(course.id!))
+              .map((course) => ({ id: course.id, title: course.title })),
             regularPrice,
             salePrice,
             pricingModel: formData.pricingModel,
@@ -354,7 +386,6 @@ export default function EditBundlePage() {
           },
         }
       );
-
     } catch (error) {
       console.error("Error updating and publishing bundle:", error);
       toast({
@@ -392,21 +423,23 @@ export default function EditBundlePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header/>
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => navigate("/admin")}
+              className="w-full sm:w-auto"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Admin
             </Button>
+
             <div className="flex items-center gap-2">
-              <Package className="h-6 w-6 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
                 Edit Bundle
               </h1>
             </div>
@@ -459,17 +492,21 @@ export default function EditBundlePage() {
                 <div>
                   <Label>Categories</Label>
                   <div className="flex flex-wrap gap-3 mt-2">
-                    {["AI/ML", "Bootcamp", "College-student", "Data-Science", "Generative-AI"].map(
-                      (cat) => (
-                        <div key={cat} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={categories.includes(cat)}
-                            onCheckedChange={() => handleCategoryChange(cat)}
-                          />
-                          <Label>{cat}</Label>
-                        </div>
-                      )
-                    )}
+                    {[
+                      "AI/ML",
+                      "Bootcamp",
+                      "College-student",
+                      "Data-Science",
+                      "Generative-AI",
+                    ].map((cat) => (
+                      <div key={cat} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={categories.includes(cat)}
+                          onCheckedChange={() => handleCategoryChange(cat)}
+                        />
+                        <Label>{cat}</Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -551,7 +588,9 @@ export default function EditBundlePage() {
                     <Select
                       value={instructorName}
                       onValueChange={(val) => {
-                        const selected = instructors.find((a) => a.name === val);
+                        const selected = instructors.find(
+                          (a) => a.name === val
+                        );
                         setInstructorId(selected?.id || "");
                         setInstructorName(val);
                       }}
@@ -569,24 +608,27 @@ export default function EditBundlePage() {
                     </Select>
                   </CardContent>
                 </Card>
-
               </CardContent>
             </Card>
 
             {/* Course Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>Select Courses ({selectedCourseIds.length} selected)</CardTitle>
+                <CardTitle>
+                  Select Courses ({selectedCourseIds.length} selected)
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {courses.length === 0 ? (
                   <div className="text-center py-8">
                     <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No courses available</h3>
+                    <h3 className="text-lg font-medium mb-2">
+                      No courses available
+                    </h3>
                     <p className="text-muted-foreground mb-4">
                       You need published courses to create a bundle.
                     </p>
-                    <Button onClick={() => navigate('/admin/create-course')}>
+                    <Button onClick={() => navigate("/admin/create-course")}>
                       <Plus className="mr-2 h-4 w-4" />
                       Create First Course
                     </Button>
@@ -594,7 +636,10 @@ export default function EditBundlePage() {
                 ) : (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {courses.map((course) => (
-                      <div key={course.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50">
+                      <div
+                        key={course.id}
+                        className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50"
+                      >
                         <Checkbox
                           checked={selectedCourseIds.includes(course.id!)}
                           onCheckedChange={() => handleCourseToggle(course.id!)}
@@ -607,7 +652,9 @@ export default function EditBundlePage() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            {formatCurrency(course.salePrice || course.regularPrice)}
+                            {formatCurrency(
+                              course.salePrice || course.regularPrice
+                            )}
                           </p>
                           <Badge variant="outline" className="text-xs">
                             {course.status}
@@ -632,13 +679,20 @@ export default function EditBundlePage() {
                 <CardContent>
                   <div className="space-y-3">
                     {selectedCourses.map((course) => (
-                      <div key={course.id} className="flex items-center justify-between">
+                      <div
+                        key={course.id}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex-1">
-                          <p className="font-medium text-sm line-clamp-1">{course.title}</p>
+                          <p className="font-medium text-sm line-clamp-1">
+                            {course.title}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">
-                            {formatCurrency(course.salePrice || course.regularPrice)}
+                            {formatCurrency(
+                              course.salePrice || course.regularPrice
+                            )}
                           </span>
                           <Button
                             variant="ghost"
@@ -656,70 +710,92 @@ export default function EditBundlePage() {
             )}
 
             {/* Pricing Configuration */}
-            {pricingData && selectedCourseIds.length > 0 && formData.pricingModel === PRICING_MODEL.PAID && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Bundle Pricing
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Individual Prices Total:</span>
-                      <span className="font-medium">{formatCurrency(pricingData.regularPrice)}</span>
+            {pricingData &&
+              selectedCourseIds.length > 0 &&
+              formData.pricingModel === PRICING_MODEL.PAID && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Bundle Pricing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Individual Prices Total:</span>
+                        <span className="font-medium">
+                          {formatCurrency(pricingData.regularPrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm text-success">
+                        <span>Suggested Bundle Price:</span>
+                        <span className="font-medium">
+                          {formatCurrency(pricingData.suggestedPrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Potential Savings:</span>
+                        <span>
+                          {formatCurrency(
+                            pricingData.regularPrice -
+                              pricingData.suggestedPrice
+                          )}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm text-success">
-                      <span>Suggested Bundle Price:</span>
-                      <span className="font-medium">{formatCurrency(pricingData.suggestedPrice)}</span>
+
+                    <Separator />
+
+                    <div>
+                      <Label htmlFor="regularPrice">Regular Price *</Label>
+                      <Input
+                        id="regularPrice"
+                        type="number"
+                        placeholder={`${pricingData.suggestedPrice}`}
+                        value={formData.regularPrice}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            regularPrice: e.target.value,
+                          }))
+                        }
+                        min={pricingData.maxDiscount}
+                        max={pricingData.regularPrice}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Range: {formatCurrency(pricingData.maxDiscount)} -{" "}
+                        {formatCurrency(pricingData.regularPrice)}
+                      </p>
                     </div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Potential Savings:</span>
-                      <span>{formatCurrency(pricingData.regularPrice - pricingData.suggestedPrice)}</span>
+
+                    <div>
+                      <Label htmlFor="salePrice">Sale Price (Optional)</Label>
+                      <Input
+                        id="salePrice"
+                        type="number"
+                        placeholder="Enter sale price"
+                        value={formData.salePrice}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            salePrice: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
-                  </div>
 
-                  <Separator />
-
-                  <div>
-                    <Label htmlFor="regularPrice">Regular Price *</Label>
-                    <Input
-                      id="regularPrice"
-                      type="number"
-                      placeholder={`${pricingData.suggestedPrice}`}
-                      value={formData.regularPrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, regularPrice: e.target.value }))}
-                      min={pricingData.maxDiscount}
-                      max={pricingData.regularPrice}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Range: {formatCurrency(pricingData.maxDiscount)} - {formatCurrency(pricingData.regularPrice)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="salePrice">Sale Price (Optional)</Label>
-                    <Input
-                      id="salePrice"
-                      type="number"
-                      placeholder="Enter sale price"
-                      value={formData.salePrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, salePrice: e.target.value }))}
-                    />
-                  </div>
-
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      {formData.salePrice
-                        ? `Sale price will be displayed instead of regular price.`
-                        : `If you don't set a sale price, the regular price will be used.`}
-                    </AlertDescription>
-                  </Alert>
-                </CardContent>
-              </Card>
-            )}
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        {formData.salePrice
+                          ? `Sale price will be displayed instead of regular price.`
+                          : `If you don't set a sale price, the regular price will be used.`}
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              )}
 
             {/* Bundle Status */}
             <Card>
@@ -729,7 +805,13 @@ export default function EditBundlePage() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Current Status:</span>
-                  <Badge variant={formData.status === BUNDLE_STATUS.PUBLISHED ? "default" : "secondary"}>
+                  <Badge
+                    variant={
+                      formData.status === BUNDLE_STATUS.PUBLISHED
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
                     {formData.status}
                   </Badge>
                 </div>
@@ -740,7 +822,12 @@ export default function EditBundlePage() {
             <div className="space-y-3">
               <Button
                 onClick={handleUpdateBundle}
-                disabled={loading || selectedCourseIds.length < 2 || !formData.title.trim() || !formData.description.trim()}
+                disabled={
+                  loading ||
+                  selectedCourseIds.length < 2 ||
+                  !formData.title.trim() ||
+                  !formData.description.trim()
+                }
                 className="w-full"
                 variant="default"
               >
@@ -750,7 +837,12 @@ export default function EditBundlePage() {
               {formData.status !== BUNDLE_STATUS.PUBLISHED && (
                 <Button
                   onClick={handlePublishBundle}
-                  disabled={loading || selectedCourseIds.length < 2 || !formData.title.trim() || !formData.description.trim()}
+                  disabled={
+                    loading ||
+                    selectedCourseIds.length < 2 ||
+                    !formData.title.trim() ||
+                    !formData.description.trim()
+                  }
                   className="w-full"
                 >
                   {loading ? "Publishing..." : "Update & Publish Bundle"}
@@ -762,4 +854,4 @@ export default function EditBundlePage() {
       </main>
     </div>
   );
-};
+}
