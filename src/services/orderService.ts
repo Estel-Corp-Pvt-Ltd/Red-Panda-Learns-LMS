@@ -4,7 +4,9 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
-  updateDoc
+  updateDoc,
+  getDocs,
+  collection,
 } from "firebase/firestore";
 import { db } from "../firebaseConfig.ts";
 import { OrderStatus } from "../types/general.ts";
@@ -73,6 +75,26 @@ class OrderService {
     } catch (error) {
       console.error("Error creating order:", error);
       throw new Error("Failed to create order");
+    }
+  }
+
+  /** Fetch all Orders */
+  async getAllOrders(): Promise<Order[]> {
+    try {
+      const querySnapshot = await getDocs(collection(db, COLLECTION.ORDERS));
+      const orgs = querySnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          ...data,
+          createdAt: data.createdAt?.toDate?.() ?? null,
+          updatedAt: data.updatedAt?.toDate?.() ?? null,
+        } as Order;
+      });
+      console.log("orderService - Fetched:", orgs.length);
+      return orgs;
+    } catch (error) {
+      console.error("orderService - Error fetching Orders:", error);
+      throw new Error("Failed to fetch Orders");
     }
   }
 
