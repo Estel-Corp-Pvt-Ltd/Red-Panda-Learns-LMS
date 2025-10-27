@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ArrowLeft } from "lucide-react";
+
 import { Label } from "@radix-ui/react-dropdown-menu";
 import { Header } from "@/components/Header";
 import { useNavigate, useParams } from "react-router-dom";
@@ -90,16 +92,32 @@ const EditUserPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
-      <div className="max-w-4xl mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center w-full justify-between">
-              <CardTitle>Edit User</CardTitle>
-              <Button variant="outline" onClick={() => navigate("/admin")}>
-                Back to Users
-              </Button>
+
+        {/* Top bar: Back + Title */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin")}
+              className="w-full sm:w-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+               Edit User
+              </h1>
             </div>
-          </CardHeader>
+          </div>
+        </div>
+      </header>
+      <div className="max-w-4xl mx-auto py-8 ">
+        <Card className="pt-4"> 
+         
 
           <CardContent>
             <Tabs defaultValue="details" className="w-full">

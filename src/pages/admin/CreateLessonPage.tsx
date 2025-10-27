@@ -1,10 +1,6 @@
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,25 +88,35 @@ const CreateLessonPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
+
+      {/* Top bar: Back + Title */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin")}
+              className="w-full sm:w-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                Create Lesson
+              </h1>
+            </div>
+          </div>
+        </div>
+      </header>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="bg-card text-card-foreground shadow-lg rounded-xl">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <CardTitle className="text-xl font-bold">
-                Create Lesson
-              </CardTitle>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/admin")}
-                className="w-full md:w-auto"
-              >
-                Back to Dashboard
-              </Button>
-            </div>
-          </CardHeader>
+          
           <CardContent>
             <Tabs defaultValue="details">
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 mt-4">
                 <TabsTrigger value="details">Lesson Details</TabsTrigger>
               </TabsList>
 
@@ -150,9 +156,7 @@ const CreateLessonPage = () => {
                     <Label>Lesson Type</Label>
                     <Select
                       value={lesson.type}
-                      onValueChange={(val) =>
-                        handleFieldChange("type", val)
-                      }
+                      onValueChange={(val) => handleFieldChange("type", val)}
                     >
                       <SelectTrigger className="w-full sm:w-[200px] bg-background text-foreground">
                         <SelectValue placeholder="Select type" />
@@ -204,10 +208,7 @@ const CreateLessonPage = () => {
 
             {/* Save button */}
             <div className="flex justify-end mt-6">
-              <Button
-                onClick={handleSaveLesson}
-                className="w-full md:w-auto"
-              >
+              <Button onClick={handleSaveLesson} className="w-full md:w-auto">
                 Save Lesson
               </Button>
             </div>
