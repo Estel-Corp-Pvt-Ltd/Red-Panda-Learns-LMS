@@ -79,6 +79,21 @@ import {
 import { PopUp } from "@/types/pop-up";
 import { popUpService } from "@/services/popupService";
 
+const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => {
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide",
+        active
+          ? "bg-[#ff00ff] text-white" // bright magenta pill for ACTIVE
+          : "border border-slate-300 text-slate-700 bg-white/80 dark:border-slate-700 dark:text-slate-300 dark:bg-transparent", // outlined pill for INACTIVE
+      ].join(" ")}
+    >
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+};
+
 const PopUpTab = () => {
   const [popUps, setPopUps] = useState<PopUp[]>([]);
   const [title, setTitle] = useState("");
@@ -290,36 +305,42 @@ const PopUpTab = () => {
           </div>
 
           {/* Status */}
+          {/* Status */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Status
             </label>
-            <Select
-              value={active ? "true" : "false"}
-              onValueChange={(v) => setActive(v === "true")}
-            >
-              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent
-                side="bottom"
-                align="start"
-                className={selectContentBase}
+            <div className="flex items-center gap-2">
+              <Select
+                value={active ? "true" : "false"}
+                onValueChange={(v) => setActive(v === "true")}
               >
-                {[
-                  { label: "Active", value: "true" },
-                  { label: "Inactive", value: "false" },
-                ].map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent
+                  side="bottom"
+                  align="start"
+                  className={selectContentBase}
+                >
+                  {[
+                    { label: "Active", value: "true" },
+                    { label: "Inactive", value: "false" },
+                  ].map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Live badge preview */}
+              <StatusBadge active={active} />
+            </div>
           </div>
 
           {/* Auto-close */}
@@ -396,7 +417,7 @@ const PopUpTab = () => {
                   CTA
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
-                  Active
+                  Status
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
                   Auto Close
@@ -438,7 +459,9 @@ const PopUpTab = () => {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                  <TableCell>
+                    <StatusBadge active={pop.active} />
+                  </TableCell>
                   <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
                   <TableCell>{pop.duration ?? 5000}</TableCell>
                   <TableCell className="text-right">
@@ -912,7 +935,9 @@ export function AdminDashboard() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -920,8 +945,8 @@ export function AdminDashboard() {
                 <TableRow key={org.id}>
                   <TableCell>{org.name}</TableCell>
                   <TableCell>{org.type}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1.5">
+                  <TableCell className="text-right whitespace-nowrap">
+                    <div className="inline-flex justify-end gap-1.5">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1352,12 +1377,12 @@ export function AdminDashboard() {
                       <Table className="table-fixed w-full">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[32%]">Bundle</TableHead>
-                            <TableHead className="w-[34%]">Courses</TableHead>
+                            <TableHead className="w-[28%]">Bundle</TableHead>
+                            <TableHead className="w-[30%]">Courses</TableHead>
                             <TableHead className="w-[14%] whitespace-nowrap">
                               Price
                             </TableHead>
-                            <TableHead className="w-[10%] whitespace-nowrap">
+                            <TableHead className="w-[12%] whitespace-nowrap">
                               Status
                             </TableHead>
                             <TableHead className="w-[10%] text-right whitespace-nowrap">

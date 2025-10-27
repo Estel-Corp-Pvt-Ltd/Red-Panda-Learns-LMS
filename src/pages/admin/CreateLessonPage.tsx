@@ -46,6 +46,15 @@ const CreateLessonPage = () => {
     }
   };
 
+  const isValidHttpUrl = (value: string): boolean => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
   const handleSaveLesson = async () => {
     try {
       if (!lesson.title.trim()) {
@@ -53,7 +62,10 @@ const CreateLessonPage = () => {
         return;
       }
       if (!lesson.description.trim()) {
-        toast({ title: "Lesson description is required", variant: "destructive" });
+        toast({
+          title: "Lesson description is required",
+          variant: "destructive",
+        });
         return;
       }
       if (!lesson.type) {
@@ -64,15 +76,21 @@ const CreateLessonPage = () => {
         toast({ title: "Embed URL is required", variant: "destructive" });
         return;
       }
-      if (lesson.durationSeconds <= 0) {
-        toast({ title: "Duration must be greater than 0 seconds", variant: "destructive" });
+      if (!isValidHttpUrl(lesson.embedUrl.trim())) {
+        toast({
+          title: "Please enter a valid URL (http/https)",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (lesson.durationSeconds < 0) {
+        toast({ title: "Duration cannot be negative", variant: "destructive" });
         return;
       }
 
       await lessonService.createLesson(lesson);
       toast({ title: "Lesson created successfully!", variant: "default" });
 
-      // Reset form
       setLesson({
         title: "",
         type: LESSON_TYPE.SLIDE_DECK,
@@ -115,7 +133,6 @@ const CreateLessonPage = () => {
       </header>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="bg-card text-card-foreground shadow-lg rounded-xl">
-          
           <CardContent>
             <Tabs defaultValue="details">
               <TabsList className="mb-4 mt-4">
@@ -177,7 +194,8 @@ const CreateLessonPage = () => {
                   <div className="space-y-2">
                     <Label>Embed URL</Label>
                     <Input
-                      placeholder="Enter embed URL for the lesson content"
+                      type="url"
+                      placeholder="https://example.com/embed/..."
                       value={lesson.embedUrl}
                       onChange={(e) =>
                         handleFieldChange("embedUrl", e.target.value)
@@ -194,13 +212,18 @@ const CreateLessonPage = () => {
                       min="0"
                       step="1"
                       placeholder="e.g. 300"
-                      value={lesson.durationSeconds || 0}
-                      onChange={(e) =>
+                      value={
+                        Number.isFinite(lesson.durationSeconds)
+                          ? lesson.durationSeconds
+                          : 0
+                      }
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
                         handleFieldChange(
                           "durationSeconds",
-                          parseInt(e.target.value)
-                        )
-                      }
+                          Number.isNaN(v) ? 0 : v
+                        );
+                      }}
                       className="w-[120px] bg-background text-foreground"
                     />
                   </div>
