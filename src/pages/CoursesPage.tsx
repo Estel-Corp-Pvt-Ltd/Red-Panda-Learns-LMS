@@ -32,7 +32,7 @@ import { useCourseFilters } from "@/hooks/use-course-filters";
 import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
 import { useCohortsQuery, useCoursesQuery } from "@/hooks/useCaching";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
-
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SORT_OPTIONS } from "@/types/course-filters";
 
@@ -40,7 +40,7 @@ const CoursesPage = () => {
   const { enrollments, isEnrolledInBundle } = useEnrollment();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
+  const navigate = useNavigate();
   const {
     data: courses,
     isLoading,
@@ -81,7 +81,7 @@ const CoursesPage = () => {
   };
 
   const handleBundlePurchase = (bundleId: string) => {
-    window.location.href = `/bundle/${bundleId}`;
+    navigate(`/bundle/${bundleId}`);
   };
 
   return (
@@ -242,7 +242,7 @@ const CoursesPage = () => {
               "grid gap-6",
               viewMode === "grid"
                 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                : "grid-cols-1"
+                : "grid-cols-1",
             )}
           >
             {Array.from({ length: 8 }).map((_, i) => (
@@ -287,7 +287,7 @@ const CoursesPage = () => {
                     "grid gap-6 animate-fade-in",
                     viewMode === "grid"
                       ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                      : "grid-cols-1 max-w-4xl"
+                      : "grid-cols-1 max-w-4xl",
                   )}
                 >
                   {bundles.map((bundle, index) => (
