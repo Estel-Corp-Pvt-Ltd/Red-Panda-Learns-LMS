@@ -682,7 +682,7 @@ export default function CheckoutPage() {
                       {isProcessing ? (
                         "Processing..."
                       ) : loadingPricing ? (
-                        "Loading Price..."
+                        "Loading..."
                       ) : (
                         <>
                           <Lock className="h-4 w-4 mr-2" />
