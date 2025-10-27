@@ -76,3 +76,74 @@ export const formatTime = (
     minute: "2-digit",
   }).format(date);
 };
+
+/**
+ * Parses a duration in seconds into hours and minutes.
+ * @param durationInSeconds The total duration in seconds.
+ * @returns An object containing the calculated hours and minutes.
+ */
+export const parseDuration = (durationInSeconds: number): { hours: number; minutes: number } => {
+  if (typeof durationInSeconds !== 'number' || durationInSeconds < 0) {
+    return { hours: 0, minutes: 0 };
+  }
+
+  const totalMinutes = Math.floor(durationInSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return { hours, minutes };
+};
+
+type DateInput = Date | Timestamp | FieldValue;
+
+/**
+ * Compares two dates (either native Date objects or Firebase Timestamps) 
+ * to determine which one is chronologically greater (more recent).
+ * @param dateA The first date to compare.
+ * @param dateB The second date to compare.
+ * @returns 1 if dateA is greater (more recent), -1 if dateB is greater, 0 if they are equal.
+ */
+export function compareDates(dateA: DateInput, dateB: DateInput): 1 | -1 | 0 {
+  // Helper function to get the numeric timestamp in milliseconds
+  const getMs = (date: DateInput): number => {
+    if (date instanceof Date) {
+      // For native JavaScript Date objects
+      return date.getTime();
+    } else if (date instanceof Timestamp) {
+      // For Firebase Timestamp objects
+      return date.toMillis();
+    }
+    // Fallback for potentially null/undefined or unexpected inputs
+    return 0;
+  };
+
+  const msA = getMs(dateA);
+  const msB = getMs(dateB);
+
+  if (msA > msB) {
+    return 1; // dateA is more recent
+  } else if (msA < msB) {
+    return -1; // dateB is more recent
+  } else {
+    return 0; // The dates are equal
+  }
+};
+
+/**
+ * Converts a Firebase Timestamp or FieldValue to a native JavaScript Date.
+ * Returns null for null/undefined or FieldValue (serverTimestamp) placeholders.
+ * This function helps with TS compiler errors since we can use toDate() on Timestamp only but our date fields have the type Timestamp | FieldValue
+ * 
+ * @param value - A Firestore Timestamp, FieldValue, or null/undefined.
+ * @returns A native Date object, or null if conversion is not possible.
+ */
+export function convertToDate(value?: Timestamp | FieldValue | null): Date | null {
+  if (!value) return null;
+
+  if (value instanceof Timestamp) {
+    return value.toDate(); // Firestore Timestamp → Date
+  }
+
+  // If it's FieldValue.serverTimestamp() or any other non-Timestamp, return null
+  return null;
+};

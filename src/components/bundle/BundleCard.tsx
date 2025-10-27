@@ -1,9 +1,10 @@
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users, Tag } from "lucide-react";
-import { Bundle } from "@/types/bundle";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CURRENCY } from "@/constants";
 import { cn } from "@/lib/utils";
+import { Bundle } from "@/types/bundle";
+import { BookOpen, Tag } from "lucide-react";
 
 interface BundleCardProps {
   bundle: Bundle;
@@ -18,10 +19,11 @@ export function BundleCard({
   onPurchase,
   className
 }: BundleCardProps) {
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: CURRENCY.USD,
     }).format(amount);
   };
 
@@ -51,12 +53,12 @@ export function BundleCard({
               </p>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {bundle.category && (
+                {bundle.categories.length && bundle.categories.map((category) => (
                   <div className="flex items-center gap-1">
-                    <Tag className="h-3 w-3" />
-                    <span>{bundle.category}</span>
+                    <Tag className="h-4 w-4" />
+                    <span>{category}</span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
 
@@ -81,7 +83,7 @@ export function BundleCard({
         </div>
       </Card>
     );
-  }
+  };
 
   return (
     <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group", className)}>
@@ -116,16 +118,12 @@ export function BundleCard({
         </p>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            <span>All levels</span>
-          </div>
-          {bundle.category && (
+          {bundle.categories.length && bundle.categories.map((category) => (
             <div className="flex items-center gap-1">
               <Tag className="h-4 w-4" />
-              <span>{bundle.category}</span>
+              <span>{category}</span>
             </div>
-          )}
+          ))}
         </div>
 
         {bundle.tags && bundle.tags.length > 0 && (

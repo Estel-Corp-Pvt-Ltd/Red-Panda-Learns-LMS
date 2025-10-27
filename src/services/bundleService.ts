@@ -118,8 +118,8 @@ class BundleService {
         regularPrice,
         salePrice,
         pricingModel: data.pricingModel,
-        authorId: data.authorId,
-        authorName: data.authorName,
+        instructorId: data.instructorId,
+        instructorName: data.instructorName,
         status: data.status,
         categories: data.categories,
         tags: data.tags || [],
@@ -226,7 +226,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
       if (updates.categories.length) updateData.categories = updateData.categories.concat(updates.categories);
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.pricingModel) updateData.pricingModel = updates.pricingModel;
-      if (updates.authorId) updateData.authorId = updates.authorId;
+      if (updates.instructorId) updateData.instructorId = updates.instructorId;
       if (updates.status) updateData.status = updates.status;
 
       await updateDoc(bundleRef, updateData);

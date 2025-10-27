@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import { Filter, X, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { CourseFilters as CourseFiltersType, PRICE_RANGE_OPTIONS, ENROLLMENT_STATUS_OPTIONS, DURATION_OPTIONS } from '@/types/courseFilters';
+import {
+  CourseFilters as CourseFiltersType,
+  DURATION_OPTIONS,
+  ENROLLMENT_STATUS_OPTIONS,
+  PRICE_RANGE_OPTIONS
+} from '@/types/course-filters';
+import { ChevronDown, Filter, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface CourseFiltersProps {
   filters: CourseFiltersType;
@@ -16,15 +21,15 @@ interface CourseFiltersProps {
   onUpdateFilter: <K extends keyof CourseFiltersType>(key: K, value: CourseFiltersType[K]) => void;
   onClearFilters: () => void;
   activeFilterCount: number;
-}
+};
 
-export function CourseFilters({
+const CourseFilters = ({
   filters,
   uniqueInstructors,
   onUpdateFilter,
   onClearFilters,
   activeFilterCount,
-}: CourseFiltersProps) {
+}: CourseFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleInstructorToggle = (instructor: string) => {
@@ -73,7 +78,7 @@ export function CourseFilters({
 
   return (
     <div className="space-y-4">
-      {/* Search and Filter Button */}
+
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
@@ -83,7 +88,7 @@ export function CourseFilters({
             className="w-full"
           />
         </div>
-        
+
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="whitespace-nowrap">
@@ -97,10 +102,9 @@ export function CourseFilters({
               <ChevronDown className="w-4 h-4 ml-2" />
             </Button>
           </PopoverTrigger>
-          
+
           <PopoverContent className="w-80 p-0" align="end">
             <div className="p-4 space-y-4">
-              {/* Price Range */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Price Range</Label>
                 <RadioGroup
@@ -120,7 +124,6 @@ export function CourseFilters({
 
               <Separator />
 
-              {/* Enrollment Status */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Enrollment Status</Label>
                 <RadioGroup
@@ -140,7 +143,6 @@ export function CourseFilters({
 
               <Separator />
 
-              {/* Duration */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Course Duration</Label>
                 <RadioGroup
@@ -160,7 +162,6 @@ export function CourseFilters({
 
               <Separator />
 
-              {/* Instructors */}
               {uniqueInstructors.length > 0 && (
                 <div>
                   <Label className="text-sm font-medium mb-3 block">Instructors</Label>
@@ -181,7 +182,6 @@ export function CourseFilters({
                 </div>
               )}
 
-              {/* Clear Filters */}
               {activeFilterCount > 0 && (
                 <>
                   <Separator />
@@ -200,7 +200,6 @@ export function CourseFilters({
         </Popover>
       </div>
 
-      {/* Active Filter Chips */}
       {activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-2">
           {filters.searchTerm && (
@@ -252,4 +251,6 @@ export function CourseFilters({
       )}
     </div>
   );
-}
+};
+
+export default CourseFilters;

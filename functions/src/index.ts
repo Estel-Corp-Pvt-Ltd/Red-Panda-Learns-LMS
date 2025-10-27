@@ -151,7 +151,11 @@ export const createOrder = onRequest(
 // ------------------ Verify Payment ------------------
 
 export const verifyPayment = onRequest(
-  { region: "us-central1", secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY, BREVO_API_KEY] },
+  {
+    region: "us-central1",
+    secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY, BREVO_API_KEY],
+    memory: "512MiB"
+  },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { POPUP_COURSE_TYPE } from "@/constants";
-import { PopUp } from "@/types/PopUp";
+import { PopUp } from "@/types/pop-up";
 
 const PopUpElement = ({
     icon,

@@ -1,10 +1,10 @@
+import { ENROLLED_PROGRAM_TYPE, ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
+import { enrollmentService } from "@/services/enrollmentService";
 import { Course } from "@/types/course";
-import { transactionService } from "../transactionService";
-import { enrollmentService } from "@/services/dummyEnrollmentService";
-import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
 import { PaymentDetails } from "@/types/transaction";
+import { transactionService } from "../transactionService";
 import { Currency } from "@/types/general";
-
+import { TransactionLineItem } from "@/types/transaction";
 class PayPalProvider {
   private readonly environment =
     import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION
@@ -17,42 +17,42 @@ class PayPalProvider {
       : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
 
   /** Dynamically load PayPal SDK for the selected currency. */
-async loadPayPalSDK(currency: Currency): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(
-      'script[src*="paypal.com/sdk/js"]'
-    );
+  async loadPayPalSDK(currency: Currency): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>(
+        'script[src*="paypal.com/sdk/js"]'
+      );
 
-    // If already loaded with same currency, reuse it
-    if ((window as any).paypal && existing) {
-      const currentCurrency = new URL(existing.src).searchParams.get("currency");
-      if (currentCurrency === currency) {
-        resolve();
-        return;
+      // If already loaded with same currency, reuse it
+      if ((window as any).paypal && existing) {
+        const currentCurrency = new URL(existing.src).searchParams.get("currency");
+        if (currentCurrency === currency) {
+          resolve();
+          return;
+        }
+        // Otherwise, remove old script and reset globals
+        existing.remove();
+        delete (window as any).paypal;
+        delete (window as any).zoid; // PayPal’s internal bridge
       }
-      // Otherwise, remove old script and reset globals
-      existing.remove();
-      delete (window as any).paypal;
-      delete (window as any).zoid; // PayPal’s internal bridge
-    }
 
-    const host =
-      this.environment === ENVIRONMENT.SANDBOX
-        ? "sandbox.paypal.com"
-        : "paypal.com";
+      const host =
+        this.environment === ENVIRONMENT.SANDBOX
+          ? "sandbox.paypal.com"
+          : "paypal.com";
 
-    const script = document.createElement("script");
-    script.src = `https://${host}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
-    document.head.appendChild(script);
-  });
-}
+      const script = document.createElement("script");
+      script.src = `https://${host}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
+      document.head.appendChild(script);
+    });
+  }
 
   /** Launches the PayPal payment flow. */
   async processPayment(
-    course: Course,
+    items: TransactionLineItem[],
     userEmail: string,
     transactionId: string,
     amount: number,
@@ -65,8 +65,10 @@ async loadPayPalSDK(currency: Currency): Promise<void> {
     error?: string;
   }> {
     try {
+      
+
       console.log("PayPalProvider - Starting payment:", {
-        courseId: course.id,
+       items,
         transactionId,
         amount,
         currency,
@@ -103,7 +105,7 @@ async loadPayPalSDK(currency: Currency): Promise<void> {
                         currency_code: currency,
                         value: amount.toFixed(2),
                       },
-                      description: `Enrollment for ${course.title}`,
+                     description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
                       custom_id: transactionId,
                     },
                   ],
@@ -130,16 +132,21 @@ async loadPayPalSDK(currency: Currency): Promise<void> {
                     }
                   );
 
-                  try {
-                    await enrollmentService.enrollUser(
-                      userId,
-                      course.id,
-                      capture?.id,
-                      "paypal"
-                    );
-                  } catch (e) {
-                    console.error("Enrollment failed after PayPal payment:", e);
-                  }
+              //     try {
+              //     for (const item of items) {
+              //   try {
+              //     await enrollmentService.enrollUser(
+              //       userId,
+              //       item.itemId,
+              //       item.itemType
+              //     );
+              //   } catch (enrollmentError) {
+              //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
+              //   }
+              // }
+              //     } catch (e) {
+              //       console.error("Enrollment failed after PayPal payment:", e);
+              //     }
 
                   resolve({
                     success: true,

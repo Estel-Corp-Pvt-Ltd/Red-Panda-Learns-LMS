@@ -19,14 +19,14 @@ const TestimonialsSection = () => {
     <section className="relative flex items-center justify-center py-20 px-4 overflow-hidden">
       {/* Animated gradient blobs background */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50"></div>
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-pink-300/40 rounded-full blur-3xl animate-blob-float-1"></div>
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-300/40 rounded-full blur-3xl animate-blob-float-2"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-blue-300/30 rounded-full blur-3xl animate-blob-float-3"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-950 dark:via-purple-950 dark:to-blue-950"></div>
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-pink-300/40 dark:bg-pink-600/20 rounded-full blur-3xl animate-blob-float-1"></div>
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-300/40 dark:bg-purple-600/20 rounded-full blur-3xl animate-blob-float-2"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-blue-300/30 dark:bg-blue-600/20 rounded-full blur-3xl animate-blob-float-3"></div>
       </div>
 
       <div className="max-w-7xl mx-auto w-full relative z-10">
-        <h2 className="text-5xl md:text-6xl font-bold text-center mb-16 text-foreground">
+        <h2 className="text-5xl md:text-6xl font-bold text-center mb-16 text-gray-900 dark:text-white">
           Testimonials
         </h2>
 

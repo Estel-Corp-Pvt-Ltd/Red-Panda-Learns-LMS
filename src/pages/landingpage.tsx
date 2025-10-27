@@ -11,6 +11,7 @@ import AICoursesSection from "./AICoursesSection";
 import CorporatesSection from "./CorporatesSection";
 import  Footer  from "./Footer";
 import  TestimonialsSection  from "./TestimonialsSection";
+import OurImpactSection from "./OurImpactSection";
 
 const LandingPage = () => {
   return (
@@ -26,6 +27,7 @@ const LandingPage = () => {
       <CorporatesSection />
       {/* <AudienceSection /> */}
       <TeamSection />
+      <OurImpactSection/>
       <TestimonialsSection />
       <NewsletterSection />
       <Footer /> 

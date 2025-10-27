@@ -14,35 +14,37 @@ import { useBundleQuery, useBundleCoursesQuery } from '@/hooks/useBundleApi';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
 import { paymentService } from '@/services/paymentService';
 import { ArrowLeft, CreditCard, DollarSign, Package, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { couponUsageService } from '@/services/couponUsageService';
 import { couponService } from '@/services/couponService'; // Assuming this is exported
 import { useAuth } from '@/contexts/AuthContext';
 import { Timestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { logError } from '@/utils/logger';
 type PaymentProvider = 'razorpay' | 'paypal';
 
 export default function DummyBundleCheckoutPage() {
+  const { toast } = useToast();
   const { bundleId } = useParams<{ bundleId: string }>();
   const navigate = useNavigate();
- 
+
   const { refreshEnrollments } = useEnrollment();
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { data: bundle, isLoading, isError, error } = useBundleQuery(bundleId!);
   const { data: courses, isLoading: coursesLoading } = useBundleCoursesQuery(bundleId!);
-const [promoCode, setPromoCode] = useState('');
-const [isCouponValid, setIsCouponValid] = useState(false);
-const [discountAmount, setDiscountAmount] = useState<number>(0);
-const [finalPrice, setFinalPrice] = useState<number>(0);
-const [couponMessage, setCouponMessage] = useState('');
-const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-const [appliedCouponId, setAppliedCouponId] = useState<string | null>(null);
-const {user} = useAuth();
-const [CouponKiId,setCouponKiId]=useState("");
+  const [promoCode, setPromoCode] = useState('');
+  const [isCouponValid, setIsCouponValid] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [finalPrice, setFinalPrice] = useState<number>(0);
+  const [couponMessage, setCouponMessage] = useState('');
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [appliedCouponId, setAppliedCouponId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [CouponKiId, setCouponKiId] = useState("");
 
-   
+
 
   if (isLoading || coursesLoading) {
     return (
@@ -60,7 +62,7 @@ const [CouponKiId,setCouponKiId]=useState("");
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container px-4 py-8">
-          <ErrorState 
+          <ErrorState
             error={error as Error}
             onRetry={() => window.location.reload()}
             className="my-12"
@@ -74,7 +76,7 @@ const [CouponKiId,setCouponKiId]=useState("");
     if (!user || !bundle) return;
 
     setIsProcessing(true);
-    
+
     try {
       console.log('Processing bundle payment:', {
         bundleId: bundle.id,
@@ -93,15 +95,15 @@ const [CouponKiId,setCouponKiId]=useState("");
       if (result.success) {
         // Refresh enrollment status
         await refreshEnrollments();
-        
-        toast.success('Payment successful! Welcome to your new courses!');
+
+        toast({ title: 'Payment successful! Welcome to your new courses!' });
         navigate(`/bundle/${bundleId}/dashboard`);
       } else {
-        toast.error(result.error || 'Payment failed. Please try again.');
+        toast({ title: result.error || 'Payment failed. Please try again.', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
+      toast({ title: 'Payment failed. Please try again.', variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }
@@ -110,122 +112,120 @@ const [CouponKiId,setCouponKiId]=useState("");
 
 
   const handleApplyCoupon = async () => {
-  // setIsValidatingCoupon(true);
-  setCouponMessage('');
-  // setIsCouponValid(false);
-  setDiscountAmount(0);
-  setAppliedCouponId(null);
+    // setIsValidatingCoupon(true);
+    setCouponMessage('');
+    // setIsCouponValid(false);
+    setDiscountAmount(0);
+    setAppliedCouponId(null);
 
-  try {
-    const couponcode = promoCode.trim();
-    // const result = await couponUsageService.isCouponApplicable(couponId, undefined, bundleId);
+    try {
+      const couponcode = promoCode.trim();
+      // const result = await couponUsageService.isCouponApplicable(couponId, undefined, bundleId);
 
-    // if (!result.isApplicable) {
-    //   setCouponMessage(result.reason || 'Coupon is not valid');
-    //   return;
-    // }
+      // if (!result.isApplicable) {
+      //   setCouponMessage(result.reason || 'Coupon is not valid');
+      //   return;
+      // }
 
 
-    
-    // console.log(couponcode)
-    const coupon = await couponService.getCouponByCode(couponcode);
-    const CouponKiId = setCouponKiId(coupon.id)
-    console.log(CouponKiId)
-        const applydiscount = async()=>{
-      try{
 
-        const afterDiscount =  (bundle.regularPrice - ((bundle.regularPrice * coupon.discountPercentage) / 100 ))
-        setDiscountAmount(afterDiscount)
-        console.log("The regular ", bundle.regularPrice )
-        console.log("The discount  percent ", coupon.discountPercentage)
-        console.log("The discount  is ", afterDiscount)
-      }catch(error){
- console.log('The Error is ',error)
+      // console.log(couponcode)
+      const coupon = await couponService.getCouponByCode(couponcode);
+      const CouponKiId = setCouponKiId(coupon.id)
+      console.log(CouponKiId)
+      const applydiscount = async () => {
+        try {
+
+          const afterDiscount = (bundle.regularPrice - ((bundle.regularPrice * coupon.discountPercentage) / 100))
+          setDiscountAmount(afterDiscount)
+          console.log("The regular ", bundle.regularPrice)
+          console.log("The discount  percent ", coupon.discountPercentage)
+          console.log("The discount  is ", afterDiscount)
+        } catch (error) {
+          logError('The Error is ', error)
+        }
       }
-    }
-    const applydiscount1 = await applydiscount()
-    console.log(coupon.id)
-    if (!coupon) {
-      setCouponMessage('Coupon not found');
-      return;
-    }
-    else{
-      setCouponMessage('Coupon Is Valid')
-    }
-    // console.log("This is bundle id stored in coupon>" ,coupon.linkedBundleIds,"<and this bundel id",bundle.id)
-    // console.log("yoo>",bundle.id.trim(),"<")
-    // console.log("yoo>",coupon.linkedBundleIds,"<")
-    const bundelIDCheck = coupon.linkedBundleIds
-    // Check if user already used the coupon (optional, based on business rules)
-    const alreadyUsed = await couponUsageService.hasUserUsedCoupon(user?.id, coupon.id);
-    const couponcount = await couponUsageService.getUsageCountByCoupon(coupon.id)
-    const couponusedbyuser = await couponService.getCouponUsagesByUser(user?.id)
-    const isApplicable = await couponUsageService.isCouponApplicable(coupon.id,null,bundle.id,null)
-    // console.log(isApplicable)
-    // console.log("THis is how much user has used",couponusedbyuser)
-    if (alreadyUsed) {
-      setCouponMessage('You have already used this coupon.');
-      return;
-    }
-    else{
-      setCouponMessage(`Pehle Pehla Coupon Hai and the total coupon count is --> ${couponcount} and here is how many user used ${couponusedbyuser}`)
-    }
- 
-    // Apply discount
-  //   const discount = coupon.discountPercentage; // assuming fixed amount in cents
-  //   setDiscountAmount(discount);
-  //   setIsCouponValid(true);
-  //   setCouponMessage(`Coupon applied! You saved $${(discount / 100).toFixed(2)}.`);
-  //   setAppliedCouponId(couponId);
-  // } catch (err) {
-  //   console.error(err);
-  //   setCouponMessage('Failed to validate coupon');
-  } finally {
-    setIsValidatingCoupon(false);
-  }
+      const applydiscount1 = await applydiscount()
+      if (!coupon) {
+        setCouponMessage('Coupon not found');
+        return;
+      }
+      else {
+        setCouponMessage('Coupon Is Valid')
+      }
+      // console.log("This is bundle id stored in coupon>" ,coupon.linkedBundleIds,"<and this bundel id",bundle.id)
+      // console.log("yoo>",bundle.id.trim(),"<")
+      // console.log("yoo>",coupon.linkedBundleIds,"<")
+      const bundelIDCheck = coupon.linkedBundleIds
+      // Check if user already used the coupon (optional, based on business rules)
+      const alreadyUsed = await couponUsageService.hasUserUsedCoupon(user?.id, coupon.id);
+      const couponcount = await couponUsageService.getUsageCountByCoupon(coupon.id)
+      const couponusedbyuser = await couponService.getCouponUsagesByUser(user?.id)
+      const isApplicable = await couponUsageService.isCouponApplicable(coupon.id, null, bundle.id, null)
+      // console.log(isApplicable)
+      // console.log("THis is how much user has used",couponusedbyuser)
+      if (alreadyUsed) {
+        setCouponMessage('You have already used this coupon.');
+        return;
+      }
+      else {
+        setCouponMessage(`Pehle Pehla Coupon Hai and the total coupon count is --> ${couponcount} and here is how many user used ${couponusedbyuser}`)
+      }
 
-};
+      // Apply discount
+      //   const discount = coupon.discountPercentage; // assuming fixed amount in cents
+      //   setDiscountAmount(discount);
+      //   setIsCouponValid(true);
+      //   setCouponMessage(`Coupon applied! You saved $${(discount / 100).toFixed(2)}.`);
+      //   setAppliedCouponId(couponId);
+      // } catch (err) {
+      //   console.error(err);
+      //   setCouponMessage('Failed to validate coupon');
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+
+  };
 
 
-const handleUseCouponTest = async()=>{
-  try{
-
-    const usageDate = {
-        userId : user?.id,
+  const handleUseCouponTest = async () => {
+    try {
+      const usageDate = {
+        userId: user?.id,
         couponId: CouponKiId,
         bundleId: bundle.id,
-        usedAt : Timestamp.now()
+        usedAt: Timestamp.now()
+      }
+      await couponUsageService.recordCouponUsage(usageDate)
+      console.log("Recorded Coupon uses", usageDate)
     }
-    await couponUsageService.recordCouponUsage(usageDate)
-    console.log("Recorded Coupon uses" ,usageDate)
+    catch (error) {
+      console.log("The Error ", error)
+    }
   }
-  catch(error){
-    console.log("The Error ",error)
-  }
-}
 
-// useEffect(() => {
-//   if (!bundle) return;
+  // useEffect(() => {
+  //   if (!bundle) return;
 
-//   if (discountAmount > 0) {
-//     setFinalPrice(discountAmount);
-//   } else {
-//     setFinalPrice(bundle.regularPrice);
-//   }
-// }, [discountAmount, bundle]);
+  //   if (discountAmount > 0) {
+  //     setFinalPrice(discountAmount);
+  //   } else {
+  //     setFinalPrice(bundle.regularPrice);
+  //   }
+  // }, [discountAmount, bundle]);
 
 
 
 
   return (
-    
+
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container px-4 py-8 max-w-4xl">
         {/* Back Navigation */}
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => navigate(`/bundle/${bundleId}`)}
           className="mb-6"
         >
@@ -250,7 +250,7 @@ const handleUseCouponTest = async()=>{
                     {bundle.description}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Courses included:</span>
@@ -265,17 +265,17 @@ const handleUseCouponTest = async()=>{
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Your savings:</span>
                     <span className="text-sm text-success font-medium">
-                      ${((bundle.regularPrice - bundle.salePrice) )}
+                      ${((bundle.regularPrice - bundle.salePrice))}
                     </span>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Total:</span>
                   <span className="text-2xl font-bold text-primary">
-                      ${((bundle.regularPrice - bundle.salePrice) )}
+                    ${((bundle.regularPrice - bundle.salePrice))}
                   </span>
                 </div>
               </CardContent>
@@ -329,8 +329,8 @@ const handleUseCouponTest = async()=>{
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <RadioGroup 
-                  value={selectedProvider} 
+                <RadioGroup
+                  value={selectedProvider}
                   onValueChange={(value) => setSelectedProvider(value as PaymentProvider)}
                 >
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -347,7 +347,7 @@ const handleUseCouponTest = async()=>{
                       </div>
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                     <RadioGroupItem value="paypal" id="paypal" />
                     <Label htmlFor="paypal" className="flex-1 cursor-pointer">
@@ -382,10 +382,10 @@ const handleUseCouponTest = async()=>{
                 </div>
 
                 <span className="text-2xl font-bold text-primary">
-  ${finalPrice} -- This is Finale Price
-</span>
+                  ${finalPrice} -- This is Finale Price
+                </span>
 
-                <Button 
+                <Button
                   onClick={handlePayment}
                   disabled={isProcessing}
                   size="lg"
@@ -397,11 +397,11 @@ const handleUseCouponTest = async()=>{
                     `Complete Purchase -> $${finalPrice}`
                   )}
                 </Button>
-                
+
                 {selectedProvider === 'razorpay' && (
                   <div id="razorpay-button-container" className="mt-4"></div>
                 )}
-                
+
                 {selectedProvider === 'paypal' && (
                   <div id="paypal-button-container" className="mt-4"></div>
                 )}
@@ -409,37 +409,37 @@ const handleUseCouponTest = async()=>{
 
 
                 <div className="space-y-2">
-  <Label htmlFor="promoCode">Have a promo code?</Label>
-  <div className="flex gap-2">
-    <Input
-      id="promoCode"
-      type="text"
-      placeholder="Enter code"
-      value={promoCode}
-      onChange={(e) => setPromoCode(e.target.value)}
-      disabled={isValidatingCoupon || isProcessing}
-    />
-    <Button
-      type="button"
-      onClick={handleApplyCoupon}
-      disabled={!promoCode || isValidatingCoupon}
-    >
-      {isValidatingCoupon ? 'Checking...' : 'Apply'}
-    </Button>
-     <Button
-      type="button"
-      onClick={handleUseCouponTest}
-     
-    >
-      {"Use Coupon Test"}
-    </Button>
-  </div>
-  {couponMessage && (
-    <p className={`text-sm ${isCouponValid ? 'text-success' : 'text-destructive'}`}>
-      {couponMessage}
-    </p>
-  )}
-</div>
+                  <Label htmlFor="promoCode">Have a promo code?</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="promoCode"
+                      type="text"
+                      placeholder="Enter code"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      disabled={isValidatingCoupon || isProcessing}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={!promoCode || isValidatingCoupon}
+                    >
+                      {isValidatingCoupon ? 'Checking...' : 'Apply'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleUseCouponTest}
+
+                    >
+                      {"Use Coupon Test"}
+                    </Button>
+                  </div>
+                  {couponMessage && (
+                    <p className={`text-sm ${isCouponValid ? 'text-success' : 'text-destructive'}`}>
+                      {couponMessage}
+                    </p>
+                  )}
+                </div>
 
               </CardContent>
 

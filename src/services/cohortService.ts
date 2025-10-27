@@ -16,8 +16,9 @@ import {
 import { db } from '@/firebaseConfig';
 import { Cohort } from '@/types/course';
 import type { Enrollment } from '@/types/course';
+
 class CohortService {
-  
+
   private async generateCohortId(): Promise<string> {
     const counterRef = doc(db, 'counters', 'cohortCounter');
 
@@ -40,10 +41,10 @@ class CohortService {
   }
 
 
-  
+
   // FIX: This now accepts and saves the full topics array.
   async createCohort(
-    data: Omit<Cohort, 'id' | 'createdAt' | 'updatedAt' >
+    data: Omit<Cohort, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
       const cohortId = await this.generateCohortId();
@@ -52,8 +53,8 @@ class CohortService {
         id: cohortId,
         title: data.title,
         description: data.description || '',
-        price : data.price,
-        topics: data.topics, 
+        price: data.price,
+        topics: data.topics,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -89,20 +90,20 @@ class CohortService {
   }
 
   async getCohortById(cohortId: string): Promise<Cohort | null> {
-      try {
-        const cohortDoc = await getDoc(doc(db, 'Cohorts', cohortId));
-        if (!cohortDoc.exists()) return null;
+    try {
+      const cohortDoc = await getDoc(doc(db, 'Cohorts', cohortId));
+      if (!cohortDoc.exists()) return null;
 
-        const data = cohortDoc.data();
-        // Safe date conversion
-        const cohort = {
-          ...data,
-        } as Cohort;
-        return cohort;
-      } catch (error) {
-        console.error('CohortService - Error fetching cohort:', error);
-        return null;
-      }
+      const data = cohortDoc.data();
+      // Safe date conversion
+      const cohort = {
+        ...data,
+      } as Cohort;
+      return cohort;
+    } catch (error) {
+      console.error('CohortService - Error fetching cohort:', error);
+      return null;
+    }
   }
 
   async publishCohort(cohortId: string): Promise<void> {
@@ -191,24 +192,24 @@ class CohortService {
 
 
 
-async getUserCohortEnrollments(userId: string): Promise<Enrollment[]> {
-  try {
-    const enrollmentsRef = collection(db, 'CohortEnrollments');
-    const q = query(enrollmentsRef, where('userId', '==', userId));
-    const snapshot = await getDocs(q);
+  async getUserCohortEnrollments(userId: string): Promise<Enrollment[]> {
+    try {
+      const enrollmentsRef = collection(db, 'CohortEnrollments');
+      const q = query(enrollmentsRef, where('userId', '==', userId));
+      const snapshot = await getDocs(q);
 
-    const enrollments = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      enrolledAt: doc.data().enrolledAt.toDate(),
-    })) as Enrollment[];
+      const enrollments = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        enrolledAt: doc.data().enrolledAt.toDate(),
+      })) as Enrollment[];
 
-    return enrollments;
-  } catch (error) {
-    console.error('CohortService - Error fetching user cohort enrollments:', error);
-    return [];
+      return enrollments;
+    } catch (error) {
+      console.error('CohortService - Error fetching user cohort enrollments:', error);
+      return [];
+    }
   }
-}
 
 
 
