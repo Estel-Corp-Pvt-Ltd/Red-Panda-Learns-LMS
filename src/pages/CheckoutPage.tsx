@@ -507,7 +507,7 @@ export default function CheckoutPage() {
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 h-28">
                           <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
                           <span className="text-sm">Loading pricing...</span>
                         </div>
@@ -532,16 +532,16 @@ export default function CheckoutPage() {
                             key={provider.id}
                             onClick={() => setSelectedProvider(provider.id)}
                             className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
-                                ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                                : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
                               }`}
                           >
                             <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                               <div className="flex gap-3">
                                 <div
                                   className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                      ? "bg-blue-600 border-blue-600"
-                                      : "border-gray-400 dark:border-[#555]"
+                                    ? "bg-blue-600 border-blue-600"
+                                    : "border-gray-400 dark:border-[#555]"
                                     }`}
                                 />
                                 <div>
@@ -682,7 +682,7 @@ export default function CheckoutPage() {
                       {isProcessing ? (
                         "Processing..."
                       ) : loadingPricing ? (
-                        "Loading..."
+                        "Loading Price..."
                       ) : (
                         <>
                           <Lock className="h-4 w-4 mr-2" />
@@ -742,8 +742,8 @@ export default function CheckoutPage() {
                         {couponMessage && (
                           <p
                             className={`text-sm ${isCouponValid
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
                               }`}
                           >
                             {couponMessage}
