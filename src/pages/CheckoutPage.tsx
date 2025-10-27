@@ -16,7 +16,7 @@ import {
   RefreshCw,
   Shield
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { Header } from "@/components/Header";
@@ -112,12 +112,8 @@ export default function CheckoutPage() {
     }
   }, [user, courseId, loadingEnrollments, navigate]);
 
-  useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-  }, [course, selectedCurrency, selectedProvider, discountAmount]);
-
-  const loadPricing = async () => {
-    if (!course) return;
+  const loadPricing = useCallback(async () => {
+    if (!course || !selectedCurrency) return;
     setLoadingPricing(true);
 
     try {
@@ -142,7 +138,11 @@ export default function CheckoutPage() {
     } finally {
       setLoadingPricing(false);
     }
-  };
+  }, [course, discountAmount, selectedCurrency, selectedProvider, toast]);
+
+  useEffect(() => {
+    loadPricing();
+  }, [loadPricing]);
 
   const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
@@ -227,6 +227,7 @@ export default function CheckoutPage() {
       setIsValidatingCoupon(false);
     }
   };
+
   const handleUseCoupon = async () => {
     const usageDate = {
       userId: user?.id,
@@ -259,7 +260,7 @@ export default function CheckoutPage() {
       const items: TransactionLineItem[] = [
         {
           itemId: course.id,
-          itemType: ENROLLED_PROGRAM_TYPE.COURSE, // Course --> Checkout Page for Course
+          itemType: ENROLLED_PROGRAM_TYPE.COURSE,
           name: course.title,
           amount: finalPrice,
           originalAmount: course.salePrice,
