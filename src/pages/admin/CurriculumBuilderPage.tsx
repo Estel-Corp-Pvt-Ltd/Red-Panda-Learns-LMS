@@ -149,6 +149,7 @@ const CurriculumBuilderPage = () => {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
   const [regularPrice, setRegularPrice] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [salePrice, setSalePrice] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
@@ -229,6 +230,7 @@ const CurriculumBuilderPage = () => {
       setTitle(courseData.title);
       setDescription(courseData.description);
       setStatus(courseData.status);
+      setDuration(courseData.duration);
       setRegularPrice(courseData.regularPrice);
       setSalePrice(courseData.salePrice);
 
@@ -401,12 +403,21 @@ const CurriculumBuilderPage = () => {
       });
       return;
     }
+    if (duration <= 0) {
+      toast({
+        title: "Invalid Duration",
+        description: "Duration must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       showOverlay("Saving Course Basics");
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
+        duration,
         regularPrice,
         thumbnail: thumbnailUrl,
         salePrice,
@@ -1488,6 +1499,19 @@ const CurriculumBuilderPage = () => {
                         />
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+                {/* Duration */}
+                <Card className="rounded-xl border p-4">
+                  <CardHeader className="pb-2">
+                    <CardTitle>Duration</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Input
+                      type="number"
+                      value={duration}
+                      onChange={(e) => setDuration(parseInt(e.target.value))}
+                    />
                   </CardContent>
                 </Card>
                 {/* Status */}

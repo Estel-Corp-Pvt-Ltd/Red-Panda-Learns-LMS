@@ -18,7 +18,7 @@ import { enrollmentService } from "@/services/enrollmentService";
 import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
-import { formatDate } from "@/utils/date-time";
+import { formatDate, formatTimeDuration } from "@/utils/date-time";
 import {
   ArrowLeft,
   BookOpen,
@@ -369,9 +369,12 @@ export default function CourseDetailPage() {
                   <BookOpen className="h-5 w-5" />
                   Course Curriculum
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {topicCount} topics • {lessonCount} lessons
-                </p>
+                <div className="text-sm text-muted-foreground flex justify-between mt-2">
+                  <p>{topicCount} topics • {lessonCount} lessons</p>
+                  <span className="text-sm text-muted-foreground ml-4">
+                    Duration: {formatTimeDuration(course.duration)}
+                  </span>
+                </div>
               </CardHeader>
               <CardContent>
                 {course.topics.length === 0 && course.cohorts.length === 0 && (

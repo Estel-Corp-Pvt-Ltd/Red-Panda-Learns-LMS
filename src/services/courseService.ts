@@ -137,6 +137,7 @@ class CourseService {
       if (updates.title) updateData.title = updates.title;
       if (updates.description) updateData.description = updates.description;
       if (updates.thumbnail) updateData.thumbnail = updates.thumbnail;
+      if (updates.duration) updateData.duration = updates.duration;
       if (updates.url) updateData.url = updates.url;
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
