@@ -8,10 +8,10 @@ import * as crypto from "crypto";
 const recaptchaSecret = defineSecret("RECAPTCHA_SECRET");
 import * as admin from "firebase-admin";
 import fetch from "node-fetch";
-import Razorpay from "razorpay";
-import { CURRENCY } from "../../src/constants";
+// import Razorpay from "razorpay";
+
 import { PayPalAccessToken } from "../src/types/paypalConfig";
-import { sendInvoice, sendPaymentFailedEmail } from "./invoice";
+// import { sendInvoice, sendPaymentFailedEmail } from "./invoice";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -21,6 +21,13 @@ const db = admin.firestore();
 const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
 const RAZORPAY_SECRET_KEY = defineSecret("RAZORPAY_KEY_SECRET");
 const BREVO_API_KEY = defineSecret("BREVO_API_KEY");
+
+const CURRENCY = {
+  INR: "INR", // Indian Rupee
+  USD: "USD", // United States Dollar
+  EUR: "EUR", // Euro
+  GBP: "GBP", // Pound Sterling
+} as const;
 
 function validateAmount(amount: any): number {
   if (typeof amount !== "number" || isNaN(amount)) {
@@ -111,6 +118,8 @@ export const createOrder = onRequest(
       const amount = validateAmount(amountInPaise);
       const currency = validateCurrency(rawcurrency);
 
+      const { default: Razorpay } = await import("razorpay");
+
       const instance = new Razorpay({
         key_id: RAZORPAY_KEY_ID.value(),
         key_secret: RAZORPAY_SECRET_KEY.value(),
@@ -178,7 +187,7 @@ export const verifyPayment = onRequest(
         transaction_id,
       } = req.body;
 
-      console.log("🔎 Incoming verifyPayment body:", req.body);
+      // console.log("🔎 Incoming verifyPayment body:", req.body);
 
       // Step 1: Validate HMAC signature
       const body = `${razorpay_order_id}|${razorpay_payment_id}`;
@@ -234,10 +243,12 @@ export const verifyPayment = onRequest(
         return;
       }
 
-      const firstName = userData.firstName;
-      const email = userData.email;
+      // const firstName = userData.firstName;
+      // const email = userData.email;
 
       // Step 4: Cross-check with Razorpay API
+      const { default: Razorpay } = await import("razorpay");
+
       const instance = new Razorpay({
         key_id: RAZORPAY_KEY_ID.value(),
         key_secret: RAZORPAY_SECRET_KEY.value(),
@@ -249,7 +260,7 @@ export const verifyPayment = onRequest(
         console.log("✅ Razorpay payment fetched:", payment);
       } catch (fetchErr) {
         console.error("❌ Razorpay fetch failed:", fetchErr);
-        await sendPaymentFailedEmail({ email, name: firstName }, BREVO_API_KEY.value());
+        // await sendPaymentFailedEmail({ email, name: firstName }, BREVO_API_KEY.value());
         res.status(400).json({ success: false, error: "Invalid payment ID" });
         return;
       }
@@ -270,31 +281,31 @@ export const verifyPayment = onRequest(
 
       // Step: 6 Send Email
       console.time("sendInvoice");
-      await sendInvoice({
-        email: email,
-        name: firstName,
-        amount: 1000,
-        billTo: {
-          name: "Gyanendra Singh",
-          address: {
-            city: "Indore",
-            line1: "G",
-            country: "India",
-            postalCode: "486220",
-            state: "Madhya Pradesh",
-          }
-        },
-        shipTo: {
-          name: "Gyanendra Singh",
-          address: {
-            city: "Indore",
-            line1: "G",
-            country: "India",
-            postalCode: "486220",
-            state: "Madhya Pradesh",
-          }
-        }
-      }, BREVO_API_KEY.value());
+      // await sendInvoice({
+      //   email: email,
+      //   name: firstName,
+      //   amount: 1000,
+      //   billTo: {
+      //     name: "Gyanendra Singh",
+      //     address: {
+      //       city: "Indore",
+      //       line1: "G",
+      //       country: "India",
+      //       postalCode: "486220",
+      //       state: "Madhya Pradesh",
+      //     }
+      //   },
+      //   shipTo: {
+      //     name: "Gyanendra Singh",
+      //     address: {
+      //       city: "Indore",
+      //       line1: "G",
+      //       country: "India",
+      //       postalCode: "486220",
+      //       state: "Madhya Pradesh",
+      //     }
+      //   }
+      // }, BREVO_API_KEY.value());
       console.timeEnd("sendInvoice");
 
       console.log("✅ Transaction updated to COMPLETED:", transaction_id);
