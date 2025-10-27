@@ -1,6 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { CURRENCY } from "@/constants";
 import { cn } from "@/lib/utils";
 import { Bundle } from "@/types/bundle";
@@ -8,28 +13,42 @@ import { BookOpen, Tag } from "lucide-react";
 
 interface BundleCardProps {
   bundle: Bundle;
-  variant?: 'default' | 'compact';
+  variant?: "default" | "compact";
   onPurchase?: (bundleId: string) => void;
   className?: string;
-};
+  isEnrolled?: boolean;
+  onAccess?: () => void;
+  ownedCoursesCount?: number;
+}
 
 export function BundleCard({
   bundle,
-  variant = 'default',
+  variant = "default",
   onPurchase,
-  className
+  className,
+  isEnrolled,
+  onAccess,
+  ownedCoursesCount = 0, // default 0
 }: BundleCardProps) {
-
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: CURRENCY.USD,
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY.INR,
     }).format(amount);
   };
 
-  if (variant === 'compact') {
+  const totalCourses = bundle.courses?.length || 0;
+  const showPartialOwnership =
+    ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
+  const fullOwnership = ownedCoursesCount === totalCourses;
+  if (variant === "compact") {
     return (
-      <Card className={cn("flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300", className)}>
+      <Card
+        className={cn(
+          "flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300",
+          className,
+        )}
+      >
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
           {bundle.thumbnail ? (
             <img
@@ -53,41 +72,69 @@ export function BundleCard({
               </p>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {bundle.categories.length && bundle.categories.map((category) => (
-                  <div className="flex items-center gap-1">
-                    <Tag className="h-4 w-4" />
-                    <span>{category}</span>
-                  </div>
-                ))}
+                {bundle.categories.length &&
+                  bundle.categories.map((category) => (
+                    <div className="flex items-center gap-1" key={category}>
+                      <Tag className="h-4 w-4" />
+                      <span>{category}</span>
+                    </div>
+                  ))}
               </div>
+
+              {showPartialOwnership && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs bg-yellow-100 text-yellow-800"
+                >
+                  {ownedCoursesCount}/{totalCourses} courses owned
+                </Badge>
+              )}
             </div>
 
             <div className="flex flex-col items-end gap-2 ml-4">
               <div className="text-right">
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-foreground">
-                    {formatCurrency(bundle.regularPrice)}
+                    {formatCurrency(bundle.salePrice ?? bundle.regularPrice)}
                   </span>
                 </div>
               </div>
 
               <Button
-                size="sm"
-                onClick={() => onPurchase?.(bundle.id)}
-                className="whitespace-nowrap"
+                className="w-full"
+                size="lg"
+                disabled={fullOwnership}
+                title={
+                  fullOwnership
+                    ? `You already own all courses in ${bundle.title} bundle`
+                    : undefined
+                }
+                onClick={() =>
+                  !fullOwnership &&
+                  (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
+                }
               >
-                Buy Bundle
+                {fullOwnership
+                  ? "All Courses Owned"
+                  : isEnrolled
+                    ? "Access Bundle"
+                    : `Buy Bundle - ${formatCurrency(bundle.salePrice ?? bundle.regularPrice)}`}
               </Button>
             </div>
           </div>
         </div>
       </Card>
     );
-  };
+  }
 
   return (
-    <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group", className)}>
-      <CardHeader className="p-0">
+    <Card
+      className={cn(
+        "overflow-hidden hover:shadow-lg transition-all duration-300 group",
+        className,
+      )}
+    >
+      <CardHeader className="p-0 relative">
         <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
           {bundle.thumbnail ? (
             <img
@@ -105,6 +152,15 @@ export function BundleCard({
           >
             Bundle
           </Badge>
+
+          {showPartialOwnership && (
+            <Badge
+              variant="secondary"
+              className="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs"
+            >
+              {ownedCoursesCount}/{totalCourses} courses owned
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
@@ -118,12 +174,13 @@ export function BundleCard({
         </p>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {bundle.categories.length && bundle.categories.map((category) => (
-            <div className="flex items-center gap-1">
-              <Tag className="h-4 w-4" />
-              <span>{category}</span>
-            </div>
-          ))}
+          {bundle.categories.length &&
+            bundle.categories.map((category) => (
+              <div className="flex items-center gap-1" key={category}>
+                <Tag className="h-4 w-4" />
+                <span>{category}</span>
+              </div>
+            ))}
         </div>
 
         {bundle.tags && bundle.tags.length > 0 && (
@@ -144,7 +201,7 @@ export function BundleCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-foreground">
-              {formatCurrency(bundle.regularPrice)}
+              {formatCurrency(bundle.salePrice ?? bundle.regularPrice)}
             </span>
           </div>
         </div>
@@ -154,11 +211,24 @@ export function BundleCard({
         <Button
           className="w-full"
           size="lg"
-          onClick={() => onPurchase?.(bundle.id)}
+          disabled={fullOwnership}
+          title={
+            fullOwnership
+              ? `You already own all courses in ${bundle.title} bundle`
+              : undefined
+          }
+          onClick={() =>
+            !fullOwnership &&
+            (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
+          }
         >
-          Buy Bundle - {formatCurrency(bundle.regularPrice)}
+          {fullOwnership
+            ? "All Courses Owned"
+            : isEnrolled
+              ? "Access Bundle"
+              : `Buy Bundle - ${formatCurrency(bundle.salePrice ?? bundle.regularPrice)}`}
         </Button>
       </CardFooter>
     </Card>
   );
-};
+}

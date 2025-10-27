@@ -75,7 +75,8 @@ export default function BundleCheckoutPage() {
   const { bundleId } = useParams<{ bundleId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { refreshEnrollments, isEnrolled } = useEnrollment();
+
 
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
