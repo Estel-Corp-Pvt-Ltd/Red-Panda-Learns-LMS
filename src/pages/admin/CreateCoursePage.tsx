@@ -1,11 +1,8 @@
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -101,7 +98,9 @@ const CreateCoursePage = () => {
   };
 
   const handleInstructorSelect = (instructorId: string) => {
-    const selected = instructors.find((instructor) => instructor.id === instructorId);
+    const selected = instructors.find(
+      (instructor) => instructor.id === instructorId
+    );
     setFormData((prev) => ({
       ...prev,
       instructorId: selected?.id || "",
@@ -114,15 +113,16 @@ const CreateCoursePage = () => {
       const result = await instructorService.getAllInstructors();
 
       if (result.success) {
-        const formattedInstructors = result
-          .data
-          .map((instructor) => ({
-            id: instructor.id,
-            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
-          }));
+        const formattedInstructors = result.data.map((instructor) => ({
+          id: instructor.id,
+          name: getFullName(
+            instructor.firstName,
+            instructor.middleName,
+            instructor.lastName
+          ),
+        }));
 
         setInstructors(formattedInstructors);
-
       } else {
         console.error("Failed to fetch instructors:", result.error);
         toast({
@@ -139,23 +139,33 @@ const CreateCoursePage = () => {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
 
+      {/* Top bar: Back + Title */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin")}
+              className="w-full sm:w-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                Create Course
+              </h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-3xl mx-auto">
-          <Card className="bg-card shadow-md rounded-xl">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <CardTitle className="text-xl font-bold">
-                  Create New Course
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/admin")}
-                  className="w-full sm:w-auto"
-                >
-                  Back to Dashboard
-                </Button>
-              </div>
-            </CardHeader>
+          <Card className="bg-card shadow-md rounded-xl pt-4">
+           
 
             <CardContent className="space-y-6">
               {/* Course Title */}
@@ -165,9 +175,7 @@ const CreateCoursePage = () => {
                   id="title"
                   placeholder="Enter course title"
                   value={formData.title}
-                  onChange={(e) =>
-                    handleInputChange("title", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("title", e.target.value)}
                   className="bg-background text-foreground"
                 />
               </div>
