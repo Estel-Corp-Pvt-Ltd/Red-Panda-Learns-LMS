@@ -118,7 +118,7 @@ export default function BundleDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                <span>Save ${(bundle.regularPrice - bundle.salePrice)}</span>
+                <span>Save ₹{(bundle.regularPrice - bundle.salePrice)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5" />
@@ -133,10 +133,10 @@ export default function BundleDetailPage() {
                 {/* prices side by side */}
                 <div className="flex items-baseline gap-3">
                   <div className="text-3xl font-bold">
-                    ${(bundle.salePrice).toFixed(2)}
+                    ₹{(bundle.salePrice).toFixed(2)}
                   </div>
                   <div className="text-lg line-through text-gray-500">
-                    ${(bundle.regularPrice).toFixed(2)}
+                    ₹{(bundle.regularPrice).toFixed(2)}
                   </div>
                 </div>
 
@@ -161,7 +161,7 @@ export default function BundleDetailPage() {
                     Access Bundle
                   </>
                 ) : (
-                  <>Buy Bundle for ${(bundle.salePrice).toFixed(2)}</>
+                  <>Buy Bundle for ₹{(bundle.salePrice).toFixed(2)}</>
                 )}
               </Button>
             </div>
@@ -220,7 +220,7 @@ export default function BundleDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Save ${(bundle.regularPrice - bundle.salePrice)} compared to individual purchases</span>
+                      <span>Save ₹{(bundle.regularPrice - bundle.salePrice)} compared to individual purchases</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
@@ -247,15 +247,15 @@ export default function BundleDetailPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>Individual Course Prices:</span>
-                        <span className="font-medium">${(bundle.salePrice).toFixed(2)}</span>
+                        <span className="font-medium">₹{(bundle.salePrice).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Bundle Price:</span>
-                        <span className="font-medium text-success">${(bundle.regularPrice).toFixed(2)}</span>
+                        <span className="font-medium text-success">₹{(bundle.regularPrice).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between border-t pt-2">
                         <span className="font-medium">Your Savings:</span>
-                        <span className="font-bold text-success">${(bundle.regularPrice - bundle.salePrice)}</span>
+                        <span className="font-bold text-success">₹{(bundle.regularPrice - bundle.salePrice)}</span>
                       </div>
                     </div>
                   </CardContent>
