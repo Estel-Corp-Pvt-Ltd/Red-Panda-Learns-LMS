@@ -46,7 +46,6 @@ import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
 import CartCheckoutPage from "./pages/cartCheckout";
-import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
 import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 

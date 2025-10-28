@@ -37,6 +37,7 @@ import { Address } from "@/types/order";
 
 import { Timestamp } from "firebase/firestore";
 import { METHOD_LOGOS } from "@/payment-method-logos";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 export default function CheckoutPage() {
