@@ -55,7 +55,6 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
   };
 
   const { lessonCount } = getCourseStructureCounts(course);
-  const { hours, minutes } = parseDuration(course.durationSeconds);
 
   return (
     <Card
@@ -130,11 +129,16 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 <BookOpen className="h-3 w-3" />
                 <span>{lessonCount} lessons</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{hours} hrs</span>
-                <span>{minutes} min</span>
-              </div>
+              {
+                course.duration &&
+                (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>{course.duration?.hours} hrs</span>
+                    <span>{course.duration?.minutes} min</span>
+                  </div>
+                )
+              }
             </div>
 
             {course.salePrice === 0 ?

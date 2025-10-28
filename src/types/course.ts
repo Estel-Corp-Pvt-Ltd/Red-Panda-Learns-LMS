@@ -32,6 +32,11 @@ export interface Enrollment {
   enrolledAt: Date;
 };
 
+export type Duration = {
+  hours: number;
+  minutes: number;
+};
+
 export interface Course {
   categoryIds: string[];
   targetAudienceIds: string[];
@@ -39,6 +44,7 @@ export interface Course {
   title: string;
   url: string;
   description: string;
+  duration?: Duration;
   thumbnail?: string;
   regularPrice: number;
   salePrice: number;
@@ -51,7 +57,6 @@ export interface Course {
   cohorts: Cohort[];
   topics: Topic[];
   isEnrollmentPaused: boolean;
-  durationSeconds?: number;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

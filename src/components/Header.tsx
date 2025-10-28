@@ -50,6 +50,9 @@ export function Header({
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Hover-controlled open for account dropdown (desktop)
+  const [accountOpen, setAccountOpen] = useState(false);
+
   const email = "hello@vizuara.com";
 
   const handleLogout = async () => {
@@ -98,16 +101,12 @@ export function Header({
             <span>Vizuara</span>
           </Link>
 
-          {/* Navigation Menu - moved here */}
+          {/* Navigation Menu - hover to open */}
           <NavigationMenu className="hidden lg:flex" delayDuration={0}>
-            <NavigationMenuList onMouseEnter={(e) => e.preventDefault()}>
+            <NavigationMenuList>
               {/* Products */}
-              <NavigationMenuItem onMouseEnter={(e) => e.preventDefault()}>
-                <NavigationMenuTrigger
-                  className="bg-transparent hover:bg-accent/10 hover:text-foreground"
-                  onPointerEnter={(e) => e.preventDefault()}
-                  onPointerMove={(e) => e.preventDefault()}
-                >
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                   Products
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -147,12 +146,8 @@ export function Header({
               </NavigationMenuItem>
 
               {/* Research */}
-              <NavigationMenuItem onMouseEnter={(e) => e.preventDefault()}>
-                <NavigationMenuTrigger
-                  className="bg-transparent hover:bg-accent/10 hover:text-foreground"
-                  onPointerEnter={(e) => e.preventDefault()}
-                  onPointerMove={(e) => e.preventDefault()}
-                >
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                   Research
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -238,12 +233,8 @@ export function Header({
               </NavigationMenuItem>
 
               {/* Courses */}
-              <NavigationMenuItem onMouseEnter={(e) => e.preventDefault()}>
-                <NavigationMenuTrigger
-                  className="bg-transparent hover:bg-accent/10 hover:text-foreground"
-                  onPointerEnter={(e) => e.preventDefault()}
-                  onPointerMove={(e) => e.preventDefault()}
-                >
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                   Courses
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -328,12 +319,8 @@ export function Header({
               </NavigationMenuItem>
 
               {/* For Businesses */}
-              <NavigationMenuItem onMouseEnter={(e) => e.preventDefault()}>
-                <NavigationMenuTrigger
-                  className="bg-transparent hover:bg-accent/10 hover:text-foreground"
-                  onPointerEnter={(e) => e.preventDefault()}
-                  onPointerMove={(e) => e.preventDefault()}
-                >
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                   For businesses
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -650,7 +637,7 @@ export function Header({
             </SheetContent>
           </Sheet>
 
-          {/* Contact Us Popover - Desktop only */}
+          {/* Contact Us Popover - Desktop only (kept as click to open) */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -702,13 +689,15 @@ export function Header({
                   )}
                 </Link>
               )}
-              {/* Logged-in dropdown */}
-              <DropdownMenu>
+              {/* Logged-in dropdown (hover to open on desktop) */}
+              <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="relative hidden lg:flex"
+                    onMouseEnter={() => setAccountOpen(true)}
+                    onMouseLeave={() => setAccountOpen(false)}
                   >
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
@@ -723,7 +712,12 @@ export function Header({
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56"
+                  onMouseEnter={() => setAccountOpen(true)}
+                  onMouseLeave={() => setAccountOpen(false)}
+                >
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard">
                       <User className="mr-2 h-4 w-4" />

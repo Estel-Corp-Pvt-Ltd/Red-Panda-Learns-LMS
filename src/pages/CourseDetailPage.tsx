@@ -18,11 +18,12 @@ import { enrollmentService } from "@/services/enrollmentService";
 import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
-import { formatDate } from "@/utils/date-time";
+import { formatDate, formatTimeDuration } from "@/utils/date-time";
 import {
   ArrowLeft,
   BookOpen,
   ChevronRight,
+  Clock,
   Lock,
   Play
 } from "lucide-react";
@@ -369,9 +370,21 @@ export default function CourseDetailPage() {
                   <BookOpen className="h-5 w-5" />
                   Course Curriculum
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {topicCount} topics • {lessonCount} lessons
-                </p>
+                <div className="text-sm text-muted-foreground flex justify-between mt-2">
+                  <p>{topicCount} topics • {lessonCount} lessons</p>
+                  <span className="text-sm text-muted-foreground ml-4">
+                    {
+                      course.duration &&
+                      (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{course.duration?.hours} hrs</span>
+                          <span>{course.duration?.minutes} min</span>
+                        </div>
+                      )
+                    }
+                  </span>
+                </div>
               </CardHeader>
               <CardContent>
                 {course.topics.length === 0 && course.cohorts.length === 0 && (

@@ -63,7 +63,7 @@ const App = () => (
           <CartProvider>
             <TooltipProvider>
               <LoadingOverlayProvider>
-                {/* <PopUpContainer /> */}
+                <PopUpContainer />
                 <Toaster />
                 <BrowserRouter>
                   <Suspense fallback={<LoadingSpinnerOverlay message="Loading..." />}>

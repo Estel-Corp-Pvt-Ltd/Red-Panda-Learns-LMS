@@ -1,5 +1,5 @@
 import { useActivePopUpsQuery } from "@/hooks/use-pop-ups";
-import PopUpElement from "./PopUp";
+import PopUpElement from "./PopUpElement";
 
 const PopUpContainer = () => {
     const { data: popUps, isLoading, isError } = useActivePopUpsQuery();
