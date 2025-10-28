@@ -1,81 +1,59 @@
-import {
-  ArrowLeft,
-  Copy,
-  CreditCard,
-  Lock,
-  RefreshCw,
-  Shield,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { paymentService } from "@/services/paymentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCourseQuery } from "@/hooks/useCaching";
+import { paymentService } from "@/services/paymentService";
+import {
+  ArrowLeft,
+  CreditCard,
+  Lock,
+  RefreshCw,
+  Shield
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { Header } from "@/components/Header";
 import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
-import { enrollmentService } from "@/services/enrollmentService";
 import { TransactionLineItem } from "@/types/transaction";
 
+import { Input } from "@/components/ui/input";
 import {
   ADDRESS_TYPE,
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,
   PAYMENT_PROVIDER,
 } from "@/constants";
-import { Address } from "@/types/order";
-import { Input } from "@/components/ui/input";
 import { Coupon } from "@/types/coupon";
 import { Currency, PaymentProvider } from "@/types/general";
+import { Address } from "@/types/order";
 
 import { Timestamp } from "firebase/firestore";
-import { EnrolledProgramType } from "@/types/general";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
-  RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
-  PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
-};
+import { METHOD_LOGOS } from "@/payment-method-logos";
 
-const METHOD_LOGOS: Record<
-  PaymentProvider,
-  { name: string; src: string; className?: string }[]
-> = {
-  RAZORPAY: [
-    { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
-    { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-    {
-      name: "Mastercard",
-      src: "/mastercard.svg",
-      className: "h-[20px] w-[32px]",
-    },
-    { name: "RuPay", src: "/rupay.png", className: "h-[30px] w-[40px]" },
-  ],
-  PAYPAL: [
-    { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-    {
-      name: "Mastercard",
-      src: "/mastercard.svg",
-      className: "h-[20px] w-[32px]",
-    },
-    { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
-  ],
-};
 
 export default function CheckoutPage() {
+
+  const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
+    RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+    PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+  };
+
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshEnrollments, isEnrolled } = useEnrollment();
+  const { refreshEnrollments, isEnrolled, loading: loadingEnrollments } = useEnrollment();
   const { toast } = useToast();
+
+  const { data: course, isLoading } = useCourseQuery(courseId!);
+  const providers = paymentService.getAvailableProviders();
 
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
@@ -99,27 +77,21 @@ export default function CheckoutPage() {
     [PAYMENT_PROVIDER.RAZORPAY]: CURRENCY.INR,
     [PAYMENT_PROVIDER.PAYPAL]: CURRENCY.USD,
   });
-
   const selectedCurrency = providerCurrencies[selectedProvider];
 
   const [pricing, setPricing] = useState<any>(null);
   const [loadingPricing, setLoadingPricing] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paypalClicked, setPaypalClicked] = useState(false);
-  const [agreed, setAgreed] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  // keep "after" functionality
-  const [isUserEnrolled, setUserIsEnrolled] = useState(false);
-
-  const providers = paymentService.getAvailableProviders();
-  const { data: course, isLoading } = useCourseQuery(courseId!);
-
   const [promoCode, setPromoCode] = useState("");
   const [isCouponValid, setIsCouponValid] = useState(false);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [finalPrice, setFinalPrice] = useState<number>(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paypalClicked, setPaypalClicked] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -132,27 +104,16 @@ export default function CheckoutPage() {
     }
   }, [user, navigate, courseId]);
 
-  // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
-    if (user && courseId) {
-      if (isEnrolled(courseId)) {
-        setUserIsEnrolled(true);
-      } else {
-        setUserIsEnrolled(false);
-      }
+    if (!user || !courseId || loadingEnrollments) return;
+
+    if (isEnrolled(courseId)) {
+      navigate(`/course/${courseId}`);
     }
-  }, [user, courseId]);
+  }, [user, courseId, loadingEnrollments, navigate]);
 
-  useEffect(() => {
-    if (isUserEnrolled) navigate(`/course/${courseId}`);
-  }, [isUserEnrolled, navigate, courseId]);
-
-  useEffect(() => {
-    if (course && selectedCurrency) loadPricing();
-  }, [course, selectedCurrency, selectedProvider, discountAmount]);
-
-  const loadPricing = async () => {
-    if (!course) return;
+  const loadPricing = useCallback(async () => {
+    if (!course || !selectedCurrency) return;
     setLoadingPricing(true);
 
     try {
@@ -177,7 +138,11 @@ export default function CheckoutPage() {
     } finally {
       setLoadingPricing(false);
     }
-  };
+  }, [course, discountAmount, selectedCurrency, selectedProvider, toast]);
+
+  useEffect(() => {
+    loadPricing();
+  }, [loadPricing]);
 
   const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
@@ -262,6 +227,7 @@ export default function CheckoutPage() {
       setIsValidatingCoupon(false);
     }
   };
+
   const handleUseCoupon = async () => {
     const usageDate = {
       userId: user?.id,
@@ -294,7 +260,7 @@ export default function CheckoutPage() {
       const items: TransactionLineItem[] = [
         {
           itemId: course.id,
-          itemType: ENROLLED_PROGRAM_TYPE.COURSE, // Course --> Checkout Page for Course
+          itemType: ENROLLED_PROGRAM_TYPE.COURSE,
           name: course.title,
           amount: finalPrice,
           originalAmount: course.salePrice,

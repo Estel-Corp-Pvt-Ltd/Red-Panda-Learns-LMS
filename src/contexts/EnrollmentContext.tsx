@@ -13,7 +13,7 @@ import React, {
 interface EnrollmentContextType {
   enrollments: Enrollment[];
   isEnrolled: (courseId: string) => boolean;
-  isEnrolledInBundle:(bundleId : string) => boolean;
+  isEnrolledInBundle: (bundleId: string) => boolean;
   refreshEnrollments: () => Promise<void>;
   loading: boolean;
 };
@@ -56,26 +56,26 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     setLoading(false);
   }, [user]);
 
- const isEnrolled = useCallback(
-  (courseId: string): boolean => {
-    const direct = enrollments.some(
-      e => e.targetId === courseId && e.status === ENROLLMENT_STATUS.ACTIVE
-    );
+  const isEnrolled = useCallback(
+    (courseId: string): boolean => {
+      const direct = enrollments.some(
+        e => e.targetId === courseId && e.status === ENROLLMENT_STATUS.ACTIVE
+      );
 
-    if (direct) return true;
+      if (direct) return true;
 
-    // check if part of an active bundle
-    return enrollments.some(
-      e =>
-        e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE  &&
-        e.status === ENROLLMENT_STATUS.ACTIVE &&
-        e.bundleProgress?.some(bp => bp.courseId === courseId)
-    );
-  },
-  [enrollments]
-);
+      // check if part of an active bundle
+      return enrollments.some(
+        e =>
+          e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE &&
+          e.status === ENROLLMENT_STATUS.ACTIVE &&
+          e.bundleProgress?.some(bp => bp.courseId === courseId)
+      );
+    },
+    [enrollments]
+  );
 
-   const isEnrolledInBundle = useCallback(
+  const isEnrolledInBundle = useCallback(
     (bundleId: string): boolean => {
       const result = enrollments.some(
         (enrollment) => {
@@ -90,6 +90,7 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     },
     [enrollments]
   );
+
   useEffect(() => {
     refreshEnrollments();
   }, [user]);

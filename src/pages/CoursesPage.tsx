@@ -1,8 +1,17 @@
-import { BookOpen, CheckCircle, Clock, Grid, Layers, List, TrendingUp, Users } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Grid,
+  Layers,
+  List,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Header } from "@/components/Header";
-import { BundleCard } from "@/components/bundle/BundleCard";
+import { BundleWrapper } from "@/components/bundle/BundleWrapper";
 import CourseCard from "@/components/course/CourseCard";
 import CourseFilters from "@/components/course/CourseFilters";
 import CourseListView from "@/components/course/CourseListView";
@@ -16,44 +25,43 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
-
+import { useAuth } from "@/contexts/AuthContext";
 import { useCourseFilters } from "@/hooks/use-course-filters";
 import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
 import { useCohortsQuery, useCoursesQuery } from "@/hooks/useCaching";
-
-import { cn } from "@/lib/utils";
-
-import { SORT_OPTIONS } from "@/types/course-filters";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { SORT_OPTIONS } from "@/types/course-filters";
 
 const CoursesPage = () => {
-  const { enrollments } = useEnrollment();
-
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
+  const { enrollments, isEnrolledInBundle } = useEnrollment();
+  const { user } = useAuth();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const navigate = useNavigate();
   const {
     data: courses,
     isLoading,
     isError,
     error,
-    refetch
+    refetch,
   } = useCoursesQuery();
 
   const {
     data: bundles,
     isLoading: bundlesLoading,
-    isError: bundlesError
+    isError: bundlesError,
   } = usePublishedBundlesQuery();
 
   const {
     data: cohorts,
     isLoading: cohortsLoading,
-    isError: cohortsError
+    isError: cohortsError,
   } = useCohortsQuery();
 
-  const enrolledCourseIds = enrollments.map(enrollment => enrollment.targetId);
+  const enrolledCourseIds = enrollments.map((en) => en.targetId);
 
   const {
     filters,
@@ -73,7 +81,7 @@ const CoursesPage = () => {
   };
 
   const handleBundlePurchase = (bundleId: string) => {
-    window.location.href = `/bundle/${bundleId}`;
+    navigate(`/bundle/${bundleId}`);
   };
 
   return (
@@ -81,7 +89,7 @@ const CoursesPage = () => {
       <Header />
 
       <main className="container px-4 py-8">
-        {/* Hero Section */}
+        {/* Hero Section  */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-hero p-8 md:p-12 mb-8">
           <div className="relative z-10 max-w-2xl">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -124,8 +132,12 @@ const CoursesPage = () => {
                 <BookOpen className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Available Courses</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.total}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Available Courses
+                </p>
               </div>
             </div>
           </div>
@@ -136,7 +148,9 @@ const CoursesPage = () => {
                 <Users className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.cohorts}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.cohorts}
+                </p>
                 <p className="text-sm text-muted-foreground">Live Cohorts</p>
               </div>
             </div>
@@ -148,7 +162,9 @@ const CoursesPage = () => {
                 <Layers className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.bundles}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.bundles}
+                </p>
                 <p className="text-sm text-muted-foreground">Course Bundles</p>
               </div>
             </div>
@@ -160,13 +176,16 @@ const CoursesPage = () => {
                 <CheckCircle className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.completed}
+                </p>
                 <p className="text-sm text-muted-foreground">Completed</p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Filters (unchanged) */}
         <div className="bg-card rounded-xl p-6 border shadow-sm mb-8">
           <CourseFilters
             filters={filters}
@@ -180,7 +199,7 @@ const CoursesPage = () => {
             <div className="flex items-center gap-2">
               <Select
                 value={filters.sortBy}
-                onValueChange={(value) => updateFilter('sortBy', value as any)}
+                onValueChange={(value) => updateFilter("sortBy", value as any)}
               >
                 <SelectTrigger className="w-44">
                   <SelectValue />
@@ -197,17 +216,17 @@ const CoursesPage = () => {
 
             <div className="flex items-center border rounded-lg">
               <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                variant={viewMode === "grid" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode("grid")}
                 className="rounded-r-none"
               >
                 <Grid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                variant={viewMode === "list" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('list')}
+                onClick={() => setViewMode("list")}
                 className="rounded-l-none"
               >
                 <List className="h-4 w-4" />
@@ -216,14 +235,16 @@ const CoursesPage = () => {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Main Content Sections */}
         {isLoading || cohortsLoading ? (
-          <div className={cn(
-            "grid gap-6",
-            viewMode === 'grid'
-              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1"
-          )}>
+          <div
+            className={cn(
+              "grid gap-6",
+              viewMode === "grid"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "grid-cols-1",
+            )}
+          >
             {Array.from({ length: 8 }).map((_, i) => (
               <LoadingSkeleton key={i} variant="card" />
             ))}
@@ -234,49 +255,21 @@ const CoursesPage = () => {
             onRetry={refetch}
             className="my-12"
           />
-        ) : filteredCourses.length === 0 && (!cohorts || cohorts.length === 0) && (!bundles || bundles.length === 0) ? (
+        ) : filteredCourses.length === 0 &&
+          (!cohorts || cohorts.length === 0) &&
+          (!bundles || bundles.length === 0) ? (
           <ErrorState
             variant="empty"
             title="No courses found"
-            description={filters.searchTerm ? `No courses match "${filters.searchTerm}"` : "No courses available at the moment."}
+            description={
+              filters.searchTerm
+                ? `No courses match "${filters.searchTerm}"`
+                : "No courses available at the moment."
+            }
             className="my-12"
           />
         ) : (
           <div className="space-y-8">
-            {/* Cohorts Section */}
-            {cohorts && cohorts.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Live Cohorts ({cohorts.length})
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Join structured learning cohorts
-                  </p>
-                </div>
-
-                {/* <div className={cn(
-                  "grid gap-6 animate-fade-in",
-                  viewMode === 'grid'
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1 max-w-4xl"
-                )}>
-                  {cohorts.map((cohort, index) => (
-                    <div
-                      key={cohort.id}
-                      className="animate-fade-in-up"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <CohortCard
-                        cohort={cohort}
-                        variant={viewMode === 'list' ? 'compact' : 'default'}
-                      />
-                    </div>
-                  ))}
-                </div> */}
-              </div>
-            )}
-
             {/* Course Bundles Section */}
             {bundles && bundles.length > 0 && (
               <div className="space-y-6">
@@ -289,41 +282,45 @@ const CoursesPage = () => {
                   </p>
                 </div>
 
-                <div className={cn(
-                  "grid gap-6 animate-fade-in",
-                  viewMode === 'grid'
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1 max-w-4xl"
-                )}>
+                <div
+                  className={cn(
+                    "grid gap-6 animate-fade-in",
+                    viewMode === "grid"
+                      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                      : "grid-cols-1 max-w-4xl",
+                  )}
+                >
                   {bundles.map((bundle, index) => (
-                    <div
+                    <BundleWrapper
                       key={bundle.id}
-                      className="animate-fade-in-up"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <BundleCard
-                        bundle={bundle}
-                        variant={viewMode === 'list' ? 'compact' : 'default'}
-                        onPurchase={handleBundlePurchase}
-                      />
-                    </div>
+                      bundle={bundle}
+                      index={index}
+                      user={user}
+                      isEnrolledInBundle={async (id) =>
+                        Promise.resolve(isEnrolledInBundle(id))
+                      }
+                      viewMode={viewMode}
+                      handleBundlePurchase={handleBundlePurchase}
+                    />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Individual Courses Section */}
+            {/* Courses Section (unchanged) */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {filters.searchTerm ? `Search Results (${filteredCourses.length})` : 'Individual Courses'}
+                  {filters.searchTerm
+                    ? `Search Results (${filteredCourses.length})`
+                    : "Individual Courses"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   Showing {filteredCourses.length} of {stats.total} courses
                 </p>
               </div>
 
-              {viewMode === 'grid' ? (
+              {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredCourses.map((course, index) => (
                     <div
@@ -331,10 +328,7 @@ const CoursesPage = () => {
                       className="animate-fade-in-up"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <CourseCard
-                        course={course}
-                        variant="default"
-                      />
+                      <CourseCard course={course} variant="default" />
                     </div>
                   ))}
                 </div>
