@@ -10,6 +10,7 @@ import {
   sendEmailVerification,
   User as FirebaseUser,
   UserCredential,
+  getAuth,
 } from "firebase/auth";
 
 import {
@@ -347,6 +348,24 @@ class AuthService {
  */
   onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
     return firebaseOnAuthStateChanged(auth, callback);
+  }
+
+  async getToken(): Promise<string | null> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.warn("⚠️ No user is logged in, cannot get token");
+      return null;
+    }
+
+    try {
+      const token = await user.getIdToken(true);
+      return token;
+    } catch (error) {
+      console.error("❌ Failed to get Firebase ID token:", error);
+      return null;
+    }
   }
 
   /** Map Firebase auth errors to user-friendly messages */

@@ -11,13 +11,23 @@ import {
   runTransaction,
   WhereFilterOp,
   serverTimestamp,
-  addDoc
+  addDoc,
+  orderBy, // Add this
+  limit,   // Add this
+  startAt, // Add this for pagination if needed
+  startAfter, // Add this for pagination if needed
+  endAt,   // Add this for pagination if needed
+  endBefore, // Add this for pagination if needed
+  Query,
+  limitToLast,
+  DocumentSnapshot
 } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { COLLECTION } from '@/constants';
 import { Assignment, AssignmentSubmission } from '@/types/assignment';
-import { ok, Result } from '@/utils/response';
+import { fail, ok, Result } from '@/utils/response';
 import { logError } from '@/utils/logger';
+import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
 
 /**
  * Firestore-based service for managing Assignments.
@@ -449,6 +459,8 @@ class AssignmentService {
           studentId: data.studentId,
           studentName: data.studentName,
           submissionFiles: data.submissionFiles || [],
+          marks: data.marks,
+          feedback: data.feedback,
           submittedAt: data.submittedAt,
           createdAt: data.createdAt?.toDate(),
         } as AssignmentSubmission;
@@ -460,6 +472,221 @@ class AssignmentService {
       console.error('AssignmentService - Error fetching submissions by student:', error);
       return ok([]);
     }
+  }
+  /**
+   * Gets submissions with customizable filters and pagination
+   */
+  async getSubmissions(
+    filters?: {
+      field: keyof AssignmentSubmission;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<AssignmentSubmission> = {}
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
+
+      let q: Query = collection(db, COLLECTION.ASSIGNMENT_SUBMISSIONS);
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        // Previous page - use endBefore with limitToLast
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        // Next page - use startAfter
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        // First page - simple limit
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+
+      // Get the documents for pagination cursors
+      const documents = querySnapshot.docs;
+
+      if (pageDirection === 'previous') {
+        // For previous page, we need to reverse the order since we used limitToLast
+        documents.reverse();
+      }
+
+      const submissions = documents.map(doc => {
+        const data = doc.data() as AssignmentSubmission;
+        return {
+          id: doc.id,
+          assignmentId: data.assignmentId,
+          studentId: data.studentId,
+          studentName: data.studentName,
+          submissionFiles: data.submissionFiles || [],
+          marks: data.marks,
+          feedback: data.feedback,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        } as AssignmentSubmission;
+      });
+
+      // Determine pagination metadata
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+
+      // Get cursors for next and previous pages
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      console.log('AssignmentService - Fetched submissions with pagination:', {
+        count: submissions.length,
+        hasNextPage,
+        hasPreviousPage,
+        pageDirection
+      });
+
+      return ok({
+        data: submissions,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor
+      });
+    } catch (error) {
+      logError('AssignmentService - Error fetching submissions with pagination:', error);
+      return fail("Error fetching submissions");
+    }
+  }
+
+  /**
+   * Gets the first page of submissions with simplified interface
+   */
+  async getFirstSubmissionsPage(
+    filters?: {
+      field: keyof AssignmentSubmission;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    pageSize: number = 25
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    return this.getSubmissions(filters, {
+      limit: pageSize,
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      pageDirection: 'next',
+      cursor: null
+    });
+  }
+
+  /**
+   * Gets the next page of submissions
+   */
+  async getNextSubmissionsPage(
+    currentCursor: DocumentSnapshot,
+    filters?: {
+      field: keyof AssignmentSubmission;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    pageSize: number = 25
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    return this.getSubmissions(filters, {
+      limit: pageSize,
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      pageDirection: 'next',
+      cursor: currentCursor
+    });
+  }
+
+  /**
+   * Gets the previous page of submissions
+   */
+  async getPreviousSubmissionsPage(
+    currentCursor: DocumentSnapshot,
+    filters?: {
+      field: keyof AssignmentSubmission;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    pageSize: number = 25
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    return this.getSubmissions(filters, {
+      limit: pageSize,
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      pageDirection: 'previous',
+      cursor: currentCursor
+    });
+  }
+
+  /**
+   * Enhanced method to get submissions by assignment with pagination
+   */
+  async getSubmissionsByAssignmentWithPagination(
+    assignmentId: string,
+    options: PaginationOptions<AssignmentSubmission> = {}
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    return this.getSubmissions([
+      { field: 'assignmentId', op: '==', value: assignmentId }
+    ], options);
+  }
+
+  /**
+   * Enhanced method to get submissions by student with pagination
+   */
+  async getSubmissionsByStudentWithPagination(
+    studentId: string,
+    options: PaginationOptions<AssignmentSubmission> = {}
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    console.log('AssignmentService - Fetching submissions by student with pagination:', studentId, options);
+    return this.getSubmissions([
+      { field: 'studentId', op: '==', value: studentId }
+    ], options);
+  }
+
+  /**
+   * Gets ungraded submissions with pagination
+   */
+  async getUngradedSubmissionsWithPagination(
+    assignmentId?: string,
+    options: PaginationOptions<AssignmentSubmission> = {}
+  ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
+    const filters: any[] = [
+      { field: 'marks', op: '==', value: null }
+    ];
+
+    if (assignmentId) {
+      filters.push({ field: 'assignmentId', op: '==', value: assignmentId });
+    }
+
+    return this.getSubmissions(filters, {
+      ...options,
+      orderBy: options.orderBy || { field: 'createdAt', direction: 'asc' }
+    });
   }
 }
 

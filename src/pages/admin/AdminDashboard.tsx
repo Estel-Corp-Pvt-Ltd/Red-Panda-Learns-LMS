@@ -1032,6 +1032,15 @@ export function AdminDashboard() {
               <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Coupon
             </Button>
+
+            <Button
+              onClick={() => navigate("/admin/submissions")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <Eye className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              Submissions
+            </Button>
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from '@/constants';
 import type { Currency } from '@/types/general';
 import { PaymentDetails, TransactionLineItem } from '@/types/transaction';
 import { transactionService } from '../transactionService';
+import { authService } from '../authService';
 
 export interface RazorpayOrder {
   id: string;
@@ -34,12 +35,13 @@ class RazorpayProvider {
 
     // Helpful debug
     console.log('RazorpayProvider.createOrder payload:', payload);
-
+    const idToken = await authService.getToken();
     const response = await fetch(`${this.backendUrl}/createOrder`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Idempotency-Key': transactionId,
+        'Authorization': `Bearer ${idToken}`
       },
       body: JSON.stringify(payload),
     });
@@ -124,9 +126,13 @@ class RazorpayProvider {
           handler: async (response: any) => {
             console.log("Razorpay payment successful:", response);
             try {
+              const idToken = await authService.getToken();
               const verificationResponse = await fetch(`${this.backendUrl}/verifyPayment`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${idToken}`
+                },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,

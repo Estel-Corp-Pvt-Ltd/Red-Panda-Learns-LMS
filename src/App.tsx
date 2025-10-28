@@ -46,6 +46,8 @@ import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
 import CartCheckoutPage from "./pages/cartCheckout";
+import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
+import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
@@ -125,7 +127,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/admin/assignments/:assignmentId/submissions"
+                        path="/admin/submissions"
                         element={
                           <AuthGuard requireAdmin>
                             <SubmissionDetailPage />
@@ -239,6 +241,13 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/submissions" element={<MySubmissionsPage />} />
+                      <Route path="/cart" element={<AuthGuard >
+                        <CartPage />
+                      </AuthGuard>} />
+                      <Route path="/cart/checkout" element={<AuthGuard >
+                        <CartCheckoutPage />
+                      </AuthGuard>} />
                       <Route path="*" element={<NotFound />} />
                       <Route path="/terms" element={<TermsPage />} />
                       <Route path="/privacy" element={<PrivacyPage />} />
