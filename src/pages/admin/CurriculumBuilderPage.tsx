@@ -1,67 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  Plus,
-  FolderOpen,
-  Edit2,
-  Trash2,
-  GripVertical,
-  Copy,
-  Save,
-  BookOpen,
-  Users,
-  ArrowLeft,
-  ChevronDown,
-  NotepadText,
-  NotebookPen,
-  Search,
-  Eye,
-  Check,
-  X,
-} from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
+import { Header } from "@/components/Header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
+  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-  CommandEmpty,
 } from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { courseService } from "@/services/courseService";
-import { Course, Topic, Cohort, TopicItem } from "@/types/course";
-import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
-import { LearningContentType, Lesson } from "@/types/lesson";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { COURSE_STATUS, LEARNING_UNIT } from "@/constants";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CourseStatus, LearningUnit } from "@/types/general";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -69,24 +25,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { instructorService } from "@/services/instructorService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Header } from "@/components/Header";
+import { ATTRIBUTE_TYPE, COURSE_STATUS, LEARNING_UNIT } from "@/constants";
+import { useToast } from "@/hooks/use-toast";
 import { attributeService } from "@/services/attributeService";
-import { ATTRIBUTE_TYPE } from "@/constants";
+import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
+import { Cohort, Course, Duration, Topic, TopicItem } from "@/types/course";
+import { CourseStatus, LearningUnit } from "@/types/general";
+import { LearningContentType, Lesson } from "@/types/lesson";
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  ChevronDown,
+  Copy,
+  Edit2,
+  Eye,
+  FolderOpen,
+  GripVertical,
+  NotebookPen,
+  NotepadText,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 // import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
 
 // FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
-import { fileService } from "@/services/fileService";
-import { getDownloadURL } from "firebase/storage";
-import CohortBuilderPage from "./CreateCohortPage";
-import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { CreateLessonModal } from "@/components/admin/AddLesson";
-import { getFullName } from "@/utils/name";
+import AssignmentModal from "@/components/AssignmentModal";
+import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
+import { fileService } from "@/services/fileService";
 import { Assignment } from "@/types/assignment";
 import { logError } from "@/utils/logger";
-import AssignmentModal from "@/components/AssignmentModal";
+import { getFullName } from "@/utils/name";
+import { getDownloadURL } from "firebase/storage";
+import CohortBuilderPage from "./CreateCohortPage";
+import { Label } from "@/components/ui/label";
 
 type SortableItemProps = {
   id: string;
@@ -153,7 +153,7 @@ const CurriculumBuilderPage = () => {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
   const [regularPrice, setRegularPrice] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState<Duration>({ hours: 0, minutes: 0 });
   const [salePrice, setSalePrice] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
@@ -238,7 +238,7 @@ const CurriculumBuilderPage = () => {
       setTitle(courseData.title);
       setDescription(courseData.description);
       setStatus(courseData.status);
-      setDuration(courseData.duration);
+      setDuration({ hours: courseData.duration?.hours, minutes: courseData.duration?.minutes });
       setRegularPrice(courseData.regularPrice);
       setSalePrice(courseData.salePrice);
 
@@ -412,10 +412,10 @@ const CurriculumBuilderPage = () => {
       });
       return;
     }
-    if (duration < 0) {
+    if (duration.hours < 0 || duration.minutes < 0) {
       toast({
         title: "Invalid Duration",
-        description: "Duration must be a positive number.",
+        description: "Hours and minutes cannot be negative.",
         variant: "destructive",
       });
       return;
@@ -1404,7 +1404,7 @@ const CurriculumBuilderPage = () => {
                               <Input
                                 placeholder="Add new category"
                                 onKeyDown={async (e) => {
-                                   e.stopPropagation();
+                                  e.stopPropagation();
                                   if (
                                     e.key === "Enter" &&
                                     e.currentTarget.value.trim()
@@ -1519,7 +1519,7 @@ const CurriculumBuilderPage = () => {
                               <Input
                                 placeholder="Add new audience"
                                 onKeyDown={async (e) => {
-                                   e.stopPropagation();
+                                  e.stopPropagation();
                                   if (
                                     e.key === "Enter" &&
                                     e.currentTarget.value.trim()
@@ -1604,10 +1604,17 @@ const CurriculumBuilderPage = () => {
                     <CardTitle>Duration</CardTitle>
                   </CardHeader>
                   <CardContent>
+                    <Label>Hours</Label>
                     <Input
                       type="number"
-                      value={duration}
-                      onChange={(e) => setDuration(parseInt(e.target.value))}
+                      value={duration.hours}
+                      onChange={(e) => setDuration(prev => ({ hours: parseInt(e.target.value), minutes: prev.minutes }))}
+                    />
+                    <Label>Minutes</Label>
+                    <Input
+                      type="number"
+                      value={duration.minutes}
+                      onChange={(e) => setDuration(prev => ({ hours: prev.hours, minutes: parseInt(e.target.value) }))}
                     />
                   </CardContent>
                 </Card>
@@ -1711,16 +1718,16 @@ const CurriculumBuilderPage = () => {
                   {!curriculum.some(
                     (item) => item.type === LEARNING_UNIT.COHORT,
                   ) && (
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        addItem(LEARNING_UNIT.TOPIC);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      Add Topic
-                    </Button>
-                  )}
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          addItem(LEARNING_UNIT.TOPIC);
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        Add Topic
+                      </Button>
+                    )}
 
                   <Button
                     size="sm"
@@ -1927,31 +1934,31 @@ const CurriculumBuilderPage = () => {
                               {/* Lesson actions */}
                               {(item.type === LEARNING_UNIT.LESSON ||
                                 item.type == LEARNING_UNIT.ASSIGNMENT) && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingItemId(item.id);
-                                      setNewItemName(item.title);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Rename"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingItemId(item.id);
+                                        setNewItemName(item.title);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Rename"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
 
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteItem(item.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteItem(item.id)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                             </div>
                           </div>
                         </SortableItem>

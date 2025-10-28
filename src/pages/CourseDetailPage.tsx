@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   BookOpen,
   ChevronRight,
+  Clock,
   Lock,
   Play
 } from "lucide-react";
@@ -372,7 +373,16 @@ export default function CourseDetailPage() {
                 <div className="text-sm text-muted-foreground flex justify-between mt-2">
                   <p>{topicCount} topics • {lessonCount} lessons</p>
                   <span className="text-sm text-muted-foreground ml-4">
-                    Duration: {formatTimeDuration(course.duration)}
+                    {
+                      course.duration &&
+                      (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{course.duration?.hours} hrs</span>
+                          <span>{course.duration?.minutes} min</span>
+                        </div>
+                      )
+                    }
                   </span>
                 </div>
               </CardHeader>
