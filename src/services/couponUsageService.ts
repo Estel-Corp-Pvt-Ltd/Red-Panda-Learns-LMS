@@ -6,6 +6,8 @@ import {
   setDoc,
   Timestamp,
   where,
+  QuerySnapshot,
+  DocumentData,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -30,16 +32,18 @@ class CouponUsageService {
    * @param couponId - The unique coupon ID.
    * @returns A Result object containing the usage count.
    */
-  async getUsageCountByCoupon(couponId: string): Promise<Result<number>> {
+  async getUsageCountByCoupon(
+    couponId: string
+  ): Promise<Result<QuerySnapshot<DocumentData>>> {
     try {
       const q = query(
         collection(db, COLLECTION.COUPON_USAGES),
-        where("couponId", "==", couponId),
+        where("couponId", "==", couponId)
       );
       const snapshot = await getDocs(q);
 
-      return ok(snapshot.size);
-    } catch (error) {
+      return ok(snapshot);
+    } catch (error: any) {
       logError("CouponUsageService.getUsageCountByCoupon", error);
       return fail("Failed to get coupon usage count", error.code);
     }
@@ -54,13 +58,13 @@ class CouponUsageService {
    */
   async hasUserUsedCoupon(
     userId: string,
-    couponId: string,
+    couponId: string
   ): Promise<Result<boolean>> {
     try {
       const q = query(
         collection(db, COLLECTION.COUPON_USAGES),
         where("userId", "==", userId),
-        where("couponId", "==", couponId),
+        where("couponId", "==", couponId)
       );
       const snapshot = await getDocs(q);
 
@@ -87,7 +91,7 @@ class CouponUsageService {
     couponId: string,
     courseId?: string,
     bundleId?: string,
-    cohortId?: string,
+    cohortId?: string
   ): Promise<Result<{ isApplicable: boolean; reason?: string }>> {
     try {
       const couponResult = await couponService.getCouponById(couponId);
@@ -98,15 +102,38 @@ class CouponUsageService {
 
       const coupon = couponResult.data;
 
-      
       // Check if user already used this coupon
-      const alreadyUsedResult = coupon.usedByUserIds?.includes(userId);
-      if (alreadyUsedResult) {
-        return ok({
-          isApplicable: false,
-          reason: "You have already used this coupon",
-        });
+      const usageResult = await couponUsageService.getUsageCountByCoupon(
+        couponId
+      );
+
+      if (usageResult.success) {
+        const totalUsageCount = usageResult.data.size;
+        const docs = usageResult.data.docs.map((doc) => doc.data());
+
+        // 🔍 Check if this user has already used the coupon
+        const alreadyUsed = docs.some((usage) => usage.userId === userId);
+
+        if (alreadyUsed) {
+          return ok({
+            isApplicable: false,
+            reason: "You have already used this coupon",
+          });
+        }
+
+        // 🔢 Check if usage limit reached
+        if (coupon.usageLimit > 0 && totalUsageCount >= coupon.usageLimit) {
+          return ok({
+            isApplicable: false,
+            reason: "Usage limit reached",
+          });
+        }
       }
+
+      // If it passes all checks
+      return ok({
+        isApplicable: true,
+      });
 
       // Check coupon status
       if (coupon.status !== COUPON_STATUS.ACTIVE) {
@@ -121,20 +148,12 @@ class CouponUsageService {
         return ok({ isApplicable: false, reason: "Coupon has expired" });
       }
 
-     
-  
-
-        if (coupon.usageLimit > 0 && coupon.currentUsageCount >= coupon.usageLimit) {
-          return ok({ isApplicable: false, reason: "Usage limit reached" });
-        }
-      
-
       // Check linked items (course, bundle, cohort)
       const isLinked = this.checkLinkedItems(
         coupon,
         courseId,
         bundleId,
-        cohortId,
+        cohortId
       );
 
       if (!isLinked) {
@@ -165,7 +184,7 @@ class CouponUsageService {
     coupon: Coupon,
     courseId?: string,
     bundleId?: string,
-    cohortId?: string,
+    cohortId?: string
   ): boolean {
     const linkedCourses = coupon.linkedCourseIds || [];
     const linkedBundles = coupon.linkedBundleIds || [];
@@ -207,7 +226,7 @@ class CouponUsageService {
    * @returns A Result object containing the created usage record ID on success.
    */
   async recordCouponUsage(
-    usageData: Omit<CouponUsage, "id">,
+    usageData: Omit<CouponUsage, "id">
   ): Promise<Result<string>> {
     try {
       const usageRef = doc(collection(db, COLLECTION.COUPON_USAGES));
