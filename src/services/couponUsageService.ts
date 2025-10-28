@@ -130,10 +130,7 @@ class CouponUsageService {
         }
       }
 
-      // If it passes all checks
-      return ok({
-        isApplicable: true,
-      });
+  
 
       // Check coupon status
       if (coupon.status !== COUPON_STATUS.ACTIVE) {
