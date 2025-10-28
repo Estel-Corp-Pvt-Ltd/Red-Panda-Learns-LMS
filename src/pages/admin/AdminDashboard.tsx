@@ -524,19 +524,29 @@ const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
     }, []);
   
 
-    async function loadOrders(){
-      try{
-        const data = await orderService.getAllOrders();
-        setOrders(data);
-      }
-      catch{
-toast({
-          title: "Error",
-          description: "Failed to load Orders",
-          variant: "destructive",
-        });
-      }
+async function loadOrders() {
+  try {
+    const result = await orderService.getAllOrders();
+
+    if (result.success && result.data) {
+      setOrders(result.data);
+    } else {
+      console.error("Failed to fetch orders:", result.error?.message);
+      toast({
+        title: "Error",
+        description: "Failed to load orders from server.",
+        variant: "destructive",
+      });
     }
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    toast({
+      title: "Error",
+      description: "Something went wrong while loading orders.",
+      variant: "destructive",
+    });
+  }
+}
 
 
     const filteredOrders = useMemo(() => {
