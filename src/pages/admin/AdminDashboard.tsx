@@ -68,7 +68,7 @@ import { User } from "@/types/user";
 import { Cohort, Course } from "@/types/course";
 import { Coupon } from "@/types/coupon";
 import { OrganizationType, PopUpCourseType } from "@/types/general";
-
+import { OrderStatus } from "@/types/general";
 import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
 import {
   BUNDLE_STATUS,
@@ -502,7 +502,7 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
-type StatusFilter = "ALL" | (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
+type StatusFilter = "ALL" | OrderStatus;
 
 const [orders, setOrders] = useState<Order[]>([]);
 const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
