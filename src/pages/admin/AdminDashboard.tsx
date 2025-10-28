@@ -1022,6 +1022,15 @@ export function AdminDashboard() {
               <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Coupon
             </Button>
+
+            <Button
+              onClick={() => navigate("/admin/submissions")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <Eye className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              Submissions
+            </Button>
           </div>
         </div>
 
@@ -1149,8 +1158,8 @@ export function AdminDashboard() {
                             <TableCell>
                               {lesson.durationSeconds
                                 ? `${Math.floor(
-                                    lesson.durationSeconds / 60
-                                  )} min`
+                                  lesson.durationSeconds / 60
+                                )} min`
                                 : "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
@@ -1613,8 +1622,8 @@ export function AdminDashboard() {
                                   user.role === USER_ROLE.ADMIN
                                     ? "destructive"
                                     : user.role === USER_ROLE.STUDENT
-                                    ? "default"
-                                    : "secondary"
+                                      ? "default"
+                                      : "secondary"
                                 }
                               >
                                 {user.role}
@@ -1626,8 +1635,8 @@ export function AdminDashboard() {
                                   user.status === USER_STATUS.ACTIVE
                                     ? "default"
                                     : user.status === USER_STATUS.INACTIVE
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {user.status}
@@ -1715,8 +1724,8 @@ export function AdminDashboard() {
                                   coupon.status === COUPON_STATUS.ACTIVE
                                     ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {coupon.status}
