@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { COURSE_STATUS } from "@/constants";
 
 import { Header } from "@/components/Header";
@@ -41,13 +41,9 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const CoursesPage = () => {
   const { enrollments } = useEnrollment();
-  const { user, isAuthenticated } = useAuth() as {
-    user?: { id?: string | null; email?: string | null; uid?: string | null } | null;
-    isAuthenticated?: boolean;
-  };
+  const { user } = useAuth();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [enrollFilter, setEnrollFilter] = useState<"all" | "enrolled" | "not_enrolled">("all");
 
   const {
     data: courses,
@@ -69,18 +65,8 @@ const CoursesPage = () => {
     isError: cohortsError,
   } = useCohortsQuery();
 
-  // Strict login check: prefer explicit isAuthenticated; else require a non-empty user.id/uid/email
-  const isLoggedIn =
-    typeof isAuthenticated === "boolean"
-      ? isAuthenticated
-      : Boolean(user?.id?.trim?.() || (user as any)?.uid?.trim?.() || user?.email?.trim?.());
-
-  // Reset the enrollment filter when logging out so the control doesn't linger
-  useEffect(() => {
-    if (!isLoggedIn && enrollFilter !== "all") {
-      setEnrollFilter("all");
-    }
-  }, [isLoggedIn, enrollFilter]);
+  // Simple login check: just rely on user presence
+  const isLoggedIn = !!user;
 
   const enrolledCourseIds = enrollments.map((enrollment) => enrollment.targetId);
 
@@ -89,6 +75,7 @@ const CoursesPage = () => {
     [courses]
   );
 
+  // All filtering (including enrollmentStatus) is handled by useCourseFilters
   const {
     filters,
     filteredCourses,
@@ -98,23 +85,12 @@ const CoursesPage = () => {
     activeFilterCount,
   } = useCourseFilters(publishedCourses, enrolledCourseIds);
 
-  // Apply enrollment filter only when logged in
-  const filteredByEnrollment = useMemo(() => {
-    if (!isLoggedIn) return filteredCourses;
-    return filteredCourses.filter((c) => {
-      const enrolled = enrolledCourseIds.includes(String(c.id));
-      if (enrollFilter === "all") return true;
-      if (enrollFilter === "enrolled") return enrolled;
-      return !enrolled; // not_enrolled
-    });
-  }, [isLoggedIn, filteredCourses, enrollFilter, enrolledCourseIds]);
-
   const stats = {
     total: publishedCourses?.length || 0,
     completed: 0,
     bundles: bundles?.length || 0,
     cohorts: cohorts?.length || 0,
-    filtered: filteredByEnrollment.length,
+    filtered: filteredCourses.length,
   };
 
   const handleBundlePurchase = (bundleId: string) => {
@@ -219,7 +195,7 @@ const CoursesPage = () => {
             onUpdateFilter={updateFilter}
             onClearFilters={clearFilters}
             activeFilterCount={activeFilterCount}
-            showEnrollmentStatus={isLoggedIn} // <-- only show when logged in
+            showEnrollmentStatus={isLoggedIn}
           />
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
@@ -279,7 +255,7 @@ const CoursesPage = () => {
           </div>
         ) : isError || cohortsError ? (
           <ErrorState error={(error || cohortsError) as Error} onRetry={refetch} className="my-12" />
-        ) : filteredByEnrollment.length === 0 &&
+        ) : filteredCourses.length === 0 &&
           (!cohorts || cohorts.length === 0) &&
           (!bundles || bundles.length === 0) ? (
           <ErrorState
@@ -318,7 +294,11 @@ const CoursesPage = () => {
                 >
                   {bundles.map((bundle, index) => (
                     <div key={bundle.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <BundleCard bundle={bundle} variant={viewMode === "list" ? "compact" : "default"} onPurchase={handleBundlePurchase} />
+                      <BundleCard
+                        bundle={bundle}
+                        variant={viewMode === "list" ? "compact" : "default"}
+                        onPurchase={handleBundlePurchase}
+                      />
                     </div>
                   ))}
                 </div>
@@ -329,23 +309,23 @@ const CoursesPage = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {filters.searchTerm ? `Search Results (${filteredByEnrollment.length})` : "Individual Courses"}
+                  {filters.searchTerm ? `Search Results (${filteredCourses.length})` : "Individual Courses"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Showing {filteredByEnrollment.length} of {stats.total} courses
+                  Showing {filteredCourses.length} of {stats.total} courses
                 </p>
               </div>
 
               {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredByEnrollment.map((course, index) => (
+                  {filteredCourses.map((course, index) => (
                     <div key={course.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
                       <CourseCard course={course} variant="default" />
                     </div>
                   ))}
                 </div>
               ) : (
-                <CourseListView courses={filteredByEnrollment} enrolledCourseIds={enrolledCourseIds} />
+                <CourseListView courses={filteredCourses} enrolledCourseIds={enrolledCourseIds} />
               )}
             </div>
           </div>

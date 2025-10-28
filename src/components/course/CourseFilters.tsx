@@ -1,30 +1,27 @@
-import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
 import {
   CourseFilters as CourseFiltersType,
   DURATION_OPTIONS,
   ENROLLMENT_STATUS_OPTIONS,
-  PRICE_RANGE_OPTIONS
-} from '@/types/course-filters';
-import { ChevronDown, Filter, X } from 'lucide-react';
+  PRICE_RANGE_OPTIONS,
+} from "@/types/course-filters";
+import { ChevronDown, Filter, X } from "lucide-react";
 
 interface CourseFiltersProps {
   filters: CourseFiltersType;
   uniqueInstructors: string[];
-  onUpdateFilter: <K extends keyof CourseFiltersType>(
-    key: K,
-    value: CourseFiltersType[K]
-  ) => void;
+  onUpdateFilter: <K extends keyof CourseFiltersType>(key: K, value: CourseFiltersType[K]) => void;
   onClearFilters: () => void;
   activeFilterCount: number;
-  showEnrollmentStatus?: boolean; // NEW: gate the enrollment UI
+  showEnrollmentStatus?: boolean; // Only show when logged in
 }
 
 const CourseFilters = ({
@@ -33,58 +30,58 @@ const CourseFilters = ({
   onUpdateFilter,
   onClearFilters,
   activeFilterCount,
-  showEnrollmentStatus = false, // default hidden
+  showEnrollmentStatus = false,
 }: CourseFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // If enrollment status is hidden (logged out), ensure it doesn't linger in state
   useEffect(() => {
-    if (!showEnrollmentStatus && filters.enrollmentStatus !== 'all') {
-      onUpdateFilter('enrollmentStatus', 'all');
+    if (!showEnrollmentStatus && filters.enrollmentStatus !== "all") {
+      onUpdateFilter("enrollmentStatus", "all");
     }
   }, [showEnrollmentStatus, filters.enrollmentStatus, onUpdateFilter]);
 
   const handleInstructorToggle = (instructor: string) => {
     const newInstructors = filters.instructors.includes(instructor)
-      ? filters.instructors.filter(i => i !== instructor)
+      ? filters.instructors.filter((i) => i !== instructor)
       : [...filters.instructors, instructor];
-    onUpdateFilter('instructors', newInstructors);
+    onUpdateFilter("instructors", newInstructors);
   };
 
   const removeActiveFilter = (filterKey: keyof CourseFiltersType) => {
     switch (filterKey) {
-      case 'searchTerm':
-        onUpdateFilter('searchTerm', '');
+      case "searchTerm":
+        onUpdateFilter("searchTerm", "");
         break;
-      case 'priceRange':
-        onUpdateFilter('priceRange', 'all');
+      case "priceRange":
+        onUpdateFilter("priceRange", "all");
         break;
-      case 'instructors':
-        onUpdateFilter('instructors', []);
+      case "instructors":
+        onUpdateFilter("instructors", []);
         break;
-      case 'enrollmentStatus':
-        onUpdateFilter('enrollmentStatus', 'all');
+      case "enrollmentStatus":
+        onUpdateFilter("enrollmentStatus", "all");
         break;
-      case 'duration':
-        onUpdateFilter('duration', 'all');
+      case "duration":
+        onUpdateFilter("duration", "all");
         break;
     }
   };
 
   const getFilterLabel = (filterKey: keyof CourseFiltersType) => {
     switch (filterKey) {
-      case 'searchTerm':
+      case "searchTerm":
         return `Search: "${filters.searchTerm}"`;
-      case 'priceRange':
-        return PRICE_RANGE_OPTIONS.find(opt => opt.value === filters.priceRange)?.label || '';
-      case 'instructors':
+      case "priceRange":
+        return PRICE_RANGE_OPTIONS.find((opt) => opt.value === filters.priceRange)?.label || "";
+      case "instructors":
         return `Instructors: ${filters.instructors.length}`;
-      case 'enrollmentStatus':
-        return ENROLLMENT_STATUS_OPTIONS.find(opt => opt.value === filters.enrollmentStatus)?.label || '';
-      case 'duration':
-        return DURATION_OPTIONS.find(opt => opt.value === filters.duration)?.label || '';
+      case "enrollmentStatus":
+        return ENROLLMENT_STATUS_OPTIONS.find((opt) => opt.value === filters.enrollmentStatus)?.label || "";
+      case "duration":
+        return DURATION_OPTIONS.find((opt) => opt.value === filters.duration)?.label || "";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -95,7 +92,7 @@ const CourseFilters = ({
           <Input
             placeholder="Search courses, instructors, content..."
             value={filters.searchTerm}
-            onChange={(e) => onUpdateFilter('searchTerm', e.target.value)}
+            onChange={(e) => onUpdateFilter("searchTerm", e.target.value)}
             className="w-full"
           />
         </div>
@@ -121,7 +118,7 @@ const CourseFilters = ({
                 <Label className="text-sm font-medium mb-3 block">Price Range</Label>
                 <RadioGroup
                   value={filters.priceRange}
-                  onValueChange={(value) => onUpdateFilter('priceRange', value as any)}
+                  onValueChange={(value) => onUpdateFilter("priceRange", value as any)}
                 >
                   {PRICE_RANGE_OPTIONS.map((option) => (
                     <div key={option.value} className="flex items-center space-x-2">
@@ -143,7 +140,7 @@ const CourseFilters = ({
                     <Label className="text-sm font-medium mb-3 block">Enrollment Status</Label>
                     <RadioGroup
                       value={filters.enrollmentStatus}
-                      onValueChange={(value) => onUpdateFilter('enrollmentStatus', value as any)}
+                      onValueChange={(value) => onUpdateFilter("enrollmentStatus", value as any)}
                     >
                       {ENROLLMENT_STATUS_OPTIONS.map((option) => (
                         <div key={option.value} className="flex items-center space-x-2">
@@ -165,7 +162,7 @@ const CourseFilters = ({
                 <Label className="text-sm font-medium mb-3 block">Course Duration</Label>
                 <RadioGroup
                   value={filters.duration}
-                  onValueChange={(value) => onUpdateFilter('duration', value as any)}
+                  onValueChange={(value) => onUpdateFilter("duration", value as any)}
                 >
                   {DURATION_OPTIONS.map((option) => (
                     <div key={option.value} className="flex items-center space-x-2">
@@ -204,12 +201,7 @@ const CourseFilters = ({
               {activeFilterCount > 0 && (
                 <>
                   <Separator />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onClearFilters}
-                    className="w-full"
-                  >
+                  <Button variant="outline" size="sm" onClick={onClearFilters} className="w-full">
                     Clear All Filters
                   </Button>
                 </>
@@ -224,46 +216,46 @@ const CourseFilters = ({
         <div className="flex flex-wrap gap-2">
           {filters.searchTerm && (
             <Badge variant="secondary" className="gap-1">
-              {getFilterLabel('searchTerm')}
+              {getFilterLabel("searchTerm")}
               <X
                 className="w-3 h-3 cursor-pointer hover:text-destructive"
-                onClick={() => removeActiveFilter('searchTerm')}
+                onClick={() => removeActiveFilter("searchTerm")}
               />
             </Badge>
           )}
-          {filters.priceRange !== 'all' && (
+          {filters.priceRange !== "all" && (
             <Badge variant="secondary" className="gap-1">
-              {getFilterLabel('priceRange')}
+              {getFilterLabel("priceRange")}
               <X
                 className="w-3 h-3 cursor-pointer hover:text-destructive"
-                onClick={() => removeActiveFilter('priceRange')}
+                onClick={() => removeActiveFilter("priceRange")}
               />
             </Badge>
           )}
           {filters.instructors.length > 0 && (
             <Badge variant="secondary" className="gap-1">
-              {getFilterLabel('instructors')}
+              {getFilterLabel("instructors")}
               <X
                 className="w-3 h-3 cursor-pointer hover:text-destructive"
-                onClick={() => removeActiveFilter('instructors')}
+                onClick={() => removeActiveFilter("instructors")}
               />
             </Badge>
           )}
-          {showEnrollmentStatus && filters.enrollmentStatus !== 'all' && (
+          {showEnrollmentStatus && filters.enrollmentStatus !== "all" && (
             <Badge variant="secondary" className="gap-1">
-              {getFilterLabel('enrollmentStatus')}
+              {getFilterLabel("enrollmentStatus")}
               <X
                 className="w-3 h-3 cursor-pointer hover:text-destructive"
-                onClick={() => removeActiveFilter('enrollmentStatus')}
+                onClick={() => removeActiveFilter("enrollmentStatus")}
               />
             </Badge>
           )}
-          {filters.duration !== 'all' && (
+          {filters.duration !== "all" && (
             <Badge variant="secondary" className="gap-1">
-              {getFilterLabel('duration')}
+              {getFilterLabel("duration")}
               <X
                 className="w-3 h-3 cursor-pointer hover:text-destructive"
-                onClick={() => removeActiveFilter('duration')}
+                onClick={() => removeActiveFilter("duration")}
               />
             </Badge>
           )}
