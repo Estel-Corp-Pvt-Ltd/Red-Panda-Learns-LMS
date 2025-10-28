@@ -87,7 +87,7 @@ export function useCourseFilters(courses: Course[] = [], enrolledCourseIds: stri
 
     if (filters.duration !== 'all') {
       filtered = filtered.filter(course => {
-        const hours = course.duration?.hours;
+        const hours = course.duration.hours;
 
         if (!hours)
           return true;

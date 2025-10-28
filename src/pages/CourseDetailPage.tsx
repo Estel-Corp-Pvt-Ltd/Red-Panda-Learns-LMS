@@ -378,8 +378,8 @@ export default function CourseDetailPage() {
                       (
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{course.duration?.hours} hrs</span>
-                          <span>{course.duration?.minutes} min</span>
+                          <span>{course.duration.hours} hrs</span>
+                          <span>{course.duration.minutes} min</span>
                         </div>
                       )
                     }

@@ -134,8 +134,8 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 (
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    <span>{course.duration?.hours} hrs</span>
-                    <span>{course.duration?.minutes} min</span>
+                    <span>{course.duration.hours} hrs</span>
+                    <span>{course.duration.minutes} min</span>
                   </div>
                 )
               }

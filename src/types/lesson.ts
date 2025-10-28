@@ -1,5 +1,6 @@
 import { ATTACHMENT_TYPE, LEARNING_CONTENT, LESSON_TYPE, VIDEO_SOURCE } from "@/constants";
 import { FieldValue, Timestamp } from "firebase/firestore";
+import { Duration } from "./general";
 
 export type Attachment = typeof ATTACHMENT_TYPE[keyof typeof ATTACHMENT_TYPE];
 export type LessonType = typeof LESSON_TYPE[keyof typeof LESSON_TYPE];
@@ -12,7 +13,7 @@ export type Lesson = {
     type: LessonType;
     description: string;
     embedUrl: string;
-    durationSeconds: number;
+    duration: Duration;
     createdAt: Timestamp | FieldValue;
     updatedAt: Timestamp | FieldValue;
 };
@@ -22,7 +23,6 @@ export type LessonAttachment = {
     name: string;
     url: string;
     type: Attachment;
-    durationSeconds?: number;
     videoSource?: VideoSource;
     size?: number;
     createdAt: Timestamp | FieldValue;

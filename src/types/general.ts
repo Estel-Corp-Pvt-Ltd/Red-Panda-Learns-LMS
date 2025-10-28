@@ -47,3 +47,8 @@ export type PayPalWebhookEvent = typeof PAYPAL_WEBHOOK_EVENT[keyof typeof PAYPAL
 export type CouponStatus = typeof COUPON_STATUS[keyof typeof COUPON_STATUS];
 export type OrganizationType = typeof ORGANIZATION[keyof typeof ORGANIZATION];
 export type PopUpCourseType = typeof POPUP_COURSE_TYPE[keyof typeof POPUP_COURSE_TYPE];
+
+export type Duration = {
+    hours: number;
+    minutes: number;
+};

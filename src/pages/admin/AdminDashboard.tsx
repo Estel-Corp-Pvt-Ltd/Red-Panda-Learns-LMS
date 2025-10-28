@@ -1138,10 +1138,8 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell>{lesson.type}</TableCell>
                             <TableCell>
-                              {lesson.durationSeconds
-                                ? `${Math.floor(
-                                    lesson.durationSeconds / 60
-                                  )} min`
+                              {lesson.duration
+                                ? `${lesson.duration.hours} hours ${lesson.duration.minutes} min`
                                 : "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
@@ -1604,8 +1602,8 @@ export function AdminDashboard() {
                                   user.role === USER_ROLE.ADMIN
                                     ? "destructive"
                                     : user.role === USER_ROLE.STUDENT
-                                    ? "default"
-                                    : "secondary"
+                                      ? "default"
+                                      : "secondary"
                                 }
                               >
                                 {user.role}
@@ -1617,8 +1615,8 @@ export function AdminDashboard() {
                                   user.status === USER_STATUS.ACTIVE
                                     ? "default"
                                     : user.status === USER_STATUS.INACTIVE
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {user.status}
@@ -1706,8 +1704,8 @@ export function AdminDashboard() {
                                   coupon.status === COUPON_STATUS.ACTIVE
                                     ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {coupon.status}
