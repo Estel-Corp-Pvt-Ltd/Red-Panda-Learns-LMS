@@ -59,7 +59,7 @@ class CourseService {
  * @throws An error if the course could not be created in Firestore.
  */
 
-  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds'>): Promise<string> {
+  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds' | 'duration' | 'url'>): Promise<string> {
     try {
       const courseId = await this.generateCourseId();
 

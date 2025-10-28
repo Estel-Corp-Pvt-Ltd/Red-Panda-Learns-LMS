@@ -650,9 +650,9 @@ export function AdminDashboard() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: CURRENCY.USD,
+      currency: CURRENCY.INR,
     }).format(amount);
   };
 
@@ -1287,7 +1287,7 @@ export function AdminDashboard() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {formatCurrency(course.regularPrice)}
+                              {formatCurrency(course.salePrice)}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
