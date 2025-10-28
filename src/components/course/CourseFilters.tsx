@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,15 +14,18 @@ import {
   PRICE_RANGE_OPTIONS
 } from '@/types/course-filters';
 import { ChevronDown, Filter, X } from 'lucide-react';
-import { useState } from 'react';
 
 interface CourseFiltersProps {
   filters: CourseFiltersType;
   uniqueInstructors: string[];
-  onUpdateFilter: <K extends keyof CourseFiltersType>(key: K, value: CourseFiltersType[K]) => void;
+  onUpdateFilter: <K extends keyof CourseFiltersType>(
+    key: K,
+    value: CourseFiltersType[K]
+  ) => void;
   onClearFilters: () => void;
   activeFilterCount: number;
-};
+  showEnrollmentStatus?: boolean; // NEW: gate the enrollment UI
+}
 
 const CourseFilters = ({
   filters,
@@ -29,8 +33,16 @@ const CourseFilters = ({
   onUpdateFilter,
   onClearFilters,
   activeFilterCount,
+  showEnrollmentStatus = false, // default hidden
 }: CourseFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  // If enrollment status is hidden (logged out), ensure it doesn't linger in state
+  useEffect(() => {
+    if (!showEnrollmentStatus && filters.enrollmentStatus !== 'all') {
+      onUpdateFilter('enrollmentStatus', 'all');
+    }
+  }, [showEnrollmentStatus, filters.enrollmentStatus, onUpdateFilter]);
 
   const handleInstructorToggle = (instructor: string) => {
     const newInstructors = filters.instructors.includes(instructor)
@@ -78,7 +90,6 @@ const CourseFilters = ({
 
   return (
     <div className="space-y-4">
-
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
@@ -105,6 +116,7 @@ const CourseFilters = ({
 
           <PopoverContent className="w-80 p-0" align="end">
             <div className="p-4 space-y-4">
+              {/* Price Range */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Price Range</Label>
                 <RadioGroup
@@ -124,25 +136,31 @@ const CourseFilters = ({
 
               <Separator />
 
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Enrollment Status</Label>
-                <RadioGroup
-                  value={filters.enrollmentStatus}
-                  onValueChange={(value) => onUpdateFilter('enrollmentStatus', value as any)}
-                >
-                  {ENROLLMENT_STATUS_OPTIONS.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`enrollment-${option.value}`} />
-                      <Label htmlFor={`enrollment-${option.value}`} className="text-sm">
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
+              {/* Enrollment Status (only if allowed) */}
+              {showEnrollmentStatus && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block">Enrollment Status</Label>
+                    <RadioGroup
+                      value={filters.enrollmentStatus}
+                      onValueChange={(value) => onUpdateFilter('enrollmentStatus', value as any)}
+                    >
+                      {ENROLLMENT_STATUS_OPTIONS.map((option) => (
+                        <div key={option.value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option.value} id={`enrollment-${option.value}`} />
+                          <Label htmlFor={`enrollment-${option.value}`} className="text-sm">
+                            {option.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
 
-              <Separator />
+                  <Separator />
+                </>
+              )}
 
+              {/* Course Duration */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Course Duration</Label>
                 <RadioGroup
@@ -162,6 +180,7 @@ const CourseFilters = ({
 
               <Separator />
 
+              {/* Instructors */}
               {uniqueInstructors.length > 0 && (
                 <div>
                   <Label className="text-sm font-medium mb-3 block">Instructors</Label>
@@ -200,6 +219,7 @@ const CourseFilters = ({
         </Popover>
       </div>
 
+      {/* Active filter chips */}
       {activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-2">
           {filters.searchTerm && (
@@ -229,7 +249,7 @@ const CourseFilters = ({
               />
             </Badge>
           )}
-          {filters.enrollmentStatus !== 'all' && (
+          {showEnrollmentStatus && filters.enrollmentStatus !== 'all' && (
             <Badge variant="secondary" className="gap-1">
               {getFilterLabel('enrollmentStatus')}
               <X

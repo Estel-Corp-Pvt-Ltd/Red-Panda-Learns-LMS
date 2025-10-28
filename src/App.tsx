@@ -8,7 +8,9 @@ import { EnrollmentProvider } from "@/contexts/EnrollmentContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import PopUpContainer from "./components/PopUpContainer";
+import { ConfirmProvider } from "./services/providers/ConfirmProvider";
 import { CartProvider } from "./contexts/CartContext";
+import ModalDemo from "./pages/ModalDemo";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
 
 // Lazy load admin pages
@@ -47,6 +49,7 @@ import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
 import CartCheckoutPage from "./pages/cartCheckout";
 import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
+import Modal from "./components/Modal";
 
 // Other lazy load pages
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
@@ -57,6 +60,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+      <ConfirmProvider>
     <AuthProvider>
       <EnrollmentProvider>
         <CohortProvider>
@@ -100,6 +104,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                       <Route path="/dev/modal-demo" element={<ModalDemo />} />
                       <Route
                         path="/admin"
                         element={
@@ -261,6 +266,7 @@ const App = () => (
         </CohortProvider>
       </EnrollmentProvider>
     </AuthProvider>
+    </ConfirmProvider>
   </QueryClientProvider>
 );
 
