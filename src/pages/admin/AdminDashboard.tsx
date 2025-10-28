@@ -979,15 +979,6 @@ export function AdminDashboard() {
           {/*  Buttons stack on mobile, row on larger screens */}
           <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
             <Button
-              onClick={() => navigate("/admin/create-lesson")}
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">New</span> Lesson
-            </Button>
-
-            <Button
               onClick={() => navigate("/admin/create-course")}
               size="sm"
               className="text-xs sm:text-sm"

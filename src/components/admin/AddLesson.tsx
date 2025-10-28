@@ -1,28 +1,28 @@
-import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
-import { lessonService } from "@/services/lessonService";
+import { LESSON_TYPE } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
-import { logError } from "@/utils/logger";
+import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
+import { logError } from "@/utils/logger";
 import MDEditor from "@uiw/react-md-editor";
+import { useEffect, useState } from "react";
 
 type CreateLessonModalProps = {
   isOpen: boolean;
@@ -43,7 +43,6 @@ export const CreateLessonModal = ({
     description: "",
     embedUrl: "",
     durationSeconds: 0,
-    scope: LESSON_SCOPE.APP,
   });
 
   // Add scroll management
@@ -88,7 +87,6 @@ export const CreateLessonModal = ({
       description: "",
       embedUrl: "",
       durationSeconds: 0,
-      scope: LESSON_SCOPE.APP,
     });
   };
 

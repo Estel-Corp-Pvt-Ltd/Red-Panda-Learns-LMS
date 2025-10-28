@@ -17,7 +17,6 @@ const CreateBundlePage = lazy(() => import("./pages/admin/CreateBundlePage"));
 const CohortBuilderPage = lazy(() => import("./pages/admin/CreateCohortPage"));
 const CreateCouponPage = lazy(() => import("./pages/admin/CreateCouponPage"));
 const CreateCoursePage = lazy(() => import("./pages/admin/CreateCoursePage"));
-const CreateLessonPage = lazy(() => import("./pages/admin/CreateLessonPage"));
 const CurriculumBuilderPage = lazy(() => import("./pages/admin/CurriculumBuilderPage"));
 const EditAssignmentPage = lazy(() => import("./pages/admin/EditAssignmentPage"));
 const EditBundlePage = lazy(() => import("./pages/admin/EditBundle"));
@@ -105,14 +104,6 @@ const App = () => (
                         element={
                           <AuthGuard requireAuth requireAdmin>
                             <AdminDashboard />
-                          </AuthGuard>
-                        }
-                      />
-                      <Route
-                        path="/admin/create-lesson"
-                        element={
-                          <AuthGuard requireAdmin >
-                            <CreateLessonPage />
                           </AuthGuard>
                         }
                       />

@@ -14,7 +14,6 @@ import {
 
 import { db } from '@/firebaseConfig';
 import { Lesson } from '@/types/lesson';
-import { LESSON_SCOPE } from '@/constants';
 
 class LessonService {
     /**
@@ -80,7 +79,6 @@ class LessonService {
                 type: data.type,
                 description: data.description || '',
                 embedUrl: data.embedUrl || '',
-                scope: data.scope,
                 durationSeconds: data.durationSeconds ?? 0,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -141,39 +139,6 @@ class LessonService {
             if (updates.durationSeconds !== undefined) updateData.durationSeconds = updates.durationSeconds;
 
             await updateDoc(lessonRef, updateData);
-            console.log("LessonService - Lesson updated successfully:", lessonId);
-
-            // 🔹 If scope is APP, update all courses where this lesson exists
-            // if (lessonData.scope === LESSON_SCOPE.APP && updates.title) {
-            //     const coursesSnapshot = await getDocs(collection(db, "Courses"));
-
-            //     const updatePromises: Promise<void>[] = [];
-
-            //     coursesSnapshot.forEach((courseDoc) => {
-            //         const courseData = courseDoc.data() as any;
-
-            //         let hasLesson = false;
-
-            //         // loop through topics and lessonRefs
-            //         courseData.topics = courseData.topics.map((topic: any) => {
-            //             topic.lessons = topic.lessons.map((lesson: any) => {
-            //                 if (lesson.id === lessonId) {
-            //                     hasLesson = true;
-            //                     return { ...lesson, title: updates.title }; // update title
-            //                 }
-            //                 return lesson;
-            //             });
-            //             return topic;
-            //         });
-
-            //         if (hasLesson) {
-            //             updatePromises.push(updateDoc(courseDoc.ref, { topics: courseData.topics }));
-            //         }
-            //     });
-
-            //     await Promise.all(updatePromises);
-            //     console.log("Updated lesson title in all relevant courses");
-            // }
         } catch (error) {
             console.error("LessonService - Error updating lesson:", error);
             throw new Error("Failed to update lesson");
