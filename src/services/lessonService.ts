@@ -14,7 +14,6 @@ import {
 
 import { db } from '@/firebaseConfig';
 import { Lesson } from '@/types/lesson';
-import { LESSON_SCOPE } from '@/constants';
 
 class LessonService {
     /**
@@ -61,9 +60,7 @@ class LessonService {
  *   - `type` (string) — The type/category of the lesson.
  *   - `description` (optional string) — A textual description of the lesson.
  *   - `embedUrl` (optional string) — A URL to embed content (e.g., video).
- *   - `assignmentID` (optional string) — The ID of the related assignment.
- *   - `quizID` (optional string) — The ID of the related quiz.
- *   - `durationSeconds` (optional number) — Estimated lesson duration in seconds.
+ *   - `duration` (optional hours : number and mintues : number) — Estimated lesson duration.
  * 
  * @returns A promise that resolves to the newly created lesson's unique `lessonId`.
  * 
@@ -80,8 +77,7 @@ class LessonService {
                 type: data.type,
                 description: data.description || '',
                 embedUrl: data.embedUrl || '',
-                scope: data.scope,
-                durationSeconds: data.durationSeconds ?? 0,
+                duration: { hours: data.duration.hours ?? 0, minutes: data.duration.minutes ?? 0 },
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -106,8 +102,7 @@ class LessonService {
   * @param {string} lessonId - The unique identifier of the lesson to update.
   * @param {Partial<Lesson>} updates - An object containing the lesson fields to update.
   *                                    All fields are optional.
-  *                                    Supported fields: title, type, description, embedUrl,
-  *                                    assignmentID, quizID, durationSeconds.
+  *                                    Supported fields: title, type, description, embedUrl.
   * @returns {Promise<void>} A promise that resolves when the update is successful.
   *
   * @throws {Error} Throws an error if the lesson is not found or the update fails.
@@ -132,48 +127,19 @@ class LessonService {
 
             const updateData: Partial<Lesson> = {
                 updatedAt: serverTimestamp(),
+                duration: lessonData.duration || { hours: 0, minutes: 0 }
             };
 
             if (updates.title) updateData.title = updates.title;
             if (updates.type) updateData.type = updates.type;
             if (updates.description !== undefined) updateData.description = updates.description;
             if (updates.embedUrl !== undefined) updateData.embedUrl = updates.embedUrl;
-            if (updates.durationSeconds !== undefined) updateData.durationSeconds = updates.durationSeconds;
+            if (updates.duration !== undefined) {
+                updateData.duration.hours = updates.duration.hours;
+                updateData.duration.minutes = updates.duration.minutes;
+            }
 
             await updateDoc(lessonRef, updateData);
-            console.log("LessonService - Lesson updated successfully:", lessonId);
-
-            // 🔹 If scope is APP, update all courses where this lesson exists
-            // if (lessonData.scope === LESSON_SCOPE.APP && updates.title) {
-            //     const coursesSnapshot = await getDocs(collection(db, "Courses"));
-
-            //     const updatePromises: Promise<void>[] = [];
-
-            //     coursesSnapshot.forEach((courseDoc) => {
-            //         const courseData = courseDoc.data() as any;
-
-            //         let hasLesson = false;
-
-            //         // loop through topics and lessonRefs
-            //         courseData.topics = courseData.topics.map((topic: any) => {
-            //             topic.lessons = topic.lessons.map((lesson: any) => {
-            //                 if (lesson.id === lessonId) {
-            //                     hasLesson = true;
-            //                     return { ...lesson, title: updates.title }; // update title
-            //                 }
-            //                 return lesson;
-            //             });
-            //             return topic;
-            //         });
-
-            //         if (hasLesson) {
-            //             updatePromises.push(updateDoc(courseDoc.ref, { topics: courseData.topics }));
-            //         }
-            //     });
-
-            //     await Promise.all(updatePromises);
-            //     console.log("Updated lesson title in all relevant courses");
-            // }
         } catch (error) {
             console.error("LessonService - Error updating lesson:", error);
             throw new Error("Failed to update lesson");

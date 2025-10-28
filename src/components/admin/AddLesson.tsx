@@ -1,28 +1,28 @@
-import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
-import { lessonService } from "@/services/lessonService";
+import { LESSON_TYPE } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
-import { logError } from "@/utils/logger";
+import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
+import { logError } from "@/utils/logger";
 import MDEditor from "@uiw/react-md-editor";
+import { useEffect, useState } from "react";
 
 type CreateLessonModalProps = {
   isOpen: boolean;
@@ -35,15 +35,16 @@ export const CreateLessonModal = ({
   onClose,
   onLessonCreated,
 }: CreateLessonModalProps) => {
+
   const { toast } = useToast();
+
   const [saving, setSaving] = useState(false);
   const [lesson, setLesson] = useState({
     title: "",
     type: LESSON_TYPE.SLIDE_DECK,
     description: "",
     embedUrl: "",
-    durationSeconds: 0,
-    scope: LESSON_SCOPE.APP,
+    duration: { hours: 0, minutes: 0 },
   });
 
   // Add scroll management
@@ -69,13 +70,10 @@ export const CreateLessonModal = ({
       : "light";
 
   const handleFieldChange = (field: string, value: any) => {
-    const exclusiveFields = ["embedUrl", "assignmentID", "quizID"];
-    if (exclusiveFields.includes(field)) {
-      const cleared = exclusiveFields.reduce(
-        (acc, f) => ({ ...acc, [f]: "" }),
-        {}
-      );
-      setLesson({ ...lesson, ...cleared, [field]: value });
+    if (field === "duration-hours") {
+      setLesson(prev => ({ ...prev, duration: { hours: value, minutes: prev.duration.minutes } }));
+    } else if (field === "duration-minutes") {
+      setLesson(prev => ({ ...prev, duration: { hours: prev.duration.hours, minutes: value } }));
     } else {
       setLesson({ ...lesson, [field]: value });
     }
@@ -87,8 +85,7 @@ export const CreateLessonModal = ({
       type: LESSON_TYPE.SLIDE_DECK,
       description: "",
       embedUrl: "",
-      durationSeconds: 0,
-      scope: LESSON_SCOPE.APP,
+      duration: { hours: 0, minutes: 0 },
     });
   };
 
@@ -102,8 +99,8 @@ export const CreateLessonModal = ({
         toast({ title: "Fill description or embedUrl.", variant: "destructive" });
         return;
       }
-      if (lesson.durationSeconds < 0) {
-        toast({ title: "Duration must be greater than 0 seconds", variant: "destructive" });
+      if (lesson.duration.hours < 0 || lesson.duration.minutes < 0) {
+        toast({ title: "Hours and minutes cannot be negative", variant: "destructive" });
         return;
       }
 
@@ -208,20 +205,30 @@ export const CreateLessonModal = ({
                   />
                 </div>
 
-                {/* Duration */}
                 <div className="space-y-1">
-                  <Label>Duration (seconds)</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="e.g. 300"
-                    value={lesson.durationSeconds || 0}
-                    onChange={(e) =>
-                      handleFieldChange("durationSeconds", parseInt(e.target.value))
-                    }
-                    className="dark:bg-neutral-800 dark:border-neutral-700"
-                  />
+                  <Label>Duration (Hours and Minutes)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={lesson.duration.hours}
+                      onChange={(e) =>
+                        handleFieldChange("duration-hours", parseInt(e.target.value))
+                      }
+                      className="dark:bg-neutral-800 dark:border-neutral-700"
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={lesson.duration.minutes}
+                      onChange={(e) =>
+                        handleFieldChange("duration-minutes", parseInt(e.target.value))
+                      }
+                      className="dark:bg-neutral-800 dark:border-neutral-700"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

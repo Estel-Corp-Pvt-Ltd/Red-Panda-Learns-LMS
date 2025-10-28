@@ -59,7 +59,7 @@ class CourseService {
  * @throws An error if the course could not be created in Firestore.
  */
 
-  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'url' | 'categories' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds'>): Promise<string> {
+  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds'>): Promise<string> {
     try {
       const courseId = await this.generateCourseId();
 
@@ -79,6 +79,7 @@ class CourseService {
         certificateTemplateId: data.certificateTemplateId || '',
         topics: [],
         cohorts: [],
+        duration: { hours: 0, minutes: 0 },
         isEnrollmentPaused: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -152,6 +153,10 @@ class CourseService {
       if (updates.isEnrollmentPaused !== undefined) updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
       if (updates.certificateTemplateId) updateData.certificateTemplateId = updates.certificateTemplateId;
       if (updates.cohorts) updateData.cohorts = updates.cohorts;
+      if (updates.duration !== undefined) {
+        updateData.duration.hours = updates.duration.hours;
+        updateData.duration.minutes = updates.duration.minutes;
+      }
 
       await updateDoc(courseRef, updateData);
       console.log('CourseService - Course updated successfully:', courseId);

@@ -32,8 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 import { attributeService } from "@/services/attributeService";
 import { courseService } from "@/services/courseService";
 import { instructorService } from "@/services/instructorService";
-import { Cohort, Course, Duration, Topic, TopicItem } from "@/types/course";
-import { CourseStatus, LearningUnit } from "@/types/general";
+import { Cohort, Course, Topic, TopicItem } from "@/types/course";
+import { CourseStatus, Duration, LearningUnit } from "@/types/general";
 import { LearningContentType, Lesson } from "@/types/lesson";
 import {
   closestCenter,
@@ -238,7 +238,7 @@ const CurriculumBuilderPage = () => {
       setTitle(courseData.title);
       setDescription(courseData.description);
       setStatus(courseData.status);
-      setDuration({ hours: courseData.duration?.hours, minutes: courseData.duration?.minutes });
+      setDuration({ hours: courseData.duration.hours, minutes: courseData.duration.minutes });
       setRegularPrice(courseData.regularPrice);
       setSalePrice(courseData.salePrice);
 
@@ -1134,7 +1134,7 @@ const CurriculumBuilderPage = () => {
       {/* Header is fine */}
 
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="curriculum" className="w-full">
+        <Tabs defaultValue="basics" className="w-full">
           {/* Tab buttons ----------------------------------------------------- */}
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
