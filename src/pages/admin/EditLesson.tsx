@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Header } from "@/components/Header";
+import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -6,8 +7,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -15,15 +15,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { LESSON_SCOPE, LESSON_TYPE } from "@/constants";
-import { Label } from "@/components/ui/label";
-import { Header } from "@/components/Header";
-import { useNavigate, useParams } from "react-router-dom";
+import { LESSON_TYPE } from "@/constants";
+import { useToast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
-import { useToast } from "@/hooks/use-toast";
 import { logError } from "@/utils/logger";
 import MDEditor from "@uiw/react-md-editor";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const EditLessonPage = () => {
     const { toast } = useToast();
@@ -35,7 +34,6 @@ const EditLessonPage = () => {
         description: "",
         embedUrl: "",
         durationSeconds: 0,
-        scope: LESSON_SCOPE.APP,
     });
 
     const navigate = useNavigate();
@@ -229,28 +227,6 @@ const EditLessonPage = () => {
                                         }
                                         className="w-[160px] dark:bg-neutral-800 dark:border-neutral-700"
                                     />
-                                </div>
-
-                                {/* Scope */}
-                                <div className="space-y-2">
-                                    <Label>Lesson Scope</Label>
-                                    <Select
-                                        value={lesson.scope}
-                                        onValueChange={(val) =>
-                                            handleFieldChange("scope", val)
-                                        }
-                                    >
-                                        <SelectTrigger className="w-[200px] dark:bg-neutral-800 dark:border-neutral-700">
-                                            <SelectValue placeholder="Select scope" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(LESSON_SCOPE).map(([key, val]) => (
-                                                <SelectItem key={key} value={val}>
-                                                    {val}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
                                 </div>
                             </div>
                         </div>

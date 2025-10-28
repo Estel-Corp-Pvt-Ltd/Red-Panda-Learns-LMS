@@ -14,7 +14,6 @@ export type Lesson = {
     description: string;
     embedUrl: string;
     durationSeconds: number;
-    scope: LessonScope;
     createdAt: Timestamp | FieldValue;
     updatedAt: Timestamp | FieldValue;
 };
