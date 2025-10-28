@@ -147,3 +147,17 @@ export function convertToDate(value?: Timestamp | FieldValue | null): Date | nul
   // If it's FieldValue.serverTimestamp() or any other non-Timestamp, return null
   return null;
 };
+
+
+export const formatTimeDuration = (totalMinutes: number): string => {
+  if (totalMinutes <= 0) return "0 min";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours} hr${hours > 1 ? 's' : ''}`);
+  if (minutes > 0) parts.push(`${minutes} min`);
+
+  return parts.join(' ');
+}

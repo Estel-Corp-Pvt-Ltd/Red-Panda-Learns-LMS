@@ -366,9 +366,41 @@ export default function BundleDetailPage() {
                         ₹{bundle.regularPrice - bundle.salePrice}
                       </span>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <span>Progress tracking across all courses</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="h-5 w-5 text-warning" />
+                      Bundle Benefits
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Course bundles are designed to provide a comprehensive learning path at a significant discount.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Individual Course Prices:</span>
+                        <span className="font-medium">${(bundle.salePrice).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Bundle Price:</span>
+                        <span className="font-medium text-success">${(bundle.regularPrice).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="font-medium">Your Savings:</span>
+                        <span className="font-bold text-success">${(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>

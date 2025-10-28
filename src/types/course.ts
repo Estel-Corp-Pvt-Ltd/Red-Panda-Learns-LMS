@@ -39,6 +39,7 @@ export interface Course {
   title: string;
   url: string;
   description: string;
+  duration: number; // in minutes
   thumbnail?: string;
   regularPrice: number;
   salePrice: number;

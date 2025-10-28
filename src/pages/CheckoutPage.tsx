@@ -473,7 +473,7 @@ export default function CheckoutPage() {
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 h-28">
                           <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
                           <span className="text-sm">Loading pricing...</span>
                         </div>
@@ -545,25 +545,30 @@ export default function CheckoutPage() {
                               </div>
 
                               <div className="flex flex-col gap-2 sm:items-end">
-                                <select
+                                <Select
                                   value={providerCurrencies[provider.id]}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) =>
+                                  onValueChange={(value: Currency) =>
                                     setProviderCurrencies((prev) => ({
                                       ...prev,
-                                      [provider.id]: e.target.value as Currency,
+                                      [provider.id]: value,
                                     }))
                                   }
-                                  className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
                                 >
-                                  {providerSupportedCurrencies[provider.id].map(
-                                    (c) => (
-                                      <option key={c} value={c}>
-                                        {c}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
+                                  <SelectTrigger
+                                    className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <SelectValue placeholder="Select currency" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {providerSupportedCurrencies[provider.id].map((currency) => (
+                                      <SelectItem key={currency} value={currency}>
+                                        {currency}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
                                 <Badge
                                   variant="secondary"
                                   className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
