@@ -7,9 +7,10 @@ import { CohortProvider } from "@/contexts/CohortContext";
 import { EnrollmentProvider } from "@/contexts/EnrollmentContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import PopUpContainer from "./components/PopUpContainer";
 import { CartProvider } from "./contexts/CartContext";
+import ModalDemo from "./pages/ModalDemo";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
+import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
 
 // Lazy load admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -45,9 +46,8 @@ import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
 import CartCheckoutPage from "./pages/cartCheckout";
-import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
+import PopUpContainer from "./components/PopUpContainer";
 
-// Other lazy load pages
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
@@ -99,6 +99,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/dev/modal-demo" element={<ModalDemo />} />
                       <Route
                         path="/admin"
                         element={
@@ -158,7 +159,7 @@ const App = () => (
                       <Route
                         path="admin/edit-bundle/:bundleId"
                         element={
-                          <AuthGuard requireAdmin >
+                          <AuthGuard requireAdmin>
                             <EditBundlePage />
                           </AuthGuard>
                         }
@@ -166,7 +167,7 @@ const App = () => (
                       <Route
                         path="admin/edit-coupon/:couponId"
                         element={
-                          <AuthGuard requireAdmin >
+                          <AuthGuard requireAdmin>
                             <EditCouponPage />
                           </AuthGuard>
                         }
@@ -174,7 +175,7 @@ const App = () => (
                       <Route
                         path="/admin/create-cohort"
                         element={
-                          <AuthGuard requireAdmin >
+                          <AuthGuard requireAdmin>
                             <CohortBuilderPage />
                           </AuthGuard>
                         }
@@ -182,7 +183,7 @@ const App = () => (
                       <Route
                         path="/admin/edit-course/:courseId"
                         element={
-                          <AuthGuard requireAdmin >
+                          <AuthGuard requireAdmin>
                             <CurriculumBuilderPage />
                           </AuthGuard>
                         }
@@ -190,15 +191,12 @@ const App = () => (
                       <Route
                         path="/admin/dummy/edit-course/:courseId"
                         element={
-                          <AuthGuard requireAdmin >
+                          <AuthGuard requireAdmin>
                             <DummyCurriculumBuilderPage />
                           </AuthGuard>
                         }
                       />
-                      <Route
-                        path="/bundle/:bundleId"
-                        element={<BundleDetailPage />}
-                      />
+                      <Route path="/bundle/:bundleId" element={<BundleDetailPage />} />
                       <Route
                         path="/bundle/:bundleId/checkout"
                         element={
@@ -223,22 +221,24 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/courses" element={<CoursesPage />} />
+                      <Route path="dummy/bundle/:bundleId/checkout" element={<DummyBundleCheckoutPage />} />
                       <Route
-                        path="/courses"
+                        path="/cart"
                         element={
-                          <CoursesPage />
+                          <AuthGuard>
+                            <CartPage />
+                          </AuthGuard>
                         }
                       />
                       <Route
-                        path="dummy/bundle/:bundleId/checkout"
-                        element={<DummyBundleCheckoutPage />}
+                        path="/cart/checkout"
+                        element={
+                          <AuthGuard>
+                            <CartCheckoutPage />
+                          </AuthGuard>
+                        }
                       />
-                      <Route path="/cart" element={<AuthGuard >
-                        <CartPage />
-                      </AuthGuard>} />
-                      <Route path="/cart/checkout" element={<AuthGuard >
-                        <CartCheckoutPage />
-                      </AuthGuard>} />
                       <Route path="*" element={<NotFound />} />
                       <Route path="/terms" element={<TermsPage />} />
                       <Route path="/privacy" element={<PrivacyPage />} />

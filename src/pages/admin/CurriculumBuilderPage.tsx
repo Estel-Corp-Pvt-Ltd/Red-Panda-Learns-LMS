@@ -1134,7 +1134,7 @@ const CurriculumBuilderPage = () => {
       {/* Header is fine */}
 
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="curriculum" className="w-full">
+        <Tabs defaultValue="basics" className="w-full">
           {/* Tab buttons ----------------------------------------------------- */}
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>

@@ -1,36 +1,37 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  inputBase,
-  selectTriggerBase,
-  selectItemBase,
-  selectContentBase,
-} from "../../components/ui/styles";
-import {
-  PlusCircle,
-  Edit,
-  Trash2,
-  Users,
-  UserPlus,
-  BookOpen,
-  Loader2,
-  Calendar,
-  Eye,
-  Check,
-  Plus,
-  Gift,
-} from "lucide-react";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import {
+  BookOpen,
+  Calendar,
+  Edit,
+  Eye,
+  Gift,
+  Loader2,
+  Plus,
+  PlusCircle,
+  Trash2,
+  Users
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  inputBase,
+  selectContentBase,
+  selectItemBase,
+  selectTriggerBase,
+} from "../../components/ui/styles";
 
-import { formatDate } from "@/utils/date-time";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/utils/date-time";
 
+import { Header } from "@/components/Header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,7 +39,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -47,37 +47,48 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Header } from "@/components/Header";
 
-import { instructorService } from "@/services/instructorService";
 import { bundleService } from "@/services/bundleService";
 import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
 import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
 import { lessonService } from "@/services/lessonService";
 import { organizationService } from "@/services/organizationService";
 import { userService } from "@/services/userService";
 
 import { Bundle } from "@/types/bundle";
+import { Coupon } from "@/types/coupon";
+import { Cohort, Course } from "@/types/course";
+import { OrganizationType, PopUpCourseType } from "@/types/general";
 import { Lesson } from "@/types/lesson";
 import { Organization } from "@/types/organization";
 import { User } from "@/types/user";
-import { Cohort, Course } from "@/types/course";
-import { Coupon } from "@/types/coupon";
-import { OrganizationType, PopUpCourseType } from "@/types/general";
 
-import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
-  COURSE_STATUS,
-  USER_ROLE,
-  USER_STATUS,
+  COURSE_STATUS, CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE, USER_ROLE,
+  USER_STATUS
 } from "@/constants";
-import { PopUp } from "@/types/pop-up";
 import { popUpService } from "@/services/popupService";
+import { PopUp } from "@/types/pop-up";
+
+const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => {
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide",
+        active
+          ? "bg-[#ff00ff] text-white" // bright magenta pill for ACTIVE
+          : "border border-slate-300 text-slate-700 bg-white/80 dark:border-slate-700 dark:text-slate-300 dark:bg-transparent", // outlined pill for INACTIVE
+      ].join(" ")}
+    >
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+};
 
 const PopUpTab = () => {
   const [popUps, setPopUps] = useState<PopUp[]>([]);
@@ -290,36 +301,42 @@ const PopUpTab = () => {
           </div>
 
           {/* Status */}
+          {/* Status */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Status
             </label>
-            <Select
-              value={active ? "true" : "false"}
-              onValueChange={(v) => setActive(v === "true")}
-            >
-              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent
-                side="bottom"
-                align="start"
-                className={selectContentBase}
+            <div className="flex items-center gap-2">
+              <Select
+                value={active ? "true" : "false"}
+                onValueChange={(v) => setActive(v === "true")}
               >
-                {[
-                  { label: "Active", value: "true" },
-                  { label: "Inactive", value: "false" },
-                ].map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent
+                  side="bottom"
+                  align="start"
+                  className={selectContentBase}
+                >
+                  {[
+                    { label: "Active", value: "true" },
+                    { label: "Inactive", value: "false" },
+                  ].map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Live badge preview */}
+              <StatusBadge active={active} />
+            </div>
           </div>
 
           {/* Auto-close */}
@@ -396,7 +413,7 @@ const PopUpTab = () => {
                   CTA
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
-                  Active
+                  Status
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
                   Auto Close
@@ -438,7 +455,9 @@ const PopUpTab = () => {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                  <TableCell>
+                    <StatusBadge active={pop.active} />
+                  </TableCell>
                   <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
                   <TableCell>{pop.duration ?? 5000}</TableCell>
                   <TableCell className="text-right">
@@ -1781,6 +1800,6 @@ export function AdminDashboard() {
       </div>
     </div>
   );
-}
+};
 
 export default AdminDashboard;

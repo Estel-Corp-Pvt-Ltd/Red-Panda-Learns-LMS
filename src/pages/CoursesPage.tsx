@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 import { Header } from "@/components/Header";
 import { BundleWrapper } from "@/components/bundle/BundleWrapper";
@@ -35,6 +35,7 @@ import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SORT_OPTIONS } from "@/types/course-filters";
+import { COURSE_STATUS } from "@/constants";
 
 const CoursesPage = () => {
   const { enrollments, isEnrolledInBundle } = useEnrollment();
@@ -61,8 +62,17 @@ const CoursesPage = () => {
     isError: cohortsError,
   } = useCohortsQuery();
 
-  const enrolledCourseIds = enrollments.map((en) => en.targetId);
+  // Simple login check: just rely on user presence
+  const isLoggedIn = !!user;
 
+  const enrolledCourseIds = enrollments.map((enrollment) => enrollment.targetId);
+
+  const publishedCourses = useMemo(
+    () => (courses ?? []).filter((c) => c?.status === COURSE_STATUS.PUBLISHED),
+    [courses]
+  );
+
+  // All filtering (including enrollmentStatus) is handled by useCourseFilters
   const {
     filters,
     filteredCourses,
@@ -70,10 +80,10 @@ const CoursesPage = () => {
     updateFilter,
     clearFilters,
     activeFilterCount,
-  } = useCourseFilters(courses || [], enrolledCourseIds);
+  } = useCourseFilters(publishedCourses, enrolledCourseIds);
 
   const stats = {
-    total: courses?.length || 0,
+    total: publishedCourses?.length || 0,
     completed: 0,
     bundles: bundles?.length || 0,
     cohorts: cohorts?.length || 0,
@@ -193,10 +203,12 @@ const CoursesPage = () => {
             onUpdateFilter={updateFilter}
             onClearFilters={clearFilters}
             activeFilterCount={activeFilterCount}
+            showEnrollmentStatus={isLoggedIn}
           />
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
             <div className="flex items-center gap-2">
+              {/* Sort */}
               <Select
                 value={filters.sortBy}
                 onValueChange={(value) => updateFilter("sortBy", value as any)}
@@ -271,54 +283,54 @@ const CoursesPage = () => {
         ) : (
           <div className="space-y-8">
             {/* Course Bundles Section */}
-            {bundles && bundles.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Course Bundles ({bundles.length})
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Save more with course bundles
-                  </p>
-                </div>
+            {
+              bundles && bundles.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-foreground">Course Bundles ({bundles.length})</h2>
+                    <p className="text-sm text-muted-foreground">Save more with course bundles</p>
+                  </div>
 
-                <div
-                  className={cn(
-                    "grid gap-6 animate-fade-in",
-                    viewMode === "grid"
-                      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                      : "grid-cols-1 max-w-4xl",
-                  )}
-                >
-                  {bundles.map((bundle, index) => (
-                    <BundleWrapper
-                      key={bundle.id}
-                      bundle={bundle}
-                      index={index}
-                      user={user}
-                      isEnrolledInBundle={async (id) =>
-                        Promise.resolve(isEnrolledInBundle(id))
-                      }
-                      viewMode={viewMode}
-                      handleBundlePurchase={handleBundlePurchase}
-                    />
-                  ))}
+                  <div
+                    className={cn(
+                      "grid gap-6 animate-fade-in",
+                      viewMode === "grid"
+                        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                        : "grid-cols-1 max-w-4xl",
+                    )}
+                  >
+                    {bundles.map((bundle, index) => (
+                      <BundleWrapper
+                        key={bundle.id}
+                        bundle={bundle}
+                        index={index}
+                        user={user}
+                        isEnrolledInBundle={async (id) =>
+                          Promise.resolve(isEnrolledInBundle(id))
+                        }
+                        viewMode={viewMode}
+                        handleBundlePurchase={handleBundlePurchase}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            }
 
             {/* Courses Section (unchanged) */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {filters.searchTerm
-                    ? `Search Results (${filteredCourses.length})`
-                    : "Individual Courses"}
-                </h2>
+                  {
+                    filters.searchTerm
+                      ? `Search Results (${filteredCourses.length})`
+                      : "Individual Courses"
+                  }
+                </h2 >
                 <p className="text-sm text-muted-foreground">
                   Showing {filteredCourses.length} of {stats.total} courses
                 </p>
-              </div>
+              </div >
 
               {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -333,16 +345,13 @@ const CoursesPage = () => {
                   ))}
                 </div>
               ) : (
-                <CourseListView
-                  courses={filteredCourses}
-                  enrolledCourseIds={enrolledCourseIds}
-                />
+                <CourseListView courses={filteredCourses} enrolledCourseIds={enrolledCourseIds} />
               )}
             </div>
-          </div>
+          </div >
         )}
-      </main>
-    </div>
+      </main >
+    </div >
   );
 };
 
