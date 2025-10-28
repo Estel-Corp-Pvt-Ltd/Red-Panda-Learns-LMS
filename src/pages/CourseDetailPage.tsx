@@ -2,30 +2,31 @@ import { Header } from "@/components/Header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { CART_ACTION, CURRENCY, ENROLLED_PROGRAM_TYPE, ORDER_STATUS } from "@/constants";
+import {
+  CART_ACTION,
+  CURRENCY,
+  ENROLLED_PROGRAM_TYPE,
+  ORDER_STATUS,
+} from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
-import {
-  useCourseQuery,
-} from "@/hooks/useCaching";
+import { useCourseQuery } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
 import { enrollmentService } from "@/services/enrollmentService";
 import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
 import { formatDate } from "@/utils/date-time";
-import {
-  ArrowLeft,
-  BookOpen,
-  ChevronRight,
-  Lock,
-  Play
-} from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronRight, Lock, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -51,7 +52,7 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading;
   const isError = courseError;
 
-  // Check if user already enrolled (keep "after" behavior) 
+  // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
     const checkEnrollment = async () => {
       setEnrollmentLoading(true);
@@ -109,28 +110,30 @@ export default function CourseDetailPage() {
 
       const orderCreationResult = await orderService.createOrderForFreeCourse({
         userId: user.id,
-        items: [{
-          itemId: courseId,
-          itemType: ENROLLED_PROGRAM_TYPE.COURSE,
-          name: course.title,
-          amount: 0,
-          originalAmount: course.regularPrice
-        }],
+        items: [
+          {
+            itemId: courseId,
+            itemType: ENROLLED_PROGRAM_TYPE.COURSE,
+            name: course.title,
+            amount: 0,
+            originalAmount: course.regularPrice,
+          },
+        ],
         status: ORDER_STATUS.COMPLETED,
         amount: 0,
         currency: CURRENCY.INR,
-        billingAddress: null
+        billingAddress: null,
       });
 
       if (enrollmentResult.success && orderCreationResult.success) {
         toast({
           title: "Enrollment Successful!",
-          description: "If you don't see the course, reload the page."
+          description: "If you don't see the course, reload the page.",
         });
       } else {
         toast({
           title: "Enrollment Successful!",
-          description: "If you don't see the course, reload the page."
+          description: "If you don't see the course, reload the page.",
         });
       }
       navigate(`/course/${courseId}`);
@@ -168,7 +171,7 @@ export default function CourseDetailPage() {
       toast({
         title: "No content available",
         description: `This course has no lessons available yet.`,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -220,7 +223,7 @@ export default function CourseDetailPage() {
       <Collapsible key={id}>
         <CollapsibleTrigger
           className={cn(
-            "group flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50",
+            "group flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50"
           )}
         >
           <div className="flex items-center gap-3">
@@ -256,13 +259,17 @@ export default function CourseDetailPage() {
               </Link>
             ))
           ) : (
-            <p className="py-2 text-sm text-muted-foreground">No lessons available.</p>
+            <p className="py-2 text-sm text-muted-foreground">
+              No lessons available.
+            </p>
           )}
         </CollapsibleContent>
       </Collapsible>
     );
   };
 
+  const hasInstructor = !!course?.instructorName?.trim();
+  const instructorInitial = course?.instructorName?.trim()?.[0]?.toUpperCase();
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -293,21 +300,22 @@ export default function CourseDetailPage() {
               </div>
 
               {/* Course Meta */}
+              {/* Course Meta */}
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src=""
-                      alt={course?.instructorName}
-                    />
-                    <AvatarFallback className="bg-accent text-background">
-                      {course?.instructorName?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">
-                    {course?.instructorName}
-                  </span>
-                </div>
+                {hasInstructor && (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      {/* If you add an avatar URL later, render AvatarImage here */}
+                      {/* <AvatarImage src={course.instructorAvatar} alt={course.instructorName} /> */}
+                      <AvatarFallback className="bg-accent text-background">
+                        {instructorInitial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">
+                      {course.instructorName}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   {(lessonCount as number) > 0 && (
@@ -316,7 +324,7 @@ export default function CourseDetailPage() {
                       <span>{lessonCount as number} lessons</span>
                     </div>
                   )}
-                  {/* {course.total_students > 0 && (
+                   {/* {course.total_students > 0 && (
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
                       <span>{course.total_students} students</span>
@@ -387,7 +395,9 @@ export default function CourseDetailPage() {
                     <h3 className="text-2xl font-semibold mb-2">
                       {cohort.title || `Cohort ${cohortIndex + 1}`}
                     </h3>
-                    {cohort.topics?.map((topic, topicIndex) => renderTopic(topic))}
+                    {cohort.topics?.map((topic, topicIndex) =>
+                      renderTopic(topic)
+                    )}
                   </div>
                 ))}
               </CardContent>
@@ -416,19 +426,13 @@ export default function CourseDetailPage() {
 
                 {/* Price and actions */}
                 <div className="space-y-4">
-                  {course.salePrice === 0 ?
-                    (
-                      <div className="font-semibold text-primary">
-                        FREE
-                      </div>
-                    )
-                    :
-                    (
-                      <div className="font-semibold text-primary">
-                        ₹{course.salePrice}
-                      </div>
-                    )
-                  }
+                  {course.salePrice === 0 ? (
+                    <div className="font-semibold text-primary">FREE</div>
+                  ) : (
+                    <div className="font-semibold text-primary">
+                      ₹{course.salePrice}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     {enrollmentLoading ? (
@@ -480,9 +484,7 @@ export default function CourseDetailPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Lessons</span>
-                    <span className="font-medium">
-                      {lessonCount as number}
-                    </span>
+                    <span className="font-medium">{lessonCount as number}</span>
                   </div>
                   {/* <div className="flex justify-between">
                     <span className="text-muted-foreground">Students</span>
@@ -502,7 +504,6 @@ export default function CourseDetailPage() {
                       <span className="font-medium">
                         {formatDate(course.updatedAt)}
                       </span>
-
                     </span>
                   </div>
                 </div>
