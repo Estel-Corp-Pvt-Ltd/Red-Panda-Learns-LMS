@@ -36,7 +36,7 @@ export default function Login() {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = (location.state as any)?.from?.pathname || "/";
+  const from = (location.state as any)?.from?.pathname || "/dashboard";
   const message = (location.state as any)?.message;
 
   // 🔹 Shared reCAPTCHA verification logic
