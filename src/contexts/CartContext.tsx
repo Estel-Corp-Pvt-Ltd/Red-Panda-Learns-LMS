@@ -13,6 +13,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
 import { CART_ACTION } from "@/constants";
+import { useEnrollment } from "./EnrollmentContext";
 
 export interface CartItem {
   courseId: string;
@@ -55,6 +56,7 @@ const CART_STORAGE_KEY = "cart";
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const { isEnrolled } = useEnrollment();
   // Initialize cart from localStorage
   const [cart, cartDispatch] = useReducer(cartReducer, [], () => {
     const storedCart = localStorage.getItem(CART_STORAGE_KEY);
@@ -90,9 +92,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           const data = cartDoc.data();
           if (data?.courses) {
             cartDispatch({ type: CART_ACTION.CLEAR }); // clear initial local cart
-            data.courses.forEach((item: CartItem) =>
-              cartDispatch({ type: CART_ACTION.ADD, item })
-            );
+            data.courses.forEach((item: CartItem) => {
+              if (!isEnrolled(item.courseId)) {
+                console.log("Adding to cart from Firebase:", item);
+                cartDispatch({ type: CART_ACTION.ADD, item });
+              }
+            });
           }
         }
       } catch (err) {

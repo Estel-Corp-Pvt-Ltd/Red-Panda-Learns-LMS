@@ -1,26 +1,26 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import CourseCard from "@/components/course/CourseCard";
 import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
-import { useBundleQuery, useBundleCoursesQuery } from "@/hooks/useBundleApi";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { ENROLLED_PROGRAM_TYPE, PRICING_MODEL } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { useBundleCoursesQuery, useBundleQuery } from "@/hooks/useBundleApi";
+import { cn } from "@/lib/utils";
+import { logError } from "@/utils/logger";
+import { fail, ok, type Result } from "@/utils/response";
 import {
   ArrowLeft,
   BookOpen,
   CheckCircle,
-  Star,
   IndianRupee,
+  Star,
 } from "lucide-react";
-import CourseCard from "@/components/course/CourseCard";
-import { ENROLLED_PROGRAM_TYPE, PRICING_MODEL } from "@/constants";
-import { ok, fail, type Result } from "@/utils/response";
-import { logError } from "@/utils/logger";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function BundleDetailPage() {
   const { bundleId } = useParams<{ bundleId: string }>();
@@ -219,7 +219,7 @@ export default function BundleDetailPage() {
                   {Math.round(
                     ((bundle.regularPrice - bundle.salePrice) /
                       bundle.regularPrice) *
-                      100,
+                    100,
                   )}
                   %
                 </Badge>
@@ -366,13 +366,45 @@ export default function BundleDetailPage() {
                         ₹{bundle.regularPrice - bundle.salePrice}
                       </span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <span>Progress tracking across all courses</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-warning" />
+                    Bundle Benefits
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Course bundles are designed to provide a comprehensive learning path at a significant discount.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Individual Course Prices:</span>
+                      <span className="font-medium">${(bundle.salePrice).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Bundle Price:</span>
+                      <span className="font-medium text-success">${(bundle.regularPrice).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Your Savings:</span>
+                      <span className="font-bold text-success">${(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </div>
         </div>
-      </main>
+      </main >
     </div>
   );
-}
+};

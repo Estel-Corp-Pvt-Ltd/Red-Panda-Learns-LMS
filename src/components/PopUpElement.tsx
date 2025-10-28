@@ -39,13 +39,12 @@ const PopUpElement = ({
           <div className="relative">
             {/* Animated blob background - Main blob */}
             <motion.div
-              className={`absolute inset-0 ${
-                isLive
+              className={`absolute inset-0 ${isLive
                   ? "bg-gradient-to-br from-red-400 via-pink-400 to-orange-400"
                   : isSelfPaced
-                  ? "bg-gradient-to-br from-blue-400 via-purple-400 to-cyan-400"
-                  : "bg-gradient-to-br from-purple-400 via-pink-400 to-indigo-400"
-              } rounded-[40%_60%_70%_30%/40%_50%_60%_50%] blur-2xl opacity-30`}
+                    ? "bg-gradient-to-br from-blue-400 via-purple-400 to-cyan-400"
+                    : "bg-gradient-to-br from-purple-400 via-pink-400 to-indigo-400"
+                } rounded-[40%_60%_70%_30%/40%_50%_60%_50%] blur-2xl opacity-30`}
               animate={{
                 borderRadius: [
                   "40% 60% 70% 30% / 40% 50% 60% 50%",
@@ -58,13 +57,12 @@ const PopUpElement = ({
 
             {/* Secondary blob for extra depth */}
             <motion.div
-              className={`absolute inset-0 ${
-                isLive
+              className={`absolute inset-0 ${isLive
                   ? "bg-gradient-to-tl from-pink-300 to-red-300"
                   : isSelfPaced
-                  ? "bg-gradient-to-tl from-cyan-300 to-blue-300"
-                  : "bg-gradient-to-tl from-indigo-300 to-purple-300"
-              } rounded-[60%_40%_30%_70%/60%_30%_70%_40%] blur-2xl opacity-20`}
+                    ? "bg-gradient-to-tl from-cyan-300 to-blue-300"
+                    : "bg-gradient-to-tl from-indigo-300 to-purple-300"
+                } rounded-[60%_40%_30%_70%/60%_30%_70%_40%] blur-2xl opacity-20`}
               animate={{
                 borderRadius: [
                   "60% 40% 30% 70% / 60% 30% 70% 40%",
@@ -87,13 +85,12 @@ const PopUpElement = ({
                 <div className="flex items-center gap-3">
                   {icon && (
                     <motion.div
-                      className={`p-3 rounded-2xl ${
-                        isLive
+                      className={`p-3 rounded-2xl ${isLive
                           ? "bg-gradient-to-br from-red-500 to-pink-500"
                           : isSelfPaced
-                          ? "bg-gradient-to-br from-blue-500 to-purple-500"
-                          : "bg-gradient-to-br from-purple-500 to-indigo-500"
-                      } text-white text-2xl shadow-lg`}
+                            ? "bg-gradient-to-br from-blue-500 to-purple-500"
+                            : "bg-gradient-to-br from-purple-500 to-indigo-500"
+                        } text-white text-2xl shadow-lg`}
                       initial={{ scale: 0, rotate: -180 }}
                       animate={{
                         scale: 1,
@@ -192,13 +189,12 @@ const PopUpElement = ({
                   href={ctaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`group relative overflow-hidden flex items-center justify-center gap-2 w-full ${
-                    isLive
+                  className={`group relative overflow-hidden flex items-center justify-center gap-2 w-full ${isLive
                       ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
                       : isSelfPaced
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                      : "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
-                  } text-white font-semibold py-3 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
+                        ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                        : "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+                    } text-white font-semibold py-3 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
                 >
                   {/* Shine effect */}
                   <motion.div
@@ -235,13 +231,12 @@ const PopUpElement = ({
               {autoClose && (
                 <div className="relative h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                   <motion.div
-                    className={`h-full rounded-full ${
-                      isLive
+                    className={`h-full rounded-full ${isLive
                         ? "bg-gradient-to-r from-red-500 via-pink-500 to-red-500"
                         : isSelfPaced
-                        ? "bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500"
-                        : "bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500"
-                    }`}
+                          ? "bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500"
+                          : "bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500"
+                      }`}
                     initial={{ scaleX: 1 }}
                     animate={{ scaleX: 0 }}
                     transition={{ duration: duration / 1000, ease: "linear" }}

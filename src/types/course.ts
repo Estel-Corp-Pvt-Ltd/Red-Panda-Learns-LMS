@@ -1,5 +1,5 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
-import { CourseStatus, PricingModel } from "./general";
+import { CourseStatus, Duration, PricingModel } from "./general";
 import { LearningContentType } from "./lesson";
 
 export interface TopicItem {
@@ -33,16 +33,17 @@ export interface Enrollment {
 };
 
 export interface Course {
-  categoryIds: string[];
-  targetAudienceIds: string[];
   id: string;
   title: string;
   url: string;
   description: string;
+  duration: Duration;
   thumbnail?: string;
   regularPrice: number;
   salePrice: number;
   pricingModel: PricingModel;
+  categoryIds: string[];
+  targetAudienceIds: string[];
   tags: string[];
   instructorId: string;
   instructorName: string;
@@ -51,7 +52,6 @@ export interface Course {
   cohorts: Cohort[];
   topics: Topic[];
   isEnrollmentPaused: boolean;
-  durationSeconds?: number;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

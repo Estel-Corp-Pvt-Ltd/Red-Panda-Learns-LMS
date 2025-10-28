@@ -22,8 +22,9 @@ const CourseListView = ({
   return (
     <div className="space-y-4">
       {courses.map((course) => {
-        const { hours, minutes } = parseDuration(course.durationSeconds);
+
         const { lessonCount } = getCourseStructureCounts(course);
+
         return (
           <Card key={course.id} className="p-6 hover:shadow-md transition-shadow">
             <div className="flex flex-col lg:flex-row gap-6">
@@ -69,11 +70,16 @@ const CourseListView = ({
                 )}
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{hours} hrs</span>
-                    <span>{minutes} min</span>
-                  </div>
+                  {
+                    course.duration &&
+                    (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{course.duration.hours} hrs</span>
+                        <span>{course.duration.minutes} min</span>
+                      </div>
+                    )
+                  }
                   <div className="flex items-center gap-1">
                     <BookOpen className="w-4 h-4" />
                     <span>{lessonCount} lessons</span>
