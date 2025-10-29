@@ -37,6 +37,7 @@ import { formatDate } from '@/utils/date-time';
 import { DocumentSnapshot } from 'firebase/firestore';
 import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import MDEditor from '@uiw/react-md-editor';
 
 interface FilterState {
   searchTerm: string;
@@ -337,6 +338,12 @@ const AllSubmissionsPage = () => {
     );
   }
 
+  const colorMode =
+    typeof document !== 'undefined' &&
+      document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light';
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -607,7 +614,7 @@ const AllSubmissionsPage = () => {
 
         {/* Grading Modal */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle className="text-lg">Grade Submission</DialogTitle>
               <DialogDescription>
@@ -631,14 +638,17 @@ const AllSubmissionsPage = () => {
 
               <div>
                 <Label htmlFor="feedback" className="text-sm">Feedback</Label>
-                <Textarea
-                  id="feedback"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Optional feedback..."
-                  rows={3}
-                  className="mt-1"
-                />
+                <div
+                  data-color-mode={colorMode}
+                  className="border rounded-lg dark:border-gray-700"
+                >
+                  <MDEditor
+                    value={feedback}
+                    onChange={value => setFeedback(value || '')}
+                    height={350}
+                    preview='edit'
+                  />
+                </div>
               </div>
             </div>
 
