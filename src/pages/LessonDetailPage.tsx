@@ -29,30 +29,24 @@ export default function LessonDetailPage() {
   } = useCourseQuery(courseId!);
 
   // Set document title to include course and current item
-  function useDocumentTitle(title?: string) {
-    useEffect(() => {
-      const prev = document.title;
-      if (title) document.title = title;
-      return () => {
-        document.title = prev;
-      };
-    }, [title]);
-  }
+  useEffect(() => {
+    if (!course?.title) return;
 
-  // Usage:
-  const computedTitle = course?.title
-    ? `${
-        selectedItem
-          ? `${
-              selectedItem.type === LEARNING_UNIT.ASSIGNMENT
-                ? "Assignment"
-                : "Lesson"
-            }: ${selectedItem.title}`
-          : "Course"
-      } | ${course.title}`
-    : undefined;
+    const prefix = selectedItem
+      ? `${
+          selectedItem.type === LEARNING_UNIT.ASSIGNMENT
+            ? "Assignment"
+            : "Lesson"
+        }: ${selectedItem.title}`
+      : "Course";
 
-  useDocumentTitle(computedTitle);
+    const prev = document.title;
+    document.title = `${prefix} | ${course.title}`;
+
+    return () => {
+      document.title = prev;
+    };
+  }, [course?.title, selectedItem?.title, selectedItem?.type]);
 
   // Find and set the lesson/assignment from URL params when course loads
   useEffect(() => {
