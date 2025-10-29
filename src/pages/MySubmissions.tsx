@@ -16,18 +16,28 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   ArrowLeft,
   Calendar,
   Search,
   Link as LinkIcon,
   Download,
   Upload,
-  Eye
+  Eye,
+  MessageSquare
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { formatDate } from '@/utils/date-time';
 import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import MarkdownViewer from '@/components/MarkdownViewer';
 
 interface FilterState {
   searchTerm: string;
@@ -171,6 +181,10 @@ const MySubmissionsPage = () => {
       filters.assignmentFilter !== 'all';
   };
 
+  const hasFeedback = (submission: AssignmentSubmission) => {
+    return submission.feedback && submission.feedback.trim().length > 0;
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -308,7 +322,7 @@ const MySubmissionsPage = () => {
                       <TableHead className="w-[140px]">Submitted</TableHead>
                       <TableHead className="w-[100px]">Status</TableHead>
                       <TableHead className="w-[100px]">Marks</TableHead>
-                      <TableHead className="w-[80px]">Actions</TableHead>
+                      <TableHead className="w-[120px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -327,9 +341,7 @@ const MySubmissionsPage = () => {
                           <TableCell>
                             <div className="max-w-[240px]">
                               <div className="font-medium text-sm">
-                                {/* <Link to={`/assignments/${submission.assignmentId}`}> */}
                                 {getAssignmentTitle(submission.assignmentId)}
-                                {/* </Link> */}
                               </div>
                             </div>
                           </TableCell>
@@ -383,6 +395,51 @@ const MySubmissionsPage = () => {
                               >
                                 <Download className="h-4 w-4" />
                               </Button>
+
+                              {/* Feedback Dialog */}
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    title="View feedback"
+                                    disabled={!hasFeedback(submission)}
+                                  >
+                                    <MessageSquare className={`h-4 w-4 ${hasFeedback(submission)
+                                      ? 'text-blue-600 dark:text-blue-400'
+                                      : 'text-gray-400 dark:text-gray-500'
+                                      }`} />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                                  <DialogHeader>
+                                    <DialogTitle>Feedback for {getAssignmentTitle(submission.assignmentId)}</DialogTitle>
+                                    <DialogDescription>
+                                      Submitted on {formatDate(submission.createdAt)}
+                                      {submission.marks != null && ` • Marks: ${submission.marks}`}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4 flex-1 overflow-y-auto">
+                                    {hasFeedback(submission) ? (
+                                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 overflow-y-auto">
+                                        <MarkdownViewer value={submission.feedback || ''} />
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-8 text-muted-foreground">
+                                        <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                                        <p>No feedback provided yet.</p>
+                                        <p className="text-sm mt-2">
+                                          {submission.marks != null
+                                            ? 'Your submission has been graded but no feedback was added.'
+                                            : 'Your submission is still pending review.'
+                                          }
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                             </div>
                           </TableCell>
                         </TableRow>
