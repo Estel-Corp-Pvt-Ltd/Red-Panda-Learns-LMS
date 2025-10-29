@@ -14,25 +14,45 @@ import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 
 export default function LessonDetailPage() {
-  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
+  const { courseId, lessonId } = useParams<{
+    courseId: string;
+    lessonId: string;
+  }>();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
 
-  const { data: course, isLoading: courseLoading, error: courseError } = useCourseQuery(courseId!);
+  const {
+    data: course,
+    isLoading: courseLoading,
+    error: courseError,
+  } = useCourseQuery(courseId!);
 
   // Set document title to include course and current item
-  useEffect(() => {
-    if (!course?.title) return;
-    const prefix = selectedItem
-      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${selectedItem.title}`
-      : "Course";
-    const prev = document.title;
-    document.title = `${prefix} | ${course.title}`;
-    return () => {
-      document.title = prev;
-    };
-  }, [course?.title, selectedItem?.title, selectedItem?.type]);
+  function useDocumentTitle(title?: string) {
+    useEffect(() => {
+      const prev = document.title;
+      if (title) document.title = title;
+      return () => {
+        document.title = prev;
+      };
+    }, [title]);
+  }
+
+  // Usage:
+  const computedTitle = course?.title
+    ? `${
+        selectedItem
+          ? `${
+              selectedItem.type === LEARNING_UNIT.ASSIGNMENT
+                ? "Assignment"
+                : "Lesson"
+            }: ${selectedItem.title}`
+          : "Course"
+      } | ${course.title}`
+    : undefined;
+
+  useDocumentTitle(computedTitle);
 
   // Find and set the lesson/assignment from URL params when course loads
   useEffect(() => {
@@ -74,7 +94,9 @@ export default function LessonDetailPage() {
     if (foundItem) {
       setSelectedItem(foundItem);
     } else {
-      console.error(`Lesson/Assignment with id ${lessonId} not found in course ${courseId}`);
+      console.error(
+        `Lesson/Assignment with id ${lessonId} not found in course ${courseId}`
+      );
       toast({
         title: "Content not found",
         description: "The requested lesson or assignment could not be found.",
@@ -84,11 +106,18 @@ export default function LessonDetailPage() {
   }, [course, lessonId, courseId]);
 
   const handleItemSelect = (item: TopicItem) => {
-    if (item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT) {
+    if (
+      item.type === LEARNING_UNIT.LESSON ||
+      item.type === LEARNING_UNIT.ASSIGNMENT
+    ) {
       setSelectedItem(item);
       setSidebarOpen(false);
       // Update URL when selecting a different item
-      window.history.pushState(null, "", `/course/${courseId}/lesson/${item.id}`);
+      window.history.pushState(
+        null,
+        "",
+        `/course/${courseId}/lesson/${item.id}`
+      );
     }
   };
 
@@ -98,7 +127,9 @@ export default function LessonDetailPage() {
     try {
       toast({
         title: "Success",
-        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} marked as completed!`,
+        description: `${
+          selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+        } marked as completed!`,
       });
     } catch (error) {
       console.error("Error updating progress:", error);
@@ -140,7 +171,8 @@ export default function LessonDetailPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Course Not Found</h1>
             <p className="text-muted-foreground mb-4">
-              The course you're looking for doesn't exist or you don't have access.
+              The course you're looking for doesn't exist or you don't have
+              access.
             </p>
             <Button asChild>
               <Link to="/courses">Back to Courses</Link>
@@ -230,16 +262,24 @@ export default function LessonDetailPage() {
           {!selectedItem ? (
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2">Select content to start learning</h2>
+                <h2 className="text-2xl font-bold mb-2">
+                  Select content to start learning
+                </h2>
                 <p className="text-muted-foreground">
                   Choose a lesson or assignment from the sidebar to begin.
                 </p>
               </div>
             </div>
           ) : selectedItem.type === "ASSIGNMENT" ? (
-            <AssignmentView assignmentId={selectedItem.id} onComplete={handleMarkComplete} />
+            <AssignmentView
+              assignmentId={selectedItem.id}
+              onComplete={handleMarkComplete}
+            />
           ) : (
-            <LessonView lessonId={selectedItem.id} onComplete={handleMarkComplete} />
+            <LessonView
+              lessonId={selectedItem.id}
+              onComplete={handleMarkComplete}
+            />
           )}
         </main>
       </div>
@@ -251,12 +291,20 @@ export default function LessonDetailPage() {
             <div className="p-4 border-b flex items-center justify-between shrink-0">
               <div className="min-w-0">
                 {/* Course bigger in sheet header too */}
-                <h2 className="truncate text-base md:text-lg font-semibold">{course.title}</h2>
+                <h2 className="truncate text-base md:text-lg font-semibold">
+                  {course.title}
+                </h2>
                 {selectedItem && (
-                  <p className="truncate text-xs text-muted-foreground">{selectedItem.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {selectedItem.title}
+                  </p>
                 )}
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(false)}
+              >
                 Close
               </Button>
             </div>

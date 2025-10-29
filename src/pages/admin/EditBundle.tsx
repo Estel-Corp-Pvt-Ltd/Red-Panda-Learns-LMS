@@ -752,7 +752,7 @@ export default function EditBundlePage() {
                       <Input
                         id="regularPrice"
                         type="number"
-                        placeholder={`₹{pricingData.suggestedPrice}`}
+                        placeholder={`Enter regular price`}
                         value={formData.regularPrice}
                         onChange={(e) =>
                           setFormData((prev) => ({

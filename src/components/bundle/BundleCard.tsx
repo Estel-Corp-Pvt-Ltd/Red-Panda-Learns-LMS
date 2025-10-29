@@ -30,20 +30,23 @@ export function BundleCard({
   onAccess,
   ownedCoursesCount = 0,
 }: BundleCardProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: CURRENCY.INR,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
-  };
 
   // Slash pricing helpers
-  const regularPrice = typeof bundle.regularPrice === "number" ? bundle.regularPrice : 0;
-  const salePrice =
-    typeof bundle.salePrice === "number" ? bundle.salePrice : regularPrice;
-  const isFree = salePrice === 0;
-  const showSlash = regularPrice > 0 && (salePrice < regularPrice || isFree);
+  const regularPrice =
+    typeof bundle.regularPrice === "number" ? bundle.regularPrice : 0;
+
+  const hasSale = typeof bundle.salePrice === "number";
+  const salePrice = hasSale ? (bundle.salePrice as number) : regularPrice;
+
+  const isFree = salePrice === 0; // keep your FREE label logic
+  const showSlash = hasSale; // show slash whenever a sale price exists
 
   const totalCourses = bundle.courses?.length || 0;
   const showPartialOwnership =
@@ -132,7 +135,9 @@ export function BundleCard({
                   ? "All Courses Owned"
                   : isEnrolled
                   ? "Access Bundle"
-                  : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
+                  : `Buy Bundle - ${
+                      isFree ? "FREE" : formatCurrency(salePrice)
+                    }`}
               </Button>
             </div>
           </div>

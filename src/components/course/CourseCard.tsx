@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { CART_ACTION } from "@/constants";
+import { CURRENCY, CART_ACTION } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Course } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
-import { parseDuration } from "@/utils/date-time";
 import { BookOpen, Clock, Play } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -50,15 +49,17 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
 
   // Pricing helpers
   const regularPrice = typeof course.regularPrice === "number" ? course.regularPrice : 0;
-  const salePrice = typeof course.salePrice === "number" ? course.salePrice : regularPrice;
+  const hasSale = typeof course.salePrice === "number";
+  const salePrice = hasSale ? (course.salePrice as number) : regularPrice;
   const isFree = salePrice === 0;
-  const showSlash = regularPrice > 0 && (salePrice < regularPrice || isFree);
+  const showSlash = hasSale; // show slash if salePrice is present
 
   const formatINR = (amount: number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
+      currency: CURRENCY.INR,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
 
   return (
@@ -133,14 +134,8 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
 
             {/* Slash pricing */}
             <div className="flex items-baseline gap-1">
-              {showSlash && (
-                <span className="line-through text-muted-foreground">
-                  {formatINR(regularPrice)}
-                </span>
-              )}
-              <span className="font-semibold text-primary">
-                {isFree ? "FREE" : formatINR(salePrice)}
-              </span>
+              {showSlash && <span className="line-through text-muted-foreground">{formatINR(regularPrice)}</span>}
+              <span className="font-semibold text-primary">{isFree ? "FREE" : formatINR(salePrice)}</span>
             </div>
           </div>
 

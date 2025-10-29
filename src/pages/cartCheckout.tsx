@@ -634,7 +634,7 @@ return (
                       <div>
                         <h4 className="font-medium mb-1">Secure Payment</h4>
                         <p className="text-sm text-muted-foreground dark:text-gray-400">
-                          All transactions are encrypted. Instant access after payment. 7‑day refund guarantee.
+                          All transactions are encrypted. Instant access after payment. 
                         </p>
                       </div>
                     </div>

@@ -16,27 +16,39 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Cohort } from "@/types/course";
-import { useNavigate
+import { useNavigate } from "react-router-dom";
 
- } from "react-router-dom";
 type CohortBuilderPageProps = {
   onCohortCreated?: (cohort: Cohort) => void;
 };
 
+// helpers: allow clearing number input to empty
+const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
+const isNum = (v: number | null): v is number => v !== null && Number.isFinite(v);
+
 const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
   const { toast } = useToast();
- const navigate = useNavigate();
+  const navigate = useNavigate();
+
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState(0);
+
+  // Keep 0 by default, but allow clearing to empty (null)
+  const [price, setPrice] = useState<number | null>(0);
+
   const [saving, setSaving] = useState(false);
 
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setPrice(0);
+    setPrice(0); // default back to 0
   };
+
+  const canSave =
+    title.trim().length > 0 &&
+    isNum(price) &&
+    price >= 0;
 
   const saveCohort = async () => {
     if (!title.trim()) {
@@ -48,13 +60,22 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
       return;
     }
 
+    if (!isNum(price) || price < 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid price (0 or more).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setSaving(true);
 
-      const cohortData =  {
+      const cohortData = {
         title: title.trim(),
         description: description.trim(),
-        price,
+        price: price, // number (guaranteed by canSave)
         topics: [],
       };
 
@@ -65,7 +86,7 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
         id: newId,
         title: title.trim(),
         description: description.trim(),
-        price,
+        price: price,
         topics: [],
       };
 
@@ -79,7 +100,7 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
         onCohortCreated(fullCohort);
       } else {
         // fallback: navigate to cohort page (original behavior)
-       navigate(`/admin/cohort/${newId}`);
+        navigate(`/admin/cohort/${newId}`);
       }
 
       resetForm();
@@ -100,9 +121,7 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          Create Cohort
-        </Button>
+        <Button size="sm">Create Cohort</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
@@ -136,10 +155,12 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
             <label className="text-sm font-medium">Price</label>
             <Input
               type="number"
+              inputMode="decimal"
+              step="0.01"
+              min={0}
               placeholder="Enter price"
-              value={price}
-              onChange={(e) => setPrice(+e.target.value)}
-              min="0"
+              value={price ?? ""} // show empty when null
+              onChange={(e) => setPrice(toNumberOrNull(e.target.value))}
             />
           </div>
         </div>
@@ -147,12 +168,15 @@ const CohortBuilderPage = ({ onCohortCreated }: CohortBuilderPageProps) => {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => { resetForm(); setIsOpen(false); }}
+            onClick={() => {
+              resetForm();
+              setIsOpen(false);
+            }}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button onClick={saveCohort} disabled={saving}>
+          <Button onClick={saveCohort} disabled={saving || !canSave}>
             <Save className="mr-2 h-4 w-4" />
             {saving ? "Creating..." : "Create Cohort"}
           </Button>
