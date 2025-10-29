@@ -6,7 +6,7 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCourseQuery } from "@/hooks/useCaching";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from "@/contexts/AuthContext";
 import { LEARNING_UNIT } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { TopicItem } from "@/types/course";
@@ -14,12 +14,39 @@ import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 
 export default function LessonDetailPage() {
-  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>(); // Add lessonId param
+  const { courseId, lessonId } = useParams<{
+    courseId: string;
+    lessonId: string;
+  }>();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
 
-  const { data: course, isLoading: courseLoading, error: courseError } = useCourseQuery(courseId!);
+  const {
+    data: course,
+    isLoading: courseLoading,
+    error: courseError,
+  } = useCourseQuery(courseId!);
+
+  // Set document title to include course and current item
+  useEffect(() => {
+    if (!course?.title) return;
+
+    const prefix = selectedItem
+      ? `${
+          selectedItem.type === LEARNING_UNIT.ASSIGNMENT
+            ? "Assignment"
+            : "Lesson"
+        }: ${selectedItem.title}`
+      : "Course";
+
+    const prev = document.title;
+    document.title = `${prefix} | ${course.title}`;
+
+    return () => {
+      document.title = prev;
+    };
+  }, [course?.title, selectedItem?.title, selectedItem?.type]);
 
   // Find and set the lesson/assignment from URL params when course loads
   useEffect(() => {
@@ -27,11 +54,11 @@ export default function LessonDetailPage() {
 
     let foundItem: TopicItem | null = null;
 
-    // First, check if course has direct topics (course → topics → items)
+    // Check direct topics
     if (course.topics && course.topics.length > 0) {
       for (const topic of course.topics) {
         if (topic.items) {
-          const item = topic.items.find(item => item.id === lessonId);
+          const item = topic.items.find((it) => it.id === lessonId);
           if (item) {
             foundItem = item;
             break;
@@ -40,13 +67,13 @@ export default function LessonDetailPage() {
       }
     }
 
-    // If not found and course has cohorts, check cohorts (course → cohorts → topics → items)
+    // If not found, check cohorts
     if (!foundItem && course.cohorts && course.cohorts.length > 0) {
       for (const cohort of course.cohorts) {
         if (cohort.topics) {
           for (const topic of cohort.topics) {
             if (topic.items) {
-              const item = topic.items.find(item => item.id === lessonId);
+              const item = topic.items.find((it) => it.id === lessonId);
               if (item) {
                 foundItem = item;
                 break;
@@ -61,8 +88,9 @@ export default function LessonDetailPage() {
     if (foundItem) {
       setSelectedItem(foundItem);
     } else {
-      // Lesson not found - you might want to show an error or redirect
-      console.error(`Lesson/Assignment with id ${lessonId} not found in course ${courseId}`);
+      console.error(
+        `Lesson/Assignment with id ${lessonId} not found in course ${courseId}`
+      );
       toast({
         title: "Content not found",
         description: "The requested lesson or assignment could not be found.",
@@ -72,11 +100,18 @@ export default function LessonDetailPage() {
   }, [course, lessonId, courseId]);
 
   const handleItemSelect = (item: TopicItem) => {
-    if (item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT) {
+    if (
+      item.type === LEARNING_UNIT.LESSON ||
+      item.type === LEARNING_UNIT.ASSIGNMENT
+    ) {
       setSelectedItem(item);
       setSidebarOpen(false);
       // Update URL when selecting a different item
-      window.history.pushState(null, '', `/course/${courseId}/lesson/${item.id}`);
+      window.history.pushState(
+        null,
+        "",
+        `/course/${courseId}/lesson/${item.id}`
+      );
     }
   };
 
@@ -86,10 +121,12 @@ export default function LessonDetailPage() {
     try {
       toast({
         title: "Success",
-        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} marked as completed!`,
+        description: `${
+          selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+        } marked as completed!`,
       });
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error("Error updating progress:", error);
       toast({
         title: "Error",
         description: "Failed to mark as complete",
@@ -110,6 +147,7 @@ export default function LessonDetailPage() {
             </div>
           </div>
           <main className="flex-1 p-6">
+            <LoadingSkeleton variant="text" lines={1} className="w-64 mb-3" />
             <LoadingSkeleton variant="video" className="mb-6" />
             <LoadingSkeleton variant="text" lines={5} />
           </main>
@@ -127,7 +165,8 @@ export default function LessonDetailPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Course Not Found</h1>
             <p className="text-muted-foreground mb-4">
-              The course you're looking for doesn't exist or you don't have access.
+              The course you're looking for doesn't exist or you don't have
+              access.
             </p>
             <Button asChild>
               <Link to="/courses">Back to Courses</Link>
@@ -174,6 +213,33 @@ export default function LessonDetailPage() {
     <div className="h-screen bg-background flex flex-col">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
+      {/* Top info bar: Course (bigger) + Lesson (smaller) */}
+      <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            {/* Course title bigger */}
+            <h1 className="truncate text-lg md:text-xl font-semibold leading-tight">
+              {course.title}
+            </h1>
+            {/* Lesson title smaller */}
+            {selectedItem && (
+              <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
+                {selectedItem.title}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open course outline"
+          >
+            Open Outline
+          </Button>
+        </div>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">
@@ -190,9 +256,9 @@ export default function LessonDetailPage() {
           {!selectedItem ? (
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">
+                <h2 className="text-2xl font-bold mb-2">
                   Select content to start learning
-                </h1>
+                </h2>
                 <p className="text-muted-foreground">
                   Choose a lesson or assignment from the sidebar to begin.
                 </p>
@@ -217,7 +283,17 @@ export default function LessonDetailPage() {
         <SheetContent side="left" className="p-0 w-80">
           <div className="h-full flex flex-col">
             <div className="p-4 border-b flex items-center justify-between shrink-0">
-              <h2 className="font-semibold">Course Content</h2>
+              <div className="min-w-0">
+                {/* Course bigger in sheet header too */}
+                <h2 className="truncate text-base md:text-lg font-semibold">
+                  {course.title}
+                </h2>
+                {selectedItem && (
+                  <p className="truncate text-xs text-muted-foreground">
+                    {selectedItem.title}
+                  </p>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"

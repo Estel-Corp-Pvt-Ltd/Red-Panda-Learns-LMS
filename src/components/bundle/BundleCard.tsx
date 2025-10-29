@@ -28,25 +28,37 @@ export function BundleCard({
   className,
   isEnrolled,
   onAccess,
-  ownedCoursesCount = 0, // default 0
+  ownedCoursesCount = 0,
 }: BundleCardProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: CURRENCY.INR,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
-  };
+
+  // Slash pricing helpers
+  const regularPrice =
+    typeof bundle.regularPrice === "number" ? bundle.regularPrice : 0;
+
+  const hasSale = typeof bundle.salePrice === "number";
+  const salePrice = hasSale ? (bundle.salePrice as number) : regularPrice;
+
+  const isFree = salePrice === 0; // keep your FREE label logic
+  const showSlash = hasSale; // show slash whenever a sale price exists
 
   const totalCourses = bundle.courses?.length || 0;
   const showPartialOwnership =
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
+
   if (variant === "compact") {
     return (
       <Card
         className={cn(
           "flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300",
-          className,
+          className
         )}
       >
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
@@ -93,9 +105,14 @@ export function BundleCard({
 
             <div className="flex flex-col items-end gap-2 ml-4">
               <div className="text-right">
-                <div className="flex items-center gap-2">
+                <div className="flex items-baseline gap-2">
+                  {showSlash && (
+                    <span className="line-through text-muted-foreground">
+                      {formatCurrency(regularPrice)}
+                    </span>
+                  )}
                   <span className="text-lg font-bold text-foreground">
-                    {formatCurrency(bundle.salePrice ?? bundle.regularPrice)}
+                    {isFree ? "FREE" : formatCurrency(salePrice)}
                   </span>
                 </div>
               </div>
@@ -117,8 +134,10 @@ export function BundleCard({
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
-                    ? "Access Bundle"
-                    : `Buy Bundle - ${formatCurrency(bundle.salePrice ?? bundle.regularPrice)}`}
+                  ? "Access Bundle"
+                  : `Buy Bundle - ${
+                      isFree ? "FREE" : formatCurrency(salePrice)
+                    }`}
               </Button>
             </div>
           </div>
@@ -131,7 +150,7 @@ export function BundleCard({
     <Card
       className={cn(
         "overflow-hidden hover:shadow-lg transition-all duration-300 group",
-        className,
+        className
       )}
     >
       <CardHeader className="p-0 relative">
@@ -199,10 +218,17 @@ export function BundleCard({
         )}
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-foreground">
-              {formatCurrency(bundle.salePrice ?? bundle.regularPrice)}
-            </span>
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline gap-2">
+              {showSlash && (
+                <span className="line-through text-muted-foreground">
+                  {formatCurrency(regularPrice)}
+                </span>
+              )}
+              <span className="text-2xl font-bold text-foreground">
+                {isFree ? "FREE" : formatCurrency(salePrice)}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -225,8 +251,8 @@ export function BundleCard({
           {fullOwnership
             ? "All Courses Owned"
             : isEnrolled
-              ? "Access Bundle"
-              : `Buy Bundle - ${formatCurrency(bundle.salePrice ?? bundle.regularPrice)}`}
+            ? "Access Bundle"
+            : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
         </Button>
       </CardFooter>
     </Card>
