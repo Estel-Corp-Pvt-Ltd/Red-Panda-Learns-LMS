@@ -20,6 +20,7 @@ import {
   COURSE_STATUS,
   CURRENCY,
   PRICING_MODEL,
+  SORT_KEY,
 } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,7 +31,7 @@ import {
 import { courseService } from "@/services/courseService";
 import { instructorService } from "@/services/instructorService";
 import { Course } from "@/types/course";
-import { BundleStatus, PricingModel } from "@/types/general";
+import { BundleStatus, PricingModel , SortKey } from "@/types/general";
 import { getFullName } from "@/utils/name";
 import {
  
@@ -148,8 +149,7 @@ export default function EditBundlePage() {
     setPriceRange([minCoursePrice, maxCoursePrice]);
   }, [minCoursePrice, maxCoursePrice]);
   
-  type SortKey = "relevance" | "priceAsc" | "priceDesc" | "titleAsc" | "titleDesc";
-  const [sortBy, setSortBy] = useState<SortKey>("relevance");
+  const [sortBy, setSortBy] = useState<SortKey>(SORT_KEY.RELEVANCE);
   const [priceType, setPriceType] = useState<"all" | PricingModel >("all");
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
@@ -244,20 +244,21 @@ export default function EditBundlePage() {
     }
   
     // sort
-    switch (sortBy) {
-      case "priceAsc":
-        list.sort((a, b) => getCoursePrice(a) - getCoursePrice(b));
-        break;
-      case "priceDesc":
-        list.sort((a, b) => getCoursePrice(b) - getCoursePrice(a));
-        break;
-      case "titleAsc":
-        list.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "titleDesc":
-        list.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      case "relevance":
+    // sort
+  switch (sortBy) {
+    case SORT_KEY.PRICE_ASC:
+      list.sort((a, b) => getCoursePrice(a) - getCoursePrice(b));
+      break;
+    case SORT_KEY.PRICE_DESC:
+      list.sort((a, b) => getCoursePrice(b) - getCoursePrice(a));
+      break;
+    case SORT_KEY.TITLE_ASC:
+      list.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case SORT_KEY.TITLE_DESC:
+      list.sort((a, b) => b.title.localeCompare(a.title));
+      break;
+    case SORT_KEY.RELEVANCE:
       default:
         list.sort((a, b) => {
           const as = selectedCourseIds.includes(a.id!);
@@ -308,7 +309,7 @@ export default function EditBundlePage() {
   const handleResetFilters = () => {
     setSearch("");
     setPriceType("all");
-    setSortBy("relevance");
+    setSortBy(SORT_KEY.RELEVANCE);
     setShowSelectedOnly(false);
     setPriceRange([minCoursePrice, maxCoursePrice]);
     setSelectedInstructorIds([]);
@@ -880,11 +881,11 @@ export default function EditBundlePage() {
         <SelectValue placeholder="Relevance" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="relevance">Relevance</SelectItem>
-        <SelectItem value="priceAsc">Price: Low to High</SelectItem>
-        <SelectItem value="priceDesc">Price: High to Low</SelectItem>
-        <SelectItem value="titleAsc">Title: A → Z</SelectItem>
-        <SelectItem value="titleDesc">Title: Z → A</SelectItem>
+        <SelectItem value={SORT_KEY.RELEVANCE}>Relevance</SelectItem>
+        <SelectItem value={SORT_KEY.PRICE_ASC}>Price: Low to High</SelectItem>
+        <SelectItem value={SORT_KEY.PRICE_DESC}>Price: High to Low</SelectItem>
+        <SelectItem value={SORT_KEY.TITLE_ASC}>Title: A → Z</SelectItem>
+        <SelectItem value={SORT_KEY.TITLE_DESC}>Title: Z → A</SelectItem>
       </SelectContent>
     </Select>
   </div>

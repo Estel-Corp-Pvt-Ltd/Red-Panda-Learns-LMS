@@ -17,9 +17,9 @@ import { courseService } from "@/services/courseService";
 import { bundleService } from "@/services/bundleService";
 import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
-import { PricingModel } from "@/types/general";
+import { PricingModel ,SortKey } from "@/types/general";
 import { Header } from "@/components/Header";
-import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL } from "@/constants";
+import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL,SORT_KEY } from "@/constants";
 import { instructorService } from "@/services/instructorService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFullName } from "@/utils/name";
@@ -70,8 +70,7 @@ useEffect(() => {
   setPriceRange([minCoursePrice, maxCoursePrice]);
 }, [minCoursePrice, maxCoursePrice]);
 
-type SortKey = "relevance" | "priceAsc" | "priceDesc" | "titleAsc" | "titleDesc";
-const [sortBy, setSortBy] = useState<SortKey>("relevance");
+const [sortBy, setSortBy] = useState<SortKey>(SORT_KEY.RELEVANCE);
 const [priceType, setPriceType] = useState<"all" | PricingModel >("all");
 const [showSelectedOnly, setShowSelectedOnly] = useState(false);
 const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
@@ -167,19 +166,19 @@ const filteredCourses = useMemo(() => {
 
   // sort
   switch (sortBy) {
-    case "priceAsc":
+    case SORT_KEY.PRICE_ASC:
       list.sort((a, b) => getCoursePrice(a) - getCoursePrice(b));
       break;
-    case "priceDesc":
+    case SORT_KEY.PRICE_DESC:
       list.sort((a, b) => getCoursePrice(b) - getCoursePrice(a));
       break;
-    case "titleAsc":
+    case SORT_KEY.TITLE_ASC:
       list.sort((a, b) => a.title.localeCompare(b.title));
       break;
-    case "titleDesc":
+    case SORT_KEY.TITLE_DESC:
       list.sort((a, b) => b.title.localeCompare(a.title));
       break;
-    case "relevance":
+    case SORT_KEY.RELEVANCE:
     default:
       list.sort((a, b) => {
         const as = selectedCourseIds.includes(a.id!);
@@ -230,7 +229,7 @@ const handleClearSelectionFiltered = () => {
 const handleResetFilters = () => {
   setSearch("");
   setPriceType("all");
-  setSortBy("relevance");
+  setSortBy(SORT_KEY.RELEVANCE);
   setShowSelectedOnly(false);
   setPriceRange([minCoursePrice, maxCoursePrice]);
   setSelectedInstructorIds([]);
@@ -733,14 +732,14 @@ const handleResetFilters = () => {
     <Label className="text-xs text-muted-foreground">Sort by</Label>
     <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
       <SelectTrigger className="w-full">
-        <SelectValue placeholder="Relevance" />
+        <SelectValue placeholder={SORT_KEY.RELEVANCE} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="relevance">Relevance</SelectItem>
-        <SelectItem value="priceAsc">Price: Low to High</SelectItem>
-        <SelectItem value="priceDesc">Price: High to Low</SelectItem>
-        <SelectItem value="titleAsc">Title: A → Z</SelectItem>
-        <SelectItem value="titleDesc">Title: Z → A</SelectItem>
+        <SelectItem value={SORT_KEY.RELEVANCE}>Relevance</SelectItem>
+        <SelectItem value={SORT_KEY.PRICE_ASC}>Price: Low to High</SelectItem>
+        <SelectItem value={SORT_KEY.PRICE_DESC}>Price: High to Low</SelectItem>
+        <SelectItem value={SORT_KEY.TITLE_ASC}>Title: A → Z</SelectItem>
+        <SelectItem value={SORT_KEY.TITLE_DESC}>Title: Z → A</SelectItem>
       </SelectContent>
     </Select>
   </div>
