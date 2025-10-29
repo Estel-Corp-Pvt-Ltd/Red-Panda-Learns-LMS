@@ -1,3 +1,5 @@
+import { useState, useEffect , useMemo} from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -10,6 +12,8 @@ import {
   Calendar,
   Edit,
   Eye,
+  Check,
+  ShoppingCart,
   Gift,
   Loader2,
   Plus,
@@ -27,6 +31,7 @@ import {
 } from "../../components/ui/styles";
 
 import { useToast } from "@/hooks/use-toast";
+import { ORDER_STATUS } from "@/constants";
 import { formatDate } from "@/utils/date-time";
 
 import { Header } from "@/components/Header";
@@ -57,7 +62,7 @@ import { instructorService } from "@/services/instructorService";
 import { lessonService } from "@/services/lessonService";
 import { organizationService } from "@/services/organizationService";
 import { userService } from "@/services/userService";
-
+import { orderService } from "@/services/orderService";
 import { Bundle } from "@/types/bundle";
 import { Coupon } from "@/types/coupon";
 import { Cohort, Course } from "@/types/course";
@@ -65,7 +70,11 @@ import { OrganizationType, PopUpCourseType } from "@/types/general";
 import { Lesson } from "@/types/lesson";
 import { Organization } from "@/types/organization";
 import { User } from "@/types/user";
-
+import { Cohort, Course } from "@/types/course";
+import { Coupon } from "@/types/coupon";
+import { OrganizationType, PopUpCourseType } from "@/types/general";
+import { OrderStatus } from "@/types/general";
+import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
@@ -73,6 +82,7 @@ import {
   USER_STATUS
 } from "@/constants";
 import { popUpService } from "@/services/popupService";
+import { Order } from "@/types/order";
 import { PopUp } from "@/types/pop-up";
 
 const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => {
@@ -104,6 +114,8 @@ const PopUpTab = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+
 
   useEffect(() => {
     loadPopUps();
@@ -517,7 +529,10 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
+type StatusFilter = "ALL" | OrderStatus;
 
+const [orders, setOrders] = useState<Order[]>([]);
+const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   useEffect(() => {
     if (location.pathname === "/admin") {
       loadCourses();
@@ -527,9 +542,46 @@ export function AdminDashboard() {
       loadInstructors();
       loadUsers();
       loadCoupons();
+      
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+      loadOrders();
+    }, []);
+  
+
+async function loadOrders() {
+  try {
+    const result = await orderService.getAllOrders();
+
+    if (result.success && result.data) {
+      setOrders(result.data);
+    } else {
+      console.error("Failed to fetch orders:", result.error?.message);
+      toast({
+        title: "Error",
+        description: "Failed to load orders from server.",
+        variant: "destructive",
+      });
+    }
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    toast({
+      title: "Error",
+      description: "Something went wrong while loading orders.",
+      variant: "destructive",
+    });
+  }
+}
+
+
+    const filteredOrders = useMemo(() => {
+  if (!orders?.length) return [];
+  return statusFilter === "ALL"
+    ? orders
+    : orders.filter((o) => o.status === statusFilter);
+}, [orders, statusFilter]);
   const loadUsers = async () => {
     const response = await userService.getAllUsers();
     if (response.success) {
@@ -742,7 +794,7 @@ export function AdminDashboard() {
   };
 
   const OrganizationTab = () => {
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
+     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [name, setName] = useState("");
     const [type, setType] = useState<OrganizationType>(ORGANIZATION.INDUSTRY);
     const [isEditing, setIsEditing] = useState(false);
@@ -750,10 +802,11 @@ export function AdminDashboard() {
     const [saving, setSaving] = useState(false);
     const { toast } = useToast();
 
-    useEffect(() => {
+  
+  useEffect(() => {
       loadOrganizations();
     }, []);
-
+  
     async function loadOrganizations() {
       try {
         const data = await organizationService.getAllOrganizations();
@@ -1111,6 +1164,12 @@ export function AdminDashboard() {
                 className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
               >
                 Pop-Ups
+              </TabsTrigger>
+               <TabsTrigger
+                value="orders"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
+                Orders
               </TabsTrigger>
             </TabsList>
 
@@ -1804,6 +1863,123 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="orders">
+  <Card>
+    <CardHeader>
+      <CardTitle>Orders</CardTitle>
+      <CardDescription>View orders, item types, amounts, and statuses.</CardDescription>
+    </CardHeader>
+
+    <CardContent>
+      {/* Status Filter */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Filter by status:</span>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All</SelectItem>
+              <SelectItem value={ORDER_STATUS.PENDING}>Pending</SelectItem>
+              <SelectItem value={ORDER_STATUS.COMPLETED}>Completed</SelectItem>
+              <SelectItem value={ORDER_STATUS.FAILED}>Failed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="text-center py-8">
+          <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">No orders</h3>
+          <p className="mt-1 text-sm text-gray-500">Orders will appear here once placed.</p>
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="text-center py-8">
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">No orders match this status</h3>
+          <p className="mt-1 text-sm text-gray-500">Try a different status filter.</p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer</TableHead>
+              <TableHead>Item Types</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>City</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredOrders.map((order) => {
+              const fullName =
+                order.billingAddress?.fullName 
+                "—";
+
+              const uniqueTypes = Array.from(
+                new Set(order.items.map((i) => i.itemType))
+              );
+              const city = order.billingAddress?.city
+              return (
+                <TableRow key={order.orderId}>
+                  <TableCell>{fullName}</TableCell>
+
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {uniqueTypes.map((t) => (
+                        <Badge key={t} variant="secondary">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    {formatCurrency(order.amount)}
+                  </TableCell>
+
+                  <TableCell>
+                    {city}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge
+                      variant={
+                        order.status === ORDER_STATUS.COMPLETED
+                          ? "default"
+                          : order.status === ORDER_STATUS.PENDING
+                          ? "secondary"
+                          : "destructive"
+                      }
+                    >
+                      {order.status}
+                    </Badge>
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        // onClick={() => navigate(`/admin/orders/${order.orderId}`)}
+                        title="View Order"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </CardContent>
+  </Card>
+</TabsContent>
           </Tabs>
         </div>
       </div>
