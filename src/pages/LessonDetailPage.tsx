@@ -6,7 +6,7 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCourseQuery } from "@/hooks/useCaching";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from "@/contexts/AuthContext";
 import { LEARNING_UNIT } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { TopicItem } from "@/types/course";
@@ -151,17 +151,55 @@ export default function LessonDetailPage() {
     );
   }
 
+  // Check if lessonId is provided but item not found
+  if (lessonId && !selectedItem && !courseLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
+        <div className="flex">
+          <div className="hidden lg:block">
+            <CourseNavigator
+              course={course}
+              currentLesson={selectedItem}
+              className="h-screen sticky top-0"
+              onLessonClick={handleItemSelect}
+            />
+          </div>
+          <main className="flex-1 max-w-4xl mx-auto p-4 lg:p-6">
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold mb-4">Content Not Found</h1>
+                <p className="text-muted-foreground mb-4">
+                  The lesson or assignment you're looking for doesn't exist.
+                </p>
+                <Button asChild>
+                  <Link to={`/course/${courseId}`}>Back to Course</Link>
+                </Button>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-background flex flex-col">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* Top info bar with Course Name (and current item) */}
+      {/* Top info bar: Course (bigger) + Lesson (smaller) */}
       <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-base md:text-lg font-semibold truncate">{course.title}</h1>
+            {/* Course title bigger */}
+            <h1 className="truncate text-lg md:text-xl font-semibold leading-tight">
+              {course.title}
+            </h1>
+            {/* Lesson title smaller */}
             {selectedItem && (
-              <p className="text-xs md:text-sm text-muted-foreground truncate">{selectedItem.title}</p>
+              <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
+                {selectedItem.title}
+              </p>
             )}
           </div>
           <Button
@@ -211,7 +249,13 @@ export default function LessonDetailPage() {
         <SheetContent side="left" className="p-0 w-80">
           <div className="h-full flex flex-col">
             <div className="p-4 border-b flex items-center justify-between shrink-0">
-              <h2 className="font-semibold truncate max-w-[70%]">{course.title}</h2>
+              <div className="min-w-0">
+                {/* Course bigger in sheet header too */}
+                <h2 className="truncate text-base md:text-lg font-semibold">{course.title}</h2>
+                {selectedItem && (
+                  <p className="truncate text-xs text-muted-foreground">{selectedItem.title}</p>
+                )}
+              </div>
               <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
                 Close
               </Button>
