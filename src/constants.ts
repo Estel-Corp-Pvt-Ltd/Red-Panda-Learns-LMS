@@ -70,11 +70,6 @@ export const PRICING_MODEL = {
   PAID: "PAID",
 } as const;
 
-export const LESSON_SCOPE = {
-  COURSE: "COURSE",
-  APP: "APP",
-} as const;
-
 export const USER_STATUS = {
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",

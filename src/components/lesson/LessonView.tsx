@@ -86,9 +86,29 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
 
   const hasVideo = lesson.type === LESSON_TYPE.VIDEO_LECTURE;
 
+  const isValidHttpUrl = (value: string): boolean => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
   const getLessonContent = () => {
     switch (lesson.type) {
       case LESSON_TYPE.SLIDE_DECK:
+        if (isValidHttpUrl(lesson.embedUrl))
+          return (
+            <iframe
+              src={lesson.embedUrl}
+              width="100%"
+              height="500"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy">
+            </iframe>
+          );
         return (
           <div
             className="prose prose-sm max-w-none dark:prose-invert leading-relaxed"

@@ -40,6 +40,7 @@ import { Timestamp } from "firebase/firestore";
 // BUNDLE queries (only difference)
 import { useBundleCoursesQuery, useBundleQuery } from "@/hooks/useBundleApi";
 import { enrollmentService } from "@/services/enrollmentService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -549,23 +550,30 @@ export default function BundleCheckoutPage() {
                                 </div>
                               </div>
                               <div className="flex flex-col gap-2 sm:items-end">
-                                <select
-                                  value={currency}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) =>
+                                <Select
+                                  value={providerCurrencies[provider.id]}
+                                  onValueChange={(value: Currency) =>
                                     setProviderCurrencies((prev) => ({
                                       ...prev,
-                                      [provider.id]: e.target.value as Currency,
+                                      [provider.id]: value,
                                     }))
                                   }
-                                  className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
                                 >
-                                  {providerSupportedCurrencies[provider.id].map((c) => (
-                                    <option key={c} value={c}>
-                                      {c}
-                                    </option>
-                                  ))}
-                                </select>
+                                  <SelectTrigger
+                                    className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <SelectValue placeholder="Select currency" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {providerSupportedCurrencies[provider.id].map((currency) => (
+                                      <SelectItem key={currency} value={currency}>
+                                        {currency}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
                                 <Badge
                                   variant="secondary"
                                   className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"

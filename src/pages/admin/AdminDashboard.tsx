@@ -1,37 +1,42 @@
 import { useState, useEffect , useMemo} from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  inputBase,
-  selectTriggerBase,
-  selectItemBase,
-  selectContentBase,
-} from "../../components/ui/styles";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
-  PlusCircle,
-  Edit,
-  Trash2,
-  Users,
-  UserPlus,
   BookOpen,
-  Loader2,
   Calendar,
+  Edit,
   Eye,
   Check,
   ShoppingCart,
-  Plus,
   Gift,
+  Loader2,
+  Plus,
+  PlusCircle,
+  Trash2,
+  Users
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+  inputBase,
+  selectContentBase,
+  selectItemBase,
+  selectTriggerBase,
+} from "../../components/ui/styles";
 
-import { formatDate } from "@/utils/date-time";
 import { useToast } from "@/hooks/use-toast";
 import { ORDER_STATUS } from "@/constants";
+import { formatDate } from "@/utils/date-time";
+
+import { Header } from "@/components/Header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -39,7 +44,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -48,20 +52,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Header } from "@/components/Header";
 
-import { instructorService } from "@/services/instructorService";
 import { bundleService } from "@/services/bundleService";
 import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
 import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
 import { lessonService } from "@/services/lessonService";
 import { organizationService } from "@/services/organizationService";
 import { userService } from "@/services/userService";
 import { orderService } from "@/services/orderService";
 import { Bundle } from "@/types/bundle";
+import { Coupon } from "@/types/coupon";
+import { Cohort, Course } from "@/types/course";
+import { OrganizationType, PopUpCourseType } from "@/types/general";
 import { Lesson } from "@/types/lesson";
 import { Organization } from "@/types/organization";
 import { User } from "@/types/user";
@@ -73,13 +78,27 @@ import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
-  COURSE_STATUS,
-  USER_ROLE,
-  USER_STATUS,
+  COURSE_STATUS, CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE, USER_ROLE,
+  USER_STATUS
 } from "@/constants";
-import { PopUp } from "@/types/pop-up";
 import { popUpService } from "@/services/popupService";
 import { Order } from "@/types/order";
+import { PopUp } from "@/types/pop-up";
+
+const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => {
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide",
+        active
+          ? "bg-[#ff00ff] text-white" // bright magenta pill for ACTIVE
+          : "border border-slate-300 text-slate-700 bg-white/80 dark:border-slate-700 dark:text-slate-300 dark:bg-transparent", // outlined pill for INACTIVE
+      ].join(" ")}
+    >
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+};
 
 const PopUpTab = () => {
   const [popUps, setPopUps] = useState<PopUp[]>([]);
@@ -294,36 +313,42 @@ const PopUpTab = () => {
           </div>
 
           {/* Status */}
+          {/* Status */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Status
             </label>
-            <Select
-              value={active ? "true" : "false"}
-              onValueChange={(v) => setActive(v === "true")}
-            >
-              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent
-                side="bottom"
-                align="start"
-                className={selectContentBase}
+            <div className="flex items-center gap-2">
+              <Select
+                value={active ? "true" : "false"}
+                onValueChange={(v) => setActive(v === "true")}
               >
-                {[
-                  { label: "Active", value: "true" },
-                  { label: "Inactive", value: "false" },
-                ].map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent
+                  side="bottom"
+                  align="start"
+                  className={selectContentBase}
+                >
+                  {[
+                    { label: "Active", value: "true" },
+                    { label: "Inactive", value: "false" },
+                  ].map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Live badge preview */}
+              <StatusBadge active={active} />
+            </div>
           </div>
 
           {/* Auto-close */}
@@ -400,7 +425,7 @@ const PopUpTab = () => {
                   CTA
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
-                  Active
+                  Status
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
                   Auto Close
@@ -442,7 +467,9 @@ const PopUpTab = () => {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                  <TableCell>
+                    <StatusBadge active={pop.active} />
+                  </TableCell>
                   <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
                   <TableCell>{pop.duration ?? 5000}</TableCell>
                   <TableCell className="text-right">
@@ -1024,15 +1051,6 @@ async function loadOrders() {
           {/*  Buttons stack on mobile, row on larger screens */}
           <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
             <Button
-              onClick={() => navigate("/admin/create-lesson")}
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">New</span> Lesson
-            </Button>
-
-            <Button
               onClick={() => navigate("/admin/create-course")}
               size="sm"
               className="text-xs sm:text-sm"
@@ -1066,6 +1084,15 @@ async function loadOrders() {
             >
               <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Coupon
+            </Button>
+
+            <Button
+              onClick={() => navigate("/admin/submissions")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <Eye className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              Submissions
             </Button>
           </div>
         </div>
@@ -1198,10 +1225,8 @@ async function loadOrders() {
                             </TableCell>
                             <TableCell>{lesson.type}</TableCell>
                             <TableCell>
-                              {lesson.durationSeconds
-                                ? `${Math.floor(
-                                    lesson.durationSeconds / 60
-                                  )} min`
+                              {lesson.duration
+                                ? `${lesson.duration.hours} hours ${lesson.duration.minutes} min`
                                 : "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
@@ -1664,8 +1689,8 @@ async function loadOrders() {
                                   user.role === USER_ROLE.ADMIN
                                     ? "destructive"
                                     : user.role === USER_ROLE.STUDENT
-                                    ? "default"
-                                    : "secondary"
+                                      ? "default"
+                                      : "secondary"
                                 }
                               >
                                 {user.role}
@@ -1677,8 +1702,8 @@ async function loadOrders() {
                                   user.status === USER_STATUS.ACTIVE
                                     ? "default"
                                     : user.status === USER_STATUS.INACTIVE
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {user.status}
@@ -1766,8 +1791,8 @@ async function loadOrders() {
                                   coupon.status === COUPON_STATUS.ACTIVE
                                     ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {coupon.status}
@@ -1960,6 +1985,6 @@ async function loadOrders() {
       </div>
     </div>
   );
-}
+};
 
 export default AdminDashboard;
