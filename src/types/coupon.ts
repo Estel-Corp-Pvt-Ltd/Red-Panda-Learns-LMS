@@ -13,8 +13,6 @@ export interface Coupon {
   linkedCohortIds: string[];
   createdById: string;
   createdbyMail: string;
-  currentUsageCount?: number;
-  usedByUserIds?: string[];
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 }
