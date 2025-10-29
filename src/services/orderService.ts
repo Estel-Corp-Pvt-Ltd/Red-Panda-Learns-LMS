@@ -1,11 +1,15 @@
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  orderBy,
+  query,
   runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
-  getDocs,
+  where,
   collection,
 } from "firebase/firestore";
 import { db } from "../firebaseConfig.ts";
@@ -49,7 +53,69 @@ class OrderService {
     }
   }
 
-  /** Create a new order */
+  async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      const orderRef = doc(db, COLLECTION.ORDERS, orderId);
+      const snapshot = await getDoc(orderRef);
+
+      if (!snapshot.exists()) {
+        console.warn(`Order ${orderId} not found`);
+        return null;
+      }
+
+      return snapshot.data() as Order;
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      throw new Error("Failed to fetch order");
+    }
+  }
+
+  async getOrdersByUser(userId: string): Promise<Order[]> {
+    try {
+      // Query orders collection directly with user filter
+      const ordersRef = collection(db, COLLECTION.ORDERS);
+      const q = query(
+        ordersRef,
+        where('userId', '==', userId),
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        console.log(`No orders found for user: ${userId}`);
+        return [];
+      }
+
+      // Map documents to Order objects with proper typing
+      const userOrders: Order[] = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          orderId: data.orderId,
+          userId: data.userId,
+          items: data.items || [],
+          status: data.status,
+          amount: data.amount,
+          currency: data.currency,
+          billingAddress: data.billingAddress,
+          shippingAddress: data.shippingAddress,
+          transactionId: data.transactionId,
+          metadata: data.metadata || {},
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          completedAt: data.completedAt
+        } as Order;
+      });
+
+      console.log(`Found ${userOrders.length} orders for user: ${userId}`);
+      return userOrders;
+
+    } catch (error) {
+      console.error(`Error fetching orders for user ${userId}:`, error);
+      throw new Error('Failed to fetch user orders');
+    }
+  }
+
   async createOrder(
     data: Omit<Order, "orderId" | "createdAt" | "completedAt" | "updatedAt">
   ): Promise<Result<string>> {
