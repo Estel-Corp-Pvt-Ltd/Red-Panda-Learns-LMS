@@ -1158,6 +1158,21 @@ const handleResetFilters = () => {
     </Badge>
   );
 })}
+
+
+ {selectedCourseTags.map((t) => (
+        <Badge key={`tf-${t}`} variant="secondary" className="flex items-center gap-1">
+          {t}
+          <button
+            onClick={() =>
+              setSelectedCourseTags((prev) => prev.filter((x) => x !== t))
+            }
+            className="ml-1 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </Badge>
+      ))}
     </div>
   )}
 
