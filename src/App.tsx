@@ -48,6 +48,8 @@ import LandingPage from "./pages/landingpage";
 import CartCheckoutPage from "./pages/cartCheckout";
 import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
+import InvoicePage from "./pages/InvoicePage";
+import MyInvoicesPage from "./pages/MyInvoices";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -248,6 +250,8 @@ const App = () => (
                         <CartCheckoutPage />
                       </AuthGuard>} />
                       <Route path="*" element={<NotFound />} />
+                      <Route path="/invoices/:orderId" element={<InvoicePage />} />
+                      <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />
                       <Route path="/privacy" element={<PrivacyPage />} />
                       <Route path="/refund-policy" element={<RefundPage />} />
