@@ -17,13 +17,21 @@ import { courseService } from "@/services/courseService";
 import { bundleService } from "@/services/bundleService";
 import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
-import { PricingModel ,SortKey } from "@/types/general";
+import { PricingModel ,SortKey,AttributeType } from "@/types/general";
 import { Header } from "@/components/Header";
-import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL,SORT_KEY } from "@/constants";
+import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL,SORT_KEY,ATTRIBUTE_TYPE } from "@/constants";
 import { instructorService } from "@/services/instructorService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFullName } from "@/utils/name";
 import { Slider } from "@/components/ui/slider";
+import { attributeService } from "@/services/attributeService";
+import { Attribute } from "@/types/attribute";
+
+
+interface Option {
+  id: string;
+  label: string;
+}
 
 export default function CreateBundlePage() {
   const navigate = useNavigate();
@@ -77,40 +85,87 @@ const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([])
 const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 const [selectedCourseTags, setSelectedCourseTags] = useState<string[]>([]);
 const [selectedTargetAudienceIds, setSelectedTargetAudienceIds] = useState<string[]>([]);
+const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+const [targetAudienceOptions , settargetAudienceOptions ] = useState<Option[]>([]);
+const [tagOptions, setTagOptions] = useState<Option[]>([]);
 
 
-// Build filter options from available courses
-const instructorOptions = useMemo(() => {
-  const map = new Map<string, string>();
-  courses.forEach((c) => {
-    const id = (c as any).instructorId as string | undefined;
-    if (!id) return;
-    const name =
-      (c as any).instructorName ||
-      instructors.find((i) => i.id === id)?.name ||
-      "Unknown Instructor";
-    map.set(id, name);
-  });
-  return Array.from(map, ([id, name]) => ({ id, name }));
-}, [courses, instructors]);
 
-const categoryOptions = useMemo(() => {
-  const set = new Set<string>();
-  courses.forEach((c) => c.categoryIds?.forEach((id) => set.add(id)));
-  return Array.from(set).map((id) => ({ id, label: id }));
-}, [courses]);
 
-const tagOptions = useMemo(() => {
-  const set = new Set<string>();
-  courses.forEach((c) => c.tags?.forEach((t) => set.add(t)));
-  return Array.from(set).map((t) => ({ id: t, label: t }));
-}, [courses]);
+useEffect(() => {
+  const fetchInstructors = async () => {
+    const result = await instructorService.getAllInstructors();
+    if (result.success) {
+      const formatted = result.data.map((i) => ({
+        id: i.id,
+        name: getFullName(i.firstName, i.middleName, i.lastName),
+      }));
+      setInstructors(formatted);
+    } else {
+      console.error("Failed to fetch instructors:", result.error);
+      toast({
+        title: "Error",
+        description: "Could not load instructors' list.",
+        variant: "destructive",
+      });
+    }
+  };
+  fetchInstructors();
+}, [toast]);
 
-const targetAudienceOptions = useMemo(() => {
-  const set = new Set<string>();
-  courses.forEach((c) => c.targetAudienceIds?.forEach((id) => set.add(id)));
-  return Array.from(set).map((id) => ({ id, label: id }));
-}, [courses]);
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
+      setCategoryOptions(categoriesData.map((a) => ({ id: a.id, label: a.name })));
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load categories.",
+        variant: "destructive",
+      });
+    }
+
+    try {
+      const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
+      settargetAudienceOptions(targetAudienceData.map((a) => ({ id: a.id, label: a.name })));
+    } catch (error) {
+      console.error("Error fetching target audiences:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load target audiences.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  fetchAttributes();
+}, [toast]);
+
+
+useEffect(() => {
+  const fetchTags = async () => {
+    try {
+      const tags = await courseService.getAllTags();
+
+     
+      const formattedTags = tags.map((t) => ({ id: t, label: t }));
+      setTagOptions(formattedTags);
+    } catch (error) {
+      console.error("Failed to fetch tags:", error);
+      toast({
+        title: "Error",
+        description: "Could not load tags.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  fetchTags();
+}, [toast]);
+
+
 
 // Filtered + sorted list
 const filteredCourses = useMemo(() => {
@@ -140,11 +195,12 @@ const filteredCourses = useMemo(() => {
   });
 
   // Advanced filters
-  if (selectedInstructorIds.length) {
-    list = list.filter((c) =>
-      selectedInstructorIds.includes(((c as any).instructorId as string) ?? "")
-    );
-  }
+ if (selectedInstructorIds.length) {
+  list = list.filter((c) => {
+    const instructorId = (c as any).instructorId as string;
+    return selectedInstructorIds.includes(instructorId ?? "");
+  });
+}
   if (selectedCategoryIds.length) {
     list = list.filter((c) =>
       c.categoryIds?.some((id) => selectedCategoryIds.includes(id))
@@ -770,73 +826,74 @@ const handleResetFilters = () => {
   {/* Row 3: Advanced filters */}
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
     {/* Instructor */}
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <span>Instructor</span>
-          <div className="flex items-center gap-2">
-            {selectedInstructorIds.length > 0 && (
-              <Badge variant="secondary">{selectedInstructorIds.length}</Badge>
-            )}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0">
-        <Command>
-          <CommandInput placeholder="Search instructors..." />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              {instructorOptions.map((opt) => {
-                const selected = selectedInstructorIds.includes(opt.id);
-                return (
-                  <CommandItem
-                    key={opt.id}
-                    onSelect={() =>
-                      setSelectedInstructorIds((prev) =>
-                        selected ? prev.filter((id) => id !== opt.id) : [...prev, opt.id]
-                      )
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    <div
-                      className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                        selected ? "bg-primary text-primary-foreground" : "opacity-50"
-                      }`}
-                    >
-                      {selected && <Check className="h-3 w-3" />}
-                    </div>
-                    <span>{opt.name}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-        <div className="flex justify-between items-center p-2 border-t">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedInstructorIds(instructorOptions.map((o) => o.id))}
-            disabled={
-              instructorOptions.length === 0 ||
-              selectedInstructorIds.length === instructorOptions.length
-            }
-          >
-            Select all
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedInstructorIds([])}
-            disabled={selectedInstructorIds.length === 0}
-          >
-            Clear
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+  
+<Popover>
+  <PopoverTrigger asChild>
+    <Button variant="outline" className="w-full justify-between">
+      <span>Instructor</span>
+      <div className="flex items-center gap-2">
+        {selectedInstructorIds.length > 0 && (
+          <Badge variant="secondary">{selectedInstructorIds.length}</Badge>
+        )}
+        <ChevronDown className="h-4 w-4 opacity-50" />
+      </div>
+    </Button>
+  </PopoverTrigger>
+  <PopoverContent className="w-[280px] p-0">
+    <Command>
+      <CommandInput placeholder="Search instructors..." />
+      <CommandList>
+        <CommandEmpty>No results.</CommandEmpty>
+        <CommandGroup>
+          {instructors.map((opt) => {
+            const selected = selectedInstructorIds.includes(opt.name);
+            return (
+              <CommandItem
+                key={opt.id}
+                value={`${opt.name} ${opt.id}`} // better search
+                onSelect={() =>
+                  setSelectedInstructorIds((prev) =>
+                    selected ? prev.filter((id) => id !== opt.name) : [...prev, opt.name]
+                  )
+                }
+                className="flex items-center gap-2"
+              >
+                <div
+                  className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                    selected ? "bg-primary text-primary-foreground" : "opacity-50"
+                  }`}
+                >
+                  {selected && <Check className="h-3 w-3" />}
+                </div>
+                <span>{opt.name}</span>
+              </CommandItem>
+            );
+          })}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+    <div className="flex justify-between items-center p-2 border-t">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setSelectedInstructorIds(instructors.map((o) => o.name))}
+        disabled={
+          instructors.length === 0 || selectedInstructorIds.length === instructors.length
+        }
+      >
+        Select all
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setSelectedInstructorIds([])}
+        disabled={selectedInstructorIds.length === 0}
+      >
+        Clear
+      </Button>
+    </div>
+  </PopoverContent>
+</Popover>
 
     {/* Categories */}
     <Popover>
@@ -858,13 +915,13 @@ const handleResetFilters = () => {
             <CommandEmpty>No results.</CommandEmpty>
             <CommandGroup>
               {categoryOptions.map((opt) => {
-                const selected = selectedCategoryIds.includes(opt.id);
+                const selected = selectedCategoryIds.includes(opt.label);
                 return (
                   <CommandItem
-                    key={opt.id}
+                    key={opt.label}
                     onSelect={() =>
                       setSelectedCategoryIds((prev) =>
-                        selected ? prev.filter((id) => id !== opt.id) : [...prev, opt.id]
+                        selected ? prev.filter((name) => name !== opt.label) : [...prev, opt.label]
                       )
                     }
                     className="flex items-center gap-2"
@@ -887,7 +944,7 @@ const handleResetFilters = () => {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => setSelectedCategoryIds(categoryOptions.map((o) => o.id))}
+            onClick={() => setSelectedCategoryIds(categoryOptions.map((o) => o.label))}
             disabled={
               categoryOptions.length === 0 ||
               selectedCategoryIds.length === categoryOptions.length
@@ -995,13 +1052,13 @@ const handleResetFilters = () => {
             <CommandEmpty>No results.</CommandEmpty>
             <CommandGroup>
               {targetAudienceOptions.map((opt) => {
-                const selected = selectedTargetAudienceIds.includes(opt.id);
+                const selected = selectedTargetAudienceIds.includes(opt.label);
                 return (
                   <CommandItem
                     key={opt.id}
                     onSelect={() =>
                       setSelectedTargetAudienceIds((prev) =>
-                        selected ? prev.filter((id) => id !== opt.id) : [...prev, opt.id]
+                        selected ? prev.filter((id) => id !== opt.label) : [...prev, opt.label]
                       )
                     }
                     className="flex items-center gap-2"
@@ -1025,7 +1082,7 @@ const handleResetFilters = () => {
             size="sm"
             variant="ghost"
             onClick={() =>
-              setSelectedTargetAudienceIds(targetAudienceOptions.map((o) => o.id))
+              setSelectedTargetAudienceIds(targetAudienceOptions.map((o) => o.label))
             }
             disabled={
               targetAudienceOptions.length === 0 ||
@@ -1055,64 +1112,52 @@ const handleResetFilters = () => {
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs text-muted-foreground">Active filters:</span>
 
-      {selectedInstructorIds.map((id) => {
-        const name = instructorOptions.find((o) => o.id === id)?.name || id;
-        return (
-          <Badge key={`if-${id}`} variant="secondary" className="flex items-center gap-1">
-            {name}
-            <button
-              onClick={() =>
-                setSelectedInstructorIds((prev) => prev.filter((x) => x !== id))
-              }
-              className="ml-1 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        );
-      })}
+    {selectedInstructorIds.map((id) => {
+  const name = instructors.find((o) => o.id === id)?.name ?? id;
+  return (
+    <Badge key={`if-${id}`} variant="secondary" className="flex items-center gap-1">
+      {name}
+      <button
+        onClick={() =>
+          setSelectedInstructorIds((prev) => prev.filter((x) => x !== id))
+        }
+        className="ml-1 text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </Badge>
+  );
+})}
 
-      {selectedCategoryIds.map((id) => (
-        <Badge key={`cf-${id}`} variant="secondary" className="flex items-center gap-1">
-          {id}
-          <button
-            onClick={() =>
-              setSelectedCategoryIds((prev) => prev.filter((x) => x !== id))
-            }
-            className="ml-1 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
+  {selectedCategoryIds.map((id) => {
+  const label = categoryOptions.find((o) => o.id === id)?.label ?? id;
+  return (
+    <Badge key={`cf-${id}`} variant="secondary" className="flex items-center gap-1">
+      {label}
+      <button
+        onClick={() => setSelectedCategoryIds((prev) => prev.filter((x) => x !== id))}
+        className="ml-1 text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </Badge>
+  );
+})}
 
-      {selectedCourseTags.map((t) => (
-        <Badge key={`tf-${t}`} variant="secondary" className="flex items-center gap-1">
-          {t}
-          <button
-            onClick={() =>
-              setSelectedCourseTags((prev) => prev.filter((x) => x !== t))
-            }
-            className="ml-1 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
-
-      {selectedTargetAudienceIds.map((id) => (
-        <Badge key={`af-${id}`} variant="secondary" className="flex items-center gap-1">
-          {id}
-          <button
-            onClick={() =>
-              setSelectedTargetAudienceIds((prev) => prev.filter((x) => x !== id))
-            }
-            className="ml-1 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
+{selectedTargetAudienceIds.map((id) => {
+  const label = targetAudienceOptions.find((o) => o.id === id)?.label ?? id;
+  return (
+    <Badge key={`af-${id}`} variant="secondary" className="flex items-center gap-1">
+      {label}
+      <button
+        onClick={() => setSelectedTargetAudienceIds((prev) => prev.filter((x) => x !== id))}
+        className="ml-1 text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </Badge>
+  );
+})}
     </div>
   )}
 

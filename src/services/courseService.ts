@@ -259,6 +259,27 @@ class CourseService {
    * ]);
    */
 
+  async getAllTags(): Promise<string[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, COLLECTION.COURSES));
+
+    // Extract tags from all courses
+    const allTags: string[] = querySnapshot.docs.flatMap(doc => {
+      const data = doc.data() as Course;
+      return data.tags ?? []; // in case tags is undefined
+    });
+
+    // Make unique
+    const uniqueTags = Array.from(new Set(allTags));
+
+    return uniqueTags;
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    return [];
+  }
+}
+
+
   async getFilteredCourses(
     filters?: { field: keyof Course; op: WhereFilterOp; value: any }[]
   ): Promise<Course[]> {
