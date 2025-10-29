@@ -48,10 +48,22 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
 
   const { lessonCount } = getCourseStructureCounts(course);
 
+  // Pricing helpers
+  const regularPrice = typeof course.regularPrice === "number" ? course.regularPrice : 0;
+  const salePrice = typeof course.salePrice === "number" ? course.salePrice : regularPrice;
+  const isFree = salePrice === 0;
+  const showSlash = regularPrice > 0 && (salePrice < regularPrice || isFree);
+
+  const formatINR = (amount: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+
   return (
     <Card
       className={cn(
-        // No movement on hover
         "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg hover:shadow-primary/10",
         isFeatured && "ring-2 ring-primary/20 shadow-glow",
         className
@@ -67,9 +79,8 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
           />
         )}
 
-        {/* Hover overlay (no transforms) */}
+        {/* Hover overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4">
             <Play className="h-6 w-6 text-primary-foreground fill-current" />
@@ -111,30 +122,32 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 <BookOpen className="h-3 w-3" />
                 <span>{lessonCount} lessons</span>
               </div>
-              {
-                course.duration &&
-                (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{course.duration.hours} hrs</span>
-                    <span>{course.duration.minutes} min</span>
-                  </div>
-                )
-              }
+              {course.duration && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{course.duration.hours} hrs</span>
+                  <span>{course.duration.minutes} min</span>
+                </div>
+              )}
             </div>
 
-            {course.salePrice === 0 ? (
-              <div className="font-semibold text-primary">FREE</div>
-            ) : (
-              <div className="font-semibold text-primary">₹{course.salePrice}</div>
-            )}
+            {/* Slash pricing */}
+            <div className="flex items-baseline gap-1">
+              {showSlash && (
+                <span className="line-through text-muted-foreground">
+                  {formatINR(regularPrice)}
+                </span>
+              )}
+              <span className="font-semibold text-primary">
+                {isFree ? "FREE" : formatINR(salePrice)}
+              </span>
+            </div>
           </div>
 
           {userIsEnrolled ? (
             <Button
               variant="outline"
               size="sm"
-              // Only on direct hover (no group-hover)
               className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
               onClick={() => navigate(`/course/${courseId}`)}
             >
@@ -146,7 +159,6 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 variant="outline"
                 size="sm"
                 onClick={handleCart}
-                // Only on direct hover (no group-hover)
                 className="flex-1 transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
               >
                 {isAddedToCart ? "Go to Cart" : "Add to Cart"}
@@ -155,7 +167,6 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 <Button
                   variant="outline"
                   size="sm"
-                  // Only on direct hover (no group-hover)
                   className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
                 >
                   View Course
