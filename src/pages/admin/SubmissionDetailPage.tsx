@@ -89,7 +89,7 @@ const AllSubmissionsPage = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
     applyFilters();
@@ -111,7 +111,7 @@ const AllSubmissionsPage = () => {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const submissionsResult = await assignmentService.getFirstSubmissionsPage([], pageSize);
+      const submissionsResult = await assignmentService.getFirstSubmissionsPage(buildFirestoreFilters(), pageSize);
       if (submissionsResult.success && submissionsResult.data) {
         setCurrentPage(submissionsResult.data);
         setSubmissions(submissionsResult.data.data);
