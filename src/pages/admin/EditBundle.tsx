@@ -399,11 +399,11 @@ export default function EditBundlePage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: CURRENCY.USD,
-    }).format(amount);
-  };
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+  }).format(amount);
+};
 
   const selectedCourses = courses.filter((course) =>
     selectedCourseIds.includes(course.id!)
@@ -752,7 +752,7 @@ export default function EditBundlePage() {
                       <Input
                         id="regularPrice"
                         type="number"
-                        placeholder={`${pricingData.suggestedPrice}`}
+                        placeholder={`₹{pricingData.suggestedPrice}`}
                         value={formData.regularPrice}
                         onChange={(e) =>
                           setFormData((prev) => ({

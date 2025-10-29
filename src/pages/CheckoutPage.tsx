@@ -8,14 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCourseQuery } from "@/hooks/useCaching";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { paymentService } from "@/services/paymentService";
-import {
-  ArrowLeft,
-  CreditCard,
-  Lock,
-  RefreshCw,
-  Shield
-} from "lucide-react";
+import { ArrowLeft, CreditCard, Lock, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -38,9 +33,7 @@ import { Address } from "@/types/order";
 import { Timestamp } from "firebase/firestore";
 import { METHOD_LOGOS } from "@/payment-method-logos";
 
-
 export default function CheckoutPage() {
-
   const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
     RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
     PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -49,7 +42,11 @@ export default function CheckoutPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshEnrollments, isEnrolled, loading: loadingEnrollments } = useEnrollment();
+  const {
+    refreshEnrollments,
+    isEnrolled,
+    loading: loadingEnrollments,
+  } = useEnrollment();
   const { toast } = useToast();
 
   const { data: course, isLoading } = useCourseQuery(courseId!);
@@ -402,7 +399,11 @@ export default function CheckoutPage() {
               billingAddress.country.trim();
 
             const canPay =
-              agreed && requiredFilled && pricing && !loadingPricing && !isProcessing;
+              agreed &&
+              requiredFilled &&
+              pricing &&
+              !loadingPricing &&
+              !isProcessing;
 
             const showMsg = !canPay;
 
@@ -497,18 +498,20 @@ export default function CheckoutPage() {
                           <div
                             key={provider.id}
                             onClick={() => setSelectedProvider(provider.id)}
-                            className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
-                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                              }`}
+                            className={`cursor-pointer p-4 rounded-xl border transition ${
+                              isSelected
+                                ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                                : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                            }`}
                           >
                             <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                               <div className="flex gap-3">
                                 <div
-                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                    ? "bg-blue-600 border-blue-600"
-                                    : "border-gray-400 dark:border-[#555]"
-                                    }`}
+                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${
+                                    isSelected
+                                      ? "bg-blue-600 border-blue-600"
+                                      : "border-gray-400 dark:border-[#555]"
+                                  }`}
                                 />
                                 <div>
                                   <div className="flex items-center gap-2 font-medium">
@@ -561,8 +564,13 @@ export default function CheckoutPage() {
                                     <SelectValue placeholder="Select currency" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {providerSupportedCurrencies[provider.id].map((currency) => (
-                                      <SelectItem key={currency} value={currency}>
+                                    {providerSupportedCurrencies[
+                                      provider.id
+                                    ].map((currency) => (
+                                      <SelectItem
+                                        key={currency}
+                                        value={currency}
+                                      >
                                         {currency}
                                       </SelectItem>
                                     ))}
@@ -592,7 +600,7 @@ export default function CheckoutPage() {
                           <h4 className="font-medium mb-1">Secure Payment</h4>
                           <p className="text-sm text-muted-foreground dark:text-gray-400">
                             All transactions are encrypted. Instant access after
-                            payment. 7‑day refund guarantee.
+                            payment.
                           </p>
                         </div>
                       </div>
@@ -635,7 +643,8 @@ export default function CheckoutPage() {
 
                     {showMsg && (
                       <div className="text-sm text-red-500 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-700">
-                        Please check “I agree” and fill all billing address fields before continuing.
+                        Please check “I agree” and fill all billing address
+                        fields before continuing.
                       </div>
                     )}
 
@@ -652,7 +661,9 @@ export default function CheckoutPage() {
                       ) : (
                         <>
                           <Lock className="h-4 w-4 mr-2" />
-                          Pay {pricing?.formattedTotal ?? pricing?.formattedPrice} & Enroll Now
+                          Pay{" "}
+                          {pricing?.formattedTotal ?? pricing?.formattedPrice} &
+                          Enroll Now
                         </>
                       )}
                     </Button>
@@ -707,10 +718,11 @@ export default function CheckoutPage() {
                         </div>
                         {couponMessage && (
                           <p
-                            className={`text-sm ${isCouponValid
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                              }`}
+                            className={`text-sm ${
+                              isCouponValid
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
                           >
                             {couponMessage}
                           </p>
@@ -724,14 +736,14 @@ export default function CheckoutPage() {
                     <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                       <CardTitle className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">1</span>
+                          <span className="text-white text-sm font-bold">
+                            1
+                          </span>
                         </div>
                         Billing Address
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-6">
-
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label
@@ -804,7 +816,9 @@ export default function CheckoutPage() {
                           className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
                         >
                           Apartment, Suite, etc.{" "}
-                          <span className="text-gray-400 text-xs">(Optional)</span>
+                          <span className="text-gray-400 text-xs">
+                            (Optional)
+                          </span>
                         </Label>
                         <Input
                           id="line2"
@@ -847,7 +861,8 @@ export default function CheckoutPage() {
                             htmlFor="state"
                             className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
                           >
-                            State/Province <span className="text-red-500">*</span>
+                            State/Province{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="state"
@@ -870,7 +885,8 @@ export default function CheckoutPage() {
                             htmlFor="postalCode"
                             className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
                           >
-                            ZIP/Postal Code <span className="text-red-500">*</span>
+                            ZIP/Postal Code{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="postalCode"
@@ -907,7 +923,6 @@ export default function CheckoutPage() {
                           />
                         </div>
                       </div>
-
                     </CardContent>
                   </Card>
                 </div>

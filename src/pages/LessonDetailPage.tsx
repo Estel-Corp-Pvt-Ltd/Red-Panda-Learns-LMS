@@ -14,12 +14,25 @@ import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 
 export default function LessonDetailPage() {
-  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>(); // Add lessonId param
+  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
 
   const { data: course, isLoading: courseLoading, error: courseError } = useCourseQuery(courseId!);
+
+  // Set document title to include course and current item
+  useEffect(() => {
+    if (!course?.title) return;
+    const prefix = selectedItem
+      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${selectedItem.title}`
+      : "Course";
+    const prev = document.title;
+    document.title = `${prefix} | ${course.title}`;
+    return () => {
+      document.title = prev;
+    };
+  }, [course?.title, selectedItem?.title, selectedItem?.type]);
 
   // Find and set the lesson/assignment from URL params when course loads
   useEffect(() => {
@@ -27,11 +40,11 @@ export default function LessonDetailPage() {
 
     let foundItem: TopicItem | null = null;
 
-    // First, check if course has direct topics (course → topics → items)
+    // Check direct topics
     if (course.topics && course.topics.length > 0) {
       for (const topic of course.topics) {
         if (topic.items) {
-          const item = topic.items.find(item => item.id === lessonId);
+          const item = topic.items.find((it) => it.id === lessonId);
           if (item) {
             foundItem = item;
             break;
@@ -40,13 +53,13 @@ export default function LessonDetailPage() {
       }
     }
 
-    // If not found and course has cohorts, check cohorts (course → cohorts → topics → items)
+    // If not found, check cohorts
     if (!foundItem && course.cohorts && course.cohorts.length > 0) {
       for (const cohort of course.cohorts) {
         if (cohort.topics) {
           for (const topic of cohort.topics) {
             if (topic.items) {
-              const item = topic.items.find(item => item.id === lessonId);
+              const item = topic.items.find((it) => it.id === lessonId);
               if (item) {
                 foundItem = item;
                 break;
@@ -61,7 +74,6 @@ export default function LessonDetailPage() {
     if (foundItem) {
       setSelectedItem(foundItem);
     } else {
-      // Lesson not found - you might want to show an error or redirect
       console.error(`Lesson/Assignment with id ${lessonId} not found in course ${courseId}`);
       toast({
         title: "Content not found",
@@ -76,7 +88,7 @@ export default function LessonDetailPage() {
       setSelectedItem(item);
       setSidebarOpen(false);
       // Update URL when selecting a different item
-      window.history.pushState(null, '', `/course/${courseId}/lesson/${item.id}`);
+      window.history.pushState(null, "", `/course/${courseId}/lesson/${item.id}`);
     }
   };
 
@@ -89,7 +101,7 @@ export default function LessonDetailPage() {
         description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} marked as completed!`,
       });
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error("Error updating progress:", error);
       toast({
         title: "Error",
         description: "Failed to mark as complete",
@@ -110,6 +122,7 @@ export default function LessonDetailPage() {
             </div>
           </div>
           <main className="flex-1 p-6">
+            <LoadingSkeleton variant="text" lines={1} className="w-64 mb-3" />
             <LoadingSkeleton variant="video" className="mb-6" />
             <LoadingSkeleton variant="text" lines={5} />
           </main>
@@ -138,41 +151,30 @@ export default function LessonDetailPage() {
     );
   }
 
-  // Check if lessonId is provided but item not found
-  if (lessonId && !selectedItem && !courseLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
-        <div className="flex">
-          <div className="hidden lg:block">
-            <CourseNavigator
-              course={course}
-              currentLesson={selectedItem}
-              className="h-screen sticky top-0"
-              onLessonClick={handleItemSelect}
-            />
-          </div>
-          <main className="flex-1 max-w-4xl mx-auto p-4 lg:p-6">
-            <div className="flex items-center justify-center min-h-[60vh]">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">Content Not Found</h1>
-                <p className="text-muted-foreground mb-4">
-                  The lesson or assignment you're looking for doesn't exist.
-                </p>
-                <Button asChild>
-                  <Link to={`/course/${courseId}`}>Back to Course</Link>
-                </Button>
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen bg-background flex flex-col">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
+
+      {/* Top info bar with Course Name (and current item) */}
+      <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-base md:text-lg font-semibold truncate">{course.title}</h1>
+            {selectedItem && (
+              <p className="text-xs md:text-sm text-muted-foreground truncate">{selectedItem.title}</p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open course outline"
+          >
+            Open Outline
+          </Button>
+        </div>
+      </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
@@ -190,24 +192,16 @@ export default function LessonDetailPage() {
           {!selectedItem ? (
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">
-                  Select content to start learning
-                </h1>
+                <h2 className="text-2xl font-bold mb-2">Select content to start learning</h2>
                 <p className="text-muted-foreground">
                   Choose a lesson or assignment from the sidebar to begin.
                 </p>
               </div>
             </div>
           ) : selectedItem.type === "ASSIGNMENT" ? (
-            <AssignmentView
-              assignmentId={selectedItem.id}
-              onComplete={handleMarkComplete}
-            />
+            <AssignmentView assignmentId={selectedItem.id} onComplete={handleMarkComplete} />
           ) : (
-            <LessonView
-              lessonId={selectedItem.id}
-              onComplete={handleMarkComplete}
-            />
+            <LessonView lessonId={selectedItem.id} onComplete={handleMarkComplete} />
           )}
         </main>
       </div>
@@ -217,12 +211,8 @@ export default function LessonDetailPage() {
         <SheetContent side="left" className="p-0 w-80">
           <div className="h-full flex flex-col">
             <div className="p-4 border-b flex items-center justify-between shrink-0">
-              <h2 className="font-semibold">Course Content</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <h2 className="font-semibold truncate max-w-[70%]">{course.title}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
                 Close
               </Button>
             </div>

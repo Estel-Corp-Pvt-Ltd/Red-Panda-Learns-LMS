@@ -1,11 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import {
-  ArrowLeft,
-  CreditCard,
-  Lock,
-  RefreshCw,
-  Shield
-} from "lucide-react";
+import { ArrowLeft, CreditCard, Lock, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -40,7 +34,13 @@ import { Timestamp } from "firebase/firestore";
 // BUNDLE queries (only difference)
 import { useBundleCoursesQuery, useBundleQuery } from "@/hooks/useBundleApi";
 import { enrollmentService } from "@/services/enrollmentService";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -77,7 +77,7 @@ export default function BundleCheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshEnrollments, isEnrolled } = useEnrollment();
-
+  const { toast } = useToast();
 
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
@@ -425,10 +425,15 @@ export default function BundleCheckoutPage() {
               billingAddress.city.trim() &&
               billingAddress.state.trim() &&
               billingAddress.postalCode.trim() &&
-              billingAddress.country.trim()
+              billingAddress.country.trim();
 
-            const canPay = agreed && requiredFilled && pricing && !loadingPricing && !isProcessing
-            const showMessage = !canPay
+            const canPay =
+              agreed &&
+              requiredFilled &&
+              pricing &&
+              !loadingPricing &&
+              !isProcessing;
+            const showMessage = !canPay;
 
             return (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
@@ -440,7 +445,9 @@ export default function BundleCheckoutPage() {
                       <CardTitle>Bundle Summary</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <h3 className="font-semibold text-lg">{(bundle as any).title}</h3>
+                      <h3 className="font-semibold text-lg">
+                        {(bundle as any).title}
+                      </h3>
                       <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
                         {(bundle as any).description}
                       </p>
@@ -453,15 +460,25 @@ export default function BundleCheckoutPage() {
                               {hasDiscount ? (
                                 <>
                                   <span className="line-through text-gray-400">
-                                    {formatMoney(originalConverted, selectedCurrency)}
+                                    {formatMoney(
+                                      originalConverted,
+                                      selectedCurrency
+                                    )}
                                   </span>
                                   <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                                    You save {formatMoney(discountConverted, selectedCurrency)}
+                                    You save{" "}
+                                    {formatMoney(
+                                      discountConverted,
+                                      selectedCurrency
+                                    )}
                                   </Badge>
                                 </>
                               ) : (
                                 <span className="font-medium">
-                                  {formatMoney(originalConverted, selectedCurrency)}
+                                  {formatMoney(
+                                    originalConverted,
+                                    selectedCurrency
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -470,7 +487,9 @@ export default function BundleCheckoutPage() {
                           <hr className="my-2 border-gray-200 dark:border-gray-700" />
 
                           <div className="flex justify-between items-center">
-                            <span className="text-base font-semibold">Total:</span>
+                            <span className="text-base font-semibold">
+                              Total:
+                            </span>
                             <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                               {pricing.formattedTotal ?? pricing.formattedPrice}
                             </span>
@@ -478,7 +497,8 @@ export default function BundleCheckoutPage() {
 
                           {pricing.originalCurrency !== pricing.currency && (
                             <div className="text-xs text-muted-foreground dark:text-gray-400">
-                              Original: {pricing.originalAmount} {pricing.originalCurrency} (Rate:{" "}
+                              Original: {pricing.originalAmount}{" "}
+                              {pricing.originalCurrency} (Rate:{" "}
                               {Number(pricing.exchangeRate).toFixed(4)})
                             </div>
                           )}
@@ -496,29 +516,32 @@ export default function BundleCheckoutPage() {
                   <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
                     <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                       <CardTitle className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5 text-blue-600" /> Select Payment Method
+                        <CreditCard className="h-5 w-5 text-blue-600" /> Select
+                        Payment Method
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {providers.map((provider) => {
-                        const isSelected = selectedProvider === provider.id
-                        const currency = providerCurrencies[provider.id]
+                        const isSelected = selectedProvider === provider.id;
+                        const currency = providerCurrencies[provider.id];
                         return (
                           <div
                             key={provider.id}
                             onClick={() => setSelectedProvider(provider.id)}
-                            className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
-                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                              }`}
+                            className={`cursor-pointer p-4 rounded-xl border transition ${
+                              isSelected
+                                ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                                : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                            }`}
                           >
                             <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                               <div className="flex gap-3">
                                 <div
-                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                    ? "bg-blue-600 border-blue-600"
-                                    : "border-gray-400 dark:border-[#555]"
-                                    }`}
+                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${
+                                    isSelected
+                                      ? "bg-blue-600 border-blue-600"
+                                      : "border-gray-400 dark:border-[#555]"
+                                  }`}
                                 />
                                 <div>
                                   <div className="flex items-center gap-2 font-medium">
@@ -536,16 +559,20 @@ export default function BundleCheckoutPage() {
                                     {provider.description}
                                   </p>
                                   <div className="mt-2 flex gap-1.5 flex-wrap">
-                                    {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
-                                      <img
-                                        key={m.name}
-                                        src={m.src}
-                                        alt={m.name}
-                                        title={m.name}
-                                        loading="lazy"
-                                        className={m.className ?? "h-[20px] w-[32px]"}
-                                      />
-                                    ))}
+                                    {(METHOD_LOGOS[provider.id] ?? []).map(
+                                      (m) => (
+                                        <img
+                                          key={m.name}
+                                          src={m.src}
+                                          alt={m.name}
+                                          title={m.name}
+                                          loading="lazy"
+                                          className={
+                                            m.className ?? "h-[20px] w-[32px]"
+                                          }
+                                        />
+                                      )
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -566,8 +593,13 @@ export default function BundleCheckoutPage() {
                                     <SelectValue placeholder="Select currency" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {providerSupportedCurrencies[provider.id].map((currency) => (
-                                      <SelectItem key={currency} value={currency}>
+                                    {providerSupportedCurrencies[
+                                      provider.id
+                                    ].map((currency) => (
+                                      <SelectItem
+                                        key={currency}
+                                        value={currency}
+                                      >
                                         {currency}
                                       </SelectItem>
                                     ))}
@@ -583,7 +615,7 @@ export default function BundleCheckoutPage() {
                               </div>
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </CardContent>
                   </Card>
@@ -596,7 +628,8 @@ export default function BundleCheckoutPage() {
                         <div>
                           <h4 className="font-medium mb-1">Secure Payment</h4>
                           <p className="text-sm text-muted-foreground dark:text-gray-400">
-                            All transactions are encrypted. Instant access after payment. 7‑day refund guarantee.
+                            All transactions are encrypted. Instant access after
+                            payment.
                           </p>
                         </div>
                       </div>
@@ -606,18 +639,31 @@ export default function BundleCheckoutPage() {
                   {/* Agreement & CTA */}
                   <div className="space-y-3 pt-2">
                     <div className="flex items-start gap-3">
-                      <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} />
+                      <Checkbox
+                        id="agree"
+                        checked={agreed}
+                        onCheckedChange={(v) => setAgreed(!!v)}
+                      />
                       <Label htmlFor="agree" className="text-sm leading-snug">
                         I agree to the{" "}
-                        <Link to="/terms" className="underline text-blue-600 dark:text-blue-400">
+                        <Link
+                          to="/terms"
+                          className="underline text-blue-600 dark:text-blue-400"
+                        >
                           Terms & Conditions
                         </Link>
                         ,{" "}
-                        <Link to="/privacy" className="underline text-blue-600 dark:text-blue-400">
+                        <Link
+                          to="/privacy"
+                          className="underline text-blue-600 dark:text-blue-400"
+                        >
                           Privacy Policy
                         </Link>
                         , and{" "}
-                        <Link to="/refund-policy" className="underline text-blue-600 dark:text-blue-400">
+                        <Link
+                          to="/refund-policy"
+                          className="underline text-blue-600 dark:text-blue-400"
+                        >
                           Refund Policy
                         </Link>
                         .
@@ -626,7 +672,8 @@ export default function BundleCheckoutPage() {
 
                     {showMessage && (
                       <div className="text-sm text-red-500 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-700">
-                        Please check “I agree” and fill all billing address fields before continuing.
+                        Please check “I agree” and fill all billing address
+                        fields before continuing.
                       </div>
                     )}
 
@@ -643,18 +690,21 @@ export default function BundleCheckoutPage() {
                       ) : (
                         <>
                           <Lock className="h-4 w-4 mr-2" />
-                          Pay {pricing?.formattedTotal ?? pricing?.formattedPrice} & Unlock Now
+                          Pay{" "}
+                          {pricing?.formattedTotal ?? pricing?.formattedPrice} &
+                          Unlock Now
                         </>
                       )}
                     </Button>
 
-                    {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
-                      <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
-                        <CardContent className="pt-6">
-                          <div id="paypal-button-container"></div>
-                        </CardContent>
-                      </Card>
-                    )}
+                    {selectedProvider === PAYMENT_PROVIDER.PAYPAL &&
+                      paypalClicked && (
+                        <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
+                          <CardContent className="pt-6">
+                            <div id="paypal-button-container"></div>
+                          </CardContent>
+                        </Card>
+                      )}
                   </div>
                 </div>
 
@@ -681,7 +731,7 @@ export default function BundleCheckoutPage() {
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") handleCoupon()
+                              if (e.key === "Enter") handleCoupon();
                             }}
                             disabled={isValidatingCoupon || isProcessing}
                             className="border-blue-200 focus:border-blue-500"
@@ -697,10 +747,11 @@ export default function BundleCheckoutPage() {
                         </div>
                         {couponMessage && (
                           <p
-                            className={`text-sm ${isCouponValid
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                              }`}
+                            className={`text-sm ${
+                              isCouponValid
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
                           >
                             {couponMessage}
                           </p>
@@ -714,7 +765,9 @@ export default function BundleCheckoutPage() {
                     <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                       <CardTitle className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">1</span>
+                          <span className="text-white text-sm font-bold">
+                            1
+                          </span>
                         </div>
                         Billing Address
                       </CardTitle>
@@ -729,7 +782,10 @@ export default function BundleCheckoutPage() {
                             id="fullName"
                             value={billingAddress.fullName}
                             onChange={(e) =>
-                              setBillingAddress({ ...billingAddress, fullName: e.target.value })
+                              setBillingAddress({
+                                ...billingAddress,
+                                fullName: e.target.value,
+                              })
                             }
                             placeholder="Enter your full name"
                             className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -744,7 +800,10 @@ export default function BundleCheckoutPage() {
                             type="tel"
                             value={billingAddress.phone}
                             onChange={(e) =>
-                              setBillingAddress({ ...billingAddress, phone: e.target.value })
+                              setBillingAddress({
+                                ...billingAddress,
+                                phone: e.target.value,
+                              })
                             }
                             placeholder="Enter your phone number"
                             className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -760,7 +819,10 @@ export default function BundleCheckoutPage() {
                           id="line1"
                           value={billingAddress.line1}
                           onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, line1: e.target.value })
+                            setBillingAddress({
+                              ...billingAddress,
+                              line1: e.target.value,
+                            })
                           }
                           placeholder="Enter your street address"
                           className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -776,7 +838,10 @@ export default function BundleCheckoutPage() {
                             id="city"
                             value={billingAddress.city}
                             onChange={(e) =>
-                              setBillingAddress({ ...billingAddress, city: e.target.value })
+                              setBillingAddress({
+                                ...billingAddress,
+                                city: e.target.value,
+                              })
                             }
                             placeholder="Enter your city"
                             className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -784,13 +849,17 @@ export default function BundleCheckoutPage() {
                         </div>
                         <div>
                           <Label htmlFor="state">
-                            State/Province <span className="text-red-500">*</span>
+                            State/Province{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="state"
                             value={billingAddress.state}
                             onChange={(e) =>
-                              setBillingAddress({ ...billingAddress, state: e.target.value })
+                              setBillingAddress({
+                                ...billingAddress,
+                                state: e.target.value,
+                              })
                             }
                             placeholder="Enter your state"
                             className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -801,13 +870,17 @@ export default function BundleCheckoutPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="postalCode">
-                            ZIP/Postal Code <span className="text-red-500">*</span>
+                            ZIP/Postal Code{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="postalCode"
                             value={billingAddress.postalCode}
                             onChange={(e) =>
-                              setBillingAddress({ ...billingAddress, postalCode: e.target.value })
+                              setBillingAddress({
+                                ...billingAddress,
+                                postalCode: e.target.value,
+                              })
                             }
                             placeholder="Enter ZIP code"
                             className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -821,7 +894,10 @@ export default function BundleCheckoutPage() {
                             id="country"
                             value={billingAddress.country}
                             onChange={(e) =>
-                              setBillingAddress({ ...billingAddress, country: e.target.value })
+                              setBillingAddress({
+                                ...billingAddress,
+                                country: e.target.value,
+                              })
                             }
                             placeholder="Enter your country"
                             className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
@@ -832,10 +908,10 @@ export default function BundleCheckoutPage() {
                   </Card>
                 </div>
               </div>
-            )
+            );
           })()}
         </div>
       </div>
     </div>
-  )
+  );
 }

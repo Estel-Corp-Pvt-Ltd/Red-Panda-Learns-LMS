@@ -1577,7 +1577,7 @@ const CurriculumBuilderPage = () => {
                         Regular price
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
+                        <span className="text-muted-foreground">₹</span>
                         <Input
                           type="number"
                           value={regularPrice}
@@ -1588,7 +1588,7 @@ const CurriculumBuilderPage = () => {
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Sale price</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
+                        <span className="text-muted-foreground">₹</span>
                         <Input
                           type="number"
                           value={salePrice}

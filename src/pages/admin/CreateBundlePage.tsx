@@ -265,12 +265,12 @@ export default function CreateBundlePage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: CURRENCY.USD,
-    }).format(amount);
-  };
+ const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+  }).format(amount);
+};
 
   const selectedCourses = courses.filter((course) =>
     selectedCourseIds.includes(course.id!)

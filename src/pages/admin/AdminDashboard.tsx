@@ -15,7 +15,7 @@ import {
   Plus,
   PlusCircle,
   Trash2,
-  Users
+  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -69,8 +69,12 @@ import { User } from "@/types/user";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
-  COURSE_STATUS, CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE, USER_ROLE,
-  USER_STATUS
+  COURSE_STATUS,
+  CURRENCY,
+  ORGANIZATION,
+  POPUP_COURSE_TYPE,
+  USER_ROLE,
+  USER_STATUS,
 } from "@/constants";
 import { popUpService } from "@/services/popupService";
 import { PopUp } from "@/types/pop-up";
@@ -650,9 +654,9 @@ export function AdminDashboard() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: CURRENCY.USD,
+      currency: "INR",
     }).format(amount);
   };
 
@@ -1621,8 +1625,8 @@ export function AdminDashboard() {
                                   user.role === USER_ROLE.ADMIN
                                     ? "destructive"
                                     : user.role === USER_ROLE.STUDENT
-                                      ? "default"
-                                      : "secondary"
+                                    ? "default"
+                                    : "secondary"
                                 }
                               >
                                 {user.role}
@@ -1634,8 +1638,8 @@ export function AdminDashboard() {
                                   user.status === USER_STATUS.ACTIVE
                                     ? "default"
                                     : user.status === USER_STATUS.INACTIVE
-                                      ? "secondary"
-                                      : "outline"
+                                    ? "secondary"
+                                    : "outline"
                                 }
                               >
                                 {user.status}
@@ -1723,8 +1727,8 @@ export function AdminDashboard() {
                                   coupon.status === COUPON_STATUS.ACTIVE
                                     ? "default"
                                     : coupon.status === COUPON_STATUS.EXPIRED
-                                      ? "secondary"
-                                      : "outline"
+                                    ? "secondary"
+                                    : "outline"
                                 }
                               >
                                 {coupon.status}
@@ -1800,6 +1804,6 @@ export function AdminDashboard() {
       </div>
     </div>
   );
-};
+}
 
 export default AdminDashboard;
