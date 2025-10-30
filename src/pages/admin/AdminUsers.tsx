@@ -198,13 +198,13 @@ const AdminUsers: React.FC = () => {
                 {users.totalCount > 0 && ` (Page ${paginationState.currentPage})`}
               </CardDescription>
             </div>
-            <Button
+            {/* <Button
               onClick={() => navigate("/admin/create-user")}
               className="flex items-center gap-2"
             >
               <PlusCircle className="h-4 w-4" />
               Add User
-            </Button>
+            </Button> */}
           </div>
         </CardHeader>
         <CardContent>
