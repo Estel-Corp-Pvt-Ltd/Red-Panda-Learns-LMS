@@ -57,6 +57,7 @@ import AdminOrganizations from "./pages/admin/AdminOrganizations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminInstructors from "./pages/admin/AdminInstructors";
 import AdminOrders from "./pages/admin/Orders";
+import AdminPopUps from "./pages/admin/PopUps";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -141,6 +142,11 @@ const App = () => (
                       <Route path="/admin/orders" element={
                         <AuthGuard requireAdmin>
                           <AdminOrders />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/pop-ups" element={
+                        <AuthGuard requireAdmin>
+                          <AdminPopUps />
                         </AuthGuard>
                       } />
                       <Route path="/admin/coupons" element={
