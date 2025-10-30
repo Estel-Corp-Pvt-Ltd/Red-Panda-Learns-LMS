@@ -20,7 +20,7 @@ import {
 } from '@/types/bundle';
 import { BUNDLE_STATUS } from '@/constants';
 import { Course } from '@/types/course';
-
+import { COLLECTION } from '@/constants';
 class BundleService {
   /**
    * Generates a new bundle ID in the format `bundle_<number>`, where <number> is a
@@ -37,7 +37,7 @@ class BundleService {
    */
 
   private async generateBundleId(): Promise<string> {
-    const counterRef = doc(db, "counters", "bundleCounter");
+    const counterRef = doc(db, COLLECTION.COUNTERS, "bundleCounter");
 
     const newId = await runTransaction(db, async (transaction) => {
       const gap = Math.floor(Math.random() * (100 - 30 + 1)) + 30; // 30–100 gap
@@ -121,6 +121,7 @@ class BundleService {
         instructorId: data.instructorId,
         instructorName: data.instructorName,
         status: data.status,
+        thumbnail:data.thumbnail,
         categories: data.categories,
         tags: data.tags || [],
         createdAt: serverTimestamp(),
@@ -129,7 +130,7 @@ class BundleService {
 
       console.log("bundle", bundle)
 
-      await setDoc(doc(db, 'Bundles', bundleId), bundle);
+      await setDoc(doc(db, COLLECTION.BUNDLES, bundleId), bundle);
       console.log('BundleService - Bundle created successfully:', bundleId);
 
       return bundleId;
@@ -149,7 +150,7 @@ class BundleService {
  * @param updatedData - An object containing the fields to update.
  */
 async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Promise<void> {
-  const bundleRef = doc(db, "Bundles", bundleId);
+  const bundleRef = doc(db, COLLECTION.BUNDLES, bundleId);
 
   try {
     const snap = await getDoc(bundleRef);
@@ -181,7 +182,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
 
   async updateBundle(bundleId: string, updates: Partial<Bundle>): Promise<void> {
     try {
-      const bundleRef = doc(db, 'Bundles', bundleId);
+      const bundleRef = doc(db, COLLECTION.BUNDLES, bundleId);
       const bundleDoc = await getDoc(bundleRef);
 
       if (!bundleDoc.exists()) {
@@ -224,6 +225,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
       if (updates.title) updateData.title = updates.title;
       if (updates.description) updateData.description = updates.description;
       if (updates.categories.length) updateData.categories = updateData.categories.concat(updates.categories);
+      if(updates.thumbnail) updateData.thumbnail =updateData.thumbnail;
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.pricingModel) updateData.pricingModel = updates.pricingModel;
       if (updates.instructorId) updateData.instructorId = updates.instructorId;
@@ -250,7 +252,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
 
   async publishBundle(bundleId: string): Promise<void> {
     try {
-      const bundleRef = doc(db, 'Bundles', bundleId);
+      const bundleRef = doc(db, COLLECTION.BUNDLES, bundleId);
       await updateDoc(bundleRef, {
         status: BUNDLE_STATUS.PUBLISHED,
         updatedAt: serverTimestamp(),
@@ -276,7 +278,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
 
   async getAllBundles(): Promise<Bundle[]> {
     try {
-      const querySnapshot = await getDocs(collection(db, 'Bundles'));
+      const querySnapshot = await getDocs(collection(db, COLLECTION.BUNDLES));
 
       const bundles = querySnapshot.docs.map(doc => ({
         ...doc.data(),
@@ -307,7 +309,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
   async getPublishedBundles(): Promise<Bundle[]> {
     try {
       const q = query(
-        collection(db, 'Bundles'),
+        collection(db, COLLECTION.BUNDLES),
         where('status', '==', BUNDLE_STATUS.PUBLISHED)
       );
       const querySnapshot = await getDocs(q);
@@ -342,7 +344,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
   async getBundleById(bundleId: string): Promise<Bundle | null> {
     try {
       console.log("fetching bundles", bundleId)
-      const bundleDoc = await getDoc(doc(db, 'Bundles', bundleId));
+      const bundleDoc = await getDoc(doc(db, COLLECTION.BUNDLES, bundleId));
 
       if (!bundleDoc.exists()) {
         console.log('BundleService - Bundle not found:', bundleId);
@@ -378,7 +380,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
 
   async deleteBundle(bundleId: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, 'Bundles', bundleId));
+      await deleteDoc(doc(db, COLLECTION.BUNDLES, bundleId));
       console.log('BundleService - Bundle deleted successfully:', bundleId);
     } catch (error) {
       console.error('BundleService - Error deleting bundle:', error);

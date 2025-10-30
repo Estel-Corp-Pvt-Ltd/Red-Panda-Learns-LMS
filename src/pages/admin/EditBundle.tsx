@@ -44,11 +44,17 @@ import { useEffect, useState ,useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { getDownloadURL } from "firebase/storage";
+import { fileService } from "@/services/fileService";
+import { logError } from "@/utils/logger";
+import { ok, Result } from "@/utils/response";
+import { title } from "process";
 type EditBundleFormData = {
   title: string;
   description: string;
   regularPrice: string;
   salePrice: string;
+  thumbnail:string,
   pricingModel: PricingModel;
   status: BundleStatus;
 };
@@ -80,7 +86,10 @@ export default function EditBundlePage() {
   const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
 const [targetAudienceOptions , settargetAudienceOptions ] = useState<Option[]>([]);
 const [tagOptions, setTagOptions] = useState<Option[]>([]);
-
+    const [progress, setProgress] = useState(0);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+   const [preview, setPreview] = useState<string | null>(null);
   // Fetch bundle data
   const {
     data: bundleData,
@@ -94,6 +103,7 @@ const [tagOptions, setTagOptions] = useState<Option[]>([]);
     description: "",
     regularPrice: "",
     salePrice: "",
+    thumbnail:"",
     pricingModel: PRICING_MODEL.PAID,
     status: BUNDLE_STATUS.DRAFT,
   });
@@ -425,6 +435,7 @@ useEffect(() => {
         regularPrice: bundleData.regularPrice
           ? bundleData.regularPrice.toString()
           : "",
+          thumbnail:bundleData.thumbnail || "",
         salePrice: bundleData.salePrice ? bundleData.salePrice.toString() : "",
         pricingModel: bundleData.pricingModel || PRICING_MODEL.PAID,
         status: bundleData.status,
@@ -433,6 +444,11 @@ useEffect(() => {
       // Set selected courses
       if (bundleData.courses) {
         setSelectedCourses(bundleData.courses.map((course) => course.id));
+      }
+
+      if (bundleData.thumbnail){
+        setThumbnailUrl(bundleData.thumbnail)
+        setPreview(bundleData.thumbnail)
       }
 
       setInstructorId(bundleData.instructorId || "");
@@ -478,6 +494,93 @@ useEffect(() => {
         : [...prev, category]
     );
   };
+
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPreview(URL.createObjectURL(file));
+    uploadThumbnail(file);
+  };
+
+  
+    const uploadThumbnail = async (selectedFile: File) => {
+      if (!selectedFile) return;
+  
+      // Check file size (3MB limit)
+      const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+      if (selectedFile.size > MAX_SIZE) {
+        toast({
+          title: "File Too Large",
+          description: "The selected file exceeds the 3MB size limit.",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      const uploadResult = fileService.startResumableUpload(
+        `/courses/${title}/thumbnail.png`,
+        selectedFile,
+      );
+      if (!uploadResult.success) {
+        toast({
+          title: "Upload Failed",
+          description: "Unable to upload the file. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      uploadResult.data.on(
+        "state_changed",
+        (snapshot) => {
+          setUploadingThumbnail(true);
+          // Calculate progress
+          const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setProgress(Math.round(prog));
+        },
+        (error) => {
+          toast({
+            title: "Failed to upload thumbnail.",
+            description: "Something went wrong",
+            variant: "destructive",
+          });
+          console.error(error);
+          setUploadingThumbnail(false);
+        },
+        async () => {
+          try {
+            setProgress(100);
+            setUploadingThumbnail(false);
+            const url = await getDownloadURL(uploadResult.data.snapshot.ref);
+            setThumbnailUrl(url);
+            console.log("here is the thumbanil url",url)
+            toast({
+              title: "Thumbnail Uploaded",
+              description: "Thumbnail has been successfully uploaded",
+              variant: "default",
+            });
+          } catch (error) {
+            toast({
+              title: "Thumbnail not uploaded",
+              description: "Something went wrong",
+              variant: "destructive",
+            });
+            logError("Error getting download URL:", error);
+          }
+        },
+      );
+    };
 
   // Tag handlers
   const handleAddTag = () => {
@@ -538,6 +641,7 @@ useEffect(() => {
               .map((course) => ({ id: course.id, title: course.title })),
             regularPrice,
             salePrice,
+            thumbnail:thumbnailUrl,
             pricingModel: formData.pricingModel,
             instructorId,
             instructorName,
@@ -865,6 +969,57 @@ useEffect(() => {
                 </Card>
               </CardContent>
             </Card>
+
+
+              <Card>
+                  <CardHeader>
+                    <CardTitle>Thumbnail</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!preview && thumbnailUrl && (
+                      <div className="mb-5">
+                        <img
+                          src={thumbnailUrl}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {preview && (
+                      <div className="mb-5">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {uploadingThumbnail && (
+                      <div className="mb-8">
+                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
+                          <div
+                            style={{
+                              width: `${progress}%`,
+                              height: "100%",
+                              backgroundColor: "#ff00ff",
+                              transition: "width 0.3s",
+                            }}
+                          />
+                        </div>
+                        <small>{progress}%</small>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+
 
             {/* Course Selection */}
                <Card>

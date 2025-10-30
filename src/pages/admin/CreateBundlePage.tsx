@@ -1,6 +1,14 @@
 import { useState, useEffect , useMemo} from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Plus, Trash2, DollarSign, Info, X , Search, RefreshCcw, CheckCheck, XCircle, Filter, Check, ChevronDown } from "lucide-react";
+import {
+  ArrowLeft,
+  Package,
+  Plus,
+  Trash2,
+  DollarSign,
+  Info,
+  X,
+ Search, RefreshCcw, CheckCheck, XCircle, Filter, Check, ChevronDown } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +27,21 @@ import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
 import { PricingModel ,SortKey,AttributeType } from "@/types/general";
 import { Header } from "@/components/Header";
-import { BUNDLE_STATUS, COURSE_STATUS, CURRENCY, PRICING_MODEL,SORT_KEY,ATTRIBUTE_TYPE } from "@/constants";
+import { getDownloadURL } from "firebase/storage";
+import {
+  BUNDLE_STATUS,
+  COURSE_STATUS,
+  CURRENCY,
+  PRICING_MODEL,SORT_KEY,ATTRIBUTE_TYPE,
+} from "@/constants";
 import { instructorService } from "@/services/instructorService";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getFullName } from "@/utils/name";
 import { Slider } from "@/components/ui/slider";
 import { attributeService } from "@/services/attributeService";
@@ -32,7 +52,10 @@ interface Option {
   id: string;
   label: string;
 }
-
+import { fileService } from "@/services/fileService";
+import { logError } from "@/utils/logger";
+import { ok, Result } from "@/utils/response";
+import { title } from "process";
 export default function CreateBundlePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,8 +68,14 @@ export default function CreateBundlePage() {
   const [newTag, setNewTag] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [instructorName, setInstructorName] = useState("");
-  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
-
+  const [instructors, setInstructors] = useState<
+    { id: string; name: string }[]
+  >([]);
+   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [progress, setProgress] = useState(0);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+   const [preview, setPreview] = useState<string | null>(null);
   // Helper to get a course's effective price (salePrice takes precedence)
 const getCoursePrice = (course: Course) =>
   Number(course.salePrice ?? course.regularPrice ?? 0);
@@ -299,15 +328,16 @@ const handleResetFilters = () => {
       const result = await instructorService.getAllInstructors();
 
       if (result.success) {
-        const formattedInstructors = result
-          .data
-          .map((instructor) => ({
-            id: instructor.id,
-            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
-          }));
+        const formattedInstructors = result.data.map((instructor) => ({
+          id: instructor.id,
+          name: getFullName(
+            instructor.firstName,
+            instructor.middleName,
+            instructor.lastName
+          ),
+        }));
 
         setInstructors(formattedInstructors);
-
       } else {
         console.error("Failed to fetch instructors:", result.error);
         toast({
@@ -326,6 +356,7 @@ const handleResetFilters = () => {
     url: "",
     regularPrice: "",
     salePrice: "",
+    thumbnailUrl:"",
     pricingModel: PRICING_MODEL.PAID as PricingModel,
     status: BUNDLE_STATUS.DRAFT,
   });
@@ -342,7 +373,9 @@ const handleResetFilters = () => {
     try {
       const coursesData = await courseService.getAllCourses();
       setCourses(
-        coursesData.filter((course) => course.status === COURSE_STATUS.PUBLISHED)
+        coursesData.filter(
+          (course) => course.status === COURSE_STATUS.PUBLISHED
+        )
       );
     } catch (error) {
       console.error("Error loading courses:", error);
@@ -353,6 +386,94 @@ const handleResetFilters = () => {
       });
     }
   };
+
+
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPreview(URL.createObjectURL(file));
+    uploadThumbnail(file);
+  };
+
+  
+    const uploadThumbnail = async (selectedFile: File) => {
+      if (!selectedFile) return;
+  
+      // Check file size (3MB limit)
+      const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+      if (selectedFile.size > MAX_SIZE) {
+        toast({
+          title: "File Too Large",
+          description: "The selected file exceeds the 3MB size limit.",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      const uploadResult = fileService.startResumableUpload(
+        `/courses/${title}/thumbnail.png`,
+        selectedFile,
+      );
+      if (!uploadResult.success) {
+        toast({
+          title: "Upload Failed",
+          description: "Unable to upload the file. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      uploadResult.data.on(
+        "state_changed",
+        (snapshot) => {
+          setUploadingThumbnail(true);
+          // Calculate progress
+          const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setProgress(Math.round(prog));
+        },
+        (error) => {
+          toast({
+            title: "Failed to upload thumbnail.",
+            description: "Something went wrong",
+            variant: "destructive",
+          });
+          console.error(error);
+          setUploadingThumbnail(false);
+        },
+        async () => {
+          try {
+            setProgress(100);
+            setUploadingThumbnail(false);
+            const url = await getDownloadURL(uploadResult.data.snapshot.ref);
+            setThumbnailUrl(url);
+            console.log("here is the thumbanil url",url)
+            toast({
+              title: "Thumbnail Uploaded",
+              description: "Thumbnail has been successfully uploaded",
+              variant: "default",
+            });
+          } catch (error) {
+            toast({
+              title: "Thumbnail not uploaded",
+              description: "Something went wrong",
+              variant: "destructive",
+            });
+            logError("Error getting download URL:", error);
+          }
+        },
+      );
+    };
 
   const handleCourseToggle = (courseId: string) => {
     setSelectedCourses((prev) =>
@@ -429,13 +550,13 @@ const handleResetFilters = () => {
       const salePrice = bundleData.salePrice
         ? parseFloat(bundleData.salePrice)
         : 0;
-
+  
       await bundleService.createBundle({
         title: bundleData.title,
         description: bundleData.description,
-        courses: courses.filter((course) =>
-          selectedCourseIds.includes(course.id!)
-        ).map(course => ({ id: course.id, title: course.title })),
+        courses: courses
+          .filter((course) => selectedCourseIds.includes(course.id!))
+          .map((course) => ({ id: course.id, title: course.title })),
         regularPrice,
         salePrice,
         pricingModel: bundleData.pricingModel,
@@ -443,9 +564,10 @@ const handleResetFilters = () => {
         instructorName: instructorName,
         categories,
         tags,
+        thumbnail:thumbnailUrl,
         status: bundleData.status,
       });
-
+     
       toast({
         title: "Success",
         description: "Bundle created successfully!",
@@ -492,15 +614,16 @@ const handleResetFilters = () => {
       await bundleService.createBundle({
         title: bundleData.title,
         description: bundleData.description,
-        courses: courses.filter((course) =>
-          selectedCourseIds.includes(course.id!)
-        ).map(course => ({ id: course.id, title: course.title })),
+        courses: courses
+          .filter((course) => selectedCourseIds.includes(course.id!))
+          .map((course) => ({ id: course.id, title: course.title })),
         regularPrice,
         salePrice,
         pricingModel: bundleData.pricingModel,
         instructorId: instructorId,
         instructorName: instructorName,
         categories,
+        thumbnail:thumbnailUrl,
         tags,
         status: BUNDLE_STATUS.PUBLISHED,
       });
@@ -608,17 +731,21 @@ const handleResetFilters = () => {
                 <div>
                   <Label>Categories</Label>
                   <div className="flex flex-wrap gap-3 mt-2">
-                    {["AI/ML", "Bootcamp", "College-student", "Data-Science", "Generative-AI"].map(
-                      (cat) => (
-                        <div key={cat} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={categories.includes(cat)}
-                            onCheckedChange={() => handleCategoryChange(cat)}
-                          />
-                          <Label>{cat}</Label>
-                        </div>
-                      )
-                    )}
+                    {[
+                      "AI/ML",
+                      "Bootcamp",
+                      "College-student",
+                      "Data-Science",
+                      "Generative-AI",
+                    ].map((cat) => (
+                      <div key={cat} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={categories.includes(cat)}
+                          onCheckedChange={() => handleCategoryChange(cat)}
+                        />
+                        <Label>{cat}</Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -700,7 +827,9 @@ const handleResetFilters = () => {
                     <Select
                       value={instructorName}
                       onValueChange={(val) => {
-                        const selected = instructors.find((a) => a.name === val);
+                        const selected = instructors.find(
+                          (a) => a.name === val
+                        );
                         setInstructorId(selected?.id || "");
                         setInstructorName(val);
                       }}
@@ -718,9 +847,55 @@ const handleResetFilters = () => {
                     </Select>
                   </CardContent>
                 </Card>
-
               </CardContent>
             </Card>
+   <Card>
+                  <CardHeader>
+                    <CardTitle>Thumbnail</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!preview && thumbnailUrl && (
+                      <div className="mb-5">
+                        <img
+                          src={thumbnailUrl}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {preview && (
+                      <div className="mb-5">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="border rounded"
+                        />
+                      </div>
+                    )}
+                    {uploadingThumbnail && (
+                      <div className="mb-8">
+                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
+                          <div
+                            style={{
+                              width: `${progress}%`,
+                              height: "100%",
+                              backgroundColor: "#ff00ff",
+                              transition: "width 0.3s",
+                            }}
+                          />
+                        </div>
+                        <small>{progress}%</small>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
             {/* Course Selection */}
           <Card>
@@ -733,7 +908,9 @@ const handleResetFilters = () => {
     {courses.length === 0 ? (
       <div className="text-center py-8">
         <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">No courses available</h3>
+        <h3 className="text-lg font-medium mb-2">
+                      No courses available
+                    </h3>
         <p className="text-muted-foreground mb-4">
           You need published courses to create a bundle.
         </p>
@@ -1235,7 +1412,9 @@ const handleResetFilters = () => {
               <div className="flex items-start sm:items-center gap-3 flex-1">
                 <Checkbox
                   checked={selectedCourseIds.includes(course.id!)}
-                  onCheckedChange={() => handleCourseToggle(course.id!)}
+                  onCheckedChange={() =>
+                              handleCourseToggle(course.id!)
+                            }
                 />
                 <div className="flex-1">
                   <h4 className="font-medium">{course.title}</h4>
@@ -1247,8 +1426,10 @@ const handleResetFilters = () => {
               <div className="text-left sm:text-right">
                 <p className="font-semibold">
                   {formatCurrency(
-                    course.salePrice ?? course.regularPrice ?? 0
-                  )}
+                    
+                              course.salePrice ?? course.regularPrice ?? 0
+                  
+                            )}
                 </p>
                 <Badge variant="outline" className="text-xs">
                   {course.status}
@@ -1279,13 +1460,20 @@ const handleResetFilters = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {selectedCourses.map((course) => (
-                      <div key={course.id} className="flex items-center justify-between">
+                      <div
+                        key={course.id}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex-1">
-                          <p className="font-medium text-sm line-clamp-1">{course.title}</p>
+                          <p className="font-medium text-sm line-clamp-1">
+                            {course.title}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">
-                            {formatCurrency(course.salePrice || course.regularPrice)}
+                            {formatCurrency(
+                              course.salePrice || course.regularPrice
+                            )}
                           </span>
                           <Button
                             variant="ghost"
@@ -1303,76 +1491,103 @@ const handleResetFilters = () => {
             )}
 
             {/* Pricing Configuration */}
-            {pricingData && selectedCourseIds.length > 0 && bundleData.pricingModel === PRICING_MODEL.PAID && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Bundle Pricing
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Individual Prices Total:</span>
-                      <span className="font-medium">{formatCurrency(pricingData.regularPrice)}</span>
+            {pricingData &&
+              selectedCourseIds.length > 0 &&
+              bundleData.pricingModel === PRICING_MODEL.PAID && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Bundle Pricing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Individual Prices Total:</span>
+                        <span className="font-medium">
+                          {formatCurrency(pricingData.regularPrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm text-success">
+                        <span>Suggested Bundle Price:</span>
+                        <span className="font-medium">
+                          {formatCurrency(pricingData.suggestedPrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Potential Savings:</span>
+                        <span>
+                          {formatCurrency(
+                            pricingData.regularPrice -
+                              pricingData.suggestedPrice
+                          )}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm text-success">
-                      <span>Suggested Bundle Price:</span>
-                      <span className="font-medium">{formatCurrency(pricingData.suggestedPrice)}</span>
+
+                    <Separator />
+
+                    <div>
+                      <Label htmlFor="regularPrice">Regular Price *</Label>
+                      <Input
+                        id="regularPrice"
+                        type="number"
+                        placeholder={`${pricingData.suggestedPrice}`}
+                        value={bundleData.regularPrice}
+                        onChange={(e) =>
+                          setBundleData((prev) => ({
+                            ...prev,
+                            regularPrice: e.target.value,
+                          }))
+                        }
+                        min={pricingData.maxDiscount}
+                        max={pricingData.regularPrice}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Range: {formatCurrency(pricingData.maxDiscount)} -{" "}
+                        {formatCurrency(pricingData.regularPrice)}
+                      </p>
                     </div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Potential Savings:</span>
-                      <span>{formatCurrency(pricingData.regularPrice - pricingData.suggestedPrice)}</span>
+
+                    <div>
+                      <Label htmlFor="salePrice">Sale Price (Optional)</Label>
+                      <Input
+                        id="salePrice"
+                        type="number"
+                        placeholder="Enter sale price"
+                        value={bundleData.salePrice}
+                        onChange={(e) =>
+                          setBundleData((prev) => ({
+                            ...prev,
+                            salePrice: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
-                  </div>
 
-                  <Separator />
-
-                  <div>
-                    <Label htmlFor="regularPrice">Regular Price *</Label>
-                    <Input
-                      id="regularPrice"
-                      type="number"
-                      placeholder={`${pricingData.suggestedPrice}`}
-                      value={bundleData.regularPrice}
-                      onChange={(e) => setBundleData(prev => ({ ...prev, regularPrice: e.target.value }))}
-                      min={pricingData.maxDiscount}
-                      max={pricingData.regularPrice}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Range: {formatCurrency(pricingData.maxDiscount)} - {formatCurrency(pricingData.regularPrice)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="salePrice">Sale Price (Optional)</Label>
-                    <Input
-                      id="salePrice"
-                      type="number"
-                      placeholder="Enter sale price"
-                      value={bundleData.salePrice}
-                      onChange={(e) => setBundleData(prev => ({ ...prev, salePrice: e.target.value }))}
-                    />
-                  </div>
-
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      {bundleData.salePrice
-                        ? `Sale price will be displayed instead of regular price.`
-                        : `If you don't set a sale price, the regular price will be used.`}
-                    </AlertDescription>
-                  </Alert>
-                </CardContent>
-              </Card>
-            )}
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        {bundleData.salePrice
+                          ? `Sale price will be displayed instead of regular price.`
+                          : `If you don't set a sale price, the regular price will be used.`}
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              )}
 
             {/* Action Buttons */}
             <div className="space-y-3">
               <Button
                 onClick={handleCreateBundle}
-                disabled={loading || selectedCourseIds.length < 2 || !bundleData.title.trim() || !bundleData.description.trim()}
+                disabled={
+                  loading ||
+                  selectedCourseIds.length < 2 ||
+                  !bundleData.title.trim() ||
+                  !bundleData.description.trim()
+                }
                 className="w-full"
                 variant="outline"
               >
@@ -1381,7 +1596,12 @@ const handleResetFilters = () => {
 
               <Button
                 onClick={handlePublishBundle}
-                disabled={loading || selectedCourseIds.length < 2 || !bundleData.title.trim() || !bundleData.description.trim()}
+                disabled={
+                  loading ||
+                  selectedCourseIds.length < 2 ||
+                  !bundleData.title.trim() ||
+                  !bundleData.description.trim()
+                }
                 className="w-full"
               >
                 {loading ? "Publishing..." : "Create & Publish Bundle"}
@@ -1392,4 +1612,4 @@ const handleResetFilters = () => {
       </main>
     </div>
   );
-};
+}

@@ -664,8 +664,9 @@ export default function CartCheckoutPage() {
                             payment. 7‑day refund guarantee.
                           </p>
                         </div>
-                      );
-                    })}
+                        </div>
+                      
+                    
                   </CardContent>
                 </Card>
 
@@ -679,6 +680,7 @@ export default function CartCheckoutPage() {
                         <p className="text-sm text-muted-foreground dark:text-gray-400">
                           All transactions are encrypted. Instant access after payment. 
                         </p>
+                      </div>
                       </div>
                     </CardContent>
                   </Card>
