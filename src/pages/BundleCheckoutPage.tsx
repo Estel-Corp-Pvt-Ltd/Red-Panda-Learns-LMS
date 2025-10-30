@@ -124,6 +124,64 @@ export default function BundleCheckoutPage() {
   const [finalPrice, setFinalPrice] = useState<number>(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loading, setLoading] = useState({ countries: false, states: false, cities: false });
+
+
+   // ----------------- Fetch countries on mount -----------------
+  useEffect(() => {
+    async function fetchCountries() {
+      setLoading((l) => ({ ...l, countries: true }));
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/");
+      const data = await res.json();
+      setCountries(data.data || []);
+      setLoading((l) => ({ ...l, countries: false }));
+    }
+    fetchCountries();
+  }, []);
+
+  // ----------------- Fetch states when country changes -----------------
+  useEffect(() => {
+    async function fetchStates() {
+      if (!billingAddress.country) return;
+      setStates([]);
+      setCities([]);
+      setLoading((l) => ({ ...l, states: true }));
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: billingAddress.country }),
+      });
+      const data = await res.json();
+      setStates(data.data?.states || []);
+      setLoading((l) => ({ ...l, states: false }));
+    }
+    fetchStates();
+  }, [billingAddress.country]);
+
+  // ----------------- Fetch cities when state changes -----------------
+  useEffect(() => {
+    async function fetchCities() {
+      if (!billingAddress.state || !billingAddress.country) return;
+      setCities([]);
+      setLoading((l) => ({ ...l, cities: true }));
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          country: billingAddress.country,
+          state: billingAddress.state,
+        }),
+      });
+      const data = await res.json();
+      setCities(data.data || []);
+      setLoading((l) => ({ ...l, cities: false }));
+    }
+    fetchCities();
+  }, [billingAddress.state]);
+
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -791,151 +849,139 @@ export default function BundleCheckoutPage() {
                   </Card>
 
                   {/* Billing second */}
-                  <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
-                    <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                      <CardTitle className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">
-                            1
-                          </span>
-                        </div>
-                        Billing Address
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="fullName">
-                            Full Name <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="fullName"
-                            value={billingAddress.fullName}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                fullName: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your full name"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">
-                            Phone Number <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            value={billingAddress.phone}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                phone: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your phone number"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                      </div>
+               <Card className="xl:col-span-2 bg-white/90 dark:bg-zinc-950 border border-blue-50 dark:border-zinc-900 rounded-xl shadow-sm overflow-hidden">
+      <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+        <CardTitle className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+            <span className="text-white text-sm font-bold">1</span>
+          </div>
+          Billing Address
+        </CardTitle>
+      </CardHeader>
 
-                      <div>
-                        <Label htmlFor="line1">
-                          Street Address <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="line1"
-                          value={billingAddress.line1}
-                          onChange={(e) =>
-                            setBillingAddress({
-                              ...billingAddress,
-                              line1: e.target.value,
-                            })
-                          }
-                          placeholder="Enter your street address"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                        />
-                      </div>
+      <CardContent className="space-y-4 pt-6">
+        {/* Name + Phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="fullName">Full Name <span className="text-red-500">*</span></Label>
+            <Input
+              id="fullName"
+              value={billingAddress.fullName}
+              onChange={(e) => setBillingAddress({ ...billingAddress, fullName: e.target.value })}
+              placeholder="Enter your full name"
+            />
+          </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="city">
-                            City <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="city"
-                            value={billingAddress.city}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                city: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your city"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="state">
-                            State/Province{" "}
-                            <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="state"
-                            value={billingAddress.state}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                state: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your state"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                      </div>
+          <div>
+            <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={billingAddress.phone}
+              onChange={(e) => setBillingAddress({ ...billingAddress, phone: e.target.value })}
+              placeholder="Enter your phone number"
+            />
+          </div>
+        </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="postalCode">
-                            ZIP/Postal Code{" "}
-                            <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="postalCode"
-                            value={billingAddress.postalCode}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                postalCode: e.target.value,
-                              })
-                            }
-                            placeholder="Enter ZIP code"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="country">
-                            Country <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="country"
-                            value={billingAddress.country}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                country: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your country"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+        {/* Address lines */}
+        <div>
+          <Label htmlFor="line1">Street Address <span className="text-red-500">*</span></Label>
+          <Input
+            id="line1"
+            value={billingAddress.line1}
+            onChange={(e) => setBillingAddress({ ...billingAddress, line1: e.target.value })}
+            placeholder="Enter your street address"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="line2">Apartment, Suite, etc. <span className="text-gray-400 text-xs">(Optional)</span></Label>
+          <Input
+            id="line2"
+            value={billingAddress.line2 || ""}
+            onChange={(e) => setBillingAddress({ ...billingAddress, line2: e.target.value })}
+            placeholder="Apartment number, suite, unit, building, floor, etc."
+          />
+        </div>
+
+        {/* Country / State / City */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="country">Country <span className="text-red-500">*</span></Label>
+            <select
+              id="country"
+              className="w-full bg-white dark:bg-zinc-800 border border-blue-200 dark:border-zinc-700 rounded-md px-3 py-2"
+              value={billingAddress.country}
+              onChange={(e) =>
+                setBillingAddress({ ...billingAddress, country: e.target.value, state: "", city: "" })
+              }
+            >
+              <option value="">{loading.countries ? "Loading..." : "Select country"}</option>
+              {countries.map((c) => (
+                <option key={c.country} value={c.country}>
+                  {c.country}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="state">State/Province <span className="text-red-500">*</span></Label>
+            <select
+              id="state"
+              className="w-full bg-white dark:bg-zinc-800 border border-blue-200 dark:border-zinc-700 rounded-md px-3 py-2"
+              value={billingAddress.state}
+              onChange={(e) =>
+                setBillingAddress({ ...billingAddress, state: e.target.value, city: "" })
+              }
+              disabled={!billingAddress.country}
+            >
+              <option value="">
+                {loading.states ? "Loading..." : billingAddress.country ? "Select state" : "Select country first"}
+              </option>
+              {states.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
+            <select
+              id="city"
+              className="w-full bg-white dark:bg-zinc-800 border border-blue-200 dark:border-zinc-700 rounded-md px-3 py-2"
+              value={billingAddress.city}
+              onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
+              disabled={!billingAddress.state}
+            >
+              <option value="">
+                {loading.cities ? "Loading..." : billingAddress.state ? "Select city" : "Select state first"}
+              </option>
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="postalCode">ZIP/Postal Code <span className="text-red-500">*</span></Label>
+            <Input
+              id="postalCode"
+              value={billingAddress.postalCode}
+              onChange={(e) => setBillingAddress({ ...billingAddress, postalCode: e.target.value })}
+              placeholder="Enter ZIP or postal code"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
                 </div>
               </div>
             );
