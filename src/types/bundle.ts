@@ -14,7 +14,8 @@ export interface Bundle {
   salePrice: number;
   courses: BundleCourseItem[];
   pricingModel: PricingModel;
-  categories: string[];
+  categoryIds: string[];
+  targetAudienceIds: string[];
   tags: string[];
   instructorId: string;
   instructorName: string;
@@ -22,4 +23,4 @@ export interface Bundle {
   status: BundleStatus;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-};
+}
