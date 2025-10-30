@@ -8,10 +8,21 @@ import {
   deleteDoc,
   runTransaction,
   serverTimestamp,
+  Query,
+  where,
+  query,
+  orderBy,
+  endBefore,
+  limitToLast,
+  startAfter,
+  limit,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
 import { Organization } from "@/types/organization";
+import { WhereFilterOp } from "firebase-admin/firestore";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { fail, ok, Result } from "@/utils/response";
 
 class OrganizationService {
   /** Generate a unique organization ID: org_<number> */
@@ -119,6 +130,96 @@ class OrganizationService {
     } catch (error) {
       console.error("OrganizationService - Error deleting organization:", error);
       throw new Error("Failed to delete organization");
+    }
+  }
+
+  async getOrganizations(
+    filters?: {
+      field: keyof Organization;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Organization> = {}
+  ): Promise<Result<PaginatedResult<Organization>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
+
+      let q: Query = collection(db, COLLECTION.ORGANIZATIONS);
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const documents = querySnapshot.docs;
+
+      console.log(`OrganizationService - Fetched ${documents.length} organizations`);
+
+      if (pageDirection === 'previous') {
+        documents.reverse();
+      }
+
+      const organizations = documents.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          type: data.type,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Organization;
+      });
+
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      return ok({
+        data: organizations,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor
+      });
+    } catch (error) {
+      console.error('OrganizationService - Error fetching organizations:', error);
+      return fail("Error fetching organizations");
     }
   }
 }

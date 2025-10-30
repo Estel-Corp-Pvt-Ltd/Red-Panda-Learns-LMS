@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Users, Settings, Book, TicketPercent } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, Settings, Book, TicketPercent, Building2 } from 'lucide-react';
 import { Header } from './Header';
 import { cn } from '@/lib/utils';
 
@@ -44,9 +44,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <Users className="h-5 w-5" />
     },
     {
-      name: 'Settings',
-      path: '/admin/settings',
-      icon: <Settings className="h-5 w-5" />
+      name: 'Organizations',
+      path: '/admin/organizations',
+      icon: <Building2 className="h-5 w-5" />
     },
   ];
 
