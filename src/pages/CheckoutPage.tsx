@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCourseQuery } from "@/hooks/useCaching";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { paymentService } from "@/services/paymentService";
 import { ArrowLeft, CreditCard, Lock, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -227,8 +226,8 @@ export default function CheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-   
-      const usageData = {
+
+    const usageData = {
       userId: user?.id,
       couponId: appliedCoupon.id,
       usedAt: Timestamp.now(),
@@ -500,20 +499,18 @@ export default function CheckoutPage() {
                           <div
                             key={provider.id}
                             onClick={() => setSelectedProvider(provider.id)}
-                            className={`cursor-pointer p-4 rounded-xl border transition ${
-                              isSelected
+                            className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
                                 ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
                                 : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                            }`}
+                              }`}
                           >
                             <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                               <div className="flex gap-3">
                                 <div
-                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${
-                                    isSelected
+                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
                                       ? "bg-blue-600 border-blue-600"
                                       : "border-gray-400 dark:border-[#555]"
-                                  }`}
+                                    }`}
                                 />
                                 <div>
                                   <div className="flex items-center gap-2 font-medium">
@@ -720,11 +717,10 @@ export default function CheckoutPage() {
                         </div>
                         {couponMessage && (
                           <p
-                            className={`text-sm ${
-                              isCouponValid
+                            className={`text-sm ${isCouponValid
                                 ? "text-green-600 dark:text-green-400"
                                 : "text-red-600 dark:text-red-400"
-                            }`}
+                              }`}
                           >
                             {couponMessage}
                           </p>
