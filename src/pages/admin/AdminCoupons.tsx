@@ -215,15 +215,6 @@ const AdminCoupons: React.FC = () => {
               <p className="mt-1 text-sm text-gray-500">
                 Get started by creating a coupon code.
               </p>
-              <div className="mt-6">
-                <Button
-                  onClick={() => navigate("/admin/create-coupon")}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Coupon
-                </Button>
-              </div>
             </div>
           ) : (
             <>

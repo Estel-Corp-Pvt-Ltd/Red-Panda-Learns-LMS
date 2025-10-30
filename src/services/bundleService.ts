@@ -29,11 +29,8 @@ import { Course } from '@/types/course';
 import { WhereFilterOp } from 'firebase-admin/firestore';
 import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
 import { fail, ok, Result } from '@/utils/response';
-
-import { db } from "@/firebaseConfig";
-import { courseService } from "./courseService";
-import { Bundle } from "@/types/bundle";
 import { COLLECTION } from "@/constants";
+
 class BundleService {
   /**
    * Generates a new bundle ID in the format `bundle_<number>`, where <number> is a
@@ -139,8 +136,8 @@ class BundleService {
         instructorName: data.instructorName,
         status: data.status,
         thumbnail: data.thumbnail,
-        categoryIds: data.categoryIds || [],      
-        targetAudienceIds: data.targetAudienceIds || [], 
+        categoryIds: data.categoryIds || [],
+        targetAudienceIds: data.targetAudienceIds || [],
         tags: data.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -587,6 +584,8 @@ class BundleService {
           tags: data.tags || [],
           instructorId: data.instructorId,
           instructorName: data.instructorName,
+          categoryIds: data.categoryIds || [],
+          targetAudienceIds: data.targetAudienceIds || [],
           thumbnail: data.thumbnail,
           status: data.status,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
