@@ -54,6 +54,7 @@ import AdminCourses from "./pages/admin/AdminCourses";
 import AdminBundles from "./pages/admin/AdminBundles";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminOrganizations from "./pages/admin/AdminOrganizations";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -123,6 +124,11 @@ const App = () => (
                       <Route path="/admin/bundles" element={
                         <AuthGuard requireAdmin>
                           <AdminBundles />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/users" element={
+                        <AuthGuard requireAdmin>
+                          <AdminUsers />
                         </AuthGuard>
                       } />
                       <Route path="/admin/coupons" element={
