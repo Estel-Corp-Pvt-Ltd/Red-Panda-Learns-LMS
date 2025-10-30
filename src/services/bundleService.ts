@@ -121,7 +121,7 @@ class BundleService {
         instructorId: data.instructorId,
         instructorName: data.instructorName,
         status: data.status,
-        categories: data.categories,
+        categories: data.categories || [],
         tags: data.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -141,29 +141,29 @@ class BundleService {
 
 
 
-  
-/**
- * Updates or creates a bundle document in Firestore.
- *
- * @param bundleId - The ID of the bundle document to update.
- * @param updatedData - An object containing the fields to update.
- */
-async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Promise<void> {
-  const bundleRef = doc(db, "Bundles", bundleId);
 
-  try {
-    const snap = await getDoc(bundleRef);
+  /**
+   * Updates or creates a bundle document in Firestore.
+   *
+   * @param bundleId - The ID of the bundle document to update.
+   * @param updatedData - An object containing the fields to update.
+   */
+  async updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Promise<void> {
+    const bundleRef = doc(db, "Bundles", bundleId);
 
-    if (snap.exists()) {
-      await updateDoc(bundleRef, updatedData);
-    } else {
-      await setDoc(bundleRef, updatedData, { merge: true });
+    try {
+      const snap = await getDoc(bundleRef);
+
+      if (snap.exists()) {
+        await updateDoc(bundleRef, updatedData);
+      } else {
+        await setDoc(bundleRef, updatedData, { merge: true });
+      }
+    } catch (error) {
+      console.error("❌ Error updating bundle:", error);
+      throw error;
     }
-  } catch (error) {
-    console.error("❌ Error updating bundle:", error);
-    throw error;
   }
-}
 
   /**
  * Updates an existing bundle with the provided changes in Firestore.
@@ -188,7 +188,6 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
         throw new Error('Bundle not found');
       }
 
-      const currentBundle = bundleDoc.data() as Bundle;
       const updateData: Partial<Bundle> = {
         updatedAt: serverTimestamp(),
       };
@@ -387,7 +386,7 @@ async  updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Pr
   }
 
 
-  
+
   /**
  * Retrieves all courses associated with a specific bundle from Firestore.
  *
