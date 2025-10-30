@@ -18,7 +18,11 @@ type CourseCardProps = {
   variant?: "default" | "featured" | "compact";
 };
 
-const CourseCard = ({ course, className, variant = "default" }: CourseCardProps) => {
+const CourseCard = ({
+  course,
+  className,
+  variant = "default",
+}: CourseCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -29,12 +33,15 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
   const isFeatured = variant === "featured";
 
   const courseId = String(course?.id);
+  const courseUrl = `/course/${courseId}`;
   const userIsEnrolled = user && isEnrolled(courseId);
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
+  const openCourse = () => navigate(courseUrl);
+
   const handleCart = () => {
     if (userIsEnrolled) {
-      navigate(`/course/${courseId}`);
+      navigate(courseUrl);
       return;
     }
     if (isAddedToCart) {
@@ -42,13 +49,17 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
       return;
     }
     cartDispatch({ type: CART_ACTION.ADD, item: { courseId } });
-    toast({ title: "Course added", description: `${course.title} has been added to your cart.` });
+    toast({
+      title: "Course added",
+      description: `${course.title} has been added to your cart.`,
+    });
   };
 
   const { lessonCount } = getCourseStructureCounts(course);
 
   // Pricing helpers
-  const regularPrice = typeof course.regularPrice === "number" ? course.regularPrice : 0;
+  const regularPrice =
+    typeof course.regularPrice === "number" ? course.regularPrice : 0;
   const hasSale = typeof course.salePrice === "number";
   const salePrice = hasSale ? (course.salePrice as number) : regularPrice;
   const isFree = salePrice === 0;
@@ -64,13 +75,28 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
 
   return (
     <Card
+      role="link"
+      tabIndex={0}
+      onClick={openCourse}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openCourse();
+        }
+      }}
       className={cn(
         "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg hover:shadow-primary/10",
         isFeatured && "ring-2 ring-primary/20 shadow-glow",
         className
       )}
     >
-      <div className={cn("relative overflow-hidden bg-muted", isCompact ? "aspect-[16/9]" : "aspect-[16/10]")}>
+      <div
+        className={cn(
+          "relative overflow-hidden bg-muted",
+          isCompact ? "aspect-[16/9]" : "aspect-[16/10]"
+        )}
+      >
         {course.thumbnail && (
           <img
             src={course.thumbnail}
@@ -94,11 +120,17 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
               Enrolled
             </Badge>
           )}
-          {isFeatured && <Badge className="bg-gradient-primary text-primary-foreground">Featured</Badge>}
+          {isFeatured && (
+            <Badge className="bg-gradient-primary text-primary-foreground">
+              Featured
+            </Badge>
+          )}
         </div>
       </div>
 
-      <CardContent className={cn("p-4 space-y-2", isCompact && "p-3 space-y-1")}>
+      <CardContent
+        className={cn("p-4 space-y-2", isCompact && "p-3 space-y-1")}
+      >
         <h3
           className={cn(
             "font-semibold leading-tight text-foreground transition-colors group-hover:text-primary line-clamp-2",
@@ -109,33 +141,46 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
         </h3>
 
         {!isCompact && course.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {course.description}
+          </p>
         )}
 
-        {course.instructorName && <p className="text-xs text-muted-foreground">by {course.instructorName}</p>}
+        {course.instructorName && (
+          <p className="text-xs text-muted-foreground">
+            by {course.instructorName}
+          </p>
+        )}
       </CardContent>
 
       <CardFooter className={cn("px-4 pb-4 pt-0", isCompact && "px-3 pb-3")}>
         <div className="w-full space-y-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <BookOpen className="h-3 w-3" />
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                <BookOpen className="h-3 w-3 flex-shrink-0" />
                 <span>{lessonCount} lessons</span>
               </div>
               {course.duration && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{course.duration.hours} hrs</span>
-                  <span>{course.duration.minutes} min</span>
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <Clock className="h-3 w-3 flex-shrink-0" />
+                  <span>
+                    {course.duration.hours} hrs {course.duration.minutes} min
+                  </span>
                 </div>
               )}
             </div>
 
             {/* Slash pricing */}
-            <div className="flex items-baseline gap-1">
-              {showSlash && <span className="line-through text-muted-foreground">{formatINR(regularPrice)}</span>}
-              <span className="font-semibold text-primary">{isFree ? "FREE" : formatINR(salePrice)}</span>
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
+              {showSlash && (
+                <span className="line-through text-muted-foreground">
+                  {formatINR(regularPrice)}
+                </span>
+              )}
+              <span className="font-semibold text-primary">
+                {isFree ? "FREE" : formatINR(salePrice)}
+              </span>
             </div>
           </div>
 
@@ -144,7 +189,10 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
               variant="outline"
               size="sm"
               className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
-              onClick={() => navigate(`/course/${courseId}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(courseUrl);
+              }}
             >
               Continue Learning
             </Button>
@@ -153,12 +201,19 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleCart}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCart();
+                }}
                 className="flex-1 transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
               >
                 {isAddedToCart ? "Go to Cart" : "Add to Cart"}
               </Button>
-              <Link to={`/course/${courseId}`} className="flex-1">
+              <Link
+                to={courseUrl}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1"
+              >
                 <Button
                   variant="outline"
                   size="sm"
