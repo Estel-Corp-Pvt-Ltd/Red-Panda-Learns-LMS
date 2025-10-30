@@ -32,7 +32,7 @@ import {
   ChevronRight,
   Clock,
   Lock,
-  Play
+  Play,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -234,7 +234,7 @@ export default function CourseDetailPage() {
               className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
               aria-hidden="true"
             />
-            <h4 className="text-lg truncate">{title}</h4>
+            <h4 className="text-[0.9rem] font-medium truncate">{title}</h4>
           </div>
           <span className="text-sm opacity-80">{items.length} lessons</span>
         </CollapsibleTrigger>
@@ -255,7 +255,7 @@ export default function CourseDetailPage() {
                       <Lock className="text-primary" size={14} />
                     )}
                   </div>
-                  <p className="flex-1 min-w-0 text-sm font-medium text-foreground truncate">
+                  <p className="flex-1 min-w-0 text-[0.9rem] font-medium text-foreground truncate">
                     {lessonTitle}
                   </p>
                 </div>
@@ -373,7 +373,7 @@ export default function CourseDetailPage() {
           {/* Right: Continue/Enroll + Curriculum (+ Details) */}
           <div className="space-y-6">
             {/* Continue Learning / Enroll */}
-            <Card className="sticky top-24">
+            <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   {course.salePrice === 0 ? (
@@ -434,7 +434,9 @@ export default function CourseDetailPage() {
                   Course Curriculum
                 </CardTitle>
                 <div className="text-sm text-muted-foreground flex justify-between mt-2">
-                  <p>{topicCount} topics • {lessonCount} lessons</p>
+                  <p>
+                    {topicCount} topics • {lessonCount} lessons
+                  </p>
                   <span className="text-sm text-muted-foreground ml-4">
                     {course.duration && (
                       <div className="flex items-center gap-1">
