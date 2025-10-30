@@ -263,17 +263,21 @@ export default function BundleCheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-    try {
-      if (!appliedCoupon) return;
-      const usageDate = {
-        userId: user?.id,
-        couponId: appliedCoupon.id,
-        usedAt: Timestamp.now(),
-      };
-      await couponUsageService.recordCouponUsage(usageDate);
-    } catch (error) {
-      console.log("Error recording coupon usage", error);
+      const usageData = {
+      userId: user?.id,
+      couponId: appliedCoupon.id,
+      usedAt: Timestamp.now(),
+    };
+    const result = await couponUsageService.recordCouponUsage(usageData);
+    if (result.success) {
+      toast({
+        title: "Coupon successfully applied!",
+      });
+      return;
     }
+    toast({
+      title: "Failed to apply coupon!",
+    });
   };
 
   const handlePayment = async () => {

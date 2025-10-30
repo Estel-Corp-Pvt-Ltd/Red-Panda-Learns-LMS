@@ -227,12 +227,13 @@ export default function CheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-    const usageDate = {
+   
+      const usageData = {
       userId: user?.id,
       couponId: appliedCoupon.id,
       usedAt: Timestamp.now(),
     };
-    const result = await couponUsageService.recordCouponUsage(usageDate);
+    const result = await couponUsageService.recordCouponUsage(usageData);
     if (result.success) {
       toast({
         title: "Coupon successfully applied!",
