@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Copy,
   CreditCard,
   Lock,
   RefreshCw,
@@ -275,7 +274,7 @@ export default function CartCheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-      const usageData = {
+    const usageData = {
       userId: user?.id,
       couponId: appliedCoupon.id,
       usedAt: Timestamp.now(),
@@ -569,20 +568,18 @@ export default function CartCheckoutPage() {
                           <div
                             key={provider.id}
                             onClick={() => setSelectedProvider(provider.id)}
-                            className={`cursor-pointer p-4 rounded-xl border transition ${
-                              isSelected
-                                ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                                : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                            }`}
+                            className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
+                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                              }`}
                           >
                             <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                               <div className="flex gap-3">
                                 <div
-                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${
-                                    isSelected
-                                      ? "bg-blue-600 border-blue-600"
-                                      : "border-gray-400 dark:border-[#555]"
-                                  }`}
+                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
+                                    ? "bg-blue-600 border-blue-600"
+                                    : "border-gray-400 dark:border-[#555]"
+                                    }`}
                                 />
                                 <div>
                                   <div className="flex items-center gap-2 font-medium">
@@ -660,27 +657,9 @@ export default function CartCheckoutPage() {
                         <div>
                           <h4 className="font-medium mb-1">Secure Payment</h4>
                           <p className="text-sm text-muted-foreground dark:text-gray-400">
-                            All transactions are encrypted. Instant access after
-                            payment. 7‑day refund guarantee.
+                            All transactions are encrypted. Instant access after payment.
                           </p>
                         </div>
-                        </div>
-                      
-                    
-                  </CardContent>
-                </Card>
-
-                {/* Security */}
-                <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3">
-                      <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium mb-1">Secure Payment</h4>
-                        <p className="text-sm text-muted-foreground dark:text-gray-400">
-                          All transactions are encrypted. Instant access after payment. 
-                        </p>
-                      </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -796,11 +775,10 @@ export default function CartCheckoutPage() {
                         </div>
                         {couponMessage && (
                           <p
-                            className={`text-sm ${
-                              isCouponValid
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
-                            }`}
+                            className={`text-sm ${isCouponValid
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                              }`}
                           >
                             {couponMessage}
                           </p>

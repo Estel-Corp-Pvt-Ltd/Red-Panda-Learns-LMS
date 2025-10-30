@@ -123,7 +123,7 @@ class BundleService {
         status: data.status,
         thumbnail: data.thumbnail,
         categoryIds: data.categoryIds || [],      
-  targetAudienceIds: data.targetAudienceIds || [], 
+        targetAudienceIds: data.targetAudienceIds || [], 
         tags: data.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -193,7 +193,6 @@ class BundleService {
         throw new Error("Bundle not found");
       }
 
-      const currentBundle = bundleDoc.data() as Bundle;
       const updateData: Partial<Bundle> = {
         updatedAt: serverTimestamp(),
       };
