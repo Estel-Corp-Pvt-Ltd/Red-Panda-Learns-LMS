@@ -26,6 +26,14 @@ const EditLessonPage = lazy(() => import("./pages/admin/EditLesson"));
 const EditUserPage = lazy(() => import("./pages/admin/EditUser"));
 const SubmissionDetailPage = lazy(() => import("./pages/admin/SubmissionDetailPage"));
 const DummyCurriculumBuilderPage = lazy(() => import("./pages/admin/dummycurriculum"));
+const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
+const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
+const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminOrganizations = lazy(() => import("./pages/admin/AdminOrganizations"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
+const AdminOrders = lazy(() => import("./pages/admin/Orders"));
+const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 
 // user pages
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
@@ -50,14 +58,6 @@ import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";
 import MyInvoicesPage from "./pages/MyInvoices";
-import AdminCourses from "./pages/admin/AdminCourses";
-import AdminBundles from "./pages/admin/AdminBundles";
-import AdminCoupons from "./pages/admin/AdminCoupons";
-import AdminOrganizations from "./pages/admin/AdminOrganizations";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminInstructors from "./pages/admin/AdminInstructors";
-import AdminOrders from "./pages/admin/Orders";
-import AdminPopUps from "./pages/admin/PopUps";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));

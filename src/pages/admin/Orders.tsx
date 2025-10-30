@@ -278,7 +278,7 @@ const AdminOrders: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/orders/${order.orderId}`)}
+                            onClick={() => navigate(`/invoices/${order.orderId}`)}
                             title="View Order Details"
                           >
                             <Eye className="h-4 w-4" />

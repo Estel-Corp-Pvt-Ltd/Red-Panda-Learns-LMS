@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Loader2, PlusCircle, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { COURSE_STATUS } from '@/constants';
+import { COURSE_STATUS, CURRENCY } from '@/constants';
 import AdminLayout from '@/components/AdminLayout';
 import { toast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -113,7 +113,7 @@ const AdminCourses = () => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: CURRENCY.INR
     }).format(amount);
   };
 

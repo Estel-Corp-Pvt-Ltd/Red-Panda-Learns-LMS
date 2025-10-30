@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-import { BUNDLE_STATUS } from '@/constants';
+import { BUNDLE_STATUS, CURRENCY } from '@/constants';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from '@/hooks/use-toast';
 
@@ -122,7 +122,7 @@ const AdminBundles: React.FC = () => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: CURRENCY.INR
     }).format(amount);
   };
 
