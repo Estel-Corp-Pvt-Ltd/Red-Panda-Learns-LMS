@@ -20,6 +20,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { USER_ROLE, USER_STATUS } from '@/constants';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface PaginatedInstructors {
   data: User[];
@@ -40,6 +41,8 @@ const AdminInstructors: React.FC = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedInstructor, setSelectedInstructor] = useState<User | null>(null);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -108,28 +111,22 @@ const AdminInstructors: React.FC = () => {
     });
   };
 
-  const deleteInstructor = async (instructorId: string) => {
-    if (!confirm('Are you sure you want to delete this instructor? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      // Implement your delete instructor logic here
-      console.log('Deleting instructor:', instructorId);
-      // After deletion, reload instructors
-      await loadInstructors();
-      toast({
-        title: "Success",
-        description: "Instructor deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting instructor:', error);
+  const deleteInstructor = async () => {
+    if (!selectedInstructor) return;
+    const result = await userService.deleteUser(selectedInstructor.id);
+    if (!result.success) {
       toast({
         title: "Error",
         description: "Failed to delete instructor",
         variant: "destructive",
       });
+      return;
     }
+    toast({
+      title: "Success",
+      description: "Instructor deleted successfully",
+    });
+    await loadInstructors();
   };
 
   const getFullName = (instructor: User) => {
@@ -284,7 +281,10 @@ const AdminInstructors: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteInstructor(instructor.id)}
+                            onClick={() => {
+                              setSelectedInstructor(instructor);
+                              setConfirmOpen(true);
+                            }}
                             title="Delete Instructor"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -329,6 +329,20 @@ const AdminInstructors: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          deleteInstructor();
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </AdminLayout>
   );
 };

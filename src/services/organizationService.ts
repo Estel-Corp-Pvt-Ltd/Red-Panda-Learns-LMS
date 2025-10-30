@@ -123,13 +123,14 @@ class OrganizationService {
   }
 
   /** Delete organization */
-  async deleteOrganization(id: string): Promise<void> {
+  async deleteOrganization(id: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.ORGANIZATIONS, id));  // 👈 use constant
       console.log("OrganizationService - deleted:", id);
+      return ok(null);
     } catch (error) {
       console.error("OrganizationService - Error deleting organization:", error);
-      throw new Error("Failed to delete organization");
+      return fail("Failed to delete organization");
     }
   }
 

@@ -18,6 +18,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { BUNDLE_STATUS } from '@/constants';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { toast } from '@/hooks/use-toast';
 
 interface PaginatedBundles {
   data: Bundle[];
@@ -37,6 +39,8 @@ const AdminBundles: React.FC = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -97,18 +101,23 @@ const AdminBundles: React.FC = () => {
     });
   };
 
-  const deleteBundle = async (bundleId: string) => {
-    if (window.confirm('Are you sure you want to delete this bundle? This action cannot be undone.')) {
-      try {
-        // Implement your delete bundle logic here
-        console.log('Deleting bundle:', bundleId);
-        // After deletion, reload bundles
-        await loadBundles();
-      } catch (error) {
-        console.error('Error deleting bundle:', error);
-      }
+  const deleteBundle = async () => {
+    if (!selectedBundle) return;
+    const result = await bundleService.deleteBundle(selectedBundle.id);
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: "Failed to delete bundle.",
+        variant: "destructive"
+      });
+      return;
     }
-  };
+    toast({
+      title: "Success",
+      description: "Bundle deleted successfully."
+    });
+    await loadBundles();
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -287,7 +296,10 @@ const AdminBundles: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteBundle(bundle.id)}
+                            onClick={() => {
+                              setSelectedBundle(bundle);
+                              setConfirmOpen(true);
+                            }}
                             title="Delete Bundle"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -332,6 +344,20 @@ const AdminBundles: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          deleteBundle();
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </AdminLayout>
   );
 };

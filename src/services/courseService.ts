@@ -558,13 +558,14 @@ class CourseService {
    * console.log('Course deleted successfully.');
    */
 
-  async deleteCourse(courseId: string): Promise<void> {
+  async deleteCourse(courseId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.COURSES, courseId));
       console.log('CourseService - Course deleted successfully:', courseId);
+      return ok(null);
     } catch (error) {
       console.error('CourseService - Error deleting course:', error);
-      throw new Error('Failed to delete course');
+      return fail('Failed to delete course');
     }
   }
 }

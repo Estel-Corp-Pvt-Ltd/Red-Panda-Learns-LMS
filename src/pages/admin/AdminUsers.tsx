@@ -20,6 +20,7 @@ import {
   User as UserIcon
 } from 'lucide-react';
 import { USER_ROLE, USER_STATUS } from '@/constants';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface PaginatedUsers {
   data: User[];
@@ -40,6 +41,8 @@ const AdminUsers: React.FC = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -108,29 +111,23 @@ const AdminUsers: React.FC = () => {
     });
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      // Implement your delete user logic here
-      console.log('Deleting user:', userId);
-      // After deletion, reload users
-      await loadUsers();
-      toast({
-        title: "Success",
-        description: "User deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting user:', error);
+  const deleteUser = async () => {
+    if (!selectedUser) return;
+    const result = await userService.deleteUser(selectedUser.id);
+    if (!result.success) {
       toast({
         title: "Error",
         description: "Failed to delete user",
         variant: "destructive",
       });
+      return;
     }
-  };
+    toast({
+      title: "Success",
+      description: "User deleted successfully",
+    });
+    await loadUsers();
+  }
 
   const getFullName = (user: User) => {
     const names = [user.firstName];
@@ -305,7 +302,10 @@ const AdminUsers: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteUser(user.id)}
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setConfirmOpen(true);
+                            }}
                             title="Delete User"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -350,6 +350,20 @@ const AdminUsers: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          deleteUser();
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </AdminLayout>
   );
 };

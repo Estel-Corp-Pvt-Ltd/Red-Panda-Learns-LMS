@@ -9,6 +9,8 @@ import { BookOpen, Loader2, PlusCircle, Edit, Trash2, ChevronLeft, ChevronRight 
 import { Button } from '@/components/ui/button';
 import { COURSE_STATUS } from '@/constants';
 import AdminLayout from '@/components/AdminLayout';
+import { toast } from '@/hooks/use-toast';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface PaginatedCourses {
   data: Course[];
@@ -28,6 +30,8 @@ const AdminCourses = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -88,17 +92,22 @@ const AdminCourses = () => {
     });
   };
 
-  const deleteCourse = async (courseId: string) => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
-      try {
-        // Implement your delete course logic here
-        console.log('Deleting course:', courseId);
-        // After deletion, reload courses
-        loadCourses();
-      } catch (error) {
-        console.error('Error deleting course:', error);
-      }
+  const deleteCourse = async () => {
+    if (!selectedCourse) return;
+    const result = await courseService.deleteCourse(selectedCourse.id);
+    if (!result.success) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete course',
+        variant: 'destructive'
+      });
+      return;
     }
+    toast({
+      title: 'Success',
+      description: 'Course deleted successfully',
+    });
+    await loadCourses();
   };
 
   const formatCurrency = (amount: number) => {
@@ -221,7 +230,10 @@ const AdminCourses = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteCourse(course.id)}
+                            onClick={() => {
+                              setSelectedCourse(course);
+                              setConfirmOpen(true);
+                            }}
                             title="Delete course"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -266,6 +278,20 @@ const AdminCourses = () => {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          deleteCourse();
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </AdminLayout>
   );
 };

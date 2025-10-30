@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { OrganizationType } from '@/types/general';
 import { ORGANIZATION } from '@/constants';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface PaginatedOrganizations {
   data: Organization[];
@@ -54,6 +55,8 @@ const OrganizationTab = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -174,24 +177,19 @@ const OrganizationTab = () => {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this organization?"))
-      return;
-    try {
-      await organizationService.deleteOrganization(id);
-      toast({
-        title: "Deleted",
-        description: "Organization deleted successfully.",
-      });
-      await loadOrganizations();
-    } catch (error) {
-      console.error("Error deleting organization:", error);
+  async function handleDelete() {
+    if (!selectedOrg) return;
+    const result = await organizationService.deleteOrganization(selectedOrg.id);
+    if (!result.success) {
       toast({
         title: "Error",
         description: "Failed to delete organization.",
         variant: "destructive",
       });
+      return;
     }
+    toast({ title: "Deleted", description: "Organization deleted successfully." });
+    await loadOrganizations();
   }
 
   const getBadgeVariant = (orgType: OrganizationType) => {
@@ -343,7 +341,10 @@ const OrganizationTab = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(org.id)}
+                          onClick={() => {
+                            setSelectedOrg(org);
+                            setConfirmOpen(true);
+                          }}
                           title="Delete organization"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -387,6 +388,20 @@ const OrganizationTab = () => {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          handleDelete();
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </div>
   );
 };

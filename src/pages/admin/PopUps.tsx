@@ -21,6 +21,7 @@ import {
 import { PopUpCourseType } from '@/types/general';
 import { PopUp } from '@/types/pop-up';
 import { POPUP_COURSE_TYPE } from '@/constants';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface PaginatedPopUps {
   data: PopUp[];
@@ -64,6 +65,8 @@ const AdminPopUps: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedPopUp, setSelectedPopUp] = useState<PopUp | null>(null);
 
   const loadPopUps = async (options = {}) => {
     setIsLoading(true);
@@ -186,19 +189,19 @@ const AdminPopUps: React.FC = () => {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this pop-up?")) return;
-    try {
-      await popUpService.deletePopUp(id);
-      toast({ title: "Deleted", description: "Pop-up deleted successfully." });
-      await loadPopUps();
-    } catch {
+  async function handleDelete() {
+    if (!selectedPopUp) return;
+    const result = await popUpService.deletePopUp(selectedPopUp.id);
+    if (!result.success) {
       toast({
         title: "Error",
         description: "Failed to delete pop-up.",
         variant: "destructive",
       });
+      return;
     }
+    toast({ title: "Deleted", description: "Pop-up deleted successfully." });
+    await loadPopUps();
   }
 
   function resetForm() {
@@ -446,7 +449,10 @@ const AdminPopUps: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(pop.id)}
+                                onClick={() => {
+                                  setSelectedPopUp(pop);
+                                  setConfirmOpen(true);
+                                }}
                                 title="Delete pop-up"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -493,6 +499,20 @@ const AdminPopUps: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          handleDelete()
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </AdminLayout>
   );
 };

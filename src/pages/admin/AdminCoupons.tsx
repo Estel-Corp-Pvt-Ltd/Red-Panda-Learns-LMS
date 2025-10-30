@@ -19,6 +19,8 @@ import {
   Eye
 } from 'lucide-react';
 import { COUPON_STATUS } from '@/constants';
+import { toast } from '@/components/ui/use-toast';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface PaginatedCoupons {
   data: Coupon[];
@@ -38,6 +40,8 @@ const AdminCoupons: React.FC = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -98,17 +102,18 @@ const AdminCoupons: React.FC = () => {
     });
   };
 
-  const deleteCoupon = async (couponId: string) => {
-    if (window.confirm('Are you sure you want to delete this coupon? This action cannot be undone.')) {
-      try {
-        // Implement your delete coupon logic here
-        console.log('Deleting coupon:', couponId);
-        // After deletion, reload coupons
-        await loadCoupons();
-      } catch (error) {
-        console.error('Error deleting coupon:', error);
-      }
+  const deleteCoupon = async () => {
+    if (!selectedCoupon) return;
+    const result = await couponService.deleteCoupon(selectedCoupon.id);
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: "Failed to delete coupon. Please try again.",
+        variant: "destructive",
+      });
+      return;
     }
+    await loadCoupons();
   };
 
   const copyToClipboard = (text: string) => {
@@ -295,7 +300,10 @@ const AdminCoupons: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteCoupon(coupon.id)}
+                            onClick={() => {
+                              setSelectedCoupon(coupon);
+                              setConfirmOpen(true);
+                            }}
                             title="Delete Coupon"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -340,6 +348,20 @@ const AdminCoupons: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          deleteCoupon();
+          setConfirmOpen(false);
+        }}
+        title="Delete"
+        body="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
     </AdminLayout>
   );
 };

@@ -385,13 +385,14 @@ class BundleService {
  * @throws Will throw an error if the bundle cannot be deleted.
  */
 
-  async deleteBundle(bundleId: string): Promise<void> {
+  async deleteBundle(bundleId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, 'Bundles', bundleId));
       console.log('BundleService - Bundle deleted successfully:', bundleId);
+      return ok(null);
     } catch (error) {
       console.error('BundleService - Error deleting bundle:', error);
-      throw new Error('Failed to delete bundle');
+      return fail('Failed to delete bundle');
     }
   }
 
