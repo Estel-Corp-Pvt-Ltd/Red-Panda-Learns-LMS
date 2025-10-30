@@ -50,6 +50,7 @@ import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";
 import MyInvoicesPage from "./pages/MyInvoices";
+import AdminCourses from "./pages/admin/AdminCourses";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -111,6 +112,11 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/admin/courses" element={
+                        <AuthGuard requireAdmin>
+                          <AdminCourses />
+                        </AuthGuard>
+                      } />
                       <Route
                         path="/admin/edit-lesson/:lessonId"
                         element={
