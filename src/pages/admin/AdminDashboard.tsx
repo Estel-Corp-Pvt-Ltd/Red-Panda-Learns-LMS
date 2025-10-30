@@ -1,36 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  inputBase,
-  selectTriggerBase,
-  selectItemBase,
-  selectContentBase,
-} from "../../components/ui/styles";
-import {
-  PlusCircle,
-  Edit,
-  Trash2,
-  Users,
-  UserPlus,
-  BookOpen,
-  Loader2,
-  Calendar,
-  Eye,
-  Check,
-  Plus,
-  Gift,
-} from "lucide-react";
-import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import {
+  BookOpen,
+  Calendar,
+  Edit,
+  Eye,
+  Check,
+  ShoppingCart,
+  Gift,
+  Loader2,
+  Plus,
+  PlusCircle,
+  Trash2,
+  Users,
+} from "lucide-react";
+import {
+  inputBase,
+  selectContentBase,
+  selectItemBase,
+  selectTriggerBase,
+} from "../../components/ui/styles";
 
-import { formatDate } from "@/utils/date-time";
 import { useToast } from "@/hooks/use-toast";
+import { ORDER_STATUS } from "@/constants";
+import { formatDate } from "@/utils/date-time";
 
+import { Header } from "@/components/Header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,7 +42,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -47,37 +50,53 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Header } from "@/components/Header";
 
-import { instructorService } from "@/services/instructorService";
 import { bundleService } from "@/services/bundleService";
 import { cohortService } from "@/services/cohortService";
 import { couponService } from "@/services/couponService";
 import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
 import { lessonService } from "@/services/lessonService";
 import { organizationService } from "@/services/organizationService";
 import { userService } from "@/services/userService";
-
+import { orderService } from "@/services/orderService";
 import { Bundle } from "@/types/bundle";
+import { Coupon } from "@/types/coupon";
+import { Cohort, Course } from "@/types/course";
+import { OrganizationType, PopUpCourseType } from "@/types/general";
 import { Lesson } from "@/types/lesson";
 import { Organization } from "@/types/organization";
 import { User } from "@/types/user";
-import { Cohort, Course } from "@/types/course";
-import { Coupon } from "@/types/coupon";
-import { OrganizationType, PopUpCourseType } from "@/types/general";
-
-import { CURRENCY, ORGANIZATION, POPUP_COURSE_TYPE } from "@/constants";
+import { OrderStatus } from "@/types/general";
 import {
   BUNDLE_STATUS,
   COUPON_STATUS,
   COURSE_STATUS,
+  CURRENCY,
+  ORGANIZATION,
+  POPUP_COURSE_TYPE,
   USER_ROLE,
   USER_STATUS,
 } from "@/constants";
-import { PopUp } from "@/types/pop-up";
 import { popUpService } from "@/services/popupService";
+import { Order } from "@/types/order";
+import { PopUp } from "@/types/pop-up";
+
+const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => {
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide",
+        active
+          ? "bg-[#ff00ff] text-white" // bright magenta pill for ACTIVE
+          : "border border-slate-300 text-slate-700 bg-white/80 dark:border-slate-700 dark:text-slate-300 dark:bg-transparent", // outlined pill for INACTIVE
+      ].join(" ")}
+    >
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+};
 
 const PopUpTab = () => {
   const [popUps, setPopUps] = useState<PopUp[]>([]);
@@ -93,6 +112,8 @@ const PopUpTab = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+
 
   useEffect(() => {
     loadPopUps();
@@ -294,32 +315,37 @@ const PopUpTab = () => {
             <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Status
             </label>
-            <Select
-              value={active ? "true" : "false"}
-              onValueChange={(v) => setActive(v === "true")}
-            >
-              <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent
-                side="bottom"
-                align="start"
-                className={selectContentBase}
+            <div className="flex items-center gap-2">
+              <Select
+                value={active ? "true" : "false"}
+                onValueChange={(v) => setActive(v === "true")}
               >
-                {[
-                  { label: "Active", value: "true" },
-                  { label: "Inactive", value: "false" },
-                ].map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger className={`${selectTriggerBase} h-11 w-full`}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent
+                  side="bottom"
+                  align="start"
+                  className={selectContentBase}
+                >
+                  {[
+                    { label: "Active", value: "true" },
+                    { label: "Inactive", value: "false" },
+                  ].map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className={`${selectItemBase} pl-9 hover:bg-sky-500 hover:text-white data-[highlighted]:bg-sky-500 data-[highlighted]:text-white`}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Live badge preview */}
+              <StatusBadge active={active} />
+            </div>
           </div>
 
           {/* Auto-close */}
@@ -396,7 +422,7 @@ const PopUpTab = () => {
                   CTA
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
-                  Active
+                  Status
                 </TableHead>
                 <TableHead className="text-slate-600 dark:text-slate-300">
                   Auto Close
@@ -438,7 +464,9 @@ const PopUpTab = () => {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>{pop.active ? "✅" : "❌"}</TableCell>
+                  <TableCell>
+                    <StatusBadge active={pop.active} />
+                  </TableCell>
                   <TableCell>{pop.autoClose ? "Yes" : "No"}</TableCell>
                   <TableCell>{pop.duration ?? 5000}</TableCell>
                   <TableCell className="text-right">
@@ -498,7 +526,10 @@ export function AdminDashboard() {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [cohortsLoading, setCohortsLoading] = useState(true);
   const [bundlesLoading, setBundlesLoading] = useState(true);
+  type StatusFilter = "ALL" | OrderStatus;
 
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   useEffect(() => {
     if (location.pathname === "/admin") {
       loadCourses();
@@ -508,9 +539,46 @@ export function AdminDashboard() {
       loadInstructors();
       loadUsers();
       loadCoupons();
+
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+
+  async function loadOrders() {
+    try {
+      const result = await orderService.getAllOrders();
+
+      if (result.success && result.data) {
+        setOrders(result.data);
+      } else {
+        console.error("Failed to fetch orders:", result.error?.message);
+        toast({
+          title: "Error",
+          description: "Failed to load orders from server.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast({
+        title: "Error",
+        description: "Something went wrong while loading orders.",
+        variant: "destructive",
+      });
+    }
+  }
+
+
+  const filteredOrders = useMemo(() => {
+    if (!orders?.length) return [];
+    return statusFilter === "ALL"
+      ? orders
+      : orders.filter((o) => o.status === statusFilter);
+  }, [orders, statusFilter]);
   const loadUsers = async () => {
     const response = await userService.getAllUsers();
     if (response.success) {
@@ -631,9 +699,9 @@ export function AdminDashboard() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: CURRENCY.USD,
+      currency: "INR",
     }).format(amount);
   };
 
@@ -730,6 +798,7 @@ export function AdminDashboard() {
     const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const { toast } = useToast();
+
 
     useEffect(() => {
       loadOrganizations();
@@ -979,15 +1048,6 @@ export function AdminDashboard() {
           {/*  Buttons stack on mobile, row on larger screens */}
           <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
             <Button
-              onClick={() => navigate("/admin/create-lesson")}
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">New</span> Lesson
-            </Button>
-
-            <Button
               onClick={() => navigate("/admin/create-course")}
               size="sm"
               className="text-xs sm:text-sm"
@@ -1021,6 +1081,15 @@ export function AdminDashboard() {
             >
               <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">New</span> Coupon
+            </Button>
+
+            <Button
+              onClick={() => navigate("/admin/submissions")}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <Eye className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              Submissions
             </Button>
           </div>
         </div>
@@ -1093,6 +1162,12 @@ export function AdminDashboard() {
               >
                 Pop-Ups
               </TabsTrigger>
+              <TabsTrigger
+                value="orders"
+                className="w-full sm:w-auto text-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              >
+                Orders
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="lessons">
@@ -1147,10 +1222,8 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell>{lesson.type}</TableCell>
                             <TableCell>
-                              {lesson.durationSeconds
-                                ? `${Math.floor(
-                                    lesson.durationSeconds / 60
-                                  )} min`
+                              {lesson.duration
+                                ? `${lesson.duration.hours} hours ${lesson.duration.minutes} min`
                                 : "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
@@ -1784,6 +1857,123 @@ export function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <PopUpTab />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="orders">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Orders</CardTitle>
+                  <CardDescription>View orders, item types, amounts, and statuses.</CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  {/* Status Filter */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Filter by status:</span>
+                      <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All</SelectItem>
+                          <SelectItem value={ORDER_STATUS.PENDING}>Pending</SelectItem>
+                          <SelectItem value={ORDER_STATUS.COMPLETED}>Completed</SelectItem>
+                          <SelectItem value={ORDER_STATUS.FAILED}>Failed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {orders.length === 0 ? (
+                    <div className="text-center py-8">
+                      <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No orders</h3>
+                      <p className="mt-1 text-sm text-gray-500">Orders will appear here once placed.</p>
+                    </div>
+                  ) : filteredOrders.length === 0 ? (
+                    <div className="text-center py-8">
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">No orders match this status</h3>
+                      <p className="mt-1 text-sm text-gray-500">Try a different status filter.</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Item Types</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>City</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrders.map((order) => {
+                          const fullName =
+                            order.billingAddress?.fullName
+                          "—";
+
+                          const uniqueTypes = Array.from(
+                            new Set(order.items.map((i) => i.itemType))
+                          );
+                          const city = order.billingAddress?.city
+                          return (
+                            <TableRow key={order.orderId}>
+                              <TableCell>{fullName}</TableCell>
+
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {uniqueTypes.map((t) => (
+                                    <Badge key={t} variant="secondary">
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                {formatCurrency(order.amount)}
+                              </TableCell>
+
+                              <TableCell>
+                                {city}
+                              </TableCell>
+
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    order.status === ORDER_STATUS.COMPLETED
+                                      ? "default"
+                                      : order.status === ORDER_STATUS.PENDING
+                                        ? "secondary"
+                                        : "destructive"
+                                  }
+                                >
+                                  {order.status}
+                                </Badge>
+                              </TableCell>
+
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    // onClick={() => navigate(`/admin/orders/${order.orderId}`)}
+                                    title="View Order"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

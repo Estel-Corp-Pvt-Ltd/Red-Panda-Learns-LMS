@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { CART_ACTION } from "@/constants";
+import { CURRENCY, CART_ACTION } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Course } from "@/types/course";
 import { getCourseStructureCounts } from "@/utils/course";
-import { parseDuration } from "@/utils/date-time";
 import { BookOpen, Clock, Play } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -42,49 +41,49 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
       navigate("/cart");
       return;
     }
-
-    cartDispatch({
-      type: CART_ACTION.ADD,
-      item: { courseId },
-    });
-
-    toast({
-      title: "Course added",
-      description: `${course.title} has been added to your cart.`,
-    });
+    cartDispatch({ type: CART_ACTION.ADD, item: { courseId } });
+    toast({ title: "Course added", description: `${course.title} has been added to your cart.` });
   };
 
   const { lessonCount } = getCourseStructureCounts(course);
-  const { hours, minutes } = parseDuration(course.durationSeconds);
+
+  // Pricing helpers
+  const regularPrice = typeof course.regularPrice === "number" ? course.regularPrice : 0;
+  const hasSale = typeof course.salePrice === "number";
+  const salePrice = hasSale ? (course.salePrice as number) : regularPrice;
+  const isFree = salePrice === 0;
+  const showSlash = hasSale; // show slash if salePrice is present
+
+  const formatINR = (amount: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY.INR,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
 
   return (
     <Card
       className={cn(
-        "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10",
+        "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg hover:shadow-primary/10",
         isFeatured && "ring-2 ring-primary/20 shadow-glow",
         className
       )}
     >
-
-      <div
-        className={cn(
-          "relative overflow-hidden bg-muted",
-          isCompact ? "aspect-[16/9]" : "aspect-[16/10]"
-        )}
-      >
+      <div className={cn("relative overflow-hidden bg-muted", isCompact ? "aspect-[16/9]" : "aspect-[16/10]")}>
         {course.thumbnail && (
           <img
             src={course.thumbnail}
             alt={`${course.title} thumbnail`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover"
             loading="lazy"
           />
         )}
 
+        {/* Hover overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4 transform scale-90 group-hover:scale-100 transition-transform duration-300">
+          <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4">
             <Play className="h-6 w-6 text-primary-foreground fill-current" />
           </div>
         </div>
@@ -95,9 +94,7 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
               Enrolled
             </Badge>
           )}
-          {isFeatured && (
-            <Badge className="bg-gradient-primary text-primary-foreground">Featured</Badge>
-          )}
+          {isFeatured && <Badge className="bg-gradient-primary text-primary-foreground">Featured</Badge>}
         </div>
       </div>
 
@@ -115,48 +112,38 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
           <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
         )}
 
-        {
-          course.instructorName &&
-          <p className="text-xs text-muted-foreground">by {course.instructorName}</p>
-        }
+        {course.instructorName && <p className="text-xs text-muted-foreground">by {course.instructorName}</p>}
       </CardContent>
 
       <CardFooter className={cn("px-4 pb-4 pt-0", isCompact && "px-3 pb-3")}>
         <div className="w-full space-y-3">
-
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <BookOpen className="h-3 w-3" />
                 <span>{lessonCount} lessons</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{hours} hrs</span>
-                <span>{minutes} min</span>
-              </div>
+              {course.duration && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{course.duration.hours} hrs</span>
+                  <span>{course.duration.minutes} min</span>
+                </div>
+              )}
             </div>
 
-            {course.salePrice === 0 ?
-              (
-                <div className="font-semibold text-primary">
-                  FREE
-                </div>
-              )
-              :
-              (
-                <div className="font-semibold text-primary">
-                  ₹{course.salePrice}
-                </div>
-              )
-            }
+            {/* Slash pricing */}
+            <div className="flex items-baseline gap-1">
+              {showSlash && <span className="line-through text-muted-foreground">{formatINR(regularPrice)}</span>}
+              <span className="font-semibold text-primary">{isFree ? "FREE" : formatINR(salePrice)}</span>
+            </div>
           </div>
 
           {userIsEnrolled ? (
             <Button
               variant="outline"
               size="sm"
-              className="w-full transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+              className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
               onClick={() => navigate(`/course/${courseId}`)}
             >
               Continue Learning
@@ -167,7 +154,7 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 variant="outline"
                 size="sm"
                 onClick={handleCart}
-                className="flex-1 transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                className="flex-1 transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
               >
                 {isAddedToCart ? "Go to Cart" : "Add to Cart"}
               </Button>
@@ -175,7 +162,7 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                  className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
                 >
                   View Course
                 </Button>

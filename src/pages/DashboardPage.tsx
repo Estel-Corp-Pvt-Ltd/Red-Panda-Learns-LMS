@@ -15,8 +15,9 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { BookOpen, Clock, PlayCircle, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PRICING_MODEL,ENROLLED_PROGRAM_TYPE } from '@/constants';
+import { PRICING_MODEL, ENROLLED_PROGRAM_TYPE } from '@/constants';
 import { toast, useToast } from '@/hooks/use-toast';
+import Sidebar from '@/components/Sidebar';
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const { data: course, isLoading } = useCourseQuery(enrollment.targetId);
   const { toast } = useToast();
@@ -96,49 +97,49 @@ export default function DashboardPage() {
       // If not admin, fetch enrollments
       const result = await enrollmentService.getUserEnrollments(user.id);
 
-     if (result.success) {
-  const data = result.data;
+      if (result.success) {
+        const data = result.data;
 
-  // Separate bundles and direct course enrollments
-  const bundles = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE);
-  const courses = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE);
+        // Separate bundles and direct course enrollments
+        const bundles = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE);
+        const courses = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE);
 
-  // For each bundle, create virtual course enrollments
-const bundleCourses = bundles.flatMap(bundle => {
-  if (!bundle.bundleProgress) return [];
-  return bundle.bundleProgress.map(bp => ({
-    id: `${bundle.id}_${bp.courseId}_virtual`,
-    userId: bundle.userId,
-    targetId: bp.courseId,
-    targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-    status: bundle.status,
-    role: bundle.role,
-    sourceBundleId: bundle.targetId,
-    pricingModel: bundle.pricingModel || PRICING_MODEL.PAID, 
-    enrollmentDate: bundle.enrollmentDate,
-    createdAt: bundle.createdAt,
-    updatedAt: bundle.updatedAt,
-    progressSummary: {
-      percent: 0,
-      completedCourses: 0,
-      totalCourses: 1
-    }
-  })) as Enrollment[]; 
-});
+        // For each bundle, create virtual course enrollments
+        const bundleCourses = bundles.flatMap(bundle => {
+          if (!bundle.bundleProgress) return [];
+          return bundle.bundleProgress.map(bp => ({
+            id: `${bundle.id}_${bp.courseId}_virtual`,
+            userId: bundle.userId,
+            targetId: bp.courseId,
+            targetType: ENROLLED_PROGRAM_TYPE.COURSE,
+            status: bundle.status,
+            role: bundle.role,
+            sourceBundleId: bundle.targetId,
+            pricingModel: bundle.pricingModel || PRICING_MODEL.PAID,
+            enrollmentDate: bundle.enrollmentDate,
+            createdAt: bundle.createdAt,
+            updatedAt: bundle.updatedAt,
+            progressSummary: {
+              percent: 0,
+              completedCourses: 0,
+              totalCourses: 1
+            }
+          })) as Enrollment[];
+        });
 
-  // Merge direct course enrollments + virtual course enrollments
-  const allCourses = [...courses, ...bundleCourses];
+        // Merge direct course enrollments + virtual course enrollments
+        const allCourses = [...courses, ...bundleCourses];
 
-  setEnrollments(allCourses);
-} 
- else {
+        setEnrollments(allCourses);
+      }
+      else {
         setEnrollments([]);
-       
-     toast({
-        title: "You are not enrolled into any course ",
-        description: "Enroll in any course ",
-        variant: "destructive",
-      });
+
+        toast({
+          title: "You are not enrolled into any course ",
+          description: "Enroll in any course ",
+          variant: "destructive",
+        });
       }
 
       setIsLoading(false);
@@ -156,91 +157,93 @@ const bundleCourses = bundles.flatMap(bundle => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background">
       <Header />
-
-      <div className="container mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
-          <p className="text-muted-foreground">
-            Track your learning progress and continue your courses
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCourses}</div>
-              <p className="text-xs text-muted-foreground">
-                Active enrollments
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completedCourses}</div>
-              <p className="text-xs text-muted-foreground">
-                Courses finished
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.averageProgress}%</div>
-              <p className="text-xs text-muted-foreground">
-                Across all courses
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Enrolled Courses */}
-        <div>
-          <div className='flex justify-between items-center mb-6'>
-            <h2 className="text-2xl font-semibold">My Courses</h2>
-            {enrollments.length > 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 w-full mx-auto p-6 overflow-y-scroll">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
+            <p className="text-muted-foreground">
+              Track your learning progress and continue your courses
+            </p>
           </div>
-          {isLoading ? (
-            <div className="grid gap-6">
-              <LoadingSkeleton className="h-48" />
-              <LoadingSkeleton className="h-48" />
-            </div>
-          ) : enrollments.length > 0 ? (
-            <div className="grid gap-6">
-              {enrollments.map((enrollment) => (
-                <EnrolledCourseCard key={enrollment.id} enrollment={enrollment} />
-              ))}
-            </div>
-          ) : (
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
-              <CardContent className="p-12 text-center">
-                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Start your learning journey by enrolling in a course
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalCourses}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active enrollments
                 </p>
-                <Button asChild>
-                  <Link to="/courses">Browse Courses</Link>
-                </Button>
               </CardContent>
             </Card>
-          )}
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.completedCourses}</div>
+                <p className="text-xs text-muted-foreground">
+                  Courses finished
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.averageProgress}%</div>
+                <p className="text-xs text-muted-foreground">
+                  Across all courses
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Enrolled Courses */}
+          <div>
+            <div className='flex justify-between items-center mb-6'>
+              <h2 className="text-2xl font-semibold">My Courses</h2>
+              {enrollments.length > 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
+            </div>
+            {isLoading ? (
+              <div className="grid gap-6">
+                <LoadingSkeleton className="h-48" />
+                <LoadingSkeleton className="h-48" />
+              </div>
+            ) : enrollments.length > 0 ? (
+              <div className="grid gap-6">
+                {enrollments.map((enrollment) => (
+                  <EnrolledCourseCard key={enrollment.id} enrollment={enrollment} />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Start your learning journey by enrolling in a course
+                  </p>
+                  <Button asChild>
+                    <Link to="/courses">Browse Courses</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

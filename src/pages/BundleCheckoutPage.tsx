@@ -34,6 +34,13 @@ import { Timestamp } from "firebase/firestore";
 // BUNDLE queries (only difference)
 import { useBundleCoursesQuery, useBundleQuery } from "@/hooks/useBundleApi";
 import { enrollmentService } from "@/services/enrollmentService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -135,7 +142,7 @@ export default function BundleCheckoutPage() {
     if (bundle && selectedCurrency) loadPricing();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, selectedCurrency, selectedProvider, discountAmount]);
-
+  
   // Initial load
   // useEffect(() => {
   //   if (bundle && selectedCurrency) loadPricing();
@@ -146,8 +153,12 @@ export default function BundleCheckoutPage() {
     if (!bundle) return;
     setLoadingPricing(true);
     try {
-      // Try known bundle price fields; adjust if your schema differs
-      const basePrice = bundle.salePrice || 0;
+      // Base price: prefer salePrice if present, else regularPrice
+      const basePrice =
+        typeof bundle.salePrice === "number"
+          ? Number(bundle.salePrice)
+          : Number(bundle.regularPrice ?? 0);
+
       const effectivePrice = Math.max(0, basePrice - discountAmount);
       setFinalPrice(effectivePrice);
 
@@ -232,7 +243,11 @@ export default function BundleCheckoutPage() {
         return;
       }
 
-      const originalPrice = bundle.salePrice || 0;
+      // Use salePrice if present, else regular
+      const originalPrice =
+        typeof bundle.salePrice === "number"
+          ? Number(bundle.salePrice)
+          : Number(bundle.regularPrice ?? 0);
 
       const d = calcDiscount(originalPrice, coupon);
       setDiscountAmount(d);
@@ -276,15 +291,16 @@ export default function BundleCheckoutPage() {
     });
 
     try {
-      // Using the generic processPayment to keep parity with reference structure
-
       const items: TransactionLineItem[] = [
         {
           itemId: bundle.id,
           itemType: ENROLLED_PROGRAM_TYPE.BUNDLE,
           name: bundle.title,
           amount: finalPrice,
-          originalAmount: bundle.salePrice,
+          originalAmount:
+            typeof bundle.salePrice === "number"
+              ? Number(bundle.salePrice)
+              : Number(bundle.regularPrice ?? 0),
         },
       ];
 
@@ -380,13 +396,22 @@ export default function BundleCheckoutPage() {
 
   const hasDiscount = discountAmount > 0;
   const exchangeRate = Number(pricing?.exchangeRate ?? 1);
+
+  // Money formatter for UI
   const formatMoney = (amount: number, cur: Currency) =>
     new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: cur,
     }).format(amount);
 
-  const originalConverted = bundle ? (bundle.salePrice || 0) * exchangeRate : 0;
+  // Price bases
+  const hasSale = typeof bundle.salePrice === "number";
+  const regularPrice = Number(bundle.regularPrice ?? 0);
+  const salePrice = hasSale ? Number(bundle.salePrice) : regularPrice;
+
+  // Converted values for display in selectedCurrency
+  const regularConverted = regularPrice * exchangeRate;
+  const saleConverted = salePrice * exchangeRate;
   const discountConverted = discountAmount * exchangeRate;
 
   return (
@@ -454,29 +479,36 @@ export default function BundleCheckoutPage() {
                           <div className="flex items-baseline justify-between text-sm">
                             <span>Bundle Price:</span>
                             <div className="flex items-baseline gap-2">
-                              {hasDiscount ? (
-                                <>
-                                  <span className="line-through text-gray-400">
-                                    {formatMoney(
-                                      originalConverted,
-                                      selectedCurrency
-                                    )}
-                                  </span>
-                                  <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                                    You save{" "}
-                                    {formatMoney(
-                                      discountConverted,
-                                      selectedCurrency
-                                    )}
-                                  </Badge>
-                                </>
-                              ) : (
-                                <span className="font-medium">
+                              {hasSale && (
+                                <span className="line-through text-gray-400">
                                   {formatMoney(
-                                    originalConverted,
+                                    regularConverted,
                                     selectedCurrency
                                   )}
                                 </span>
+                              )}
+
+                              <span
+                                className={`font-medium ${
+                                  hasDiscount
+                                    ? "line-through text-gray-400"
+                                    : ""
+                                }`}
+                              >
+                                {formatMoney(
+                                  saleConverted,
+                                  selectedCurrency
+                                )}
+                              </span>
+
+                              {hasDiscount && (
+                                <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                                  You save{" "}
+                                  {formatMoney(
+                                    discountConverted,
+                                    selectedCurrency
+                                  )}
+                                </Badge>
                               )}
                             </div>
                           </div>
@@ -488,7 +520,8 @@ export default function BundleCheckoutPage() {
                               Total:
                             </span>
                             <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                              {pricing.formattedTotal ?? pricing.formattedPrice}
+                              {pricing.formattedTotal ??
+                                pricing.formattedPrice}
                             </span>
                           </div>
 
@@ -574,25 +607,35 @@ export default function BundleCheckoutPage() {
                                 </div>
                               </div>
                               <div className="flex flex-col gap-2 sm:items-end">
-                                <select
-                                  value={currency}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) =>
+                                <Select
+                                  value={providerCurrencies[provider.id]}
+                                  onValueChange={(value: Currency) =>
                                     setProviderCurrencies((prev) => ({
                                       ...prev,
-                                      [provider.id]: e.target.value as Currency,
+                                      [provider.id]: value,
                                     }))
                                   }
-                                  className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
                                 >
-                                  {providerSupportedCurrencies[provider.id].map(
-                                    (c) => (
-                                      <option key={c} value={c}>
-                                        {c}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
+                                  <SelectTrigger
+                                    className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <SelectValue placeholder="Select currency" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {providerSupportedCurrencies[
+                                      provider.id
+                                    ].map((currency) => (
+                                      <SelectItem
+                                        key={currency}
+                                        value={currency}
+                                      >
+                                        {currency}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
                                 <Badge
                                   variant="secondary"
                                   className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
@@ -616,7 +659,7 @@ export default function BundleCheckoutPage() {
                           <h4 className="font-medium mb-1">Secure Payment</h4>
                           <p className="text-sm text-muted-foreground dark:text-gray-400">
                             All transactions are encrypted. Instant access after
-                            payment. 7‑day refund guarantee.
+                            payment.
                           </p>
                         </div>
                       </div>

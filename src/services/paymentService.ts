@@ -159,7 +159,7 @@ class PaymentService {
           : `${itemNames[0]} + ${itemNames.length - 1} more`;
 
       // Create Order
-      const orderId = await orderService.createOrder({
+      const orderResult = await orderService.createOrder({
         userId,
         items,
         amount: pricing.amount,
@@ -184,6 +184,12 @@ class PaymentService {
         },
         status: ORDER_STATUS.PENDING,
       });
+      if (!orderResult.success) {
+        console.error("Failed to create order:", orderResult.error?.message);
+        return;
+      }
+
+      const orderId = orderResult.data!;
 
       const transactionId = await transactionService.createTransaction({
         orderNumber: orderId,
@@ -244,14 +250,10 @@ class PaymentService {
         );
 
         try {
-          await enrollmentService.enrollUser(
-            userId,
-            items
-          );
+          await enrollmentService.enrollUser(userId, items);
         } catch (err) {
           console.error("Enrollment failed for item:", items, err);
         }
-
       } else {
         // Mark order as failed so it doesn’t linger in PENDING
         await orderService.updateOrder(

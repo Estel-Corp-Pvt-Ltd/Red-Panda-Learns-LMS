@@ -1,63 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  Plus,
-  FolderOpen,
-  Edit2,
-  Trash2,
-  GripVertical,
-  Copy,
-  Save,
-  BookOpen,
-  Users,
-  ArrowLeft,
-  ChevronDown,
-  NotepadText,
-  NotebookPen,
-  Search,
-  Eye,
-} from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
+import { Header } from "@/components/Header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
+  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { courseService } from "@/services/courseService";
-import { Course, Topic, Cohort, TopicItem } from "@/types/course";
-import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
-import { LearningContentType, Lesson } from "@/types/lesson";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { COURSE_STATUS, LEARNING_UNIT } from "@/constants";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CourseStatus, LearningUnit } from "@/types/general";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -65,42 +25,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { instructorService } from "@/services/instructorService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Header } from "@/components/Header";
+import { ATTRIBUTE_TYPE, COURSE_STATUS, LEARNING_UNIT } from "@/constants";
+import { useToast } from "@/hooks/use-toast";
 import { attributeService } from "@/services/attributeService";
-import { ATTRIBUTE_TYPE } from "@/constants";
+import { courseService } from "@/services/courseService";
+import { instructorService } from "@/services/instructorService";
+import { Cohort, Course, Topic, TopicItem } from "@/types/course";
+import { CourseStatus, LearningUnit as LearningUnitType } from "@/types/general";
+import { LearningContentType, Lesson } from "@/types/lesson";
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  ChevronDown,
+  Copy,
+  Edit2,
+  Eye,
+  FolderOpen,
+  GripVertical,
+  NotebookPen,
+  NotepadText,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-// import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
-
-// FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
-import { fileService } from "@/services/fileService";
-import { getDownloadURL } from "firebase/storage";
-import CohortBuilderPage from "./CreateCohortPage";
-import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { CreateLessonModal } from "@/components/admin/AddLesson";
-import { getFullName } from "@/utils/name";
+import AssignmentModal from "@/components/AssignmentModal";
+import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
+import { fileService } from "@/services/fileService";
 import { Assignment } from "@/types/assignment";
 import { logError } from "@/utils/logger";
-import AssignmentModal from "@/components/AssignmentModal";
+import { getFullName } from "@/utils/name";
+import { getDownloadURL } from "firebase/storage";
+import CohortBuilderPage from "./CreateCohortPage";
+import { Label } from "@/components/ui/label";
 
 type SortableItemProps = {
   id: string;
   children: React.ReactNode;
-  type: LearningUnit;
+  type: LearningUnitType;
   depth: number;
 };
 
 type DraggableItem = {
   id: string;
   title: string;
-  type: LearningUnit;
+  type: LearningUnitType;
 
   depth: number;
   parentId: string | null;
   originalData?: Cohort | Topic;
   refId?: string; // real id for lessons, assignments
 };
+
+type DurationForm = { hours: number | null; minutes: number | null };
+
+const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
+const isNum = (v: number | null): v is number => v !== null && Number.isFinite(v);
 
 const SortableItem = ({ id, children, depth }: SortableItemProps) => {
   const {
@@ -148,8 +154,12 @@ const CurriculumBuilderPage = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
-  const [regularPrice, setRegularPrice] = useState(0);
-  const [salePrice, setSalePrice] = useState(0);
+
+  // Keep 0 by default, allow clearing to empty (null) while editing
+  const [regularPrice, setRegularPrice] = useState<number | null>(0);
+  const [salePrice, setSalePrice] = useState<number | null>(0);
+  const [duration, setDuration] = useState<DurationForm>({ hours: 0, minutes: 0 });
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
@@ -160,25 +170,30 @@ const CurriculumBuilderPage = () => {
   const [tagInput, setTagInput] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [instructorName, setInstructorName] = useState("");
-  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [instructors, setInstructors] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
   const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
         const categoriesData = await attributeService.getAttributes(
-          ATTRIBUTE_TYPE.CATEGORY
+          ATTRIBUTE_TYPE.CATEGORY,
         );
         setAllCategories(categoriesData.map((a) => a.name));
       } catch (error) {
@@ -192,7 +207,7 @@ const CurriculumBuilderPage = () => {
 
       try {
         const targetAudienceData = await attributeService.getAttributes(
-          ATTRIBUTE_TYPE.TARGET_AUDIENCE
+          ATTRIBUTE_TYPE.TARGET_AUDIENCE,
         );
         setAllTargetAudiences(targetAudienceData.map((a) => a.name));
       } catch (error) {
@@ -229,13 +244,32 @@ const CurriculumBuilderPage = () => {
       setTitle(courseData.title);
       setDescription(courseData.description);
       setStatus(courseData.status);
-      setRegularPrice(courseData.regularPrice);
-      setSalePrice(courseData.salePrice);
+
+      // Set numeric fields; keep 0 default if missing
+      setDuration({
+        hours:
+          typeof courseData?.duration?.hours === "number"
+            ? courseData.duration.hours
+            : 0,
+        minutes:
+          typeof courseData?.duration?.minutes === "number"
+            ? courseData.duration.minutes
+            : 0,
+      });
+      setRegularPrice(
+        typeof courseData?.regularPrice === "number"
+          ? courseData.regularPrice
+          : 0
+      );
+      setSalePrice(
+        typeof courseData?.salePrice === "number"
+          ? courseData.salePrice
+          : 0
+      );
 
       setSelectedTargetAudiences(courseData.targetAudienceIds || []);
       setSelectedCategories(courseData.categoryIds || []);
       setThumbnailUrl(courseData.thumbnail || "");
-      // setAllCategories(courseData.categories || []);
       setTags(courseData.tags || []);
       setInstructorId(courseData.instructorName);
       setInstructorName(courseData.instructorName);
@@ -254,7 +288,6 @@ const CurriculumBuilderPage = () => {
   // auto-save when curriculum changes
   useEffect(() => {
     if (isTopicItemAdded && curriculum.length > 0 && courseId) {
-      // Debounce auto-save to avoid too many requests
       const timeoutId = setTimeout(() => {
         saveCurriculumStructure();
       }, 1000);
@@ -269,15 +302,16 @@ const CurriculumBuilderPage = () => {
       const result = await instructorService.getAllInstructors();
 
       if (result.success) {
-        const formattedInstructors = result
-          .data
-          .map((instructor) => ({
-            id: instructor.id,
-            name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName)
-          }));
+        const formattedInstructors = result.data.map((instructor) => ({
+          id: instructor.id,
+          name: getFullName(
+            instructor.firstName,
+            instructor.middleName,
+            instructor.lastName,
+          ),
+        }));
 
         setInstructors(formattedInstructors);
-
       } else {
         console.error("Failed to fetch instructors:", result.error);
         toast({
@@ -291,8 +325,8 @@ const CurriculumBuilderPage = () => {
     fetchInstructors();
   }, [toast, instructorId, instructorName]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -324,7 +358,7 @@ const CurriculumBuilderPage = () => {
 
     const uploadResult = fileService.startResumableUpload(
       `/courses/${courseId}/thumbnail.png`,
-      selectedFile
+      selectedFile,
     );
     if (!uploadResult.success) {
       toast({
@@ -371,32 +405,32 @@ const CurriculumBuilderPage = () => {
           });
           logError("Error getting download URL:", error);
         }
-      }
+      },
     );
   };
 
+  // Validation + Save enabling
+  const canSaveBasics =
+    title.trim().length > 0 &&
+    description.trim().length > 0 &&
+    isNum(regularPrice) &&
+    isNum(salePrice) &&
+    isNum(duration.hours) &&
+    isNum(duration.minutes) &&
+    regularPrice >= 0 &&
+    salePrice >= 0 &&
+    salePrice <= regularPrice &&
+    duration.hours >= 0 &&
+    duration.minutes >= 0 &&
+    duration.minutes <= 59;
+
   const saveBasics = async () => {
     if (!courseId || !course) return;
-    if (!title.trim()) {
+
+    if (!canSaveBasics) {
       toast({
-        title: "Missing Title",
-        description: "Enter a course title.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!description.trim()) {
-      toast({
-        title: "Missing Description",
-        description: "Enter a description.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (regularPrice < 0 || salePrice < 0 || salePrice > regularPrice) {
-      toast({
-        title: "Pricing Error",
-        description: "Check regular / sale price.",
+        title: "Missing or invalid fields",
+        description: "Fill all numeric fields and required text fields correctly.",
         variant: "destructive",
       });
       return;
@@ -407,9 +441,10 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
-        regularPrice,
+        duration: { hours: duration.hours!, minutes: duration.minutes! },
+        regularPrice: regularPrice!,
         thumbnail: thumbnailUrl,
-        salePrice,
+        salePrice: salePrice!,
         targetAudienceIds: selectedTargetAudiences,
         categoryIds: selectedCategories,
         tags,
@@ -480,7 +515,9 @@ const CurriculumBuilderPage = () => {
             id: item.id,
             refId: item.id, // real item id
             title: item.title,
-            type: isAssignment ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
+            type: isAssignment
+              ? LEARNING_UNIT.ASSIGNMENT
+              : LEARNING_UNIT.LESSON,
             depth: 2,
             parentId: topic.id,
           });
@@ -510,7 +547,7 @@ const CurriculumBuilderPage = () => {
       };
 
       const topics = newList.filter(
-        (i) => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC
+        (i) => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC,
       );
 
       const itemsToInsert: DraggableItem[] = [newCohort];
@@ -530,7 +567,7 @@ const CurriculumBuilderPage = () => {
         itemsToInsert.push(newTopic);
 
         const lessons = newList.filter(
-          (i) => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON
+          (i) => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON,
         );
 
         lessons.forEach((lesson) => {
@@ -550,12 +587,11 @@ const CurriculumBuilderPage = () => {
     });
   };
 
-
   const excludedLessonIdsForActiveParent = useMemo(() => {
     if (!isLessonSelectorModalOpen || !activeParentId) return [];
 
     const topic = curriculum.find(
-      (i) => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC
+      (i) => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC,
     );
     if (!topic) return [];
 
@@ -566,9 +602,9 @@ const CurriculumBuilderPage = () => {
       const topicIdsInCohort = new Set(
         curriculum
           .filter(
-            (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId
+            (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId,
           )
-          .map((i) => i.id)
+          .map((i) => i.id),
       );
 
       const usedLessonIds = new Set<string>();
@@ -622,7 +658,7 @@ const CurriculumBuilderPage = () => {
         if (isTopic(item)) return item.parentId ?? null;
         if (isLesson(item) || isAssignment(item)) {
           const topic = item.parentId ? itemMap.get(item.parentId) : undefined;
-          return topic && isTopic(topic) ? topic.parentId ?? null : null;
+          return topic && isTopic(topic) ? (topic.parentId ?? null) : null;
         }
         return null;
       };
@@ -638,7 +674,8 @@ const CurriculumBuilderPage = () => {
         if (isTopic(activeItem)) {
           if (isCohort(overItem)) return overItem.id; // Topic into that cohort
           if (isTopic(overItem)) return overItem.parentId ?? null; // Topic among topics of same cohort
-          if (isLesson(overItem) || isAssignment(overItem)) return getCohortIdFor(overItem); // Topic near a lesson => adopt that lesson's cohort
+          if (isLesson(overItem) || isAssignment(overItem))
+            return getCohortIdFor(overItem); // Topic near a lesson => adopt that lesson's cohort
           return undefined;
         }
 
@@ -662,11 +699,8 @@ const CurriculumBuilderPage = () => {
       list = arrayMove(list, idxActive, idxOver);
 
       // Enforce relaxed “level gating” (minimal movement):
-      // 1) Ensure at least one cohort exists above the first topic (if both exist).
-      // 2) Ensure at least one topic exists above the first lesson (if both exist).
       const ensureLevelGating = (arr: typeof list) => {
         let out = arr;
-        // Iterate a few times to resolve interdependencies (e.g., moving topic before lesson may require moving cohort before topic)
         for (let pass = 0; pass < 4; pass++) {
           let changed = false;
 
@@ -675,17 +709,14 @@ const CurriculumBuilderPage = () => {
           const lIdx = out.findIndex(isLesson) || out.findIndex(isAssignment);
 
           if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
-            // Move earliest cohort to just before the earliest topic
             out = arrayMove(out, cIdx, tIdx);
             changed = true;
           }
 
-          // Recompute after potential move
           const tIdx2 = out.findIndex(isTopic);
           const lIdx2 = out.findIndex(isLesson) || out.findIndex(isAssignment);
 
           if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
-            // Move earliest topic to just before the earliest lesson
             out = arrayMove(out, tIdx2, lIdx2);
             changed = true;
           }
@@ -727,9 +758,9 @@ const CurriculumBuilderPage = () => {
   };
 
   const addItem = (
-    type: LearningUnit,
+    type: LearningUnitType,
     parentId: string | null = null,
-    depth = 0
+    depth = 0,
   ) => {
     const newItem: DraggableItem = {
       id: `${type.toLowerCase()}_${Date.now()}`,
@@ -813,14 +844,14 @@ const CurriculumBuilderPage = () => {
 
   const updateItemName = (itemId: string, name: string) => {
     setCurriculum((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, title: name } : item))
+      prev.map((item) =>
+        item.id === itemId ? { ...item, title: name } : item,
+      ),
     );
     setEditingItemId(null);
   };
 
   const deleteItem = (itemId: string) => {
-    console.log("Deleting item:", itemId);
-
     setCurriculum((prev) => {
       // Find all children and grandchildren recursively to delete them too
       const itemsToDelete = new Set<string>([itemId]);
@@ -835,42 +866,38 @@ const CurriculumBuilderPage = () => {
         }
       }
 
-      console.log("Items to delete:", Array.from(itemsToDelete));
       const newCurriculum = prev.filter((i) => !itemsToDelete.has(i.id));
-      console.log("New curriculum length:", newCurriculum.length);
       return newCurriculum;
     });
   };
 
   const handleAssignment = (assignment: Assignment) => {
-    console.log("handleAssignment called:", { assignment, activeParentId });
-
     if (!activeParentId) {
       console.error("No activeParentId set");
       return;
     }
 
-    const parentIndex = curriculum.findIndex(item => item.id === activeParentId);
+    const parentIndex = curriculum.findIndex(
+      (item) => item.id === activeParentId,
+    );
     if (parentIndex === -1) {
       console.error("Parent not found in curriculum:", activeParentId);
       return;
     }
 
-    console.log("Parent found at index:", parentIndex, curriculum[parentIndex]);
-
     // Check duplicate
-    const assignmentExists = curriculum.some(item =>
-      item.type === LEARNING_UNIT.ASSIGNMENT &&
-      item.parentId === activeParentId &&
-      (item.refId === assignment.id || item.refId === assignment.id)
+    const assignmentExists = curriculum.some(
+      (item) =>
+        item.type === LEARNING_UNIT.ASSIGNMENT &&
+        item.parentId === activeParentId &&
+        (item.refId === assignment.id || item.refId === assignment.id),
     );
 
     if (assignmentExists) {
-      console.log("Assignment already exists");
       toast({
         title: "Duplicate Assignment",
         description: "Assignment already exists in this topic",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -885,9 +912,7 @@ const CurriculumBuilderPage = () => {
       parentId: activeParentId,
     };
 
-    console.log("Adding new assignment item:", newItem);
-
-    setCurriculum(prev => {
+    setCurriculum((prev) => {
       const updated = [...prev];
 
       // Find insertion point after parent
@@ -898,7 +923,6 @@ const CurriculumBuilderPage = () => {
       }
 
       updated.splice(insertIndex, 0, newItem);
-      console.log("Curriculum after adding assignment:", updated);
       return updated;
     });
 
@@ -906,7 +930,7 @@ const CurriculumBuilderPage = () => {
     setActiveParentId(null); // Reset active parent
     toast({
       title: "Success",
-      description: "Assignment added to curriculum"
+      description: "Assignment added to curriculum",
     });
     setIsTopicItemAdded(true);
   };
@@ -914,9 +938,7 @@ const CurriculumBuilderPage = () => {
   const addLessonsToParent = (lessons: Lesson[]) => {
     if (!activeParentId) return;
 
-    const parentIndex = curriculum.findIndex(
-      (i) => i.id === activeParentId
-    );
+    const parentIndex = curriculum.findIndex((i) => i.id === activeParentId);
     const parentDepth = curriculum[parentIndex]?.depth || 0;
     const parentTopic = curriculum[parentIndex];
 
@@ -928,10 +950,9 @@ const CurriculumBuilderPage = () => {
       const topicIdsInCohort = new Set(
         curriculum
           .filter(
-            (i) =>
-              i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId
+            (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId,
           )
-          .map((i) => i.id)
+          .map((i) => i.id),
       );
 
       curriculum.forEach((i) => {
@@ -998,7 +1019,6 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      console.log("Current curriculum:", curriculum);
       showOverlay("Saving Curriculum.");
 
       const newRootTopics: Topic[] = [];
@@ -1022,16 +1042,20 @@ const CurriculumBuilderPage = () => {
           if (item.type === LEARNING_UNIT.COHORT) {
             // Topics directly under this cohort
             const cohortTopicItems = (childrenMap.get(item.id) || []).filter(
-              (c) => c.type === LEARNING_UNIT.TOPIC
+              (c) => c.type === LEARNING_UNIT.TOPIC,
             );
 
             const cohortTopics: Topic[] = cohortTopicItems.map((topicItem) => {
               const lessonItems = (childrenMap.get(topicItem.id) || [])
-                .filter((l) => l.type === LEARNING_UNIT.LESSON || l.type === LEARNING_UNIT.ASSIGNMENT)
+                .filter(
+                  (l) =>
+                    l.type === LEARNING_UNIT.LESSON ||
+                    l.type === LEARNING_UNIT.ASSIGNMENT,
+                )
                 .map((lessonItem) => ({
                   id: (lessonItem.refId ?? lessonItem.id) as string, // handle both lessons and assignments
                   title: lessonItem.title,
-                  type: lessonItem.type as LearningContentType
+                  type: lessonItem.type as LearningContentType,
                 })) as TopicItem[];
 
               return {
@@ -1052,11 +1076,15 @@ const CurriculumBuilderPage = () => {
           } else if (item.type === LEARNING_UNIT.TOPIC) {
             // Root topic
             const lessonItems = (childrenMap.get(item.id) || [])
-              .filter((l) => l.type === LEARNING_UNIT.LESSON || l.type === LEARNING_UNIT.ASSIGNMENT)
+              .filter(
+                (l) =>
+                  l.type === LEARNING_UNIT.LESSON ||
+                  l.type === LEARNING_UNIT.ASSIGNMENT,
+              )
               .map((lessonItem) => ({
                 id: lessonItem.refId ?? lessonItem.id, // handle both lessons and assignments
                 title: lessonItem.title,
-                type: lessonItem.type as LearningContentType
+                type: lessonItem.type as LearningContentType,
               }));
             newRootTopics.push({
               id: item.id,
@@ -1087,7 +1115,8 @@ const CurriculumBuilderPage = () => {
 
   const firstLessonId = useMemo(() => {
     const firstLesson = curriculum.find(
-      (i) => i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
+      (i) =>
+        i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT,
     );
     return firstLesson ? (firstLesson.refId ?? firstLesson.id) : null;
   }, [curriculum]);
@@ -1101,7 +1130,7 @@ const CurriculumBuilderPage = () => {
       {/* Header is fine */}
 
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="curriculum" className="w-full">
+        <Tabs defaultValue="basics" className="w-full">
           {/* Tab buttons ----------------------------------------------------- */}
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
@@ -1183,7 +1212,11 @@ const CurriculumBuilderPage = () => {
                       </div>
                     )}
                     <div className="flex justify-between items-center">
-                      <input type="file" accept="image/*" onChange={handleFileChange} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -1216,7 +1249,7 @@ const CurriculumBuilderPage = () => {
                       </Select>
                     </CardContent>
                   </Card>
-                  {/* Categories */}
+                   {/* Categories */}
                   {/* <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Categories</CardTitle>
@@ -1242,6 +1275,7 @@ const CurriculumBuilderPage = () => {
                       ))}
                     </CardContent>
                   </Card>
+
                   {/* Tags */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
@@ -1293,7 +1327,33 @@ const CurriculumBuilderPage = () => {
                         Pick one or more to help discovery
                       </p>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-3">
+                      {/* Selected Categories Display */}
+                      {selectedCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCategories.map((cat) => (
+                            <Badge
+                              key={cat}
+                              variant="secondary"
+                              className="pl-2 pr-1 py-1 text-sm"
+                            >
+                              {cat}
+                              <button
+                                onClick={() =>
+                                  setSelectedCategories((prev) =>
+                                    prev.filter((c) => c !== cat),
+                                  )
+                                }
+                                className="ml-1 rounded-full hover:bg-muted p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Popover Selector */}
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -1309,8 +1369,9 @@ const CurriculumBuilderPage = () => {
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                           <Command>
-                            <CommandInput placeholder="Search or add category..." />
+                            <CommandInput placeholder="Search categories..." />
                             <CommandList>
+                              <CommandEmpty>No category found.</CommandEmpty>
                               <CommandGroup>
                                 {allCategories.map((cat) => (
                                   <CommandItem
@@ -1319,15 +1380,19 @@ const CurriculumBuilderPage = () => {
                                       setSelectedCategories((prev) =>
                                         prev.includes(cat)
                                           ? prev.filter((c) => c !== cat)
-                                          : [...prev, cat]
+                                          : [...prev, cat],
                                       )
                                     }
+                                    className="cursor-pointer"
                                   >
                                     <Checkbox
                                       checked={selectedCategories.includes(cat)}
                                       className="mr-2"
                                     />
                                     {cat}
+                                    {selectedCategories.includes(cat) && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
@@ -1336,23 +1401,26 @@ const CurriculumBuilderPage = () => {
                               <Input
                                 placeholder="Add new category"
                                 onKeyDown={async (e) => {
+                                  e.stopPropagation();
                                   if (
                                     e.key === "Enter" &&
                                     e.currentTarget.value.trim()
                                   ) {
                                     const newCat = e.currentTarget.value.trim();
-                                    await attributeService.addAttribute(
-                                      ATTRIBUTE_TYPE.CATEGORY,
-                                      newCat
-                                    );
-                                    setAllCategories((prev) => [
-                                      ...prev,
-                                      newCat,
-                                    ]);
-                                    setSelectedCategories((prev) => [
-                                      ...prev,
-                                      newCat,
-                                    ]);
+                                    if (!allCategories.includes(newCat)) {
+                                      await attributeService.addAttribute(
+                                        ATTRIBUTE_TYPE.CATEGORY,
+                                        newCat,
+                                      );
+                                      setAllCategories((prev) => [
+                                        ...prev,
+                                        newCat,
+                                      ]);
+                                      setSelectedCategories((prev) => [
+                                        ...prev,
+                                        newCat,
+                                      ]);
+                                    }
                                     e.currentTarget.value = "";
                                   }
                                 }}
@@ -1363,13 +1431,41 @@ const CurriculumBuilderPage = () => {
                       </Popover>
                     </CardContent>
                   </Card>
-
-                  {/* Target Audience */}
+                    {/* Target Audience */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Target Audience</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Who is this content for?
+                      </p>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-3">
+                      {/* Selected Audiences Display */}
+                      {selectedTargetAudiences.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTargetAudiences.map((aud) => (
+                            <Badge
+                              key={aud}
+                              variant="secondary"
+                              className="pl-2 pr-1 py-1 text-sm"
+                            >
+                              {aud}
+                              <button
+                                onClick={() =>
+                                  setSelectedTargetAudiences((prev) =>
+                                    prev.filter((a) => a !== aud),
+                                  )
+                                }
+                                className="ml-1 rounded-full hover:bg-muted p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Popover Selector */}
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -1385,8 +1481,9 @@ const CurriculumBuilderPage = () => {
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                           <Command>
-                            <CommandInput placeholder="Search or add audience..." />
+                            <CommandInput placeholder="Search audiences..." />
                             <CommandList>
+                              <CommandEmpty>No audience found.</CommandEmpty>
                               <CommandGroup>
                                 {allTargetAudiences.map((aud) => (
                                   <CommandItem
@@ -1395,42 +1492,49 @@ const CurriculumBuilderPage = () => {
                                       setSelectedTargetAudiences((prev) =>
                                         prev.includes(aud)
                                           ? prev.filter((a) => a !== aud)
-                                          : [...prev, aud]
+                                          : [...prev, aud],
                                       )
                                     }
+                                    className="cursor-pointer"
                                   >
                                     <Checkbox
                                       checked={selectedTargetAudiences.includes(
-                                        aud
+                                        aud,
                                       )}
                                       className="mr-2"
                                     />
                                     {aud}
+                                    {selectedTargetAudiences.includes(aud) && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
                             </CommandList>
                             <div className="p-2 border-t">
                               <Input
-                                placeholder="Add new target audience"
+                                placeholder="Add new audience"
                                 onKeyDown={async (e) => {
+                                  e.stopPropagation();
                                   if (
                                     e.key === "Enter" &&
                                     e.currentTarget.value.trim()
                                   ) {
                                     const newAud = e.currentTarget.value.trim();
-                                    await attributeService.addAttribute(
-                                      ATTRIBUTE_TYPE.TARGET_AUDIENCE,
-                                      newAud
-                                    );
-                                    setAllTargetAudiences((prev) => [
-                                      ...prev,
-                                      newAud,
-                                    ]);
-                                    setSelectedTargetAudiences((prev) => [
-                                      ...prev,
-                                      newAud,
-                                    ]);
+                                    if (!allTargetAudiences.includes(newAud)) {
+                                      await attributeService.addAttribute(
+                                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+                                        newAud,
+                                      );
+                                      setAllTargetAudiences((prev) => [
+                                        ...prev,
+                                        newAud,
+                                      ]);
+                                      setSelectedTargetAudiences((prev) => [
+                                        ...prev,
+                                        newAud,
+                                      ]);
+                                    }
                                     e.currentTarget.value = "";
                                   }
                                 }}
@@ -1448,7 +1552,7 @@ const CurriculumBuilderPage = () => {
                 {/* Pricing */}
                 <Card className="rounded-xl border p-4">
                   <div className="flex gap-4">
-                    <Button onClick={saveBasics}>
+                    <Button onClick={saveBasics} disabled={!canSaveBasics}>
                       <Save className="mr-2 h-4 w-4" />
                       Save Basics
                     </Button>
@@ -1469,25 +1573,72 @@ const CurriculumBuilderPage = () => {
                         Regular price
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
+                        <span className="text-muted-foreground">₹</span>
                         <Input
                           type="number"
-                          value={regularPrice}
-                          onChange={(e) => setRegularPrice(+e.target.value)}
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          value={regularPrice ?? ""}
+                          onChange={(e) => setRegularPrice(toNumberOrNull(e.target.value))}
+                          placeholder="Enter regular price"
                         />
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Sale price</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
+                        <span className="text-muted-foreground">₹</span>
                         <Input
                           type="number"
-                          value={salePrice}
-                          onChange={(e) => setSalePrice(+e.target.value)}
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          value={salePrice ?? ""}
+                          onChange={(e) => setSalePrice(toNumberOrNull(e.target.value))}
+                          placeholder="Enter sale price"
                         />
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+                {/* Duration */}
+                <Card className="rounded-xl border p-4">
+                  <CardHeader className="pb-2">
+                    <CardTitle>Duration</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Label>Hours</Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={duration.hours ?? ""}
+                      onChange={(e) =>
+                        setDuration((prev) => ({
+                          ...prev,
+                          hours: toNumberOrNull(e.target.value),
+                        }))
+                      }
+                      placeholder="Hours"
+                    />
+                    <Label>Minutes</Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={59}
+                      step={1}
+                      value={duration.minutes ?? ""}
+                      onChange={(e) =>
+                        setDuration((prev) => ({
+                          ...prev,
+                          minutes: toNumberOrNull(e.target.value),
+                        }))
+                      }
+                      placeholder="Minutes (0–59)"
+                    />
                   </CardContent>
                 </Card>
                 {/* Status */}
@@ -1544,7 +1695,7 @@ const CurriculumBuilderPage = () => {
                         const orphanTopics = prev.filter(
                           (i) =>
                             i.type === LEARNING_UNIT.TOPIC &&
-                            i.parentId === null
+                            i.parentId === null,
                         );
                         if (orphanTopics.length === 0) {
                           // No orphans, just append cohort
@@ -1569,7 +1720,7 @@ const CurriculumBuilderPage = () => {
                         const firstOrphanIndex = prev.findIndex(
                           (i) =>
                             i.type === LEARNING_UNIT.TOPIC &&
-                            i.parentId === null
+                            i.parentId === null,
                         );
                         const insertIndex =
                           firstOrphanIndex === -1
@@ -1588,7 +1739,7 @@ const CurriculumBuilderPage = () => {
                   />
 
                   {!curriculum.some(
-                    (item) => item.type === LEARNING_UNIT.COHORT
+                    (item) => item.type === LEARNING_UNIT.COHORT,
                   ) && (
                       <Button
                         size="sm"
@@ -1609,20 +1760,20 @@ const CurriculumBuilderPage = () => {
                     <Save className="h-4 w-4" />
                     Save
                   </Button>
-                  <Link to={`/course/${courseId}/lesson/${firstLessonId}`} target="_blank">
-                    <Button
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
+                  <Link
+                    to={`/course/${courseId}/lesson/${firstLessonId}`}
+                    target="_blank"
+                  >
+                    <Button size="sm" className="flex items-center gap-1">
                       <Eye className="h-4 w-4" />
                       Preview Course
                     </Button>
                   </Link>
-                </div >
-              </CardHeader >
+                </div>
+              </CardHeader>
 
               {/* ---- Body -------------------------------------------------- */}
-              < CardContent className="pt-0" >
+              <CardContent className="pt-0">
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -1675,14 +1826,20 @@ const CurriculumBuilderPage = () => {
                                   className="flex-1 min-w-0"
                                   autoFocus
                                 />
-                              ) : item.type === LEARNING_UNIT.ASSIGNMENT || item.type == LEARNING_UNIT.LESSON ? (<Link to={`/admin/edit-${item.type.toLowerCase()}/${item.id}`}>{item.title}</Link>) : (
+                              ) : item.type === LEARNING_UNIT.ASSIGNMENT ||
+                                item.type == LEARNING_UNIT.LESSON ? (
+                                <Link
+                                  to={`/admin/edit-${item.type.toLowerCase()}/${item.id}`}
+                                >
+                                  {item.title}
+                                </Link>
+                              ) : (
                                 <span className="flex-1 truncate cursor-pointer hover:underline">
                                   {item.title}
                                 </span>
                               )}
                             </div>
 
-                            {/* ---- Action Buttons ----------------------------- */}
                             {/* ---- Action Buttons ----------------------------- */}
                             <div className="flex items-center gap-1">
                               {/* Cohort actions */}
@@ -1797,32 +1954,33 @@ const CurriculumBuilderPage = () => {
                               )}
 
                               {/* Lesson actions */}
-                              {(item.type === LEARNING_UNIT.LESSON || item.type == LEARNING_UNIT.ASSIGNMENT) && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingItemId(item.id);
-                                      setNewItemName(item.title);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Rename"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
+                              {(item.type === LEARNING_UNIT.LESSON ||
+                                item.type == LEARNING_UNIT.ASSIGNMENT) && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingItemId(item.id);
+                                        setNewItemName(item.title);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Rename"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
 
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteItem(item.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteItem(item.id)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                             </div>
                           </div>
                         </SortableItem>
@@ -1830,11 +1988,11 @@ const CurriculumBuilderPage = () => {
                     </div>
                   </SortableContext>
                 </DndContext>
-              </CardContent >
-            </Card >
-          </TabsContent >
-        </Tabs >
-      </main >
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
 
       {/* Lesson Selector */}
       <LessonSelectorModal
@@ -1845,9 +2003,14 @@ const CurriculumBuilderPage = () => {
         onConfirm={addLessonsToParent}
         excludedLessonIds={excludedLessonIdsForActiveParent}
       />
-      {isAssignmentModelOpen && <AssignmentModal onCancel={() => {
-        setIsAssignmentModelOpen(false);
-      }} onSave={handleAssignment} />}
+      {isAssignmentModelOpen && (
+        <AssignmentModal
+          onCancel={() => {
+            setIsAssignmentModelOpen(false);
+          }}
+          onSave={handleAssignment}
+        />
+      )}
       <CreateLessonModal
         isOpen={isCreateLessonOpen}
         onClose={() => {
@@ -1855,7 +2018,7 @@ const CurriculumBuilderPage = () => {
         }}
         onLessonCreated={(lesson) => addLessonsToParent([lesson])}
       />
-    </div >
+    </div>
   );
 };
 

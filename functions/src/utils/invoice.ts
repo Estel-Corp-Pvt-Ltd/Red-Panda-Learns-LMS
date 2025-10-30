@@ -1,7 +1,7 @@
 import html_to_pdf from "html-pdf-node";
 import * as brevo from "@getbrevo/brevo";
-import { generateInvoiceHTML } from "./templates/invoiceTemplate";
-import { CustomerInfo, InvoiceData } from "./types/invoice";
+import { generateInvoiceHTML } from "./invoiceTemplate";
+import { CustomerInfo, InvoiceData } from "../types/invoice";
 
 const generatePdfAsync = (file: any, options: any): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
@@ -15,7 +15,7 @@ const generatePdfAsync = (file: any, options: any): Promise<Buffer> => {
   });
 };
 
-type InvoiceDetails = {
+export type InvoiceDetails = {
   name: string;
   email: string,
   amount: number,
