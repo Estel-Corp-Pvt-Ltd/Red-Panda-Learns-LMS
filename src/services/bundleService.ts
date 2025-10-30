@@ -10,13 +10,27 @@ import {
   deleteDoc,
   runTransaction,
   serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
-import { courseService } from "./courseService";
-import { Bundle } from "@/types/bundle";
-import { BUNDLE_STATUS } from "@/constants";
-import { Course } from "@/types/course";
+  Query,
+  orderBy,
+  endBefore,
+  limitToLast,
+  startAfter,
+  limit
+} from 'firebase/firestore';
+import { db } from '@/firebaseConfig';
+import {
+  courseService,
+} from './courseService';
+import {
+  Bundle
+} from '@/types/bundle';
+import { BUNDLE_STATUS } from '@/constants';
+import { Course } from '@/types/course';
+import { WhereFilterOp } from 'firebase-admin/firestore';
+import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
+import { fail, ok, Result } from '@/utils/response';
 import { COLLECTION } from "@/constants";
+
 class BundleService {
   /**
    * Generates a new bundle ID in the format `bundle_<number>`, where <number> is a
@@ -122,8 +136,8 @@ class BundleService {
         instructorName: data.instructorName,
         status: data.status,
         thumbnail: data.thumbnail,
-        categoryIds: data.categoryIds || [],      
-        targetAudienceIds: data.targetAudienceIds || [], 
+        categoryIds: data.categoryIds || [],
+        targetAudienceIds: data.targetAudienceIds || [],
         tags: data.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -387,13 +401,14 @@ class BundleService {
    * @throws Will throw an error if the bundle cannot be deleted.
    */
 
-  async deleteBundle(bundleId: string): Promise<void> {
+  async deleteBundle(bundleId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.BUNDLES, bundleId));
-      console.log("BundleService - Bundle deleted successfully:", bundleId);
+      console.log('BundleService - Bundle deleted successfully:', bundleId);
+      return ok(null);
     } catch (error) {
-      console.error("BundleService - Error deleting bundle:", error);
-      throw new Error("Failed to delete bundle");
+      console.error('BundleService - Error deleting bundle:', error);
+      return fail('Failed to delete bundle');
     }
   }
 
@@ -495,6 +510,106 @@ class BundleService {
       };
     }
   }
-}
+
+  async getBundles(
+    filters?: {
+      field: keyof Bundle;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Bundle> = {}
+  ): Promise<Result<PaginatedResult<Bundle>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
+
+      let q: Query = collection(db, 'bundles');
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const documents = querySnapshot.docs;
+
+      if (pageDirection === 'previous') {
+        documents.reverse();
+      }
+
+      const bundles = documents.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          description: data.description,
+          regularPrice: data.regularPrice,
+          salePrice: data.salePrice,
+          courses: data.courses || [],
+          pricingModel: data.pricingModel,
+          categories: data.categories || [],
+          tags: data.tags || [],
+          instructorId: data.instructorId,
+          instructorName: data.instructorName,
+          categoryIds: data.categoryIds || [],
+          targetAudienceIds: data.targetAudienceIds || [],
+          thumbnail: data.thumbnail,
+          status: data.status,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Bundle;
+      });
+
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      return ok({
+        data: bundles,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor
+      });
+    } catch (error) {
+      console.error('BundleService - Error fetching bundles:', error);
+      return fail("Error fetching bundles");
+    }
+  }
+};
 
 export const bundleService = new BundleService();

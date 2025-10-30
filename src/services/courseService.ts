@@ -2,12 +2,18 @@ import {
   collection,
   deleteDoc,
   doc,
+  endBefore,
   getDoc,
   getDocs,
+  limit,
+  limitToLast,
+  orderBy,
+  Query,
   query,
   runTransaction,
   serverTimestamp,
   setDoc,
+  startAfter,
   updateDoc,
   where,
   WhereFilterOp
@@ -16,6 +22,8 @@ import {
 import { COLLECTION, COURSE_STATUS, PRICING_MODEL } from '@/constants';
 import { db } from '@/firebaseConfig';
 import { Course } from '@/types/course';
+import { ok, Result } from '@/utils/response';
+import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
 
 class CourseService {
   /**
@@ -235,6 +243,126 @@ class CourseService {
     }
   }
 
+  async getCourses(
+    filters?: {
+      field: keyof Course;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Course> = {}
+  ): Promise<Result<PaginatedResult<Course>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
+
+      let q: Query = collection(db, COLLECTION.COURSES);
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        // Previous page - use endBefore with limitToLast
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        // Next page - use startAfter
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        // First page - simple limit
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+
+      // Get the documents for pagination cursors
+      const documents = querySnapshot.docs;
+
+      if (pageDirection === 'previous') {
+        // For previous page, we need to reverse the order since we used limitToLast
+        documents.reverse();
+      }
+
+      const courses = documents.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          url: data.url,
+          description: data.description,
+          duration: data.duration,
+          thumbnail: data.thumbnail,
+          regularPrice: data.regularPrice,
+          salePrice: data.salePrice,
+          pricingModel: data.pricingModel,
+          categoryIds: data.categoryIds || [],
+          targetAudienceIds: data.targetAudienceIds || [],
+          tags: data.tags || [],
+          instructorId: data.instructorId,
+          instructorName: data.instructorName,
+          status: data.status,
+          certificateTemplateId: data.certificateTemplateId,
+          cohorts: data.cohorts || [],
+          topics: data.topics || [],
+          isEnrollmentPaused: data.isEnrollmentPaused || false,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Course;
+      });
+
+      // Determine pagination metadata
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+
+      // Get cursors for next and previous pages
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      console.log('CourseService - Fetched courses with pagination:', {
+        count: courses.length,
+        hasNextPage,
+        hasPreviousPage,
+        pageDirection
+      });
+
+      return ok({
+        data: courses,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor
+      });
+    } catch (error) {
+      console.error('CourseService - Error fetching courses with pagination:', error);
+      return fail("Error fetching courses");
+    }
+  }
+
   /**
    * Retrieves courses from the Firestore `Courses` collection based on filters.
    *
@@ -451,13 +579,14 @@ class CourseService {
    * console.log('Course deleted successfully.');
    */
 
-  async deleteCourse(courseId: string): Promise<void> {
+  async deleteCourse(courseId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.COURSES, courseId));
       console.log('CourseService - Course deleted successfully:', courseId);
+      return ok(null);
     } catch (error) {
       console.error('CourseService - Error deleting course:', error);
-      throw new Error('Failed to delete course');
+      return fail('Failed to delete course');
     }
   }
 }

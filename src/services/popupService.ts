@@ -2,12 +2,17 @@ import {
     collection,
     deleteDoc,
     doc,
+    endBefore,
     getDoc,
     getDocs,
+    limit,
+    limitToLast,
     orderBy,
+    Query,
     query,
     serverTimestamp,
     setDoc,
+    startAfter,
     Timestamp,
     updateDoc,
     where,
@@ -19,6 +24,7 @@ import { db } from "@/firebaseConfig";
 import { PopUp } from "@/types/pop-up";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 
 class PopUpService {
     private readonly MAX_POPUPS = 3;
@@ -28,7 +34,7 @@ class PopUpService {
      * If 3 pop-ups are already active, deactivates the oldest one first.
      */
     async createPopUp(
-        data: Omit<PopUp, "id" | "active" | "createdAt" | "updatedAt">
+        data: Omit<PopUp, "id" | "createdAt" | "updatedAt">
     ): Promise<Result<PopUp>> {
         try {
             // Fetch active pop-ups ordered by updatedAt (oldest first)
@@ -52,7 +58,7 @@ class PopUpService {
                 ctaLink: data.ctaLink,
                 autoClose: data.autoClose || false,
                 duration: data.duration || 5000,
-                active: true,
+                active: data.active || false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -234,6 +240,101 @@ class PopUpService {
      */
     private generatePopUpId(): string {
         return `popup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    async getPopUps(
+        filters?: {
+            field: keyof PopUp;
+            op: WhereFilterOp;
+            value: any;
+        }[],
+        options: PaginationOptions<PopUp> = {}
+    ): Promise<Result<PaginatedResult<PopUp>>> {
+        try {
+            const {
+                limit: itemsPerPage = 25,
+                orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+                pageDirection = 'next',
+                cursor = null
+            } = options;
+
+            let q: Query = collection(db, COLLECTION.POPUPS);
+
+            // Apply filters if provided
+            if (filters && filters.length > 0) {
+                const whereClauses = filters.map((f) =>
+                    where(f.field as string, f.op, f.value)
+                );
+                q = query(q, ...whereClauses);
+            }
+
+            // Apply ordering
+            const { field, direction } = orderByOption;
+
+            // For pagination, we need to handle different scenarios
+            if (pageDirection === 'previous' && cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    endBefore(cursor),
+                    limitToLast(itemsPerPage)
+                );
+            } else if (cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    startAfter(cursor),
+                    limit(itemsPerPage)
+                );
+            } else {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    limit(itemsPerPage)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+            const documents = querySnapshot.docs;
+
+            if (pageDirection === 'previous') {
+                documents.reverse();
+            }
+
+            const popUps = documents.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    title: data.title,
+                    description: data.description,
+                    type: data.type,
+                    ctaText: data.ctaText,
+                    ctaLink: data.ctaLink,
+                    autoClose: data.autoClose,
+                    duration: data.duration,
+                    active: data.active,
+                    icon: data.icon,
+                    createdAt: data.createdAt?.toDate?.() || data.createdAt,
+                    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+                } as PopUp;
+            });
+
+            const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+            const hasPreviousPage = cursor !== null;
+            const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+            const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+            return ok({
+                data: popUps,
+                hasNextPage,
+                hasPreviousPage,
+                nextCursor,
+                previousCursor
+            });
+        } catch (error) {
+            console.error('PopUpService - Error fetching pop-ups:', error);
+            return fail("Error fetching pop-ups");
+        }
     }
 }
 
