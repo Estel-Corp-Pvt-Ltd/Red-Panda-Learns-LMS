@@ -344,6 +344,15 @@ class UserService {
             return fail("Error fetching users");
         }
     }
+
+    async getUsersByRole(role: string, options: PaginationOptions<User> = {}): Promise<Result<PaginatedResult<User>>> {
+        return this.getUsers(
+            [
+                { field: 'role', op: '==', value: role }
+            ],
+            options
+        );
+    }
 }
 
 export const userService = new UserService();

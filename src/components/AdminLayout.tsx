@@ -39,6 +39,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <TicketPercent className="h-5 w-5" />
     },
     {
+      name: 'Instructors',
+      path: '/admin/instructors',
+      icon: <Users className="h-5 w-5" />
+    },
+    {
       name: 'Users',
       path: '/admin/users',
       icon: <Users className="h-5 w-5" />
