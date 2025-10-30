@@ -136,6 +136,7 @@ export const ORDER_STATUS = {
   FAILED: "FAILED",
 } as const;
 
+
 export const PAYMENT_ATTEMPT_STATUS = {
   FAILED: "FAILED",
   CANCELLED: "CANCELLED",
@@ -157,6 +158,16 @@ export const ADDRESS_TYPE = {
   BILLING: "BILLING",
   SHIPPING: "SHIPPING",
 } as const;
+
+// constants/sort.ts
+export const SORT_KEY = {
+  RELEVANCE: "RELEVANCE",
+  PRICE_ASC: "PRICE_ASC",
+  PRICE_DESC: "PRICE_DESC",
+  TITLE_ASC: "TITLE_ASC",
+  TITLE_DESC: "TITLE_DESC",
+} as const;
+
 
 // --- PAYPAL WEBHOOK EVENTS ---
 
