@@ -1,18 +1,15 @@
-import { ENROLLED_PROGRAM_TYPE, ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
-import { enrollmentService } from "@/services/enrollmentService";
-import { Course } from "@/types/course";
-import { PaymentDetails } from "@/types/transaction";
-import { transactionService } from "../transactionService";
+import { ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
 import { Currency } from "@/types/general";
-import { TransactionLineItem } from "@/types/transaction";
+import { PaymentDetails, TransactionLineItem } from "@/types/transaction";
+import { transactionService } from "../transactionService";
 class PayPalProvider {
   private readonly environment =
     import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION
       ? ENVIRONMENT.PRODUCTION
-      : ENVIRONMENT.SANDBOX;
+      : ENVIRONMENT.DEVELOPMENT;
 
   private readonly clientId =
-    this.environment === ENVIRONMENT.SANDBOX
+    this.environment === ENVIRONMENT.DEVELOPMENT
       ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID
       : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
 
@@ -37,7 +34,7 @@ class PayPalProvider {
       }
 
       const host =
-        this.environment === ENVIRONMENT.SANDBOX
+        this.environment === ENVIRONMENT.DEVELOPMENT
           ? "sandbox.paypal.com"
           : "paypal.com";
 
@@ -65,10 +62,10 @@ class PayPalProvider {
     error?: string;
   }> {
     try {
-      
+
 
       console.log("PayPalProvider - Starting payment:", {
-       items,
+        items,
         transactionId,
         amount,
         currency,
@@ -105,7 +102,7 @@ class PayPalProvider {
                         currency_code: currency,
                         value: amount.toFixed(2),
                       },
-                     description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
+                      description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
                       custom_id: transactionId,
                     },
                   ],
@@ -132,21 +129,21 @@ class PayPalProvider {
                     }
                   );
 
-              //     try {
-              //     for (const item of items) {
-              //   try {
-              //     await enrollmentService.enrollUser(
-              //       userId,
-              //       item.itemId,
-              //       item.itemType
-              //     );
-              //   } catch (enrollmentError) {
-              //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
-              //   }
-              // }
-              //     } catch (e) {
-              //       console.error("Enrollment failed after PayPal payment:", e);
-              //     }
+                  //     try {
+                  //     for (const item of items) {
+                  //   try {
+                  //     await enrollmentService.enrollUser(
+                  //       userId,
+                  //       item.itemId,
+                  //       item.itemType
+                  //     );
+                  //   } catch (enrollmentError) {
+                  //     console.error("RazorpayProvider - Enrollment failed:", enrollmentError, item);
+                  //   }
+                  // }
+                  //     } catch (e) {
+                  //       console.error("Enrollment failed after PayPal payment:", e);
+                  //     }
 
                   resolve({
                     success: true,
