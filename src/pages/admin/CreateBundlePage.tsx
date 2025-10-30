@@ -8,6 +8,8 @@ import {
   DollarSign,
   Info,
   X,
+  Layers,
+  Users as UsersIcon,
  Search, RefreshCcw, CheckCheck, XCircle, Filter, Check, ChevronDown } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -118,6 +120,12 @@ const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
 const [targetAudienceOptions , settargetAudienceOptions ] = useState<Option[]>([]);
 const [tagOptions, setTagOptions] = useState<Option[]>([]);
 
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
+    string[]
+  >([]);
+  const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
 
 
 
@@ -147,6 +155,7 @@ useEffect(() => {
     try {
       const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
       setCategoryOptions(categoriesData.map((a) => ({ id: a.id, label: a.name })));
+      setAllCategories(categoriesData.map((a) => a.name));
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast({
@@ -159,6 +168,7 @@ useEffect(() => {
     try {
       const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
       settargetAudienceOptions(targetAudienceData.map((a) => ({ id: a.id, label: a.name })));
+      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
     } catch (error) {
       console.error("Error fetching target audiences:", error);
       toast({
@@ -355,6 +365,8 @@ const handleResetFilters = () => {
     description: "",
     url: "",
     regularPrice: "",
+    categories:"",
+    taregetAudience:"",
     salePrice: "",
     thumbnailUrl:"",
     pricingModel: PRICING_MODEL.PAID as PricingModel,
@@ -562,7 +574,8 @@ const handleResetFilters = () => {
         pricingModel: bundleData.pricingModel,
         instructorId: instructorId,
         instructorName: instructorName,
-        categories,
+        targetAudienceIds: selectedTargetAudiences,
+        categoryIds: selectedCategories,
         tags,
         thumbnail:thumbnailUrl,
         status: bundleData.status,
@@ -622,7 +635,8 @@ const handleResetFilters = () => {
         pricingModel: bundleData.pricingModel,
         instructorId: instructorId,
         instructorName: instructorName,
-        categories,
+       targetAudienceIds: selectedTargetAudiences,
+        categoryIds: selectedCategories,
         thumbnail:thumbnailUrl,
         tags,
         status: BUNDLE_STATUS.PUBLISHED,
@@ -727,28 +741,216 @@ const handleResetFilters = () => {
                   />
                 </div>
 
-                {/* Categories */}
-                <div>
-                  <Label>Categories</Label>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {[
-                      "AI/ML",
-                      "Bootcamp",
-                      "College-student",
-                      "Data-Science",
-                      "Generative-AI",
-                    ].map((cat) => (
-                      <div key={cat} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={categories.includes(cat)}
-                          onCheckedChange={() => handleCategoryChange(cat)}
-                        />
-                        <Label>{cat}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+             {/* Categories + Target Audience side-by-side */}
 
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Categories */}
+  <Card className="rounded-xl border p-4">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <Layers className="h-5 w-5 text-primary" />
+        Categories
+      </CardTitle>
+      <p className="text-xs text-muted-foreground">
+        Pick one or more to help discovery
+      </p>
+    </CardHeader>
+
+    <CardContent className="space-y-3">
+      {selectedCategories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedCategories.map((cat) => (
+            <Badge
+              key={cat}
+              variant="secondary"
+              className="pl-2 pr-1 py-[2px] text-sm"
+            >
+              {cat}
+              <button
+                onClick={() =>
+                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
+                }
+                className="ml-1 rounded-full hover:bg-muted p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+          >
+            {selectedCategories.length > 0
+              ? `${selectedCategories.length} selected`
+              : "Select categories"}
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput placeholder="Search categories..." />
+            <CommandList>
+              <CommandEmpty>No category found.</CommandEmpty>
+              <CommandGroup>
+                {allCategories.map((cat) => (
+                  <CommandItem
+                    key={cat}
+                    onSelect={() =>
+                      setSelectedCategories((prev) =>
+                        prev.includes(cat)
+                          ? prev.filter((c) => c !== cat)
+                          : [...prev, cat],
+                      )
+                    }
+                  >
+                    <Checkbox
+                      checked={selectedCategories.includes(cat)}
+                      className="mr-2"
+                    />
+                    {cat}
+                    {selectedCategories.includes(cat) && (
+                      <Check className="ml-auto h-4 w-4" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+            <div className="p-2 border-t">
+              <Input
+                placeholder="Add new category"
+                onKeyDown={async (e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                    const newCat = e.currentTarget.value.trim();
+                    if (!allCategories.includes(newCat)) {
+                      await attributeService.addAttribute(
+                        ATTRIBUTE_TYPE.CATEGORY,
+                        newCat,
+                      );
+                      setAllCategories((prev) => [...prev, newCat]);
+                      setSelectedCategories((prev) => [...prev, newCat]);
+                    }
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+            </div>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </CardContent>
+  </Card>
+
+  {/* Target Audience */}
+  <Card className="rounded-xl border p-4">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <UsersIcon className="h-5 w-5 text-primary" />
+        Target Audience
+      </CardTitle>
+      <p className="text-xs text-muted-foreground">Who is this content for?</p>
+    </CardHeader>
+
+    <CardContent className="space-y-3">
+      {selectedTargetAudiences.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedTargetAudiences.map((aud) => (
+            <Badge
+              key={aud}
+              variant="secondary"
+              className="pl-2 pr-1 py-[2px] text-sm"
+            >
+              {aud}
+              <button
+                onClick={() =>
+                  setSelectedTargetAudiences((prev) =>
+                    prev.filter((a) => a !== aud),
+                  )
+                }
+                className="ml-1 rounded-full hover:bg-muted p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+          >
+            {selectedTargetAudiences.length > 0
+              ? `${selectedTargetAudiences.length} selected`
+              : "Select target audience"}
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput placeholder="Search audiences..." />
+            <CommandList>
+              <CommandEmpty>No audience found.</CommandEmpty>
+              <CommandGroup>
+                {allTargetAudiences.map((aud) => (
+                  <CommandItem
+                    key={aud}
+                    onSelect={() =>
+                      setSelectedTargetAudiences((prev) =>
+                        prev.includes(aud)
+                          ? prev.filter((a) => a !== aud)
+                          : [...prev, aud],
+                      )
+                    }
+                  >
+                    <Checkbox
+                      checked={selectedTargetAudiences.includes(aud)}
+                      className="mr-2"
+                    />
+                    {aud}
+                    {selectedTargetAudiences.includes(aud) && (
+                      <Check className="ml-auto h-4 w-4" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+            <div className="p-2 border-t">
+              <Input
+                placeholder="Add new audience"
+                onKeyDown={async (e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                    const newAud = e.currentTarget.value.trim();
+                    if (!allTargetAudiences.includes(newAud)) {
+                      await attributeService.addAttribute(
+                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+                        newAud,
+                      );
+                      setAllTargetAudiences((prev) => [...prev, newAud]);
+                      setSelectedTargetAudiences((prev) => [...prev, newAud]);
+                    }
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+            </div>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </CardContent>
+  </Card>
+</div>
                 {/* Tags */}
                 <div>
                   <Label>Tags</Label>
