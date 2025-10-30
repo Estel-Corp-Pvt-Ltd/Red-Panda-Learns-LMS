@@ -65,8 +65,6 @@ export default function CourseDetailPage() {
       setEnrollmentLoading(true);
 
       if (user && courseId) {
-        // Add a small delay to ensure enrollment context is ready
-        // Or wait for enrollment data to be loaded
         const enrolled = isEnrolled(courseId);
         setUserIsEnrolled(enrolled);
       }
@@ -75,7 +73,7 @@ export default function CourseDetailPage() {
     };
 
     checkEnrollment();
-  }, [user, courseId, isEnrolled]); // Add isEnrolled to dependencies
+  }, [user, courseId, isEnrolled]);
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -156,7 +154,6 @@ export default function CourseDetailPage() {
     let firstLessonId: string | null = null;
 
     if (course.cohorts && course.cohorts.length > 0) {
-      // Course has cohorts structure
       const firstCohort = course.cohorts[0];
       if (firstCohort.topics && firstCohort.topics.length > 0) {
         const firstTopic = firstCohort.topics[0];
@@ -165,7 +162,6 @@ export default function CourseDetailPage() {
         }
       }
     } else if (course.topics && course.topics.length > 0) {
-      // Course has direct topics structure
       const firstTopic = course.topics[0];
       if (firstTopic.items && firstTopic.items.length > 0) {
         firstLessonId = firstTopic.items[0].id;
@@ -277,6 +273,7 @@ export default function CourseDetailPage() {
 
   const hasInstructor = !!course?.instructorName?.trim();
   const instructorInitial = course?.instructorName?.trim()?.[0]?.toUpperCase();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -295,74 +292,69 @@ export default function CourseDetailPage() {
           <span className="text-foreground">{course.title}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Course Header */}
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
-                  {course.title}
-                </h1>
+        {/* Course header (title + meta) – full width */}
+        <div className="space-y-6 mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
+              {course.title}
+            </h1>
+          </div>
+
+          {/* Course Meta */}
+          <div className="flex flex-wrap items-center gap-4">
+            {hasInstructor && (
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  {/* <AvatarImage src={course.instructorAvatar} alt={course.instructorName} /> */}
+                  <AvatarFallback className="bg-accent text-background">
+                    {instructorInitial}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium">
+                  {course.instructorName}
+                </span>
               </div>
+            )}
 
-              {/* Course Meta */}
-              {/* Course Meta */}
-              <div className="flex flex-wrap items-center gap-4">
-                {hasInstructor && (
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      {/* If you add an avatar URL later, render AvatarImage here */}
-                      {/* <AvatarImage src={course.instructorAvatar} alt={course.instructorName} /> */}
-                      <AvatarFallback className="bg-accent text-background">
-                        {instructorInitial}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">
-                      {course.instructorName}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {(lessonCount as number) > 0 && (
-                    <div className="flex items-center gap-1">
-                      <BookOpen className="h-4 w-4" />
-                      <span>{lessonCount as number} lessons</span>
-                    </div>
-                  )}
-                  {/* {course.total_students > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{course.total_students} students</span>
-                    </div>
-                  )}
-                  {course.course_duration && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{course.course_duration}</span>
-                    </div>
-                  )} */}
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              {(lessonCount as number) > 0 && (
+                <div className="flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>{lessonCount as number} lessons</span>
                 </div>
-              </div>
-
-              {/* Progress (if enrolled) */}
-              {/* {userIsEnrolled && (
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Your Progress</span>
-                      <span className="text-sm text-muted-foreground">
-                        {progressPercentage}% complete
-                      </span>
-                    </div>
-                    <Progress value={progressPercentage} className="h-2" />
-                  </CardContent>
-                </Card>
-              )} */}
+              )}
             </div>
+          </div>
+        </div>
 
-            {/* Course Description */}
+        {/* New two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left: Thumbnail + About */}
+          <div className="space-y-6">
+            {/* Thumbnail */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
+                  {course.thumbnail ? (
+                    <>
+                      <img
+                        src={course.thumbnail}
+                        alt={`${course.title} thumbnail`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                      <Play className="h-12 w-12 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* About This Course */}
             {course.description && (
               <Card>
                 <CardHeader>
@@ -376,74 +368,13 @@ export default function CourseDetailPage() {
                 </CardContent>
               </Card>
             )}
-
-            {/* Course Curriculum */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Course Curriculum
-                </CardTitle>
-                <div className="text-sm text-muted-foreground flex justify-between mt-2">
-                  <p>{topicCount} topics • {lessonCount} lessons</p>
-                  <span className="text-sm text-muted-foreground ml-4">
-                    {
-                      course.duration &&
-                      (
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{course.duration.hours} hrs</span>
-                          <span>{course.duration.minutes} min</span>
-                        </div>
-                      )
-                    }
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {course.topics.length === 0 && course.cohorts.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No curriculum available yet.</p>
-                  </div>
-                )}
-                {course.topics.map((topic) => renderTopic(topic))}
-                {course.cohorts?.map((cohort, cohortIndex) => (
-                  <div key={`cohort-${cohortIndex}`} className="mt-6">
-                    {/* Optional: Display cohort title */}
-                    <h3 className="text-2xl font-semibold mb-2">
-                      {cohort.title || `Cohort ${cohortIndex + 1}`}
-                    </h3>
-                    {cohort.topics?.map((topic, topicIndex) =>
-                      renderTopic(topic)
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Right: Continue/Enroll + Curriculum (+ Details) */}
           <div className="space-y-6">
-            {/* Course Preview/Enroll Card */}
+            {/* Continue Learning / Enroll */}
             <Card className="sticky top-24">
               <CardContent className="p-6">
-                {/* Course thumbnail */}
-                {/* <div className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden">
-                  {course.thumbnail_url ? (
-                    <img
-                      src={course.thumbnail_url}
-                      alt={course.post_title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                      <Play className="h-12 w-12 text-primary-foreground" />
-                    </div>
-                  )}
-                </div> */}
-
-                {/* Price and actions */}
                 <div className="space-y-4">
                   {course.salePrice === 0 ? (
                     <div className="font-semibold text-primary">FREE</div>
@@ -455,7 +386,6 @@ export default function CourseDetailPage() {
 
                   <div className="space-y-2">
                     {enrollmentLoading ? (
-                      // Show loading state while checking enrollment
                       <Button className="w-full" size="lg" disabled>
                         <div className="flex items-center gap-2">
                           <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -496,7 +426,46 @@ export default function CourseDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Course Stats */}
+            {/* Course Curriculum */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Course Curriculum
+                </CardTitle>
+                <div className="text-sm text-muted-foreground flex justify-between mt-2">
+                  <p>{topicCount} topics • {lessonCount} lessons</p>
+                  <span className="text-sm text-muted-foreground ml-4">
+                    {course.duration && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{course.duration.hours} hrs</span>
+                        <span>{course.duration.minutes} min</span>
+                      </div>
+                    )}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {course.topics.length === 0 && course.cohorts.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No curriculum available yet.</p>
+                  </div>
+                )}
+                {course.topics.map((topic) => renderTopic(topic))}
+                {course.cohorts?.map((cohort, cohortIndex) => (
+                  <div key={`cohort-${cohortIndex}`} className="mt-6">
+                    <h3 className="text-2xl font-semibold mb-2">
+                      {cohort.title || `Cohort ${cohortIndex + 1}`}
+                    </h3>
+                    {cohort.topics?.map((topic) => renderTopic(topic))}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Course Details (optional) */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4">Course Details</h3>
@@ -505,24 +474,10 @@ export default function CourseDetailPage() {
                     <span className="text-muted-foreground">Lessons</span>
                     <span className="font-medium">{lessonCount as number}</span>
                   </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-muted-foreground">Students</span>
-                    <span className="font-medium">{course.total_students}</span>
-                  </div> */}
-                  {/* {course.course_duration && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration</span>
-                      <span className="font-medium">
-                        {course.course_duration}
-                      </span>
-                    </div>
-                  )} */}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">
-                      <span className="font-medium">
-                        {formatDate(course.updatedAt)}
-                      </span>
+                      {formatDate(course.updatedAt)}
                     </span>
                   </div>
                 </div>
