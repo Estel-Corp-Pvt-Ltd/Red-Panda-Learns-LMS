@@ -529,7 +529,7 @@ useEffect(() => {
       }
   
       const uploadResult = fileService.startResumableUpload(
-        `/courses/${title}/thumbnail.png`,
+        `/bundles/${bundleId}/thumbnail.png`,
         selectedFile,
       );
       if (!uploadResult.success) {
@@ -564,7 +564,6 @@ useEffect(() => {
             setUploadingThumbnail(false);
             const url = await getDownloadURL(uploadResult.data.snapshot.ref);
             setThumbnailUrl(url);
-            console.log("here is the thumbanil url",url)
             toast({
               title: "Thumbnail Uploaded",
               description: "Thumbnail has been successfully uploaded",

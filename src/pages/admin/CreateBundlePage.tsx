@@ -420,9 +420,9 @@ const handleResetFilters = () => {
         });
         return;
       }
-  
+      const tempId = crypto.randomUUID();
       const uploadResult = fileService.startResumableUpload(
-        `/courses/${title}/thumbnail.png`,
+        `/bundles/${tempId}/thumbnail.png`,
         selectedFile,
       );
       if (!uploadResult.success) {
@@ -457,7 +457,7 @@ const handleResetFilters = () => {
             setUploadingThumbnail(false);
             const url = await getDownloadURL(uploadResult.data.snapshot.ref);
             setThumbnailUrl(url);
-            console.log("here is the thumbanil url",url)
+     
             toast({
               title: "Thumbnail Uploaded",
               description: "Thumbnail has been successfully uploaded",
