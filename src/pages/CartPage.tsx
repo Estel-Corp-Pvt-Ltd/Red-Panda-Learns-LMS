@@ -123,14 +123,14 @@ const CartPage: React.FC = () => {
               <CardContent className="p-4 sm:p-6 space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${regularTotal.toFixed(2)}</span>
+                  <span>₹{regularTotal.toFixed(2)}</span>
                 </div>
 
                 {hasDiscount && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Savings</span>
                     <span className="text-green-600 dark:text-green-500">
-                      -${savings.toFixed(2)}
+                      -₹{savings.toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -139,7 +139,7 @@ const CartPage: React.FC = () => {
 
                 <div className="flex items-center justify-between text-base font-semibold">
                   <span>Total</span>
-                  <span>${totalAmount.toFixed(2)}</span>
+                  <span>₹{totalAmount.toFixed(2)}</span>
                 </div>
 
                 <Button

@@ -33,7 +33,7 @@ import { attributeService } from "@/services/attributeService";
 import { courseService } from "@/services/courseService";
 import { instructorService } from "@/services/instructorService";
 import { Cohort, Course, Topic, TopicItem } from "@/types/course";
-import { CourseStatus, Duration, LearningUnit } from "@/types/general";
+import { CourseStatus, LearningUnit as LearningUnitType } from "@/types/general";
 import { LearningContentType, Lesson } from "@/types/lesson";
 import {
   closestCenter,
@@ -74,9 +74,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-// import CourseAttributeSelector from "@/components/admin/CourseAttributeSelector";
-
-// FIX: Define a new type for all draggable items, separating Cohort from LearningUnit
 import { CreateLessonModal } from "@/components/admin/AddLesson";
 import AssignmentModal from "@/components/AssignmentModal";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
@@ -91,20 +88,25 @@ import { Label } from "@/components/ui/label";
 type SortableItemProps = {
   id: string;
   children: React.ReactNode;
-  type: LearningUnit;
+  type: LearningUnitType;
   depth: number;
 };
 
 type DraggableItem = {
   id: string;
   title: string;
-  type: LearningUnit;
+  type: LearningUnitType;
 
   depth: number;
   parentId: string | null;
   originalData?: Cohort | Topic;
   refId?: string; // real id for lessons, assignments
 };
+
+type DurationForm = { hours: number | null; minutes: number | null };
+
+const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
+const isNum = (v: number | null): v is number => v !== null && Number.isFinite(v);
 
 const SortableItem = ({ id, children, depth }: SortableItemProps) => {
   const {
@@ -152,9 +154,12 @@ const CurriculumBuilderPage = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
-  const [regularPrice, setRegularPrice] = useState(0);
-  const [duration, setDuration] = useState<Duration>({ hours: 0, minutes: 0 });
-  const [salePrice, setSalePrice] = useState(0);
+
+  // Keep 0 by default, allow clearing to empty (null) while editing
+  const [regularPrice, setRegularPrice] = useState<number | null>(0);
+  const [salePrice, setSalePrice] = useState<number | null>(0);
+  const [duration, setDuration] = useState<DurationForm>({ hours: 0, minutes: 0 });
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
@@ -168,14 +173,15 @@ const CurriculumBuilderPage = () => {
   const [instructors, setInstructors] = useState<
     { id: string; name: string }[]
   >([]);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
   const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -238,14 +244,32 @@ const CurriculumBuilderPage = () => {
       setTitle(courseData.title);
       setDescription(courseData.description);
       setStatus(courseData.status);
-      setDuration({ hours: courseData.duration.hours, minutes: courseData.duration.minutes });
-      setRegularPrice(courseData.regularPrice);
-      setSalePrice(courseData.salePrice);
+
+      // Set numeric fields; keep 0 default if missing
+      setDuration({
+        hours:
+          typeof courseData?.duration?.hours === "number"
+            ? courseData.duration.hours
+            : 0,
+        minutes:
+          typeof courseData?.duration?.minutes === "number"
+            ? courseData.duration.minutes
+            : 0,
+      });
+      setRegularPrice(
+        typeof courseData?.regularPrice === "number"
+          ? courseData.regularPrice
+          : 0
+      );
+      setSalePrice(
+        typeof courseData?.salePrice === "number"
+          ? courseData.salePrice
+          : 0
+      );
 
       setSelectedTargetAudiences(courseData.targetAudienceIds || []);
       setSelectedCategories(courseData.categoryIds || []);
       setThumbnailUrl(courseData.thumbnail || "");
-      // setAllCategories(courseData.categories || []);
       setTags(courseData.tags || []);
       setInstructorId(courseData.instructorName);
       setInstructorName(courseData.instructorName);
@@ -264,7 +288,6 @@ const CurriculumBuilderPage = () => {
   // auto-save when curriculum changes
   useEffect(() => {
     if (isTopicItemAdded && curriculum.length > 0 && courseId) {
-      // Debounce auto-save to avoid too many requests
       const timeoutId = setTimeout(() => {
         saveCurriculumStructure();
       }, 1000);
@@ -302,8 +325,8 @@ const CurriculumBuilderPage = () => {
     fetchInstructors();
   }, [toast, instructorId, instructorName]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -386,36 +409,28 @@ const CurriculumBuilderPage = () => {
     );
   };
 
+  // Validation + Save enabling
+  const canSaveBasics =
+    title.trim().length > 0 &&
+    description.trim().length > 0 &&
+    isNum(regularPrice) &&
+    isNum(salePrice) &&
+    isNum(duration.hours) &&
+    isNum(duration.minutes) &&
+    regularPrice >= 0 &&
+    salePrice >= 0 &&
+    salePrice <= regularPrice &&
+    duration.hours >= 0 &&
+    duration.minutes >= 0 &&
+    duration.minutes <= 59;
+
   const saveBasics = async () => {
     if (!courseId || !course) return;
-    if (!title.trim()) {
+
+    if (!canSaveBasics) {
       toast({
-        title: "Missing Title",
-        description: "Enter a course title.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!description.trim()) {
-      toast({
-        title: "Missing Description",
-        description: "Enter a description.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (regularPrice < 0 || salePrice < 0 || salePrice > regularPrice) {
-      toast({
-        title: "Pricing Error",
-        description: "Check regular / sale price.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (duration.hours < 0 || duration.minutes < 0) {
-      toast({
-        title: "Invalid Duration",
-        description: "Hours and minutes cannot be negative.",
+        title: "Missing or invalid fields",
+        description: "Fill all numeric fields and required text fields correctly.",
         variant: "destructive",
       });
       return;
@@ -426,10 +441,10 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
-        duration,
-        regularPrice,
+        duration: { hours: duration.hours!, minutes: duration.minutes! },
+        regularPrice: regularPrice!,
         thumbnail: thumbnailUrl,
-        salePrice,
+        salePrice: salePrice!,
         targetAudienceIds: selectedTargetAudiences,
         categoryIds: selectedCategories,
         tags,
@@ -684,11 +699,8 @@ const CurriculumBuilderPage = () => {
       list = arrayMove(list, idxActive, idxOver);
 
       // Enforce relaxed “level gating” (minimal movement):
-      // 1) Ensure at least one cohort exists above the first topic (if both exist).
-      // 2) Ensure at least one topic exists above the first lesson (if both exist).
       const ensureLevelGating = (arr: typeof list) => {
         let out = arr;
-        // Iterate a few times to resolve interdependencies (e.g., moving topic before lesson may require moving cohort before topic)
         for (let pass = 0; pass < 4; pass++) {
           let changed = false;
 
@@ -697,17 +709,14 @@ const CurriculumBuilderPage = () => {
           const lIdx = out.findIndex(isLesson) || out.findIndex(isAssignment);
 
           if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
-            // Move earliest cohort to just before the earliest topic
             out = arrayMove(out, cIdx, tIdx);
             changed = true;
           }
 
-          // Recompute after potential move
           const tIdx2 = out.findIndex(isTopic);
           const lIdx2 = out.findIndex(isLesson) || out.findIndex(isAssignment);
 
           if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
-            // Move earliest topic to just before the earliest lesson
             out = arrayMove(out, tIdx2, lIdx2);
             changed = true;
           }
@@ -749,7 +758,7 @@ const CurriculumBuilderPage = () => {
   };
 
   const addItem = (
-    type: LearningUnit,
+    type: LearningUnitType,
     parentId: string | null = null,
     depth = 0,
   ) => {
@@ -843,8 +852,6 @@ const CurriculumBuilderPage = () => {
   };
 
   const deleteItem = (itemId: string) => {
-    console.log("Deleting item:", itemId);
-
     setCurriculum((prev) => {
       // Find all children and grandchildren recursively to delete them too
       const itemsToDelete = new Set<string>([itemId]);
@@ -859,16 +866,12 @@ const CurriculumBuilderPage = () => {
         }
       }
 
-      console.log("Items to delete:", Array.from(itemsToDelete));
       const newCurriculum = prev.filter((i) => !itemsToDelete.has(i.id));
-      console.log("New curriculum length:", newCurriculum.length);
       return newCurriculum;
     });
   };
 
   const handleAssignment = (assignment: Assignment) => {
-    console.log("handleAssignment called:", { assignment, activeParentId });
-
     if (!activeParentId) {
       console.error("No activeParentId set");
       return;
@@ -882,8 +885,6 @@ const CurriculumBuilderPage = () => {
       return;
     }
 
-    console.log("Parent found at index:", parentIndex, curriculum[parentIndex]);
-
     // Check duplicate
     const assignmentExists = curriculum.some(
       (item) =>
@@ -893,7 +894,6 @@ const CurriculumBuilderPage = () => {
     );
 
     if (assignmentExists) {
-      console.log("Assignment already exists");
       toast({
         title: "Duplicate Assignment",
         description: "Assignment already exists in this topic",
@@ -912,8 +912,6 @@ const CurriculumBuilderPage = () => {
       parentId: activeParentId,
     };
 
-    console.log("Adding new assignment item:", newItem);
-
     setCurriculum((prev) => {
       const updated = [...prev];
 
@@ -925,7 +923,6 @@ const CurriculumBuilderPage = () => {
       }
 
       updated.splice(insertIndex, 0, newItem);
-      console.log("Curriculum after adding assignment:", updated);
       return updated;
     });
 
@@ -1022,7 +1019,6 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      console.log("Current curriculum:", curriculum);
       showOverlay("Saving Curriculum.");
 
       const newRootTopics: Topic[] = [];
@@ -1253,7 +1249,7 @@ const CurriculumBuilderPage = () => {
                       </Select>
                     </CardContent>
                   </Card>
-                  {/* Categories */}
+                   {/* Categories */}
                   {/* <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Categories</CardTitle>
@@ -1279,6 +1275,7 @@ const CurriculumBuilderPage = () => {
                       ))}
                     </CardContent>
                   </Card>
+
                   {/* Tags */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
@@ -1434,8 +1431,7 @@ const CurriculumBuilderPage = () => {
                       </Popover>
                     </CardContent>
                   </Card>
-
-                  {/* Target Audience */}
+                    {/* Target Audience */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Target Audience</CardTitle>
@@ -1556,7 +1552,7 @@ const CurriculumBuilderPage = () => {
                 {/* Pricing */}
                 <Card className="rounded-xl border p-4">
                   <div className="flex gap-4">
-                    <Button onClick={saveBasics}>
+                    <Button onClick={saveBasics} disabled={!canSaveBasics}>
                       <Save className="mr-2 h-4 w-4" />
                       Save Basics
                     </Button>
@@ -1577,22 +1573,30 @@ const CurriculumBuilderPage = () => {
                         Regular price
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
+                        <span className="text-muted-foreground">₹</span>
                         <Input
                           type="number"
-                          value={regularPrice}
-                          onChange={(e) => setRegularPrice(+e.target.value)}
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          value={regularPrice ?? ""}
+                          onChange={(e) => setRegularPrice(toNumberOrNull(e.target.value))}
+                          placeholder="Enter regular price"
                         />
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Sale price</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
+                        <span className="text-muted-foreground">₹</span>
                         <Input
                           type="number"
-                          value={salePrice}
-                          onChange={(e) => setSalePrice(+e.target.value)}
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          value={salePrice ?? ""}
+                          onChange={(e) => setSalePrice(toNumberOrNull(e.target.value))}
+                          placeholder="Enter sale price"
                         />
                       </div>
                     </div>
@@ -1607,14 +1611,33 @@ const CurriculumBuilderPage = () => {
                     <Label>Hours</Label>
                     <Input
                       type="number"
-                      value={duration.hours}
-                      onChange={(e) => setDuration(prev => ({ hours: parseInt(e.target.value), minutes: prev.minutes }))}
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={duration.hours ?? ""}
+                      onChange={(e) =>
+                        setDuration((prev) => ({
+                          ...prev,
+                          hours: toNumberOrNull(e.target.value),
+                        }))
+                      }
+                      placeholder="Hours"
                     />
                     <Label>Minutes</Label>
                     <Input
                       type="number"
-                      value={duration.minutes}
-                      onChange={(e) => setDuration(prev => ({ hours: prev.hours, minutes: parseInt(e.target.value) }))}
+                      inputMode="numeric"
+                      min={0}
+                      max={59}
+                      step={1}
+                      value={duration.minutes ?? ""}
+                      onChange={(e) =>
+                        setDuration((prev) => ({
+                          ...prev,
+                          minutes: toNumberOrNull(e.target.value),
+                        }))
+                      }
+                      placeholder="Minutes (0–59)"
                     />
                   </CardContent>
                 </Card>
@@ -1817,7 +1840,6 @@ const CurriculumBuilderPage = () => {
                               )}
                             </div>
 
-                            {/* ---- Action Buttons ----------------------------- */}
                             {/* ---- Action Buttons ----------------------------- */}
                             <div className="flex items-center gap-1">
                               {/* Cohort actions */}

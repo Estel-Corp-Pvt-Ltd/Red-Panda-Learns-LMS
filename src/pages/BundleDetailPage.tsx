@@ -388,15 +388,15 @@ export default function BundleDetailPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Individual Course Prices:</span>
-                      <span className="font-medium">${(bundle.salePrice).toFixed(2)}</span>
+                      <span className="font-medium">₹{(bundle.salePrice).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Bundle Price:</span>
-                      <span className="font-medium text-success">${(bundle.regularPrice).toFixed(2)}</span>
+                      <span className="font-medium text-success">₹{(bundle.regularPrice).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
                       <span className="font-medium">Your Savings:</span>
-                      <span className="font-bold text-success">${(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
+                      <span className="font-bold text-success">₹{(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>

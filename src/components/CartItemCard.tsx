@@ -42,7 +42,7 @@ const CartItemCard: React.FC<Props> = ({ item, borderless = false }) => {
     : 0;
 
   const formatPrice = (value?: number) =>
-    typeof value === "number" ? `$${value.toFixed(2)}` : "N/A";
+    typeof value === "number" ? `₹${value.toFixed(2)}` : "N/A";
 
   return (
     <div
