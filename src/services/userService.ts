@@ -10,6 +10,12 @@ import {
     deleteDoc,
     WhereFilterOp,
     serverTimestamp,
+    Query,
+    orderBy,
+    endBefore,
+    limitToLast,
+    limit,
+    startAfter,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -18,6 +24,7 @@ import { User } from "@/types/user";
 import { COLLECTION } from "@/constants";
 import { Result, ok, fail } from "@/utils/response";
 import { logError } from "@/utils/logger";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 
 class UserService {
     /**
@@ -240,6 +247,111 @@ class UserService {
             logError("UserService.changeUserStatus", error);
             return fail("Failed to change user status");
         }
+    }
+
+    async getUsers(
+        filters?: {
+            field: keyof User;
+            op: WhereFilterOp;
+            value: any;
+        }[],
+        options: PaginationOptions<User> = {}
+    ): Promise<Result<PaginatedResult<User>>> {
+        try {
+            const {
+                limit: itemsPerPage = 25,
+                orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+                pageDirection = 'next',
+                cursor = null
+            } = options;
+
+            let q: Query = collection(db, COLLECTION.USERS);
+
+            // Apply filters if provided
+            if (filters && filters.length > 0) {
+                const whereClauses = filters.map((f) =>
+                    where(f.field as string, f.op, f.value)
+                );
+                q = query(q, ...whereClauses);
+            }
+
+            // Apply ordering
+            const { field, direction } = orderByOption;
+
+            // For pagination, we need to handle different scenarios
+            if (pageDirection === 'previous' && cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    endBefore(cursor),
+                    limitToLast(itemsPerPage)
+                );
+            } else if (cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    startAfter(cursor),
+                    limit(itemsPerPage)
+                );
+            } else {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    limit(itemsPerPage)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+            const documents = querySnapshot.docs;
+
+            if (pageDirection === 'previous') {
+                documents.reverse();
+            }
+
+            const users = documents.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    username: data.username,
+                    email: data.email,
+                    firstName: data.firstName,
+                    middleName: data.middleName,
+                    lastName: data.lastName,
+                    role: data.role,
+                    status: data.status,
+                    enrollments: data.enrollments || [],
+                    organizationId: data.organizationId,
+                    photoURL: data.photoURL,
+                    createdAt: data.createdAt?.toDate?.() || data.createdAt,
+                    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+                } as User;
+            });
+
+            const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+            const hasPreviousPage = cursor !== null;
+            const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+            const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+            return ok({
+                data: users,
+                hasNextPage,
+                hasPreviousPage,
+                nextCursor,
+                previousCursor
+            });
+        } catch (error) {
+            console.error('UserService - Error fetching users:', error);
+            return fail("Error fetching users");
+        }
+    }
+
+    async getUsersByRole(role: string, options: PaginationOptions<User> = {}): Promise<Result<PaginatedResult<User>>> {
+        return this.getUsers(
+            [
+                { field: 'role', op: '==', value: role }
+            ],
+            options
+        );
     }
 }
 

@@ -13,6 +13,12 @@ import {
   WhereFilterOp,
   arrayUnion,
   increment,
+  Query,
+  orderBy,
+  endBefore,
+  limitToLast,
+  startAfter,
+  limit,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -21,6 +27,7 @@ import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 
 import { Coupon, CouponUsage } from "@/types/coupon";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 
 /**
  * Service class for managing coupons and coupon usage tracking.
@@ -277,31 +284,127 @@ class CouponService {
   }
 
 
-async  addUserCouponUsage(
-  userId: string,
-  couponId: string
-): Promise<Result<string>> {
-  const couponRef = doc(db, COLLECTION.COUPONS, couponId);
+  async addUserCouponUsage(
+    userId: string,
+    couponId: string
+  ): Promise<Result<string>> {
+    const couponRef = doc(db, COLLECTION.COUPONS, couponId);
 
-  try {
-    await runTransaction(db, async (transaction) => {
-      transaction.update(couponRef, {
-        currentUsageCount: increment(1),
-        usedByUserIds: arrayUnion(userId),
-        updatedAt: Timestamp.now(),
+    try {
+      await runTransaction(db, async (transaction) => {
+        transaction.update(couponRef, {
+          currentUsageCount: increment(1),
+          usedByUserIds: arrayUnion(userId),
+          updatedAt: Timestamp.now(),
+        });
       });
-    });
 
-    return ok("Coupon usage updated successfully!");
-  } catch (error: any) {
-    console.error("Failed to update coupon usage:", error);
-    return fail(
-      "Failed to update coupon usage",
-      error?.code,
-      error?.stack
-    );
+      return ok("Coupon usage updated successfully!");
+    } catch (error: any) {
+      console.error("Failed to update coupon usage:", error);
+      return fail(
+        "Failed to update coupon usage",
+        error?.code,
+        error?.stack
+      );
+    }
   }
-}
+
+  async getCoupons(
+    filters?: {
+      field: keyof Coupon;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Coupon> = {}
+  ): Promise<Result<PaginatedResult<Coupon>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
+
+      let q: Query = collection(db, COLLECTION.COUPONS);
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const documents = querySnapshot.docs;
+
+      if (pageDirection === 'previous') {
+        documents.reverse();
+      }
+
+      const coupons = documents.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          code: data.code,
+          expiryDate: data.expiryDate,
+          discountPercentage: data.discountPercentage,
+          status: data.status,
+          usageLimit: data.usageLimit,
+          linkedCourseIds: data.linkedCourseIds || [],
+          linkedBundleIds: data.linkedBundleIds || [],
+          linkedCohortIds: data.linkedCohortIds || [],
+          createdById: data.createdById,
+          createdbyMail: data.createdbyMail,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        } as Coupon;
+      });
+
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      return ok({
+        data: coupons,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor
+      });
+    } catch (error) {
+      console.error('CouponService - Error fetching coupons:', error);
+      return fail("Error fetching coupons");
+    }
+  }
 
 }
 

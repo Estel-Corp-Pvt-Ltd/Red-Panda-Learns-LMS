@@ -10,6 +10,11 @@ import {
   updateDoc,
   where,
   collection,
+  Query,
+  endBefore,
+  limitToLast,
+  startAfter,
+  limit,
 } from "firebase/firestore";
 import { db } from "../firebaseConfig.ts";
 import { OrderStatus } from "../types/general.ts";
@@ -17,6 +22,8 @@ import { COLLECTION, ORDER_STATUS } from "@/constants.ts";
 import { Order } from "@/types/order.ts";
 import { logError } from "@/utils/logger.ts";
 import { fail, ok, Result } from "@/utils/response.ts";
+import { WhereFilterOp } from "firebase-admin/firestore";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination.ts";
 
 class OrderService {
   /** Generate unique order ID based on date + incremental counter */
@@ -250,6 +257,111 @@ class OrderService {
       logError("OrderService.updateOrder", error);
       return fail("Failed to update order");
     }
+  }
+  async getOrders(
+    filters?: {
+      field: keyof Order;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Order> = {}
+  ): Promise<Result<PaginatedResult<Order>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
+
+      let q: Query = collection(db, COLLECTION.ORDERS);
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const documents = querySnapshot.docs;
+
+      if (pageDirection === 'previous') {
+        documents.reverse();
+      }
+
+      const orders = documents.map(doc => {
+        const data = doc.data();
+        return {
+          orderId: data.orderId,
+          userId: data.userId,
+          items: data.items || [],
+          status: data.status,
+          amount: data.amount,
+          completedAt: data.completedAt,
+          transactionId: data.transactionId,
+          currency: data.currency,
+          metadata: data.metadata || {},
+          billingAddress: data.billingAddress,
+          shippingAddress: data.shippingAddress,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Order;
+      });
+
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      return ok({
+        data: orders,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor
+      });
+    } catch (error) {
+      console.error('OrderService - Error fetching orders:', error);
+      return fail("Error fetching orders");
+    }
+  }
+
+  // Additional methods for specific order operations
+  async getOrdersByStatus(status: OrderStatus, options: PaginationOptions<Order> = {}): Promise<Result<PaginatedResult<Order>>> {
+    return this.getOrders(
+      [
+        { field: 'status', op: '==', value: status }
+      ],
+      options
+    );
   }
 }
 
