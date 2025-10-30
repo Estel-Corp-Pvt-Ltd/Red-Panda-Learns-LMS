@@ -67,7 +67,7 @@ class CourseService {
  * @throws An error if the course could not be created in Firestore.
  */
 
-  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds'>): Promise<string> {
+  async createCourse(data: Omit<Course, 'id' | 'status' | 'topics' | 'regularPrice' | 'salePrice' | 'pricingModel' | 'isEnrollmentPaused' | 'tags' | 'createdAt' | 'updatedAt' | 'cohorts' | 'categoryIds' | 'targetAudienceIds' | 'duration' | 'url'>): Promise<string> {
     try {
       const courseId = await this.generateCourseId();
 
@@ -386,6 +386,27 @@ class CourseService {
    *   { field: 'category', op: '==', value: 'AI' }
    * ]);
    */
+
+  async getAllTags(): Promise<string[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, COLLECTION.COURSES));
+
+    // Extract tags from all courses
+    const allTags: string[] = querySnapshot.docs.flatMap(doc => {
+      const data = doc.data() as Course;
+      return data.tags ?? []; // in case tags is undefined
+    });
+
+    // Make unique
+    const uniqueTags = Array.from(new Set(allTags));
+
+    return uniqueTags;
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    return [];
+  }
+}
+
 
   async getFilteredCourses(
     filters?: { field: keyof Course; op: WhereFilterOp; value: any }[]

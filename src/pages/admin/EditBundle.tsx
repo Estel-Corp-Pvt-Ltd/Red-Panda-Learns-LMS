@@ -20,6 +20,8 @@ import {
   COURSE_STATUS,
   CURRENCY,
   PRICING_MODEL,
+  SORT_KEY,
+  ATTRIBUTE_TYPE,
 } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,30 +32,71 @@ import {
 import { courseService } from "@/services/courseService";
 import { instructorService } from "@/services/instructorService";
 import { Course } from "@/types/course";
-import { BundleStatus, PricingModel } from "@/types/general";
+import {
+  BundleStatus,
+  PricingModel,
+  SortKey,
+  AttributeType,
+} from "@/types/general";
 import { getFullName } from "@/utils/name";
 import {
-  ArrowLeft,
-  DollarSign,
-  Info,
   Loader2,
+  ArrowLeft,
   Package,
   Plus,
   Trash2,
+  DollarSign,
+  Info,
   X,
+  Search,
+  RefreshCcw,
+  CheckCheck,
+  XCircle,
+  Filter,
+  Check,
+  ChevronDown,
+  Layers,
+  Users as UsersIcon
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { getDownloadURL } from "firebase/storage";
+import { fileService } from "@/services/fileService";
+import { logError } from "@/utils/logger";
+import { ok, Result } from "@/utils/response";
+import { title } from "process";
 type EditBundleFormData = {
   title: string;
   description: string;
   regularPrice: string;
   salePrice: string;
+  thumbnail: string;
+  categories: string[];
+  taregetAudience: string[];
   pricingModel: PricingModel;
   status: BundleStatus;
 };
+import { Slider } from "@/components/ui/slider";
+import { attributeService } from "@/services/attributeService";
+import { Attribute } from "@/types/attribute";
 
+interface Option {
+  id: string;
+  label: string;
+}
 export default function EditBundlePage() {
   const navigate = useNavigate();
   const { bundleId } = useParams<{ bundleId: string }>();
@@ -71,7 +114,22 @@ export default function EditBundlePage() {
   const [instructors, setInstructors] = useState<
     { id: string; name: string }[]
   >([]);
+  const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+  const [targetAudienceOptions, settargetAudienceOptions] = useState<Option[]>(
+    []
+  );
+  const [tagOptions, setTagOptions] = useState<Option[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
 
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
+    string[]
+  >([]);
+  const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
   // Fetch bundle data
   const {
     data: bundleData,
@@ -85,6 +143,9 @@ export default function EditBundlePage() {
     description: "",
     regularPrice: "",
     salePrice: "",
+    thumbnail: "",
+    categories: [],
+    taregetAudience: [],
     pricingModel: PRICING_MODEL.PAID,
     status: BUNDLE_STATUS.DRAFT,
   });
@@ -117,6 +178,262 @@ export default function EditBundlePage() {
       navigate("/admin");
     }
   }, [bundleError, navigate, toast]);
+
+  // Helper to get a course's effective price (salePrice takes precedence)
+  const getCoursePrice = (course: Course) =>
+    Number(course.salePrice ?? course.regularPrice ?? 0);
+
+  // Search (debounced)
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const id = setTimeout(
+      () => setDebouncedSearch(search.trim().toLowerCase()),
+      300
+    );
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Price range setup from current courses
+  const prices = useMemo(() => courses.map(getCoursePrice), [courses]);
+  const minCoursePrice = useMemo(
+    () => (prices.length ? Math.min(...prices) : 0),
+    [prices]
+  );
+  const maxCoursePrice = useMemo(
+    () => (prices.length ? Math.max(...prices) : 0),
+    [prices]
+  );
+
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+  useEffect(() => {
+    setPriceRange([minCoursePrice, maxCoursePrice]);
+  }, [minCoursePrice, maxCoursePrice]);
+
+  const [sortBy, setSortBy] = useState<SortKey>(SORT_KEY.RELEVANCE);
+  const [priceType, setPriceType] = useState<"all" | PricingModel>("all");
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>(
+    []
+  );
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedCourseTags, setSelectedCourseTags] = useState<string[]>([]);
+  const [selectedTargetAudienceIds, setSelectedTargetAudienceIds] = useState<
+    string[]
+  >([]);
+
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      const result = await instructorService.getAllInstructors();
+      if (result.success) {
+        const formatted = result.data.map((i) => ({
+          id: i.id,
+          name: getFullName(i.firstName, i.middleName, i.lastName),
+        }));
+        setInstructors(formatted);
+      } else {
+        console.error("Failed to fetch instructors:", result.error);
+        toast({
+          title: "Error",
+          description: "Could not load instructors' list.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchInstructors();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const categoriesData = await attributeService.getAttributes(
+          ATTRIBUTE_TYPE.CATEGORY
+        );
+        setCategoryOptions(
+          categoriesData.map((a) => ({ id: a.id, label: a.name }))
+        );
+        setAllCategories(categoriesData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load categories.",
+          variant: "destructive",
+        });
+      }
+
+      try {
+        const targetAudienceData = await attributeService.getAttributes(
+          ATTRIBUTE_TYPE.TARGET_AUDIENCE
+        );
+        settargetAudienceOptions(
+          targetAudienceData.map((a) => ({ id: a.id, label: a.name }))
+        );
+        setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching target audiences:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load target audiences.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchAttributes();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const tags = await courseService.getAllTags();
+
+        const formattedTags = tags.map((t) => ({ id: t, label: t }));
+        setTagOptions(formattedTags);
+      } catch (error) {
+        console.error("Failed to fetch tags:", error);
+        toast({
+          title: "Error",
+          description: "Could not load tags.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchTags();
+  }, [toast]);
+
+  // Filtered + sorted list
+  const filteredCourses = useMemo(() => {
+    let list = [...courses];
+
+    // search
+    if (debouncedSearch) {
+      list = list.filter((c) =>
+        [c.title, c.description]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(debouncedSearch))
+      );
+    }
+
+    // price type
+    list = list.filter((c) => {
+      const p = getCoursePrice(c);
+      if (priceType === PRICING_MODEL.FREE) return p <= 0;
+      if (priceType === PRICING_MODEL.PAID) return p > 0;
+      return true;
+    });
+
+    // price range
+    list = list.filter((c) => {
+      const p = getCoursePrice(c);
+      return p >= priceRange[0] && p <= priceRange[1];
+    });
+
+    // Advanced filters
+    if (selectedInstructorIds.length) {
+      list = list.filter((c) => {
+        const instructorId = (c as any).instructorId as string;
+        return selectedInstructorIds.includes(instructorId ?? "");
+      });
+    }
+    if (selectedCategoryIds.length) {
+      list = list.filter((c) =>
+        c.categoryIds?.some((id) => selectedCategoryIds.includes(id))
+      );
+    }
+    if (selectedCourseTags.length) {
+      list = list.filter((c) =>
+        c.tags?.some((t) => selectedCourseTags.includes(t))
+      );
+    }
+    if (selectedTargetAudienceIds.length) {
+      list = list.filter((c) =>
+        c.targetAudienceIds?.some((id) =>
+          selectedTargetAudienceIds.includes(id)
+        )
+      );
+    }
+
+    // show selected only
+    if (showSelectedOnly) {
+      list = list.filter((c) => selectedCourseIds.includes(c.id!));
+    }
+
+    // sort
+    // sort
+    switch (sortBy) {
+      case SORT_KEY.PRICE_ASC:
+        list.sort((a, b) => getCoursePrice(a) - getCoursePrice(b));
+        break;
+      case SORT_KEY.PRICE_DESC:
+        list.sort((a, b) => getCoursePrice(b) - getCoursePrice(a));
+        break;
+      case SORT_KEY.TITLE_ASC:
+        list.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case SORT_KEY.TITLE_DESC:
+        list.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case SORT_KEY.RELEVANCE:
+      default:
+        list.sort((a, b) => {
+          const as = selectedCourseIds.includes(a.id!);
+          const bs = selectedCourseIds.includes(b.id!);
+          if (as !== bs) return as ? -1 : 1;
+          if (debouncedSearch) {
+            const at = a.title?.toLowerCase().includes(debouncedSearch) ? 1 : 0;
+            const bt = b.title?.toLowerCase().includes(debouncedSearch) ? 1 : 0;
+            if (at !== bt) return bt - at;
+          }
+          return a.title.localeCompare(b.title);
+        });
+    }
+
+    return list;
+  }, [
+    courses,
+    debouncedSearch,
+    priceType,
+    priceRange,
+    sortBy,
+    showSelectedOnly,
+    selectedCourseIds,
+    selectedInstructorIds,
+    selectedCategoryIds,
+    selectedCourseTags,
+    selectedTargetAudienceIds,
+  ]);
+  // Bulk actions + helpers
+  const totalCount = courses.length;
+  const filteredCount = filteredCourses.length;
+
+  const handleSelectAllFiltered = () => {
+    setSelectedCourses((prev) => {
+      const toAdd = filteredCourses
+        .map((c) => c.id!)
+        .filter((id) => !prev.includes(id));
+      return [...prev, ...toAdd];
+    });
+  };
+
+  const handleClearSelectionFiltered = () => {
+    setSelectedCourses((prev) =>
+      prev.filter((id) => !filteredCourses.some((c) => c.id === id))
+    );
+  };
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setPriceType("all");
+    setSortBy(SORT_KEY.RELEVANCE);
+    setShowSelectedOnly(false);
+    setPriceRange([minCoursePrice, maxCoursePrice]);
+    setSelectedInstructorIds([]);
+    setSelectedCategoryIds([]);
+    setSelectedCourseTags([]);
+    setSelectedTargetAudienceIds([]);
+  };
 
   useEffect(() => {
     const fetchInstructors = async () => {
@@ -170,6 +487,9 @@ export default function EditBundlePage() {
         regularPrice: bundleData.regularPrice
           ? bundleData.regularPrice.toString()
           : "",
+        thumbnail: bundleData.thumbnail || "",
+        categories: bundleData.categoryIds || [],
+        taregetAudience: bundleData.targetAudienceIds || [],
         salePrice: bundleData.salePrice ? bundleData.salePrice.toString() : "",
         pricingModel: bundleData.pricingModel || PRICING_MODEL.PAID,
         status: bundleData.status,
@@ -180,11 +500,23 @@ export default function EditBundlePage() {
         setSelectedCourses(bundleData.courses.map((course) => course.id));
       }
 
+      if (bundleData.categoryIds) {
+        setSelectedCategories(bundleData.categoryIds);
+      }
+      if (bundleData.targetAudienceIds) {
+        setSelectedTargetAudiences(bundleData.targetAudienceIds);
+      }
+      if (bundleData.thumbnail) {
+        setThumbnailUrl(bundleData.thumbnail);
+        setPreview(bundleData.thumbnail);
+      }
+
       setInstructorId(bundleData.instructorId || "");
       setInstructorName(bundleData.instructorName || "");
 
       // Set categories and tags
-      setCategories(bundleData.categories || []);
+      setCategories(bundleData.categoryIds || []);
+
       setTags(bundleData.tags || []);
     }
   }, [bundleData, bundleLoading]);
@@ -221,6 +553,90 @@ export default function EditBundlePage() {
       prev.includes(category)
         ? prev.filter((c) => c !== category)
         : [...prev, category]
+    );
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPreview(URL.createObjectURL(file));
+    uploadThumbnail(file);
+  };
+
+  const uploadThumbnail = async (selectedFile: File) => {
+    if (!selectedFile) return;
+
+    // Check file size (3MB limit)
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+    if (selectedFile.size > MAX_SIZE) {
+      toast({
+        title: "File Too Large",
+        description: "The selected file exceeds the 3MB size limit.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const uploadResult = fileService.startResumableUpload(
+      `/bundles/${bundleId}/thumbnail.png`,
+      selectedFile
+    );
+    if (!uploadResult.success) {
+      toast({
+        title: "Upload Failed",
+        description: "Unable to upload the file. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadResult.data.on(
+      "state_changed",
+      (snapshot) => {
+        setUploadingThumbnail(true);
+        // Calculate progress
+        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setProgress(Math.round(prog));
+      },
+      (error) => {
+        toast({
+          title: "Failed to upload thumbnail.",
+          description: "Something went wrong",
+          variant: "destructive",
+        });
+        console.error(error);
+        setUploadingThumbnail(false);
+      },
+      async () => {
+        try {
+          setProgress(100);
+          setUploadingThumbnail(false);
+          const url = await getDownloadURL(uploadResult.data.snapshot.ref);
+          setThumbnailUrl(url);
+          toast({
+            title: "Thumbnail Uploaded",
+            description: "Thumbnail has been successfully uploaded",
+            variant: "default",
+          });
+        } catch (error) {
+          toast({
+            title: "Thumbnail not uploaded",
+            description: "Something went wrong",
+            variant: "destructive",
+          });
+          logError("Error getting download URL:", error);
+        }
+      }
     );
   };
 
@@ -283,10 +699,12 @@ export default function EditBundlePage() {
               .map((course) => ({ id: course.id, title: course.title })),
             regularPrice,
             salePrice,
+            thumbnail: thumbnailUrl,
             pricingModel: formData.pricingModel,
             instructorId,
             instructorName,
-            categories,
+            targetAudienceIds: selectedTargetAudiences,
+        categoryIds: selectedCategories,
             tags,
             status: formData.status,
           },
@@ -360,7 +778,8 @@ export default function EditBundlePage() {
             pricingModel: formData.pricingModel,
             instructorId,
             instructorName,
-            categories,
+            targetAudienceIds: selectedTargetAudiences,
+            categoryIds: selectedCategories,
             tags,
             status: formData.status,
           },
@@ -399,11 +818,11 @@ export default function EditBundlePage() {
   };
 
   const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-  }).format(amount);
-};
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY.INR,
+    }).format(amount);
+  };
 
   const selectedCourses = courses.filter((course) =>
     selectedCourseIds.includes(course.id!)
@@ -423,7 +842,7 @@ export default function EditBundlePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header/>
+      <Header />
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -488,27 +907,213 @@ export default function EditBundlePage() {
                   />
                 </div>
 
-                {/* Categories */}
-                <div>
-                  <Label>Categories</Label>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {[
-                      "AI/ML",
-                      "Bootcamp",
-                      "College-student",
-                      "Data-Science",
-                      "Generative-AI",
-                    ].map((cat) => (
-                      <div key={cat} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={categories.includes(cat)}
-                          onCheckedChange={() => handleCategoryChange(cat)}
-                        />
-                        <Label>{cat}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Categories */}
+  <Card className="rounded-xl border p-4">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <Layers className="h-5 w-5 text-primary" />
+        Categories
+      </CardTitle>
+      <p className="text-xs text-muted-foreground">
+        Pick one or more to help discovery
+      </p>
+    </CardHeader>
+
+    <CardContent className="space-y-3">
+      {selectedCategories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedCategories.map((cat) => (
+            <Badge
+              key={cat}
+              variant="secondary"
+              className="pl-2 pr-1 py-[2px] text-sm"
+            >
+              {cat}
+              <button
+                onClick={() =>
+                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
+                }
+                className="ml-1 rounded-full hover:bg-muted p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+          >
+            {selectedCategories.length > 0
+              ? `${selectedCategories.length} selected`
+              : "Select categories"}
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput placeholder="Search categories..." />
+            <CommandList>
+              <CommandEmpty>No category found.</CommandEmpty>
+              <CommandGroup>
+                {allCategories.map((cat) => (
+                  <CommandItem
+                    key={cat}
+                    onSelect={() =>
+                      setSelectedCategories((prev) =>
+                        prev.includes(cat)
+                          ? prev.filter((c) => c !== cat)
+                          : [...prev, cat],
+                      )
+                    }
+                  >
+                    <Checkbox
+                      checked={selectedCategories.includes(cat)}
+                      className="mr-2"
+                    />
+                    {cat}
+                    {selectedCategories.includes(cat) && (
+                      <Check className="ml-auto h-4 w-4" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+            <div className="p-2 border-t">
+              <Input
+                placeholder="Add new category"
+                onKeyDown={async (e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                    const newCat = e.currentTarget.value.trim();
+                    if (!allCategories.includes(newCat)) {
+                      await attributeService.addAttribute(
+                        ATTRIBUTE_TYPE.CATEGORY,
+                        newCat,
+                      );
+                      setAllCategories((prev) => [...prev, newCat]);
+                      setSelectedCategories((prev) => [...prev, newCat]);
+                    }
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+            </div>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </CardContent>
+  </Card>
+
+  {/* Target Audience */}
+  <Card className="rounded-xl border p-4">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <UsersIcon className="h-5 w-5 text-primary" />
+        Target Audience
+      </CardTitle>
+      <p className="text-xs text-muted-foreground">Who is this content for?</p>
+    </CardHeader>
+
+    <CardContent className="space-y-3">
+      {selectedTargetAudiences.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedTargetAudiences.map((aud) => (
+            <Badge
+              key={aud}
+              variant="secondary"
+              className="pl-2 pr-1 py-[2px] text-sm"
+            >
+              {aud}
+              <button
+                onClick={() =>
+                  setSelectedTargetAudiences((prev) =>
+                    prev.filter((a) => a !== aud),
+                  )
+                }
+                className="ml-1 rounded-full hover:bg-muted p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+          >
+            {selectedTargetAudiences.length > 0
+              ? `${selectedTargetAudiences.length} selected`
+              : "Select target audience"}
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput placeholder="Search audiences..." />
+            <CommandList>
+              <CommandEmpty>No audience found.</CommandEmpty>
+              <CommandGroup>
+                {allTargetAudiences.map((aud) => (
+                  <CommandItem
+                    key={aud}
+                    onSelect={() =>
+                      setSelectedTargetAudiences((prev) =>
+                        prev.includes(aud)
+                          ? prev.filter((a) => a !== aud)
+                          : [...prev, aud],
+                      )
+                    }
+                  >
+                    <Checkbox
+                      checked={selectedTargetAudiences.includes(aud)}
+                      className="mr-2"
+                    />
+                    {aud}
+                    {selectedTargetAudiences.includes(aud) && (
+                      <Check className="ml-auto h-4 w-4" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+            <div className="p-2 border-t">
+              <Input
+                placeholder="Add new audience"
+                onKeyDown={async (e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                    const newAud = e.currentTarget.value.trim();
+                    if (!allTargetAudiences.includes(newAud)) {
+                      await attributeService.addAttribute(
+                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+                        newAud,
+                      );
+                      setAllTargetAudiences((prev) => [...prev, newAud]);
+                      setSelectedTargetAudiences((prev) => [...prev, newAud]);
+                    }
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+            </div>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </CardContent>
+  </Card>
+</div>
 
                 {/* Tags */}
                 <div>
@@ -611,6 +1216,54 @@ export default function EditBundlePage() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>Thumbnail</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!preview && thumbnailUrl && (
+                  <div className="mb-5">
+                    <img
+                      src={thumbnailUrl}
+                      alt="Preview"
+                      className="border rounded"
+                    />
+                  </div>
+                )}
+                {preview && (
+                  <div className="mb-5">
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="border rounded"
+                    />
+                  </div>
+                )}
+                {uploadingThumbnail && (
+                  <div className="mb-8">
+                    <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
+                      <div
+                        style={{
+                          width: `${progress}%`,
+                          height: "100%",
+                          backgroundColor: "#ff00ff",
+                          transition: "width 0.3s",
+                        }}
+                      />
+                    </div>
+                    <small>{progress}%</small>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Course Selection */}
             <Card>
               <CardHeader>
@@ -634,35 +1287,705 @@ export default function EditBundlePage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {courses.map((course) => (
-                      <div
-                        key={course.id}
-                        className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50"
-                      >
-                        <Checkbox
-                          checked={selectedCourseIds.includes(course.id!)}
-                          onCheckedChange={() => handleCourseToggle(course.id!)}
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium">{course.title}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {course.description}
-                          </p>
+                  <>
+                    {/* Filter toolbar */}
+                    {/* Filter toolbar */}
+                    <div className="p-3 border rounded-lg bg-muted/20 space-y-3 mb-4">
+                      {/* Row 1: Search, Type, Sort */}
+                      <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+                        {/* Search */}
+                        <div className="w-full lg:flex-1 space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Search
+                          </Label>
+                          <div className="relative">
+                            <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-muted-foreground">
+                              <Search className="h-4 w-4" />
+                            </span>
+                            <Input
+                              className="pl-8"
+                              placeholder="Search by title or description..."
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            {formatCurrency(
-                              course.salePrice || course.regularPrice
-                            )}
-                          </p>
-                          <Badge variant="outline" className="text-xs">
-                            {course.status}
-                          </Badge>
+
+                        {/* Type */}
+                        <div className="w-full lg:w-40 space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Type
+                          </Label>
+                          <Select
+                            value={priceType}
+                            onValueChange={(v) =>
+                              setPriceType(v as "all" | PricingModel)
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="All" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value={PRICING_MODEL.FREE}>
+                                Free
+                              </SelectItem>
+                              <SelectItem value={PRICING_MODEL.PAID}>
+                                Paid
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Sort by */}
+                        <div className="w-full lg:w-48 space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Sort by
+                          </Label>
+                          <Select
+                            value={sortBy}
+                            onValueChange={(v) => setSortBy(v as SortKey)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Relevance" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={SORT_KEY.RELEVANCE}>
+                                Relevance
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.PRICE_ASC}>
+                                Price: Low to High
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.PRICE_DESC}>
+                                Price: High to Low
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.TITLE_ASC}>
+                                Title: A → Z
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.TITLE_DESC}>
+                                Title: Z → A
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
-                    ))}
-                  </div>
+
+                      {/* Row 2: Price Range */}
+                      <div className="w-full">
+                        <Label className="text-xs text-muted-foreground">
+                          Price range
+                        </Label>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium">
+                            {formatCurrency(priceRange[0] || 0)}
+                          </span>
+                          <Slider
+                            value={[priceRange[0], priceRange[1]]}
+                            onValueChange={(vals) =>
+                              setPriceRange([vals[0], vals[1]])
+                            }
+                            min={minCoursePrice}
+                            max={maxCoursePrice}
+                            step={1}
+                            className="flex-1"
+                            disabled={minCoursePrice === maxCoursePrice}
+                          />
+                          <span className="text-sm font-medium">
+                            {formatCurrency(priceRange[1] || 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Row 3: Advanced filters */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {/* Instructor */}
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Instructor</span>
+                              <div className="flex items-center gap-2">
+                                {selectedInstructorIds.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedInstructorIds.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search instructors..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {instructors.map((opt) => {
+                                    const selected =
+                                      selectedInstructorIds.includes(opt.name);
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        value={`${opt.name} ${opt.id}`} // better search
+                                        onSelect={() =>
+                                          setSelectedInstructorIds((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (id) => id !== opt.name
+                                                )
+                                              : [...prev, opt.name]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.name}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedInstructorIds(
+                                    instructors.map((o) => o.name)
+                                  )
+                                }
+                                disabled={
+                                  instructors.length === 0 ||
+                                  selectedInstructorIds.length ===
+                                    instructors.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedInstructorIds([])}
+                                disabled={selectedInstructorIds.length === 0}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Categories */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Categories</span>
+                              <div className="flex items-center gap-2">
+                                {selectedCategoryIds.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedCategoryIds.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search categories..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {categoryOptions.map((opt) => {
+                                    const selected =
+                                      selectedCategoryIds.includes(opt.label);
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        onSelect={() =>
+                                          setSelectedCategoryIds((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (id) => id !== opt.label
+                                                )
+                                              : [...prev, opt.label]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.label}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedCategoryIds(
+                                    categoryOptions.map((o) => o.label)
+                                  )
+                                }
+                                disabled={
+                                  categoryOptions.length === 0 ||
+                                  selectedCategoryIds.length ===
+                                    categoryOptions.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedCategoryIds([])}
+                                disabled={selectedCategoryIds.length === 0}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Tags */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Tags</span>
+                              <div className="flex items-center gap-2">
+                                {selectedCourseTags.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedCourseTags.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search tags..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {tagOptions.map((opt) => {
+                                    const selected =
+                                      selectedCourseTags.includes(opt.label);
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        onSelect={() =>
+                                          setSelectedCourseTags((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (t) => t !== opt.label
+                                                )
+                                              : [...prev, opt.label]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.label}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedCourseTags(
+                                    tagOptions.map((o) => o.id)
+                                  )
+                                }
+                                disabled={
+                                  tagOptions.length === 0 ||
+                                  selectedCourseTags.length ===
+                                    tagOptions.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedCourseTags([])}
+                                disabled={selectedCourseTags.length === 0}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Target Audience */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Target Audience</span>
+                              <div className="flex items-center gap-2">
+                                {selectedTargetAudienceIds.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedTargetAudienceIds.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search audience..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {targetAudienceOptions.map((opt) => {
+                                    const selected =
+                                      selectedTargetAudienceIds.includes(
+                                        opt.label
+                                      );
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        onSelect={() =>
+                                          setSelectedTargetAudienceIds((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (id) => id !== opt.label
+                                                )
+                                              : [...prev, opt.label]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.label}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedTargetAudienceIds(
+                                    targetAudienceOptions.map((o) => o.label)
+                                  )
+                                }
+                                disabled={
+                                  targetAudienceOptions.length === 0 ||
+                                  selectedTargetAudienceIds.length ===
+                                    targetAudienceOptions.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedTargetAudienceIds([])}
+                                disabled={
+                                  selectedTargetAudienceIds.length === 0
+                                }
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Active filter chips */}
+                      {(selectedInstructorIds.length ||
+                        selectedCategoryIds.length ||
+                        selectedCourseTags.length ||
+                        selectedTargetAudienceIds.length) > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            Active filters:
+                          </span>
+
+                          {selectedInstructorIds.map((id) => {
+                            const name =
+                              instructors.find((o) => o.id === id)?.name || id;
+                            return (
+                              <Badge
+                                key={`if-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {name}
+                                <button
+                                  onClick={() =>
+                                    setSelectedInstructorIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedInstructorIds.map((id) => {
+                            const name =
+                              instructors.find((o) => o.id === id)?.name ?? id;
+                            return (
+                              <Badge
+                                key={`if-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {name}
+                                <button
+                                  onClick={() =>
+                                    setSelectedInstructorIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedCategoryIds.map((id) => {
+                            const label =
+                              categoryOptions.find((o) => o.id === id)?.label ??
+                              id;
+                            return (
+                              <Badge
+                                key={`cf-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {label}
+                                <button
+                                  onClick={() =>
+                                    setSelectedCategoryIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedTargetAudienceIds.map((id) => {
+                            const label =
+                              targetAudienceOptions.find((o) => o.id === id)
+                                ?.label ?? id;
+                            return (
+                              <Badge
+                                key={`af-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {label}
+                                <button
+                                  onClick={() =>
+                                    setSelectedTargetAudienceIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                          {selectedCourseTags.map((t) => (
+                            <Badge
+                              key={`tf-${t}`}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {t}
+                              <button
+                                onClick={() =>
+                                  setSelectedCourseTags((prev) =>
+                                    prev.filter((x) => x !== t)
+                                  )
+                                }
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Row 4: Toggles + Bulk Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="selectedOnly"
+                            checked={showSelectedOnly}
+                            onCheckedChange={(checked) =>
+                              setShowSelectedOnly(Boolean(checked))
+                            }
+                          />
+                          <Label htmlFor="selectedOnly" className="text-sm">
+                            Show selected only
+                          </Label>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSelectAllFiltered}
+                            disabled={
+                              filteredCourses.length === 0 ||
+                              filteredCourses.every((c) =>
+                                selectedCourseIds.includes(c.id!)
+                              )
+                            }
+                          >
+                            <CheckCheck className="h-4 w-4 mr-1" />
+                            Select all (filtered)
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleClearSelectionFiltered}
+                            disabled={filteredCourses.every(
+                              (c) => !selectedCourseIds.includes(c.id!)
+                            )}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Clear selection (filtered)
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleResetFilters}
+                          >
+                            <RefreshCcw className="h-4 w-4 mr-1" />
+                            Reset
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Showing {filteredCount} of {totalCount} courses •
+                        Selected {selectedCourseIds.length}
+                      </div>
+                    </div>
+
+                    {/* Filtered results */}
+                    <div className="space-y-3">
+                      {filteredCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50"
+                        >
+                          <div className="flex items-start sm:items-center gap-3 flex-1">
+                            <Checkbox
+                              checked={selectedCourseIds.includes(course.id!)}
+                              onCheckedChange={() =>
+                                handleCourseToggle(course.id!)
+                              }
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{course.title}</h4>
+                              <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
+                                {course.description}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-left sm:text-right">
+                            <p className="font-semibold">
+                              {formatCurrency(
+                                course.salePrice ?? course.regularPrice ?? 0
+                              )}
+                            </p>
+                            <Badge variant="outline" className="text-xs">
+                              {course.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                      {filteredCourses.length === 0 && (
+                        <div className="text-sm text-muted-foreground py-6 text-center">
+                          No courses match your filters.
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCourseQuery } from "@/hooks/useCaching";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { paymentService } from "@/services/paymentService";
 import { ArrowLeft, CreditCard, Lock, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";

@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Copy,
   CreditCard,
   Lock,
   RefreshCw,
@@ -647,22 +646,6 @@ export default function CartCheckoutPage() {
                           </div>
                         );
                       })}
-                    </CardContent>
-                  </Card>
-
-                  {/* Security */}
-                  <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start gap-3">
-                        <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium mb-1">Secure Payment</h4>
-                          <p className="text-sm text-muted-foreground dark:text-gray-400">
-                            All transactions are encrypted. Instant access after
-                            payment. 7‑day refund guarantee.
-                          </p>
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
 

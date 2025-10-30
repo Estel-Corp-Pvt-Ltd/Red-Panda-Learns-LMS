@@ -3,7 +3,6 @@ import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AdminLayout from "@/components/AdminLayout";
 
-
 export function AdminDashboard() {
   const navigate = useNavigate();
 
@@ -48,10 +47,6 @@ export function AdminDashboard() {
             <span className="hidden xs:inline">New</span> Coupon
           </Button>
         </div>
-      </div>
-
-      <div className="space-y-8">
-        {/* implement here */}
       </div>
     </AdminLayout>
   );
