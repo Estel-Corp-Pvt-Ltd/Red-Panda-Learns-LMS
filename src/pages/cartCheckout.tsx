@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Copy,
   CreditCard,
   Lock,
   RefreshCw,
@@ -26,12 +25,12 @@ import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
 import { TransactionLineItem } from "@/types/transaction";
 
-import { 
-  ADDRESS_TYPE, 
-  CURRENCY, 
-  ENROLLED_PROGRAM_TYPE, 
+import {
+  ADDRESS_TYPE,
+  CURRENCY,
+  ENROLLED_PROGRAM_TYPE,
   PAYMENT_PROVIDER,
-  CART_ACTION 
+  CART_ACTION,
 } from "@/constants";
 import { Address } from "@/types/order";
 import { Input } from "@/components/ui/input";
@@ -91,7 +90,7 @@ export default function CartCheckoutPage() {
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
-    PAYMENT_PROVIDER.RAZORPAY,
+    PAYMENT_PROVIDER.RAZORPAY
   );
   const [providerCurrencies, setProviderCurrencies] = useState<
     Record<PaymentProvider, Currency>
@@ -145,14 +144,14 @@ export default function CartCheckoutPage() {
   // Check if any cart course is already enrolled
   useEffect(() => {
     if (user && cartCourses.length > 0) {
-      const enrolledCourses = cartCourses.filter(course => isEnrolled(course.id));
-      
+      const enrolledCourses = cartCourses.filter((course) =>
+        isEnrolled(course.id)
+      );
+
       if (enrolledCourses.length > 0) {
-  
-        
         toast({
           title: "Already Enrolled",
-         description: `You are already enrolled in ${enrolledCourses.length} course(s). Please remove them from your cart before proceeding.`,
+          description: `You are already enrolled in ${enrolledCourses.length} course(s). Please remove them from your cart before proceeding.`,
           variant: "default",
         });
       }
@@ -185,7 +184,7 @@ export default function CartCheckoutPage() {
         effectivePrice,
         selectedCurrency,
         CURRENCY.INR,
-        selectedProvider,
+        selectedProvider
       );
 
       setPricing(data);
@@ -203,7 +202,10 @@ export default function CartCheckoutPage() {
   const calculateDiscount = (originalPrice: number, coupon?: Coupon) => {
     if (!coupon) return 0;
     const discountPercentage = coupon.discountPercentage ?? 0;
-    return Math.max(0, Math.min(originalPrice, (originalPrice * discountPercentage) / 100));
+    return Math.max(
+      0,
+      Math.min(originalPrice, (originalPrice * discountPercentage) / 100)
+    );
   };
 
   const clearCoupon = () => {
@@ -249,13 +251,16 @@ export default function CartCheckoutPage() {
       coupon.id,
       null, // No specific courseId for cart
       null,
-      null,
+      null
     );
-    
-    if (!applicabilityResult.success || !applicabilityResult.data?.isApplicable) {
+
+    if (
+      !applicabilityResult.success ||
+      !applicabilityResult.data?.isApplicable
+    ) {
       clearCoupon();
       setCouponMessage(
-        applicabilityResult.data?.reason ?? "Coupon not applicable to cart",
+        applicabilityResult.data?.reason ?? "Coupon not applicable to cart"
       );
       setIsValidatingCoupon(false);
       return;
@@ -269,31 +274,26 @@ export default function CartCheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-    if (!appliedCoupon) return;
-    
-    const usageDate = {
+    const usageData = {
       userId: user?.id,
       couponId: appliedCoupon.id,
       usedAt: Timestamp.now(),
     };
-    
-    const result = await couponUsageService.recordCouponUsage(usageDate);
+    const result = await couponUsageService.recordCouponUsage(usageData);
     if (result.success) {
       toast({
-        title: "Coupon successfully applied!"
+        title: "Coupon successfully applied!",
       });
       return;
     }
-    
     toast({
       title: "Failed to apply coupon!",
-      variant: "destructive"
     });
   };
 
   const handlePayment = async () => {
     if (cartCourses.length === 0 || !user || !pricing) return;
-    
+
     if (selectedProvider === PAYMENT_PROVIDER.PAYPAL) setPaypalClicked(true);
     setIsProcessing(true);
 
@@ -304,7 +304,7 @@ export default function CartCheckoutPage() {
 
     try {
       // Transform cart courses into transaction line items
-      const items: TransactionLineItem[] = cartCourses.map(course => ({
+      const items: TransactionLineItem[] = cartCourses.map((course) => ({
         itemId: course.id,
         itemType: ENROLLED_PROGRAM_TYPE.COURSE,
         name: course.title,
@@ -325,9 +325,9 @@ export default function CartCheckoutPage() {
 
       if (result.success && result.transactionId) {
         // Apply coupon if used
-         if (isCouponValid) {
+        if (isCouponValid) {
           try {
-            await handleUseCoupon(); 
+            await handleUseCoupon();
           } catch (error) {
             console.error("Error applying coupon:", error);
             toast({
@@ -343,11 +343,11 @@ export default function CartCheckoutPage() {
         let allEnrolled = false;
         for (let i = 0; i < 5; i++) {
           await refreshEnrollments();
-          
-          const enrolledCount = cartCourses.filter(course => 
+
+          const enrolledCount = cartCourses.filter((course) =>
             isEnrolled(course.id)
           ).length;
-          
+
           if (enrolledCount === cartCourses.length) {
             allEnrolled = true;
             break;
@@ -414,474 +414,534 @@ export default function CartCheckoutPage() {
   const discountConverted = discountAmount * exchangeRate;
   const totalSavings = initialSavings + discountAmount;
 
-return (
-  <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col">
-    <Header />
+  return (
+    <div className="min-h-screen bg-background dark:bg-[#0e0f11] flex flex-col">
+      <Header />
 
-    <div className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
-      <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white">
-        {/* Top bar */}
-        <div className="mb-8 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/cart")}
-            className="flex items-center text-blue-600"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Cart
-          </Button>
-        </div>
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+        <div className="container mx-auto max-w-7xl text-gray-800 dark:text-white">
+          {/* Top bar */}
+          <div className="mb-8 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/cart")}
+              className="flex items-center text-blue-600"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Cart
+            </Button>
+          </div>
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">
-            Complete Your Enrollment
-          </h1>
-          <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
-            You're enrolling in {cartCourses.length} course(s)
-          </p>
-        </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">
+              Complete Your Enrollment
+            </h1>
+            <p className="text-muted-foreground dark:text-gray-400 text-sm sm:text-base">
+              You're enrolling in {cartCourses.length} course(s)
+            </p>
+          </div>
 
-        {/* Define helper for address validation */}
-        {(() => {
-          const requiredFilled =
-            billingAddress.fullName.trim() &&
-            billingAddress.phone.trim() &&
-            billingAddress.line1.trim() &&
-            billingAddress.city.trim() &&
-            billingAddress.state.trim() &&
-            billingAddress.postalCode.trim() &&
-            billingAddress.country.trim();
-          const canPay = agreed && requiredFilled && pricing && !loadingPricing && !isProcessing;
-          const showMessage = !canPay;
+          {/* Define helper for address validation */}
+          {(() => {
+            const requiredFilled =
+              billingAddress.fullName.trim() &&
+              billingAddress.phone.trim() &&
+              billingAddress.line1.trim() &&
+              billingAddress.city.trim() &&
+              billingAddress.state.trim() &&
+              billingAddress.postalCode.trim() &&
+              billingAddress.country.trim();
+            const canPay =
+              agreed &&
+              requiredFilled &&
+              pricing &&
+              !loadingPricing &&
+              !isProcessing;
+            const showMessage = !canPay;
 
-          return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
-              {/* LEFT: Payment Section */}
-              <div className="lg:col-span-5 space-y-6">
-                {/* Order Summary */}
-                <Card className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
-                  <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                    <CardTitle className="flex items-center gap-2">
-                      <ShoppingCart className="h-5 w-5" />
-                      Order Summary ({cartCourses.length} courses)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                      {cartCourses.map((course) => (
-                        <div
-                          key={course.id}
-                          className="flex justify-between items-start gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800 last:border-0"
-                        >
-                          <div className="flex-1">
-                            <h4 className="text-sm font-medium line-clamp-2">{course.title}</h4>
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
+                {/* LEFT: Payment Section */}
+                <div className="lg:col-span-5 space-y-6">
+                  {/* Order Summary */}
+                  <Card className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                    <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                      <CardTitle className="flex items-center gap-2">
+                        <ShoppingCart className="h-5 w-5" />
+                        Order Summary ({cartCourses.length} courses)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                        {cartCourses.map((course) => (
+                          <div
+                            key={course.id}
+                            className="flex justify-between items-start gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                          >
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium line-clamp-2">
+                                {course.title}
+                              </h4>
+                            </div>
+                            <div className="text-sm font-medium whitespace-nowrap">
+                              {course.salePrice !== course.regularPrice && (
+                                <span className="line-through text-gray-400 mr-2">
+                                  ₹{course.regularPrice}
+                                </span>
+                              )}
+                              ₹{course.salePrice || course.regularPrice}
+                            </div>
                           </div>
-                          <div className="text-sm font-medium whitespace-nowrap">
-                            {course.salePrice !== course.regularPrice && (
-                              <span className="line-through text-gray-400 mr-2">
-                                ₹{course.regularPrice}
-                              </span>
-                            )}
-                            ₹{course.salePrice || course.regularPrice}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
 
-                    {pricing && !loadingPricing ? (
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span>Subtotal:</span>
-                          <span>{formatMoney(originalConverted, selectedCurrency)}</span>
-                        </div>
-                        {hasDiscount && (
-                          <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                            <span>Discount:</span>
+                      {pricing && !loadingPricing ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span>Subtotal:</span>
                             <span>
-                              -{formatMoney(discountConverted, selectedCurrency)}
+                              {formatMoney(originalConverted, selectedCurrency)}
                             </span>
                           </div>
-                        )}
-                        {totalSavings > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span>Total Savings:</span>
-                            <Badge className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                              You save{" "}
-                              {formatMoney(totalSavings * exchangeRate, selectedCurrency)}
-                            </Badge>
-                          </div>
-                        )}
-                        <hr className="my-2 border-gray-200 dark:border-gray-700" />
-                        <div className="flex justify-between items-center">
-                          <span className="text-base font-semibold">Total:</span>
-                          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                            {pricing.formattedTotal ?? pricing.formattedPrice}
-                          </span>
-                        </div>
-                        {pricing.originalCurrency !== pricing.currency && (
-                          <div className="text-xs text-muted-foreground dark:text-gray-400">
-                            Original: {pricing.originalAmount} {pricing.originalCurrency} (Rate:{" "}
-                            {Number(pricing.exchangeRate).toFixed(4)})
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-                        <span className="text-sm">Loading pricing...</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Payment Providers */}
-                <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
-                  <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-blue-600" />
-                      Select Payment Method
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-6">
-                    {providers.map((provider) => {
-                      const isSelected = selectedProvider === provider.id;
-                      return (
-                        <div
-                          key={provider.id}
-                          onClick={() => setSelectedProvider(provider.id)}
-                          className={`cursor-pointer p-4 rounded-xl border transition ${
-                            isSelected
-                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
-                          }`}
-                        >
-                          <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
-                            <div className="flex gap-3">
-                              <div
-                                className={`w-4 h-4 mt-1 rounded-full border-2 ${
-                                  isSelected
-                                    ? "bg-blue-600 border-blue-600"
-                                    : "border-gray-400 dark:border-[#555]"
-                                }`}
-                              />
-                              <div>
-                                <div className="flex items-center gap-2 font-medium">
-                                  <img
-                                    src={
-                                      provider.id === "RAZORPAY"
-                                        ? "/razorpay-icon.svg"
-                                        : "/paypal-icon.svg"
-                                    }
-                                    className="h-5"
-                                    alt={provider.id}
-                                  />
-                                </div>
-                                <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
-                                  {provider.description}
-                                </p>
-                                <div className="mt-2 flex gap-1.5 flex-wrap">
-                                  {(METHOD_LOGOS[provider.id] ?? []).map((m) => (
-                                    <img
-                                      key={m.name}
-                                      src={m.src}
-                                      alt={m.name}
-                                      title={m.name}
-                                      loading="lazy"
-                                      className={m.className ?? "h-[20px] w-[32px]"}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
+                          {hasDiscount && (
+                            <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                              <span>Discount:</span>
+                              <span>
+                                -
+                                {formatMoney(
+                                  discountConverted,
+                                  selectedCurrency
+                                )}
+                              </span>
                             </div>
-
-                            <div className="flex flex-col gap-2 sm:items-end">
-                              <select
-                                value={providerCurrencies[provider.id]}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) =>
-                                  setProviderCurrencies((prev) => ({
-                                    ...prev,
-                                    [provider.id]: e.target.value as Currency,
-                                  }))
-                                }
-                                className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
-                              >
-                                {providerSupportedCurrencies[provider.id].map((c) => (
-                                  <option key={c} value={c}>
-                                    {c}
-                                  </option>
-                                ))}
-                              </select>
-                              <Badge
-                                variant="secondary"
-                                className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
-                              >
-                                Secure
+                          )}
+                          {totalSavings > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span>Total Savings:</span>
+                              <Badge className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                                You save{" "}
+                                {formatMoney(
+                                  totalSavings * exchangeRate,
+                                  selectedCurrency
+                                )}
                               </Badge>
                             </div>
+                          )}
+                          <hr className="my-2 border-gray-200 dark:border-gray-700" />
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-semibold">
+                              Total:
+                            </span>
+                            <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                              {pricing.formattedTotal ?? pricing.formattedPrice}
+                            </span>
                           </div>
+                          {pricing.originalCurrency !== pricing.currency && (
+                            <div className="text-xs text-muted-foreground dark:text-gray-400">
+                              Original: {pricing.originalAmount}{" "}
+                              {pricing.originalCurrency} (Rate:{" "}
+                              {Number(pricing.exchangeRate).toFixed(4)})
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                          <span className="text-sm">Loading pricing...</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                {/* Security */}
-                <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
-                  <CardContent className="pt-6">
+                  {/* Payment Providers */}
+                  <Card className="bg-card text-card-foreground border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                    <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                      <CardTitle className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-blue-600" />
+                        Select Payment Method
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-6">
+                      {providers.map((provider) => {
+                        const isSelected = selectedProvider === provider.id;
+                        return (
+                          <div
+                            key={provider.id}
+                            onClick={() => setSelectedProvider(provider.id)}
+                            className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
+                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                              }`}
+                          >
+                            <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
+                              <div className="flex gap-3">
+                                <div
+                                  className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
+                                    ? "bg-blue-600 border-blue-600"
+                                    : "border-gray-400 dark:border-[#555]"
+                                    }`}
+                                />
+                                <div>
+                                  <div className="flex items-center gap-2 font-medium">
+                                    <img
+                                      src={
+                                        provider.id === "RAZORPAY"
+                                          ? "/razorpay-icon.svg"
+                                          : "/paypal-icon.svg"
+                                      }
+                                      className="h-5"
+                                      alt={provider.id}
+                                    />
+                                  </div>
+                                  <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
+                                    {provider.description}
+                                  </p>
+                                  <div className="mt-2 flex gap-1.5 flex-wrap">
+                                    {(METHOD_LOGOS[provider.id] ?? []).map(
+                                      (m) => (
+                                        <img
+                                          key={m.name}
+                                          src={m.src}
+                                          alt={m.name}
+                                          title={m.name}
+                                          loading="lazy"
+                                          className={
+                                            m.className ?? "h-[20px] w-[32px]"
+                                          }
+                                        />
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2 sm:items-end">
+                                <select
+                                  value={providerCurrencies[provider.id]}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) =>
+                                    setProviderCurrencies((prev) => ({
+                                      ...prev,
+                                      [provider.id]: e.target.value as Currency,
+                                    }))
+                                  }
+                                  className="px-2 py-1 text-sm border border-gray-300 dark:border-[#444] rounded-md bg-white dark:bg-[#2b2b2b] text-gray-900 dark:text-white"
+                                >
+                                  {providerSupportedCurrencies[provider.id].map(
+                                    (c) => (
+                                      <option key={c} value={c}>
+                                        {c}
+                                      </option>
+                                    )
+                                  )}
+                                </select>
+                                <Badge
+                                  variant="secondary"
+                                  className="text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                                >
+                                  Secure
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+
+                  {/* Security */}
+                  <Card className="bg-white dark:bg-[#15171a] border border-blue-100 dark:border-blue-500/20 rounded-xl">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium mb-1">Secure Payment</h4>
+                          <p className="text-sm text-muted-foreground dark:text-gray-400">
+                            All transactions are encrypted. Instant access after payment.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Agreement & CTA */}
+                  <div className="space-y-3 pt-2">
                     <div className="flex items-start gap-3">
-                      <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium mb-1">Secure Payment</h4>
-                        <p className="text-sm text-muted-foreground dark:text-gray-400">
-                          All transactions are encrypted. Instant access after payment. 
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Agreement & CTA */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="agree"
-                      checked={agreed}
-                      onCheckedChange={(v) => setAgreed(!!v)}
-                    />
-                    <Label htmlFor="agree" className="text-sm leading-snug">
-                      I agree to the{" "}
-                      <Link to="/terms" className="underline text-blue-600 dark:text-blue-400">
-                        Terms & Conditions
-                      </Link>
-                      ,{" "}
-                      <Link to="/privacy" className="underline text-blue-600 dark:text-blue-400">
-                        Privacy Policy
-                      </Link>
-                      , and{" "}
-                      <Link to="/refund-policy" className="underline text-blue-600 dark:text-blue-400">
-                        Refund Policy
-                      </Link>
-                      .
-                    </Label>
-                  </div>
-
-                  {showMessage && (
-                    <div className="text-sm text-red-500 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-700">
-                      Please check "I agree" and fill all billing address fields before continuing.
-                    </div>
-                  )}
-
-                  <Button
-                    onClick={handlePayment}
-                    disabled={!canPay}
-                    size="lg"
-                    className="w-full mt-1 bg-blue-600 hover:bg-blue-700 text-white dark:text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing ? (
-                      "Processing..."
-                    ) : loadingPricing ? (
-                      "Loading..."
-                    ) : (
-                      <>
-                        <Lock className="h-4 w-4 mr-2" />
-                        Pay {pricing?.formattedTotal ?? pricing?.formattedPrice} & Enroll Now
-                      </>
-                    )}
-                  </Button>
-
-                  {selectedProvider === PAYMENT_PROVIDER.PAYPAL && paypalClicked && (
-                    <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
-                      <CardContent className="pt-6">
-                        <div id="paypal-button-container"></div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-
-              {/* RIGHT: Coupon + Billing Address */}
-              <div className="lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Coupon */}
-                <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
-                  <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                    <CardTitle className="flex items-center gap-2">
-                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
-                        %
-                      </span>
-                      Apply Promo Code
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="promoCode">Have a promo code?</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="promoCode"
-                          type="text"
-                          placeholder="Enter code"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleCoupon();
-                          }}
-                          disabled={isValidatingCoupon || isProcessing}
-                          className="border-blue-200 focus:border-blue-500"
-                        />
-                        <Button
-                          type="button"
-                          onClick={handleCoupon}
-                          disabled={!promoCode || isValidatingCoupon}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                      <Checkbox
+                        id="agree"
+                        checked={agreed}
+                        onCheckedChange={(v) => setAgreed(!!v)}
+                      />
+                      <Label htmlFor="agree" className="text-sm leading-snug">
+                        I agree to the{" "}
+                        <Link
+                          to="/terms"
+                          className="underline text-blue-600 dark:text-blue-400"
                         >
-                          {isValidatingCoupon ? "Checking..." : "Apply"}
-                        </Button>
+                          Terms & Conditions
+                        </Link>
+                        ,{" "}
+                        <Link
+                          to="/privacy"
+                          className="underline text-blue-600 dark:text-blue-400"
+                        >
+                          Privacy Policy
+                        </Link>
+                        , and{" "}
+                        <Link
+                          to="/refund-policy"
+                          className="underline text-blue-600 dark:text-blue-400"
+                        >
+                          Refund Policy
+                        </Link>
+                        .
+                      </Label>
+                    </div>
+
+                    {showMessage && (
+                      <div className="text-sm text-red-500 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-700">
+                        Please check "I agree" and fill all billing address
+                        fields before continuing.
                       </div>
-                      {couponMessage && (
-                        <p
-                          className={`text-sm ${
-                            isCouponValid
+                    )}
+
+                    <Button
+                      onClick={handlePayment}
+                      disabled={!canPay}
+                      size="lg"
+                      className="w-full mt-1 bg-blue-600 hover:bg-blue-700 text-white dark:text-white shadow-sm ring-2 ring-blue-200 dark:ring-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {isProcessing ? (
+                        "Processing..."
+                      ) : loadingPricing ? (
+                        "Loading..."
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 mr-2" />
+                          Pay{" "}
+                          {pricing?.formattedTotal ?? pricing?.formattedPrice} &
+                          Enroll Now
+                        </>
+                      )}
+                    </Button>
+
+                    {selectedProvider === PAYMENT_PROVIDER.PAYPAL &&
+                      paypalClicked && (
+                        <Card className="mt-2 bg-white dark:bg-[#1a1a1a] border dark:border-[#2c2c2e] rounded-xl">
+                          <CardContent className="pt-6">
+                            <div id="paypal-button-container"></div>
+                          </CardContent>
+                        </Card>
+                      )}
+                  </div>
+                </div>
+
+                {/* RIGHT: Coupon + Billing Address */}
+                <div className="lg:col-span-7 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  {/* Coupon */}
+                  <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                    <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
+                          %
+                        </span>
+                        Apply Promo Code
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="promoCode">Have a promo code?</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="promoCode"
+                            type="text"
+                            placeholder="Enter code"
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleCoupon();
+                            }}
+                            disabled={isValidatingCoupon || isProcessing}
+                            className="border-blue-200 focus:border-blue-500"
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleCoupon}
+                            disabled={!promoCode || isValidatingCoupon}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {isValidatingCoupon ? "Checking..." : "Apply"}
+                          </Button>
+                        </div>
+                        {couponMessage && (
+                          <p
+                            className={`text-sm ${isCouponValid
                               ? "text-green-600 dark:text-green-400"
                               : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {couponMessage}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Billing Address */}
-                <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
-                  <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
-                    <CardTitle className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">1</span>
+                              }`}
+                          >
+                            {couponMessage}
+                          </p>
+                        )}
                       </div>
-                      Billing Address
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    </CardContent>
+                  </Card>
+
+                  {/* Billing Address */}
+                  <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+                    <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">
+                            1
+                          </span>
+                        </div>
+                        Billing Address
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="fullName">
+                            Full Name <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="fullName"
+                            value={billingAddress.fullName}
+                            onChange={(e) =>
+                              setBillingAddress({
+                                ...billingAddress,
+                                fullName: e.target.value,
+                              })
+                            }
+                            placeholder="Enter your full name"
+                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="phone">
+                            Phone Number <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={billingAddress.phone}
+                            onChange={(e) =>
+                              setBillingAddress({
+                                ...billingAddress,
+                                phone: e.target.value,
+                              })
+                            }
+                            placeholder="Enter your phone number"
+                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                          />
+                        </div>
+                      </div>
+
                       <div>
-                        <Label htmlFor="fullName">
-                          Full Name <span className="text-red-500">*</span>
+                        <Label htmlFor="line1">
+                          Street Address <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          id="fullName"
-                          value={billingAddress.fullName}
+                          id="line1"
+                          value={billingAddress.line1}
                           onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, fullName: e.target.value })
+                            setBillingAddress({
+                              ...billingAddress,
+                              line1: e.target.value,
+                            })
                           }
-                          placeholder="Enter your full name"
+                          placeholder="Enter your street address"
                           className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
                         />
                       </div>
 
-                      <div>
-                        <Label htmlFor="phone">
-                          Phone Number <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={billingAddress.phone}
-                          onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, phone: e.target.value })
-                          }
-                          placeholder="Enter your phone number"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                        />
-                      </div>
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="city">
+                            City <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="city"
+                            value={billingAddress.city}
+                            onChange={(e) =>
+                              setBillingAddress({
+                                ...billingAddress,
+                                city: e.target.value,
+                              })
+                            }
+                            placeholder="Enter your city"
+                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                          />
+                        </div>
 
-                    <div>
-                      <Label htmlFor="line1">
-                        Street Address <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="line1"
-                        value={billingAddress.line1}
-                        onChange={(e) =>
-                          setBillingAddress({ ...billingAddress, line1: e.target.value })
-                        }
-                        placeholder="Enter your street address"
-                        className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="city">
-                          City <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="city"
-                          value={billingAddress.city}
-                          onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, city: e.target.value })
-                          }
-                          placeholder="Enter your city"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                        />
+                        <div>
+                          <Label htmlFor="state">
+                            State/Province{" "}
+                            <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="state"
+                            value={billingAddress.state}
+                            onChange={(e) =>
+                              setBillingAddress({
+                                ...billingAddress,
+                                state: e.target.value,
+                              })
+                            }
+                            placeholder="Enter your state"
+                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <Label htmlFor="state">
-                          State/Province <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="state"
-                          value={billingAddress.state}
-                          onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, state: e.target.value })
-                          }
-                          placeholder="Enter your state"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                        />
-                      </div>
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="postalCode">
+                            ZIP/Postal Code{" "}
+                            <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="postalCode"
+                            value={billingAddress.postalCode}
+                            onChange={(e) =>
+                              setBillingAddress({
+                                ...billingAddress,
+                                postalCode: e.target.value,
+                              })
+                            }
+                            placeholder="Enter ZIP code"
+                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                          />
+                        </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="postalCode">
-                          ZIP/Postal Code <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="postalCode"
-                          value={billingAddress.postalCode}
-                          onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, postalCode: e.target.value })
-                          }
-                          placeholder="Enter ZIP code"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                        />
+                        <div>
+                          <Label htmlFor="country">
+                            Country <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="country"
+                            value={billingAddress.country}
+                            onChange={(e) =>
+                              setBillingAddress({
+                                ...billingAddress,
+                                country: e.target.value,
+                              })
+                            }
+                            placeholder="Enter your country"
+                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                          />
+                        </div>
                       </div>
-
-                      <div>
-                        <Label htmlFor="country">
-                          Country <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="country"
-                          value={billingAddress.country}
-                          onChange={(e) =>
-                            setBillingAddress({ ...billingAddress, country: e.target.value })
-                          }
-                          placeholder="Enter your country"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

@@ -21,7 +21,8 @@ import {
     USER_ROLE,
     USER_STATUS,
     ORDER_STATUS,
-    ADDRESS_TYPE
+    ADDRESS_TYPE,
+    SORT_KEY
 } from "@/constants";
 
 export type AttributeType = typeof ATTRIBUTE_TYPE[keyof typeof ATTRIBUTE_TYPE];
@@ -47,6 +48,7 @@ export type PayPalWebhookEvent = typeof PAYPAL_WEBHOOK_EVENT[keyof typeof PAYPAL
 export type CouponStatus = typeof COUPON_STATUS[keyof typeof COUPON_STATUS];
 export type OrganizationType = typeof ORGANIZATION[keyof typeof ORGANIZATION];
 export type PopUpCourseType = typeof POPUP_COURSE_TYPE[keyof typeof POPUP_COURSE_TYPE];
+export type SortKey = typeof SORT_KEY[keyof typeof SORT_KEY];
 
 export type Duration = {
     hours: number;
