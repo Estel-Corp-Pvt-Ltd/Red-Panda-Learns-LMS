@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ArrowLeft, CreditCard, Lock, RefreshCw, Shield } from "lucide-react";
+import {
+  ArrowLeft,
+  CreditCard,
+  Lock,
+  RefreshCw,
+  Shield,
+  MapPin,
+  Building2,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -9,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +27,6 @@ import { couponService } from "@/services/couponService";
 import { couponUsageService } from "@/services/couponUsageService";
 import { paymentService } from "@/services/paymentService";
 
-import { Input } from "@/components/ui/input";
 import {
   ADDRESS_TYPE,
   CURRENCY,
@@ -41,7 +48,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
   PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -124,7 +132,102 @@ export default function BundleCheckoutPage() {
   const [finalPrice, setFinalPrice] = useState<number>(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loading, setLoading] = useState({
+    countries: false,
+    states: false,
+    cities: false,
+  });
 
+  const [phoneError, setPhoneError] = useState<string>("");
+  // ----------------- Fetch countries on mount -----------------
+  useEffect(() => {
+    async function fetchCountries() {
+      setLoading((l) => ({ ...l, countries: true }));
+      try {
+        const res = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/"
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        const list = data.data || [];
+        if (!Array.isArray(list) || list.length === 0)
+          throw new Error("Empty list");
+        setCountries(list);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+        // fallback: allow user manual input
+        setCountries([]);
+      } finally {
+        setLoading((l) => ({ ...l, countries: false }));
+      }
+    }
+    fetchCountries();
+  }, []);
+
+  // ----------------- Fetch states when country changes -----------------
+  useEffect(() => {
+    async function fetchStates() {
+      if (!billingAddress.country) return;
+      setStates([]);
+      setCities([]);
+      setLoading((l) => ({ ...l, states: true }));
+      try {
+        const res = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/states",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: billingAddress.country }),
+          }
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        const list = data.data?.states || [];
+        setStates(list);
+      } catch (error) {
+        console.error("Error fetching states:", error);
+        setStates([]);
+      } finally {
+        setLoading((l) => ({ ...l, states: false }));
+      }
+    }
+    fetchStates();
+  }, [billingAddress.country]);
+
+  // ----------------- Fetch cities when state changes -----------------
+  useEffect(() => {
+    async function fetchCities() {
+      if (!billingAddress.state || !billingAddress.country) return;
+      setCities([]);
+      setLoading((l) => ({ ...l, cities: true }));
+      try {
+        const res = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/state/cities",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              country: billingAddress.country,
+              state: billingAddress.state,
+            }),
+          }
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        const list = data.data || [];
+        setCities(list);
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        setCities([]);
+      } finally {
+        setLoading((l) => ({ ...l, cities: false }));
+      }
+    }
+    fetchCities();
+  }, [billingAddress.state]);
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
@@ -142,7 +245,7 @@ export default function BundleCheckoutPage() {
     if (bundle && selectedCurrency) loadPricing();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, selectedCurrency, selectedProvider, discountAmount]);
-  
+
   // Initial load
   // useEffect(() => {
   //   if (bundle && selectedCurrency) loadPricing();
@@ -263,7 +366,7 @@ export default function BundleCheckoutPage() {
   };
 
   const handleUseCoupon = async () => {
-      const usageData = {
+    const usageData = {
       userId: user?.id,
       couponId: appliedCoupon.id,
       usedAt: Timestamp.now(),
@@ -443,6 +546,7 @@ export default function BundleCheckoutPage() {
             const requiredFilled =
               billingAddress.fullName.trim() &&
               billingAddress.phone.trim() &&
+              isValidPhoneNumber(billingAddress.phone) &&
               billingAddress.line1.trim() &&
               billingAddress.city.trim() &&
               billingAddress.state.trim() &&
@@ -495,10 +599,7 @@ export default function BundleCheckoutPage() {
                                     : ""
                                 }`}
                               >
-                                {formatMoney(
-                                  saleConverted,
-                                  selectedCurrency
-                                )}
+                                {formatMoney(saleConverted, selectedCurrency)}
                               </span>
 
                               {hasDiscount && (
@@ -520,8 +621,7 @@ export default function BundleCheckoutPage() {
                               Total:
                             </span>
                             <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                              {pricing.formattedTotal ??
-                                pricing.formattedPrice}
+                              {pricing.formattedTotal ?? pricing.formattedPrice}
                             </span>
                           </div>
 
@@ -791,7 +891,7 @@ export default function BundleCheckoutPage() {
                   </Card>
 
                   {/* Billing second */}
-                  <Card className="xl:col-span-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+                  <Card className="xl:col-span-2 bg-white/90 dark:bg-zinc-950 border border-blue-50 dark:border-zinc-900 rounded-xl shadow-sm overflow-hidden">
                     <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                       <CardTitle className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
@@ -802,7 +902,9 @@ export default function BundleCheckoutPage() {
                         Billing Address
                       </CardTitle>
                     </CardHeader>
+
                     <CardContent className="space-y-4 pt-6">
+                      {/* Name + Phone */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="fullName">
@@ -818,29 +920,50 @@ export default function BundleCheckoutPage() {
                               })
                             }
                             placeholder="Enter your full name"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
                           />
                         </div>
+
                         <div>
                           <Label htmlFor="phone">
                             Phone Number <span className="text-red-500">*</span>
                           </Label>
-                          <Input
+
+                          <PhoneInput
                             id="phone"
-                            type="tel"
+                            international
+                            defaultCountry="IN"
+                            smartCaret
                             value={billingAddress.phone}
-                            onChange={(e) =>
+                            onChange={(value) => {
                               setBillingAddress({
                                 ...billingAddress,
-                                phone: e.target.value,
-                              })
-                            }
+                                phone: value || "",
+                              });
+                              setPhoneError("");
+                            }}
+                            onBlur={() => {
+                              if (
+                                billingAddress.phone &&
+                                !isValidPhoneNumber(billingAddress.phone)
+                              ) {
+                                setPhoneError(
+                                  "Please enter a valid phone number."
+                                );
+                              }
+                            }}
                             placeholder="Enter your phone number"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                            className="w-full border border-blue-200 dark:border-zinc-700 rounded-md px-3 py-2 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500"
                           />
+
+                          {phoneError && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {phoneError}
+                            </p>
+                          )}
                         </div>
                       </div>
 
+                      {/* Address lines */}
                       <div>
                         <Label htmlFor="line1">
                           Street Address <span className="text-red-500">*</span>
@@ -855,49 +978,190 @@ export default function BundleCheckoutPage() {
                             })
                           }
                           placeholder="Enter your street address"
-                          className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
                         />
                       </div>
 
+                      <div>
+                        <Label htmlFor="line2">
+                          Apartment, Suite, etc.{" "}
+                          <span className="text-gray-400 text-xs">
+                            (Optional)
+                          </span>
+                        </Label>
+                        <Input
+                          id="line2"
+                          value={billingAddress.line2 || ""}
+                          onChange={(e) =>
+                            setBillingAddress({
+                              ...billingAddress,
+                              line2: e.target.value,
+                            })
+                          }
+                          placeholder="Apartment number, suite, unit, building, floor, etc."
+                        />
+                      </div>
+
+                      {/* Country / State / City */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Country */}
                         <div>
-                          <Label htmlFor="city">
-                            City <span className="text-red-500">*</span>
+                          <Label htmlFor="country">
+                            Country <span className="text-red-500">*</span>
                           </Label>
-                          <Input
-                            id="city"
-                            value={billingAddress.city}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                city: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your city"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
+                          {countries.length > 0 ? (
+                            <Select
+                              value={billingAddress.country}
+                              onValueChange={(val) =>
+                                setBillingAddress({
+                                  ...billingAddress,
+                                  country: val,
+                                  state: "",
+                                  city: "",
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-full border-blue-200 dark:border-zinc-700">
+                                <SelectValue
+                                  placeholder={
+                                    loading.countries
+                                      ? "Loading..."
+                                      : "Select country"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {countries.map((c) => (
+                                  <SelectItem key={c.country} value={c.country}>
+                                    <span className="flex items-center gap-2">
+                                      <MapPin className="w-4 h-4 text-blue-600" />
+                                      {c.country}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id="countryManual"
+                              placeholder="Enter country"
+                              value={billingAddress.country}
+                              onChange={(e) =>
+                                setBillingAddress({
+                                  ...billingAddress,
+                                  country: e.target.value,
+                                  state: "",
+                                  city: "",
+                                })
+                              }
+                            />
+                          )}
                         </div>
+
+                        {/* State */}
                         <div>
                           <Label htmlFor="state">
                             State/Province{" "}
                             <span className="text-red-500">*</span>
                           </Label>
-                          <Input
-                            id="state"
-                            value={billingAddress.state}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                state: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your state"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
+                          {states.length > 0 ? (
+                            <Select
+                              value={billingAddress.state}
+                              onValueChange={(val) =>
+                                setBillingAddress({
+                                  ...billingAddress,
+                                  state: val,
+                                  city: "",
+                                })
+                              }
+                            >
+                              <SelectTrigger
+                                disabled={!billingAddress.country}
+                                className="w-full border-blue-200 dark:border-zinc-700"
+                              >
+                                <SelectValue
+                                  placeholder={
+                                    loading.states
+                                      ? "Loading..."
+                                      : "Select state"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {states.map((s) => (
+                                  <SelectItem key={s.name} value={s.name}>
+                                    <span className="flex items-center gap-2">
+                                      <Building2 className="w-4 h-4 text-blue-600" />
+                                      {s.name}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              placeholder="Enter state/province"
+                              value={billingAddress.state}
+                              disabled={!billingAddress.country}
+                              onChange={(e) =>
+                                setBillingAddress({
+                                  ...billingAddress,
+                                  state: e.target.value,
+                                  city: "",
+                                })
+                              }
+                            />
+                          )}
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* City */}
+                        <div className="sm:col-span-1">
+                          <Label htmlFor="city">
+                            City <span className="text-red-500">*</span>
+                          </Label>
+                          {cities.length > 0 ? (
+                            <Select
+                              value={billingAddress.city}
+                              onValueChange={(val) =>
+                                setBillingAddress({
+                                  ...billingAddress,
+                                  city: val,
+                                })
+                              }
+                            >
+                              <SelectTrigger
+                                disabled={!billingAddress.state}
+                                className="w-50% border-blue-200 dark:border-zinc-700"
+                              >
+                                <SelectValue
+                                  placeholder={
+                                    loading.cities
+                                      ? "Loading..."
+                                      : "Select city"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cities.map((city) => (
+                                  <SelectItem key={city} value={city}>
+                                    {city}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              placeholder="Enter city"
+                              value={billingAddress.city}
+                              disabled={!billingAddress.state}
+                              onChange={(e) =>
+                                setBillingAddress({
+                                  ...billingAddress,
+                                  city: e.target.value,
+                                })
+                              }
+                            />
+                          )}
+                        </div>
                         <div>
                           <Label htmlFor="postalCode">
                             ZIP/Postal Code{" "}
@@ -912,25 +1176,7 @@ export default function BundleCheckoutPage() {
                                 postalCode: e.target.value,
                               })
                             }
-                            placeholder="Enter ZIP code"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="country">
-                            Country <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="country"
-                            value={billingAddress.country}
-                            onChange={(e) =>
-                              setBillingAddress({
-                                ...billingAddress,
-                                country: e.target.value,
-                              })
-                            }
-                            placeholder="Enter your country"
-                            className="bg-white dark:bg-zinc-800/50 border-blue-200 dark:border-zinc-700"
+                            placeholder="Enter ZIP or postal code"
                           />
                         </div>
                       </div>
