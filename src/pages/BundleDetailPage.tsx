@@ -17,6 +17,7 @@ import {
   BookOpen,
   CheckCircle,
   IndianRupee,
+  Play,
   Star,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -45,13 +46,13 @@ export default function BundleDetailPage() {
       try {
         if (!user || !bundle) return;
 
-        // 1️⃣ Check if user directly enrolled in the bundle
+        // 1) Direct bundle enrollment
         const enrolledInBundle = await isEnrolledInBundle(bundle.id);
 
-        // 2️⃣ Compute all courses owned (direct + via bundles)
+        // 2) Owned courses (direct + via bundles)
         const directCourses =
           enrollments?.filter(
-            (e) => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE,
+            (e) => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE
           ) || [];
 
         const bundleCourses =
@@ -82,14 +83,14 @@ export default function BundleDetailPage() {
         const allOwnedCourses = [...directCourses, ...bundleCourses];
         const userCourseIds = allOwnedCourses.map((e) => e.targetId);
 
-        // 3️⃣ Compare with current bundle courses
+        // 3) Compare with current bundle courses
         const totalCourses = bundle.courses?.length || 0;
         const ownedCourses =
           bundle.courses?.filter((c) => userCourseIds.includes(c.id)) || [];
 
         const ownsAll = ownedCourses.length === totalCourses;
 
-        // 4️⃣ Update state
+        // 4) Update state
         setOwnedCoursesCount(ownedCourses.length);
         setOwnsAllCourses(ownsAll);
         setIsEnrolled(enrolledInBundle);
@@ -100,7 +101,7 @@ export default function BundleDetailPage() {
       } catch (err) {
         logError("BundleDetailPage.checkEnrollment", err);
         const failResult = fail(
-          err instanceof Error ? err.message : "Unknown enrollment error",
+          err instanceof Error ? err.message : "Unknown enrollment error"
         );
         console.warn("BundleDetailPage - Enrollment failed:", {
           bundleId: bundle?.id,
@@ -161,115 +162,161 @@ export default function BundleDetailPage() {
           Back to Courses
         </Button>
 
-        {/* Bundle Header */}
-        <div className="rounded-2xl p-8 md:p-12 mb-12 border">
-          <div className="max-w-4xl space-y-6">
-            {/* Categories & Tags */}
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">Bundle</Badge>
-              {bundle.categories.map((category) => (
-                <Badge key={category} variant="outline">
-                  {category}
-                </Badge>
-              ))}
+        {/* Header: Title, Categories, Quick stats */}
+        <div className="space-y-6 mb-8">
+          {/* Categories */}
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">Bundle</Badge>
+            {bundle.categories?.map((category) => (
+              <Badge key={category} variant="outline">
+                {category}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Title */}
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight">
+            {bundle.title}
+          </h1>
+
+          {/* Stats Row */}
+          <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              <span>{bundle.courses.length} Courses</span>
             </div>
-
-            {/* Title & Description */}
-            <div>
-              <h1 className="text-3xl md:text-5xl font-bold mb-3">
-                {bundle.title}
-              </h1>
-              <p className="text-lg text-gray-700">{bundle.description}</p>
+            <div className="flex items-center gap-2">
+              <IndianRupee className="h-5 w-5" />
+              <span>
+                Save {(bundle.regularPrice - bundle.salePrice).toFixed(2)}
+              </span>
             </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-gray-700">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                <span>{bundle.courses.length} Courses</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <IndianRupee className="h-5 w-5" />
-                <span>
-                  Save {(bundle.regularPrice - bundle.salePrice).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                <span>Expert Instructors</span>
-              </div>
-            </div>
-
-            {/* Pricing + CTA */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex flex-col">
-                <div className="flex items-baseline gap-3">
-                  <div className="text-3xl font-bold">
-                    ₹{bundle.salePrice.toFixed(2)}
-                  </div>
-                  <div className="text-lg line-through text-gray-500">
-                    ₹{bundle.regularPrice.toFixed(2)}
-                  </div>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="mt-2 self-start text-green-600 border-green-600"
-                >
-                  Save{" "}
-                  {Math.round(
-                    ((bundle.regularPrice - bundle.salePrice) /
-                      bundle.regularPrice) *
-                    100,
-                  )}
-                  %
-                </Badge>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:ml-auto gap-3">
-                {ownedCoursesCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-blue-100 text-blue-900 font-semibold border border-blue-300 hover:bg-blue-200"
-                  >
-                    You already own <strong>{ownedCoursesCount}</strong> of{" "}
-                    <strong>{bundle.courses.length}</strong> courses
-                  </Badge>
-                )}
-
-                <Button
-                  onClick={() => !ownsAllCourses && handleEnrollment()}
-                  size="lg"
-                  disabled={ownsAllCourses}
-                  title={
-                    ownsAllCourses
-                      ? `You already own all courses in ${bundle.title} bundle`
-                      : undefined
-                  }
-                  className={cn(
-                    "w-full sm:w-auto text-white",
-                    ownsAllCourses
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-black hover:bg-gray-800",
-                  )}
-                >
-                  {ownsAllCourses ? (
-                    "All Courses Owned"
-                  ) : isEnrolled ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Access Bundle
-                    </>
-                  ) : (
-                    <>Buy Bundle for ₹{bundle.salePrice.toFixed(2)}</>
-                  )}
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5" />
+              <span>Expert Instructors</span>
             </div>
           </div>
         </div>
 
+        {/* Two-column layout: Left (thumbnail + about), Right (pricing + CTA) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left: Thumbnail + About */}
+          <div className="space-y-6">
+            {/* Thumbnail */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
+                  {bundle.thumbnail ? (
+                    <>
+                      <img
+                        src={bundle.thumbnail}
+                        alt={`${bundle.title} thumbnail`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                      <Play className="h-12 w-12 text-primary" />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* About This Bundle */}
+            {bundle.description && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>About This Bundle</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: bundle.description }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Right: Pricing + CTA */}
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {/* Pricing */}
+                  <div className="flex items-baseline gap-3">
+                    <div className="text-3xl font-bold">
+                      ₹{bundle.salePrice.toFixed(2)}
+                    </div>
+                    <div className="text-lg line-through text-gray-500">
+                      ₹{bundle.regularPrice.toFixed(2)}
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="self-start text-green-600 border-green-600"
+                  >
+                    Save{" "}
+                    {Math.round(
+                      ((bundle.regularPrice - bundle.salePrice) /
+                        bundle.regularPrice) *
+                        100
+                    )}
+                    %
+                  </Badge>
+
+                  {/* Ownership info */}
+                  {ownedCoursesCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-blue-100 text-blue-900 font-semibold border border-blue-300 hover:bg-blue-200"
+                    >
+                      You already own <strong>{ownedCoursesCount}</strong> of{" "}
+                      <strong>{bundle.courses.length}</strong> courses
+                    </Badge>
+                  )}
+
+                  {/* CTA */}
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => !ownsAllCourses && handleEnrollment()}
+                      size="lg"
+                      disabled={ownsAllCourses}
+                      title={
+                        ownsAllCourses
+                          ? `You already own all courses in ${bundle.title} bundle`
+                          : undefined
+                      }
+                      className={cn(
+                        "w-full text-white",
+                        ownsAllCourses
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-black hover:bg-gray-800"
+                      )}
+                    >
+                      {ownsAllCourses ? (
+                        "All Courses Owned"
+                      ) : isEnrolled ? (
+                        <>
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Access Bundle
+                        </>
+                      ) : (
+                        <>Buy Bundle for ₹{bundle.salePrice.toFixed(2)}</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Bundle Contents */}
-        <div className="rounded-2xl p-8 md:p-12 mb-8">
+        <div className="rounded-2xl p-0 md:p-0 mb-8 mt-10">
           <div className="space-y-8">
             <div>
               <h2 className="text-2xl font-bold mb-4">Bundle Contents</h2>
@@ -282,11 +329,7 @@ export default function BundleDetailPage() {
             {courses && courses.length > 0 ? (
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {courses.map((course) => (
-                  <CourseCard
-                    key={course.id}
-                    course={course}
-                    variant="default"
-                  />
+                  <CourseCard key={course.id} course={course} variant="default" />
                 ))}
               </div>
             ) : (
@@ -363,10 +406,10 @@ export default function BundleDetailPage() {
                     <div className="flex justify-between border-t pt-2">
                       <span className="font-medium">Your Savings:</span>
                       <span className="font-bold text-success">
-                        ₹{bundle.regularPrice - bundle.salePrice}
+                        ₹{(bundle.regularPrice - bundle.salePrice).toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
                       <span>Progress tracking across all courses</span>
                     </div>
@@ -374,37 +417,11 @@ export default function BundleDetailPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="h-5 w-5 text-warning" />
-                    Bundle Benefits
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Course bundles are designed to provide a comprehensive learning path at a significant discount.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Individual Course Prices:</span>
-                      <span className="font-medium">₹{(bundle.salePrice).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Bundle Price:</span>
-                      <span className="font-medium text-success">₹{(bundle.regularPrice).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-medium">Your Savings:</span>
-                      <span className="font-bold text-success">₹{(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              
             </div>
           </div>
         </div>
-      </main >
+      </main>
     </div>
   );
-};
+}
