@@ -65,7 +65,9 @@ const CoursesPage = () => {
   // Simple login check: just rely on user presence
   const isLoggedIn = !!user;
 
-  const enrolledCourseIds = enrollments.map((enrollment) => enrollment.targetId);
+  const enrolledCourseIds = enrollments.map(
+    (enrollment) => enrollment.targetId
+  );
 
   const publishedCourses = useMemo(
     () => (courses ?? []).filter((c) => c?.status === COURSE_STATUS.PUBLISHED),
@@ -195,7 +197,7 @@ const CoursesPage = () => {
           </div>
         </div>
 
-        {/* Filters (unchanged) */}
+        {/* Filters */}
         <div className="bg-card rounded-xl p-6 border shadow-sm mb-8">
           <CourseFilters
             filters={filters}
@@ -254,7 +256,7 @@ const CoursesPage = () => {
               "grid gap-6",
               viewMode === "grid"
                 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                : "grid-cols-1",
+                : "grid-cols-1"
             )}
           >
             {Array.from({ length: 8 }).map((_, i) => (
@@ -283,25 +285,41 @@ const CoursesPage = () => {
         ) : (
           <div className="space-y-8">
             {/* Course Bundles Section */}
-            {
-              bundles && bundles.length > 0 && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-foreground">Course Bundles ({bundles.length})</h2>
-                    <p className="text-sm text-muted-foreground">Save more with course bundles</p>
-                  </div>
+            {bundles && bundles.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-foreground">
+                    Course Bundles ({bundles.length})
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Save more with course bundles
+                  </p>
+                </div>
 
-                  <div
-                    className={cn(
-                      "grid gap-6 animate-fade-in",
-                      viewMode === "grid"
-                        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                        : "grid-cols-1 max-w-4xl",
-                    )}
-                  >
-                    {bundles.map((bundle, index) => (
+                <div
+                  className={cn(
+                    "grid gap-6 animate-fade-in",
+                    viewMode === "grid"
+                      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                      : "grid-cols-1 max-w-4xl"
+                  )}
+                >
+                  {bundles.map((bundle, index) => (
+                    <div
+                      key={bundle.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/bundle/${bundle.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate(`/bundle/${bundle.id}`);
+                        }
+                      }}
+                      className="relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/60 rounded-xl"
+                      aria-label={`Open ${bundle.title} details`}
+                    >
                       <BundleWrapper
-                        key={bundle.id}
                         bundle={bundle}
                         index={index}
                         user={user}
@@ -309,28 +327,30 @@ const CoursesPage = () => {
                           Promise.resolve(isEnrolledInBundle(id))
                         }
                         viewMode={viewMode}
-                        handleBundlePurchase={handleBundlePurchase}
+                        handleBundlePurchase={(id) => {
+                          // If your BundleWrapper includes CTA buttons,
+                          // ensure those buttons call e.stopPropagation() in their onClick handlers.
+                          handleBundlePurchase(id);
+                        }}
                       />
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )
-            }
+              </div>
+            )}
 
-            {/* Courses Section (unchanged) */}
+            {/* Courses Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {
-                    filters.searchTerm
-                      ? `Search Results (${filteredCourses.length})`
-                      : "Individual Courses"
-                  }
-                </h2 >
+                  {filters.searchTerm
+                    ? `Search Results (${filteredCourses.length})`
+                    : "Individual Courses"}
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   Showing {filteredCourses.length} of {stats.total} courses
                 </p>
-              </div >
+              </div>
 
               {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -345,13 +365,16 @@ const CoursesPage = () => {
                   ))}
                 </div>
               ) : (
-                <CourseListView courses={filteredCourses} enrolledCourseIds={enrolledCourseIds} />
+                <CourseListView
+                  courses={filteredCourses}
+                  enrolledCourseIds={enrolledCourseIds}
+                />
               )}
             </div>
-          </div >
+          </div>
         )}
-      </main >
-    </div >
+      </main>
+    </div>
   );
 };
 
