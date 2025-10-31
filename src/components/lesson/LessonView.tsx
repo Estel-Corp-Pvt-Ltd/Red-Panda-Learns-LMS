@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { CheckCircle, Video, FileText } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { CheckCircle, Video, FileText, Minimize2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -21,6 +21,19 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleChange);
+    return () => document.removeEventListener('fullscreenchange', handleChange);
+  }, []);
+
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -46,6 +59,28 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       fetchLesson();
     }
   }, [lessonId]);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error);
+    }
+  }, []);
 
   const handleMarkComplete = async () => {
     try {
@@ -128,7 +163,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className={`bg-white dark:bg-black space-y-6 mx-auto ${isFullscreen ? 'p-10' : ''}`} ref={containerRef}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -152,6 +187,9 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
         <Button variant="outline" size="sm" onClick={handleMarkComplete}>
           <CheckCircle className="h-4 w-4 mr-2" />
           Mark Complete
+        </Button>
+        <Button onClick={toggleFullscreen}>
+          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </Button>
       </div>
 

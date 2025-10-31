@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
 
 type MarkdownViewerProps = {
   value: string;
@@ -8,6 +9,7 @@ type MarkdownViewerProps = {
 const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ value }) => {
   return (
     <ReactMarkdown
+      rehypePlugins={[rehypeRaw]} // For HTML support
       components={{
         // Headers
         h1: ({ children }) => (

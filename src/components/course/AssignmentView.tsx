@@ -124,7 +124,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="mx-auto p-6">
       {/* Assignment Header */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
         <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-3">
