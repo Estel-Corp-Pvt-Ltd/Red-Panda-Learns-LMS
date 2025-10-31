@@ -134,9 +134,8 @@ export function BundleCard({
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
-                  ? "Access Bundle"
-                  : `Buy Bundle - ${
-                      isFree ? "FREE" : formatCurrency(salePrice)
+                    ? "Access Bundle"
+                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)
                     }`}
               </Button>
             </div>
@@ -193,7 +192,7 @@ export function BundleCard({
         </p>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {bundle.categories.length &&
+          {bundle.categories && bundle.categories.length &&
             bundle.categories.map((category) => (
               <div className="flex items-center gap-1" key={category}>
                 <Tag className="h-4 w-4" />
@@ -251,8 +250,8 @@ export function BundleCard({
           {fullOwnership
             ? "All Courses Owned"
             : isEnrolled
-            ? "Access Bundle"
-            : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
+              ? "Access Bundle"
+              : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
         </Button>
       </CardFooter>
     </Card>

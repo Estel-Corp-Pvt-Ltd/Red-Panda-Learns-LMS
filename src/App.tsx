@@ -26,6 +26,14 @@ const EditLessonPage = lazy(() => import("./pages/admin/EditLesson"));
 const EditUserPage = lazy(() => import("./pages/admin/EditUser"));
 const SubmissionDetailPage = lazy(() => import("./pages/admin/SubmissionDetailPage"));
 const DummyCurriculumBuilderPage = lazy(() => import("./pages/admin/dummycurriculum"));
+const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
+const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
+const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminOrganizations = lazy(() => import("./pages/admin/AdminOrganizations"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
+const AdminOrders = lazy(() => import("./pages/admin/Orders"));
+const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 
 // user pages
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
@@ -45,7 +53,7 @@ import Signup from "./pages/auth/Signup";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
-import CartCheckoutPage from "./pages/CartCheckout";
+import CartCheckoutPage from "./pages/cartCheckout";
 import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";
@@ -111,6 +119,46 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/admin/courses" element={
+                        <AuthGuard requireAdmin>
+                          <AdminCourses />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/bundles" element={
+                        <AuthGuard requireAdmin>
+                          <AdminBundles />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/users" element={
+                        <AuthGuard requireAdmin>
+                          <AdminUsers />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/instructors" element={
+                        <AuthGuard requireAdmin>
+                          <AdminInstructors />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/orders" element={
+                        <AuthGuard requireAdmin>
+                          <AdminOrders />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/pop-ups" element={
+                        <AuthGuard requireAdmin>
+                          <AdminPopUps />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/coupons" element={
+                        <AuthGuard requireAdmin>
+                          <AdminCoupons />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin/organizations" element={
+                        <AuthGuard requireAdmin>
+                          <AdminOrganizations />
+                        </AuthGuard>
+                      } />
                       <Route
                         path="/admin/edit-lesson/:lessonId"
                         element={

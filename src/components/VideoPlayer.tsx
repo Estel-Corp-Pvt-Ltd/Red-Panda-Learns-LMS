@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Loader2, ExternalLink } from "lucide-react";
+import { Play, ExternalLink } from "lucide-react";
+import Plyr from "plyr-react";
+import "plyr-react/plyr.css";
 
 type LmsVideoPlayerProps = {
     url: string;
     title?: string;
     playing?: boolean;
-    controls?: boolean;
     onEnded?: () => void;
     className?: string;
 };
@@ -15,44 +16,40 @@ export default function VideoPlayer({
     url,
     title = "Video Player",
     playing = false,
-    controls = true,
     onEnded,
     className = "",
 }: LmsVideoPlayerProps) {
     const [showEndOverlay, setShowEndOverlay] = useState(false);
-    const [hasStarted, setHasStarted] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const playerRef = useRef<HTMLDivElement>(null);
+    const playerRef = useRef<any>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    // Memoize the video info extraction to avoid recalculation on every render
-    const videoInfo = useMemo(() => {
+    const videoSource = useMemo(() => {
         try {
-            // YouTube patterns
+            // YouTube
             if (url.includes("youtube.com") || url.includes("youtu.be")) {
-                let videoId = "";
-
-                // Standard YouTube URL
                 const youtubeMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                if (youtubeMatch && youtubeMatch[1]) {
-                    videoId = youtubeMatch[1];
+                if (youtubeMatch?.[1]) {
+                    return {
+                        type: 'video' as const,
+                        sources: [{
+                            src: youtubeMatch[1],
+                            provider: 'youtube' as const,
+                        }],
+                    };
                 }
-
-                return {
-                    type: "youtube" as const,
-                    id: videoId,
-                    embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=${playing ? 1 : 0}&controls=${controls ? 1 : 0}&modestbranding=1&playsinline=1&rel=0&enablejsapi=1`,
-                };
             }
 
-            // Vimeo patterns
+            // Vimeo
             if (url.includes("vimeo.com")) {
                 const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/);
-                if (vimeoMatch && vimeoMatch[1]) {
+                if (vimeoMatch?.[1]) {
                     return {
-                        type: "vimeo" as const,
-                        id: vimeoMatch[1],
-                        embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${playing ? 1 : 0}&controls=${controls ? 1 : 0}&title=0&byline=0&portrait=0`,
+                        type: 'video' as const,
+                        sources: [{
+                            src: vimeoMatch[1],
+                            provider: 'vimeo' as const,
+                        }],
                     };
                 }
             }
@@ -60,169 +57,157 @@ export default function VideoPlayer({
             // Direct video files
             if (url.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
                 return {
-                    type: "direct" as const,
-                    id: null,
-                    embedUrl: url,
+                    type: 'video' as const,
+                    sources: [{
+                        src: url,
+                        type: 'video/mp4'
+                    }],
                 };
             }
 
-            return { type: "error" as const, id: null, embedUrl: "" };
-        } catch (err) {
-            return { type: "error" as const, id: null, embedUrl: "" };
+            return null;
+        } catch {
+            return null;
         }
-    }, [url, playing, controls]);
-
-    // Set error state based on videoInfo
-    useEffect(() => {
-        if (videoInfo.type === "error") {
-            setError("Invalid video URL format");
-        } else {
-            setError(null);
-        }
-    }, [videoInfo.type]);
-
-    // Memoize the handleVideoEnd callback
-    const handleVideoEnd = useCallback(() => {
-        setShowEndOverlay(true);
-        onEnded?.();
-    }, [onEnded]);
-
-    // Handle play/pause based on prop changes
-    useEffect(() => {
-        if (!playerRef.current || videoInfo.type === "error") return;
-
-        const iframe = playerRef.current.querySelector("iframe");
-        if (!iframe || !iframe.contentWindow) return;
-
-        const sendMessage = (message: any) => {
-            iframe.contentWindow?.postMessage(JSON.stringify(message), "*");
-        };
-
-        if (videoInfo.type === "youtube") {
-            if (playing) {
-                sendMessage({ event: "command", func: "playVideo", args: "" });
-            } else {
-                sendMessage({ event: "command", func: "pauseVideo", args: "" });
-            }
-        } else if (videoInfo.type === "vimeo") {
-            if (playing) {
-                sendMessage({ method: "play" });
-            } else {
-                sendMessage({ method: "pause" });
-            }
-        }
-    }, [playing, videoInfo.type]);
-
-    // Setup message listeners for YouTube/Vimeo API
-    useEffect(() => {
-        if (videoInfo.type === "error") return;
-
-        const handleMessage = (event: MessageEvent) => {
-            try {
-                const data = JSON.parse(event.data);
-
-                if (videoInfo.type === "youtube") {
-                    if (data.event === "onStateChange") {
-                        if (data.info === 0) { // Ended
-                            handleVideoEnd();
-                        } else if (data.info === 1) { // Playing
-                            setHasStarted(true);
-                            setIsLoading(false);
-                        } else if (data.info === 3) { // Buffering
-                            setIsLoading(true);
-                        }
-                    }
-                } else if (videoInfo.type === "vimeo") {
-                    if (data.event === "play") {
-                        setHasStarted(true);
-                        setIsLoading(false);
-                    } else if (data.event === "pause") {
-                        setIsLoading(false);
-                    } else if (data.event === "ended") {
-                        handleVideoEnd();
-                    } else if (data.event === "bufferstart") {
-                        setIsLoading(true);
-                    } else if (data.event === "bufferend") {
-                        setIsLoading(false);
-                    }
-                }
-            } catch (e) {
-                // Not a JSON message, ignore
-            }
-        };
-
-        window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
-    }, [videoInfo.type, handleVideoEnd]);
-
-    // Reset state when URL changes
-    useEffect(() => {
-        setShowEndOverlay(false);
-        setHasStarted(false);
-        setIsLoading(true);
     }, [url]);
 
-    const replayVideo = useCallback(() => {
-        setShowEndOverlay(false);
-        setHasStarted(false);
+    const plyrOptions = useMemo(() => ({
+        controls: [
+            'play-large', 'play', 'progress', 'current-time', 'duration',
+            'mute', 'volume', 'settings', 'fullscreen',
+        ],
+        settings: ['quality', 'speed'],
+        autoplay: playing,
+        ratio: '16:9',
+        displayDuration: true,
+        hideControls: false,
+        clickToPlay: true,
+        disableContextMenu: false,
+        // YouTube specific options
+        youtube: {
+            noCookie: true,
+            rel: 0, // Shows related videos from the same channel
+            modestbranding: 1, // Reduces YouTube logo
+            iv_load_policy: 3, // Hides video annotations
+            widget_referrer: window.location.href,
+            enablejsapi: 1,
+            origin: window.location.origin,
+            showinfo: 0, //  Removes video title and uploader info (though deprecated, still helps)
+            controls: 0,
+            disablekb: 1,
+            fs: 1,
+            playsInLine: 1,
+            showRelatedVideos: false,
+        },
+        // Vimeo specific options
+        vimeo: {
+            byline: false, // Hides the author's name
+            portrait: false, // Hides the author's profile picture
+            title: false, // Hides the video title
+            speed: true,
+            transparent: false,
+            badge: false, // Affects the Vimeo logo (may require paid plan)
+        },
+        html5: {
+            hls: {
+                autoStart: true,
+            },
+            vhs: {
+                overrideNative: true,
+            },
+        },
+    }), [playing]);
 
-        if (playerRef.current) {
-            const iframe = playerRef.current.querySelector("iframe");
-            if (!iframe || !iframe.contentWindow) return;
+    // Handle play/pause programmatically
+    useEffect(() => {
+        if (!playerRef.current) return;
 
-            if (videoInfo.type === "youtube") {
-                iframe.contentWindow.postMessage(
-                    JSON.stringify({ event: "command", func: "seekTo", args: [0, true] }),
-                    "*"
-                );
-                iframe.contentWindow.postMessage(
-                    JSON.stringify({ event: "command", func: "playVideo", args: "" }),
-                    "*"
-                );
-            } else if (videoInfo.type === "vimeo") {
-                iframe.contentWindow.postMessage(
-                    JSON.stringify({ method: "setCurrentTime", value: 0 }),
-                    "*"
-                );
-                iframe.contentWindow.postMessage(
-                    JSON.stringify({ method: "play" }),
-                    "*"
-                );
-            }
-        }
-    }, [videoInfo.type]);
-
-    const handleInitialPlay = useCallback(() => {
-        setHasStarted(true);
-        if (playerRef.current) {
-            const iframe = playerRef.current.querySelector("iframe");
-            if (iframe && iframe.contentWindow) {
-                if (videoInfo.type === "youtube") {
-                    iframe.contentWindow.postMessage(
-                        JSON.stringify({ event: "command", func: "playVideo", args: "" }),
-                        "*"
-                    );
-                } else if (videoInfo.type === "vimeo") {
-                    iframe.contentWindow.postMessage(
-                        JSON.stringify({ method: "play" }),
-                        "*"
-                    );
+        try {
+            const plyrInstance = playerRef.current.plyr;
+            if (plyrInstance) {
+                if (playing) {
+                    plyrInstance.play();
+                } else {
+                    plyrInstance.pause();
                 }
             }
+        } catch (error) {
+            console.warn('Error during play/pause:', error);
         }
-    }, [videoInfo.type]);
+    }, [playing]);
 
-    if (videoInfo.type === "error" || error) {
+    // Reset on URL change
+    useEffect(() => {
+        setShowEndOverlay(false);
+        setError(null);
+    }, [url]);
+
+    // Fix for Plyr styling issues
+    useEffect(() => {
+        const fixPlyrStyling = () => {
+            if (containerRef.current) {
+                // Remove any default margins/padding from Plyr elements
+                const plyrElements = containerRef.current.querySelectorAll('.plyr');
+                plyrElements.forEach(element => {
+                    (element as HTMLElement).style.margin = '0';
+                    (element as HTMLElement).style.padding = '0';
+                });
+
+                // Fix video container styling
+                const videoContainers = containerRef.current.querySelectorAll('.plyr__video-wrapper');
+                videoContainers.forEach(container => {
+                    (container as HTMLElement).style.margin = '0';
+                    (container as HTMLElement).style.padding = '0';
+                    (container as HTMLElement).style.borderRadius = '0';
+                });
+
+                // Fix the actual video element
+                const videoElements = containerRef.current.querySelectorAll('video');
+                videoElements.forEach(video => {
+                    (video as HTMLElement).style.margin = '0';
+                    (video as HTMLElement).style.padding = '0';
+                    (video as HTMLElement).style.borderRadius = '0';
+                    (video as HTMLElement).style.objectFit = 'contain';
+                });
+            }
+        };
+
+        // Apply fixes after a short delay to ensure Plyr has rendered
+        const timer = setTimeout(fixPlyrStyling, 100);
+        return () => clearTimeout(timer);
+    }, [url, showEndOverlay]);
+
+    const handleEnded = () => {
+        setShowEndOverlay(true);
+        onEnded?.();
+    };
+
+    const handleError = () => {
+        setError('Failed to load video');
+    };
+
+    const replayVideo = () => {
+        setShowEndOverlay(false);
+
+        if (playerRef.current) {
+            try {
+                const plyrInstance = playerRef.current.plyr;
+                if (plyrInstance) {
+                    plyrInstance.restart();
+                }
+            } catch (error) {
+                console.warn('Error during replay:', error);
+            }
+        }
+    };
+
+    if (!videoSource || error) {
         return (
             <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center ${className}`}>
                 <div className="text-center p-6">
                     <div className="text-red-500 font-semibold mb-2">Error loading video</div>
                     <p className="text-sm text-gray-600 mb-4">{error || "Invalid video URL"}</p>
-                    <Button
-                        variant="outline"
-                        onClick={() => window.open(url, "_blank")}
-                        className="flex items-center gap-2"
-                    >
+                    <Button variant="outline" onClick={() => window.open(url, "_blank")} className="flex items-center gap-2">
                         <ExternalLink size={16} />
                         Open video link
                     </Button>
@@ -232,88 +217,43 @@ export default function VideoPlayer({
     }
 
     return (
-        <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-black ${className}`}>
-            {/* Loading indicator */}
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                    <Loader2 className="h-8 w-8 animate-spin text-white" />
-                </div>
-            )}
-
-            {/* Play button overlay for initial state */}
-            {!hasStarted && !isLoading && (
-                <div
-                    className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 cursor-pointer"
-                    onClick={handleInitialPlay}
-                >
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
-                        <div className="bg-red-600 rounded-full p-4 flex items-center justify-center">
-                            <Play className="h-8 w-8 text-white fill-white ml-1" />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* The player itself */}
+        <div
+            ref={containerRef}
+            className={`relative w-full aspect-video bg-black ${className}`}
+            style={{
+                borderRadius: '1rem',
+                overflow: 'hidden',
+                margin: 0,
+                padding: 0
+            }}
+        >
             <div
-                ref={playerRef}
-                className={`h-full w-full transition-opacity ${showEndOverlay ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+                className={`h-full w-full ${showEndOverlay ? "opacity-0" : "opacity-100"}`}
+                style={{
+                    margin: 0,
+                    padding: 0
+                }}
             >
-                {videoInfo.type === "direct" ? (
-                    <video
-                        className="h-full w-full object-contain"
-                        controls={controls}
-                        autoPlay={playing}
-                        onEnded={handleVideoEnd}
-                        onPlay={() => {
-                            setHasStarted(true);
-                            setIsLoading(false);
-                        }}
-                        onWaiting={() => setIsLoading(true)}
-                        onCanPlay={() => setIsLoading(false)}
-                    >
-                        <source src={videoInfo.embedUrl} type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
-                ) : (
-                    <iframe
-                        src={videoInfo.embedUrl}
-                        className="h-full w-full"
-                        frameBorder="0"
-                        allowFullScreen
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerPolicy="strict-origin-when-cross-origin"
-                        title={title}
-                        onLoad={() => {
-                            if (!hasStarted) setIsLoading(false);
-                        }}
-                    />
-                )}
+                <Plyr
+                    ref={playerRef}
+                    source={videoSource}
+                    options={plyrOptions}
+                    onEnded={handleEnded}
+                    onError={handleError}
+                />
             </div>
 
-            {/* Custom end screen (prevents platform recommendations) */}
             {showEndOverlay && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/90 text-white z-20">
                     <div className="text-center px-4">
-                        <h3 className="text-xl font-semibold mb-2">{title ?? "Video complete"}</h3>
+                        <h3 className="text-xl font-semibold mb-2">{title}</h3>
                         <p className="text-sm opacity-80">You can replay or continue.</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            className="rounded-xl bg-white text-black hover:bg-white/90"
-                            onClick={replayVideo}
-                        >
+                    <div className="flex gap-3">
+                        <Button variant="outline" size="lg" className="rounded-xl bg-white text-black hover:bg-gray-100" onClick={replayVideo}>
                             Replay
                         </Button>
-                        <Button
-                            size="lg"
-                            className="rounded-xl bg-blue-600 hover:bg-blue-700"
-                            onClick={() => {
-                                // e.g., navigate("/next-lesson");
-                            }}
-                        >
+                        <Button size="lg" className="rounded-xl bg-blue-600 hover:bg-blue-700">
                             Next Lesson
                         </Button>
                     </div>
