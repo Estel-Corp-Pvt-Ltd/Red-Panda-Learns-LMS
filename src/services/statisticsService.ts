@@ -2,10 +2,22 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
+  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { USER_STATUS } from "@/constants";
+import { COLLECTION, USER_STATUS } from "@/constants";
+import { Result, ok, fail } from "@/utils/response";
+import { logError } from "@/utils/logger";
+
+/**
+ * Basic statistics response for the new stats page.
+ */
+export type BasicStats = {
+  totalBundles: number;
+  totalUsers: number;
+  totalEnrollments: number;
+};
 
 /**
  * Type for the dashboard statistics response.
@@ -24,77 +36,108 @@ export type DashboardStats = {
   cohortStudents: number;
 };
 
-/**
- * Service responsible for fetching and aggregating
- * application-wide statistics like revenue, students, courses, and cohorts.
- */
 class StatisticsService {
-  /**
-   * Returns all dashboard statistics needed for the analytics cards.
-   *
-   * @returns A `DashboardStats` object containing:
-   *  - `totalRevenue`: Total revenue from payments
-   *  - `revenueGrowth`: Percentage growth vs last month
-   *  - `activeStudents`: Count of active students
-   *  - `activeStudentGrowth`: Growth vs last month
-   *  - `newEnrollments`: Number of new enrollments this month
-   *  - `enrollmentGrowth`: % growth of enrollments vs last month
-   *  - `totalCourses`: Total available courses
-   *  - `activeCohorts`: Currently active cohorts
-   *  - `totalCohorts`: Total cohorts (any status)
-   *  - `cohortStudents`: Students enrolled across cohorts
-   */
-  async getDashboardStats(): Promise<DashboardStats> {
-    const [
-      totalRevenue,
-      revenueGrowth,
-      activeStudents,
-      activeStudentGrowth,
-      newEnrollments,
-      enrollmentGrowth,
-      totalCourses,
-      activeCohorts,
-      totalCohorts,
-      cohortStudents,
-    ] = await Promise.all([
-      this.getTotalRevenue(),
-      this.getRevenueGrowth(),
-      this.getActiveStudentsCount(),
-      this.getActiveStudentsGrowth(),
-      this.getNewEnrollments(),
-      this.getEnrollmentsGrowth(),
-      this.getTotalCourses(),
-      this.getActiveCohorts(),
-      this.getTotalCohorts(),
-      this.getCohortStudents(),
-    ]);
+  // ==========================================================
+  // Basic stats (Bundles, Users, Enrollments)
+  // ==========================================================
 
-    return {
-      totalCohortStudents: cohortStudents,
-      totalRevenue,
-      revenueGrowth,
-      activeStudents,
-      activeStudentGrowth,
-      newEnrollments,
-      enrollmentGrowth,
-      totalCourses,
-      activeCohorts,
-      totalCohorts,
-      cohortStudents,
-    };
+  async getBasicStats(): Promise<Result<BasicStats>> {
+    try {
+      const [totalBundles, totalUsers, totalEnrollments] = await Promise.all([
+        this.getCollectionCount(COLLECTION.BUNDLES),
+        this.getCollectionCount(COLLECTION.USERS),
+        this.getCollectionCount(COLLECTION.ENROLLMENTS),
+      ]);
+
+      return ok({
+        totalBundles,
+        totalUsers,
+        totalEnrollments,
+      });
+    } catch (error) {
+      logError("StatisticsService.getBasicStats", error);
+      return fail("Failed to fetch basic statistics");
+    }
+  }
+
+  /**
+   * Efficiently counts documents in a collection using server-side aggregation.
+   * Falls back to getDocs; if both fail, throws to be handled by caller.
+   */
+  private async getCollectionCount(collectionName: string): Promise<number> {
+    const collRef = collection(db, collectionName);
+    try {
+      const agg = await getCountFromServer(collRef);
+      return agg.data().count;
+    } catch (err) {
+      console.warn(
+        `[StatisticsService] getCountFromServer failed for ${collectionName}, falling back to getDocs`,
+        err
+      );
+      try {
+        const snapshot = await getDocs(collRef);
+        return snapshot.size;
+      } catch (e) {
+        throw e;
+      }
+    }
   }
 
   // ==========================================================
-  //  Revenue
+  // Full dashboard analytics
   // ==========================================================
 
-  /**
-   * Calculates total revenue across all payments.
-   *
-   * @returns Total revenue amount (in smallest currency units or formatted as needed).
-   */
-  async getTotalRevenue(): Promise<number> {
-    const snapshot = await getDocs(collection(db, "Payments"));
+  async getDashboardStats(): Promise<Result<DashboardStats>> {
+    try {
+      const [
+        totalRevenue,
+        revenueGrowth,
+        activeStudents,
+        activeStudentGrowth,
+        newEnrollments,
+        enrollmentGrowth,
+        totalCourses,
+        activeCohorts,
+        totalCohorts,
+        cohortStudents,
+      ] = await Promise.all([
+        this.getTotalRevenue(),
+        this.getRevenueGrowth(),
+        this.getActiveStudentsCount(),
+        this.getActiveStudentsGrowth(),
+        this.getNewEnrollments(),
+        this.getEnrollmentsGrowth(),
+        this.getTotalCourses(),
+        this.getActiveCohorts(),
+        this.getTotalCohorts(),
+        this.getCohortStudents(),
+      ]);
+
+      return ok({
+        totalCohortStudents: cohortStudents,
+        totalRevenue,
+        revenueGrowth,
+        activeStudents,
+        activeStudentGrowth,
+        newEnrollments,
+        enrollmentGrowth,
+        totalCourses,
+        activeCohorts,
+        totalCohorts,
+        cohortStudents,
+      });
+    } catch (error) {
+      logError("StatisticsService.getDashboardStats", error);
+      return fail("Failed to fetch dashboard statistics");
+    }
+  }
+
+  // ==========================================================
+  // Revenue
+  // ==========================================================
+
+  private async getTotalRevenue(): Promise<number> {
+    const snapshot = await getDocs(collection(db, COLLECTION.TRANSACTIONS));
     let total = 0;
     snapshot.forEach((doc) => {
       total += doc.data().amount || 0;
@@ -102,114 +145,69 @@ class StatisticsService {
     return total;
   }
 
-  /**
-   * Calculates revenue growth as a percentage compared to last month.
-   * 
-   * @returns Revenue growth percentage (positive or negative)
-   */
-  async getRevenueGrowth(): Promise<number> {
-    // TODO: Replace logic with real monthly comparison
+  private async getRevenueGrowth(): Promise<number> {
     return 20.1; // placeholder
   }
 
   // ==========================================================
-  //  Students
+  // Students
   // ==========================================================
 
-  /**
-   * Counts all students with status = ACTIVE.
-   *
-   * @returns Number of active students.
-   */
-  async getActiveStudentsCount(): Promise<number> {
+  private async getActiveStudentsCount(): Promise<number> {
     const q = query(
-      collection(db, "Users"),
+      collection(db, COLLECTION.USERS),
       where("status", "==", USER_STATUS.ACTIVE)
     );
     const snapshot = await getDocs(q);
     return snapshot.size;
   }
 
-  /**
-   * Calculates the growth of active students vs last month.
-   *
-   * @returns Active student growth percentage.
-   */
-  async getActiveStudentsGrowth(): Promise<number> {
-    // TODO: calculate from createdAt timestamps
+  private async getActiveStudentsGrowth(): Promise<number> {
     return 180.1; // placeholder
   }
 
   // ==========================================================
-  //  Enrollments
+  // Enrollments
   // ==========================================================
 
-  /**
-   * Counts total new enrollments (this month).
-   *
-   * @returns Number of new enrollments
-   */
-  async getNewEnrollments(): Promise<number> {
-    const snapshot = await getDocs(collection(db, "Enrollments"));
+  private async getNewEnrollments(): Promise<number> {
+    const snapshot = await getDocs(collection(db, COLLECTION.ENROLLMENTS));
     return snapshot.size;
   }
 
-  /**
-   * Calculates enrollment growth percentage vs previous month.
-   *
-   * @returns Enrollment growth percentage.
-   */
-  async getEnrollmentsGrowth(): Promise<number> {
-    // TODO: calculate from createdAt timestamps
+  private async getEnrollmentsGrowth(): Promise<number> {
     return 19; // placeholder
   }
 
   // ==========================================================
-  //  Courses
+  // Courses
   // ==========================================================
 
-  /**
-   * Returns the total number of courses available.
-   *
-   * @returns Number of courses in the system.
-   */
-  async getTotalCourses(): Promise<number> {
-    const snapshot = await getDocs(collection(db, "Courses"));
+  private async getTotalCourses(): Promise<number> {
+    const snapshot = await getDocs(collection(db, COLLECTION.COURSES));
     return snapshot.size;
   }
 
   // ==========================================================
-  //  Cohorts
+  // Cohorts
   // ==========================================================
 
-  /**
-   * Counts how many cohorts are currently active.
-   *
-   * @returns Number of active cohorts
-   */
-  async getActiveCohorts(): Promise<number> {
-    const q = query(collection(db, "Cohorts"), where("status", "==", "ACTIVE"));
+  private async getActiveCohorts(): Promise<number> {
+    const q = query(
+      collection(db, COLLECTION.COHORTS),
+      where("status", "==", "ACTIVE")
+    );
     const snapshot = await getDocs(q);
     return snapshot.size;
   }
 
-  /**
-   * Returns the total number of cohorts in the system.
-   *
-   * @returns Number of cohorts
-   */
-  async getTotalCohorts(): Promise<number> {
-    const snapshot = await getDocs(collection(db, "Cohorts"));
+  private async getTotalCohorts(): Promise<number> {
+    const snapshot = await getDocs(collection(db, COLLECTION.COHORTS));
     return snapshot.size;
   }
 
-  /**
-   * Counts all students enrolled across cohorts.
-   *
-   * @returns Number of students across all cohorts
-   */
-  async getCohortStudents(): Promise<number> {
-    const snapshot = await getDocs(collection(db, "Cohorts"));
+  private async getCohortStudents(): Promise<number> {
+    const snapshot = await getDocs(collection(db, COLLECTION.COHORTS));
     let total = 0;
     snapshot.forEach((doc) => {
       const cohort = doc.data();
