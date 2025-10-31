@@ -53,7 +53,7 @@ import Signup from "./pages/auth/Signup";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
-import CartCheckoutPage from "./pages/CartCheckout";
+import CartCheckoutPage from "./pages/cartCheckout";
 import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";

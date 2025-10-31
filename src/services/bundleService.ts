@@ -527,7 +527,7 @@ class BundleService {
         cursor = null
       } = options;
 
-      let q: Query = collection(db, 'bundles');
+      let q: Query = collection(db, COLLECTION.BUNDLES);
 
       // Apply filters if provided
       if (filters && filters.length > 0) {
