@@ -163,7 +163,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   };
 
   return (
-    <div className={`bg-white dark:bg-black space-y-6 mx-auto ${isFullscreen ? 'p-10' : ''}`} ref={containerRef}>
+    <div className={`bg-white dark:bg-black space-y-6 mx-auto ${isFullscreen ? 'p-10 overflow-y-scroll' : ''}`} ref={containerRef}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">

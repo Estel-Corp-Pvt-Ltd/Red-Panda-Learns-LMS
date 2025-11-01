@@ -9,11 +9,20 @@ import {
     runTransaction,
     query,
     where,
-    serverTimestamp
+    serverTimestamp,
+    orderBy,
+    limit,
+    startAfter,
+    limitToLast,
+    endBefore,
+    Query,
+    WhereFilterOp
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
 import { Lesson } from '@/types/lesson';
+import { ok, Result } from '@/utils/response';
+import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
 
 class LessonService {
     /**
@@ -73,6 +82,7 @@ class LessonService {
 
             const lesson: Lesson = {
                 id: lessonId,
+                courseId: data.courseId,
                 title: data.title,
                 type: data.type,
                 description: data.description || '',
@@ -114,7 +124,7 @@ class LessonService {
   * });
   */
 
-    async updateLesson(lessonId: string, updates: Partial<Lesson>): Promise<void> {
+    async updateLesson(lessonId: string, updates: Partial<Lesson>): Promise<Result<void>> {
         try {
             const lessonRef = doc(db, "Lessons", lessonId);
             const lessonDoc = await getDoc(lessonRef);
@@ -140,9 +150,10 @@ class LessonService {
             }
 
             await updateDoc(lessonRef, updateData);
+            return ok(null);
         } catch (error) {
             console.error("LessonService - Error updating lesson:", error);
-            throw new Error("Failed to update lesson");
+            return fail("Failed to update lesson");
         }
     }
 
@@ -306,6 +317,98 @@ class LessonService {
         } catch (error) {
             console.error(`LessonService - Error deleting lesson:`, error);
             throw new Error('Failed to delete lesson');
+        }
+    }
+
+    async getLessons(
+        filters?: {
+            field: keyof Lesson;
+            op: WhereFilterOp;
+            value: any;
+        }[],
+        options: PaginationOptions<Lesson> = {}
+    ): Promise<Result<PaginatedResult<Lesson>>> {
+        try {
+            const {
+                limit: itemsPerPage = 25,
+                orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+                pageDirection = 'next',
+                cursor = null
+            } = options;
+
+            let q: Query = collection(db, 'lessons');
+
+            // Apply filters if provided
+            if (filters && filters.length > 0) {
+                const whereClauses = filters.map((f) =>
+                    where(f.field as string, f.op, f.value)
+                );
+                q = query(q, ...whereClauses);
+            }
+
+            // Apply ordering
+            const { field, direction } = orderByOption;
+
+            // For pagination, we need to handle different scenarios
+            if (pageDirection === 'previous' && cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    endBefore(cursor),
+                    limitToLast(itemsPerPage)
+                );
+            } else if (cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    startAfter(cursor),
+                    limit(itemsPerPage)
+                );
+            } else {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    limit(itemsPerPage)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+            const documents = querySnapshot.docs;
+
+            if (pageDirection === 'previous') {
+                documents.reverse();
+            }
+
+            const lessons = documents.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    courseId: data.courseId,
+                    title: data.title,
+                    type: data.type,
+                    description: data.description,
+                    embedUrl: data.embedUrl,
+                    duration: data.duration,
+                    createdAt: data.createdAt?.toDate?.() || data.createdAt,
+                    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+                } as Lesson;
+            });
+
+            const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+            const hasPreviousPage = cursor !== null;
+            const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+            const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+            return ok({
+                data: lessons,
+                hasNextPage,
+                hasPreviousPage,
+                nextCursor,
+                previousCursor
+            });
+        } catch (error) {
+            console.error('LessonService - Error fetching lessons:', error);
+            return fail("Error fetching lessons");
         }
     }
 }
