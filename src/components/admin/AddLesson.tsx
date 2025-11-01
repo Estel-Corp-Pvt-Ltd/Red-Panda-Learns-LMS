@@ -25,12 +25,14 @@ import MDEditor from "@uiw/react-md-editor";
 import { useEffect, useState } from "react";
 
 type CreateLessonModalProps = {
+  courseId: string;
   isOpen: boolean;
   onClose: () => void;
   onLessonCreated?: (lesson: Lesson) => void;
 };
 
 export const CreateLessonModal = ({
+  courseId,
   isOpen,
   onClose,
   onLessonCreated,
@@ -105,7 +107,7 @@ export const CreateLessonModal = ({
       }
 
       setSaving(true);
-      const newLesson = await lessonService.createLesson(lesson);
+      const newLesson = await lessonService.createLesson({ ...lesson, courseId }); // Pass courseId appropriately
       toast({ title: "Lesson created successfully!" });
 
       onLessonCreated?.(newLesson);
