@@ -85,6 +85,8 @@ import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
 import { Label } from "@/components/ui/label";
 import { lessonService } from "@/services/lessonService";
+import { EditLessonModal } from "@/components/admin/LessonEditModel";
+import { LessonImportModal } from "@/components/admin/LessonImportModal";
 
 type SortableItemProps = {
   id: string;
@@ -181,6 +183,7 @@ const CurriculumBuilderPage = () => {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
+  const [isLessonEditModelOpen, setIsLessonEditModelOpen] = useState(false);
   const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
 
   const sensors = useSensors(
@@ -1971,7 +1974,7 @@ const CurriculumBuilderPage = () => {
                                       size="sm"
                                       onClick={() => {
                                         setEditingItemId(item.id);
-                                        setNewItemName(item.title);
+                                        setIsLessonEditModelOpen(true);
                                       }}
                                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                                       title="Rename"
@@ -2004,14 +2007,35 @@ const CurriculumBuilderPage = () => {
       </main>
 
       {/* Lesson Selector */}
-      <LessonSelectorModal
+      <LessonImportModal
         courseId={courseId}
         isOpen={isLessonSelectorModalOpen}
         onClose={() => {
           setIsLessonSelectorModalOpen(false);
         }}
         onConfirm={addLessonsToParent}
-        excludedLessonIds={excludedLessonIdsForActiveParent}
+      />
+      <EditLessonModal
+        courseId={courseId}
+        lessonId={editingItemId}
+        isOpen={isLessonEditModelOpen}
+        onClose={() => {
+          setIsLessonEditModelOpen(false);
+        }}
+      // onLessonUpdated={(lesson: Lesson) => {
+      //   setCurriculum((prev) => {
+      //     return prev.map((item) => {
+      //       if (item.id === lesson.id && item.type === LEARNING_UNIT.LESSON) {
+      //         // Ensure we're only updating lesson items
+      //         return {
+      //           ...item,
+      //           title: lesson.title,
+      //         } as DraggableItem;
+      //       }
+      //       return item;
+      //     });
+      //   });
+      // }}
       />
       {isAssignmentModelOpen && (
         <AssignmentModal

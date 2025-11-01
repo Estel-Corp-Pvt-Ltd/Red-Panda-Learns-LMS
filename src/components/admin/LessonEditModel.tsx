@@ -27,7 +27,7 @@ interface EditLessonModalProps {
   lessonId: string;
   isOpen: boolean;
   onClose: () => void;
-  onLessonUpdated: (lesson: Lesson) => void;
+  onLessonUpdated?: (lesson: Lesson) => void;
 }
 
 export const EditLessonModal = ({
@@ -38,7 +38,7 @@ export const EditLessonModal = ({
   onLessonUpdated,
 }: EditLessonModalProps) => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [lesson, setLesson] = useState<Lesson | null>(null);
 
@@ -156,7 +156,7 @@ export const EditLessonModal = ({
       title: "Lesson updated successfully!",
       variant: "default"
     });
-    onLessonUpdated({
+    onLessonUpdated?.({
       id: lessonId,
       courseId: courseId,
       title: lesson.title || "",
