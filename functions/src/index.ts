@@ -4,6 +4,9 @@ import { verifyRecaptcha } from './handlers/verifyRecaptcha';
 import { createPaypalOrder } from './handlers/createPaypalOrder';
 import { capturePaypalOrder } from './handlers/capturePaypalOrder';
 import { sendMailWorker } from './workers/sendMailWorker';
+// Cascade delete workers
+import { courseDeleteCascade } from './workers/courseDeleteCascade';
+import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
 
 export {
   createOrder,
@@ -11,5 +14,7 @@ export {
   verifyRecaptcha,
   createPaypalOrder,
   capturePaypalOrder,
-  sendMailWorker
+  sendMailWorker,
+  courseDeleteCascade,
+  lessonDeleteCascade
 };

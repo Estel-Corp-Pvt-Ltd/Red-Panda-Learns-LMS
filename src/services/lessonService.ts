@@ -23,6 +23,7 @@ import { db } from '@/firebaseConfig';
 import { Lesson } from '@/types/lesson';
 import { ok, Result } from '@/utils/response';
 import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
+import { COLLECTION } from '@/constants';
 
 class LessonService {
     /**
@@ -336,7 +337,7 @@ class LessonService {
                 cursor = null
             } = options;
 
-            let q: Query = collection(db, 'lessons');
+            let q: Query = collection(db, COLLECTION.LESSONS);
 
             // Apply filters if provided
             if (filters && filters.length > 0) {

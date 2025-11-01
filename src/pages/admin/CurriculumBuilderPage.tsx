@@ -84,6 +84,7 @@ import { getFullName } from "@/utils/name";
 import { getDownloadURL } from "firebase/storage";
 import CohortBuilderPage from "./CreateCohortPage";
 import { Label } from "@/components/ui/label";
+import { lessonService } from "@/services/lessonService";
 
 type SortableItemProps = {
   id: string;
@@ -851,7 +852,15 @@ const CurriculumBuilderPage = () => {
     setEditingItemId(null);
   };
 
-  const deleteItem = (itemId: string) => {
+  const deleteItem = async (itemId: string, item?: DraggableItem) => {
+    if (item && item.type === LEARNING_UNIT.LESSON) {
+      const confirmed = window.confirm(
+        `Are you sure you want to remove the lesson "${item.title}" from the curriculum? This will not delete the lesson itself.`,
+      );
+      if (!confirmed) return;
+
+      await lessonService.deleteLesson(item.refId ?? item.id)
+    }
     setCurriculum((prev) => {
       // Find all children and grandchildren recursively to delete them too
       const itemsToDelete = new Set<string>([itemId]);
@@ -1249,7 +1258,7 @@ const CurriculumBuilderPage = () => {
                       </Select>
                     </CardContent>
                   </Card>
-                   {/* Categories */}
+                  {/* Categories */}
                   {/* <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Categories</CardTitle>
@@ -1431,7 +1440,7 @@ const CurriculumBuilderPage = () => {
                       </Popover>
                     </CardContent>
                   </Card>
-                    {/* Target Audience */}
+                  {/* Target Audience */}
                   <Card className="rounded-xl border p-4">
                     <CardHeader className="pb-2">
                       <CardTitle>Target Audience</CardTitle>
@@ -1973,7 +1982,7 @@ const CurriculumBuilderPage = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => deleteItem(item.id)}
+                                      onClick={() => deleteItem(item.id, item)}
                                       className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
                                       title="Delete"
                                     >
@@ -1996,6 +2005,7 @@ const CurriculumBuilderPage = () => {
 
       {/* Lesson Selector */}
       <LessonSelectorModal
+        courseId={courseId}
         isOpen={isLessonSelectorModalOpen}
         onClose={() => {
           setIsLessonSelectorModalOpen(false);
@@ -2012,6 +2022,7 @@ const CurriculumBuilderPage = () => {
         />
       )}
       <CreateLessonModal
+        courseId={courseId}
         isOpen={isCreateLessonOpen}
         onClose={() => {
           setIsCreateLessonOpen(false);
