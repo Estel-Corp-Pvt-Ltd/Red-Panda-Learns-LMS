@@ -92,7 +92,7 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
       application_context: {
         shipping_preference: "NO_SHIPPING",
         user_action: "PAY_NOW",
-        brand_name: "Vizuara",
+        brand_name: "Vizuara AI Labs",
       },
     };
 
