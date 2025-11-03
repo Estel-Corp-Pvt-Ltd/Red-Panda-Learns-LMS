@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const CartPage: React.FC = () => {
-  const { cartCourses, cartDispatch, loading } = useCart();
+  const { cartCourses, cartBundles, cartDispatch, loading } = useCart();
   const { toast } = useToast();
   const [totalAmount, setTotalAmount] = useState(0);
   const [regularTotal, setRegularTotal] = useState(0);
@@ -101,12 +101,20 @@ const CartPage: React.FC = () => {
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
+                  {cartBundles.map((bundle) => (
+                    <div
+                      key={bundle.id}
+                      className="rounded-lg border border-border bg-background/60 hover:bg-background transition-colors"
+                    >
+                      <CartItemCard item={bundle} type="BUNDLE" />
+                    </div>
+                  ))}
                   {cartCourses.map((course) => (
                     <div
                       key={course.id}
                       className="rounded-lg border border-border bg-background/60 hover:bg-background transition-colors"
                     >
-                      <CartItemCard item={course} />
+                      <CartItemCard item={course} type="COURSE" />
                     </div>
                   ))}
                 </div>
