@@ -266,6 +266,8 @@ const OrganizationTab = () => {
             type="submit"
             disabled={saving}
             className="whitespace-nowrap"
+             variant="pill"
+                  size="sm"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {isEditing ? "Update" : "Add Organization"}
