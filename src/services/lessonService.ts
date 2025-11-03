@@ -31,7 +31,7 @@ class LessonService {
      * Uses a random gap between 10 and 50 to avoid easy guessing.
      */
     private async generateLessonId(): Promise<string> {
-        const counterRef = doc(db, 'counters', 'lessonCounter');
+        const counterRef = doc(db, COLLECTION.COUNTERS, 'lessonCounter');
 
         const newId = await runTransaction(db, async (transaction) => {
             const gap = Math.floor(Math.random() * (50 - 10 + 1)) + 10; // 10–50 gap
