@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { COLLECTION, ORDER_STATUS } from "../constants";
 import { Order } from "../types/order";
 import { fail, ok, Result } from "../utils/response";
+import { FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -111,7 +112,7 @@ class OrderService {
       if (!generated.success || !generated.data) return fail("Failed to generate order ID");
 
       const { orderId } = generated.data;
-      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      const timestamp = FieldValue.serverTimestamp();
 
       const order: Order = {
         orderId,
@@ -122,7 +123,7 @@ class OrderService {
         currency: data.currency,
         metadata: data.metadata || {},
         billingAddress: data.billingAddress,
-        shippingAddress: data.shippingAddress,
+        // shippingAddress: data.shippingAddress as Address,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -151,7 +152,7 @@ class OrderService {
       if (!generated.success || !generated.data) return fail("Failed to generate order ID");
 
       const { orderId } = generated.data;
-      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      const timestamp = FieldValue.serverTimestamp();
 
       const order: Order = {
         orderId,
@@ -196,7 +197,7 @@ class OrderService {
       const existingData = snapshot.data();
       const updateData: any = {
         status,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       if (transactionId) {
@@ -211,7 +212,7 @@ class OrderService {
       }
 
       if (status === ORDER_STATUS.COMPLETED) {
-        updateData.completedAt = admin.firestore.FieldValue.serverTimestamp();
+        updateData.completedAt = FieldValue.serverTimestamp();
       }
 
       await orderRef.update(updateData);

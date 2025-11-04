@@ -5,6 +5,7 @@ import { Result, ok, fail } from '../utils/response';
 import { COLLECTION, ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '../constants';
 import { EnrolledProgramType } from '../types/general';
 import { Enrollment } from '../types/enrollment';
+import { FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -51,11 +52,11 @@ class EnrollmentService {
             userId,
             courseId: item.itemId,
             bundleId: '', // Empty for course enrollments
-            enrollmentDate: admin.firestore.FieldValue.serverTimestamp(),
+            enrollmentDate: FieldValue.serverTimestamp(),
             status: ENROLLMENT_STATUS.ACTIVE,
             orderId: orderId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
           };
 
           batch.set(db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId), enrollment);
@@ -79,11 +80,11 @@ class EnrollmentService {
               userId,
               courseId: courseId,
               bundleId: item.itemId, // Reference to parent bundle
-              enrollmentDate: admin.firestore.FieldValue.serverTimestamp(),
+              enrollmentDate: FieldValue.serverTimestamp(),
               status: ENROLLMENT_STATUS.ACTIVE,
               orderId: orderId,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
             };
 
             batch.set(db.collection(COLLECTION.ENROLLMENTS).doc(courseEnrollmentId), courseEnrollment);
@@ -134,11 +135,11 @@ class EnrollmentService {
         userId,
         courseId: courseId,
         bundleId: '', // Empty for free course
-        enrollmentDate: admin.firestore.FieldValue.serverTimestamp(),
+        enrollmentDate: FieldValue.serverTimestamp(),
         status: ENROLLMENT_STATUS.ACTIVE,
         orderId: '', // Empty for free courses
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       await enrollmentRef.set(enrollment);

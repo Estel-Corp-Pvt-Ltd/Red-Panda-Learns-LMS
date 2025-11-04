@@ -38,13 +38,13 @@ const paymentIntentHandler = async (req: Request, res: Response) => {
     const bundles: Bundle[] = [];
 
     await Promise.all(items.map(async (item) => {
-      if (item.type === "COURSE") {
-        const result = await courseService.getCourseById(item.refId);
+      if (item.itemType === "COURSE") {
+        const result = await courseService.getCourseById(item.itemId);
         if (result.success && result.data) {
           courses.push(result.data);
         }
-      } else if (item.type === "BUNDLE") {
-        const result = await bundleService.getBundleById(item.refId);
+      } else if (item.itemType === "BUNDLE") {
+        const result = await bundleService.getBundleById(item.itemId);
         if (result.success && result.data) {
           bundles.push(result.data);
         }
@@ -64,14 +64,14 @@ const paymentIntentHandler = async (req: Request, res: Response) => {
     const order = await orderService.createOrder({
       userId: user.uid,
       items: items.map(item => ({
-        itemId: item.refId,
-        itemType: item.type,
-        name: item.type === "COURSE"
-          ? courses.find(c => c.id === item.refId)?.title || "Unknown Course"
-          : bundles.find(b => b.id === item.refId)?.title || "Unknown Bundle",
-        amount: item.type === "COURSE"
-          ? courses.find(c => c.id === item.refId)?.salePrice || 0
-          : bundles.find(b => b.id === item.refId)?.salePrice || 0,
+        itemId: item.itemId,
+        itemType: item.itemType,
+        name: item.itemType === "COURSE"
+          ? courses.find(c => c.id === item.itemId)?.title || "Unknown Course"
+          : bundles.find(b => b.id === item.itemId)?.title || "Unknown Bundle",
+        amount: item.itemType === "COURSE"
+          ? courses.find(c => c.id === item.itemId)?.salePrice || 0
+          : bundles.find(b => b.id === item.itemId)?.salePrice || 0,
       })) as TransactionLineItem[],
       status: "PENDING",
       amount: convertedAmount,
@@ -92,14 +92,14 @@ const paymentIntentHandler = async (req: Request, res: Response) => {
       orderNumber: order.data,
       userId: user.uid,
       items: items.map(item => ({
-        itemId: item.refId,
-        itemType: item.type,
-        name: item.type === "COURSE"
-          ? courses.find(c => c.id === item.refId)?.title || "Unknown Course"
-          : bundles.find(b => b.id === item.refId)?.title || "Unknown Bundle",
-        amount: item.type === "COURSE"
-          ? courses.find(c => c.id === item.refId)?.salePrice || 0
-          : bundles.find(b => b.id === item.refId)?.salePrice || 0,
+        itemId: item.itemId,
+        itemType: item.itemType,
+        name: item.itemType === "COURSE"
+          ? courses.find(c => c.id === item.itemId)?.title || "Unknown Course"
+          : bundles.find(b => b.id === item.itemId)?.title || "Unknown Bundle",
+        amount: item.itemType === "COURSE"
+          ? courses.find(c => c.id === item.itemId)?.salePrice || 0
+          : bundles.find(b => b.id === item.itemId)?.salePrice || 0,
       })) as TransactionLineItem[],
       type: TRANSACTION_TYPE.PAYMENT,
       amount: convertedAmount,
@@ -107,10 +107,10 @@ const paymentIntentHandler = async (req: Request, res: Response) => {
       originalAmount: originalAmount,
       originalCurrency: CURRENCY.INR,
       exchangeRate: exchangedRate,
-      metadata: undefined,
+      metadata: {},
       paymentProvider: provider,
       status: TRANSACTION_STATUS.PENDING,
-      paymentDetails: undefined,
+      paymentDetails: {},
     });
 
     if (!transactionResult.success) {
@@ -122,7 +122,7 @@ const paymentIntentHandler = async (req: Request, res: Response) => {
       success: true,
       data: {
         orderId: order.data,
-        transactionId: '',
+        transactionId: transactionResult.data,
         items,
         userEmail: user.email,
         userId: user.uid,

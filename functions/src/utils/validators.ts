@@ -41,8 +41,8 @@ export const AddressSchema = z.object({
 });
 
 export const ItemSchema = z.object({
-  refId: z.string().min(1, "Reference ID is required"),
-  type: z.enum(["COURSE", "BUNDLE"]),
+  itemId: z.string().min(1, "Reference ID is required"),
+  itemType: z.enum(["COURSE", "BUNDLE"]),
 });
 
 export const PaymentRequestSchema = z.object({
