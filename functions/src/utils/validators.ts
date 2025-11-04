@@ -45,9 +45,13 @@ export const ItemSchema = z.object({
   itemType: z.enum(["COURSE", "BUNDLE"]),
 });
 
+export type OrderItem = z.infer<typeof ItemSchema>;
+
 export const PaymentRequestSchema = z.object({
   provider: z.enum(["RAZORPAY", "PAYPAL"]),
   items: z.array(ItemSchema).min(1, "At least one item is required").max(10),
   selectedCurrency: z.enum(["USD", "INR"]),
   billingAddress: AddressSchema,
 });
+
+export type PaymentRequest = z.infer<typeof PaymentRequestSchema>;

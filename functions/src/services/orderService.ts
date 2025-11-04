@@ -120,6 +120,7 @@ class OrderService {
         items: data.items,
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
+        providerOrderId: data.providerOrderId,
         currency: data.currency,
         metadata: data.metadata || {},
         billingAddress: data.billingAddress,
@@ -159,6 +160,7 @@ class OrderService {
         userId: data.userId,
         items: data.items,
         status: ORDER_STATUS.COMPLETED,
+        providerOrderId: data.providerOrderId,
         amount: data.amount,
         currency: data.currency,
         metadata: data.metadata ?? {},
@@ -222,6 +224,19 @@ class OrderService {
     } catch (error: any) {
       functions.logger.error('Error updating order:', error);
       return fail("Failed to update order", error.message);
+    }
+  }
+
+  async updateOrderStatus(orderId: string, status: string): Promise<Result<void>> {
+    try {
+      await db.collection(COLLECTION.ORDERS).doc(orderId).update({
+        status,
+        updatedAt: FieldValue.serverTimestamp(),
+        ...(status === ORDER_STATUS.COMPLETED && { completedAt: FieldValue.serverTimestamp() }),
+      });
+      return ok(undefined);
+    } catch (error: any) {
+      return fail("Failed to update order status", error.message);
     }
   }
 }

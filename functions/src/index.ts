@@ -1,4 +1,4 @@
-import { createOrder } from './handlers/createOrder';
+import { createRazorpayOrder } from './handlers/createRazorpayOrder';
 import { verifyPayment } from './handlers/verifyPayment';
 import { verifyRecaptcha } from './handlers/verifyRecaptcha';
 import { createPaypalOrder } from './handlers/createPaypalOrder';
@@ -7,7 +7,7 @@ import { paymentIntent } from './handlers/paymentIntent';
 import { sendMailWorker } from './workers/sendMailWorker';
 
 export {
-  createOrder,
+  createRazorpayOrder,
   verifyPayment,
   verifyRecaptcha,
   createPaypalOrder,
