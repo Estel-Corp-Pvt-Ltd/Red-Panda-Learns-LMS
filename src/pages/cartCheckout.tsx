@@ -49,6 +49,7 @@ import { Currency, PaymentProvider } from "@/types/general";
 import { Timestamp } from "firebase/firestore";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { Bundle } from "@/types/bundle";
 
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
@@ -84,7 +85,7 @@ export default function CartCheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshEnrollments, isEnrolled } = useEnrollment();
-  const { cartCourses, cartDispatch, loading: cartLoading } = useCart();
+  const { cartItems, cartBundles, cartCourses, cartDispatch, loading: cartLoading } = useCart();
   const { toast } = useToast();
 
   const [billingAddress, setBillingAddress] = useState<Address>({
@@ -224,14 +225,14 @@ export default function CartCheckoutPage() {
     }
     fetchCities();
   }, [billingAddress.state]);
-  // Calculate subtotal from cart courses
-  const subtotal = cartCourses.reduce(
-    (sum, course) => sum + (course.salePrice || course.regularPrice || 0),
+  // Calculate subtotal from cart items
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + (item.salePrice || item.regularPrice || 0),
     0
   );
 
-  const regularTotal = cartCourses.reduce(
-    (sum, course) => sum + (course.regularPrice || 0),
+  const regularTotal = cartItems.reduce(
+    (sum, item) => sum + (item.regularPrice || 0),
     0
   );
 
@@ -248,38 +249,38 @@ export default function CartCheckoutPage() {
     }
   }, [user, navigate]);
 
-  // Check if any cart course is already enrolled
+  // Check if any cart item is already enrolled
   useEffect(() => {
-    if (user && cartCourses.length > 0) {
-      const enrolledCourses = cartCourses.filter((course) =>
-        isEnrolled(course.id)
+    if (user && cartItems.length > 0) {
+      const enrolledItems = cartItems.filter((item) =>
+        isEnrolled(item.id)
       );
 
-      if (enrolledCourses.length > 0) {
+      if (enrolledItems.length > 0) {
         toast({
           title: "Already Enrolled",
-          description: `You are already enrolled in ${enrolledCourses.length} course(s). Please remove them from your cart before proceeding.`,
+          description: `You are already enrolled in ${enrolledItems.length} course(s). Please remove them from your cart before proceeding.`,
           variant: "default",
         });
       }
     }
-  }, [user, cartCourses, isEnrolled, cartDispatch, toast]);
+  }, [user, cartItems, isEnrolled, cartDispatch, toast]);
 
   // Redirect if cart is empty
   useEffect(() => {
-    if (!cartLoading && cartCourses.length === 0) {
+    if (!cartLoading && cartItems.length === 0) {
       navigate("/cart");
     }
-  }, [cartCourses, cartLoading, navigate]);
+  }, [cartItems, cartLoading, navigate]);
 
   useEffect(() => {
-    if (cartCourses.length > 0 && selectedCurrency) {
+    if (cartItems.length > 0 && selectedCurrency) {
       loadPricing();
     }
-  }, [cartCourses, selectedCurrency, selectedProvider, discountAmount]);
+  }, [cartItems, selectedCurrency, selectedProvider, discountAmount]);
 
   const loadPricing = async () => {
-    if (cartCourses.length === 0) return;
+    if (cartItems.length === 0) return;
     setLoadingPricing(true);
 
     try {
@@ -399,7 +400,7 @@ export default function CartCheckoutPage() {
   };
 
   const handlePayment = async () => {
-    if (cartCourses.length === 0 || !user || !pricing) return;
+    if (cartItems.length === 0 || !user || !pricing) return;
 
     if (selectedProvider === PAYMENT_PROVIDER.PAYPAL) setPaypalClicked(true);
     setIsProcessing(true);
@@ -411,17 +412,16 @@ export default function CartCheckoutPage() {
 
     try {
       // Transform cart courses into transaction line items
-      const items: TransactionLineItem[] = cartCourses.map((course) => ({
-        itemId: course.id,
-        itemType: ENROLLED_PROGRAM_TYPE.COURSE,
-        name: course.title,
-        amount: course.salePrice || course.regularPrice || 0,
-        originalAmount: course.regularPrice,
-      }));
 
       const result = await paymentService.processPayment({
         provider: selectedProvider,
-        items,
+        items: cartItems.map<TransactionLineItem>((item) => ({
+          itemId: item.id,
+          itemType: item.type === "COURSE" ? ENROLLED_PROGRAM_TYPE.COURSE : ENROLLED_PROGRAM_TYPE.BUNDLE,
+          name: item.title,
+          amount: item.salePrice || item.regularPrice || 0,
+          originalAmount: item.regularPrice,
+        })),
         finalPrice,
         userEmail: user.email!,
         userId: user.id,
@@ -576,28 +576,40 @@ export default function CartCheckoutPage() {
                     <CardHeader className="border-b border-blue-100 dark:border-zinc-800">
                       <CardTitle className="flex items-center gap-2">
                         <ShoppingCart className="h-5 w-5" />
-                        Order Summary ({cartCourses.length} courses)
+                        Order Summary ({cartItems.length} items)
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
-                      <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                        {cartCourses.map((course) => (
+                      <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                        {cartItems.map((item) => (
                           <div
-                            key={course.id}
-                            className="flex justify-between items-start gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                            key={item.id}
+                            className="flex justify-between items-center gap-2 py-2 border-b border-gray-100 dark:border-zinc-800 last:border-0"
                           >
-                            <div className="flex-1">
-                              <h4 className="text-sm font-medium line-clamp-2">
-                                {course.title}
-                              </h4>
-                            </div>
-                            <div className="text-sm font-medium whitespace-nowrap">
-                              {course.salePrice !== course.regularPrice && (
-                                <span className="line-through text-gray-400 mr-2">
-                                  ₹{course.regularPrice}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="text-sm font-medium truncate">
+                                  {item.title}
+                                </h4>
+                                <span className="text-xs bg-gray-100 dark:bg-zinc-700 px-2 py-1 rounded whitespace-nowrap">
+                                  {item.type === "COURSE" ? "Course" : "Bundle"}
                                 </span>
+                              </div>
+                            </div>
+
+                            <div className="text-sm font-medium whitespace-nowrap">
+                              {item.salePrice !== item.regularPrice ? (
+                                <>
+                                  <span className="line-through text-gray-400 text-xs mr-1">
+                                    ₹{item.regularPrice}
+                                  </span>
+                                  <span className="text-green-600 dark:text-green-400">
+                                    ₹{item.salePrice}
+                                  </span>
+                                </>
+                              ) : (
+                                <span>₹{item.regularPrice}</span>
                               )}
-                              ₹{course.salePrice || course.regularPrice}
                             </div>
                           </div>
                         ))}
@@ -677,16 +689,16 @@ export default function CartCheckoutPage() {
                             key={provider.id}
                             onClick={() => setSelectedProvider(provider.id)}
                             className={`cursor-pointer p-4 rounded-xl border transition ${isSelected
-                                ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
-                                : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
+                              ? "bg-blue-50 dark:bg-[#1f2330] border-blue-600"
+                              : "bg-white dark:bg-[#1a1a1a] border-gray-300 hover:border-blue-500 dark:border-[#3a3a3a]"
                               }`}
                           >
                             <div className="flex justify-between gap-4 flex-wrap sm:flex-nowrap">
                               <div className="flex gap-3">
                                 <div
                                   className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                      ? "bg-blue-600 border-blue-600"
-                                      : "border-gray-400 dark:border-[#555]"
+                                    ? "bg-blue-600 border-blue-600"
+                                    : "border-gray-400 dark:border-[#555]"
                                     }`}
                                 />
                                 <div>
@@ -885,8 +897,8 @@ export default function CartCheckoutPage() {
                         {couponMessage && (
                           <p
                             className={`text-sm ${isCouponValid
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
                               }`}
                           >
                             {couponMessage}

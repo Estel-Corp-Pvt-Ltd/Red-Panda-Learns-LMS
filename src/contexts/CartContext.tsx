@@ -22,6 +22,13 @@ export interface CartItem {
   refId: string;
 }
 
+export interface CartCourseItem extends CartItem {
+  id: string;
+  title: string;
+  regularPrice: number;
+  salePrice: number;
+}
+
 type Action =
   | { type: typeof CART_ACTION.ADD; item: CartItem }
   | { type: typeof CART_ACTION.REMOVE; id: string }
@@ -49,6 +56,7 @@ interface CartContextType {
   cart: CartItem[];
   cartCourses: Course[]; // fetched course details
   cartBundles: Bundle[]; // fetched bundle details
+  cartItems: CartCourseItem[]; // combined cart items with details
   loading: boolean;
   cartDispatch: React.Dispatch<Action>;
   fetchCourses: () => Promise<void>;
@@ -69,6 +77,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartBundles, setCartBundles] = useState<Bundle[]>([]);
   const [cartCourses, setCartCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  const cartItems = cart.map((item) => {
+    if (item.type === "COURSE") {
+      const course = cartCourses.find((c) => c.id === item.refId);
+      return course
+        ? {
+          id: course.id,
+          type: "COURSE",
+          title: course.title,
+          regularPrice: course.regularPrice,
+          salePrice: course.salePrice,
+        }
+        : null;
+    } else if (item.type === "BUNDLE") {
+      const bundle = cartBundles.find((b) => b.id === item.refId);
+      return bundle
+        ? {
+          id: bundle.id,
+          type: "BUNDLE",
+          title: bundle.title,
+          regularPrice: bundle.regularPrice,
+          salePrice: bundle.salePrice,
+        }
+        : null;
+    }
+    return null;
+  }).filter((item): item is CartCourseItem => item !== null);
 
   // Persist cart to localStorage whenever it changes
   useEffect(() => {
@@ -143,7 +178,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cart]);
 
   return (
-    <CartContext.Provider value={{ cart, cartCourses, cartBundles, loading, cartDispatch, fetchCourses }}>
+    <CartContext.Provider value={{ cartItems, cart, cartCourses, cartBundles, loading, cartDispatch, fetchCourses }}>
       {children}
     </CartContext.Provider>
   );
