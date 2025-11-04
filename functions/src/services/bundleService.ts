@@ -35,7 +35,7 @@ class BundleService {
     }
   }
 
-  async getBundleCourses(bundleId: string): Promise<Result<Course[]>> {
+  async getBundleCourses(bundleId: string): Promise<Result<{ bundle: Bundle, courses: Course[] }>> {
     try {
       const bundleResult = await this.getBundleById(bundleId);
       if (!bundleResult.success || !bundleResult.data) {
@@ -54,7 +54,7 @@ class BundleService {
         )
         .map(result => result.data);
 
-      return ok(validCourses);
+      return ok({ bundle: bundleResult.data, courses: validCourses });
     } catch (error) {
       return fail("Failed to fetch bundle courses");
     }

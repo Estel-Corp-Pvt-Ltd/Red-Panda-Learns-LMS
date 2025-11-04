@@ -79,8 +79,8 @@ export interface Transaction {
   exchangeRate?: number;
   paymentProvider: PaymentProvider;
   status: TransactionStatus;
-  paymentDetails: PaymentDetails;
-  metadata: TransactionMetadata;
+  paymentDetails?: PaymentDetails;
+  metadata?: TransactionMetadata;
   webhookEvents?: WebhookEvent[];
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;

@@ -23,7 +23,6 @@ export interface Order {
   status: OrderStatus;
   amount: number;
   completedAt?: Timestamp | FieldValue;
-  transactionId?: string | null;
   currency: Currency;
   metadata?: Record<string, any>;
   billingAddress: Address;
