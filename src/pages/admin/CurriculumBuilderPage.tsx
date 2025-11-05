@@ -514,14 +514,40 @@ const CurriculumBuilderPage = () => {
       const activeItem = list[idxActive];
       const overItem = list[idxOver];
 
-      // ─────────────────────────────────────────────────────────
-      // CASE 1: Dragging a TOPIC
-      // Topics can only reorder among themselves at root level
-      // ─────────────────────────────────────────────────────────
+     
       if (isTopic(activeItem)) {
-        const reordered = arrayMove(list, idxActive, idxOver);
+        const overItem = list[idxOver];
 
-        // Enforce all topics remain root-level
+        // Prevent dropping into another topic’s children
+        // Check if drop target is inside someone else’s subtree
+        if (!isTopic(overItem)) {
+          // Find the topic "block" that owns the overItem
+          const parentTopic = list.find(
+            (i) =>
+              i.type === LEARNING_UNIT.TOPIC &&
+              // Find first topic above the overItem
+              list.indexOf(i) < idxOver &&
+              // Find next topic below (if any)
+              (list.findIndex(
+                (t) =>
+                  t.type === LEARNING_UNIT.TOPIC &&
+                  list.indexOf(t) > list.indexOf(i)
+              ) > idxOver ||
+                list.findIndex(
+                  (t) =>
+                    t.type === LEARNING_UNIT.TOPIC &&
+                    list.indexOf(t) > list.indexOf(i)
+                ) === -1)
+          );
+
+          // If we found that the overItem belongs to a topic block (thus not root)
+          if (parentTopic) {
+            return prev; //  Invalid drop → ignore
+          }
+        }
+
+        //  Valid reorder: treat all topics as root-level
+        const reordered = arrayMove(list, idxActive, idxOver);
         const final = reordered.map((item) =>
           isTopic(item) ? { ...item, parentId: null, depth: 0 } : item
         );
