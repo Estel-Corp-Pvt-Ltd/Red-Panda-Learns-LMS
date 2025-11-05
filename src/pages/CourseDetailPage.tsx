@@ -421,11 +421,11 @@ export default function CourseDetailPage() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-baseline gap-2 whitespace-nowrap text-3xl">
-                    {course.salePrice && (
+                    {course.regularPrice && course.salePrice && course.salePrice !== 0 ? (
                       <span className="line-through text-muted-foreground">
                         {formatINR(course.regularPrice)}
                       </span>
-                    )}
+                    ) : (<span></span>)}
                     <span className="font-semibold text-primary">
                       {course.salePrice === 0 ? "FREE" : formatINR(course.salePrice)}
                     </span>
