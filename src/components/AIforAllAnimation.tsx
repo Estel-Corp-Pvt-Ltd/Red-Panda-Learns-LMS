@@ -5,6 +5,8 @@ import {
   Building,
   BookOpen,
   Users,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -61,6 +63,9 @@ const AIForAllAnimation = () => {
       icon: GraduationCap,
       color: brandOrange,
       gradient: "from-[#fbb03b] to-[#ff9500]",
+      description: "Empowering K-12 education with AI tools",
+      stats: "500+ Schools",
+      cta: "Explore Programs",
     },
     {
       id: 2,
@@ -69,6 +74,9 @@ const AIForAllAnimation = () => {
       icon: Building2,
       color: brandBlue,
       gradient: "from-[#29abe2] to-[#0088cc]",
+      description: "Advanced AI curriculum for higher education",
+      stats: "200+ Universities",
+      cta: "View Courses",
     },
     {
       id: 3,
@@ -77,6 +85,9 @@ const AIForAllAnimation = () => {
       icon: Briefcase,
       color: brandMagenta,
       gradient: "from-[#ff00ff] to-[#cc00cc]",
+      description: "Upskilling professionals in AI technologies",
+      stats: "10K+ Professionals",
+      cta: "Join Network",
     },
     {
       id: 4,
@@ -85,6 +96,9 @@ const AIForAllAnimation = () => {
       icon: Building,
       color: brandOrange,
       gradient: "from-[#fbb03b] to-[#ff9500]",
+      description: "Interactive AI learning for young minds",
+      stats: "50K+ Students",
+      cta: "Start Learning",
     },
     {
       id: 5,
@@ -93,6 +107,9 @@ const AIForAllAnimation = () => {
       icon: BookOpen,
       color: brandBlue,
       gradient: "from-[#29abe2] to-[#0088cc]",
+      description: "Specialized AI training for graduates",
+      stats: "15K+ Learners",
+      cta: "Discover More",
     },
     {
       id: 6,
@@ -101,6 +118,9 @@ const AIForAllAnimation = () => {
       icon: Users,
       color: brandMagenta,
       gradient: "from-[#ff00ff] to-[#cc00cc]",
+      description: "Enterprise AI solutions and consulting",
+      stats: "300+ Companies",
+      cta: "Partner With Us",
     },
   ];
 
@@ -194,6 +214,19 @@ const AIForAllAnimation = () => {
     const base = hover ? 4 : 2;
     const scaled = Math.round(size * (hover ? 0.004 : 0.0025));
     return Math.max(base, scaled);
+  };
+
+  // Helper to determine card position based on node location
+  const getCardAlignment = (nodeId: number) => {
+    // Node 1 (Schools), 2 (Universities), 6 (Businesses) - card goes down
+    // Node 3 (Industry Professionals), 4 (School Students), 5 (Grads & Undergrads) - card goes up
+    if (nodeId === 1 || nodeId === 2 || nodeId === 6) {
+      // Schools, Universities, Businesses - card goes down
+      return { top: "calc(100% + 20px)", transform: "translateX(-50%)" };
+    } else {
+      // Industry Professionals, School Students, Grads & Undergrads - card goes up
+      return { bottom: "calc(100% + 20px)", transform: "translateX(-50%)" };
+    }
   };
 
   return (
@@ -327,6 +360,7 @@ const AIForAllAnimation = () => {
           const isRevealed = revealedNodes.includes(node.id);
           const isHovered = hoveredNode === node.id;
           const Icon = node.icon;
+          const cardAlignment = getCardAlignment(node.id);
 
           return (
             <div
@@ -346,7 +380,7 @@ const AIForAllAnimation = () => {
                   ? "node-reveal 0.8s ease-out forwards"
                   : "none",
                 cursor: "pointer",
-                zIndex: 5,
+                zIndex: isHovered ? 100 : 5,
               }}
               className="ai-node"
             >
@@ -458,8 +492,176 @@ const AIForAllAnimation = () => {
                     </>
                   )}
                 </div>
+
+                {/* Floating Info Card */}
+                {isHovered && (
+                  <div
+                    className="info-card"
+                    style={{
+                      position: "absolute",
+                      ...cardAlignment,
+                      left: "50%",
+                      minWidth: "220px",
+                      maxWidth: "280px",
+                      background: "rgba(0, 0, 0, 0.95)",
+                      backdropFilter: "blur(20px)",
+                      border: `2px solid ${node.color}`,
+                      borderRadius: "16px",
+                      padding: "16px",
+                      boxShadow: `
+                        0 20px 60px ${node.color}40,
+                        0 0 40px ${node.color}20,
+                        inset 0 0 20px rgba(0, 0, 0, 0.5)
+                      `,
+                      animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+                      zIndex: 1000,
+                    }}
+                  >
+                    {/* Card Header */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "10px",
+                          background: `linear-gradient(135deg, ${node.color}40, ${node.color}20)`,
+                          border: `1.5px solid ${node.color}60`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Icon
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            color: node.color,
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: 700,
+                            color: node.color,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {node.label.replace('\n', ' ')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div
+                      style={{
+                        height: "1px",
+                        background: `linear-gradient(90deg, transparent, ${node.color}60, transparent)`,
+                        marginBottom: "12px",
+                      }}
+                    />
+
+                    {/* Description */}
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        color: "rgba(255, 255, 255, 0.8)",
+                        lineHeight: 1.5,
+                        marginBottom: "12px",
+                      }}
+                    >
+                      {node.description}
+                    </p>
+
+                    {/* Stats Badge */}
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        background: `${node.color}15`,
+                        border: `1px solid ${node.color}40`,
+                        borderRadius: "20px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <Sparkles
+                        style={{
+                          width: "14px",
+                          height: "14px",
+                          color: node.color,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: node.color,
+                        }}
+                      >
+                        {node.stats}
+                      </span>
+                    </div>
+
+                    {/* CTA Button */}
+                    <button
+                      style={{
+                        width: "100%",
+                        padding: "10px 16px",
+                        background: `linear-gradient(135deg, ${node.color}, ${node.color}cc)`,
+                        border: "none",
+                        borderRadius: "10px",
+                        color: "#fff",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        transition: "all 0.3s ease",
+                        boxShadow: `0 4px 12px ${node.color}40`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = `0 6px 20px ${node.color}60`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = `0 4px 12px ${node.color}40`;
+                      }}
+                    >
+                      {node.cta}
+                      <ArrowRight style={{ width: "16px", height: "16px" }} />
+                    </button>
+
+                    {/* Decorative corner accent */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-2px",
+                        right: "-2px",
+                        width: "40px",
+                        height: "40px",
+                        background: `radial-gradient(circle at top right, ${node.color}40, transparent 70%)`,
+                        borderRadius: "0 16px 0 0",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
+              {/* Node Label - Hidden when hovered */}
               <div
                 style={{
                   fontSize: isHovered
@@ -480,6 +682,8 @@ const AIForAllAnimation = () => {
                     ? "translate(-50%, 4px) scale(1.05)"
                     : "translate(-50%, 4px) scale(1)",
                   marginTop: "0px",
+                  opacity: isHovered ? 0 : 1, // Hide label when card is shown
+                  pointerEvents: "none",
                 }}
               >
                 {node.label}
@@ -609,6 +813,17 @@ const AIForAllAnimation = () => {
             100% { transform: rotate(360deg); }
           }
 
+          @keyframes slideUp {
+            0% {
+              opacity: 0;
+              transform: translate(-50%, 20px);
+            }
+            100% {
+              opacity: 1;
+              transform: translate(-50%, 0);
+            }
+          }
+
           .ai-node:hover .ai-node-icon {
             animation: icon-spin 2s linear infinite;
           }
@@ -672,6 +887,14 @@ const AIForAllAnimation = () => {
           .sparkle-2 { bottom: -10px; left: 50%; animation: sparkle 1.5s ease-in-out infinite 0.375s; }
           .sparkle-3 { top: 50%; left: -10px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
           .sparkle-4 { top: 50%; right: -10px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
+
+          .info-card {
+            pointer-events: auto;
+          }
+
+          .info-card button:active {
+            transform: translateY(0) scale(0.98) !important;
+          }
         `}</style>
       </div>
     </div>
