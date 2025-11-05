@@ -16,11 +16,12 @@ import {
 import { db } from '@/firebaseConfig';
 import { Cohort } from '@/types/course';
 import type { Enrollment } from '@/types/course';
+import { COLLECTION } from '@/constants';
 
 class CohortService {
 
   private async generateCohortId(): Promise<string> {
-    const counterRef = doc(db, 'counters', 'cohortCounter');
+    const counterRef = doc(db, COLLECTION.COUNTERS, 'cohortCounter');
 
     const newId = await runTransaction(db, async (transaction) => {
       const gap = Math.floor(Math.random() * (40 - 10 + 1)) + 10; // 10–40 gap

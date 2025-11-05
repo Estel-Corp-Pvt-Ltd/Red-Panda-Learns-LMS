@@ -2,7 +2,7 @@ import { collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestam
 import { db } from '@/firebaseConfig';
 import { CurrencyRate } from '@/types/transaction';
 import { Currency } from '@/types/general';
-import { CURRENCY } from '@/constants';
+import { COLLECTION, CURRENCY } from '@/constants';
 import { toDateSafe } from '@/utils/date-time';
 import { FALLBACK_CURRENCY_RATE } from "@/constants";
 
@@ -93,7 +93,7 @@ class CurrencyService {
  *    - Ensures the rate returned is the snapshot specifically created for today.
  *
  * 2. **Fallback to Latest Available**:
- *    - If today's rate is not found, queries the `Currency_Rates` collection
+ *    - If today's rate is not found, queries the `Currency Rates` collection
  *      for the latest (most recent `date`) entry matching the given base and
  *      target currencies.
  *    - This ensures that if today's snapshot hasn’t been created yet, the
@@ -120,57 +120,57 @@ class CurrencyService {
  * ```
  */
 
- private async getCachedRate(from: Currency, to: Currency): Promise<CurrencyRate | null> {
-  // 🔒 Step 1: Validate input
-  if (!from || !to) {
-    console.warn("CurrencyService - Cannot fetch cached rate. 'from' or 'to' is undefined", { from, to });
-    return null;
-  }
-
-  try {
-    const rateId = `${from}_${to}`;
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-
-    // 🔍 Step 2: Check if today's rate exists
-    const todayRef = doc(db, "Currency_Rates", `${rateId}_${today}`);
-    const todaySnap = await getDoc(todayRef);
-
-    if (todaySnap.exists()) {
-      const data = todaySnap.data();
-      return {
-        ...data,
-        createdAt: data.createdAt?.toDate?.() ?? data.createdAt,
-      } as CurrencyRate;
+  private async getCachedRate(from: Currency, to: Currency): Promise<CurrencyRate | null> {
+    // 🔒 Step 1: Validate input
+    if (!from || !to) {
+      console.warn("CurrencyService - Cannot fetch cached rate. 'from' or 'to' is undefined", { from, to });
+      return null;
     }
 
-    // 🔁 Step 3: Fallback to last known rate
-    const ratesRef = collection(db, "Currency_Rates");
+    try {
+      const rateId = `${from}_${to}`;
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-    const q = query(
-      ratesRef,
-      where("baseCurrency", "==", from),
-      where("targetCurrency", "==", to),
-      orderBy("date", "desc"),
-      limit(1)
-    );
+      // 🔍 Step 2: Check if today's rate exists
+      const todayRef = doc(db, COLLECTION.CURRENCY_RATES, `${rateId}_${today}`);
+      const todaySnap = await getDoc(todayRef);
 
-    const querySnap = await getDocs(q);
+      if (todaySnap.exists()) {
+        const data = todaySnap.data();
+        return {
+          ...data,
+          createdAt: data.createdAt?.toDate?.() ?? data.createdAt,
+        } as CurrencyRate;
+      }
 
-    if (!querySnap.empty) {
-      const latest = querySnap.docs[0].data();
-      return {
-        ...latest,
-        createdAt: latest.createdAt?.toDate?.() ?? latest.createdAt,
-      } as CurrencyRate;
+      // 🔁 Step 3: Fallback to last known rate
+      const ratesRef = collection(db, COLLECTION.CURRENCY_RATES);
+
+      const q = query(
+        ratesRef,
+        where("baseCurrency", "==", from),
+        where("targetCurrency", "==", to),
+        orderBy("date", "desc"),
+        limit(1)
+      );
+
+      const querySnap = await getDocs(q);
+
+      if (!querySnap.empty) {
+        const latest = querySnap.docs[0].data();
+        return {
+          ...latest,
+          createdAt: latest.createdAt?.toDate?.() ?? latest.createdAt,
+        } as CurrencyRate;
+      }
+
+      // ❗ No cached rate found
+      return null;
+    } catch (error) {
+      console.log("CurrencyService - Error getting cached rate:", error);
+      return null;
     }
-
-    // ❗ No cached rate found
-    return null;
-  } catch (error) {
-    console.log("CurrencyService - Error getting cached rate:", error);
-    return null;
   }
-}
 
   /**
  * Fetches a fresh exchange rate for a given currency pair directly from the external API.
@@ -236,7 +236,7 @@ class CurrencyService {
  *    - The snapshot date (for historical lookups).
  *    - The source of the data (hardcoded here as `"exchangerate-api"`).
  *    - A `createdAt` timestamp indicating when this snapshot was stored.
- * 4. Stores the document in Firestore under the `currency_rates` collection.
+ * 4. Stores the document in Firestore under the `Currency Rates` collection.
  *
  * @param from - The base currency code (e.g., "USD").
  * @param to - The target currency code (e.g., "INR").
@@ -272,7 +272,7 @@ class CurrencyService {
         createdAt: serverTimestamp()     // when this record was stored
       };
 
-      await setDoc(doc(db, "currency_rates", rateId), currencyRate);
+      await setDoc(doc(db, COLLECTION.CURRENCY_RATES, rateId), currencyRate);
     } catch (error) {
       console.error("Error caching rate:", error);
     }
@@ -315,14 +315,14 @@ class CurrencyService {
  * ```
  */
   private isCacheValid(cachedRate: CurrencyRate): boolean {
-  const now = Date.now();
-  const cachedTime = toDateSafe(cachedRate.createdAt);
+    const now = Date.now();
+    const cachedTime = toDateSafe(cachedRate.createdAt);
 
-  // Safeguard against invalid or null
-  if (!cachedTime || isNaN(cachedTime.getTime())) return false;
+    // Safeguard against invalid or null
+    if (!cachedTime || isNaN(cachedTime.getTime())) return false;
 
-  return (now - cachedTime.getTime()) < this.CACHE_DURATION;
-}
+    return (now - cachedTime.getTime()) < this.CACHE_DURATION;
+  }
 
   /**
  * Provides a static fallback exchange rate for a given currency pair.
@@ -356,7 +356,7 @@ class CurrencyService {
  */
   private getFallbackRate(from: Currency, to: Currency): number {
     return FALLBACK_CURRENCY_RATE[`${from}_${to}`] || 1;
-}
+  }
 
 
   /**
@@ -446,15 +446,15 @@ class CurrencyService {
  * ```
  */
   formatCurrency(amount: number, currency: Currency): string {
-  const formatters: Record<Currency, Intl.NumberFormat> = {
-    INR: new Intl.NumberFormat('en-IN', { style: 'currency', currency: CURRENCY.INR }),
-    USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: CURRENCY.USD }),
-    EUR: new Intl.NumberFormat('en-IE', { style: 'currency', currency: CURRENCY.EUR }), // Ireland locale
-    GBP: new Intl.NumberFormat('en-GB', { style: 'currency', currency: CURRENCY.GBP })
-  };
+    const formatters: Record<Currency, Intl.NumberFormat> = {
+      INR: new Intl.NumberFormat('en-IN', { style: 'currency', currency: CURRENCY.INR }),
+      USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: CURRENCY.USD }),
+      EUR: new Intl.NumberFormat('en-IE', { style: 'currency', currency: CURRENCY.EUR }), // Ireland locale
+      GBP: new Intl.NumberFormat('en-GB', { style: 'currency', currency: CURRENCY.GBP })
+    };
 
-  return formatters[currency].format(amount);
-}
+    return formatters[currency].format(amount);
+  }
 
 }
 

@@ -9,11 +9,23 @@ import {
     runTransaction,
     query,
     where,
-    serverTimestamp
+    serverTimestamp,
+    orderBy,
+    limit,
+    startAfter,
+    limitToLast,
+    endBefore,
+    Query,
+    WhereFilterOp
 } from 'firebase/firestore';
 
 import { db } from '@/firebaseConfig';
 import { Lesson } from '@/types/lesson';
+import { fail, ok, Result } from '@/utils/response';
+import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
+import { COLLECTION } from '@/constants';
+import { logError } from '@/utils/logger';
+import { Duration } from '@/types/general';
 
 class LessonService {
     /**
@@ -21,7 +33,7 @@ class LessonService {
      * Uses a random gap between 10 and 50 to avoid easy guessing.
      */
     private async generateLessonId(): Promise<string> {
-        const counterRef = doc(db, 'counters', 'lessonCounter');
+        const counterRef = doc(db, COLLECTION.COUNTERS, 'lessonCounter');
 
         const newId = await runTransaction(db, async (transaction) => {
             const gap = Math.floor(Math.random() * (50 - 10 + 1)) + 10; // 10–50 gap
@@ -73,6 +85,7 @@ class LessonService {
 
             const lesson: Lesson = {
                 id: lessonId,
+                courseId: data.courseId,
                 title: data.title,
                 type: data.type,
                 description: data.description || '',
@@ -114,7 +127,7 @@ class LessonService {
   * });
   */
 
-    async updateLesson(lessonId: string, updates: Partial<Lesson>): Promise<void> {
+    async updateLesson(lessonId: string, updates: Partial<Lesson>): Promise<Result<void>> {
         try {
             const lessonRef = doc(db, "Lessons", lessonId);
             const lessonDoc = await getDoc(lessonRef);
@@ -140,9 +153,10 @@ class LessonService {
             }
 
             await updateDoc(lessonRef, updateData);
+            return ok(null);
         } catch (error) {
             console.error("LessonService - Error updating lesson:", error);
-            throw new Error("Failed to update lesson");
+            return fail("Failed to update lesson");
         }
     }
 
@@ -306,6 +320,150 @@ class LessonService {
         } catch (error) {
             console.error(`LessonService - Error deleting lesson:`, error);
             throw new Error('Failed to delete lesson');
+        }
+    }
+
+    async getLessons(
+        filters?: {
+            field: keyof Lesson;
+            op: WhereFilterOp;
+            value: any;
+        }[],
+        options: PaginationOptions<Lesson> = {}
+    ): Promise<Result<PaginatedResult<Lesson>>> {
+        try {
+            const {
+                limit: itemsPerPage = 25,
+                orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+                pageDirection = 'next',
+                cursor = null
+            } = options;
+
+            let q: Query = collection(db, COLLECTION.LESSONS);
+
+            // Apply filters if provided
+            if (filters && filters.length > 0) {
+                const whereClauses = filters.map((f) =>
+                    where(f.field as string, f.op, f.value)
+                );
+                q = query(q, ...whereClauses);
+            }
+
+            // Apply ordering
+            const { field, direction } = orderByOption;
+
+            // For pagination, we need to handle different scenarios
+            if (pageDirection === 'previous' && cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    endBefore(cursor),
+                    limitToLast(itemsPerPage)
+                );
+            } else if (cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    startAfter(cursor),
+                    limit(itemsPerPage)
+                );
+            } else {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    limit(itemsPerPage)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+            const documents = querySnapshot.docs;
+
+            if (pageDirection === 'previous') {
+                documents.reverse();
+            }
+
+            const lessons = documents.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    courseId: data.courseId,
+                    title: data.title,
+                    type: data.type,
+                    description: data.description,
+                    embedUrl: data.embedUrl,
+                    duration: data.duration,
+                    createdAt: data.createdAt?.toDate?.() || data.createdAt,
+                    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+                } as Lesson;
+            });
+
+            const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+            const hasPreviousPage = cursor !== null;
+            const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+            const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+            return ok({
+                data: lessons,
+                hasNextPage,
+                hasPreviousPage,
+                nextCursor,
+                previousCursor
+            });
+        } catch (error) {
+            console.error('LessonService - Error fetching lessons:', error);
+            return fail("Error fetching lessons");
+        }
+    }
+
+    /**
+     * Fetches all lesson descriptions and calculates the total duration for a given course.
+     *
+     * @param courseId - The unique identifier of the course whose lesson details should be retrieved.
+     * @returns {Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>>} 
+     * A promise resolving to an object containing:
+     *  - `descriptions`: a map of lessonId → description
+     *  - `totalDuration`: the total combined duration of all lessons ({ hours, minutes })
+     *
+     * @example
+     * const result = await lessonService.getLessonDetailsByCourseId('course_123');
+     * if (result.ok) {
+     *   console.log(result.value.descriptions); // { lessonId1: "Intro to AI", lessonId2: "Neural Networks" }
+     *   console.log(result.value.totalDuration); // { hours: 3, minutes: 45 }
+     * }
+     */
+    async getLessonDetailsByCourseId(
+        courseId: string
+    ): Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>> {
+        try {
+            const lessonsRef = collection(db, COLLECTION.LESSONS);
+            const q = query(lessonsRef, where("courseId", "==", courseId));
+            const querySnapshot = await getDocs(q);
+
+            const descriptions: Record<string, string> = {};
+            let totalMinutes = 0;
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const lessonId = doc.id;
+
+                if (typeof data.description === "string" && data.description.trim().length > 0) {
+                    descriptions[lessonId] = data.description;
+                }
+
+                if (data.duration && typeof data.duration.hours === "number" && typeof data.duration.minutes === "number") {
+                    totalMinutes += data.duration.hours * 60 + data.duration.minutes;
+                }
+            });
+
+            // ✅ Convert totalMinutes → hours + minutes
+            const totalDuration: Duration = {
+                hours: Math.floor(totalMinutes / 60),
+                minutes: totalMinutes % 60,
+            };
+            return ok({ descriptions, totalDuration });
+        } catch (error) {
+            logError("LessonService.getLessonDescriptionsByCourseId", error);
+            return fail("Error fetching lesson descriptions and duration by courseId");
         }
     }
 }

@@ -385,7 +385,8 @@ export const COLLECTION = {
   TRANSACTIONS: "Transactions",
   COUNTERS: "Counters",
   LEARNING_PROGRESS: "LearningProgress",
-  ENROLLMENTS: "Enrollments"
+  ENROLLMENTS: "Enrollments",
+  CURRENCY_RATES: "CurrencyRates"
 } as const;
 
 export const ATTRIBUTE_TYPE = {

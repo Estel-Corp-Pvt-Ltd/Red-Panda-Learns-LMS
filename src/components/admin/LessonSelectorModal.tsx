@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreateLessonModal } from "./AddLesson";
 
 interface LessonSelectModalProps {
+  courseId: string;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (selectedLessons: Lesson[]) => void;
@@ -27,6 +28,7 @@ export const LessonSelectorModal = ({
   onClose,
   onConfirm,
   excludedLessonIds,
+  courseId,
 }: LessonSelectModalProps) => {
   const { toast } = useToast();
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -176,6 +178,7 @@ export const LessonSelectorModal = ({
         </DialogContent>
       </Dialog>
       <CreateLessonModal
+        courseId={courseId}
         isOpen={isCreateLessonOpen}
         onClose={() => setIsCreateLessonOpen(false)}
         onLessonCreated={(lesson) => {

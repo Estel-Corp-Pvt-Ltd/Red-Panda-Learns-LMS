@@ -39,7 +39,7 @@ class AssignmentService {
    * starting from 60000000, with a random gap between 5 and 20.
    */
   private async generateAssignmentId(): Promise<string> {
-    const counterRef = doc(db, 'counters', 'assignmentCounter');
+    const counterRef = doc(db, COLLECTION.COUNTERS, 'assignmentCounter');
 
     const newId = await runTransaction(db, async (transaction) => {
       const gap = Math.floor(Math.random() * (20 - 5 + 1)) + 5;
