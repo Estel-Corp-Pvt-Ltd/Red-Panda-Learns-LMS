@@ -35,11 +35,13 @@ import { LEARNING_UNIT } from "@/constants";
 import { LessonImportModal } from "@/components/admin/LessonImportModal";
 import { EditLessonModal } from "@/components/admin/LessonEditModel";
 import AssignmentModal from "@/components/AssignmentModal";
+import EditAssignmentModal from "./EditAssignmentModal";
 import { CreateLessonModal } from "@/components/admin/AddLesson";
 import type { Lesson } from "@/types/lesson";
 import type { Assignment } from "@/types/assignment";
 import { LearningUnit } from "@/types/general";
 import { Topic } from "@/types/course";
+import { useEffect,useState } from "react";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItem = {
@@ -120,6 +122,8 @@ type CurriculumTabProps = {
   firstLessonId: string | null;
 };
 
+
+
 // ─── Component ─────────────────────────────────────────────
 const CurriculumTab = ({
   title,
@@ -157,6 +161,8 @@ const CurriculumTab = ({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+ const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
+
 
   return (
     <>
@@ -188,14 +194,14 @@ const CurriculumTab = ({
 
             {/* Preview */}
             <Link
-                               to={`/course/${courseId}/lesson/${firstLessonId}`}
-                               target="_blank"
-                             >
-                               <Button size="sm" className="flex items-center gap-1">
-                                 <Eye className="h-4 w-4" />
-                                 Preview Course
-                               </Button>
-                             </Link>
+              to={`/course/${courseId}/lesson/${firstLessonId}`}
+              target="_blank"
+            >
+              <Button size="sm" className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                Preview Course
+              </Button>
+            </Link>
           </div>
         </CardHeader>
 
@@ -219,7 +225,7 @@ const CurriculumTab = ({
                     depth={item.depth}
                   >
                     <div className="flex items-center justify-between w-full group">
-                      {/* Name and icon */}
+                      {/* ───── Left: icon + title ───────────── */}
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {item.type === LEARNING_UNIT.TOPIC && (
                           <FolderOpen className="h-6 w-6 text-primary" />
@@ -231,46 +237,52 @@ const CurriculumTab = ({
                           <NotepadText className="h-6 w-6 text-blue-500" />
                         )}
 
-                        {/* Editable Title */}
-                        {editingItemId === item.id ? (
-                          <Input
-                            value={newItemName}
-                            onChange={(e) => setNewItemName(e.target.value)}
-                            onBlur={() => updateItemName(item.id, newItemName)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter")
-                                updateItemName(item.id, newItemName);
-                            }}
-                            className="flex-1 min-w-0"
-                            autoFocus
-                          />
-                        ) : item.type === LEARNING_UNIT.ASSIGNMENT ||
-                          item.type === LEARNING_UNIT.LESSON ? (
+                        {/* ───── Title Logic ───────────── */}
+                        {item.type === LEARNING_UNIT.TOPIC ? (
+                          editingItemId === item.id ? (
+                            <Input
+                              value={newItemName}
+                              onChange={(e) => setNewItemName(e.target.value)}
+                              onBlur={() =>
+                                updateItemName(item.id, newItemName)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  updateItemName(item.id, newItemName);
+                              }}
+                              className="flex-1 min-w-0"
+                              autoFocus
+                            />
+                          ) : (
+                            <span
+                              className="flex-1 truncate cursor-pointer hover:underline"
+                              onClick={() => {
+                                setEditingItemId(item.id);
+                                setNewItemName(item.title);
+                              }}
+                            >
+                              {item.title}
+                            </span>
+                          )
+                        ) : item.type === LEARNING_UNIT.LESSON ? (
                           <Link
-                            to={`/admin/edit-${item.type.toLowerCase()}/${
-                              item.id
-                            }`}
+                            to={`/course/${courseId}/lesson/${item.id}`}
+                            target="_blank"
+                            className="flex-1 truncate text-foreground hover:opacity-80"
+                            style={{ textDecoration: "none" }}
                           >
                             {item.title}
                           </Link>
                         ) : (
-                          <span
-                            className="flex-1 truncate cursor-pointer hover:underline"
-                            onClick={() => {
-                              setEditingItemId(item.id);
-                              setNewItemName(item.title);
-                            }}
-                          >
-                            {item.title}
-                          </span>
+                          <span className="flex-1 truncate">{item.title}</span>
                         )}
                       </div>
 
-                      {/* Action buttons */}
+                      {/* ───── Right: Action Buttons ───────────── */}
                       <div className="flex items-center gap-1">
                         {item.type === LEARNING_UNIT.TOPIC && (
                           <>
-                            {/* Create new lesson */}
+                            {/* Add Lesson */}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -283,7 +295,7 @@ const CurriculumTab = ({
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
-                            {/* Import existing lesson */}
+                            {/* Import Lesson */}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -293,32 +305,34 @@ const CurriculumTab = ({
                             >
                               <Search className="h-4 w-4" />
                             </Button>
-                            {/* Add assignment */}
+                            {/* Add Assignment */}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setIsAssignmentModelOpen(true);
                                 setActiveParentId(item.id);
+                                setEditingItemId(null);
+                                setIsAssignmentModelOpen(true);
                               }}
                               className="opacity-0 group-hover:opacity-100"
                               title="Add Assignment"
                             >
                               <NotebookPen className="h-4 w-4" />
                             </Button>
-                             <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                  setEditingItemId(item.id);
-                                                                  setNewItemName(item.title);
-                                                                }}
-                                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                title="Rename Topic"
-                                                              >
-                                                                <Edit2 className="h-4 w-4" />
-                                                              </Button>
-                            {/* Delete topic */}
+                            {/* Rename Topic */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingItemId(item.id);
+                                setNewItemName(item.title);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Rename Topic"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            {/* Delete Topic */}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -338,8 +352,15 @@ const CurriculumTab = ({
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setEditingItemId(item.id);
-                                setIsLessonEditModelOpen(true);
+                                if (item.type === LEARNING_UNIT.LESSON) {
+                                  setEditingItemId(item.id);
+                                  setIsLessonEditModelOpen(true);
+                                } else if (
+                                  item.type === LEARNING_UNIT.ASSIGNMENT
+                                ) {
+                                  setEditingItemId(item.id);
+                                  setIsAssignmentEditModalOpen(true);
+                                }
                               }}
                               className="opacity-0 group-hover:opacity-100"
                               title="Edit"
@@ -379,24 +400,78 @@ const CurriculumTab = ({
         courseId={courseId}
         lessonId={editingItemId}
         isOpen={isLessonEditModelOpen}
-        onClose={() => setIsLessonEditModelOpen(false)}
+        onClose={() => {
+          setIsLessonEditModelOpen(false);
+        }}
+        onLessonUpdated={(lesson: Lesson) => {
+          setCurriculum((prev) => {
+            return prev.map((item) => {
+              if (item.id === lesson.id && item.type === LEARNING_UNIT.LESSON) {
+                // Ensure we're only updating lesson items
+                return {
+                  ...item,
+                  title: lesson.title,
+                } as DraggableItem;
+              }
+              return item;
+            });
+          });
+        }}
       />
 
       {isAssignmentModelOpen && (
         <AssignmentModal
-          onCancel={() => setIsAssignmentModelOpen(false)}
+          assignmentId={editingItemId} // ✅ Pass ID when editing
+          initialTitle={
+            editingItemId
+              ? curriculum.find((i) => i.id === editingItemId)?.title
+              : undefined
+          } // ✅ Pass existing title
+          onCancel={() => {
+            setIsAssignmentModelOpen(false);
+            setEditingItemId(null);
+            setActiveParentId(null); // ✅ Also clear parent
+          }}
           onSave={handleAssignment}
         />
       )}
+
+      <EditAssignmentModal
+        assignmentId={editingItemId}
+        isOpen={isAssignmentEditModalOpen}
+        onClose={() => setIsAssignmentEditModalOpen(false)}
+        onUpdated={(updatedAssignment) => {
+          // ✅ Update the curriculum list immediately
+          setCurriculum((prev) =>
+            prev.map((item) => {
+              if (
+                item.id === updatedAssignment.id &&
+                item.type === LEARNING_UNIT.ASSIGNMENT
+              ) {
+                return {
+                  ...item,
+                  title: updatedAssignment.title,
+                } as DraggableItem;
+              }
+              return item;
+            })
+          );
+        }}
+      />
 
       <CreateLessonModal
         courseId={courseId}
         isOpen={isCreateLessonOpen}
         onClose={() => setIsCreateLessonOpen(false)}
-        onLessonCreated={(lesson) => addLessonsToParent([lesson])}
+        onLessonCreated={(lesson) => {
+          // ✅ Ensure refId is set
+          addLessonsToParent([lesson]);
+        }}
       />
     </>
   );
 };
+
+
 
 export default CurriculumTab;

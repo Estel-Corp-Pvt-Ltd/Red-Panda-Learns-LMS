@@ -356,12 +356,14 @@ const CurriculumBuilderPage = () => {
     ]);
   };
 
+
+
   /** Update an item's title (topic/lesson/assignment) */
-  const updateItemName = (id: string, name: string) => {
+  const updateItemName = (itemId: string, name: string) => {
     setCurriculum((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, title: name } : i))
+      prev.map((item) => (item.id === itemId ? { ...item, title: name } : item))
     );
-    setEditingItemId(null);
+  
   };
 
   /** Delete any curriculum item */
@@ -382,9 +384,6 @@ const CurriculumBuilderPage = () => {
 
     const parentDepth = curriculum[parentIndex].depth;
 
-    // ─────────────────────────────────────────────────────────
-    // Find the LAST child of this topic
-    // ─────────────────────────────────────────────────────────
     let insertIndex = parentIndex + 1;
 
     for (let i = parentIndex + 1; i < curriculum.length; i++) {
@@ -402,6 +401,7 @@ const CurriculumBuilderPage = () => {
 
     const newItems = lessons.map((l) => ({
       id: l.id,
+      refId: l.id, // ✅ Add refId for consistency
       title: l.title,
       type: LEARNING_UNIT.LESSON,
       depth: parentDepth + 1,
@@ -414,43 +414,75 @@ const CurriculumBuilderPage = () => {
     setIsLessonSelectorModalOpen(false);
   };
 
-  /** Add new assignment under active topic */
+  /** Add new assignment or update existing one under active topic */
+  /** Add new assignment or update existing one */
   const handleAssignment = (assignment: Assignment) => {
-    if (!activeParentId) return;
+    setCurriculum((prev) => {
+      // ─────────────────────────────────────────────────────────
+      // ✅ CHECK IF EDITING EXISTING ASSIGNMENT
+      // ─────────────────────────────────────────────────────────
+      const existingIndex = prev.findIndex((i) => i.id === assignment.id);
 
-    const parentIndex = curriculum.findIndex((i) => i.id === activeParentId);
-    if (parentIndex === -1) return;
-
-    const parentDepth = curriculum[parentIndex].depth;
-
-   
-    let insertIndex = parentIndex + 1; // Default: right after parent
-
-    for (let i = parentIndex + 1; i < curriculum.length; i++) {
-      const item = curriculum[i];
-
-      // If this item belongs to our parent, update insert position
-      if (item.parentId === activeParentId) {
-        insertIndex = i + 1;
+      if (existingIndex !== -1) {
+        // ✅ UPDATE MODE: Just update the title
+        return prev.map((item) =>
+          item.id === assignment.id
+            ? { ...item, title: assignment.title }
+            : item
+        );
       }
-      // If we hit a topic or item at same/lower depth, stop searching
-      else if (item.depth <= parentDepth || item.type === LEARNING_UNIT.TOPIC) {
-        break;
+
+      // ─────────────────────────────────────────────────────────
+      // ✅ CREATE MODE: Insert under active parent
+      // ─────────────────────────────────────────────────────────
+      if (!activeParentId) {
+        toast({
+          title: "Error",
+          description: "No topic selected",
+          variant: "destructive",
+        });
+        return prev;
       }
-    }
 
-    const newAssignment = {
-      id: assignment.id,
-      title: assignment.title,
-      type: LEARNING_UNIT.ASSIGNMENT,
-      depth: parentDepth + 1,
-      parentId: activeParentId,
-    };
+      const parentIndex = prev.findIndex((i) => i.id === activeParentId);
+      if (parentIndex === -1) return prev;
 
-    const newCurriculum = [...curriculum];
-    newCurriculum.splice(insertIndex, 0, newAssignment);
-    setCurriculum(newCurriculum);
+      const parentDepth = prev[parentIndex].depth;
+
+      // Find insert position (after last child of parent)
+      let insertIndex = parentIndex + 1;
+
+      for (let i = parentIndex + 1; i < prev.length; i++) {
+        const item = prev[i];
+
+        if (item.parentId === activeParentId) {
+          insertIndex = i + 1;
+        } else if (
+          item.depth <= parentDepth ||
+          item.type === LEARNING_UNIT.TOPIC
+        ) {
+          break;
+        }
+      }
+
+      const newAssignment = {
+        id: assignment.id,
+        refId: assignment.id,
+        title: assignment.title,
+        type: LEARNING_UNIT.ASSIGNMENT,
+        depth: parentDepth + 1,
+        parentId: activeParentId,
+      };
+
+      const newCurriculum = [...prev];
+      newCurriculum.splice(insertIndex, 0, newAssignment);
+      return newCurriculum;
+    });
+
+    // ✅ Clean up modal state
     setIsAssignmentModelOpen(false);
+    setEditingItemId(null);
+    setActiveParentId(null);
   };
   /** Enforce hierarchy and re-index after drag & drop */
   const handleDragEnd = (event: DragEndEvent) => {
@@ -458,7 +490,6 @@ const CurriculumBuilderPage = () => {
 
     // Early exit: no valid drop target or dropped on self
     if (!over || active.id === over.id) return;
-
 
     const activeId = String(active.id);
     const overId = String(over.id);
@@ -495,7 +526,6 @@ const CurriculumBuilderPage = () => {
           isTopic(item) ? { ...item, parentId: null, depth: 0 } : item
         );
 
-  
         if (JSON.stringify(prev) !== JSON.stringify(final)) {
           queueMicrotask(() => saveCurriculumStructure());
         }
