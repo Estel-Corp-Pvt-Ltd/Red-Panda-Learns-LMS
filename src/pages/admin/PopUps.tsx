@@ -351,7 +351,8 @@ const AdminPopUps: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={saving} className="flex items-center gap-2">
+                  <Button type="submit" disabled={saving} className="flex items-center gap-2  "  variant="pill"
+                  size="sm">
                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                     {isEditing ? "Update Pop-up" : "Add Pop-up"}
                   </Button>
