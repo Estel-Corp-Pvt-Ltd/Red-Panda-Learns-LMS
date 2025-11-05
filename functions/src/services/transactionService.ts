@@ -1,3 +1,4 @@
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import { ok, Result, fail } from '../utils/response';
@@ -53,7 +54,7 @@ class TransactionService {
 
       const transaction: Transaction = {
         id: transactionId,
-        orderNumber: data.orderNumber,
+        orderId: data.orderId,
         userId: data.userId,
         items: data.items,
         type: data.type,
@@ -80,21 +81,28 @@ class TransactionService {
     }
   }
 
-  async updateTransactionStatus(
-    transactionId: string,
+  async updateTransactionStatusByOrderId(
+    orderId: string,
     status: string,
     paymentDetails?: PaymentDetails,
     reasonForFailure?: string
   ): Promise<Result<void>> {
     try {
-      const transactionRef = db.collection(COLLECTION.TRANSACTIONS).doc(transactionId);
-      const snapshot = await transactionRef.get();
+      // Find the transaction by orderId field
+      const transactionsRef = db.collection(COLLECTION.TRANSACTIONS);
+      const snapshot = await transactionsRef
+        .where('orderId', '==', orderId)
+        .limit(1)
+        .get();
 
-      if (!snapshot.exists) {
-        return fail(`Transaction ${transactionId} not found`);
+      if (snapshot.empty) {
+        return fail(`Transaction with orderId ${orderId} not found`);
       }
 
-      const existingData = snapshot.data();
+      const transactionRef = snapshot.docs[0].ref;
+      const transactionId = snapshot.docs[0].id;
+      const existingData = snapshot.docs[0].data();
+
       const updateData: any = {
         status,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -120,8 +128,16 @@ class TransactionService {
 
       await transactionRef.update(updateData);
 
+      functions.logger.info(`✅ Transaction status updated`, {
+        orderId,
+        transactionId,
+        status,
+        previousStatus: existingData?.status
+      });
+
       return ok(undefined);
     } catch (error: any) {
+      functions.logger.error("❌ Failed to update transaction status:", error, { orderId, status });
       return fail("Failed to update transaction status");
     }
   }
@@ -242,30 +258,31 @@ class TransactionService {
     }
   }
 
-  // Refund method
-  async refundTransaction(transactionId: string, refundAmount?: number): Promise<Result<void>> {
-    try {
-      const transactionResult = await this.getTransaction(transactionId);
-      if (!transactionResult.success || !transactionResult.data) {
-        return fail("Transaction not found");
-      }
+  // Refund method (need to create transaction record for refund)
 
-      const transaction = transactionResult.data;
+  // async refundTransaction(transactionId: string, refundAmount?: number): Promise<Result<void>> {
+  //   try {
+  //     const transactionResult = await this.getTransaction(transactionId);
+  //     if (!transactionResult.success || !transactionResult.data) {
+  //       return fail("Transaction not found");
+  //     }
 
-      // Implement refund logic based on payment provider
-      // This is a placeholder - implement actual refund logic
-      await this.updateTransactionStatus(
-        transactionId,
-        "REFUNDED",
-        undefined,
-        `Refund processed for amount: ${refundAmount || transaction.amount}`
-      );
+  //     const transaction = transactionResult.data;
 
-      return ok(undefined);
-    } catch (error: any) {
-      return fail("Failed to refund transaction");
-    }
-  }
+  //     // Implement refund logic based on payment provider
+  //     // This is a placeholder - implement actual refund logic
+  //     await this.updateTransactionStatus(
+  //       transactionId,
+  //       "REFUNDED",
+  //       undefined,
+  //       `Refund processed for amount: ${refundAmount || transaction.amount}`
+  //     );
+
+  //     return ok(undefined);
+  //   } catch (error: any) {
+  //     return fail("Failed to refund transaction");
+  //   }
+  // }
 }
 
 export const transactionService = new TransactionService();

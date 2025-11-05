@@ -72,6 +72,37 @@ class OrderService {
     }
   }
 
+  async getOrderByProviderId(providerOrderId: string): Promise<Result<Order | null>> {
+    try {
+      const ordersRef = db
+        .collection(COLLECTION.ORDERS)
+        .where("providerOrderId", "==", providerOrderId)
+        .limit(1);
+
+      const snapshot = await ordersRef.get();
+
+      if (snapshot.empty) {
+        functions.logger.warn(`Order with providerOrderId ${providerOrderId} not found`);
+        return fail("Failed to fetch order by provider ID");
+      }
+
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      const order: Order = {
+        ...data,
+        orderId: doc.id,
+        createdAt: data?.createdAt?.toDate(),
+        updatedAt: data?.updatedAt?.toDate(),
+        completedAt: data?.completedAt?.toDate(),
+      } as Order;
+
+      return ok(order);
+    } catch (error: any) {
+      functions.logger.error('Error fetching order by provider ID:', error);
+      return fail("Failed to fetch order by provider ID");
+    }
+  }
+
   async getOrdersByUser(userId: string): Promise<Result<Order[]>> {
     try {
       const ordersRef = db.collection(COLLECTION.ORDERS);

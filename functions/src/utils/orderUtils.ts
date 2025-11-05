@@ -68,7 +68,7 @@ export const initiateOrder = async (userId: string, providerOrderId: string, pay
 
   // Fix: Add the missing required fields
   const transactionResult = await transactionService.createTransaction({
-    orderNumber: order.data,
+    orderId: order.data,
     userId: userId,
     items: itemsDetails,
     type: TRANSACTION_TYPE.PAYMENT,

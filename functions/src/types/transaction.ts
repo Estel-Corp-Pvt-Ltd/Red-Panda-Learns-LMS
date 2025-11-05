@@ -29,6 +29,8 @@ export type RazorpayPaymentDetails = {
   signature?: string;
   method?: string;
   bank?: string;
+  vpa?: string;
+  acquirerData?: any;
   wallet?: string;
   timestamp?: ProviderTimestamp;
 };
@@ -67,7 +69,7 @@ export interface TransactionLineItem {
 
 export interface Transaction {
   id: string; // internal transaction ID (UUID)
-  orderNumber: string;
+  orderId: string;
   userId: string;
   items: TransactionLineItem[];
   parentTransactionId?: string; // if refund, points to original payment

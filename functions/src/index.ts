@@ -3,7 +3,7 @@ import { verifyPayment } from './handlers/verifyPayment';
 import { verifyRecaptcha } from './handlers/verifyRecaptcha';
 import { createPaypalOrder } from './handlers/createPaypalOrder';
 import { capturePaypalOrder } from './handlers/capturePaypalOrder';
-import { paymentIntent } from './handlers/paymentIntent';
+import { razorpayWebhook } from './handlers/razorpayWebhook';
 import { sendMailWorker } from './workers/sendMailWorker';
 
 export {
@@ -12,6 +12,6 @@ export {
   verifyRecaptcha,
   createPaypalOrder,
   capturePaypalOrder,
-  paymentIntent,
+  razorpayWebhook,
   sendMailWorker
 };
