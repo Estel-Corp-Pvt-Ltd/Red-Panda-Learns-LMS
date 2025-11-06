@@ -152,6 +152,7 @@ class OrderService {
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         provider: data.provider,
+        promoCode: data.promoCode,
         providerOrderId: data.providerOrderId,
         currency: data.currency,
         metadata: data.metadata || {},

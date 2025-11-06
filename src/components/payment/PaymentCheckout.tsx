@@ -348,9 +348,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
             <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white">
               Complete Your Enrollment
             </h1>
-            <p className="text-muted-foreground dark:text-gray-400">
-              You're enrolling in {items.length} course(s)
-            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
@@ -385,9 +382,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                         <div className="text-sm font-medium whitespace-nowrap">
                           {item.amount !== item.originalAmount ? (
                             <>
-                              <span className="line-through text-gray-400 text-xs mr-1">
-                                ₹{item.originalAmount}
-                              </span>
+                              {item.originalAmount && (
+                                <span className="line-through text-gray-400 text-xs mr-1">
+                                  ₹{item.originalAmount}
+                                </span>
+                              )}
                               <span className="text-green-600 dark:text-green-400">
                                 ₹{item.amount}
                               </span>

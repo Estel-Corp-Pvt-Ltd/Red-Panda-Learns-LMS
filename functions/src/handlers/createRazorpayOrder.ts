@@ -87,7 +87,7 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       originalAmount,
       originalAmount,
       itemsDetails,
-      1
+      promoCode
     );
     if (!orderId) {
       throw new Error("Failed to create order");

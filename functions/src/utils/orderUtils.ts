@@ -44,7 +44,7 @@ export const getItemsDetails = async (items: OrderItem[]) => {
 };
 
 
-export const initiateOrder = async (userId: string, providerOrderId: string, paymentData: PaymentRequest, originalAmount: number, payAmount: number, itemsDetails: ItemsDetails[], exchangedRate: number) => {
+export const initiateOrder = async (userId: string, providerOrderId: string, paymentData: PaymentRequest, originalAmount: number, payAmount: number, itemsDetails: ItemsDetails[], promoCode?: string) => {
   const { provider, selectedCurrency, billingAddress } = paymentData;
 
   const order = await orderService.createOrder({
@@ -55,6 +55,7 @@ export const initiateOrder = async (userId: string, providerOrderId: string, pay
     providerOrderId: providerOrderId,
     amount: payAmount,
     currency: selectedCurrency,
+    promoCode: promoCode,
     metadata: {},
     billingAddress: billingAddress as Address,
   });

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CART_ACTION } from "@/constants";
 import { useNavigate } from "react-router-dom";
-// Optional: If you have a CardFooter or Separator in your UI kit, you can import and use them too.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const CartPage: React.FC = () => {
@@ -20,16 +19,12 @@ const CartPage: React.FC = () => {
 
   // Calculate totals and savings
   useEffect(() => {
-    if (!cartCourses || cartCourses.length === 0) {
-      setTotalAmount(0);
-      setRegularTotal(0);
-      setSavings(0);
-      return;
-    }
-
-    const regTotal = cartCourses.reduce((sum, c) => sum + (c.regularPrice ?? 0), 0);
+    const regTotal = cartCourses.reduce((sum, c) => sum + (c.regularPrice ?? 0), 0) + cartBundles.reduce((sum, b) => sum + (b.regularPrice ?? 0), 0);
     const saleTotal = cartCourses.reduce(
       (sum, c) => sum + (c.salePrice ?? c.regularPrice ?? 0),
+      0
+    ) + cartBundles.reduce(
+      (sum, b) => sum + (b.salePrice ?? b.regularPrice ?? 0),
       0
     );
 

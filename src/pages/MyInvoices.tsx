@@ -227,9 +227,9 @@ const MyInvoicesPage = () => {
   const handleViewItem = (item: TransactionLineItem) => {
     // Navigate to the course/bundle detail page
     if (item.itemType === 'COURSE') {
-      navigate(`/courses/${item.itemId}`);
+      navigate(`/course/${item.itemId}`);
     } else if (item.itemType === 'BUNDLE') {
-      navigate(`/bundles/${item.itemId}`);
+      navigate(`/bundle/${item.itemId}`);
     }
   };
 
@@ -392,7 +392,6 @@ const MyInvoicesPage = () => {
                     <TableRow>
                       <TableHead className="w-[120px]">Invoice ID</TableHead>
                       <TableHead className="w-[250px]">Items</TableHead>
-                      <TableHead className="w-[100px]">Type</TableHead>
                       <TableHead className="w-[120px]">Amount</TableHead>
                       <TableHead className="w-[120px]">Date</TableHead>
                       <TableHead className="w-[100px]">Status</TableHead>
@@ -451,15 +450,6 @@ const MyInvoicesPage = () => {
                                       </div>
                                     )}
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {invoice.items.map((item, index) => (
-                                <div key={index}>
-                                  {getItemTypeBadge(item.itemType)}
                                 </div>
                               ))}
                             </div>

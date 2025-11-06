@@ -1,6 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { OrderStatus, Currency } from "./general";
-import { AddressType } from "./general";
+import { AddressType, PaymentProvider } from "./general";
 import { TransactionLineItem } from "./transaction";
 
 export interface Address {
@@ -23,7 +23,8 @@ export interface Order {
   status: OrderStatus;
   amount: number;
   completedAt?: Timestamp | FieldValue;
-  provider: string;
+  promoCode?: string;
+  provider: PaymentProvider;
   providerOrderId: string;
   currency: Currency;
   metadata?: Record<string, any>;
