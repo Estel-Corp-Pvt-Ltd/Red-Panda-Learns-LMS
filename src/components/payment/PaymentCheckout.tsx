@@ -402,7 +402,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>{formatMoney(subtotal, selectedCurrency)}</span>
+                      <span>{formatMoney(regularTotal, selectedCurrency)}</span>
                     </div>
 
                     {savings > 0 && (
@@ -649,6 +649,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   {providers.filter((provider) => {
+                    if (!billingAddress.country) return true;
                     if (billingAddress.country === "India") {
                       return provider.id === PAYMENT_PROVIDER.RAZORPAY;
                     }
@@ -699,6 +700,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                           >
                             {config.currencies
                               .filter((currency) => {
+                                if (!billingAddress.country) return true;
                                 if (billingAddress.country === "India") {
                                   return currency === "INR";
                                 }

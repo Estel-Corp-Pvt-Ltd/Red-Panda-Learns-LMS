@@ -50,7 +50,7 @@ const CartPage: React.FC = () => {
     navigate("checkout");
   };
 
-  const itemCount = cartCourses?.length ?? 0;
+  const itemCount = cartCourses?.length + cartBundles?.length;
   const hasDiscount = regularTotal > totalAmount;
 
   return (
