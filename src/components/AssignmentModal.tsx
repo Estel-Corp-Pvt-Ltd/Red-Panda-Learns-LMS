@@ -35,8 +35,6 @@ interface FormErrors {
 }
 
 interface AssignmentModalProps {
-  assignmentId?: string | null;
-  initialTitle?: string;
   onSave: (assignment: Assignment) => void;
   onCancel: () => void;
 }

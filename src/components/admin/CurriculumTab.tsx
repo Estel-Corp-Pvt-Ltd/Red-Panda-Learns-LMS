@@ -421,16 +421,10 @@ const CurriculumTab = ({
 
       {isAssignmentModelOpen && (
         <AssignmentModal
-          assignmentId={editingItemId} // ✅ Pass ID when editing
-          initialTitle={
-            editingItemId
-              ? curriculum.find((i) => i.id === editingItemId)?.title
-              : undefined
-          } // ✅ Pass existing title
           onCancel={() => {
             setIsAssignmentModelOpen(false);
             setEditingItemId(null);
-            setActiveParentId(null); // ✅ Also clear parent
+            setActiveParentId(null); 
           }}
           onSave={handleAssignment}
         />
