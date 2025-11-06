@@ -2,9 +2,7 @@ import { OrderItem, PaymentRequest } from "./validators";
 import { orderService } from "../services/orderService";
 import { courseService } from "../services/courseService";
 import { bundleService } from "../services/bundleService";
-import { transactionService } from "../services/transactionService";
 import { Address } from "../types/order";
-import { TRANSACTION_STATUS, TRANSACTION_TYPE } from "../constants";
 
 interface ItemsDetails {
   itemId: string;
