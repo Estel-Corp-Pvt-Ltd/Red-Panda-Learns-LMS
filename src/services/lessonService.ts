@@ -29,6 +29,7 @@ import { ok, fail, Result } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { COLLECTION } from "@/constants";
 import { Duration } from "@/types/general";
+import { logError } from "@/utils/logger";
 /** Deep‑cleans objects before sending to Firestore */
 function deepClean(obj: any): any {
   if (obj === null || obj === undefined) return obj;
@@ -86,7 +87,7 @@ class LessonService {
       };
 
       await setDoc(doc(db, COLLECTION.LESSONS, lessonId), lesson);
-    
+
       return lesson;
     } catch (err) {
       console.error("❌ LessonService.createLesson:", err);
@@ -95,49 +96,49 @@ class LessonService {
   }
 
   // ───────────────────────────────────────────────
- async updateLesson(lessonId: string, updates: Partial<Lesson>): Promise<Result<void>> {
-  try {
-    const lessonRef = doc(db, COLLECTION.LESSONS, lessonId);
-    const lessonDoc = await getDoc(lessonRef);
+  async updateLesson(lessonId: string, updates: Partial<Lesson>): Promise<Result<void>> {
+    try {
+      const lessonRef = doc(db, COLLECTION.LESSONS, lessonId);
+      const lessonDoc = await getDoc(lessonRef);
 
-    if (!lessonDoc.exists()) {
-      throw new Error("Lesson not found");
+      if (!lessonDoc.exists()) {
+        throw new Error("Lesson not found");
+      }
+
+      const lessonData = lessonDoc.data() as Lesson;
+
+      // Base update object
+      const updateData: Partial<Lesson> = {
+        updatedAt: serverTimestamp(),
+      };
+
+      // Handle scalar fields
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.type !== undefined) updateData.type = updates.type;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.embedUrl !== undefined) updateData.embedUrl = updates.embedUrl;
+      if (updates.courseId !== undefined) updateData.courseId = updates.courseId;
+
+      // ✅ Safely handle duration (always an object)
+      const existingDuration = lessonData.duration || { hours: 0, minutes: 0 };
+      const newDuration: Partial<Duration> = updates.duration || {};
+
+
+      updateData.duration = {
+        hours: newDuration.hours ?? existingDuration.hours ?? 0,
+        minutes: newDuration.minutes ?? existingDuration.minutes ?? 0,
+      };
+
+
+
+      await updateDoc(lessonRef, updateData);
+
+      return ok(null);
+    } catch (error) {
+      console.error("❌ LessonService - Error updating lesson:", error);
+      return fail("Failed to update lesson");
     }
-
-    const lessonData = lessonDoc.data() as Lesson;
-
-    // Base update object
-    const updateData: Partial<Lesson> = {
-      updatedAt: serverTimestamp(),
-    };
-
-    // Handle scalar fields
-    if (updates.title !== undefined) updateData.title = updates.title;
-    if (updates.type !== undefined) updateData.type = updates.type;
-    if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.embedUrl !== undefined) updateData.embedUrl = updates.embedUrl;
-    if (updates.courseId !== undefined) updateData.courseId = updates.courseId;
-
-    // ✅ Safely handle duration (always an object)
-    const existingDuration = lessonData.duration || { hours: 0, minutes: 0 };
-    const newDuration: Partial<Duration> = updates.duration || {};
-
-
-    updateData.duration = {
-      hours: newDuration.hours ?? existingDuration.hours ?? 0,
-      minutes: newDuration.minutes ?? existingDuration.minutes ?? 0,
-    };
-
- 
-
-    await updateDoc(lessonRef, updateData);
-
-    return ok(null);
-  } catch (error) {
-    console.error("❌ LessonService - Error updating lesson:", error);
-    return fail("Failed to update lesson");
   }
-}
 
 
   // ───────────────────────────────────────────────
@@ -283,57 +284,60 @@ class LessonService {
       return fail("Error fetching lessons");
     }
 
-    /**
-     * Fetches all lesson descriptions and calculates the total duration for a given course.
-     *
-     * @param courseId - The unique identifier of the course whose lesson details should be retrieved.
-     * @returns {Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>>} 
-     * A promise resolving to an object containing:
-     *  - `descriptions`: a map of lessonId → description
-     *  - `totalDuration`: the total combined duration of all lessons ({ hours, minutes })
-     *
-     * @example
-     * const result = await lessonService.getLessonDetailsByCourseId('course_123');
-     * if (result.ok) {
-     *   console.log(result.value.descriptions); // { lessonId1: "Intro to AI", lessonId2: "Neural Networks" }
-     *   console.log(result.value.totalDuration); // { hours: 3, minutes: 45 }
-     * }
-     */
-    async getLessonDetailsByCourseId(
-        courseId: string
-    ): Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>> {
-        try {
-            const lessonsRef = collection(db, COLLECTION.LESSONS);
-            const q = query(lessonsRef, where("courseId", "==", courseId));
-            const querySnapshot = await getDocs(q);
 
-            const descriptions: Record<string, string> = {};
-            let totalMinutes = 0;
+  }
 
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const lessonId = doc.id;
+  /**
+    * Fetches all lesson descriptions and calculates the total duration for a given course.
+    *
+    * @param courseId - The unique identifier of the course whose lesson details should be retrieved.
+    * @returns {Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>>} 
+    * A promise resolving to an object containing:
+    *  - `descriptions`: a map of lessonId → description
+    *  - `totalDuration`: the total combined duration of all lessons ({ hours, minutes })
+    *
+    * @example
+    * const result = await lessonService.getLessonDetailsByCourseId('course_123');
+    * if (result.ok) {
+    *   console.log(result.value.descriptions); // { lessonId1: "Intro to AI", lessonId2: "Neural Networks" }
+    *   console.log(result.value.totalDuration); // { hours: 3, minutes: 45 }
+    * }
+    */
+  async getLessonDetailsByCourseId(
+    courseId: string
+  ): Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>> {
+    try {
+      const lessonsRef = collection(db, COLLECTION.LESSONS);
+      const q = query(lessonsRef, where("courseId", "==", courseId));
+      const querySnapshot = await getDocs(q);
 
-                if (typeof data.description === "string" && data.description.trim().length > 0) {
-                    descriptions[lessonId] = data.description;
-                }
+      const descriptions: Record<string, string> = {};
+      let totalMinutes = 0;
 
-                if (data.duration && typeof data.duration.hours === "number" && typeof data.duration.minutes === "number") {
-                    totalMinutes += data.duration.hours * 60 + data.duration.minutes;
-                }
-            });
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const lessonId = doc.id;
 
-            // ✅ Convert totalMinutes → hours + minutes
-            const totalDuration: Duration = {
-                hours: Math.floor(totalMinutes / 60),
-                minutes: totalMinutes % 60,
-            };
-            return ok({ descriptions, totalDuration });
-        } catch (error) {
-            logError("LessonService.getLessonDescriptionsByCourseId", error);
-            return fail("Error fetching lesson descriptions and duration by courseId");
+        if (typeof data.description === "string" && data.description.trim().length > 0) {
+          descriptions[lessonId] = data.description;
         }
+
+        if (data.duration && typeof data.duration.hours === "number" && typeof data.duration.minutes === "number") {
+          totalMinutes += data.duration.hours * 60 + data.duration.minutes;
+        }
+      });
+
+      // ✅ Convert totalMinutes → hours + minutes
+      const totalDuration: Duration = {
+        hours: Math.floor(totalMinutes / 60),
+        minutes: totalMinutes % 60,
+      };
+      return ok({ descriptions, totalDuration });
+    } catch (error) {
+      logError("LessonService.getLessonDescriptionsByCourseId", error);
+      return fail("Error fetching lesson descriptions and duration by courseId");
     }
+  }
 }
 
 export const lessonService = new LessonService();
