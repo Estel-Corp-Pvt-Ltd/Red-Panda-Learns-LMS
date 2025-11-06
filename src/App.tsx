@@ -105,7 +105,7 @@ const App = () => (
                       <Route
                         path="/dashboard"
                         element={
-                          <AuthGuard>
+                          <AuthGuard requireAuth requireStudent>
                             <DashboardPage />
                           </AuthGuard>
                         }

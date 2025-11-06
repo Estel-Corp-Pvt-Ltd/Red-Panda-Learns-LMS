@@ -1,61 +1,76 @@
 import React from "react";
 import { LayoutDashboard, FileText, Upload, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+
+interface MenuItem {
+  name: string;
+  path: string;
+  icon: React.ReactNode;
+}
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
 
-  const menuItems = [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "Invoices", icon: FileText, href: "/invoices" },
-    { label: "Submissions", icon: Upload, href: "/submissions" },
+  const menuItems: MenuItem[] = [
+    {
+      name: "Dashboard",
+      path: "/dashboard",
+      icon: <LayoutDashboard className="h-5 w-5" />
+    },
+    {
+      name: "Invoices",
+      path: "/invoices",
+      icon: <FileText className="h-5 w-5" />
+    },
+    {
+      name: "Submissions",
+      path: "/submissions",
+      icon: <Upload className="h-5 w-5" />
+    },
   ];
 
-  return (
-    <aside
-      className="w-64 flex flex-col justify-between border-r overflow-y-scroll
-        bg-gray-50 text-gray-800 shadow-md
-        dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800
-      "
-    >
-      {/* Top Section */}
-      <div>
-        {/* Navigation */}
-        <nav className="mt-4 flex flex-col space-y-1">
-          {menuItems.map(({ label, icon: Icon, href }) => {
-            const isActive = location.pathname === href;
+  const isActive = (path: string) => {
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard";
+    }
+    return location.pathname.startsWith(path);
+  };
 
-            return (
+  return (
+    <aside className="w-64 flex flex-col border-r bg-card overflow-y-auto">
+      {/* Navigation Menu */}
+      <nav className="flex-1 p-4">
+        <ul className="space-y-1">
+          {menuItems.map((item) => (
+            <li key={item.name}>
               <Link
-                key={label}
-                to={href}
-                className={`
-                  flex items-center px-6 py-3 rounded-md mx-2 text-sm font-medium
-                  transition-colors duration-200
-                  ${isActive
-                    ? "bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-white"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
-                  }
-                `}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground",
+                  isActive(item.path)
+                    ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                    : "text-muted-foreground"
+                )}
               >
-                <Icon className="w-5 h-5 mr-3" />
-                {label}
+                {item.icon}
+                <span>{item.name}</span>
               </Link>
-            );
-          })}
-        </nav>
-      </div>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       {/* Logout Button */}
-      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800">
+      <div className="p-4 border-t">
         <button
-          className="
-            flex items-center w-full text-gray-700 hover:text-red-500
-            dark:text-gray-300 dark:hover:text-red-400 transition-colors
-          "
+          className={cn(
+            "flex items-center gap-3 w-full rounded-lg px-3 py-3 text-sm font-medium transition-all",
+            "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          )}
         >
-          <LogOut className="w-5 h-5 mr-3" />
-          Logout
+          <LogOut className="h-5 w-5" />
+          <span>Logout</span>
         </button>
       </div>
     </aside>
