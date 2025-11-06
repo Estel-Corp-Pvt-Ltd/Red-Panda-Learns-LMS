@@ -151,6 +151,8 @@ class OrderService {
         items: data.items,
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
+        exchangeRate: data.exchangeRate,
+        originalAmount: data.originalAmount,
         provider: data.provider,
         promoCode: data.promoCode,
         providerOrderId: data.providerOrderId,
@@ -194,7 +196,9 @@ class OrderService {
         items: data.items,
         status: ORDER_STATUS.COMPLETED,
         provider: data.provider,
-        providerOrderId: data.providerOrderId,
+        exchangeRate: 0,
+        providerOrderId: "",
+        originalAmount: 0,
         amount: data.amount,
         currency: data.currency,
         metadata: data.metadata ?? {},
@@ -273,6 +277,17 @@ class OrderService {
       return fail("Failed to update order status", error.message);
     }
   }
-}
 
+  async updateOrderProviderOrderId(orderId: string, providerOrderId: string): Promise<Result<void>> {
+    try {
+      await db.collection(COLLECTION.ORDERS).doc(orderId).update({
+        providerOrderId,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return ok(undefined);
+    } catch (error: any) {
+      return fail("Failed to update order providerOrderId", error.message);
+    }
+  }
+}
 export const orderService = new OrderService();

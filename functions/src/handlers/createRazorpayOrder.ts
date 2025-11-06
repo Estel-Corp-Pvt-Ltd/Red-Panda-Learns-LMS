@@ -7,8 +7,10 @@ import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/https";
 import { PaymentRequestSchema } from "../utils/validators";
 import { defineSecret } from "firebase-functions/params";
-import { getItemsDetails, initiateOrder } from "../utils/orderUtils";
+import { getItemsDetails } from "../utils/orderUtils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { orderService } from "../services/orderService";
+import { ORDER_STATUS, PAYMENT_PROVIDER } from "../constants";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -36,7 +38,7 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       return;
     }
 
-    const { items, selectedCurrency, promoCode } = result.data;
+    const { items, selectedCurrency, promoCode, billingAddress } = result.data;
 
     if (promoCode) {
       functions.logger.info(`Applying promo code: ${promoCode}`);
@@ -66,6 +68,26 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
     const { itemsDetails, originalAmount } = await getItemsDetails(items);
     const amountInPaise = Math.round(originalAmount * 100);
 
+    // Create an order in database
+    const orderResult = await orderService.createOrder({
+      userId: user.uid,
+      items: itemsDetails,
+      status: ORDER_STATUS.PENDING,
+      originalAmount: originalAmount,
+      exchangeRate: 1,
+      provider: PAYMENT_PROVIDER.RAZORPAY,
+      providerOrderId: "", // to be updated after Razorpay order creation
+      amount: originalAmount,
+      currency: selectedCurrency,
+      promoCode: promoCode,
+      metadata: {},
+      billingAddress: billingAddress,
+    });
+
+    if (!orderResult.success || !orderResult.data) {
+      throw new Error("Failed to create order");
+    }
+
     const { default: Razorpay } = await import("razorpay");
     const rp = new Razorpay({
       key_id: RAZORPAY_KEY_ID.value(),
@@ -75,27 +97,19 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
     const razorpayOrder = await rp.orders.create({
       amount: amountInPaise,
       currency: selectedCurrency,
-      receipt: `${idempotencyKey.substring(0, 12)}`,
+      receipt: orderResult.data,
     });
 
     functions.logger.info("✅ Razorpay order created:", razorpayOrder);
 
-    const orderId = await initiateOrder(
-      user.uid,
-      razorpayOrder.id,
-      result.data,
-      originalAmount,
-      originalAmount,
-      itemsDetails,
-      promoCode
-    );
-    if (!orderId) {
-      throw new Error("Failed to create order");
+    const updateResult = await orderService.updateOrderProviderOrderId(orderResult.data, razorpayOrder.id);
+    if (!updateResult.success) {
+      throw new Error("Failed to update order with provider order ID");
     }
 
     const response = {
       success: true,
-      orderId: orderId,
+      orderId: orderResult.data,
       razorpayOrder: razorpayOrder,
       key_id: RAZORPAY_KEY_ID.value()
     };

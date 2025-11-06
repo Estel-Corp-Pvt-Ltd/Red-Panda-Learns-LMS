@@ -22,6 +22,8 @@ export interface Order {
   items: TransactionLineItem[];
   status: OrderStatus;
   amount: number;
+  exchangeRate: number;
+  originalAmount: number;
   completedAt?: Timestamp | FieldValue;
   promoCode?: string;
   provider: PaymentProvider;
