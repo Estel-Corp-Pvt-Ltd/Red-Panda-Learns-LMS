@@ -648,7 +648,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
-                  {providers.map((provider) => {
+                  {providers.filter((provider) => {
+                    if (billingAddress.country === "India") {
+                      return provider.id === PAYMENT_PROVIDER.RAZORPAY;
+                    }
+                    return true;
+                  }).map((provider) => {
                     const isSelected = selectedProvider === provider.id;
                     const config = PROVIDER_CONFIG[provider.id];
 
@@ -692,11 +697,19 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                             onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
                             className="px-2 py-1 text-sm border rounded bg-background"
                           >
-                            {config.currencies.map((currency) => (
-                              <option key={currency} value={currency}>
-                                {currency}
-                              </option>
-                            ))}
+                            {config.currencies
+                              .filter((currency) => {
+                                if (billingAddress.country === "India") {
+                                  return currency === "INR";
+                                }
+                                return currency !== "INR";
+                              })
+                              .map((currency) => (
+                                <option key={currency} value={currency}>
+                                  {currency}
+                                </option>
+                              ))
+                            }
                           </select>
                         </div>
                       </div>
