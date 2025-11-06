@@ -117,11 +117,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      const courseIds = cart.map((item) => item.courseId);
-      console.log(courseIds);
-      const fetchedCourses = await courseService.getCoursesByIds(courseIds);
-      console.log(fetchedCourses);
-      setCartCourses(fetchedCourses);
+     const courseIds = cart.map((item) => item.courseId).filter(Boolean);
+     if (courseIds.length > 0) {
+       const fetchedCourses = await courseService.getCoursesByIds(courseIds);
+       setCartCourses(fetchedCourses);
+     }
     } catch (error) {
       console.error("Error fetching course data:", error);
       setCartCourses([]);
