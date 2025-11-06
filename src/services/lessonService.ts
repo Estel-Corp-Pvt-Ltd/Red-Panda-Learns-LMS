@@ -282,7 +282,58 @@ class LessonService {
       console.error("❌ LessonService.getLessons:", err);
       return fail("Error fetching lessons");
     }
-  }
+
+    /**
+     * Fetches all lesson descriptions and calculates the total duration for a given course.
+     *
+     * @param courseId - The unique identifier of the course whose lesson details should be retrieved.
+     * @returns {Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>>} 
+     * A promise resolving to an object containing:
+     *  - `descriptions`: a map of lessonId → description
+     *  - `totalDuration`: the total combined duration of all lessons ({ hours, minutes })
+     *
+     * @example
+     * const result = await lessonService.getLessonDetailsByCourseId('course_123');
+     * if (result.ok) {
+     *   console.log(result.value.descriptions); // { lessonId1: "Intro to AI", lessonId2: "Neural Networks" }
+     *   console.log(result.value.totalDuration); // { hours: 3, minutes: 45 }
+     * }
+     */
+    async getLessonDetailsByCourseId(
+        courseId: string
+    ): Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>> {
+        try {
+            const lessonsRef = collection(db, COLLECTION.LESSONS);
+            const q = query(lessonsRef, where("courseId", "==", courseId));
+            const querySnapshot = await getDocs(q);
+
+            const descriptions: Record<string, string> = {};
+            let totalMinutes = 0;
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const lessonId = doc.id;
+
+                if (typeof data.description === "string" && data.description.trim().length > 0) {
+                    descriptions[lessonId] = data.description;
+                }
+
+                if (data.duration && typeof data.duration.hours === "number" && typeof data.duration.minutes === "number") {
+                    totalMinutes += data.duration.hours * 60 + data.duration.minutes;
+                }
+            });
+
+            // ✅ Convert totalMinutes → hours + minutes
+            const totalDuration: Duration = {
+                hours: Math.floor(totalMinutes / 60),
+                minutes: totalMinutes % 60,
+            };
+            return ok({ descriptions, totalDuration });
+        } catch (error) {
+            logError("LessonService.getLessonDescriptionsByCourseId", error);
+            return fail("Error fetching lesson descriptions and duration by courseId");
+        }
+    }
 }
 
 export const lessonService = new LessonService();

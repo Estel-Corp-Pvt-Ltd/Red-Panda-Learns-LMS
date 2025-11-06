@@ -52,7 +52,7 @@ export function BundleCard({
   const showPartialOwnership =
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
-
+    
   if (variant === "compact") {
     return (
       <Card
@@ -84,8 +84,8 @@ export function BundleCard({
               </p>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {bundle.categories.length &&
-                  bundle.categories.map((category) => (
+                {bundle.categoryIds.length &&
+                  bundle.categoryIds.map((category) => (
                     <div className="flex items-center gap-1" key={category}>
                       <Tag className="h-4 w-4" />
                       <span>{category}</span>
@@ -192,8 +192,8 @@ export function BundleCard({
         </p>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {bundle.categories && bundle.categories.length &&
-            bundle.categories.map((category) => (
+          {bundle.categoryIds && bundle.categoryIds.length &&
+            bundle.categoryIds.map((category) => (
               <div className="flex items-center gap-1" key={category}>
                 <Tag className="h-4 w-4" />
                 <span>{category}</span>

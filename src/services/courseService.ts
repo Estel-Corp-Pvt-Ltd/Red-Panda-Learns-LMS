@@ -31,7 +31,7 @@ class CourseService {
    * Uses a random gap between 10 and 50 to avoid easy guessing.
    */
   private async generateCourseId(): Promise<string> {
-    const counterRef = doc(db, 'counters', 'courseCounter');
+    const counterRef = doc(db, COLLECTION.COUNTERS, 'courseCounter');
 
     const newId = await runTransaction(db, async (transaction) => {
       const gap = Math.floor(Math.random() * (50 - 10 + 1)) + 10; // 10–50 gap
@@ -388,24 +388,24 @@ class CourseService {
    */
 
   async getAllTags(): Promise<string[]> {
-  try {
-    const querySnapshot = await getDocs(collection(db, COLLECTION.COURSES));
+    try {
+      const querySnapshot = await getDocs(collection(db, COLLECTION.COURSES));
 
-    // Extract tags from all courses
-    const allTags: string[] = querySnapshot.docs.flatMap(doc => {
-      const data = doc.data() as Course;
-      return data.tags ?? []; // in case tags is undefined
-    });
+      // Extract tags from all courses
+      const allTags: string[] = querySnapshot.docs.flatMap(doc => {
+        const data = doc.data() as Course;
+        return data.tags ?? []; // in case tags is undefined
+      });
 
-    // Make unique
-    const uniqueTags = Array.from(new Set(allTags));
+      // Make unique
+      const uniqueTags = Array.from(new Set(allTags));
 
-    return uniqueTags;
-  } catch (error) {
-    console.error('Error fetching tags:', error);
-    return [];
+      return uniqueTags;
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      return [];
+    }
   }
-}
 
 
   async getFilteredCourses(

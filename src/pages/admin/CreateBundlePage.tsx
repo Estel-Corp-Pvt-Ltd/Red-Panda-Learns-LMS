@@ -1805,6 +1805,8 @@ const handleResetFilters = () => {
                   !bundleData.description.trim()
                 }
                 className="w-full"
+                 variant="pill"
+                  size="sm"
               >
                 {loading ? "Publishing..." : "Create & Publish Bundle"}
               </Button>

@@ -37,7 +37,7 @@ class BundleService {
    * monotonically increasing integer starting from 10000000.
    *
    * The increment (gap) between consecutive IDs is a random value between 30 and 100.
-   * The last generated number is stored in Firestore (`counters/bundleCounter`) to ensure
+   * The last generated number is stored in Firestore (`Counters/bundleCounter`) to ensure
    * persistence across server restarts and to prevent ID collisions in concurrent environments.
    *
    * Uses a Firestore transaction to guarantee atomic reads and updates, ensuring safe
