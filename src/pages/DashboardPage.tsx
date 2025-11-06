@@ -98,39 +98,7 @@ export default function DashboardPage() {
       const result = await enrollmentService.getUserEnrollments(user.id);
 
       if (result.success) {
-        const data = result.data;
-
-        // Separate bundles and direct course enrollments
-        const bundles = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE);
-        const courses = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE);
-
-        // For each bundle, create virtual course enrollments
-        const bundleCourses = bundles.flatMap(bundle => {
-          if (!bundle.bundleProgress) return [];
-          return bundle.bundleProgress.map(bp => ({
-            id: `${bundle.id}_${bp.courseId}_virtual`,
-            userId: bundle.userId,
-            targetId: bp.courseId,
-            targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-            status: bundle.status,
-            role: bundle.role,
-            sourceBundleId: bundle.targetId,
-            pricingModel: bundle.pricingModel || PRICING_MODEL.PAID,
-            enrollmentDate: bundle.enrollmentDate,
-            createdAt: bundle.createdAt,
-            updatedAt: bundle.updatedAt,
-            progressSummary: {
-              percent: 0,
-              completedCourses: 0,
-              totalCourses: 1
-            }
-          })) as Enrollment[];
-        });
-
-        // Merge direct course enrollments + virtual course enrollments
-        const allCourses = [...courses, ...bundleCourses];
-
-        setEnrollments(allCourses);
+        setEnrollments(result.data);
       }
       else {
         setEnrollments([]);

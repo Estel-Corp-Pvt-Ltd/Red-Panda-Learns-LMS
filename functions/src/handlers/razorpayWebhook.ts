@@ -6,7 +6,7 @@ import { razorpayWebhookMiddleware } from "../middlewares/razorpayWebhook";
 import { transactionService } from "../services/transactionService";
 import { orderService } from "../services/orderService";
 import { enrollmentService } from "../services/enrollService";
-import { TRANSACTION_STATUS, ORDER_STATUS } from "../constants";
+import { TRANSACTION_STATUS, ORDER_STATUS, TRANSACTION_TYPE } from "../constants";
 import { rawBodyMiddleware } from "../middlewares/rawBody";
 import { defineSecret } from "firebase-functions/params";
 
@@ -27,6 +27,7 @@ interface RazorpayWebhookPayload {
         wallet?: string;
         vpa?: string;
         acquirer_data?: any;
+        notes?: string[];
       };
     };
     order: {
@@ -49,11 +50,7 @@ const razorpayWebhookHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    functions.logger.info("🔔 Razorpay Webhook Received:", {
-      event: webhookPayload.event,
-      orderId: webhookPayload.payload.order.entity.id,
-      paymentId: webhookPayload.payload.payment.entity.id
-    });
+    functions.logger.info("🔔 Razorpay Webhook Received:", webhookPayload);
 
     // Process different webhook events
     switch (webhookPayload.event) {
@@ -69,6 +66,10 @@ const razorpayWebhookHandler = async (req: Request, res: Response) => {
         await handleOrderPaid(webhookPayload);
         break;
 
+      case "order.expired":
+        await handleOrderExpired(webhookPayload);
+        break;
+
       default:
         functions.logger.info(`ℹ️ Unhandled webhook event: ${webhookPayload.event}`);
     }
@@ -82,43 +83,74 @@ const razorpayWebhookHandler = async (req: Request, res: Response) => {
 
 // Handle successful payment capture
 async function handlePaymentCaptured(payload: RazorpayWebhookPayload) {
-  const { payment, order } = payload.payload;
+  const { payment } = payload.payload;
 
   functions.logger.info("💰 Payment Captured:", {
     paymentId: payment.entity.id,
-    orderId: order.entity.id,
+    orderId: payment.entity.order_id,
     amount: payment.entity.amount,
     currency: payment.entity.currency,
   });
 
-  // Update order status
-  await orderService.updateOrderStatus(order.entity.id, ORDER_STATUS.COMPLETED);
+  const userOrder = await orderService.getOrderByProviderId(payment.entity.order_id);
 
-  // Enroll user in courses/bundles
-  await enrollUserInPurchasedItems(order.entity.id);
+  if (!userOrder.success || !userOrder.data) {
+    functions.logger.warn("Order not found for provider order ID:", payment.entity.order_id);
+    return;
+  }
+
+  await transactionService.createTransaction({
+    orderId: userOrder.data.orderId,
+    userId: userOrder.data.userId,
+    type: TRANSACTION_TYPE.PAYMENT,
+    amount: payment.entity.amount / 100,
+    currency: payment.entity.currency,
+    paymentProvider: "RAZORPAY",
+    status: TRANSACTION_STATUS.COMPLETED,
+    paymentDetails: {
+      method: payment.entity.method,
+      bank: payment.entity.bank,
+      wallet: payment.entity.wallet,
+      vpa: payment.entity.vpa,
+      acquirerData: payment.entity.acquirer_data,
+    },
+    notes: payment.entity?.notes || [],
+  });
 }
 
 // Handle failed payment
 async function handlePaymentFailed(payload: RazorpayWebhookPayload) {
-  const { payment, order } = payload.payload;
+  const { payment } = payload.payload;
 
   functions.logger.error("❌ Payment Failed:", {
     paymentId: payment.entity.id,
-    orderId: order.entity.id,
+    orderId: payment.entity.order_id,
   });
 
-  const userOrder = await orderService.getOrderByProviderId(order.entity.id);
+  const userOrder = await orderService.getOrderByProviderId(payment.entity.order_id);
 
   if (!userOrder.success || !userOrder.data) {
-    functions.logger.warn("Order not found for provider order ID:", order.entity.id);
+    functions.logger.warn("Order not found for provider order ID:", payment.entity.order_id);
     return;
   }
 
-  await orderService.updateOrderStatus(userOrder.data.orderId, ORDER_STATUS.FAILED);
-  await transactionService.updateTransactionStatusByOrderId(
-    userOrder.data.orderId,
-    TRANSACTION_STATUS.FAILED
-  );
+  await transactionService.createTransaction({
+    orderId: userOrder.data.orderId,
+    userId: userOrder.data.userId,
+    type: TRANSACTION_TYPE.PAYMENT,
+    amount: payment.entity.amount / 100,
+    currency: payment.entity.currency,
+    paymentProvider: "RAZORPAY",
+    status: TRANSACTION_STATUS.FAILED,
+    paymentDetails: {
+      method: payment.entity.method,
+      bank: payment.entity.bank,
+      wallet: payment.entity.wallet,
+      vpa: payment.entity.vpa,
+      acquirerData: payment.entity.acquirer_data,
+    },
+    notes: payment.entity?.notes || [],
+  });
 }
 
 // Handle order paid
@@ -133,11 +165,29 @@ async function handleOrderPaid(payload: RazorpayWebhookPayload) {
   }
 
   await orderService.updateOrderStatus(userOrder.data.orderId, ORDER_STATUS.COMPLETED);
-  await transactionService.updateTransactionStatusByOrderId(
-    userOrder.data.orderId,
-    TRANSACTION_STATUS.COMPLETED
-  );
+  // await transactionService.updateTransactionStatusByOrderId(
+  //   userOrder.data.orderId,
+  //   TRANSACTION_STATUS.COMPLETED
+  // );
   await enrollUserInPurchasedItems(userOrder.data.orderId);
+}
+
+async function handleOrderExpired(payload: RazorpayWebhookPayload) {
+  const { order } = payload.payload;
+
+  const userOrder = await orderService.getOrderByProviderId(order.entity.id);
+
+  if (!userOrder.success || !userOrder.data) {
+    functions.logger.warn("Order not found for provider order ID:", order.entity.id);
+    return;
+  }
+
+  functions.logger.error("❌ Order Expired:", {
+    orderId: order.entity.id,
+    userOrderId: userOrder.data.orderId,
+  });
+
+  await orderService.updateOrderStatus(userOrder.data.orderId, ORDER_STATUS.FAILED);
 }
 
 // Enroll user in purchased courses/bundles
@@ -169,7 +219,7 @@ export const razorpayWebhook = onRequest(
   },
   withMiddleware(
     rawBodyMiddleware,
-    razorpayWebhookMiddleware(RAZORPAY_WEBHOOK_SECRET.value()),
+    razorpayWebhookMiddleware(RAZORPAY_WEBHOOK_SECRET),
     razorpayWebhookHandler
   )
 );

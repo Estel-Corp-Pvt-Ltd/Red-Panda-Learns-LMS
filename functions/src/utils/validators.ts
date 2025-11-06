@@ -52,6 +52,7 @@ export const PaymentRequestSchema = z.object({
   items: z.array(ItemSchema).min(1, "At least one item is required").max(10),
   selectedCurrency: z.enum(["USD", "INR"]),
   billingAddress: AddressSchema,
+  promoCode: z.string().optional(),
 });
 
 export type PaymentRequest = z.infer<typeof PaymentRequestSchema>;

@@ -19,6 +19,7 @@ import { paypalProvider } from "./providers/paypalProvider";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { transactionService } from "./transactionService";
 import { authService } from "./authService";
+import { Result } from "@/utils/response";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -27,13 +28,6 @@ export type PaymentProviderOption = {
   currency: Currency;
   isAvailable: boolean;
   description: string;
-};
-
-export type PaymentResult = {
-  success: boolean;
-  transactionId?: string;
-  paymentId?: string;
-  error?: string;
 };
 
 class PaymentService {
@@ -122,189 +116,57 @@ class PaymentService {
   async processPayment({
     provider,
     items,
-    finalPrice,
     userEmail,
-    userId,
     selectedCurrency,
-    baseCurrency,
     billingAddress,
+    promoCode,
+    onPaymentSuccess,
   }: {
     provider: PaymentProvider;
     items: TransactionLineItem[];
-    finalPrice?: number;
     userEmail: string;
-    userId: string;
     selectedCurrency: Currency;
-    baseCurrency: Currency;
     billingAddress: Address;
-  }): Promise<PaymentResult> {
+    promoCode?: string;
+    onPaymentSuccess?: (orderId: string) => void;
+  }): Promise<Result<{ orderId: string }>> {
     try {
       if (!items || items.length === 0) {
-        return { success: false, error: "No items to purchase" };
+        return fail("No items to purchase");
       }
-
-      // // Compute subtotal from items if not provided
-      // const subtotal = items.reduce((sum, li) => sum + (li.amount ?? 0), 0);
-      // const toCharge = typeof finalPrice === "number" ? finalPrice : subtotal;
-
-      // // Price and currency conversion, fees, etc.
-      // const pricing = await this.calculatePricing(
-      //   toCharge,
-      //   selectedCurrency,
-      //   baseCurrency,
-      //   provider
-      // );
-      // // pricing: { amount, currency, originalAmount?, originalCurrency?, exchangeRate? }
-
-      // // Build a compact description for the provider/receipt
-      // const itemNames = items.map((i) => i.name || i.itemId);
-      // const displayTitle =
-      //   itemNames.length === 1
-      //     ? itemNames[0]
-      //     : `${itemNames[0]} + ${itemNames.length - 1} more`;
-
-      // // Create Order
-      // const orderResult = await orderService.createOrder({
-      //   userId,
-      //   items,
-      //   amount: pricing.amount,
-      //   currency: pricing.currency,
-      //   billingAddress,
-
-      //   metadata: {
-      //     userEmail,
-      //     userAgent:
-      //       typeof navigator !== "undefined" ? navigator.userAgent : "",
-      //     itemsSnapshot: items.map(
-      //       ({ itemId, itemType, name, amount, originalAmount }) => ({
-      //         itemId,
-      //         itemType,
-      //         name,
-      //         amount,
-      //         originalAmount,
-      //       })
-      //     ),
-      //     subtotal,
-      //     displayTitle,
-      //   },
-      //   status: ORDER_STATUS.PENDING,
-      // });
-      // if (!orderResult.success) {
-      //   console.error("Failed to create order:", orderResult.error?.message);
-      //   return;
-      // }
-
-      // const orderId = orderResult.data!;
-
-      // const transactionId = await transactionService.createTransaction({
-      //   orderNumber: orderId,
-      //   userId,
-      //   items,
-      //   type: TRANSACTION_TYPE.PAYMENT,
-      //   amount: pricing.amount,
-      //   currency: pricing.currency,
-      //   originalAmount: pricing.originalAmount,
-      //   originalCurrency: pricing.originalCurrency,
-      //   exchangeRate: pricing.exchangeRate,
-      //   paymentProvider: provider,
-      //   status: TRANSACTION_STATUS.PENDING,
-      //   paymentDetails: { orderId: "", paymentId: "" },
-      //   metadata: {
-      //     userEmail,
-      //     itemTitles: itemNames,
-      //     displayTitle,
-      //     paymentAttempts: 1,
-      //     subtotal,
-      //   },
-      // });
-
-      const idToken = await authService.getToken();
-      const response = await fetch(`${this.backendUrl}/paymentIntent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-          provider,
-          items,
-          selectedCurrency,
-          billingAddress,
-        }),
-      });
-
-      if (response.status !== 200) {
-        const errorData = await response.json();
-        console.error("Payment intent creation failed:", errorData);
-        return {
-          success: false,
-          error: errorData.error || "Payment intent creation failed",
-        };
-      }
-
-      const responseData = await response.json();
-      const { orderId, transactionId, amount } = responseData.data;
 
       // Call provider
-      let result: PaymentResult;
+      let result: Result<{ orderId: string }>;
       if (provider === PAYMENT_PROVIDER.RAZORPAY) {
         // Suggested new provider input signature
         result = await razorpayProvider.processPayment(
           items,
-          userEmail,
-          transactionId,
-          amount,
-          userId,
+          billingAddress,
           selectedCurrency,
-          orderId
+          userEmail,
+          promoCode,
+          onPaymentSuccess,
         );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
-        result = await paypalProvider.processPayment(
-          items,
-          userEmail,
-          transactionId,
-          amount,
-          userId,
-          selectedCurrency
-        );
+        // result = await paypalProvider.processPayment(
+        //   items,
+        //   userEmail,
+        //   "transactionId-placeholder",
+        //   10000, // amount,
+        //   userId,
+        //   selectedCurrency
+        // );
+        result = fail("PayPal payment not yet implemented");
       } else {
-        result = { success: false, error: "Unsupported payment provider" };
-      }
-
-      // Post-payment updates
-      if (result.success) {
-        result.transactionId = transactionId;
-
-        await orderService.updateOrder(
-          orderId,
-          result.success ? ORDER_STATUS.COMPLETED : ORDER_STATUS.FAILED,
-          transactionId
-        );
-
-        try {
-          await enrollmentService.enrollUser(userId, items);
-        } catch (err) {
-          console.error("Enrollment failed for item:", items, err);
-        }
-      } else {
-        // Mark order as failed so it doesn’t linger in PENDING
-        await orderService.updateOrder(
-          orderId,
-          ORDER_STATUS.FAILED,
-          transactionId
-        );
+        result = fail("Unsupported payment provider");
       }
 
       return result;
     } catch (error) {
       console.error(error);
-      return {
-        success: false,
-        error: "Payment processing failed. Please try again.",
-      };
+      return fail("Payment processing failed. Please try again.");
     }
   }
-
   async getTransactionHistory(userId: string) {
     return transactionService.getUserTransactions(userId);
   }

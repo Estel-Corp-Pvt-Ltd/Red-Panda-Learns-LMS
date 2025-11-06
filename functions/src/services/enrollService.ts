@@ -3,9 +3,10 @@ import * as admin from 'firebase-admin';
 import { bundleService } from './bundleService';
 import { Result, ok, fail } from '../utils/response';
 import { COLLECTION, ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '../constants';
-import { EnrolledProgramType } from '../types/general';
 import { Enrollment } from '../types/enrollment';
 import { FieldValue } from 'firebase-admin/firestore';
+import { TransactionLineItem } from '../types/transaction';
+import { courseService } from './courseService';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -13,11 +14,6 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-
-type EnrollmentItem = {
-  itemId: string;
-  itemType: EnrolledProgramType;
-};
 
 class EnrollmentService {
   /**
@@ -32,7 +28,7 @@ class EnrollmentService {
    */
   async enrollUser(
     userId: string,
-    items: EnrollmentItem[],
+    items: TransactionLineItem[],
     orderId: string
   ): Promise<Result<string[]>> {
     if (!items || items.length === 0) return ok([]);
@@ -51,6 +47,7 @@ class EnrollmentService {
             id: enrollmentId,
             userId,
             courseId: item.itemId,
+            courseName: item.name,
             bundleId: '', // Empty for course enrollments
             enrollmentDate: FieldValue.serverTimestamp(),
             status: ENROLLMENT_STATUS.ACTIVE,
@@ -68,17 +65,18 @@ class EnrollmentService {
             return fail("Bundle not found");
           }
 
-          const bundleCourseIds = bundleResult.data.courses.map(c => c.id);
+          const bundleCourses = bundleResult.data.courses;
 
           // Create individual course enrollments for each course in the bundle
-          for (const courseId of bundleCourseIds) {
-            const courseEnrollmentId = this.generateEnrollmentId(userId, courseId);
+          for (const course of bundleCourses) {
+            const courseEnrollmentId = this.generateEnrollmentId(userId, course.id);
             enrollmentIds.push(courseEnrollmentId);
 
             const courseEnrollment: Enrollment = {
               id: courseEnrollmentId,
               userId,
-              courseId: courseId,
+              courseId: course.id,
+              courseName: course.title,
               bundleId: item.itemId, // Reference to parent bundle
               enrollmentDate: FieldValue.serverTimestamp(),
               status: ENROLLMENT_STATUS.ACTIVE,
@@ -115,13 +113,10 @@ class EnrollmentService {
     if (!courseId) return fail("Invalid course ID");
 
     try {
-      const userDocRef = db.collection(COLLECTION.USERS).doc(userId);
-      const userSnap = await userDocRef.get();
-
-      if (!userSnap.exists) {
-        return fail("User does not exist");
+      const courseResult = await courseService.getCourseById(courseId);
+      if (!courseResult.success || !courseResult.data) {
+        return fail("Course not found");
       }
-
       const enrollmentId = this.generateEnrollmentId(userId, courseId);
       const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
       const enrollmentSnap = await enrollmentRef.get();
@@ -134,6 +129,7 @@ class EnrollmentService {
         id: enrollmentId,
         userId,
         courseId: courseId,
+        courseName: courseResult.data.title,
         bundleId: '', // Empty for free course
         enrollmentDate: FieldValue.serverTimestamp(),
         status: ENROLLMENT_STATUS.ACTIVE,

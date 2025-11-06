@@ -1,3 +1,4 @@
+import * as functions from "firebase-functions";
 import { Request, Response } from "express";
 import { withMiddleware } from "../middlewares";
 import { corsMiddleware } from "../middlewares/cors";
@@ -7,6 +8,7 @@ import { onRequest } from "firebase-functions/https";
 import { PaymentRequestSchema } from "../utils/validators";
 import { defineSecret } from "firebase-functions/params";
 import { getItemsDetails, initiateOrder } from "../utils/orderUtils";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -34,7 +36,11 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       return;
     }
 
-    const { items, selectedCurrency } = result.data;
+    const { items, selectedCurrency, promoCode } = result.data;
+
+    if (promoCode) {
+      functions.logger.info(`Applying promo code: ${promoCode}`);
+    }
 
     const idempotencyRef = admin
       .firestore()
@@ -51,8 +57,8 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
     // ✅ Create placeholder document immediately (avoids race conditions)
     await idempotencyRef.set({
       status: "processing",
-      createdAt: admin.firestore.Timestamp.now(),
-      expiresAt: admin.firestore.Timestamp.fromDate(
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt: Timestamp.fromDate(
         new Date(Date.now() + 24 * 60 * 60 * 1000) // ⏱ 24 hour TTL
       )
     });
@@ -69,10 +75,12 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
     const razorpayOrder = await rp.orders.create({
       amount: amountInPaise,
       currency: selectedCurrency,
-      receipt: `order_${user.uid}_${Date.now()}`
+      receipt: `${idempotencyKey.substring(0, 12)}`,
     });
 
-    await initiateOrder(
+    functions.logger.info("✅ Razorpay order created:", razorpayOrder);
+
+    const orderId = await initiateOrder(
       user.uid,
       razorpayOrder.id,
       result.data,
@@ -81,10 +89,14 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       itemsDetails,
       1
     );
+    if (!orderId) {
+      throw new Error("Failed to create order");
+    }
 
     const response = {
       success: true,
-      order: razorpayOrder,
+      orderId: orderId,
+      razorpayOrder: razorpayOrder,
       key_id: RAZORPAY_KEY_ID.value()
     };
 

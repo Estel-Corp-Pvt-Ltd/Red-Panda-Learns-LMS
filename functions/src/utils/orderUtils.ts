@@ -4,7 +4,7 @@ import { courseService } from "../services/courseService";
 import { bundleService } from "../services/bundleService";
 import { transactionService } from "../services/transactionService";
 import { Address } from "../types/order";
-import { CURRENCY, TRANSACTION_STATUS, TRANSACTION_TYPE } from "../constants";
+import { TRANSACTION_STATUS, TRANSACTION_TYPE } from "../constants";
 
 interface ItemsDetails {
   itemId: string;
@@ -53,6 +53,7 @@ export const initiateOrder = async (userId: string, providerOrderId: string, pay
     userId: userId,
     items: itemsDetails,
     status: "PENDING",
+    provider: provider,
     providerOrderId: providerOrderId,
     amount: payAmount,
     currency: selectedCurrency,
@@ -63,27 +64,25 @@ export const initiateOrder = async (userId: string, providerOrderId: string, pay
 
 
   if (!order.success || !order.data) {
-    return;
+    return null;
   }
 
   // Fix: Add the missing required fields
-  const transactionResult = await transactionService.createTransaction({
-    orderId: order.data,
-    userId: userId,
-    items: itemsDetails,
-    type: TRANSACTION_TYPE.PAYMENT,
-    amount: payAmount,
-    currency: selectedCurrency,
-    originalAmount: originalAmount,
-    originalCurrency: CURRENCY.INR,
-    exchangeRate: exchangedRate,
-    metadata: {},
-    paymentProvider: provider,
-    status: TRANSACTION_STATUS.PENDING,
-    paymentDetails: {},
-  });
+  // const transactionResult = await transactionService.createTransaction({
+  //   orderId: order.data,
+  //   userId: userId,
+  //   type: TRANSACTION_TYPE.PAYMENT,
+  //   amount: payAmount,
+  //   currency: selectedCurrency,
+  //   notes: [],
+  //   paymentProvider: provider,
+  //   status: TRANSACTION_STATUS.PENDING,
+  //   paymentDetails: {},
+  // });
 
-  if (!transactionResult.success) {
-    return;
-  }
+  // if (!transactionResult.success) {
+  //   return null;
+  // }
+
+  return order.data;
 };

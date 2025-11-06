@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { defineSecret } from "firebase-functions/params";
 import crypto from "crypto";
 import * as functions from 'firebase-functions';
 
@@ -6,13 +7,13 @@ import * as functions from 'firebase-functions';
  * Middleware to verify Razorpay webhook signatures
  * This should be used before any webhook handler
  */
-export const razorpayWebhookMiddleware = (webhookSecret: string) => {
+export const razorpayWebhookMiddleware = (secretParam: ReturnType<typeof defineSecret>) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (req.method !== "POST") {
       next();
       return;
     }
-
+    const webhookSecret = secretParam.value();
     try {
       if (!webhookSecret) {
         functions.logger.error("❌ Webhook secret not provided");

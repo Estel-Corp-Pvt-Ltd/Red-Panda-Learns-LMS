@@ -6,6 +6,7 @@ export interface Enrollment {
   id: string;
   userId: string;
   courseId: string;
+  courseName: string;
   bundleId?: string;
   enrollmentDate: Timestamp | FieldValue;
   status: EnrollmentStatus;

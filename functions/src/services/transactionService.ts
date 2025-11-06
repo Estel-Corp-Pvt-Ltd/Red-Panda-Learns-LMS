@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import { ok, Result, fail } from '../utils/response';
-import { PaymentDetails, Transaction, WebhookEvent } from '../types/transaction';
+import { PaymentDetails, Transaction } from '../types/transaction';
 import { COLLECTION, PAYMENT_PROVIDER, TRANSACTION_STATUS } from '../constants';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -56,18 +56,13 @@ class TransactionService {
         id: transactionId,
         orderId: data.orderId,
         userId: data.userId,
-        items: data.items,
         type: data.type,
         amount: data.amount,
         currency: data.currency,
-        originalAmount: data.originalAmount,
-        originalCurrency: data.originalCurrency,
-        exchangeRate: data.exchangeRate,
         paymentProvider: data.paymentProvider,
         status: TRANSACTION_STATUS.PENDING,
         paymentDetails: data.paymentDetails || {} as PaymentDetails,
-        metadata: data.metadata,
-        webhookEvents: data.webhookEvents || [],
+        notes: data.notes || [],
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       };
@@ -84,7 +79,7 @@ class TransactionService {
   async updateTransactionStatusByOrderId(
     orderId: string,
     status: string,
-    paymentDetails?: PaymentDetails,
+    paymentDetails?: any,
     reasonForFailure?: string
   ): Promise<Result<void>> {
     try {
@@ -157,7 +152,6 @@ class TransactionService {
         id: docSnap.id,
         createdAt: data?.createdAt?.toDate(),
         updatedAt: data?.updatedAt?.toDate(),
-        completedAt: data?.completedAt?.toDate(),
       } as Transaction;
 
       return ok(transaction);
@@ -181,7 +175,6 @@ class TransactionService {
           id: doc.id,
           createdAt: data.createdAt?.toDate(),
           updatedAt: data.updatedAt?.toDate(),
-          completedAt: data.completedAt?.toDate(),
         } as Transaction;
       });
 
@@ -206,34 +199,12 @@ class TransactionService {
           id: doc.id,
           createdAt: data.createdAt?.toDate(),
           updatedAt: data.updatedAt?.toDate(),
-          completedAt: data.completedAt?.toDate(),
         } as Transaction;
       });
 
       return ok(transactions);
     } catch (error: any) {
       return fail("Failed to get course transactions");
-    }
-  }
-
-  async addWebhookEvent(transactionId: string, webhookEvent: WebhookEvent): Promise<Result<void>> {
-    try {
-      const transactionResult = await this.getTransaction(transactionId);
-      if (!transactionResult.success || !transactionResult.data) {
-        return fail("Transaction not found");
-      }
-
-      const transaction = transactionResult.data;
-      const updatedWebhookEvents = [...(transaction.webhookEvents || []), webhookEvent];
-
-      await db.collection(COLLECTION.TRANSACTIONS).doc(transactionId).update({
-        webhookEvents: updatedWebhookEvents,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      return ok(undefined);
-    } catch (error: any) {
-      return fail("Failed to add webhook event");
     }
   }
 

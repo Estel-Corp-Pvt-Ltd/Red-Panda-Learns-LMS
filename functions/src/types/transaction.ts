@@ -1,10 +1,8 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import {
-  Currency,
   PaymentProvider,
   PayPalWebhookEvent,
   RazorpayWebhookEvent,
-  RefundInitiator,
   TransactionStatus,
   TransactionType,
   EnrolledProgramType
@@ -44,19 +42,6 @@ export type PayPalPaymentDetails = {
   timestamp?: ProviderTimestamp;
 };
 
-export type TransactionMetadata = {
-  userEmail: string;
-  itemTitles: string[];
-  displayTitle: string;
-  subtotal: number;
-  userAgent?: string;
-  paymentAttempts: number;
-  reasonForRefund?: string;
-  reasonForFailure?: string;
-  refundInitiatedBy?: RefundInitiator;
-  notes?: string[];
-};
-
 export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
 
 export interface TransactionLineItem {
@@ -71,22 +56,15 @@ export interface Transaction {
   id: string; // internal transaction ID (UUID)
   orderId: string;
   userId: string;
-  items: TransactionLineItem[];
-  parentTransactionId?: string; // if refund, points to original payment
   type: TransactionType;
   amount: number; // final charged amount
-  currency: Currency;
-  originalAmount?: number; // in original currency
-  originalCurrency?: Currency;
-  exchangeRate?: number;
+  currency: string;
   paymentProvider: PaymentProvider;
   status: TransactionStatus;
   paymentDetails: PaymentDetails | {};
-  metadata: TransactionMetadata | {};
-  webhookEvents?: WebhookEvent[];
+  notes?: string[];
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-  completedAt?: Timestamp | FieldValue;
 };
 
 export type CurrencyRate = {
