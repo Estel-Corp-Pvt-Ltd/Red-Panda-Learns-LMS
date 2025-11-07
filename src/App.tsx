@@ -64,6 +64,7 @@ import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";
 import MyInvoicesPage from "./pages/MyInvoices";
+import AuthRedirection from "./components/auth/AuthRedirection";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -103,6 +104,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/auth" element={<AuthRedirection />} />
                       <Route path="/auth/login" element={<Login />} />
                       <Route path="/auth/signup" element={<Signup />} />
                       <Route
@@ -222,7 +224,6 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      
                       <Route
                         path="/admin/submissions"
                         element={
