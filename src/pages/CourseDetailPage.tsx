@@ -49,10 +49,11 @@ export default function CourseDetailPage() {
   const { toast } = useToast();
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
-  const isAddedToCart = cart.some((item) => item.type === "COURSE" && item.refId === courseId);
+  const [courseId, setCourseId] = useState("");
   const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
   const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
-  const [courseId,setCourseId] = useState("")
+
+  const isAddedToCart = cart.some((item) => item.type === ENROLLED_PROGRAM_TYPE.COURSE && item.refId === courseId);
 
   const {
     data: course,
@@ -61,12 +62,12 @@ export default function CourseDetailPage() {
     error: courseErrorData,
     refetch: refetchCourse,
   } = useCourseQuery(param!);
-     
+
   useEffect(() => {
     if (!param || courseLoading || !course) return;
     setCourseId(course.id);
   }, [param, courseLoading, course?.id]);
- 
+
 
   const isLoading = courseLoading;
   const isError = courseError;

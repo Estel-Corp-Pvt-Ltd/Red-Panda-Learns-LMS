@@ -84,40 +84,15 @@ const METHOD_LOGOS: Record<
 };
 
 export default function BundleCheckoutPage() {
- const { param } = useParams<{ param: string }>();
+  const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
-  const [bundle, setBundle] = useState<null | Bundle>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-const [bundleId, setBundleId] = useState("");
-
- const {
-   data: bundle,
-   isLoading: bundleLoading,
-   error: bundleError,
- } = useBundleQuery(param!);
-
- useEffect(() => {
-   if (!param || bundleLoading || !bundle) return;
-   setBundleId(bundle.id);
- }, [param, bundleLoading, bundle]);
-  
-  useEffect(() => {
-    const fetchBundle = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bundleService.getBundleById(bundleId);
-        setBundle(data);
-      } catch (error) {
-        console.error("Error fetching bundle:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBundle();
-  }, [bundleId]);
+  const {
+    data: bundle,
+    isLoading: bundleLoading,
+    error: bundleError,
+  } = useBundleQuery(param!);
 
   if (bundleLoading) {
     return (

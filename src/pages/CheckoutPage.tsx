@@ -9,14 +9,9 @@ import PaymentCheckout from "@/components/payment/PaymentCheckout";
 
 export default function CheckoutPage() {
   const { param } = useParams<{ param: string }>();
-  const [courseId,setCourseId] = useState("");
-  
-   useEffect(() => {
-    if (!param || courseLoading || !course) return;
-    setCourseId(course.id);
 
-  }, [param, courseLoading, course?.id]);
-  const { data: course, isLoading: courseLoading } = useCourseQuery(param!);
+  const { data: course } = useCourseQuery(param!);
+  
   useEffect(() => {
     if (!user || !courseId || loadingEnrollments) return;
 
@@ -27,7 +22,6 @@ export default function CheckoutPage() {
 
   const [items, setItems] = useState<TransactionLineItem[]>([]);
 
-  const { data, isLoading } = useCourseQuery(courseId);
   const navigate = useNavigate();
 
   useEffect(() => {
