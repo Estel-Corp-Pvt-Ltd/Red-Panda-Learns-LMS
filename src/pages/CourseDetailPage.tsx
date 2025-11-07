@@ -22,8 +22,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useCourseQuery } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
 import { enrollmentService } from "@/services/enrollmentService";
+import { lessonService } from "@/services/lessonService";
 import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
+import { Duration } from "@/types/general";
 import { getCourseStructureCounts } from "@/utils/course";
 import { formatDate } from "@/utils/date-time";
 import {
@@ -31,6 +33,7 @@ import {
   BookOpen,
   ChevronRight,
   Clock,
+  Info,
   Lock,
   Play,
 } from "lucide-react";
@@ -47,6 +50,8 @@ export default function CourseDetailPage() {
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
   const isAddedToCart = cart.some((item) => item.type === "COURSE" && item.refId === courseId);
+  const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
+  const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
 
   const {
     data: course,
@@ -58,6 +63,14 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading;
   const isError = courseError;
+
+  const formatINR = (amount: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY.INR,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
 
   // Check if user already enrolled (keep "after" behavior)
   useEffect(() => {
@@ -73,7 +86,30 @@ export default function CourseDetailPage() {
     };
 
     checkEnrollment();
+
+
   }, [user, courseId, isEnrolled]);
+
+  // Fetch lesson descriptions separately
+  useEffect(() => {
+    const fetchLessonDescriptions = async () => {
+      if (!courseId) return;
+
+      const result = await lessonService.getLessonDetailsByCourseId(courseId);
+      if (result.success) {
+        setLessonDescriptions(result.data.descriptions);
+        setCourseDuration(result.data.totalDuration);
+      } else {
+        toast({
+          title: "Lesson descriptions unavailable",
+          description: `Could not fetch lesson descriptions`,
+        });
+      }
+    };
+
+    fetchLessonDescriptions();
+  }, [courseId]);
+
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -258,6 +294,14 @@ export default function CourseDetailPage() {
                   <p className="flex-1 min-w-0 text-[0.9rem] font-medium text-foreground truncate">
                     {lessonTitle}
                   </p>
+                  <div className="relative group">
+                    <Info className="text-muted-foreground hover:text-foreground cursor-pointer" size={16} />
+                    <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block w-64 bg-popover text-popover-foreground p-1.5 text-sm rounded-md z-10 break-words border-l-2 border-b-2 border-primary/40 shadow-[2px_-2px_8px_rgba(0,0,0,0.15)]">
+                      <p className="whitespace-pre-wrap leading-snug">
+                        {lessonDescriptions[lessonId] || "No description available."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))
@@ -376,13 +420,16 @@ export default function CourseDetailPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {course.salePrice === 0 ? (
-                    <div className="font-semibold text-primary">FREE</div>
-                  ) : (
-                    <div className="font-semibold text-primary">
-                      ₹{course.salePrice}
-                    </div>
-                  )}
+                  <div className="flex items-baseline gap-2 whitespace-nowrap text-3xl">
+                    {course.regularPrice && course.salePrice && course.salePrice !== 0 ? (
+                      <span className="line-through text-muted-foreground">
+                        {formatINR(course.regularPrice)}
+                      </span>
+                    ) : (<span></span>)}
+                    <span className="font-semibold text-primary">
+                      {course.salePrice === 0 ? "FREE" : formatINR(course.salePrice)}
+                    </span>
+                  </div>
 
                   <div className="space-y-2">
                     {enrollmentLoading ? (
@@ -441,8 +488,8 @@ export default function CourseDetailPage() {
                     {course.duration && (
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>{course.duration.hours} hrs</span>
-                        <span>{course.duration.minutes} min</span>
+                        <span>{courseDuration.hours} hrs</span>
+                        <span>{courseDuration.minutes} min</span>
                       </div>
                     )}
                   </span>

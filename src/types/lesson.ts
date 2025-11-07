@@ -9,6 +9,7 @@ export type VideoSource = typeof VIDEO_SOURCE[keyof typeof VIDEO_SOURCE];
 
 export type Lesson = {
     id: string;
+    courseId: string;
     title: string;
     type: LessonType;
     description: string;

@@ -422,6 +422,8 @@ export default function CreateCouponPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !!existingCoupon}
+                   variant="pill"
+                  size="sm"
                 >
                   {isSubmitting ? "Creating..." : "Create Coupon"}
                 </Button>

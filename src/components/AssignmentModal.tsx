@@ -52,6 +52,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     minimumPassPoint: 60,
     attachments: [],
   });
+
+  
   const [errors, setErrors] = useState<FormErrors>({});
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -28,7 +28,7 @@ class OrganizationService {
   /** Generate a unique organization ID: org_<number> */
   private async generateOrganizationId(): Promise<string> {
     try {
-      const counterRef = doc(db, "counters", "organizationCounter");
+      const counterRef = doc(db, COLLECTION.COUNTERS, "organizationCounter");
 
       const newId = await runTransaction(db, async (transaction) => {
         const gap = Math.floor(Math.random() * (20 - 5 + 1)) + 5;

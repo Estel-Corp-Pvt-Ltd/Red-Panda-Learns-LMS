@@ -199,6 +199,8 @@ const AdminCoupons: React.FC = () => {
             <Button
               onClick={() => navigate("/admin/create-coupon")}
               className="flex items-center gap-2"
+               variant="pill"
+                  size="sm"
             >
               <Plus className="h-4 w-4" />
               Create Coupon

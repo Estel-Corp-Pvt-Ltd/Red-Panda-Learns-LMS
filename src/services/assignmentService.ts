@@ -39,7 +39,7 @@ class AssignmentService {
    * starting from 60000000, with a random gap between 5 and 20.
    */
   private async generateAssignmentId(): Promise<string> {
-    const counterRef = doc(db, 'counters', 'assignmentCounter');
+    const counterRef = doc(db, COLLECTION.COUNTERS, 'assignmentCounter');
 
     const newId = await runTransaction(db, async (transaction) => {
       const gap = Math.floor(Math.random() * (20 - 5 + 1)) + 5;
@@ -100,7 +100,7 @@ class AssignmentService {
    * @param assignmentId - The ID of the assignment to update.
    * @param updates - Partial update fields.
    */
-  async updateAssignment(assignmentId: string, updates: Partial<Assignment>): Promise<void> {
+  async updateAssignment(assignmentId: string, updates: Partial<Assignment>): Promise<Result<void>> {
     try {
       const assignmentRef = doc(db, COLLECTION.ASSIGNMENTS, assignmentId);
       const assignmentDoc = await getDoc(assignmentRef);
@@ -113,8 +113,8 @@ class AssignmentService {
         ...updates,
         updatedAt: serverTimestamp(),
       });
-
-      console.log('AssignmentService - Assignment updated successfully:', assignmentId);
+      return ok(undefined)
+     
     } catch (error) {
       console.error('AssignmentService - Error updating assignment:', error);
       throw new Error('Failed to update assignment');

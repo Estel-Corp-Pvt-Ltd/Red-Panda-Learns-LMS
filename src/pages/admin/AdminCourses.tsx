@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Loader2, PlusCircle, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { COURSE_STATUS, CURRENCY } from '@/constants';
+
 import AdminLayout from '@/components/AdminLayout';
 import { toast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -136,7 +137,7 @@ const AdminCourses = () => {
     );
   }
 
-  return (
+    return (
     <AdminLayout>
       <Card>
         <CardHeader>
@@ -149,6 +150,8 @@ const AdminCourses = () => {
               </CardDescription>
             </div>
             <Button
+              variant="pill"
+              size="sm"
               onClick={() => navigate("/admin/create-course")}
               className="flex items-center gap-2"
             >
@@ -167,10 +170,13 @@ const AdminCourses = () => {
               <p className="mt-1 text-sm text-gray-500">
                 Get started by creating your first course.
               </p>
-              <div className="mt-6">
+              {/* Optional: show the same CTA here */}
+              <div className="mt-4">
                 <Button
+                  variant="pill"
+                  size="sm"
                   onClick={() => navigate("/admin/create-course")}
-                  className="flex items-center gap-2"
+                  className="inline-flex items-center gap-2"
                 >
                   <PlusCircle className="h-4 w-4" />
                   Create Course

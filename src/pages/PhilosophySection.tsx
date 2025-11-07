@@ -5,9 +5,9 @@ import "katex/dist/katex.min.css";
 
 // Decryption config (shared by code + math)
 const DECRYPTION_CONFIG = {
-  SCRAMBLE_INTERVAL: 30, // how often scrambled glyphs update (ms)
-  TIME_PER_LINE: 800, // each line finishes in exactly this time (ms)
-  LINE_TRANSITION_DELAY: 150, // pause before the next line starts (ms)
+  SCRAMBLE_INTERVAL: 30,
+  TIME_PER_LINE: 800,
+  LINE_TRANSITION_DELAY: 150,
 };
 
 const CHARS =
@@ -32,6 +32,7 @@ interface DecryptedLineProps {
   delay?: number;
   fixedDuration?: number;
   onComplete?: () => void;
+  bold?: boolean;
 }
 
 interface DecryptedCodeLineByLineProps {
@@ -50,6 +51,32 @@ interface DecryptedMathLineByLineProps {
   lines: string[];
   startTrigger: number;
 }
+
+interface ResearchPaper {
+  title: string;
+  authors: string;
+  venue?: string;
+  year?: number | string;
+  link: string;
+}
+
+// Scholar items (add more as needed)
+const researchPapers: ResearchPaper[] = [
+  {
+    title: "Decoders Laugh as Loud as Encoders",
+    authors: "E Borodach, R Dandekar, R Dandekar, S Panat",
+    venue: "arXiv",
+    year: 2025,
+    link: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=qq8OirYAAAAJ&sortby=pubdate&citation_for_view=qq8OirYAAAAJ:ZeXyd9-uunAC",
+  },
+  
+];
+
+// Show at most 2 research papers (fits without scroll)
+const MAX_PAPERS = 2;
+
+// Keep the same mono font & sizing across all content areas
+const CONTENT_FONT_CLASS = "font-mono text-[13px] leading-[1.6]";
 
 const philosophyItems: PhilosophyItem[] = [
   {
@@ -78,7 +105,7 @@ const philosophyItems: PhilosophyItem[] = [
   },
 ];
 
-// 7 lines each to align the total animation time
+// Foundations (LaTeX) — will render in the same mono style
 const foundationLatexLines = [
   String.raw`\textbf{Neural Network}`,
   String.raw`\mathbf{z} = \mathbf{W}\mathbf{x} + \mathbf{b}`,
@@ -97,19 +124,12 @@ def attention(q, k, v):
     out = attn @ v
     return out`;
 
-const researchRef = {
-  title: "Attention Is All You Need",
-  authors: "Vaswani et al.",
-  venue: "NeurIPS 2017",
-  link: "https://arxiv.org/abs/1706.03762",
-};
-
-// Unified decrypt line (used by code)
 const DecryptedLine: React.FC<DecryptedLineProps> = ({
   text,
   delay = 0,
   fixedDuration,
   onComplete,
+  bold = false,
 }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -119,7 +139,6 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
   const onCompleteRef = useRef<() => void>(() => {});
   const didCompleteRef = useRef(false);
 
-  // derive per-character speed to hit the fixed duration
   const charRevealSpeed = fixedDuration
     ? Math.max(15, Math.floor(fixedDuration / Math.max(1, text.length)))
     : 25;
@@ -171,13 +190,16 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
   }, [hasStarted, currentIndex, text, charRevealSpeed]);
 
   return (
-    <div className="font-mono font-normal text-[13px] leading-[1.6] text-foreground/80 text-left">
+    <div
+      className={`${CONTENT_FONT_CLASS} ${
+        bold ? "font-semibold" : "font-normal"
+      } text-foreground/80 text-left`}
+    >
       {displayedText || " "}
     </div>
   );
 };
 
-// Math line (decrypts monospace, then renders KaTeX inline to keep alignment)
 const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   latex,
   delay = 0,
@@ -194,7 +216,6 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   const onCompleteRef = useRef<() => void>(() => {});
   const didCompleteRef = useRef(false);
 
-  // derive per-character speed to hit the fixed duration
   const charRevealSpeed = fixedDuration
     ? Math.max(15, Math.floor(fixedDuration / Math.max(1, latex.length)))
     : 25;
@@ -249,7 +270,7 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   useEffect(() => {
     if (!isComplete || !renderedRef.current) return;
     try {
-      // inline mode to keep the same line height/orientation as code
+      // Render KaTeX but force mono font (to match code/research)
       katex.render(latex, renderedRef.current, {
         displayMode: false,
         throwOnError: false,
@@ -261,14 +282,13 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
     }
   }, [isComplete, latex]);
 
-  // While decrypting, show monospace; when done, show KaTeX inline with same line box
   return isComplete ? (
     <div
       ref={renderedRef}
-      className="katex-line font-mono font-normal text-[13px] leading-[1.6] text-left text-foreground"
+      className={`${CONTENT_FONT_CLASS} text-left text-foreground katex-line`}
     />
   ) : (
-    <div className="font-mono font-normal text-[13px] leading-[1.6] text-foreground/80 text-left">
+    <div className={`${CONTENT_FONT_CLASS} text-foreground/80 text-left`}>
       {displayedText || " "}
     </div>
   );
@@ -366,13 +386,11 @@ const PhilosophySection: React.FC = () => {
   const intervalsRef = useRef<number[]>([]);
 
   useEffect(() => {
-    // Start both math and code at the same time
     const start = window.setTimeout(() => {
       setDecryptionTrigger(Date.now());
     }, 500);
     timeoutsRef.current.push(start);
 
-    // Pulse visuals (non-layout affecting)
     philosophyItems.forEach((_, index) => {
       const t = window.setTimeout(() => createPulse(index), index * 250);
       timeoutsRef.current.push(t);
@@ -392,7 +410,6 @@ const PhilosophySection: React.FC = () => {
       intervalsRef.current = [];
       timeoutsRef.current = [];
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createPulse = (cardIndex: number) => {
@@ -420,27 +437,17 @@ const PhilosophySection: React.FC = () => {
   return (
     <>
       <style>{`
-        /* keep KaTeX inline visually aligned with code and same weight */
-        .katex { 
-          font-size: 13px !important; 
-          line-height: 1.6 !important; 
+        /* Force KaTeX to use the same mono font as code/research for consistent style */
+        .katex, .katex .mord, .katex .mbin, .katex .mrel, .katex .mop,
+        .katex .mopen, .katex .mclose, .katex .minner, .katex .text,
+        .katex .mathrm, .katex .mathit, .katex .mathbf, .katex .textbf, .katex .bold {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+          font-size: 13px !important;
+          line-height: 1.6 !important;
           font-weight: 400 !important;
         }
         .katex-display { margin: 0 !important; }
-        /* Normalize KaTeX internals to same weight as code */
-        .katex .mord, .katex .mbin, .katex .mrel, .katex .mop,
-        .katex .mopen, .katex .mclose, .katex .minner,
-        .katex .text, .katex .mathrm, .katex .mathit,
-        .katex .mathbf, .katex .textbf, .katex .bold {
-          font-weight: 400 !important;
-        }
-        /* clamp helper for equal description height */
-        .clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
+        .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
 
       <section className="relative py-24 px-6 overflow-hidden">
@@ -466,12 +473,12 @@ const PhilosophySection: React.FC = () => {
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
                 >
-                  <div className="relative w-full p-8 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col h-full">
+                  <div className="relative w-full p-10 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col h-full">
                     {/* Header */}
                     <div className="flex flex-col items-center text-center">
                       <div className="relative mb-6">
                         <div
-                          className={`relative p-4 bg-gradient-to-br ${item.gradient} rounded-full transition-all duration-500`}
+                          className={`relative p-5 bg-gradient-to-br ${item.gradient} rounded-full transition-all duration-500`}
                           style={{
                             boxShadow: isHovered
                               ? `0 0 30px ${item.color}, 0 8px 24px ${item.color}80`
@@ -479,32 +486,29 @@ const PhilosophySection: React.FC = () => {
                             transform: isHovered ? "scale(1.2)" : "scale(1)",
                           }}
                         >
-                          <Icon className="w-8 h-8 text-white relative z-10" />
+                          <Icon className="w-10 h-10 text-white relative z-10" />
                         </div>
                       </div>
 
                       <h3
-                        className="text-xl font-semibold mb-3"
+                        className="text-2xl font-semibold mb-3"
                         style={{
                           color: isHovered ? item.color : "var(--foreground)",
-                          textShadow: isHovered
-                            ? `0 2px 8px ${item.color}40`
-                            : "none",
+                          textShadow: isHovered ? `0 2px 8px ${item.color}40` : "none",
                         }}
                       >
                         {item.title}
                       </h3>
 
-                      {/* clamp to keep all three cards same height in header+desc */}
                       <p className="text-foreground/70 leading-relaxed font-light clamp-2 min-h-[48px]">
                         {item.description}
                       </p>
                     </div>
 
-                    {/* Content area (fixed height, left aligned) */}
+                    {/* Content area (same height + same font across all) */}
                     <div className="mt-6 w-full flex-1">
                       <div
-                        className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden h-[200px]"
+                        className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden h-[220px]"
                         style={{ boxShadow: `0 4px 18px ${item.color}22` }}
                       >
                         <div className="flex items-center justify-between px-3 py-2 border-b border-foreground/10">
@@ -515,34 +519,52 @@ const PhilosophySection: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="p-4 h-[calc(200px-40px)] text-left">
+                        <div className="p-5 h-[calc(220px-40px)] text-left">
                           {index === 2 ? (
-                            <div className="text-left">
-                              <div className="text-sm leading-relaxed">
-                                <div className="font-medium">
-                                  {researchRef.title}
-                                </div>
-                                <div className="text-foreground/60 mt-1">
-                                  {researchRef.authors} — {researchRef.venue}
-                                </div>
-                                <a
-                                  href={researchRef.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2 mt-2 underline underline-offset-4 decoration-dotted"
-                                  style={{ color: item.color }}
-                                >
-                                  View paper ↗
-                                </a>
+                            <div className="text-left h-full flex flex-col">
+                              <div className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}>
+                                {researchPapers.slice(0, MAX_PAPERS).map((p, i) => (
+                                  <a
+                                    key={p.link + i}
+                                    href={p.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
+                                  >
+                                    <DecryptedLine
+                                      text={p.title}
+                                      delay={i * 80}
+                                      fixedDuration={500}
+                                      bold
+                                    />
+                                    <div className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}>
+                                      {p.authors}
+                                      {p.venue ? ` — ${p.venue}` : ""}
+                                      {p.year ? ` ${p.year}` : ""}
+                                    </div>
+                                  </a>
+                                ))}
                               </div>
+
+                              <a
+                                href="https://scholar.google.com/citations?hl=en&user=qq8OirYAAAAJ&view_op=list_works&sortby=pubdate"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 mt-2 text-xs underline underline-offset-4 decoration-dotted self-start"
+                                style={{ color: item.color }}
+                              >
+                                View all on Google Scholar ↗
+                              </a>
                             </div>
                           ) : index === 0 ? (
-                            <DecryptedMathLineByLine
-                              lines={foundationLatexLines}
-                              startTrigger={decryptionTrigger}
-                            />
+                            <div className={CONTENT_FONT_CLASS}>
+                              <DecryptedMathLineByLine
+                                lines={foundationLatexLines}
+                                startTrigger={decryptionTrigger}
+                              />
+                            </div>
                           ) : (
-                            <pre className="text-left font-mono font-normal text-[13px] leading-[1.6] text-foreground/80 whitespace-pre-wrap">
+                            <pre className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}>
                               <code>
                                 <DecryptedCodeLineByLine
                                   text={attentionSnippet}

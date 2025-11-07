@@ -1,330 +1,189 @@
-import { LessonSelectorModal } from "@/components/admin/LessonSelectorModal";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { ATTRIBUTE_TYPE, COURSE_STATUS, LEARNING_UNIT } from "@/constants";
+import CourseBasicsTab from "@/components/admin/CourseBasicsTab";
+import CurriculumTab from "@/components/admin/CurriculumTab";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { attributeService } from "@/services/attributeService";
-import { courseService } from "@/services/courseService";
-import { instructorService } from "@/services/instructorService";
-import { Cohort, Course, Topic, TopicItem } from "@/types/course";
-import { CourseStatus, LearningUnit as LearningUnitType } from "@/types/general";
-import { LearningContentType, Lesson } from "@/types/lesson";
-import {
-  closestCenter,
-  DndContext,
-  DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  ArrowLeft,
-  BookOpen,
-  Check,
-  ChevronDown,
-  Copy,
-  Edit2,
-  Eye,
-  FolderOpen,
-  GripVertical,
-  NotebookPen,
-  NotepadText,
-  Plus,
-  Save,
-  Search,
-  Trash2,
-  Users,
-  X,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-
-import { CreateLessonModal } from "@/components/admin/AddLesson";
-import AssignmentModal from "@/components/AssignmentModal";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
-import { fileService } from "@/services/fileService";
-import { Assignment } from "@/types/assignment";
-import { logError } from "@/utils/logger";
+import { courseService } from "@/services/courseService";
+import { attributeService } from "@/services/attributeService";
+import { instructorService } from "@/services/instructorService";
 import { getFullName } from "@/utils/name";
+import { ATTRIBUTE_TYPE, COURSE_STATUS, LEARNING_UNIT } from "@/constants";
+import { logError } from "@/utils/logger";
+import type { Course } from "@/types/course";
+import type { Lesson } from "@/types/lesson";
+import type { Assignment } from "@/types/assignment";
+import type { Topic, TopicItem } from "@/types/course";
+import type { CourseStatus, LearningUnit } from "@/types/general";
+import type { DurationForm } from "@/components/admin/CourseBasicsTab";
+import { LearningContentType } from "@/types/lesson";
+import { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { getDownloadURL } from "firebase/storage";
-import CohortBuilderPage from "./CreateCohortPage";
-import { Label } from "@/components/ui/label";
+import { fileService } from "@/services/fileService";
 
-type SortableItemProps = {
-  id: string;
-  children: React.ReactNode;
-  type: LearningUnitType;
-  depth: number;
-};
-
-type DraggableItem = {
-  id: string;
-  title: string;
-  type: LearningUnitType;
-
-  depth: number;
-  parentId: string | null;
-  originalData?: Cohort | Topic;
-  refId?: string; // real id for lessons, assignments
-};
-
-type DurationForm = { hours: number | null; minutes: number | null };
-
+/** Convert empty string to null or valid number */
 const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
-const isNum = (v: number | null): v is number => v !== null && Number.isFinite(v);
+/** Type guard for numeric checks */
+const isNum = (v: number | null): v is number =>
+  v !== null && Number.isFinite(v);
 
-const SortableItem = ({ id, children, depth }: SortableItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    marginLeft: `${depth * 2}rem`,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group">
-        <div {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 const CurriculumBuilderPage = () => {
+  // ─── Router + Utils ─────────────────────────────────────────────
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { showOverlay, hideOverlay } = useLoadingOverlay();
 
+  // ─── Basic Info States ─────────────────────────────────────────
   const [course, setCourse] = useState<Course | null>(null);
-  const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [newItemName, setNewItemName] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] =
-    useState(false);
-  const [activeParentId, setActiveParentId] = useState<string | null>(null); // For adding lessons/topics
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
 
-  // Keep 0 by default, allow clearing to empty (null) while editing
   const [regularPrice, setRegularPrice] = useState<number | null>(0);
   const [salePrice, setSalePrice] = useState<number | null>(0);
-  const [duration, setDuration] = useState<DurationForm>({ hours: 0, minutes: 0 });
+  const [duration, setDuration] = useState<DurationForm>({
+    hours: 0,
+    minutes: 0,
+  });
 
+  // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
     string[]
   >([]);
   const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-  const [instructorId, setInstructorId] = useState("");
-  const [instructorName, setInstructorName] = useState("");
   const [instructors, setInstructors] = useState<
     { id: string; name: string }[]
   >([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [instructorId, setInstructorId] = useState("");
+  const [instructorName, setInstructorName] = useState("");
+
+  // ─── Tags & Media ───────────────────────────────────────────
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
+
+  // ─── Curriculum Management ──────────────────────────────────
+  type DraggableItem = {
+    id: string;
+    title: string;
+    type: LearningUnit;
+    depth: number;
+    parentId: string | null;
+    refId?: string;
+    originalData?: any;
+  };
+
+  const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
+  const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [newItemName, setNewItemName] = useState("");
+  const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] =
+    useState(false);
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
-  const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
+  const [isLessonEditModelOpen, setIsLessonEditModelOpen] = useState(false);
+  const [activeParentId, setActiveParentId] = useState<string | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+  // ───────────────────────────────────────────────────────────────
+  // ─── Lifecycle: Load Attributes, Instructor, and Course Data ───
+  // ───────────────────────────────────────────────────────────────
 
+  /** Load attributes (Categories, Target Audiences) */
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const categoriesData = await attributeService.getAttributes(
-          ATTRIBUTE_TYPE.CATEGORY,
+        const categories = await attributeService.getAttributes(
+          ATTRIBUTE_TYPE.CATEGORY
         );
-        setAllCategories(categoriesData.map((a) => a.name));
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load categories.",
-          variant: "destructive",
-        });
-      }
+        setAllCategories(categories.map((a) => a.name));
 
-      try {
-        const targetAudienceData = await attributeService.getAttributes(
-          ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+        const audiences = await attributeService.getAttributes(
+          ATTRIBUTE_TYPE.TARGET_AUDIENCE
         );
-        setAllTargetAudiences(targetAudienceData.map((a) => a.name));
-      } catch (error) {
-        console.error("Error fetching target audiences:", error);
+        setAllTargetAudiences(audiences.map((a) => a.name));
+      } catch (err) {
         toast({
-          title: "Error",
-          description: "Failed to load target audiences.",
+          title: "Error loading attributes",
+          description: String(err),
           variant: "destructive",
         });
       }
     };
-
     fetchAttributes();
   }, [toast]);
 
-  useEffect(() => {
-    loadCourseData();
-  }, [courseId]);
-
-  const loadCourseData = async () => {
-    if (!courseId) return;
-    try {
-      setLoading(true);
-      const courseData = await courseService.getCourseById(courseId);
-      if (!courseData) {
-        toast({
-          title: "Error",
-          description: "Course not found.",
-          variant: "destructive",
-        });
-        return;
-      }
-      setCourse(courseData);
-      setTitle(courseData.title);
-      setDescription(courseData.description);
-      setStatus(courseData.status);
-
-      // Set numeric fields; keep 0 default if missing
-      setDuration({
-        hours:
-          typeof courseData?.duration?.hours === "number"
-            ? courseData.duration.hours
-            : 0,
-        minutes:
-          typeof courseData?.duration?.minutes === "number"
-            ? courseData.duration.minutes
-            : 0,
-      });
-      setRegularPrice(
-        typeof courseData?.regularPrice === "number"
-          ? courseData.regularPrice
-          : 0
-      );
-      setSalePrice(
-        typeof courseData?.salePrice === "number"
-          ? courseData.salePrice
-          : 0
-      );
-
-      setSelectedTargetAudiences(courseData.targetAudienceIds || []);
-      setSelectedCategories(courseData.categoryIds || []);
-      setThumbnailUrl(courseData.thumbnail || "");
-      setTags(courseData.tags || []);
-      setInstructorId(courseData.instructorName);
-      setInstructorName(courseData.instructorName);
-      setCurriculum(getFlatCurriculum(courseData));
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to load course data. ${error}`,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // auto-save when curriculum changes
-  useEffect(() => {
-    if (isTopicItemAdded && curriculum.length > 0 && courseId) {
-      const timeoutId = setTimeout(() => {
-        saveCurriculumStructure();
-      }, 1000);
-      setIsTopicItemAdded(false);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [curriculum]); // This will run whenever curriculum changes
-
+  /** Load instructors list */
   useEffect(() => {
     const fetchInstructors = async () => {
       const result = await instructorService.getAllInstructors();
-
       if (result.success) {
-        const formattedInstructors = result.data.map((instructor) => ({
-          id: instructor.id,
-          name: getFullName(
-            instructor.firstName,
-            instructor.middleName,
-            instructor.lastName,
-          ),
-        }));
-
-        setInstructors(formattedInstructors);
-      } else {
-        console.error("Failed to fetch instructors:", result.error);
-        toast({
-          title: "Error",
-          description: "Could not load instructors' list.",
-          variant: "destructive",
-        });
+        setInstructors(
+          result.data.map((i) => ({
+            id: i.id,
+            name: getFullName(i.firstName, i.middleName, i.lastName),
+          }))
+        );
       }
     };
-
     fetchInstructors();
-  }, [toast, instructorId, instructorName]);
+  }, []);
 
+  /** Load course and flatten structure into draggable list */
+  useEffect(() => {
+    if (!courseId) return;
+    const loadCourse = async () => {
+      try {
+        showOverlay("Loading course data...");
+        const data = await courseService.getCourseById(courseId);
+        setCourse(data);
+        setTitle(data.title);
+        setDescription(data.description);
+        setStatus(data.status);
+        setDuration({
+          hours: data.duration?.hours ?? 0,
+          minutes: data.duration?.minutes ?? 0,
+        });
+        setRegularPrice(data.regularPrice ?? 0);
+        setSalePrice(data.salePrice ?? 0);
+        setSelectedCategories(data.categoryIds ?? []);
+        setSelectedTargetAudiences(data.targetAudienceIds ?? []);
+        setTags(data.tags ?? []);
+        setInstructorId(data.instructorId ?? "");
+        setInstructorName(data.instructorName ?? "");
+        setThumbnailUrl(data.thumbnail ?? "");
+        setCurriculum(getFlatCurriculum(data));
+      } catch (err) {
+        toast({
+          title: "Error loading course",
+          description: String(err),
+          variant: "destructive",
+        });
+      } finally {
+        hideOverlay();
+      }
+    };
+    loadCourse();
+  }, [courseId]);
+
+  // ───────────────────────────────────────────────────────────────
+  // ─── BASICS TAB LOGIC ──────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────
+
+  /**
+   * Upload handler for new thumbnail image
+   */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     if (!file) return;
@@ -358,7 +217,7 @@ const CurriculumBuilderPage = () => {
 
     const uploadResult = fileService.startResumableUpload(
       `/courses/${courseId}/thumbnail.png`,
-      selectedFile,
+      selectedFile
     );
     if (!uploadResult.success) {
       toast({
@@ -405,67 +264,58 @@ const CurriculumBuilderPage = () => {
           });
           logError("Error getting download URL:", error);
         }
-      },
+      }
     );
   };
 
-  // Validation + Save enabling
+  /** Can the basic course info be saved (validation) */
   const canSaveBasics =
-    title.trim().length > 0 &&
-    description.trim().length > 0 &&
+    title.trim() &&
+    description.trim() &&
     isNum(regularPrice) &&
     isNum(salePrice) &&
     isNum(duration.hours) &&
-    isNum(duration.minutes) &&
-    regularPrice >= 0 &&
-    salePrice >= 0 &&
-    salePrice <= regularPrice &&
-    duration.hours >= 0 &&
-    duration.minutes >= 0 &&
-    duration.minutes <= 59;
+    isNum(duration.minutes);
 
+  /** Save fundamental course details (non-curriculum) */
   const saveBasics = async () => {
-    if (!courseId || !course) return;
-
-    if (!canSaveBasics) {
-      toast({
-        title: "Missing or invalid fields",
-        description: "Fill all numeric fields and required text fields correctly.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!courseId) return;
     try {
-      showOverlay("Saving Course Basics");
+      showOverlay("Saving course basics...");
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
-        duration: { hours: duration.hours!, minutes: duration.minutes! },
+        duration,
         regularPrice: regularPrice!,
-        thumbnail: thumbnailUrl,
         salePrice: salePrice!,
-        targetAudienceIds: selectedTargetAudiences,
+        thumbnail: thumbnailUrl,
         categoryIds: selectedCategories,
+        targetAudienceIds: selectedTargetAudiences,
         tags,
-        instructorId: instructorId,
-        instructorName: instructorName,
+        instructorId,
+        instructorName,
         status,
       });
-      toast({ title: "Saved", description: "Basics updated." });
-    } catch (e) {
-      toast({ title: "Error", description: String(e), variant: "destructive" });
+      toast({ title: "Saved", description: "Course updated." });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: String(err),
+        variant: "destructive",
+      });
     } finally {
       hideOverlay();
     }
   };
 
-  //Todo
-  // Notify the system if both cohorts and topics are non-empty simultaneously
+  // ───────────────────────────────────────────────────────────────
+  // ─── CURRICULUM TAB LOGIC ──────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────
+
+  /** Flatten backend structure into draggable list form */
   const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
     const flatList: DraggableItem[] = [];
 
-    // Root topics
     (courseData.topics || []).forEach((topic) => {
       flatList.push({
         id: topic.id,
@@ -477,10 +327,10 @@ const CurriculumBuilderPage = () => {
       });
 
       (topic.items || []).forEach((item) => {
-        const isAssignment = item.type === "ASSIGNMENT";
+        const isAssignment = item.type === LEARNING_UNIT.ASSIGNMENT;
         flatList.push({
           id: item.id,
-          refId: item.id, // real item id
+          refId: item.id,
           title: item.title,
           type: isAssignment ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
           depth: 1,
@@ -489,525 +339,300 @@ const CurriculumBuilderPage = () => {
       });
     });
 
-    // Cohorts
-    (courseData.cohorts || []).forEach((cohort) => {
-      flatList.push({
-        id: cohort.id,
-        title: cohort.title,
-        type: LEARNING_UNIT.COHORT,
-        depth: 0,
-        parentId: null,
-        originalData: cohort,
-      });
-
-      (cohort.topics || []).forEach((topic) => {
-        flatList.push({
-          id: topic.id,
-          title: topic.title,
-          type: LEARNING_UNIT.TOPIC,
-          depth: 1,
-          parentId: cohort.id,
-        });
-
-        (topic.items || []).forEach((item) => {
-          const isAssignment = item.type === "ASSIGNMENT";
-          flatList.push({
-            id: item.id,
-            refId: item.id, // real item id
-            title: item.title,
-            type: isAssignment
-              ? LEARNING_UNIT.ASSIGNMENT
-              : LEARNING_UNIT.LESSON,
-            depth: 2,
-            parentId: topic.id,
-          });
-        });
-      });
-    });
-
     return flatList;
   };
 
-  const duplicateCohort = (cohortId: string) => {
-    setCurriculum((prev) => {
-      const newList = [...prev];
-      const originalCohort = newList.find((i) => i.id === cohortId);
-      if (!originalCohort || originalCohort.type !== LEARNING_UNIT.COHORT)
-        return prev;
-
-      const newCohortId = `cohort_${Date.now()}`;
-      const newCohortTitle = `${originalCohort.title} -- Copy`;
-
-      const newCohort: DraggableItem = {
-        id: newCohortId,
-        title: newCohortTitle,
-        type: LEARNING_UNIT.COHORT,
+  /** Create and insert a new top-level Topic */
+  const addTopic = () => {
+    setCurriculum((prev) => [
+      ...prev,
+      {
+        id: `topic_${Date.now()}`,
+        title: "New Topic",
+        type: LEARNING_UNIT.TOPIC,
         depth: 0,
         parentId: null,
-      };
-
-      const topics = newList.filter(
-        (i) => i.parentId === cohortId && i.type === LEARNING_UNIT.TOPIC,
-      );
-
-      const itemsToInsert: DraggableItem[] = [newCohort];
-
-      topics.forEach((topic) => {
-        const newTopicId = `topic_${Date.now()}_${Math.random()
-          .toString(36)
-          .substring(2, 8)}`;
-        const newTopic: DraggableItem = {
-          id: newTopicId,
-          title: topic.title,
-          type: LEARNING_UNIT.TOPIC,
-          depth: 1,
-          parentId: newCohortId,
-        };
-
-        itemsToInsert.push(newTopic);
-
-        const lessons = newList.filter(
-          (i) => i.parentId === topic.id && i.type === LEARNING_UNIT.LESSON,
-        );
-
-        lessons.forEach((lesson) => {
-          const refId = lesson.refId ?? lesson.id;
-          const newLesson: DraggableItem = {
-            ...lesson,
-            id: refId,
-            refId: refId,
-            parentId: newTopicId,
-            depth: 2,
-          };
-          itemsToInsert.push(newLesson);
-        });
-      });
-
-      return [...newList, ...itemsToInsert];
-    });
+      },
+    ]);
   };
 
-  const excludedLessonIdsForActiveParent = useMemo(() => {
-    if (!isLessonSelectorModalOpen || !activeParentId) return [];
 
-    const topic = curriculum.find(
-      (i) => i.id === activeParentId && i.type === LEARNING_UNIT.TOPIC,
+
+  /** Update an item's title (topic/lesson/assignment) */
+  const updateItemName = (itemId: string, name: string) => {
+    setCurriculum((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, title: name } : item))
     );
-    if (!topic) return [];
-
-    const cohortId = topic.parentId;
-
-    // ------- CASE 1: topic inside a cohort -------
-    if (cohortId) {
-      const topicIdsInCohort = new Set(
-        curriculum
-          .filter(
-            (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId,
-          )
-          .map((i) => i.id),
-      );
-
-      const usedLessonIds = new Set<string>();
-      curriculum.forEach((i) => {
-        if (
-          i.type === LEARNING_UNIT.LESSON &&
-          i.parentId &&
-          topicIdsInCohort.has(i.parentId)
-        ) {
-          usedLessonIds.add(i.refId ?? i.id);
-        }
-      });
-      return Array.from(usedLessonIds);
-    }
-
-    // ------- CASE 2: root topic (no cohort) -------
-    // Then exclude *all* lessons used anywhere else in the course
-    const usedLessonIds = new Set<string>();
-    curriculum.forEach((i) => {
-      if (i.type === LEARNING_UNIT.LESSON) {
-        usedLessonIds.add(i.refId ?? i.id);
-      }
-    });
-    return Array.from(usedLessonIds);
-  }, [isLessonSelectorModalOpen, activeParentId, curriculum]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    setCurriculum((prev) => {
-      let list = [...prev];
-
-      const isCohort = (i: (typeof list)[number]) =>
-        i.type === LEARNING_UNIT.COHORT;
-      const isTopic = (i: (typeof list)[number]) =>
-        i.type === LEARNING_UNIT.TOPIC;
-      const isLesson = (i: (typeof list)[number]) =>
-        i.type === LEARNING_UNIT.LESSON;
-      const isAssignment = (i: (typeof list)[number]) =>
-        i.type === LEARNING_UNIT.ASSIGNMENT;
-
-      const idxActive = list.findIndex((i) => i.id === active.id);
-      const idxOver = list.findIndex((i) => i.id === over.id);
-      if (idxActive === -1 || idxOver === -1) return prev;
-
-      const itemMap = new Map(list.map((i) => [i.id, i] as const));
-
-      const getCohortIdFor = (item: (typeof list)[number]): string | null => {
-        if (isCohort(item)) return item.id;
-        if (isTopic(item)) return item.parentId ?? null;
-        if (isLesson(item) || isAssignment(item)) {
-          const topic = item.parentId ? itemMap.get(item.parentId) : undefined;
-          return topic && isTopic(topic) ? (topic.parentId ?? null) : null;
-        }
-        return null;
-      };
-
-      // Reparent only when the drop pairing is valid
-      const activeItem = { ...list[idxActive] };
-      const overItem = list[idxOver];
-
-      const computeNewParentId = (): string | null | undefined => {
-        // undefined => keep current parent
-        if (isCohort(activeItem)) return null; // cohorts are always top-level (parentId = null)
-
-        if (isTopic(activeItem)) {
-          if (isCohort(overItem)) return overItem.id; // Topic into that cohort
-          if (isTopic(overItem)) return overItem.parentId ?? null; // Topic among topics of same cohort
-          if (isLesson(overItem) || isAssignment(overItem))
-            return getCohortIdFor(overItem); // Topic near a lesson => adopt that lesson's cohort
-          return undefined;
-        }
-
-        if (isLesson(activeItem) || isAssignment(activeItem)) {
-          if (isTopic(overItem)) return overItem.id; // Lesson into that topic
-          if (isLesson(overItem)) return overItem.parentId ?? null; // Lesson among lessons of same topic
-          if (isCohort(overItem)) return undefined; // Don't reparent off a cohort
-          return undefined;
-        }
-
-        return undefined;
-      };
-
-      const maybeNewParent = computeNewParentId();
-      if (maybeNewParent !== undefined) {
-        activeItem.parentId = maybeNewParent;
-      }
-      list[idxActive] = activeItem;
-
-      // Move active to the 'over' index
-      list = arrayMove(list, idxActive, idxOver);
-
-      // Enforce relaxed “level gating” (minimal movement):
-      const ensureLevelGating = (arr: typeof list) => {
-        let out = arr;
-        for (let pass = 0; pass < 4; pass++) {
-          let changed = false;
-
-          const cIdx = out.findIndex(isCohort);
-          const tIdx = out.findIndex(isTopic);
-          const lIdx = out.findIndex(isLesson) || out.findIndex(isAssignment);
-
-          if (cIdx !== -1 && tIdx !== -1 && tIdx < cIdx) {
-            out = arrayMove(out, cIdx, tIdx);
-            changed = true;
-          }
-
-          const tIdx2 = out.findIndex(isTopic);
-          const lIdx2 = out.findIndex(isLesson) || out.findIndex(isAssignment);
-
-          if (tIdx2 !== -1 && lIdx2 !== -1 && lIdx2 < tIdx2) {
-            out = arrayMove(out, tIdx2, lIdx2);
-            changed = true;
-          }
-
-          if (!changed) break;
-        }
-        return out;
-      };
-
-      list = ensureLevelGating(list);
-
-      // Recompute depth from actual parent chain (order-independent)
-      const finalMap = new Map(list.map((i) => [i.id, i] as const));
-      const depthMemo = new Map<string, number>();
-
-      const depthOf = (item: (typeof list)[number]): number => {
-        if (depthMemo.has(item.id)) return depthMemo.get(item.id)!;
-
-        let d = 0;
-        if (isCohort(item)) {
-          d = 0;
-        } else if (isTopic(item)) {
-          const parent = item.parentId
-            ? finalMap.get(item.parentId)
-            : undefined;
-          d = parent && isCohort(parent) ? depthOf(parent) + 1 : 1; // fallback to level 1
-        } else if (isLesson(item) || isAssignment(item)) {
-          const parent = item.parentId
-            ? finalMap.get(item.parentId)
-            : undefined;
-          d = parent && isTopic(parent) ? depthOf(parent) + 1 : 2; // fallback to level 2
-        }
-        depthMemo.set(item.id, d);
-        return d;
-      };
-
-      return list.map((i) => ({ ...i, depth: depthOf(i) }));
-    });
+  
   };
 
-  const addItem = (
-    type: LearningUnitType,
-    parentId: string | null = null,
-    depth = 0,
-  ) => {
-    const newItem: DraggableItem = {
-      id: `${type.toLowerCase()}_${Date.now()}`,
-      title: `New ${type} `,
-      type,
-      depth,
-      parentId,
-    };
-    setCurriculum((prev) => [...prev, newItem]);
-    setEditingItemId(newItem.id);
-    setNewItemName(newItem.title);
+  /** Delete any curriculum item */
+  const deleteItem = (id: string) => {
+    setCurriculum((prev) => prev.filter((i) => i.id !== id));
   };
 
+  /** Pick lessons from library to attach to a topic */
   const addLessonToParent = (parentId: string) => {
     setActiveParentId(parentId);
     setIsLessonSelectorModalOpen(true);
   };
 
-  const addTopicToCohort = (cohortId: string, depth: number) => {
-    const newTopic = {
-      id: `TOPIC_${Date.now()}`,
-      title: "New Topic",
-      type: LEARNING_UNIT.TOPIC,
-      depth: depth + 1,
-      parentId: cohortId,
-    };
-
-    setCurriculum((prev) => {
-      const cohortIndex = prev.findIndex((i) => i.id === cohortId);
-
-      // Find index after the last child of the cohort
-      let insertIndex = cohortIndex + 1;
-      for (let i = cohortIndex + 1; i < prev.length; i++) {
-        if (prev[i].depth <= depth) break;
-        insertIndex = i + 1;
-      }
-
-      const newCurriculum = [...prev];
-      newCurriculum.splice(insertIndex, 0, newTopic);
-      return newCurriculum;
-    });
-  };
-
-  // utils ---------------------------------------------------------------
-  const flattenCohort = (cohort: Cohort, cohortDepth = 0): DraggableItem[] => {
-    const rows: DraggableItem[] = [
-      {
-        id: cohort.id,
-        title: cohort.title,
-        type: LEARNING_UNIT.COHORT,
-        depth: cohortDepth,
-        parentId: null,
-        originalData: cohort,
-      },
-    ];
-
-    cohort.topics.forEach((topic) => {
-      rows.push({
-        id: topic.id,
-        title: topic.title,
-        type: LEARNING_UNIT.TOPIC,
-        depth: cohortDepth + 1,
-        parentId: cohort.id,
-      });
-
-      topic.items.forEach((lesson) => {
-        rows.push({
-          id: lesson.id,
-          title: lesson.title,
-          type: LEARNING_UNIT.LESSON,
-          depth: cohortDepth + 2,
-          parentId: topic.id,
-        });
-      });
-    });
-
-    return rows;
-  };
-
-  // --------------------------------------------------------------------
-
-  const updateItemName = (itemId: string, name: string) => {
-    setCurriculum((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, title: name } : item,
-      ),
-    );
-    setEditingItemId(null);
-  };
-
-  const deleteItem = (itemId: string) => {
-    setCurriculum((prev) => {
-      // Find all children and grandchildren recursively to delete them too
-      const itemsToDelete = new Set<string>([itemId]);
-      const queue = [itemId];
-
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        const children = prev.filter((i) => i.parentId === currentId);
-        for (const child of children) {
-          itemsToDelete.add(child.id);
-          queue.push(child.id);
-        }
-      }
-
-      const newCurriculum = prev.filter((i) => !itemsToDelete.has(i.id));
-      return newCurriculum;
-    });
-  };
-
-  const handleAssignment = (assignment: Assignment) => {
-    if (!activeParentId) {
-      console.error("No activeParentId set");
-      return;
-    }
-
-    const parentIndex = curriculum.findIndex(
-      (item) => item.id === activeParentId,
-    );
-    if (parentIndex === -1) {
-      console.error("Parent not found in curriculum:", activeParentId);
-      return;
-    }
-
-    // Check duplicate
-    const assignmentExists = curriculum.some(
-      (item) =>
-        item.type === LEARNING_UNIT.ASSIGNMENT &&
-        item.parentId === activeParentId &&
-        (item.refId === assignment.id || item.refId === assignment.id),
-    );
-
-    if (assignmentExists) {
-      toast({
-        title: "Duplicate Assignment",
-        description: "Assignment already exists in this topic",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Create assignment item
-    const newItem: DraggableItem = {
-      id: assignment.id,
-      refId: assignment.id,
-      title: assignment.title,
-      type: LEARNING_UNIT.ASSIGNMENT,
-      depth: curriculum[parentIndex].depth + 1,
-      parentId: activeParentId,
-    };
-
-    setCurriculum((prev) => {
-      const updated = [...prev];
-
-      // Find insertion point after parent
-      let insertIndex = parentIndex + 1;
-      for (let i = parentIndex + 1; i < updated.length; i++) {
-        if (updated[i].depth <= curriculum[parentIndex].depth) break;
-        insertIndex = i + 1;
-      }
-
-      updated.splice(insertIndex, 0, newItem);
-      return updated;
-    });
-
-    setIsAssignmentModelOpen(false);
-    setActiveParentId(null); // Reset active parent
-    toast({
-      title: "Success",
-      description: "Assignment added to curriculum",
-    });
-    setIsTopicItemAdded(true);
-  };
-
+  /** Add lessons to the active topic (at end of topic's children) */
   const addLessonsToParent = (lessons: Lesson[]) => {
-    if (!activeParentId) return;
-
     const parentIndex = curriculum.findIndex((i) => i.id === activeParentId);
-    const parentDepth = curriculum[parentIndex]?.depth || 0;
-    const parentTopic = curriculum[parentIndex];
+    if (parentIndex === -1) return;
 
-    // if topic has a cohort, collect used lesson ids in that cohort
-    let usedInCohort = new Set<string>();
-    const cohortId = parentTopic?.parentId ?? null;
+    const parentDepth = curriculum[parentIndex].depth;
 
-    if (cohortId) {
-      const topicIdsInCohort = new Set(
-        curriculum
-          .filter(
-            (i) => i.type === LEARNING_UNIT.TOPIC && i.parentId === cohortId,
-          )
-          .map((i) => i.id),
-      );
+    let insertIndex = parentIndex + 1;
 
-      curriculum.forEach((i) => {
-        if (
-          i.type === LEARNING_UNIT.LESSON &&
-          i.parentId &&
-          topicIdsInCohort.has(i.parentId)
-        ) {
-          usedInCohort.add(i.refId ?? i.id);
-        }
-      });
+    for (let i = parentIndex + 1; i < curriculum.length; i++) {
+      const item = curriculum[i];
+
+      if (item.parentId === activeParentId) {
+        insertIndex = i + 1;
+      } else if (
+        item.depth <= parentDepth ||
+        item.type === LEARNING_UNIT.TOPIC
+      ) {
+        break;
+      }
     }
 
-    // Filter: remove duplicates already present in cohort AND duplicates within selection
-    const seenInSelection = new Set<string>();
-    const filtered = lessons.filter((l) => {
-      if (cohortId && usedInCohort.has(l.id)) return false;
-      if (seenInSelection.has(l.id)) return false;
-      seenInSelection.add(l.id);
-      return true;
-    });
-
-    const skippedCount = lessons.length - filtered.length;
-    if (skippedCount > 0) {
-      toast({
-        title: "Skipped duplicates",
-        description: `${skippedCount} lesson(s) already exist in this cohort and were not added.`,
-      });
-    }
-
-    const newItems: DraggableItem[] = filtered.map((lesson) => ({
-      id: lesson.id, // instance id
-      refId: lesson.id, // real id
-      title: lesson.title,
+    const newItems = lessons.map((l) => ({
+      id: l.id,
+      refId: l.id, // ✅ Add refId for consistency
+      title: l.title,
       type: LEARNING_UNIT.LESSON,
       depth: parentDepth + 1,
       parentId: activeParentId,
     }));
 
-    setCurriculum((prev) => {
-      let insertIndex = parentIndex + 1;
-      for (let i = parentIndex + 1; i < prev.length; i++) {
-        if (prev[i].depth <= parentDepth) break;
-        insertIndex = i + 1;
-      }
-
-      const updated = [...prev];
-      updated.splice(insertIndex, 0, ...newItems);
-      return updated;
-    });
+    const newCurriculum = [...curriculum];
+    newCurriculum.splice(insertIndex, 0, ...newItems);
+    setCurriculum(newCurriculum);
     setIsLessonSelectorModalOpen(false);
-    setActiveParentId(null); // Reset active parent
-    setIsTopicItemAdded(true);
   };
 
+  /** Add new assignment or update existing one under active topic */
+  /** Add new assignment or update existing one */
+  const handleAssignment = (assignment: Assignment) => {
+    setCurriculum((prev) => {
+      // ─────────────────────────────────────────────────────────
+      // ✅ CHECK IF EDITING EXISTING ASSIGNMENT
+      // ─────────────────────────────────────────────────────────
+      const existingIndex = prev.findIndex((i) => i.id === assignment.id);
+
+      if (existingIndex !== -1) {
+        // ✅ UPDATE MODE: Just update the title
+        return prev.map((item) =>
+          item.id === assignment.id
+            ? { ...item, title: assignment.title }
+            : item
+        );
+      }
+
+      // ─────────────────────────────────────────────────────────
+      // ✅ CREATE MODE: Insert under active parent
+      // ─────────────────────────────────────────────────────────
+      if (!activeParentId) {
+        toast({
+          title: "Error",
+          description: "No topic selected",
+          variant: "destructive",
+        });
+        return prev;
+      }
+
+      const parentIndex = prev.findIndex((i) => i.id === activeParentId);
+      if (parentIndex === -1) return prev;
+
+      const parentDepth = prev[parentIndex].depth;
+
+      // Find insert position (after last child of parent)
+      let insertIndex = parentIndex + 1;
+
+      for (let i = parentIndex + 1; i < prev.length; i++) {
+        const item = prev[i];
+
+        if (item.parentId === activeParentId) {
+          insertIndex = i + 1;
+        } else if (
+          item.depth <= parentDepth ||
+          item.type === LEARNING_UNIT.TOPIC
+        ) {
+          break;
+        }
+      }
+
+      const newAssignment = {
+        id: assignment.id,
+        refId: assignment.id,
+        title: assignment.title,
+        type: LEARNING_UNIT.ASSIGNMENT,
+        depth: parentDepth + 1,
+        parentId: activeParentId,
+      };
+
+      const newCurriculum = [...prev];
+      newCurriculum.splice(insertIndex, 0, newAssignment);
+      return newCurriculum;
+    });
+
+    // ✅ Clean up modal state
+    setIsAssignmentModelOpen(false);
+    setEditingItemId(null);
+    setActiveParentId(null);
+  };
+  /** Enforce hierarchy and re-index after drag & drop */
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    // Early exit: no valid drop target or dropped on self
+    if (!over || active.id === over.id) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    setCurriculum((prev) => {
+      const list = [...prev];
+
+      // Find item indices
+      const idxActive = list.findIndex((i) => i.id === activeId);
+      const idxOver = list.findIndex((i) => i.id === overId);
+
+      // Guard: invalid indices
+      if (idxActive === -1 || idxOver === -1) return prev;
+
+      // Type predicates
+      const isTopic = (item: (typeof list)[number]) =>
+        item.type === LEARNING_UNIT.TOPIC;
+      const isChild = (item: (typeof list)[number]) =>
+        item.type === LEARNING_UNIT.LESSON ||
+        item.type === LEARNING_UNIT.ASSIGNMENT;
+
+      const activeItem = list[idxActive];
+      const overItem = list[idxOver];
+
+     
+      if (isTopic(activeItem)) {
+        const overItem = list[idxOver];
+
+        // Prevent dropping into another topic’s children
+        // Check if drop target is inside someone else’s subtree
+        if (!isTopic(overItem)) {
+          // Find the topic "block" that owns the overItem
+          const parentTopic = list.find(
+            (i) =>
+              i.type === LEARNING_UNIT.TOPIC &&
+              // Find first topic above the overItem
+              list.indexOf(i) < idxOver &&
+              // Find next topic below (if any)
+              (list.findIndex(
+                (t) =>
+                  t.type === LEARNING_UNIT.TOPIC &&
+                  list.indexOf(t) > list.indexOf(i)
+              ) > idxOver ||
+                list.findIndex(
+                  (t) =>
+                    t.type === LEARNING_UNIT.TOPIC &&
+                    list.indexOf(t) > list.indexOf(i)
+                ) === -1)
+          );
+
+          // If we found that the overItem belongs to a topic block (thus not root)
+          if (parentTopic) {
+            return prev; //  Invalid drop → ignore
+          }
+        }
+
+        //  Valid reorder: treat all topics as root-level
+        const reordered = arrayMove(list, idxActive, idxOver);
+        const final = reordered.map((item) =>
+          isTopic(item) ? { ...item, parentId: null, depth: 0 } : item
+        );
+
+        if (JSON.stringify(prev) !== JSON.stringify(final)) {
+          queueMicrotask(() => saveCurriculumStructure());
+        }
+
+        return final;
+      }
+
+      // ─────────────────────────────────────────────────────────
+      // CASE 2: Dragging a CHILD (Lesson or Assignment)
+      // Must maintain parent relationship and validate position
+      // ─────────────────────────────────────────────────────────
+      if (isChild(activeItem)) {
+        let newParentId: string | null = null;
+
+        // Determine new parent based on drop target
+        if (isTopic(overItem)) {
+          // Dropped on a topic → becomes child of that topic
+          newParentId = overItem.id;
+        } else if (isChild(overItem)) {
+          // Dropped on another child → inherits that child's parent
+          newParentId = overItem.parentId;
+        }
+
+        // Guard: must have valid parent
+        if (!newParentId) return prev;
+
+        // Perform array reorder
+        let reordered = arrayMove(list, idxActive, idxOver);
+
+        // Update the moved item's parent
+        reordered = reordered.map((item) =>
+          item.id === activeId ? { ...item, parentId: newParentId } : item
+        );
+
+        // ─────────────────────────────────────────────────────────
+        //  CRITICAL GUARD: Prevent children before first topic
+        // ─────────────────────────────────────────────────────────
+        const firstTopicIdx = reordered.findIndex(isTopic);
+        if (firstTopicIdx === -1) return prev; // No topics exist
+
+        // Check if any child appears before the first topic
+        for (let i = 0; i < firstTopicIdx; i++) {
+          if (isChild(reordered[i])) {
+            // INVALID: child positioned before first topic → snap back
+            return prev;
+          }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Recalculate depths from parent relationships
+        // ─────────────────────────────────────────────────────────
+        const idMap = new Map(reordered.map((i) => [i.id, i]));
+
+        const computeDepth = (item: (typeof reordered)[number]): number => {
+          if (isTopic(item)) return 0;
+          if (!item.parentId) return 0;
+          const parent = idMap.get(item.parentId);
+          return parent ? parent.depth + 1 : 0;
+        };
+
+        const final = reordered.map((item) => ({
+          ...item,
+          depth: computeDepth(item),
+        }));
+
+        // ─────────────────────────────────────────────────────────
+        // ✅ Persist only if structure actually changed
+        // ─────────────────────────────────────────────────────────
+        if (JSON.stringify(prev) !== JSON.stringify(final)) {
+          queueMicrotask(() => saveCurriculumStructure());
+        }
+
+        return final;
+      }
+
+      // Fallback: unrecognized operation
+      return prev;
+    });
+  };
+
+  /** Save the current curriculum structure to the backend */
   const saveCurriculumStructure = async () => {
     if (!courseId || !course) {
       toast({
@@ -1019,86 +644,41 @@ const CurriculumBuilderPage = () => {
     }
 
     try {
-      showOverlay("Saving Curriculum.");
+      showOverlay("Saving Curriculum...");
 
-      const newRootTopics: Topic[] = [];
-      const newCohorts: Cohort[] = [];
-
-      // Create maps for efficient lookup
-      const itemMap = new Map(curriculum.map((item) => [item.id, item]));
+      const newTopics: Topic[] = [];
       const childrenMap = new Map<string, DraggableItem[]>();
       curriculum.forEach((item) => {
         if (item.parentId) {
-          if (!childrenMap.has(item.parentId)) {
+          if (!childrenMap.has(item.parentId))
             childrenMap.set(item.parentId, []);
-          }
           childrenMap.get(item.parentId)!.push(item);
         }
       });
 
-      // Process only root items (depth 0)
       for (const item of curriculum) {
-        if (item.parentId == null) {
-          if (item.type === LEARNING_UNIT.COHORT) {
-            // Topics directly under this cohort
-            const cohortTopicItems = (childrenMap.get(item.id) || []).filter(
-              (c) => c.type === LEARNING_UNIT.TOPIC,
-            );
+        if (!item.parentId && item.type === LEARNING_UNIT.TOPIC) {
+          const lessonItems = (childrenMap.get(item.id) || [])
+            .filter(
+              (l) =>
+                l.type === LEARNING_UNIT.LESSON ||
+                l.type === LEARNING_UNIT.ASSIGNMENT
+            )
+            .map((lessonItem) => ({
+              id: lessonItem.refId ?? lessonItem.id,
+              title: lessonItem.title,
+              type: lessonItem.type as LearningContentType,
+            }));
 
-            const cohortTopics: Topic[] = cohortTopicItems.map((topicItem) => {
-              const lessonItems = (childrenMap.get(topicItem.id) || [])
-                .filter(
-                  (l) =>
-                    l.type === LEARNING_UNIT.LESSON ||
-                    l.type === LEARNING_UNIT.ASSIGNMENT,
-                )
-                .map((lessonItem) => ({
-                  id: (lessonItem.refId ?? lessonItem.id) as string, // handle both lessons and assignments
-                  title: lessonItem.title,
-                  type: lessonItem.type as LearningContentType,
-                })) as TopicItem[];
-
-              return {
-                id: topicItem.id,
-                title: topicItem.title,
-                items: lessonItems,
-              };
-            });
-
-            const originalCohort = (item.originalData as Cohort) || {};
-            newCohorts.push({
-              ...originalCohort,
-              id: item.id,
-              title: item.title,
-              topics: cohortTopics,
-              price: 0,
-            });
-          } else if (item.type === LEARNING_UNIT.TOPIC) {
-            // Root topic
-            const lessonItems = (childrenMap.get(item.id) || [])
-              .filter(
-                (l) =>
-                  l.type === LEARNING_UNIT.LESSON ||
-                  l.type === LEARNING_UNIT.ASSIGNMENT,
-              )
-              .map((lessonItem) => ({
-                id: lessonItem.refId ?? lessonItem.id, // handle both lessons and assignments
-                title: lessonItem.title,
-                type: lessonItem.type as LearningContentType,
-              }));
-            newRootTopics.push({
-              id: item.id,
-              title: item.title,
-              items: lessonItems,
-            });
-          }
+          newTopics.push({
+            id: item.id,
+            title: item.title,
+            items: lessonItems,
+          });
         }
       }
-      const updates: Partial<Course> = {
-        topics: newRootTopics,
-        cohorts: newCohorts,
-      };
 
+      const updates: Partial<Course> = { topics: newTopics };
       await courseService.updateCourse(courseId, updates);
 
       toast({ title: "Success", description: "Curriculum saved!" });
@@ -1116,908 +696,103 @@ const CurriculumBuilderPage = () => {
   const firstLessonId = useMemo(() => {
     const firstLesson = curriculum.find(
       (i) =>
-        i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT,
+        i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
     );
-    return firstLesson ? (firstLesson.refId ?? firstLesson.id) : null;
+    return firstLesson ? firstLesson.refId ?? firstLesson.id : null;
   }, [curriculum]);
 
-  if (loading) return <div>Loading...</div>;
-  if (!course) return <div>Course not found.</div>;
+  // ───────────────────────────────────────────────────────────────
+  // ─── RENDER ────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      {/* Header is fine */}
-
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="basics" className="w-full">
-          {/* Tab buttons ----------------------------------------------------- */}
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            {/* <TabsTrigger value="additional">Additional</TabsTrigger> */}
           </TabsList>
 
-          {/* ────────── BASICS TAB CONTENT ────────── */}
+          {/* ─── BASICS TAB ───────────────────────────────────────── */}
           <TabsContent value="basics">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              {/* ───────── LEFT SIDE (Main Content) ───────── */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Title */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Course Title</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Mastering React 18"
-                    />
-                  </CardContent>
-                </Card>
-                {/* Description */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Description</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      A short marketing paragraph – supports markdown.
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <Textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="min-h-32"
-                      placeholder="What will students learn?"
-                    />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Thumbnail</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {!preview && thumbnailUrl && (
-                      <div className="mb-5">
-                        <img
-                          src={thumbnailUrl}
-                          alt="Preview"
-                          className="border rounded"
-                        />
-                      </div>
-                    )}
-                    {preview && (
-                      <div className="mb-5">
-                        <img
-                          src={preview}
-                          alt="Preview"
-                          className="border rounded"
-                        />
-                      </div>
-                    )}
-                    {uploadingThumbnail && (
-                      <div className="mb-8">
-                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
-                          <div
-                            style={{
-                              width: `${progress}%`,
-                              height: "100%",
-                              backgroundColor: "#ff00ff",
-                              transition: "width 0.3s",
-                            }}
-                          />
-                        </div>
-                        <small>{progress}%</small>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Instructor + Categories + Tags row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Instructor */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Instructor</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select
-                        value={instructorName}
-                        onValueChange={(val) => {
-                          const a = instructors.find((x) => x.name === val);
-                          setInstructorName(val);
-                          setInstructorId(a?.id || "");
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select instructor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {instructors.map((a) => (
-                            <SelectItem key={a.id} value={a.name}>
-                              {a.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-                   {/* Categories */}
-                  {/* <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Categories</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Pick one or more to help discovery
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {["AI/ML", "Bootcamp", "College", "Data-Science", "Generative-AI"].map((cat) => (
-                        <label key={cat} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox
-                            checked={categories.includes(cat)}
-                            onCheckedChange={() =>
-                              setCategories((prev) =>
-                                prev.includes(cat)
-                                  ? prev.filter((c) => c !== cat)
-                                  : [...prev, cat]
-                              )
-                            }
-                          />
-                          {cat}
-                        </label>
-                      ))}
-                    </CardContent>
-                  </Card>
-
-                  {/* Tags */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Tags</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Used for search. Press Enter to add.
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <Input
-                        value={tagInput}
-                        placeholder="add tag and press ↵"
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && tagInput.trim()) {
-                            e.preventDefault();
-                            if (!tags.includes(tagInput.trim()))
-                              setTags([...tags, tagInput.trim()]);
-                            setTagInput("");
-                          }
-                        }}
-                      />
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {tags.map((t) => (
-                          <span
-                            key={t}
-                            className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full flex items-center gap-1"
-                          >
-                            {t}
-                            <button
-                              className="hover:text-red-500"
-                              onClick={() =>
-                                setTags(tags.filter((x) => x !== t))
-                              }
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Categories */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Categories</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Pick one or more to help discovery
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {/* Selected Categories Display */}
-                      {selectedCategories.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedCategories.map((cat) => (
-                            <Badge
-                              key={cat}
-                              variant="secondary"
-                              className="pl-2 pr-1 py-1 text-sm"
-                            >
-                              {cat}
-                              <button
-                                onClick={() =>
-                                  setSelectedCategories((prev) =>
-                                    prev.filter((c) => c !== cat),
-                                  )
-                                }
-                                className="ml-1 rounded-full hover:bg-muted p-0.5"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Popover Selector */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className="w-full justify-between"
-                          >
-                            {selectedCategories.length > 0
-                              ? `${selectedCategories.length} selected`
-                              : "Select categories"}
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
-                          <Command>
-                            <CommandInput placeholder="Search categories..." />
-                            <CommandList>
-                              <CommandEmpty>No category found.</CommandEmpty>
-                              <CommandGroup>
-                                {allCategories.map((cat) => (
-                                  <CommandItem
-                                    key={cat}
-                                    onSelect={() =>
-                                      setSelectedCategories((prev) =>
-                                        prev.includes(cat)
-                                          ? prev.filter((c) => c !== cat)
-                                          : [...prev, cat],
-                                      )
-                                    }
-                                    className="cursor-pointer"
-                                  >
-                                    <Checkbox
-                                      checked={selectedCategories.includes(cat)}
-                                      className="mr-2"
-                                    />
-                                    {cat}
-                                    {selectedCategories.includes(cat) && (
-                                      <Check className="ml-auto h-4 w-4" />
-                                    )}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                            <div className="p-2 border-t">
-                              <Input
-                                placeholder="Add new category"
-                                onKeyDown={async (e) => {
-                                  e.stopPropagation();
-                                  if (
-                                    e.key === "Enter" &&
-                                    e.currentTarget.value.trim()
-                                  ) {
-                                    const newCat = e.currentTarget.value.trim();
-                                    if (!allCategories.includes(newCat)) {
-                                      await attributeService.addAttribute(
-                                        ATTRIBUTE_TYPE.CATEGORY,
-                                        newCat,
-                                      );
-                                      setAllCategories((prev) => [
-                                        ...prev,
-                                        newCat,
-                                      ]);
-                                      setSelectedCategories((prev) => [
-                                        ...prev,
-                                        newCat,
-                                      ]);
-                                    }
-                                    e.currentTarget.value = "";
-                                  }
-                                }}
-                              />
-                            </div>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </CardContent>
-                  </Card>
-                    {/* Target Audience */}
-                  <Card className="rounded-xl border p-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle>Target Audience</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Who is this content for?
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {/* Selected Audiences Display */}
-                      {selectedTargetAudiences.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedTargetAudiences.map((aud) => (
-                            <Badge
-                              key={aud}
-                              variant="secondary"
-                              className="pl-2 pr-1 py-1 text-sm"
-                            >
-                              {aud}
-                              <button
-                                onClick={() =>
-                                  setSelectedTargetAudiences((prev) =>
-                                    prev.filter((a) => a !== aud),
-                                  )
-                                }
-                                className="ml-1 rounded-full hover:bg-muted p-0.5"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Popover Selector */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className="w-full justify-between"
-                          >
-                            {selectedTargetAudiences.length > 0
-                              ? `${selectedTargetAudiences.length} selected`
-                              : "Select target audience"}
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
-                          <Command>
-                            <CommandInput placeholder="Search audiences..." />
-                            <CommandList>
-                              <CommandEmpty>No audience found.</CommandEmpty>
-                              <CommandGroup>
-                                {allTargetAudiences.map((aud) => (
-                                  <CommandItem
-                                    key={aud}
-                                    onSelect={() =>
-                                      setSelectedTargetAudiences((prev) =>
-                                        prev.includes(aud)
-                                          ? prev.filter((a) => a !== aud)
-                                          : [...prev, aud],
-                                      )
-                                    }
-                                    className="cursor-pointer"
-                                  >
-                                    <Checkbox
-                                      checked={selectedTargetAudiences.includes(
-                                        aud,
-                                      )}
-                                      className="mr-2"
-                                    />
-                                    {aud}
-                                    {selectedTargetAudiences.includes(aud) && (
-                                      <Check className="ml-auto h-4 w-4" />
-                                    )}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                            <div className="p-2 border-t">
-                              <Input
-                                placeholder="Add new audience"
-                                onKeyDown={async (e) => {
-                                  e.stopPropagation();
-                                  if (
-                                    e.key === "Enter" &&
-                                    e.currentTarget.value.trim()
-                                  ) {
-                                    const newAud = e.currentTarget.value.trim();
-                                    if (!allTargetAudiences.includes(newAud)) {
-                                      await attributeService.addAttribute(
-                                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
-                                        newAud,
-                                      );
-                                      setAllTargetAudiences((prev) => [
-                                        ...prev,
-                                        newAud,
-                                      ]);
-                                      setSelectedTargetAudiences((prev) => [
-                                        ...prev,
-                                        newAud,
-                                      ]);
-                                    }
-                                    e.currentTarget.value = "";
-                                  }
-                                }}
-                              />
-                            </div>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-              {/* ───────── RIGHT SIDE (Pricing, Status) ───────── */}
-              <div className="space-y-6">
-                {/* Pricing */}
-                <Card className="rounded-xl border p-4">
-                  <div className="flex gap-4">
-                    <Button onClick={saveBasics} disabled={!canSaveBasics}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Basics
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/admin")}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-3" />
-                      {"Back to Courses"}
-                    </Button>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Pricing</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">
-                        Regular price
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">₹</span>
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.01"
-                          min={0}
-                          value={regularPrice ?? ""}
-                          onChange={(e) => setRegularPrice(toNumberOrNull(e.target.value))}
-                          placeholder="Enter regular price"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">Sale price</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">₹</span>
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.01"
-                          min={0}
-                          value={salePrice ?? ""}
-                          onChange={(e) => setSalePrice(toNumberOrNull(e.target.value))}
-                          placeholder="Enter sale price"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Duration */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Duration</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Label>Hours</Label>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step={1}
-                      value={duration.hours ?? ""}
-                      onChange={(e) =>
-                        setDuration((prev) => ({
-                          ...prev,
-                          hours: toNumberOrNull(e.target.value),
-                        }))
-                      }
-                      placeholder="Hours"
-                    />
-                    <Label>Minutes</Label>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      max={59}
-                      step={1}
-                      value={duration.minutes ?? ""}
-                      onChange={(e) =>
-                        setDuration((prev) => ({
-                          ...prev,
-                          minutes: toNumberOrNull(e.target.value),
-                        }))
-                      }
-                      placeholder="Minutes (0–59)"
-                    />
-                  </CardContent>
-                </Card>
-                {/* Status */}
-                <Card className="rounded-xl border p-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle>Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select
-                      value={status}
-                      onValueChange={(val) => setStatus(val as CourseStatus)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(COURSE_STATUS).map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            <CourseBasicsTab
+              course={course}
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+              instructorId={instructorId}
+              setInstructorId={setInstructorId}
+              instructorName={instructorName}
+              setInstructorName={setInstructorName}
+              instructors={instructors}
+              regularPrice={regularPrice}
+              setRegularPrice={setRegularPrice}
+              salePrice={salePrice}
+              setSalePrice={setSalePrice}
+              duration={duration}
+              setDuration={setDuration}
+              status={status}
+              setStatus={setStatus}
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              allCategories={allCategories}
+              setAllCategories={setAllCategories}
+              selectedTargetAudiences={selectedTargetAudiences}
+              setSelectedTargetAudiences={setSelectedTargetAudiences}
+              allTargetAudiences={allTargetAudiences}
+              setAllTargetAudiences={setAllTargetAudiences}
+              tags={tags}
+              setTags={setTags}
+              tagInput={tagInput}
+              setTagInput={setTagInput}
+              thumbnailUrl={thumbnailUrl}
+              preview={preview}
+              uploadingThumbnail={uploadingThumbnail}
+              progress={progress}
+              handleFileChange={handleFileChange}
+              onSave={saveBasics}
+              canSaveBasics={Boolean(canSaveBasics)}
+            />
           </TabsContent>
 
-          {/* Curriculum Tab */}
+          {/* ─── CURRICULUM TAB ───────────────────────────────────── */}
           <TabsContent value="curriculum">
-            <Card className="shadow-lg border">
-              {/* ---- Header ------------------------------------------------ */}
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  {title} - Curriculum
-                </CardTitle>
-
-                <div className="flex flex-wrap gap-2">
-                  <CohortBuilderPage
-                    onCohortCreated={(cohort) => {
-                      setCurriculum((prev) => {
-                        const newCohort: DraggableItem = {
-                          id: cohort.id,
-                          title: cohort.title,
-                          type: LEARNING_UNIT.COHORT,
-                          depth: 0,
-                          parentId: null,
-                          originalData: cohort,
-                        };
-
-                        // Find all orphan topics (no cohort yet)
-                        const orphanTopics = prev.filter(
-                          (i) =>
-                            i.type === LEARNING_UNIT.TOPIC &&
-                            i.parentId === null,
-                        );
-                        if (orphanTopics.length === 0) {
-                          // No orphans, just append cohort
-                          return [...prev, newCohort];
-                        }
-
-                        // Reparent orphans + adjust depth
-                        const updated = prev.map((item) => {
-                          if (orphanTopics.some((t) => t.id === item.id)) {
-                            return { ...item, parentId: cohort.id, depth: 1 };
-                          }
-                          if (
-                            item.type === LEARNING_UNIT.LESSON &&
-                            orphanTopics.some((t) => t.id === item.parentId)
-                          ) {
-                            return { ...item, depth: 2 };
-                          }
-                          return item;
-                        });
-
-                        // Place cohort before first orphan topic
-                        const firstOrphanIndex = prev.findIndex(
-                          (i) =>
-                            i.type === LEARNING_UNIT.TOPIC &&
-                            i.parentId === null,
-                        );
-                        const insertIndex =
-                          firstOrphanIndex === -1
-                            ? prev.length
-                            : firstOrphanIndex;
-                        const result = [...updated];
-                        result.splice(insertIndex, 0, newCohort);
-                        return result;
-                      });
-
-                      toast({
-                        title: "Cohort Added",
-                        description: `“${cohort.title}” has been added, and existing topics were nested under it.`,
-                      });
-                    }}
-                  />
-
-                  {!curriculum.some(
-                    (item) => item.type === LEARNING_UNIT.COHORT,
-                  ) && (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          addItem(LEARNING_UNIT.TOPIC);
-                        }}
-                        className="flex items-center gap-1"
-                      >
-                        Add Topic
-                      </Button>
-                    )}
-
-                  <Button
-                    size="sm"
-                    onClick={saveCurriculumStructure}
-                    className="flex items-center gap-1"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save
-                  </Button>
-                  <Link
-                    to={`/course/${courseId}/lesson/${firstLessonId}`}
-                    target="_blank"
-                  >
-                    <Button size="sm" className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />
-                      Preview Course
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-
-              {/* ---- Body -------------------------------------------------- */}
-              <CardContent className="pt-0">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={curriculum.map((i) => i.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-2">
-                      {curriculum.map((item) => (
-                        <SortableItem
-                          key={item.id}
-                          id={item.id}
-                          type={item.type}
-                          depth={item.depth}
-                        >
-                          <div className="flex items-center justify-between w-full group">
-                            {/* ---- Icon + Title -------------------------------- */}
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              {/* Icon */}
-                              {item.type === LEARNING_UNIT.TOPIC && (
-                                <FolderOpen className="h-6 w-6 text-primary flex-shrink-0" />
-                              )}
-                              {item.type === LEARNING_UNIT.LESSON && (
-                                <BookOpen className="h-6 w-6 text-red-500 flex-shrink-0" />
-                              )}
-                              {item.type === LEARNING_UNIT.COHORT && (
-                                <Users className="h-6 w-6 text-green-600 flex-shrink-0" />
-                              )}
-                              {item.type === LEARNING_UNIT.ASSIGNMENT && (
-                                <NotepadText className="h-6 w-6 text-blue-500 flex-shrink-0" />
-                              )}
-
-                              {/* Title – inline edit */}
-                              {editingItemId === item.id ? (
-                                <Input
-                                  value={newItemName}
-                                  onChange={(e) =>
-                                    setNewItemName(e.target.value)
-                                  }
-                                  onBlur={() => {
-                                    updateItemName(item.id, newItemName);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      updateItemName(item.id, newItemName);
-                                    }
-                                  }}
-                                  className="flex-1 min-w-0"
-                                  autoFocus
-                                />
-                              ) : item.type === LEARNING_UNIT.ASSIGNMENT ||
-                                item.type == LEARNING_UNIT.LESSON ? (
-                                <Link
-                                  to={`/admin/edit-${item.type.toLowerCase()}/${item.id}`}
-                                >
-                                  {item.title}
-                                </Link>
-                              ) : (
-                                <span className="flex-1 truncate cursor-pointer hover:underline">
-                                  {item.title}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* ---- Action Buttons ----------------------------- */}
-                            <div className="flex items-center gap-1">
-                              {/* Cohort actions */}
-                              {item.type === LEARNING_UNIT.COHORT && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      addTopicToCohort(item.id, item.depth)
-                                    }
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title={`Add Topic to Cohort${item.id} ${item.depth} ${item.parentId}`}
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => duplicateCohort(item.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Duplicate Cohort"
-                                  >
-                                    <Copy className="h-4 w-4 text-blue-500" />
-                                  </Button>
-
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingItemId(item.id);
-                                      setNewItemName(item.title);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Rename Cohort"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteItem(item.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                    title="Delete Cohort"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-
-                              {/* Topic actions */}
-                              {item.type === LEARNING_UNIT.TOPIC && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setIsCreateLessonOpen(true);
-                                      setActiveParentId(item.id);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Add Lesson"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => addLessonToParent(item.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Add Lesson"
-                                  >
-                                    <Search className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setIsAssignmentModelOpen(true);
-                                      setActiveParentId(item.id);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Add Assignment"
-                                  >
-                                    <NotebookPen className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingItemId(item.id);
-                                      setNewItemName(item.title);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Rename Topic"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteItem(item.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                    title="Delete Topic"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-
-                              {/* Lesson actions */}
-                              {(item.type === LEARNING_UNIT.LESSON ||
-                                item.type == LEARNING_UNIT.ASSIGNMENT) && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setEditingItemId(item.id);
-                                        setNewItemName(item.title);
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                      title="Rename"
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => deleteItem(item.id)}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                      title="Delete"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                            </div>
-                          </div>
-                        </SortableItem>
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              </CardContent>
-            </Card>
+            <CurriculumTab
+              title={title}
+              courseId={courseId}
+              curriculum={curriculum}
+              setCurriculum={setCurriculum}
+              toast={toast}
+              handleDragEnd={handleDragEnd}
+              saveCurriculumStructure={saveCurriculumStructure}
+              addItem={addTopic}
+              addLessonToParent={addLessonToParent}
+              deleteItem={deleteItem}
+              updateItemName={updateItemName}
+              isLessonSelectorModalOpen={isLessonSelectorModalOpen}
+              setIsLessonSelectorModalOpen={setIsLessonSelectorModalOpen}
+              isCreateLessonOpen={isCreateLessonOpen}
+              setIsCreateLessonOpen={setIsCreateLessonOpen}
+              isAssignmentModelOpen={isAssignmentModelOpen}
+              setIsAssignmentModelOpen={setIsAssignmentModelOpen}
+              isLessonEditModelOpen={isLessonEditModelOpen}
+              setIsLessonEditModelOpen={setIsLessonEditModelOpen}
+              activeParentId={activeParentId}
+              setActiveParentId={setActiveParentId}
+              editingItemId={editingItemId}
+              setEditingItemId={setEditingItemId}
+              newItemName={newItemName}
+              setNewItemName={setNewItemName}
+              addLessonsToParent={addLessonsToParent}
+              handleAssignment={handleAssignment}
+              firstLessonId={firstLessonId}
+            />
           </TabsContent>
         </Tabs>
       </main>
-
-      {/* Lesson Selector */}
-      <LessonSelectorModal
-        isOpen={isLessonSelectorModalOpen}
-        onClose={() => {
-          setIsLessonSelectorModalOpen(false);
-        }}
-        onConfirm={addLessonsToParent}
-        excludedLessonIds={excludedLessonIdsForActiveParent}
-      />
-      {isAssignmentModelOpen && (
-        <AssignmentModal
-          onCancel={() => {
-            setIsAssignmentModelOpen(false);
-          }}
-          onSave={handleAssignment}
-        />
-      )}
-      <CreateLessonModal
-        isOpen={isCreateLessonOpen}
-        onClose={() => {
-          setIsCreateLessonOpen(false);
-        }}
-        onLessonCreated={(lesson) => addLessonsToParent([lesson])}
-      />
     </div>
   );
 };

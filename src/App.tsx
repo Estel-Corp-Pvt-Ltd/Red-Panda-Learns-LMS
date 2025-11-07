@@ -14,22 +14,28 @@ import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
 
 // Lazy load admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
 const CreateBundlePage = lazy(() => import("./pages/admin/CreateBundlePage"));
 const CohortBuilderPage = lazy(() => import("./pages/admin/CreateCohortPage"));
 const CreateCouponPage = lazy(() => import("./pages/admin/CreateCouponPage"));
 const CreateCoursePage = lazy(() => import("./pages/admin/CreateCoursePage"));
 const CurriculumBuilderPage = lazy(() => import("./pages/admin/CurriculumBuilderPage"));
-const EditAssignmentPage = lazy(() => import("./pages/admin/EditAssignmentPage"));
 const EditBundlePage = lazy(() => import("./pages/admin/EditBundle"));
 const EditCouponPage = lazy(() => import("./pages/admin/EditCouponPage"));
 const EditLessonPage = lazy(() => import("./pages/admin/EditLesson"));
 const EditUserPage = lazy(() => import("./pages/admin/EditUser"));
-const SubmissionDetailPage = lazy(() => import("./pages/admin/SubmissionDetailPage"));
-const DummyCurriculumBuilderPage = lazy(() => import("./pages/admin/dummycurriculum"));
+const SubmissionDetailPage = lazy(
+  () => import("./pages/admin/SubmissionDetailPage")
+);
+const DummyCurriculumBuilderPage = lazy(
+  () => import("./pages/admin/dummycurriculum")
+);
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
-const AdminOrganizations = lazy(() => import("./pages/admin/AdminOrganizations"));
+const AdminOrganizations = lazy(
+  () => import("./pages/admin/AdminOrganizations")
+);
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
@@ -76,24 +82,41 @@ const App = () => (
                 <PopUpContainer />
                 <Toaster />
                 <BrowserRouter>
-                  <Suspense fallback={<LoadingSpinnerOverlay message="Loading..." />}>
+                  <Suspense
+                    fallback={<LoadingSpinnerOverlay message="Loading..." />}
+                  >
                     <Routes>
                       <Route path="/" element={<LandingPage />} />
-                      <Route path="/course/:courseId" element={<CourseDetailPage />} />
+                      <Route
+                        path="/course/:courseId"
+                        element={<CourseDetailPage />}
+                      />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
                         path="/course/:courseId/lesson/:lessonId"
                         element={
-                          <AuthGuard requireAuth requireEnrollmentOrAdmin={true}>
+                          <AuthGuard
+                            requireAuth
+                            requireEnrollmentOrAdmin={true}
+                          >
                             <LessonDetailPage />
                           </AuthGuard>
                         }
                       />
                       <Route path="/auth/login" element={<Login />} />
                       <Route path="/auth/signup" element={<Signup />} />
-                      <Route path="/auth/verify-email" element={<VerifyEmail />} />
-                      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                      <Route path="/auth/reset-password" element={<SetNewPassword />} />
+                      <Route
+                        path="/auth/verify-email"
+                        element={<VerifyEmail />}
+                      />
+                      <Route
+                        path="/auth/forgot-password"
+                        element={<ForgotPassword />}
+                      />
+                      <Route
+                        path="/auth/reset-password"
+                        element={<SetNewPassword />}
+                      />
                       <Route
                         path="/checkout/:courseId"
                         element={
@@ -119,46 +142,78 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      <Route path="/admin/courses" element={
-                        <AuthGuard requireAdmin>
-                          <AdminCourses />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/bundles" element={
-                        <AuthGuard requireAdmin>
-                          <AdminBundles />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/users" element={
-                        <AuthGuard requireAdmin>
-                          <AdminUsers />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/instructors" element={
-                        <AuthGuard requireAdmin>
-                          <AdminInstructors />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/orders" element={
-                        <AuthGuard requireAdmin>
-                          <AdminOrders />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/pop-ups" element={
-                        <AuthGuard requireAdmin>
-                          <AdminPopUps />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/coupons" element={
-                        <AuthGuard requireAdmin>
-                          <AdminCoupons />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/organizations" element={
-                        <AuthGuard requireAdmin>
-                          <AdminOrganizations />
-                        </AuthGuard>
-                      } />
+                      <Route
+                        path="/admin/courses"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminCourses />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/bundles"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminBundles />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/users"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminUsers />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/instructors"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminInstructors />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/orders"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminOrders />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/pop-ups"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminPopUps />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/statistics"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminStatistics />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/coupons"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminCoupons />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/organizations"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminOrganizations />
+                          </AuthGuard>
+                        }
+                      />
                       <Route
                         path="/admin/edit-lesson/:lessonId"
                         element={
@@ -167,14 +222,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      <Route
-                        path="/admin/edit-assignment/:assignmentId"
-                        element={
-                          <AuthGuard requireAdmin>
-                            <EditAssignmentPage />
-                          </AuthGuard>
-                        }
-                      />
+                      
                       <Route
                         path="/admin/submissions"
                         element={
@@ -247,7 +295,10 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      <Route path="/bundle/:bundleId" element={<BundleDetailPage />} />
+                      <Route
+                        path="/bundle/:bundleId"
+                        element={<BundleDetailPage />}
+                      />
                       <Route
                         path="/bundle/:bundleId/checkout"
                         element={
@@ -273,7 +324,10 @@ const App = () => (
                         }
                       />
                       <Route path="/courses" element={<CoursesPage />} />
-                      <Route path="dummy/bundle/:bundleId/checkout" element={<DummyBundleCheckoutPage />} />
+                      <Route
+                        path="dummy/bundle/:bundleId/checkout"
+                        element={<DummyBundleCheckoutPage />}
+                      />
                       <Route
                         path="/cart"
                         element={
@@ -290,15 +344,31 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      <Route path="/submissions" element={<MySubmissionsPage />} />
-                      <Route path="/cart" element={<AuthGuard >
-                        <CartPage />
-                      </AuthGuard>} />
-                      <Route path="/cart/checkout" element={<AuthGuard >
-                        <CartCheckoutPage />
-                      </AuthGuard>} />
+                      <Route
+                        path="/submissions"
+                        element={<MySubmissionsPage />}
+                      />
+                      <Route
+                        path="/cart"
+                        element={
+                          <AuthGuard>
+                            <CartPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/cart/checkout"
+                        element={
+                          <AuthGuard>
+                            <CartCheckoutPage />
+                          </AuthGuard>
+                        }
+                      />
                       <Route path="*" element={<NotFound />} />
-                      <Route path="/invoices/:orderId" element={<InvoicePage />} />
+                      <Route
+                        path="/invoices/:orderId"
+                        element={<InvoicePage />}
+                      />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />
                       <Route path="/privacy" element={<PrivacyPage />} />

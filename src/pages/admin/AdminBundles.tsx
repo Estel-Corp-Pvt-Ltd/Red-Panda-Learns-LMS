@@ -179,6 +179,8 @@ const AdminBundles: React.FC = () => {
             <Button
               onClick={() => navigate("/admin/create-bundle")}
               className="flex items-center gap-2"
+               variant="pill"
+                  size="sm"
             >
               <PlusCircle className="h-4 w-4" />
               Create Bundle
