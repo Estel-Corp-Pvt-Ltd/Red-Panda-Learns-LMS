@@ -280,7 +280,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/admin/edit-course/:courseId"
+                        path="/admin/edit-course/:param"
                         element={
                           <AuthGuard requireAdmin>
                             <CurriculumBuilderPage />

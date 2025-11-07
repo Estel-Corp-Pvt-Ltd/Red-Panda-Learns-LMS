@@ -35,7 +35,7 @@ const isNum = (v: number | null): v is number =>
 
 const CurriculumBuilderPage = () => {
   // ─── Router + Utils ─────────────────────────────────────────────
-  const { courseId } = useParams();
+  const { param } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { showOverlay, hideOverlay } = useLoadingOverlay();
@@ -73,7 +73,11 @@ const CurriculumBuilderPage = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
-
+  const [urlTaken, setUrlTaken] = useState(true);
+  const [checkingUrl, setCheckingUrl] = useState(true);
+  const [url, setUrl] = useState("");
+  const [courseId, setCourseId] = useState("");
+   const [copied, setCopied] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -142,14 +146,31 @@ const CurriculumBuilderPage = () => {
 
   /** Load course and flatten structure into draggable list */
   useEffect(() => {
-    if (!courseId) return;
+    if (!param) return;
     const loadCourse = async () => {
       try {
         showOverlay("Loading course data...");
-        const data = await courseService.getCourseById(courseId);
+        console.log("this is param",param)
+        let data = await courseService.getCourseByUrl(param);
+
+        // Fallback: try fetching by ID if not found
+        if (!data) {
+          data = await courseService.getCourseById(param);
+        }
+        
+        // If still not found, handle gracefully
+        if (!data) {
+          console.warn("Course not found for param:", param);
+          return;
+        }
+
         setCourse(data);
+        setCourseId(data.id);
         setTitle(data.title);
         setDescription(data.description);
+          setUrl(
+            data.url ? `${data.url}` : `${data.id ?? param}`
+          );
         setStatus(data.status);
         setDuration({
           hours: data.duration?.hours ?? 0,
@@ -272,6 +293,7 @@ const CurriculumBuilderPage = () => {
   const canSaveBasics =
     title.trim() &&
     description.trim() &&
+    url.trim().length > 0 &&
     isNum(regularPrice) &&
     isNum(salePrice) &&
     isNum(duration.hours) &&
@@ -285,6 +307,7 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
+        url: url.trim(),
         duration,
         regularPrice: regularPrice!,
         salePrice: salePrice!,
@@ -308,6 +331,14 @@ const CurriculumBuilderPage = () => {
     }
   };
 
+   const handleCopyLink = async () => {
+     const baseUrl = window.location.origin || "http://localhost:8080";
+     const link = `${baseUrl}/course/${url ? url : courseId}`;
+     await navigator.clipboard.writeText(link);
+
+     setCopied(true);
+     setTimeout(() => setCopied(false), 2000);
+   };
   // ───────────────────────────────────────────────────────────────
   // ─── CURRICULUM TAB LOGIC ──────────────────────────────────────
   // ───────────────────────────────────────────────────────────────
@@ -356,14 +387,11 @@ const CurriculumBuilderPage = () => {
     ]);
   };
 
-
-
   /** Update an item's title (topic/lesson/assignment) */
   const updateItemName = (itemId: string, name: string) => {
     setCurriculum((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, title: name } : item))
     );
-  
   };
 
   /** Delete any curriculum item */
@@ -514,7 +542,6 @@ const CurriculumBuilderPage = () => {
       const activeItem = list[idxActive];
       const overItem = list[idxOver];
 
-     
       if (isTopic(activeItem)) {
         const overItem = list[idxOver];
 
@@ -721,8 +748,12 @@ const CurriculumBuilderPage = () => {
               course={course}
               title={title}
               setTitle={setTitle}
+              courseId={courseId}
+              setCourseId={setCourseId}
               description={description}
               setDescription={setDescription}
+              url={url}
+              setUrl={setUrl}
               instructorId={instructorId}
               setInstructorId={setInstructorId}
               instructorName={instructorName}
@@ -755,6 +786,9 @@ const CurriculumBuilderPage = () => {
               handleFileChange={handleFileChange}
               onSave={saveBasics}
               canSaveBasics={Boolean(canSaveBasics)}
+              copied={copied}
+              setCopied={setCopied}
+              handleCopyLink={handleCopyLink}
             />
           </TabsContent>
 
