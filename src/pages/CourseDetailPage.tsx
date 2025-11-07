@@ -95,7 +95,7 @@ export default function CourseDetailPage() {
 
     checkEnrollment();
 
-
+  
   }, [user, courseId, isEnrolled]);
 
   // Fetch lesson descriptions separately

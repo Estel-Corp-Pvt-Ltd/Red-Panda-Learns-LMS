@@ -58,6 +58,7 @@ export function BundleCard({
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
 
+ 
   if (variant === "compact") {
     return (
       <Card
@@ -139,8 +140,9 @@ export function BundleCard({
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
-                    ? "Access Bundle"
-                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)
+                  ? "Access Bundle"
+                  : `Buy Bundle - ${
+                      isFree ? "FREE" : formatCurrency(salePrice)
                     }`}
               </Button>
             </div>
@@ -245,10 +247,15 @@ export function BundleCard({
             if (isAddedToCart) {
               cartDispatch({ type: "REMOVE", id: bundle.id });
             } else {
-              cartDispatch({ type: "ADD", item: { type: "BUNDLE", refId: bundle.id } })
+              cartDispatch({
+                type: "ADD",
+                item: { type: "BUNDLE", refId: bundle.id },
+              });
             }
           }}
-        >{isAddedToCart ? "Remove from Cart" : "Add to Cart"}</Button>
+        >
+          {isAddedToCart ? "Remove from Cart" : "Add to Cart"}
+        </Button>
         <Button
           className="flex-grow"
           disabled={fullOwnership}
@@ -261,14 +268,13 @@ export function BundleCard({
             if (!fullOwnership) {
               navigate(`/bundle/${bundle.id}`);
             }
-          }
-          }
+          }}
         >
           {fullOwnership
             ? "All Courses Owned"
             : isEnrolled
-              ? "Access Bundle"
-              : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
+            ? "Access Bundle"
+            : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
         </Button>
       </CardFooter>
     </Card>

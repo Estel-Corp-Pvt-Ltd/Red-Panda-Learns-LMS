@@ -59,18 +59,13 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
   const isEnrolled = useCallback(
     (courseId: string): boolean => {
       const direct = enrollments.some(
-        e => e.targetId === courseId && e.status === ENROLLMENT_STATUS.ACTIVE
+        e => e.courseId === courseId && e.status === ENROLLMENT_STATUS.ACTIVE
       );
 
       if (direct) return true;
 
       // check if part of an active bundle
-      return enrollments.some(
-        e =>
-          e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE &&
-          e.status === ENROLLMENT_STATUS.ACTIVE &&
-          e.bundleProgress?.some(bp => bp.courseId === courseId)
-      );
+    
     },
     [enrollments]
   );
@@ -79,7 +74,7 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     (bundleId: string): boolean => {
       const result = enrollments.some(
         (enrollment) => {
-          const match = String(enrollment.targetId) === String(bundleId);
+          const match = String(enrollment.bundleId) === String(bundleId);
           const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
 
           return match && statusOk;

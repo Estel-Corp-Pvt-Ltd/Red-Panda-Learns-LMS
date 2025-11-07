@@ -98,10 +98,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     );
   }
 
-  if (requireStudent && !user.role || user.role === USER_ROLE.STUDENT) {
+  if (requireStudent &&   user.role != USER_ROLE.STUDENT) {
     return (
       <Navigate
-        to="/login"
+        to="/auth/login"
         state={{ from: location, message: 'You must be a registered user to access this page.' }}
         replace
       />
