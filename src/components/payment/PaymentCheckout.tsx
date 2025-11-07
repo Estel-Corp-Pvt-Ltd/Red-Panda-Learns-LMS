@@ -287,6 +287,14 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
         billingAddress,
         promoCode: appliedCoupon?.code,
         onPaymentSuccess: verifyOrder,
+        onPaymentFail: (message: string) => {
+          setIsProcessing(false);
+          toast({
+            title: "Payment Failed",
+            description: message,
+            variant: "destructive"
+          });
+        }
       });
     } catch (error) {
       toast({

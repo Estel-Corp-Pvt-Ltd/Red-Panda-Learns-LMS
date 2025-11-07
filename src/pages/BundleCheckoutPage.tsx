@@ -127,7 +127,7 @@ export default function BundleCheckoutPage() {
       title: "Payment Successful",
       description: "Please do not refresh or close this window.",
     });
-    navigate(`/invoices/${orderId}`);
+    navigate(`/dashboard`);
   }
 
   return (

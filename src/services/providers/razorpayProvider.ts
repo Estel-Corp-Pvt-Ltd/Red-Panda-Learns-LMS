@@ -70,7 +70,8 @@ class RazorpayProvider {
     selectedCurrency: Currency,
     userEmail: string,
     promoCode?: string,
-    onPaymentSuccess?: (orderId: string) => void
+    onPaymentSuccess?: (orderId: string) => void,
+    onPaymentFail?: (message: string) => void
   ): Promise<Result<{ orderId: string }>> {
     try {
       // Create order on backend
@@ -119,6 +120,7 @@ class RazorpayProvider {
       });
 
     } catch (error) {
+      onPaymentFail?.(error instanceof Error ? error.message : "Payment processing failed");
       console.error("RazorpayProvider - Payment processing failed:", error);
       return fail(error instanceof Error ? error.message : "Payment processing failed");
     }

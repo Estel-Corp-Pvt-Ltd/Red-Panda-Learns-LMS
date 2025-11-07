@@ -5,3 +5,10 @@ export const CURRENCY = {
   GBP: "GBP", // Pound Sterling
 } as const;
 export type Currency = typeof CURRENCY[keyof typeof CURRENCY];
+
+export interface ItemsDetails {
+  itemId: string;
+  itemType: "COURSE" | "BUNDLE";
+  name: string;
+  amount: number;
+}
