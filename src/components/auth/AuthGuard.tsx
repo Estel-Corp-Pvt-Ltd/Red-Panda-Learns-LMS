@@ -10,6 +10,7 @@ import { Navigate, useLocation, useParams } from 'react-router-dom';
 interface AuthGuardProps {
   children: React.ReactNode;
   requireAuth?: boolean;
+  requireStudent?: boolean;
   requireEnrollment?: boolean;
   requireCohortAccess?: boolean;
   requireAdmin?: boolean;
@@ -21,6 +22,7 @@ interface AuthGuardProps {
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   children,
   requireAuth = true,
+  requireStudent = false,
   requireEnrollment = false,
   requireCohortAccess = false,
   requireAdmin = false,
@@ -91,6 +93,16 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       <Navigate
         to="/auth/login"
         state={{ from: location, message }}
+        replace
+      />
+    );
+  }
+
+  if (requireStudent && !user.role || user.role === USER_ROLE.STUDENT) {
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location, message: 'You must be a registered user to access this page.' }}
         replace
       />
     );

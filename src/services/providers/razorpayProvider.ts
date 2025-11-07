@@ -1,8 +1,9 @@
-import { CURRENCY, ENVIRONMENT, TRANSACTION_STATUS } from '@/constants';
+import { ENVIRONMENT } from '@/constants';
 import type { Currency } from '@/types/general';
-import { PaymentDetails, TransactionLineItem } from '@/types/transaction';
-import { transactionService } from '../transactionService';
+import { TransactionLineItem } from '@/types/transaction';
 import { authService } from '../authService';
+import { Address, Order } from '@/types/order';
+import { ok, fail, Result } from '@/utils/response';
 
 export interface RazorpayOrder {
   id: string;
@@ -10,214 +11,128 @@ export interface RazorpayOrder {
   currency: string;
   receipt: string;
   status: string;
-};
+}
+
+interface CreateOrderResponse {
+  orderId: string;
+  razorpayOrder: RazorpayOrder;
+  key_id: string;
+  current: Currency;
+  amount: number;
+}
 
 class RazorpayProvider {
-  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ?
-    import.meta.env.VITE_DEV_BACKEND_URL :
-    import.meta.env.VITE_PROD_BACKEND_URL;
+  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
+    ? import.meta.env.VITE_DEV_BACKEND_URL
+    : import.meta.env.VITE_PROD_BACKEND_URL;
 
   async createOrder(
-    amount: number,                // final amount in display units (e.g., 12.34 USD)
-    currency: string,              // 'INR' | 'USD' | ...
-    receipt: string,
-    transactionId: string,
-    notes?: Record<string, string> // optional: pass quoteId, courseId, userId
-  ): Promise<any> {
-    const safeReceipt = (receipt || "").substring(0, 40);
+    items: TransactionLineItem[],
+    billingAddress: Address,
+    selectedCurrency: Currency,
+    promoCode?: string
+  ): Promise<Result<CreateOrderResponse>> {
+    try {
+      const idToken = await authService.getToken();
+      const idempotencyKey = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const payload = {
-      rawamount: amount,
-      rawcurrency: currency,
-      receipt: safeReceipt,
-      notes,                       // backend can forward to Razorpay `notes`
-    };
+      const response = await fetch(`${this.backendUrl}/createRazorpayOrder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          provider: "RAZORPAY",
+          items,
+          selectedCurrency,
+          billingAddress,
+          promoCode
+        }),
+      });
 
-    // Helpful debug
-    console.log('RazorpayProvider.createOrder payload:', payload);
-    const idToken = await authService.getToken();
-    const response = await fetch(`${this.backendUrl}/createOrder`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': transactionId,
-        'Authorization': `Bearer ${idToken}`
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      let message = 'Failed to create order';
-
-      try {
-        const text = await response.text(); // Read once
-        try {
-          const err = JSON.parse(text); // Try JSON first
-          message = err?.message || err?.error || message;
-          console.error('createOrder failed (JSON):', response.status, err);
-        } catch {
-          console.error('createOrder failed (text):', response.status, text);
-          if (text) message = text;
-        }
-      } catch (err) {
-        console.error('createOrder failed (unknown):', response.status, err);
+      if (!response.ok) {
+        return fail('Failed to create order');
       }
 
-      throw new Error(message);
+      const data = await response.json();
+      return ok(data);
+    } catch (error) {
+      console.error('RazorpayProvider - Create order failed:', error);
+      return fail('Failed to create order');
     }
-
-
-    return response.json();
   }
 
-  // CHANGED: accept payCurrency + optional quoteId
   async processPayment(
     items: TransactionLineItem[],
+    billingAddress: Address,
+    selectedCurrency: Currency,
     userEmail: string,
-    transactionId: string,
-    amount: number,               // should be the final total in selected currency
-    userId: string,
-    payCurrency: Currency = CURRENCY.INR,
-    quoteId?: string              // to let backend verify pricing
-  ): Promise<{ success: boolean; transactionId?: string; paymentId?: string; error?: string }> {
-    return new Promise(async (resolve) => {
-      try {
+    promoCode?: string,
+    onPaymentSuccess?: (orderId: string) => void,
+    onPaymentFail?: (message: string) => void
+  ): Promise<Result<{ orderId: string }>> {
+    try {
+      // Create order on backend
+      const orderData = await this.createOrder(items, billingAddress, selectedCurrency, promoCode);
 
-        console.log("RazorpayProvider - Starting payment process:", {
-          transactionId,
-          amount,
-          payCurrency,
-          userId,
-          items,
-        });
-
-        // Create order on backend
-        const orderData = await this.createOrder(
-          amount,
-          payCurrency,
-          transactionId,
-          transactionId,
-          { quoteId, userId, itemIds: items.map(i => i.itemId).join(",") }
-        );
-
-        console.log("RazorpayProvider - Order Data", orderData);
-
-        if (!orderData.success) {
-          throw new Error(orderData.error || "Order creation failed");
-        }
-
-        const { order, key_id } = orderData;
-
-        await transactionService.updateTransactionStatus(
-          transactionId,
-          TRANSACTION_STATUS.PROCESSING,
-          { orderId: order.id }
-        );
-
-        const options = {
-          key: key_id,
-          amount: order.amount,      // subunits from backend
-          currency: order.currency,  // matches payCurrency
-          order_id: order.id,
-          name: "Vizuara AI Labs",
-          description: `Enrollment for ${items.map(i => i.name).join(", ")}`,
-          prefill: { email: userEmail },
-          theme: { color: "#3b82f6" },
-          handler: async (response: any) => {
-            console.log("Razorpay payment successful:", response);
-            try {
-              const idToken = await authService.getToken();
-              const verificationResponse = await fetch(`${this.backendUrl}/verifyPayment`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${idToken}`
-                },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  transaction_id: transactionId,
-                  quote_id: quoteId, // let backend tie to same quote
-                }),
-              });
-
-              const verificationData = await verificationResponse.json();
-
-              if (verificationData.success) {
-                await transactionService.updateTransactionStatus(
-                  transactionId,
-                  TRANSACTION_STATUS.COMPLETED,
-                  {
-                    orderId: order.id,
-                    paymentId: response.razorpay_payment_id,
-                    signature: response.razorpay_signature,
-                  }
-                );
-
-                resolve({
-                  success: true,
-                  transactionId,
-                  paymentId: response.razorpay_payment_id,
-                });
-              } else {
-                console.log("RazorpayProvider - Payment verification failed");
-                throw new Error(verificationData.error || "Payment verification failed");
-              }
-            } catch (error) {
-              console.error("RazorpayProvider - Payment verification failed:", error);
-              await transactionService.updateTransactionStatus(
-                transactionId,
-                TRANSACTION_STATUS.FAILED,
-                {} as PaymentDetails,
-                "Payment verification failed"
-              );
-              resolve({ success: false, error: "Payment verification failed" });
-            }
-          },
-          modal: {
-            ondismiss: async () => {
-              console.log("RazorpayProvider - Payment dismissed by user");
-              await transactionService.updateTransactionStatus(
-                transactionId,
-                TRANSACTION_STATUS.CANCELLED,
-                {} as PaymentDetails,
-                "Payment cancelled by user"
-              );
-              resolve({ success: false, error: "Payment cancelled by user" });
-            },
-          },
-        };
-
-        // Open Razorpay modal
-        if (typeof window !== "undefined" && (window as any).Razorpay) {
-          const rzp = new (window as any).Razorpay(options);
-          rzp.open();
-        } else {
-          await transactionService.updateTransactionStatus(
-            transactionId,
-            TRANSACTION_STATUS.FAILED,
-            {} as PaymentDetails,
-            "Razorpay SDK not loaded"
-          );
-          resolve({ success: false, error: "Could not load Razorpay Window" });
-        }
-      } catch (error) {
-        console.error("RazorpayProvider - Payment failed:", error);
-        await transactionService.updateTransactionStatus(
-          transactionId,
-          TRANSACTION_STATUS.FAILED,
-          {} as PaymentDetails,
-          error instanceof Error ? error.message : "Unknown error"
-        );
-        resolve({
-          success: false,
-          error: error instanceof Error ? error.message : "Payment failed. Please try again.",
-        });
+      if (!orderData.success || !orderData.data) {
+        throw new Error("Order creation failed");
       }
-    });
+
+      const { orderId, razorpayOrder, key_id } = orderData.data;
+
+      // Validate Razorpay availability
+      if (typeof window === "undefined" || !(window as any).Razorpay) {
+        throw new Error("Razorpay payment gateway not available");
+      }
+
+      const options = {
+        key: key_id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        order_id: razorpayOrder.id,
+        name: "Vizuara AI Labs",
+        description: this.getOrderDescription(items),
+        prefill: {
+          email: userEmail,
+          name: billingAddress.fullName || '',
+          contact: billingAddress.phone || ''
+        },
+        theme: { color: "#3b82f6" },
+        handler: () => {
+          onPaymentSuccess?.(orderId);
+        },
+        modal: {
+          ondismiss: () => {
+            // this.handlePaymentCancellation(orderId);
+          },
+        },
+      };
+
+      // Open Razorpay modal
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+      return ok({
+        orderId: orderId
+      });
+
+    } catch (error) {
+      onPaymentFail?.(error instanceof Error ? error.message : "Payment processing failed");
+      console.error("RazorpayProvider - Payment processing failed:", error);
+      return fail(error instanceof Error ? error.message : "Payment processing failed");
+    }
   }
 
+  private getOrderDescription(items: TransactionLineItem[]): string {
+    const itemNames = items.map(item => item.name);
+    if (itemNames.length === 1) {
+      return `Purchase: ${itemNames[0]}`;
+    }
+    return `Purchase: ${itemNames.length} items`;
+  }
 }
 
 export const razorpayProvider = new RazorpayProvider();

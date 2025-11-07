@@ -14,9 +14,19 @@ import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
 import { CART_ACTION } from "@/constants";
 import { useEnrollment } from "./EnrollmentContext";
+import { bundleService } from "@/services/bundleService";
+import { Bundle } from "@/types/bundle";
 
 export interface CartItem {
-  courseId: string;
+  type: "COURSE" | "BUNDLE";
+  refId: string;
+}
+
+export interface CartCourseItem extends CartItem {
+  id: string;
+  title: string;
+  regularPrice: number;
+  salePrice: number;
 }
 
 type Action =
@@ -28,11 +38,11 @@ type Action =
 function cartReducer(state: CartItem[], action: Action): CartItem[] {
   switch (action.type) {
     case CART_ACTION.ADD:
-      return state.some((c) => c.courseId === action.item.courseId)
+      return state.some((c) => c.refId === action.item.refId)
         ? state
         : [...state, action.item];
     case CART_ACTION.REMOVE:
-      return state.filter((c) => c.courseId !== action.id);
+      return state.filter((c) => c.refId !== action.id);
     case CART_ACTION.CLEAR:
       return [];
     case CART_ACTION.SET_CART:
@@ -45,6 +55,8 @@ function cartReducer(state: CartItem[], action: Action): CartItem[] {
 interface CartContextType {
   cart: CartItem[];
   cartCourses: Course[]; // fetched course details
+  cartBundles: Bundle[]; // fetched bundle details
+  cartItems: CartCourseItem[]; // combined cart items with details
   loading: boolean;
   cartDispatch: React.Dispatch<Action>;
   fetchCourses: () => Promise<void>;
@@ -62,9 +74,36 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const storedCart = localStorage.getItem(CART_STORAGE_KEY);
     return storedCart ? JSON.parse(storedCart) : [];
   });
-
+  const [cartBundles, setCartBundles] = useState<Bundle[]>([]);
   const [cartCourses, setCartCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  const cartItems = cart.map((item) => {
+    if (item.type === "COURSE") {
+      const course = cartCourses.find((c) => c.id === item.refId);
+      return course
+        ? {
+          id: course.id,
+          type: "COURSE",
+          title: course.title,
+          regularPrice: course.regularPrice,
+          salePrice: course.salePrice,
+        }
+        : null;
+    } else if (item.type === "BUNDLE") {
+      const bundle = cartBundles.find((b) => b.id === item.refId);
+      return bundle
+        ? {
+          id: bundle.id,
+          type: "BUNDLE",
+          title: bundle.title,
+          regularPrice: bundle.regularPrice,
+          salePrice: bundle.salePrice,
+        }
+        : null;
+    }
+    return null;
+  }).filter((item): item is CartCourseItem => item !== null);
 
   // Persist cart to localStorage whenever it changes
   useEffect(() => {
@@ -93,7 +132,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           if (data?.courses) {
             cartDispatch({ type: CART_ACTION.CLEAR }); // clear initial local cart
             data.courses.forEach((item: CartItem) => {
-              if (!isEnrolled(item.courseId)) {
+              if (item.type === "COURSE" && !isEnrolled(item.refId)) {
                 console.log("Adding to cart from Firebase:", item);
                 cartDispatch({ type: CART_ACTION.ADD, item });
               }
@@ -117,14 +156,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-     const courseIds = cart.map((item) => item.courseId).filter(Boolean);
-     if (courseIds.length > 0) {
-       const fetchedCourses = await courseService.getCoursesByIds(courseIds);
-       setCartCourses(fetchedCourses);
-     }
+      const courseIds = cart.filter(item => item.type === "COURSE").map((item) => item.refId);
+      const bundleIds = cart.filter(item => item.type === "BUNDLE").map((item) => item.refId);
+      const fetchedBundles = await bundleService.getBundleByIds(bundleIds);
+      const fetchedCourses = await courseService.getCoursesByIds(courseIds);
+      console.log(fetchedCourses);
+      setCartCourses(fetchedCourses);
+      setCartBundles(fetchedBundles);
     } catch (error) {
       console.error("Error fetching course data:", error);
       setCartCourses([]);
+      setCartBundles([]);
     } finally {
       setLoading(false);
     }
@@ -136,7 +178,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cart]);
 
   return (
-    <CartContext.Provider value={{ cart, cartCourses, loading, cartDispatch, fetchCourses }}>
+    <CartContext.Provider value={{ cartItems, cart, cartCourses, cartBundles, loading, cartDispatch, fetchCourses }}>
       {children}
     </CartContext.Provider>
   );

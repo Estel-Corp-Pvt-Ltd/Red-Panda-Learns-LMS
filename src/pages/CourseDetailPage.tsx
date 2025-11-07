@@ -49,10 +49,10 @@ export default function CourseDetailPage() {
   const { toast } = useToast();
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
+  const isAddedToCart = cart.some((item) => item.type === "COURSE" && item.refId === courseId);
   const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
   const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
   const [courseId,setCourseId] = useState("")
-  const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
   const {
     data: course,
@@ -139,7 +139,7 @@ export default function CourseDetailPage() {
     if (!course) return;
     cartDispatch({
       type: CART_ACTION.ADD,
-      item: { courseId },
+      item: { type: "COURSE", refId: courseId },
     });
     toast({
       title: "Course Added",

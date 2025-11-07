@@ -35,7 +35,7 @@ const CourseCard = ({
   const courseId = String(course?.id);
   const courseUrl = `/course/${course.url ? course.url : course.id}`;
   const userIsEnrolled = user && isEnrolled(courseId);
-  const isAddedToCart = cart.some((item) => item.courseId === courseId);
+  const isAddedToCart = cart.some((item) => item.refId === courseId);
 
   const openCourse = () => navigate(courseUrl);
 
@@ -48,7 +48,7 @@ const CourseCard = ({
       navigate("/cart");
       return;
     }
-    cartDispatch({ type: CART_ACTION.ADD, item: { courseId } });
+    cartDispatch({ type: CART_ACTION.ADD, item: { type: "COURSE", refId: courseId } });
     toast({
       title: "Course added",
       description: `${course.title} has been added to your cart.`,

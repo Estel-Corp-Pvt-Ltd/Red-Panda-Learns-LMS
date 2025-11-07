@@ -1,4 +1,4 @@
-import { Timestamp, FieldValue } from "firebase/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { CouponStatus } from "./general";
 
 export interface Coupon {

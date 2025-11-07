@@ -513,6 +513,37 @@ class BundleService {
     }
   }
 
+
+  async getBundleByIds(bundleIds: string[]): Promise<Bundle[]> {
+    if (!bundleIds || bundleIds.length === 0) return [];
+
+    const CHUNK_SIZE = 10; // Firestore 'in' queries allow max 10 items
+    const chunks: string[][] = [];
+
+    for (let i = 0; i < bundleIds.length; i += CHUNK_SIZE) {
+      chunks.push(bundleIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    const bundles: Bundle[] = [];
+
+    for (const chunk of chunks) {
+      const q = query(collection(db, COLLECTION.BUNDLES), where("id", "in", chunk));
+      const snapshot = await getDocs(q);
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        bundles.push({
+          ...data,
+          createdAt: data?.createdAt?.toDate(),
+          updatedAt: data?.updatedAt?.toDate(),
+        } as Bundle);
+      });
+    }
+
+    return bundles;
+  }
+
+
   async getBundles(
     filters?: {
       field: keyof Bundle;
