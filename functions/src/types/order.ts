@@ -25,7 +25,8 @@ export interface Order {
   exchangeRate: number;
   originalAmount: number;
   completedAt?: Timestamp | FieldValue;
-  promoCode?: string;
+  promoCode: string;
+  couponDiscount: number;
   provider: PaymentProvider;
   providerOrderId: string;
   currency: Currency;

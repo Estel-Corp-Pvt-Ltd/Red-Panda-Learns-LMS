@@ -24,12 +24,23 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function BundleDetailPage() {
-  const { bundleId } = useParams<{ bundleId: string }>();
+const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { enrollments, isEnrolledInBundle, loading } = useEnrollment();
+  const [bundleId,setBundleId] = useState("")
 
-  const { data: bundle, isLoading, isError, error } = useBundleQuery(bundleId!);
+    const {
+      data: bundle,
+      isLoading: bundleLoading,
+      error: bundleError,
+    } = useBundleQuery(param!);
+
+    useEffect(() => {
+      if (!param || bundleLoading || !bundle) return;
+      setBundleId(bundle.id);
+    }, [param, bundleLoading, bundle]);
+
   const {
     data: courses,
     isLoading: coursesLoading,
@@ -41,77 +52,65 @@ export default function BundleDetailPage() {
   const [enrollmentChecked, setEnrollmentChecked] = useState(false);
   const [ownsAllCourses, setOwnsAllCourses] = useState(false);
 
+
+
   useEffect(() => {
+    let cancelled = false;
+
     const checkEnrollment = async () => {
       try {
-        if (!user || !bundle) return;
+        if (!bundle) return;
 
-        // 1) Direct bundle enrollment
+        // If user isn't logged in, mark as checked so the page can render
+        if (!user?.id) {
+          if (!cancelled) {
+            setIsEnrolled(false);
+            setOwnedCoursesCount(0);
+            setOwnsAllCourses(false);
+            setEnrollmentChecked(true);
+          }
+          return;
+        }
+
+        // 1) Direct bundle enrollment (still useful if you track bundle license)
         const enrolledInBundle = await isEnrolledInBundle(bundle.id);
+        if (cancelled) return;
 
-        // 2) Owned courses (direct + via bundles)
-        const directCourses =
-          enrollments?.filter(
-            (e) => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE
-          ) || [];
+        // 2) Owned courses from new schema: Enrollment.courseId
+        // If enrollments already belong to the current user, you can skip the userId filter
+        const userEnrollments = (enrollments ?? []).filter(e => e.userId === user.id);
 
-        const bundleCourses =
-          enrollments
-            ?.filter((e) => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE)
-            .flatMap((bundleEnrollment) => {
-              if (!bundleEnrollment.bundleProgress) return [];
-              return bundleEnrollment.bundleProgress.map((bp) => ({
-                id: `${bundleEnrollment.id}_${bp.courseId}_virtual`,
-                userId: bundleEnrollment.userId,
-                targetId: bp.courseId,
-                targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-                status: bundleEnrollment.status,
-                sourceBundleId: bundleEnrollment.targetId,
-                pricingModel:
-                  bundleEnrollment.pricingModel || PRICING_MODEL.PAID,
-                enrollmentDate: bundleEnrollment.enrollmentDate,
-                createdAt: bundleEnrollment.createdAt,
-                updatedAt: bundleEnrollment.updatedAt,
-                progressSummary: {
-                  percent: 0,
-                  completedCourses: 0,
-                  totalCourses: 1,
-                },
-              }));
-            }) || [];
+        // Optional: filter by status if you need (uncomment and adjust)
+        // const ACTIVE_STATUSES = new Set<EnrollmentStatus>(["ACTIVE", "COMPLETED"]);
+        // const userEnrollments = (enrollments ?? [])
+        //   .filter(e => e.userId === user.id && ACTIVE_STATUSES.has(e.status));
 
-        const allOwnedCourses = [...directCourses, ...bundleCourses];
-        const userCourseIds = allOwnedCourses.map((e) => e.targetId);
+        const ownedCourseIds = new Set(userEnrollments.map(e => e.courseId));
 
-        // 3) Compare with current bundle courses
-        const totalCourses = bundle.courses?.length || 0;
-        const ownedCourses =
-          bundle.courses?.filter((c) => userCourseIds.includes(c.id)) || [];
-
-        const ownsAll = ownedCourses.length === totalCourses;
+        // 3) Compare to current bundle courses
+        const totalCourses = bundle.courses?.length ?? 0;
+        const ownedCount = (bundle.courses ?? []).filter(c => ownedCourseIds.has(c.id)).length;
+        const ownsAll = totalCourses > 0 && ownedCount === totalCourses;
 
         // 4) Update state
-        setOwnedCoursesCount(ownedCourses.length);
-        setOwnsAllCourses(ownsAll);
-        setIsEnrolled(enrolledInBundle);
-        setEnrollmentChecked(true);
-
-        const result: Result<boolean> = ok(enrolledInBundle);
-        console.log("✅ Enrollment check:", result);
+        if (!cancelled) {
+          setIsEnrolled(enrolledInBundle);
+          setOwnedCoursesCount(ownedCount);
+          setOwnsAllCourses(ownsAll);
+          setEnrollmentChecked(true);
+        }
       } catch (err) {
         logError("BundleDetailPage.checkEnrollment", err);
-        const failResult = fail(
-          err instanceof Error ? err.message : "Unknown enrollment error"
-        );
-        console.warn("BundleDetailPage - Enrollment failed:", {
-          bundleId: bundle?.id,
-          failResult,
-        });
+        if (!cancelled) {
+          setEnrollmentChecked(true);
+        }
       }
     };
 
     checkEnrollment();
-  }, [user, bundle, enrollments, isEnrolledInBundle]);
+    return () => { cancelled = true; };
+  }, [user?.id, bundle?.id, bundle?.courses, enrollments, isEnrolledInBundle]);
+
 
   const handleEnrollment = () => {
     if (isEnrolled) {
@@ -121,7 +120,7 @@ export default function BundleDetailPage() {
     }
   };
 
-  if (isLoading || coursesLoading || loading || !enrollmentChecked) {
+  if (bundleLoading || coursesLoading || loading || !enrollmentChecked) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -132,13 +131,13 @@ export default function BundleDetailPage() {
     );
   }
 
-  if (isError || coursesError || !bundle) {
+  if (bundleError || coursesError || !bundle) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ErrorState
-            error={error as Error}
+            error={bundleError as Error}
             onRetry={() => window.location.reload()}
             className="my-12"
           />
@@ -167,7 +166,7 @@ export default function BundleDetailPage() {
           {/* Categories */}
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">Bundle</Badge>
-            {bundle.categories?.map((category) => (
+            {bundle.categoryIds?.map((category) => (
               <Badge key={category} variant="outline">
                 {category}
               </Badge>

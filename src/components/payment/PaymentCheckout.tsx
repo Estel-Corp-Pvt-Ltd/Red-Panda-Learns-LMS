@@ -25,14 +25,16 @@ import { Currency, PaymentProvider } from "@/types/general";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { orderService } from "@/services/orderService";
-import { CouponSection } from "@/components/payment/CouponSection";
+import { CouponCard } from "@/components/payment/CouponCard";
 import { Coupon } from "@/types/coupon";
 import { couponUsageService } from "@/services/couponUsageService";
 import { Timestamp } from "firebase/firestore";
+import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { currencyService } from "@/services/currencyService";
 
 const PROVIDER_CONFIG = {
   RAZORPAY: {
-    currencies: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+    currencies: [CURRENCY.INR, CURRENCY.USD],
     logos: [
       { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
       { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
@@ -70,7 +72,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const { user } = useAuth();
   const { toast } = useToast();
   const [isOrderVerifying, setIsOrderVerifying] = useState(false);
-
+  const { refreshEnrollments } = useEnrollment();
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
     line1: "",
@@ -84,18 +86,15 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(PAYMENT_PROVIDER.RAZORPAY);
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(CURRENCY.INR);
   const [isProcessing, setIsProcessing] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [phoneError, setPhoneError] = useState("");
 
   // Coupon-related state
-  const [promoCode, setPromoCode] = useState("");
-  const [isCouponValid, setIsCouponValid] = useState(false);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  const [couponMessage, setCouponMessage] = useState("");
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // Location data state
   const [countries, setCountries] = useState<Country[]>([]);
@@ -115,12 +114,27 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const savings = regularTotal - subtotal;
   const finalAmount = Math.max(0, subtotal - discountAmount);
 
+  useEffect(() => {
+    // Update exchange rate when currency changes
+    async function fetchExchangeRate() {
+      if (selectedCurrency === CURRENCY.INR) {
+        setExchangeRate(1);
+        return;
+      }
+      const result = await currencyService.getExchangeRate(CURRENCY.INR, selectedCurrency);
+      if (result) {
+        setExchangeRate(result);
+      }
+    }
+    fetchExchangeRate();
+  }, [selectedCurrency]);
+
   // Simple currency formatting
   const formatMoney = (amount: number, currency: Currency) => {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
-      currency,
-    }).format(amount);
+      currency: currency,
+    }).format(amount * exchangeRate);
   };
 
   // Validate address fields
@@ -241,33 +255,14 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     const interval = setInterval(async () => {
       const order = await orderService.getOrderById(orderId);
       console.log("Verifying order status:", order);
-      if (order && order.status === "COMPLETED") {
+      if (order && order.status === "COMPLETED" ) {
+        refreshEnrollments();
         clearInterval(interval);
         setIsOrderVerifying(false);
         onPaymentSuccess?.(orderId);
       }
     }, 5000);
   }
-
-  const handleUseCoupon = async () => {
-    if (!appliedCoupon || !user) return;
-
-    const usageData = {
-      userId: user.id,
-      couponId: appliedCoupon.id,
-      usedAt: Timestamp.now(),
-    };
-    const result = await couponUsageService.recordCouponUsage(usageData);
-    if (result.success) {
-      toast({
-        title: "Coupon successfully applied!",
-      });
-      return;
-    }
-    toast({
-      title: "Failed to apply coupon!",
-    });
-  };
 
   const handlePayment = async () => {
     if (!user || !canProceed) return;
@@ -280,20 +275,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     });
 
     try {
-      // Apply coupon if used
-      if (isCouponValid && appliedCoupon) {
-        try {
-          await handleUseCoupon();
-        } catch (error) {
-          console.error("Error applying coupon:", error);
-          toast({
-            title: "Coupon Error",
-            description: "There was an issue applying the coupon. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }
-
       await paymentService.processPayment({
         provider: selectedProvider,
         items: items.map(item => ({
@@ -305,6 +286,14 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
         billingAddress,
         promoCode: appliedCoupon?.code,
         onPaymentSuccess: verifyOrder,
+        onPaymentFail: (message: string) => {
+          setIsProcessing(false);
+          toast({
+            title: "Payment Failed",
+            description: message,
+            variant: "destructive"
+          });
+        }
       });
     } catch (error) {
       toast({
@@ -384,15 +373,15 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                             <>
                               {item.originalAmount && (
                                 <span className="line-through text-gray-400 text-xs mr-1">
-                                  ₹{item.originalAmount}
+                                  {formatMoney(item.originalAmount || 0, selectedCurrency)}
                                 </span>
                               )}
                               <span className="text-green-600 dark:text-green-400">
-                                ₹{item.amount}
+                                {formatMoney(item.amount, selectedCurrency)}
                               </span>
                             </>
                           ) : (
-                            <span>₹{item.originalAmount}</span>
+                            <span>{formatMoney(item.originalAmount, selectedCurrency)}</span>
                           )}
                         </div>
                       </div>
@@ -401,12 +390,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>{formatMoney(regularTotal, selectedCurrency)}</span>
+                      <span>{formatMoney(regularTotal || subtotal, selectedCurrency)}</span>
                     </div>
 
                     {savings > 0 && (
                       <div className="flex justify-between text-green-600 dark:text-green-400">
-                        <span>Savings:</span>
+                        <span>Regular Savings:</span>
                         <span>-{formatMoney(savings, selectedCurrency)}</span>
                       </div>
                     )}
@@ -621,21 +610,10 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
             {/* Right Column - Coupon & Payment */}
             <div className="lg:col-span-5 space-y-6">
               {/* Coupon Section */}
-              <CouponSection
-                promoCode={promoCode}
-                setPromoCode={setPromoCode}
-                isCouponValid={isCouponValid}
-                setIsCouponValid={setIsCouponValid}
-                discountAmount={discountAmount}
+              <CouponCard
+                items={items}
                 setDiscountAmount={setDiscountAmount}
-                appliedCoupon={appliedCoupon}
                 setAppliedCoupon={setAppliedCoupon}
-                couponMessage={couponMessage}
-                setCouponMessage={setCouponMessage}
-                isValidatingCoupon={isValidatingCoupon}
-                setIsValidatingCoupon={setIsValidatingCoupon}
-                subtotal={subtotal}
-                isProcessing={isProcessing}
               />
 
               {/* Payment Methods */}

@@ -67,7 +67,7 @@ const CartPage: React.FC = () => {
           <Button
             variant="destructive"
             onClick={handleClearCart}
-            disabled={itemCount === 0 || loading}
+            
             className="w-full sm:w-auto"
           >
             Clear Cart

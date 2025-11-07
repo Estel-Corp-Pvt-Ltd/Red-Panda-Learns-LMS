@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
 
 export default function ForgotPassword() {
-    const { resetPassword } = useAuth(); 
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -49,22 +49,22 @@ export default function ForgotPassword() {
 
       <div className="flex justify-center items-center py-12 px-4">
         <Card className="w-full max-w-md shadow-lg">
-         
-             <CardHeader className="text-center space-y-4">
-  {/* Centered logo */}
-  <div className="flex justify-center">
-    <img src="/logo.png" alt="Vizuara AI Labs" className="w-14 h-14" />
-  </div>
 
-  {/* Brand name under logo */}
-  <div>
-    <h2 className="text-2xl font-bold">Vizuara AI Labs</h2>
-   <CardTitle className="text-xl font-semibold">Reset Your Password</CardTitle>
-            <CardDescription>
-              Enter your email and we'll send you a reset link.
-            </CardDescription>
-  </div>
-</CardHeader>
+          <CardHeader className="text-center space-y-4">
+            {/* Centered logo */}
+            <div className="flex justify-center">
+              <img src="/logo.png" alt="Vizuara AI Labs" className="w-14 h-14" />
+            </div>
+
+            {/* Brand name under logo */}
+            <div>
+              <h2 className="text-2xl font-bold">Vizuara AI Labs</h2>
+              <CardTitle className="text-xl font-semibold">Reset Your Password</CardTitle>
+              <CardDescription>
+                Enter your email and we'll send you a reset link.
+              </CardDescription>
+            </div>
+          </CardHeader>
 
           <CardContent className="space-y-4">
             {message && (

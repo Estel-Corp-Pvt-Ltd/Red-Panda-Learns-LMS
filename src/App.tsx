@@ -64,6 +64,7 @@ import MySubmissionsPage from "./pages/MySubmissions";
 import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";
 import MyInvoicesPage from "./pages/MyInvoices";
+import AuthRedirection from "./components/auth/AuthRedirection";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -88,12 +89,12 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route
-                        path="/course/:courseId"
+                        path="/course/:param"
                         element={<CourseDetailPage />}
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
-                        path="/course/:courseId/lesson/:lessonId"
+                        path="/course/:param/lesson/:lessonId"
                         element={
                           <AuthGuard
                             requireAuth
@@ -103,6 +104,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/auth" element={<AuthRedirection />} />
                       <Route path="/auth/login" element={<Login />} />
                       <Route path="/auth/signup" element={<Signup />} />
                       <Route
@@ -118,7 +120,7 @@ const App = () => (
                         element={<SetNewPassword />}
                       />
                       <Route
-                        path="/checkout/:courseId"
+                        path="/checkout/:param"
                         element={
                           <AuthGuard>
                             <CheckoutPage />
@@ -222,7 +224,6 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      
                       <Route
                         path="/admin/submissions"
                         element={
@@ -256,7 +257,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="admin/edit-bundle/:bundleId"
+                        path="admin/edit-bundle/:param"
                         element={
                           <AuthGuard requireAdmin>
                             <EditBundlePage />
@@ -280,7 +281,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/admin/edit-course/:courseId"
+                        path="/admin/edit-course/:param"
                         element={
                           <AuthGuard requireAdmin>
                             <CurriculumBuilderPage />
@@ -296,11 +297,11 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/bundle/:bundleId"
+                        path="/bundle/:param"
                         element={<BundleDetailPage />}
                       />
                       <Route
-                        path="/bundle/:bundleId/checkout"
+                        path="/bundle/:param/checkout"
                         element={
                           <AuthGuard>
                             <BundleCheckoutPage />
@@ -308,7 +309,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/bundle/:bundleId/dashboard"
+                        path="/bundle/:param/dashboard"
                         element={
                           <AuthGuard>
                             <BundleDashboardPage />

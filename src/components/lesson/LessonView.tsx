@@ -153,10 +153,10 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
       default:
-        return lesson.description ? (
+        return lesson.embedUrl ? (
           <div
             className="prose prose-sm max-w-none dark:prose-invert leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: lesson.description }}
+            dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
           />
         ) : null;
     }
@@ -199,7 +199,12 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       </div>
 
       {/* Lesson Description */}
-      <MarkdownViewer value={lesson.description || '_No content provided._'} />
+      {
+        lesson.description ?
+          <MarkdownViewer value={lesson.description || ''} />
+          :
+          <></>
+      }
 
       {/* Progress Indicator */}
       <Card className="bg-muted/30">

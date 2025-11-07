@@ -14,19 +14,25 @@ import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 
 export default function LessonDetailPage() {
-  const { courseId, lessonId } = useParams<{
-    courseId: string;
+  const { param, lessonId } = useParams<{
+    param: string;
     lessonId: string;
   }>();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
-
+  const [courseId,setCourseId] = useState("")
   const {
     data: course,
     isLoading: courseLoading,
     error: courseError,
-  } = useCourseQuery(courseId!);
+  } = useCourseQuery(param!);
+  
+    useEffect(() => {
+      if (!param || courseLoading || !course) return;
+      setCourseId(course.id);
+    }, [param, courseLoading, course?.id]);
+    
 
   // Set document title to include course and current item
   useEffect(() => {
@@ -110,7 +116,7 @@ export default function LessonDetailPage() {
       window.history.pushState(
         null,
         "",
-        `/course/${courseId}/lesson/${item.id}`
+        `/course/${course.url ? course.url : course.id}/lesson/${item.id}`
       );
     }
   };
@@ -199,7 +205,7 @@ export default function LessonDetailPage() {
                   The lesson or assignment you're looking for doesn't exist.
                 </p>
                 <Button asChild>
-                  <Link to={`/course/${courseId}`}>Back to Course</Link>
+                  <Link to={`/course/${course.url ? course.url : course.id}`}>Back to Course</Link>
                 </Button>
               </div>
             </div>

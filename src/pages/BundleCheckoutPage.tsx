@@ -84,30 +84,17 @@ const METHOD_LOGOS: Record<
 };
 
 export default function BundleCheckoutPage() {
-  const { bundleId } = useParams<{ bundleId: string }>();
+  const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
-  const [bundle, setBundle] = useState<null | Bundle>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const {
+    data: bundle,
+    isLoading: bundleLoading,
+    error: bundleError,
+  } = useBundleQuery(param!);
 
-  useEffect(() => {
-    const fetchBundle = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bundleService.getBundleById(bundleId);
-        setBundle(data);
-      } catch (error) {
-        console.error("Error fetching bundle:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBundle();
-  }, [bundleId]);
-
-  if (isLoading) {
+  if (bundleLoading) {
     return (
       <div className="min-h-screen bg-background dark:bg-[#0e0f11] p-6">
         <div className="max-w-2xl mx-auto">
@@ -127,14 +114,14 @@ export default function BundleCheckoutPage() {
       title: "Payment Successful",
       description: "Please do not refresh or close this window.",
     });
-    navigate(`/invoices/${orderId}`);
+    navigate(`/dashboard`);
   }
 
   return (
     <PaymentCheckout
       items={[{
         itemId: bundle.id,
-        itemType: "BUNDLE",
+        itemType: ENROLLED_PROGRAM_TYPE.BUNDLE,
         name: bundle.title,
         amount: bundle.salePrice ?? bundle.regularPrice,
         originalAmount: bundle.regularPrice,
