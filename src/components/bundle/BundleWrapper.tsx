@@ -2,18 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BundleCard } from "@/components/bundle/BundleCard";
 import { logError } from "@/utils/logger";
-import { ok, fail, type Result } from "@/utils/response";
-import { ENROLLED_PROGRAM_TYPE, PRICING_MODEL } from "@/constants";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import type { Enrollment } from "@/types/enrollment";
-import { Bundle } from "@/types/bundle";
-import { User } from "@/types/user";
+import type { Bundle } from "@/types/bundle";
+import type { User } from "@/types/user";
 
 interface BundleProps {
   bundle: Bundle;
   index: number;
   user: User;
-  isEnrolledInBundle: (id: string) => Promise<boolean>;
+  isEnrolledInBundle: (id: string) => Promise<boolean>; // keep if you track bundle purchase explicitly
   viewMode: "grid" | "list";
   handleBundlePurchase: (bundleId: string) => void;
 }
@@ -26,80 +24,56 @@ export const BundleWrapper = ({
   viewMode,
   handleBundlePurchase,
 }: BundleProps) => {
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isEnrolledInThisBundle, setIsEnrolledInThisBundle] = useState(false);
+  const [ownsAllBundleCourses, setOwnsAllBundleCourses] = useState(false);
   const [ownedCoursesCount, setOwnedCoursesCount] = useState(0);
+
   const navigate = useNavigate();
-  const { enrollments } = useEnrollment(); // global user enrollments
+  const { enrollments } = useEnrollment(); // user enrollments (course-based now)
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkEnrollment = async () => {
       try {
-        if (!user || !bundle) return;
+        if (!user?.id || !bundle?.id) return;
 
-        // --- 1️⃣ Check if user directly enrolled in the bundle ---
-        const enrolledInBundle = await isEnrolledInBundle(bundle.id);
+        // 1) If you still track bundle purchases, keep this call.
+        const enrolledInBundle = await isEnrolledInBundle(bundle.id).catch(() => false);
+        if (cancelled) return;
 
-        // --- 2️⃣ Compute all courses owned (direct + virtual from bundles) ---
-        const directCourses =
-          enrollments?.filter(
-            (e) => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE,
-          ) || [];
+        // 2) Build owned courseId set from new Enrollment schema
+        // Optional: filter by "active" statuses only if you have them
+        const userEnrollments: Enrollment[] =
+          (enrollments ?? []).filter((e) => e.userId === user.id);
+          // .filter((e) => ["ACTIVE", "COMPLETED"].includes(e.status as unknown as string));
 
-        const bundleCourses: Enrollment[] =
-          enrollments
-            ?.filter((e) => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE)
-            .flatMap((bundleEnrollment) => {
-              if (!bundleEnrollment.bundleProgress) return [];
-              return bundleEnrollment.bundleProgress.map((bp) => ({
-                id: `${bundleEnrollment.id}_${bp.courseId}_virtual`,
-                userId: bundleEnrollment.userId,
-                targetId: bp.courseId,
-                targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-                status: bundleEnrollment.status,
-                role: bundleEnrollment.role,
-                sourceBundleId: bundleEnrollment.targetId,
-                pricingModel:
-                  bundleEnrollment.pricingModel || PRICING_MODEL.PAID,
-                enrollmentDate: bundleEnrollment.enrollmentDate,
-                createdAt: bundleEnrollment.createdAt,
-                updatedAt: bundleEnrollment.updatedAt,
-                progressSummary: {
-                  percent: 0,
-                  completedCourses: 0,
-                  totalCourses: 1,
-                },
-              }));
-            }) || [];
+        const ownedCourseIds = new Set(userEnrollments.map((e) => e.courseId));
 
-        const allOwnedCourses = [...directCourses, ...bundleCourses];
-        const userCourseIds = allOwnedCourses.map((e) => e.targetId);
-
-        // --- 3️⃣ Compare with current bundle courses ---
-        const totalCourses = bundle.courses?.length || 0;
+        // 3) Compare to bundle courses
+        const totalCourses = bundle.courses?.length ?? 0;
         const ownedCourses =
-          bundle.courses?.filter((c) => userCourseIds.includes(c.id)) || [];
+          bundle.courses?.filter((c) => ownedCourseIds.has(c.id)) ?? [];
 
-        const ownsAllCourses = ownedCourses.length === totalCourses;
-
-        // --- 4️⃣ Set state ---
         setOwnedCoursesCount(ownedCourses.length);
-        setIsEnrolled(enrolledInBundle);
 
-        const result: Result<boolean> = ok(enrolledInBundle);
+        const ownsAll = totalCourses > 0 && ownedCourses.length === totalCourses;
+        setOwnsAllBundleCourses(ownsAll);
+        setIsEnrolledInThisBundle(enrolledInBundle);
       } catch (err) {
         logError("BundleWrapper.checkEnrollment", err);
-        const failResult = fail(
-          err instanceof Error ? err.message : "Unknown enrollment error",
-        );
-        console.warn("BundleWrapper - Enrollment failed:", {
+        console.warn("BundleWrapper - Enrollment check failed:", {
           bundleId: bundle.id,
-          failResult,
+          error: err instanceof Error ? err.message : String(err),
         });
       }
     };
 
     checkEnrollment();
-  }, [user, bundle, isEnrolledInBundle, enrollments]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, bundle?.id, enrollments, isEnrolledInBundle]);
 
   const handleAccessBundle = () => {
     try {
@@ -107,6 +81,16 @@ export const BundleWrapper = ({
     } catch (err) {
       logError("BundleWrapper.handleAccessBundle", err);
     }
+  };
+
+  const handlePurchaseClick = () => {
+    // Hard block purchase if user owns every course in the bundle
+    if (ownsAllBundleCourses) {
+      // Optional: show a toast/snackbar here
+      // toast.info("You already own all courses in this bundle.");
+      return;
+    }
+    handleBundlePurchase(bundle.id);
   };
 
   return (
@@ -117,10 +101,16 @@ export const BundleWrapper = ({
       <BundleCard
         bundle={bundle}
         variant={viewMode === "list" ? "compact" : "default"}
-        onPurchase={() => handleBundlePurchase(bundle.id)}
-        isEnrolled={isEnrolled}
-        ownedCoursesCount={ownedCoursesCount} // optional: show partial ownership
+        onPurchase={handlePurchaseClick}
+        // Keep "isEnrolled" meaning "owns the bundle license" (not just all courses)
+        isEnrolled={isEnrolledInThisBundle}
+        ownedCoursesCount={ownedCoursesCount}
         onAccess={handleAccessBundle}
+        // If your BundleCard supports disabling buy, pass this:
+        // disablePurchase={isEnrolledInThisBundle || ownsAllBundleCourses}
+        // purchaseDisabledReason={
+        //   ownsAllBundleCourses ? "You already own all courses in this bundle" : undefined
+        // }
       />
     </div>
   );
