@@ -29,6 +29,7 @@ import { CouponCard } from "@/components/payment/CouponCard";
 import { Coupon } from "@/types/coupon";
 import { couponUsageService } from "@/services/couponUsageService";
 import { Timestamp } from "firebase/firestore";
+import { useEnrollment } from "@/contexts/EnrollmentContext";
 
 const PROVIDER_CONFIG = {
   RAZORPAY: {
@@ -70,7 +71,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const { user } = useAuth();
   const { toast } = useToast();
   const [isOrderVerifying, setIsOrderVerifying] = useState(false);
-
+  const { refreshEnrollments } = useEnrollment();
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
     line1: "",
@@ -237,7 +238,8 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     const interval = setInterval(async () => {
       const order = await orderService.getOrderById(orderId);
       console.log("Verifying order status:", order);
-      if (order && order.status === "COMPLETED") {
+      if (order && order.status === "COMPLETED" ) {
+        refreshEnrollments();
         clearInterval(interval);
         setIsOrderVerifying(false);
         onPaymentSuccess?.(orderId);
