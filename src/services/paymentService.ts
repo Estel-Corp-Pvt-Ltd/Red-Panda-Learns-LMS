@@ -43,14 +43,14 @@ class PaymentService {
       isAvailable: !!import.meta.env.VITE_RAZORPAY_KEY_ID,
       description: "Pay with Cards, UPI, Net Banking & Wallets",
     },
-    {
-      id: PAYMENT_PROVIDER.PAYPAL,
-      name: "paypal",
-      displayName: "PayPal",
-      currency: "USD",
-      isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
-      description: "Pay securely with PayPal",
-    },
+    // {
+    //   id: PAYMENT_PROVIDER.PAYPAL,
+    //   name: "paypal",
+    //   displayName: "PayPal",
+    //   currency: "USD",
+    //   isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
+    //   description: "Pay securely with PayPal",
+    // },
   ];
 
   getAvailableProviders(): PaymentProviderOption[] {
@@ -121,6 +121,7 @@ class PaymentService {
     billingAddress,
     promoCode,
     onPaymentSuccess,
+    onPaymentFail,
   }: {
     provider: PaymentProvider;
     items: TransactionLineItem[];
@@ -129,6 +130,7 @@ class PaymentService {
     billingAddress: Address;
     promoCode?: string;
     onPaymentSuccess?: (orderId: string) => void;
+    onPaymentFail?: (message: string) => void;
   }): Promise<Result<{ orderId: string }>> {
     try {
       if (!items || items.length === 0) {
@@ -146,6 +148,7 @@ class PaymentService {
           userEmail,
           promoCode,
           onPaymentSuccess,
+          onPaymentFail,
         );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
         // result = await paypalProvider.processPayment(

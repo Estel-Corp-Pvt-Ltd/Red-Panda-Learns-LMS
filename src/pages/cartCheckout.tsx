@@ -90,7 +90,7 @@ export default function CartCheckoutPage() {
     });
 
     cartDispatch({ type: CART_ACTION.CLEAR });
-    navigate(`/invoices/${orderId}`);
+    navigate(`/dashboard`);
   };
 
   if (cartLoading) {

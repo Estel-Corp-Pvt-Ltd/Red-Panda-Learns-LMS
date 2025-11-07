@@ -7,7 +7,7 @@ import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/https";
 import { PaymentRequestSchema } from "../utils/validators";
 import { defineSecret } from "firebase-functions/params";
-import { getItemsDetails } from "../utils/orderUtils";
+import { getCouponDiscount, getItemsDetails } from "../utils/orderUtils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { orderService } from "../services/orderService";
 import { ORDER_STATUS, PAYMENT_PROVIDER } from "../constants";
@@ -32,18 +32,6 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       return;
     }
 
-    const result = PaymentRequestSchema.safeParse(req.body);
-    if (!result.success) {
-      res.status(400).json({ error: "Invalid request", details: result.error });
-      return;
-    }
-
-    const { items, selectedCurrency, promoCode, billingAddress } = result.data;
-
-    if (promoCode) {
-      functions.logger.info(`Applying promo code: ${promoCode}`);
-    }
-
     const idempotencyRef = admin
       .firestore()
       .collection("idempotency")
@@ -65,9 +53,30 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       )
     });
 
-    const { itemsDetails, originalAmount } = await getItemsDetails(items);
-    const amountInPaise = Math.round(originalAmount * 100);
+    // Logic Starts Here
+    const result = PaymentRequestSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: "Invalid request", details: result.error });
+      return;
+    }
 
+    const { items, selectedCurrency, promoCode, billingAddress } = result.data;
+
+    const { itemsDetails, originalAmount } = await getItemsDetails(items);
+
+    let discount = 0;
+    if (promoCode) {
+      const discountResult = await getCouponDiscount(itemsDetails, promoCode);
+      if (!discountResult.success || !discountResult.data) {
+        functions.logger.info(`Invalid promo code: ${promoCode}`);
+      }
+      discount = discountResult.data || 0;
+      functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
+    }
+
+    const amountInPaise = Math.round((originalAmount - discount) * 100);
+
+    functions.logger.info("💰 Creating Razorpay order for amount (in paise):", amountInPaise);
     // Create an order in database
     const orderResult = await orderService.createOrder({
       userId: user.uid,
@@ -77,9 +86,10 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       exchangeRate: 1,
       provider: PAYMENT_PROVIDER.RAZORPAY,
       providerOrderId: "", // to be updated after Razorpay order creation
-      amount: originalAmount,
+      couponDiscount: discount,
+      amount: originalAmount - discount,
       currency: selectedCurrency,
-      promoCode: promoCode,
+      promoCode: promoCode || "",
       metadata: {},
       billingAddress: billingAddress,
     });

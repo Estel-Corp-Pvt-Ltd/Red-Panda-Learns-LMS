@@ -16,7 +16,7 @@ export {
   createPaypalOrder,
   capturePaypalOrder,
   razorpayWebhook,
-  sendMailWorker
+  sendMailWorker,
   courseDeleteCascade,
   lessonDeleteCascade
 };
