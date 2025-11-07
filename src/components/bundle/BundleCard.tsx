@@ -7,9 +7,11 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { CURRENCY } from "@/constants";
+import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { Bundle } from "@/types/bundle";
 import { BookOpen, Tag } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface BundleCardProps {
   bundle: Bundle;
@@ -37,6 +39,9 @@ export function BundleCard({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  const { cartDispatch, cart } = useCart();
+  const navigate = useNavigate();
+  const isAddedToCart = cart.some((item) => item.refId == bundle.id);
 
   // Slash pricing helpers
   const regularPrice =
@@ -91,7 +96,7 @@ export function BundleCard({
                       <span>{category}</span>
                     </div>
                   ))}
-              </div>
+              </div> */}
 
               {showPartialOwnership && (
                 <Badge
@@ -199,7 +204,7 @@ export function BundleCard({
                 <span>{category}</span>
               </div>
             ))}
-        </div>
+        </div> */}
 
         {bundle.tags && bundle.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
@@ -232,19 +237,31 @@ export function BundleCard({
         </div>
       </CardContent>
 
-      <CardFooter className="p-6 pt-0">
+      <CardFooter className="p-6 pt-0 flex justify-between gap-6">
         <Button
-          className="w-full"
-          size="lg"
+          className="flex-grow"
+          hidden={fullOwnership}
+          onClick={() => {
+            if (isAddedToCart) {
+              cartDispatch({ type: "REMOVE", id: bundle.id });
+            } else {
+              cartDispatch({ type: "ADD", item: { type: "BUNDLE", refId: bundle.id } })
+            }
+          }}
+        >{isAddedToCart ? "Remove from Cart" : "Add to Cart"}</Button>
+        <Button
+          className="flex-grow"
           disabled={fullOwnership}
           title={
             fullOwnership
               ? `You already own all courses in ${bundle.title} bundle`
               : undefined
           }
-          onClick={() =>
-            !fullOwnership &&
-            (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
+          onClick={() => {
+            if (!fullOwnership) {
+              navigate(`/bundle/${bundle.id}`);
+            }
+          }
           }
         >
           {fullOwnership

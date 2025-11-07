@@ -18,9 +18,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PRICING_MODEL, ENROLLED_PROGRAM_TYPE } from '@/constants';
 import { toast, useToast } from '@/hooks/use-toast';
 import Sidebar from '@/components/Sidebar';
+
+
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
-  const { data: course, isLoading } = useCourseQuery(enrollment.targetId);
-  const { toast } = useToast();
+  const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
   if (isLoading) {
     return <LoadingSkeleton className="h-48" />;
   }
@@ -32,18 +33,18 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h3 className="font-semibold text-lg mb-2">{course.title}</h3>
+            <h3 className="font-semibold text-lg mb-2">{enrollment.courseName || course.title}</h3>
             <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
               {course.description}
             </p>
 
-            <div className="space-y-3 mb-4">
+            {/* <div className="space-y-3 mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span>Progress</span>
                 <span>{enrollment.progressSummary?.percent ?? 0}%</span>
               </div>
               <Progress value={enrollment.progressSummary?.percent ?? 0} />
-            </div>
+            </div> */}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -57,7 +58,7 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                 </Badge>
               </div>
               <Button asChild size="sm">
-                <Link to={`/course/${course?.id}`}>
+                <Link to={`/course/${enrollment.courseId}`}>
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Continue
                 </Link>
@@ -80,68 +81,12 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkAdminAndFetchEnrollments = async () => {
       if (!user || !user.email) return;
-
-      // Query users collection where email == current user's email
-      const usersRef = collection(db, COLLECTION.USERS);
-      const q = query(usersRef, where('email', '==', user.email));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const userData = querySnapshot.docs[0].data();
-        if (userData.role === USER_ROLE.ADMIN) {
-          navigate('/admin');
-          return; // Skip loading enrollments
-        }
-      }
-
-      // If not admin, fetch enrollments
       const result = await enrollmentService.getUserEnrollments(user.id);
-
       if (result.success) {
-        const data = result.data;
-
-        // Separate bundles and direct course enrollments
-        const bundles = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.BUNDLE);
-        const courses = data.filter(e => e.targetType === ENROLLED_PROGRAM_TYPE.COURSE);
-
-        // For each bundle, create virtual course enrollments
-        const bundleCourses = bundles.flatMap(bundle => {
-          if (!bundle.bundleProgress) return [];
-          return bundle.bundleProgress.map(bp => ({
-            id: `${bundle.id}_${bp.courseId}_virtual`,
-            userId: bundle.userId,
-            targetId: bp.courseId,
-            targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-            status: bundle.status,
-            role: bundle.role,
-            sourceBundleId: bundle.targetId,
-            pricingModel: bundle.pricingModel || PRICING_MODEL.PAID,
-            enrollmentDate: bundle.enrollmentDate,
-            createdAt: bundle.createdAt,
-            updatedAt: bundle.updatedAt,
-            progressSummary: {
-              percent: 0,
-              completedCourses: 0,
-              totalCourses: 1
-            }
-          })) as Enrollment[];
-        });
-
-        // Merge direct course enrollments + virtual course enrollments
-        const allCourses = [...courses, ...bundleCourses];
-
-        setEnrollments(allCourses);
-      }
-      else {
+        setEnrollments(result.data);
+      } else {
         setEnrollments([]);
-
-        toast({
-          title: "You are not enrolled into any course ",
-          description: "Enroll in any course ",
-          variant: "destructive",
-        });
       }
-
       setIsLoading(false);
     };
 
