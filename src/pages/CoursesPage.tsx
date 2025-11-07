@@ -305,20 +305,8 @@ const CoursesPage = () => {
                   )}
                 >
                   {bundles.map((bundle, index) => (
-                    <div
-                      key={bundle.id}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          navigate(`/bundle/${bundle.id}`);
-                        }
-                      }}
-                      className="relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/60 rounded-xl"
-                      aria-label={`Open ${bundle.title} details`}
-                    >
                       <BundleWrapper
+                      key={bundle.id}
                         bundle={bundle}
                         index={index}
                         user={user}
@@ -332,7 +320,6 @@ const CoursesPage = () => {
                           handleBundlePurchase(id);
                         }}
                       />
-                    </div>
                   ))}
                 </div>
               </div>

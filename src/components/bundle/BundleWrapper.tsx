@@ -88,15 +88,23 @@ export const BundleWrapper = ({
     if (ownsAllBundleCourses) {
       // Optional: show a toast/snackbar here
       // toast.info("You already own all courses in this bundle.");
-      return;
+      return; 
     }
     handleBundlePurchase(bundle.id);
   };
-
+if(ownsAllBundleCourses){
+  return <></>
+}
   return (
     <div
       className="animate-fade-in-up"
       style={{ animationDelay: `${index * 0.1}s` }}
+      onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                navigate(`/bundle/${bundle.id}`);
+                              }
+                            }}
     >
       <BundleCard
         bundle={bundle}

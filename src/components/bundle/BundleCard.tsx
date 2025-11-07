@@ -57,9 +57,8 @@ export function BundleCard({
   const showPartialOwnership =
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
-  if (fullOwnership) {
-    return null;
-  }
+
+ 
   if (variant === "compact") {
     return (
       <Card
