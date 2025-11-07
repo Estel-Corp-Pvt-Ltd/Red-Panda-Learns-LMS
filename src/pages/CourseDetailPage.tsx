@@ -122,7 +122,7 @@ export default function CourseDetailPage() {
     if (!user) {
       navigate("/auth/login", {
         state: {
-          from: `/course/${courseId}`,
+          from: `/course/${course.url ? course.url : course.id}`,
           message: "Please login to enroll in this course.",
         },
       });
@@ -132,7 +132,7 @@ export default function CourseDetailPage() {
     if (userIsEnrolled) {
       if (course.topics && course.topics.length > 0) {
         const firstTopic = course.topics[0];
-        navigate(`/course/${courseId}/lesson/${firstTopic.items[0].id}`);
+        navigate(`/course/${course.url ? course.url : course.id}/lesson/${firstTopic.items[0].id}`);
       }
     }
 
@@ -184,10 +184,10 @@ export default function CourseDetailPage() {
           description: "If you don't see the course, reload the page.",
         });
       }
-      navigate(`/course/${courseId}`);
+      navigate(`/course/${course.url ? course.url : course.id}`);
       return;
     }
-    navigate(`/checkout/${courseId}`);
+    navigate(`/checkout/${course.url ? course.url : course.id}`);
   };
 
   const handleContinueLearning = () => {
@@ -212,7 +212,7 @@ export default function CourseDetailPage() {
     }
 
     if (firstLessonId) {
-      navigate(`/course/${courseId}/lesson/${firstLessonId}`);
+      navigate(`/course/${course.url ? course.url : course.id}/lesson/${firstLessonId}`);
     } else {
       toast({
         title: "No content available",
@@ -287,7 +287,7 @@ export default function CourseDetailPage() {
             items.map(({ id: lessonId, title: lessonTitle, type }) => (
               <Link
                 key={lessonId}
-                to={`/course/${courseId}/lesson/${lessonId}`}
+                to={`/course/${course.url ? course.url : course.id}/lesson/${lessonId}`}
                 className="block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border"
               >
                 <div className="flex items-center gap-3">

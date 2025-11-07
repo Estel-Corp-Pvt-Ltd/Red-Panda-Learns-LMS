@@ -205,7 +205,7 @@ export default function CheckoutPage() {
     if (!user) {
       navigate("/auth/login", {
         state: {
-          from: `/checkout/${courseId}`,
+          from: `/checkout/${course.url ? course.url : course.id}`,
           message: "Please login to proceed with enrollment.",
         },
       });
@@ -216,7 +216,7 @@ export default function CheckoutPage() {
     if (!user || !courseId || loadingEnrollments) return;
 
     if (isEnrolled(courseId)) {
-      navigate(`/course/${courseId}`);
+      navigate(`/course/${course.url ? course.url : course.id}`);
     }
   }, [user, courseId, loadingEnrollments, navigate]);
 
@@ -417,14 +417,14 @@ export default function CheckoutPage() {
             title: "Enrollment Successful!",
             description: `You are now enrolled in ${course.title}`,
           });
-          navigate(`/course/${courseId}`);
+          navigate(`/course/${course.url ? course.url : course.id}`);
         } else {
           toast({
             title: "Payment Successful",
             description:
               "Your payment was processed. If you don't see the course immediately, please refresh the page.",
           });
-          navigate(`/course/${courseId}`);
+          navigate(`/course/${course.url ? course.url : course.id}`);
         }
       } else {
         toast({
@@ -482,7 +482,7 @@ export default function CheckoutPage() {
           <div className="mb-6 flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => navigate(`/course/${courseId}`)}
+              onClick={() => navigate(`/course/${course.url ? course.url : course.id}`)}
               className="flex items-center text-blue-600"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

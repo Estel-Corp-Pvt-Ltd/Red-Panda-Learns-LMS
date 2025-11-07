@@ -116,7 +116,7 @@ export default function LessonDetailPage() {
       window.history.pushState(
         null,
         "",
-        `/course/${courseId}/lesson/${item.id}`
+        `/course/${course.url ? course.url : course.id}/lesson/${item.id}`
       );
     }
   };
@@ -205,7 +205,7 @@ export default function LessonDetailPage() {
                   The lesson or assignment you're looking for doesn't exist.
                 </p>
                 <Button asChild>
-                  <Link to={`/course/${courseId}`}>Back to Course</Link>
+                  <Link to={`/course/${course.url ? course.url : course.id}`}>Back to Course</Link>
                 </Button>
               </div>
             </div>
