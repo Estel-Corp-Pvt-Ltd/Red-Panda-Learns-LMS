@@ -11,6 +11,7 @@ import { getCouponDiscount, getItemsDetails } from "../utils/orderUtils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { orderService } from "../services/orderService";
 import { ORDER_STATUS, PAYMENT_PROVIDER } from "../constants";
+import { currencyService } from "../services/currencyService";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -74,7 +75,14 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
     }
 
-    const amountInPaise = Math.round((originalAmount - discount) * 100);
+    const currencyResult = await currencyService.convertCurrency(originalAmount - discount, 'INR', selectedCurrency);
+    if (!currencyResult.success || !currencyResult.data) {
+      throw new Error(currencyResult.error?.message || "Currency conversion failed");
+    }
+
+    functions.logger.info(`Converted amount to INR: ${currencyResult.data.toAmount} at rate: ${currencyResult.data.rate}`);
+
+    const amountInPaise = Math.round((currencyResult.data.toAmount) * 100);
 
     functions.logger.info("💰 Creating Razorpay order for amount (in paise):", amountInPaise);
     // Create an order in database
@@ -83,7 +91,7 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       items: itemsDetails,
       status: ORDER_STATUS.PENDING,
       originalAmount: originalAmount,
-      exchangeRate: 1,
+      exchangeRate: currencyResult.data.rate,
       provider: PAYMENT_PROVIDER.RAZORPAY,
       providerOrderId: "", // to be updated after Razorpay order creation
       couponDiscount: discount,

@@ -29,6 +29,7 @@ import { CouponCard } from "@/components/payment/CouponCard";
 import { Coupon } from "@/types/coupon";
 import { couponUsageService } from "@/services/couponUsageService";
 import { Timestamp } from "firebase/firestore";
+import { currencyService } from "@/services/currencyService";
 
 const PROVIDER_CONFIG = {
   RAZORPAY: {
@@ -84,6 +85,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   });
 
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(PAYMENT_PROVIDER.RAZORPAY);
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(CURRENCY.INR);
   const [isProcessing, setIsProcessing] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -111,12 +113,27 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const savings = regularTotal - subtotal;
   const finalAmount = Math.max(0, subtotal - discountAmount);
 
+  useEffect(() => {
+    // Update exchange rate when currency changes
+    async function fetchExchangeRate() {
+      if (selectedCurrency === CURRENCY.INR) {
+        setExchangeRate(1);
+        return;
+      }
+      const result = await currencyService.getExchangeRate(CURRENCY.INR, selectedCurrency);
+      if (result) {
+        setExchangeRate(result);
+      }
+    }
+    fetchExchangeRate();
+  }, [selectedCurrency]);
+
   // Simple currency formatting
   const formatMoney = (amount: number, currency: Currency) => {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
-      currency,
-    }).format(amount);
+      currency: currency,
+    }).format(amount * exchangeRate);
   };
 
   // Validate address fields
@@ -245,26 +262,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     }, 5000);
   }
 
-  const handleUseCoupon = async () => {
-    if (!appliedCoupon || !user) return;
-
-    const usageData = {
-      userId: user.id,
-      couponId: appliedCoupon.id,
-      usedAt: Timestamp.now(),
-    };
-    const result = await couponUsageService.recordCouponUsage(usageData);
-    if (result.success) {
-      toast({
-        title: "Coupon successfully applied!",
-      });
-      return;
-    }
-    toast({
-      title: "Failed to apply coupon!",
-    });
-  };
-
   const handlePayment = async () => {
     if (!user || !canProceed) return;
 
@@ -374,15 +371,15 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                             <>
                               {item.originalAmount && (
                                 <span className="line-through text-gray-400 text-xs mr-1">
-                                  ₹{item.originalAmount}
+                                  {formatMoney(item.originalAmount || 0, selectedCurrency)}
                                 </span>
                               )}
                               <span className="text-green-600 dark:text-green-400">
-                                ₹{item.amount}
+                                {formatMoney(item.amount, selectedCurrency)}
                               </span>
                             </>
                           ) : (
-                            <span>₹{item.originalAmount}</span>
+                            <span>{formatMoney(item.originalAmount, selectedCurrency)}</span>
                           )}
                         </div>
                       </div>
