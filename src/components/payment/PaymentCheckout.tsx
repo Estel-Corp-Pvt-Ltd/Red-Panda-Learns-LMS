@@ -32,7 +32,7 @@ import { Timestamp } from "firebase/firestore";
 
 const PROVIDER_CONFIG = {
   RAZORPAY: {
-    currencies: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+    currencies: [CURRENCY.INR, CURRENCY.USD],
     logos: [
       { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
       { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },

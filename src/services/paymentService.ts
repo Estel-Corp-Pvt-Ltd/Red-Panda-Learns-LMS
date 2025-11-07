@@ -43,14 +43,14 @@ class PaymentService {
       isAvailable: !!import.meta.env.VITE_RAZORPAY_KEY_ID,
       description: "Pay with Cards, UPI, Net Banking & Wallets",
     },
-    {
-      id: PAYMENT_PROVIDER.PAYPAL,
-      name: "paypal",
-      displayName: "PayPal",
-      currency: "USD",
-      isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
-      description: "Pay securely with PayPal",
-    },
+    // {
+    //   id: PAYMENT_PROVIDER.PAYPAL,
+    //   name: "paypal",
+    //   displayName: "PayPal",
+    //   currency: "USD",
+    //   isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
+    //   description: "Pay securely with PayPal",
+    // },
   ];
 
   getAvailableProviders(): PaymentProviderOption[] {
