@@ -81,7 +81,7 @@ const METHOD_LOGOS: Record<
 };
 
 export default function BundleCheckoutPage() {
-  const { bundleId } = useParams<{ bundleId: string }>();
+ const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshEnrollments, isEnrolled } = useEnrollment();
@@ -123,7 +123,19 @@ export default function BundleCheckoutPage() {
   const providers = paymentService.getAvailableProviders();
 
   // Only change: use bundle queries here
-  const { data: bundle, isLoading } = useBundleQuery(bundleId!);
+ const [bundleId, setBundleId] = useState("");
+
+ const {
+   data: bundle,
+   isLoading: bundleLoading,
+   error: bundleError,
+ } = useBundleQuery(param!);
+
+ useEffect(() => {
+   if (!param || bundleLoading || !bundle) return;
+   setBundleId(bundle.id);
+ }, [param, bundleLoading, bundle]);
+
   const { data: courses } = useBundleCoursesQuery(bundleId!);
 
   const [promoCode, setPromoCode] = useState("");
@@ -482,7 +494,7 @@ export default function BundleCheckoutPage() {
     }
   };
 
-  if (isLoading) {
+  if (bundleLoading) {
     return (
       <div className="min-h-screen bg-background dark:bg-[#0e0f11] p-6">
         <div className="max-w-2xl mx-auto">

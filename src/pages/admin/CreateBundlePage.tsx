@@ -78,6 +78,9 @@ export default function CreateBundlePage() {
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
    const [preview, setPreview] = useState<string | null>(null);
+   const [checkingUrl, setCheckingUrl] = useState(false);
+   const [urlTaken, setUrlTaken] = useState(false);
+  const [url,setURl] = useState("")
   // Helper to get a course's effective price (salePrice takes precedence)
 const getCoursePrice = (course: Course) =>
   Number(course.salePrice ?? course.regularPrice ?? 0);
@@ -314,6 +317,10 @@ const handleSelectAllFiltered = () => {
     return [...prev, ...toAdd];
   });
 };
+
+
+
+
 
 const handleClearSelectionFiltered = () => {
   setSelectedCourses((prev) =>
@@ -566,6 +573,7 @@ const handleResetFilters = () => {
       await bundleService.createBundle({
         title: bundleData.title,
         description: bundleData.description,
+        url:bundleData.url,
         courses: courses
           .filter((course) => selectedCourseIds.includes(course.id!))
           .map((course) => ({ id: course.id, title: course.title })),
@@ -627,6 +635,7 @@ const handleResetFilters = () => {
       await bundleService.createBundle({
         title: bundleData.title,
         description: bundleData.description,
+        url:bundleData.url,
         courses: courses
           .filter((course) => selectedCourseIds.includes(course.id!))
           .map((course) => ({ id: course.id, title: course.title })),
@@ -659,6 +668,19 @@ const handleResetFilters = () => {
       setLoading(false);
     }
   };
+useEffect(() => {
+  if (!bundleData.url) return;
+
+  const check = setTimeout(async () => {
+    setCheckingUrl(true);
+    const res = await bundleService.isBundleUrlTaken(url);
+    setUrlTaken(res);
+    setCheckingUrl(false);
+  }, 500);
+
+  return () => clearTimeout(check);
+}, [bundleData.url]);
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -741,216 +763,307 @@ const handleResetFilters = () => {
                   />
                 </div>
 
-             {/* Categories + Target Audience side-by-side */}
+                <div>
+                  <Label htmlFor="bundle-url">Custom URL</Label>
 
-
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {/* Categories */}
-  <Card className="rounded-xl border p-4">
-    <CardHeader className="pb-3">
-      <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <Layers className="h-5 w-5 text-primary" />
-        Categories
-      </CardTitle>
-      <p className="text-xs text-muted-foreground">
-        Pick one or more to help discovery
-      </p>
-    </CardHeader>
-
-    <CardContent className="space-y-3">
-      {selectedCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedCategories.map((cat) => (
-            <Badge
-              key={cat}
-              variant="secondary"
-              className="pl-2 pr-1 py-[2px] text-sm"
-            >
-              {cat}
-              <button
-                onClick={() =>
-                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
-                }
-                className="ml-1 rounded-full hover:bg-muted p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
-
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-full justify-between"
-          >
-            {selectedCategories.length > 0
-              ? `${selectedCategories.length} selected`
-              : "Select categories"}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0">
-          <Command>
-            <CommandInput placeholder="Search categories..." />
-            <CommandList>
-              <CommandEmpty>No category found.</CommandEmpty>
-              <CommandGroup>
-                {allCategories.map((cat) => (
-                  <CommandItem
-                    key={cat}
-                    onSelect={() =>
-                      setSelectedCategories((prev) =>
-                        prev.includes(cat)
-                          ? prev.filter((c) => c !== cat)
-                          : [...prev, cat],
-                      )
-                    }
-                  >
-                    <Checkbox
-                      checked={selectedCategories.includes(cat)}
-                      className="mr-2"
+                  <div className="flex items-start gap-2">
+                    <Textarea
+                      id="bundle-url"
+                      placeholder="Write Custom URL"
+                      rows={2}
+                      value={bundleData.url ?? ""}
+                      onChange={(e) => {
+                        const newUrl = e.target.value
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[^\w\s-]/g, "") // remove special chars
+                          .replace(/\s+/g, "-"); // replace spaces with hyphens
+                          setURl(newUrl)
+                        setBundleData((prev) => ({
+                          ...prev,
+                          url: newUrl,
+                        }));
+                      }}
                     />
-                    {cat}
-                    {selectedCategories.includes(cat) && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-            <div className="p-2 border-t">
-              <Input
-                placeholder="Add new category"
-                onKeyDown={async (e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                    const newCat = e.currentTarget.value.trim();
-                    if (!allCategories.includes(newCat)) {
-                      await attributeService.addAttribute(
-                        ATTRIBUTE_TYPE.CATEGORY,
-                        newCat,
-                      );
-                      setAllCategories((prev) => [...prev, newCat]);
-                      setSelectedCategories((prev) => [...prev, newCat]);
-                    }
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-            </div>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </CardContent>
-  </Card>
 
-  {/* Target Audience */}
-  <Card className="rounded-xl border p-4">
-    <CardHeader className="pb-3">
-      <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <UsersIcon className="h-5 w-5 text-primary" />
-        Target Audience
-      </CardTitle>
-      <p className="text-xs text-muted-foreground">Who is this content for?</p>
-    </CardHeader>
+                    {/* Generate URL Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!bundleData.title?.trim()) return;
 
-    <CardContent className="space-y-3">
-      {selectedTargetAudiences.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedTargetAudiences.map((aud) => (
-            <Badge
-              key={aud}
-              variant="secondary"
-              className="pl-2 pr-1 py-[2px] text-sm"
-            >
-              {aud}
-              <button
-                onClick={() =>
-                  setSelectedTargetAudiences((prev) =>
-                    prev.filter((a) => a !== aud),
-                  )
-                }
-                className="ml-1 rounded-full hover:bg-muted p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
+                        const generatedUrl = bundleData.title
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[^\w\s-]/g, "") // remove special chars
+                          .replace(/\s+/g, "-"); // replace spaces with hyphens
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-full justify-between"
-          >
-            {selectedTargetAudiences.length > 0
-              ? `${selectedTargetAudiences.length} selected`
-              : "Select target audience"}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0">
-          <Command>
-            <CommandInput placeholder="Search audiences..." />
-            <CommandList>
-              <CommandEmpty>No audience found.</CommandEmpty>
-              <CommandGroup>
-                {allTargetAudiences.map((aud) => (
-                  <CommandItem
-                    key={aud}
-                    onSelect={() =>
-                      setSelectedTargetAudiences((prev) =>
-                        prev.includes(aud)
-                          ? prev.filter((a) => a !== aud)
-                          : [...prev, aud],
-                      )
-                    }
-                  >
-                    <Checkbox
-                      checked={selectedTargetAudiences.includes(aud)}
-                      className="mr-2"
-                    />
-                    {aud}
-                    {selectedTargetAudiences.includes(aud) && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-            <div className="p-2 border-t">
-              <Input
-                placeholder="Add new audience"
-                onKeyDown={async (e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                    const newAud = e.currentTarget.value.trim();
-                    if (!allTargetAudiences.includes(newAud)) {
-                      await attributeService.addAttribute(
-                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
-                        newAud,
-                      );
-                      setAllTargetAudiences((prev) => [...prev, newAud]);
-                      setSelectedTargetAudiences((prev) => [...prev, newAud]);
-                    }
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-            </div>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </CardContent>
-  </Card>
-</div>
+                        setBundleData((prev) => ({
+                          ...prev,
+                          url: generatedUrl,
+                        }));
+                      }}
+                    >
+                      Generate URL
+                    </Button>
+                  </div>
+
+                  {/* URL availability feedback */}
+                  {checkingUrl && (
+                    <p className="text-xs text-muted-foreground">
+                      Checking availability...
+                    </p>
+                  )}
+
+                  {!checkingUrl && urlTaken && (
+                    <p className="text-xs text-red-500">
+                      This URL is already in use.
+                    </p>
+                  )}
+
+                  {!checkingUrl && !urlTaken && bundleData.url && (
+                    <p className="text-xs text-green-500">
+                      This URL is available.
+                    </p>
+                  )}
+
+                 
+                </div>
+
+                {/* Categories + Target Audience side-by-side */}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Categories */}
+                  <Card className="rounded-xl border p-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        <Layers className="h-5 w-5 text-primary" />
+                        Categories
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Pick one or more to help discovery
+                      </p>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3">
+                      {selectedCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCategories.map((cat) => (
+                            <Badge
+                              key={cat}
+                              variant="secondary"
+                              className="pl-2 pr-1 py-[2px] text-sm"
+                            >
+                              {cat}
+                              <button
+                                onClick={() =>
+                                  setSelectedCategories((prev) =>
+                                    prev.filter((c) => c !== cat)
+                                  )
+                                }
+                                className="ml-1 rounded-full hover:bg-muted p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between"
+                          >
+                            {selectedCategories.length > 0
+                              ? `${selectedCategories.length} selected`
+                              : "Select categories"}
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search categories..." />
+                            <CommandList>
+                              <CommandEmpty>No category found.</CommandEmpty>
+                              <CommandGroup>
+                                {allCategories.map((cat) => (
+                                  <CommandItem
+                                    key={cat}
+                                    onSelect={() =>
+                                      setSelectedCategories((prev) =>
+                                        prev.includes(cat)
+                                          ? prev.filter((c) => c !== cat)
+                                          : [...prev, cat]
+                                      )
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={selectedCategories.includes(cat)}
+                                      className="mr-2"
+                                    />
+                                    {cat}
+                                    {selectedCategories.includes(cat) && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                            <div className="p-2 border-t">
+                              <Input
+                                placeholder="Add new category"
+                                onKeyDown={async (e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    e.key === "Enter" &&
+                                    e.currentTarget.value.trim()
+                                  ) {
+                                    const newCat = e.currentTarget.value.trim();
+                                    if (!allCategories.includes(newCat)) {
+                                      await attributeService.addAttribute(
+                                        ATTRIBUTE_TYPE.CATEGORY,
+                                        newCat
+                                      );
+                                      setAllCategories((prev) => [
+                                        ...prev,
+                                        newCat,
+                                      ]);
+                                      setSelectedCategories((prev) => [
+                                        ...prev,
+                                        newCat,
+                                      ]);
+                                    }
+                                    e.currentTarget.value = "";
+                                  }
+                                }}
+                              />
+                            </div>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </CardContent>
+                  </Card>
+
+                  {/* Target Audience */}
+                  <Card className="rounded-xl border p-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        <UsersIcon className="h-5 w-5 text-primary" />
+                        Target Audience
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Who is this content for?
+                      </p>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3">
+                      {selectedTargetAudiences.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTargetAudiences.map((aud) => (
+                            <Badge
+                              key={aud}
+                              variant="secondary"
+                              className="pl-2 pr-1 py-[2px] text-sm"
+                            >
+                              {aud}
+                              <button
+                                onClick={() =>
+                                  setSelectedTargetAudiences((prev) =>
+                                    prev.filter((a) => a !== aud)
+                                  )
+                                }
+                                className="ml-1 rounded-full hover:bg-muted p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between"
+                          >
+                            {selectedTargetAudiences.length > 0
+                              ? `${selectedTargetAudiences.length} selected`
+                              : "Select target audience"}
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search audiences..." />
+                            <CommandList>
+                              <CommandEmpty>No audience found.</CommandEmpty>
+                              <CommandGroup>
+                                {allTargetAudiences.map((aud) => (
+                                  <CommandItem
+                                    key={aud}
+                                    onSelect={() =>
+                                      setSelectedTargetAudiences((prev) =>
+                                        prev.includes(aud)
+                                          ? prev.filter((a) => a !== aud)
+                                          : [...prev, aud]
+                                      )
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={selectedTargetAudiences.includes(
+                                        aud
+                                      )}
+                                      className="mr-2"
+                                    />
+                                    {aud}
+                                    {selectedTargetAudiences.includes(aud) && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                            <div className="p-2 border-t">
+                              <Input
+                                placeholder="Add new audience"
+                                onKeyDown={async (e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    e.key === "Enter" &&
+                                    e.currentTarget.value.trim()
+                                  ) {
+                                    const newAud = e.currentTarget.value.trim();
+                                    if (!allTargetAudiences.includes(newAud)) {
+                                      await attributeService.addAttribute(
+                                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+                                        newAud
+                                      );
+                                      setAllTargetAudiences((prev) => [
+                                        ...prev,
+                                        newAud,
+                                      ]);
+                                      setSelectedTargetAudiences((prev) => [
+                                        ...prev,
+                                        newAud,
+                                      ]);
+                                    }
+                                    e.currentTarget.value = "";
+                                  }
+                                }}
+                              />
+                            </div>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </CardContent>
+                  </Card>
+                </div>
                 {/* Tags */}
                 <div>
                   <Label>Tags</Label>
@@ -1051,604 +1164,754 @@ const handleResetFilters = () => {
                 </Card>
               </CardContent>
             </Card>
-   <Card>
-                  <CardHeader>
-                    <CardTitle>Thumbnail</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {!preview && thumbnailUrl && (
-                      <div className="mb-5">
-                        <img
-                          src={thumbnailUrl}
-                          alt="Preview"
-                          className="border rounded"
-                        />
-                      </div>
-                    )}
-                    {preview && (
-                      <div className="mb-5">
-                        <img
-                          src={preview}
-                          alt="Preview"
-                          className="border rounded"
-                        />
-                      </div>
-                    )}
-                    {uploadingThumbnail && (
-                      <div className="mb-8">
-                        <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
-                          <div
-                            style={{
-                              width: `${progress}%`,
-                              height: "100%",
-                              backgroundColor: "#ff00ff",
-                              transition: "width 0.3s",
-                            }}
-                          />
-                        </div>
-                        <small>{progress}%</small>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
+            <Card>
+              <CardHeader>
+                <CardTitle>Thumbnail</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!preview && thumbnailUrl && (
+                  <div className="mb-5">
+                    <img
+                      src={thumbnailUrl}
+                      alt="Preview"
+                      className="border rounded"
+                    />
+                  </div>
+                )}
+                {preview && (
+                  <div className="mb-5">
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="border rounded"
+                    />
+                  </div>
+                )}
+                {uploadingThumbnail && (
+                  <div className="mb-8">
+                    <div className="w-full h-2 rounded-sm bg-white border overflow-hidden">
+                      <div
+                        style={{
+                          width: `${progress}%`,
+                          height: "100%",
+                          backgroundColor: "#ff00ff",
+                          transition: "width 0.3s",
+                        }}
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                    <small>{progress}%</small>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Course Selection */}
-          <Card>
-  <CardHeader>
-    <CardTitle>
-      Select Courses ({selectedCourseIds.length} selected)
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    {courses.length === 0 ? (
-      <div className="text-center py-8">
-        <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Select Courses ({selectedCourseIds.length} selected)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {courses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">
                       No courses available
                     </h3>
-        <p className="text-muted-foreground mb-4">
-          You need published courses to create a bundle.
-        </p>
-        <Button onClick={() => navigate("/admin/create-course")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create First Course
-        </Button>
-      </div>
-    ) : (
-      <>
-        {/* Filter toolbar */}
-       {/* Filter toolbar */}
-<div className="p-3 border rounded-lg bg-muted/20 space-y-3 mb-4">
-  {/* Row 1: Search, Type, Sort */}
- <div className="flex flex-col lg:flex-row lg:items-end gap-3">
-  {/* Search */}
-  <div className="w-full lg:flex-1 space-y-1.5">
-    <Label className="text-xs text-muted-foreground">Search</Label>
-    <div className="relative">
-      <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-muted-foreground">
-        <Search className="h-4 w-4" />
-      </span>
-      <Input
-        className="pl-8"
-        placeholder="Search by title or description..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-    </div>
-  </div>
+                    <p className="text-muted-foreground mb-4">
+                      You need published courses to create a bundle.
+                    </p>
+                    <Button onClick={() => navigate("/admin/create-course")}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create First Course
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Filter toolbar */}
+                    {/* Filter toolbar */}
+                    <div className="p-3 border rounded-lg bg-muted/20 space-y-3 mb-4">
+                      {/* Row 1: Search, Type, Sort */}
+                      <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+                        {/* Search */}
+                        <div className="w-full lg:flex-1 space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Search
+                          </Label>
+                          <div className="relative">
+                            <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-muted-foreground">
+                              <Search className="h-4 w-4" />
+                            </span>
+                            <Input
+                              className="pl-8"
+                              placeholder="Search by title or description..."
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                            />
+                          </div>
+                        </div>
 
-  {/* Type */}
-  <div className="w-full lg:w-40 space-y-1.5">
-    <Label className="text-xs text-muted-foreground">Type</Label>
-    <Select
-      value={priceType}
-      onValueChange={(v) => setPriceType(v as "all" | PricingModel)}
-    >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="All" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All</SelectItem>
-        <SelectItem value={PRICING_MODEL.FREE}>Free</SelectItem>
-        <SelectItem value={PRICING_MODEL.PAID}>Paid</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-
-  {/* Sort by */}
-  <div className="w-full lg:w-48 space-y-1.5">
-    <Label className="text-xs text-muted-foreground">Sort by</Label>
-    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={SORT_KEY.RELEVANCE} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={SORT_KEY.RELEVANCE}>Relevance</SelectItem>
-        <SelectItem value={SORT_KEY.PRICE_ASC}>Price: Low to High</SelectItem>
-        <SelectItem value={SORT_KEY.PRICE_DESC}>Price: High to Low</SelectItem>
-        <SelectItem value={SORT_KEY.TITLE_ASC}>Title: A → Z</SelectItem>
-        <SelectItem value={SORT_KEY.TITLE_DESC}>Title: Z → A</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-</div>
-
-  {/* Row 2: Price Range */}
-  <div className="w-full">
-    <Label className="text-xs text-muted-foreground">Price range</Label>
-    <div className="flex items-center gap-3">
-      <span className="text-sm font-medium">
-        {formatCurrency(priceRange[0] || 0)}
-      </span>
-      <Slider
-        value={[priceRange[0], priceRange[1]]}
-        onValueChange={(vals) => setPriceRange([vals[0], vals[1]])}
-        min={minCoursePrice}
-        max={maxCoursePrice}
-        step={1}
-        className="flex-1"
-        disabled={minCoursePrice === maxCoursePrice}
-      />
-      <span className="text-sm font-medium">
-        {formatCurrency(priceRange[1] || 0)}
-      </span>
-    </div>
-  </div>
-
-  {/* Row 3: Advanced filters */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-    {/* Instructor */}
-  
-<Popover>
-  <PopoverTrigger asChild>
-    <Button variant="outline" className="w-full justify-between">
-      <span>Instructor</span>
-      <div className="flex items-center gap-2">
-        {selectedInstructorIds.length > 0 && (
-          <Badge variant="secondary">{selectedInstructorIds.length}</Badge>
-        )}
-        <ChevronDown className="h-4 w-4 opacity-50" />
-      </div>
-    </Button>
-  </PopoverTrigger>
-  <PopoverContent className="w-[280px] p-0">
-    <Command>
-      <CommandInput placeholder="Search instructors..." />
-      <CommandList>
-        <CommandEmpty>No results.</CommandEmpty>
-        <CommandGroup>
-          {instructors.map((opt) => {
-            const selected = selectedInstructorIds.includes(opt.name);
-            return (
-              <CommandItem
-                key={opt.id}
-                value={`${opt.name} ${opt.id}`} // better search
-                onSelect={() =>
-                  setSelectedInstructorIds((prev) =>
-                    selected ? prev.filter((id) => id !== opt.name) : [...prev, opt.name]
-                  )
-                }
-                className="flex items-center gap-2"
-              >
-                <div
-                  className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                    selected ? "bg-primary text-primary-foreground" : "opacity-50"
-                  }`}
-                >
-                  {selected && <Check className="h-3 w-3" />}
-                </div>
-                <span>{opt.name}</span>
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
-      </CommandList>
-    </Command>
-    <div className="flex justify-between items-center p-2 border-t">
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setSelectedInstructorIds(instructors.map((o) => o.name))}
-        disabled={
-          instructors.length === 0 || selectedInstructorIds.length === instructors.length
-        }
-      >
-        Select all
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setSelectedInstructorIds([])}
-        disabled={selectedInstructorIds.length === 0}
-      >
-        Clear
-      </Button>
-    </div>
-  </PopoverContent>
-</Popover>
-
-    {/* Categories */}
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <span>Categories</span>
-          <div className="flex items-center gap-2">
-            {selectedCategoryIds.length > 0 && (
-              <Badge variant="secondary">{selectedCategoryIds.length}</Badge>
-            )}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0">
-        <Command>
-          <CommandInput placeholder="Search categories..." />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              {categoryOptions.map((opt) => {
-                const selected = selectedCategoryIds.includes(opt.label);
-                return (
-                  <CommandItem
-                    key={opt.label}
-                    onSelect={() =>
-                      setSelectedCategoryIds((prev) =>
-                        selected ? prev.filter((name) => name !== opt.label) : [...prev, opt.label]
-                      )
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    <div
-                      className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                        selected ? "bg-primary text-primary-foreground" : "opacity-50"
-                      }`}
-                    >
-                      {selected && <Check className="h-3 w-3" />}
-                    </div>
-                    <span>{opt.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-        <div className="flex justify-between items-center p-2 border-t">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedCategoryIds(categoryOptions.map((o) => o.label))}
-            disabled={
-              categoryOptions.length === 0 ||
-              selectedCategoryIds.length === categoryOptions.length
-            }
-          >
-            Select all
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedCategoryIds([])}
-            disabled={selectedCategoryIds.length === 0}
-          >
-            Clear
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-
-    {/* Tags */}
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <span>Tags</span>
-          <div className="flex items-center gap-2">
-            {selectedCourseTags.length > 0 && (
-              <Badge variant="secondary">{selectedCourseTags.length}</Badge>
-            )}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0">
-        <Command>
-          <CommandInput placeholder="Search tags..." />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              {tagOptions.map((opt) => {
-                const selected = selectedCourseTags.includes(opt.id);
-                return (
-                  <CommandItem
-                    key={opt.id}
-                    onSelect={() =>
-                      setSelectedCourseTags((prev) =>
-                        selected ? prev.filter((t) => t !== opt.id) : [...prev, opt.id]
-                      )
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    <div
-                      className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                        selected ? "bg-primary text-primary-foreground" : "opacity-50"
-                      }`}
-                    >
-                      {selected && <Check className="h-3 w-3" />}
-                    </div>
-                    <span>{opt.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-        <div className="flex justify-between items-center p-2 border-t">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedCourseTags(tagOptions.map((o) => o.id))}
-            disabled={
-              tagOptions.length === 0 || selectedCourseTags.length === tagOptions.length
-            }
-          >
-            Select all
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedCourseTags([])}
-            disabled={selectedCourseTags.length === 0}
-          >
-            Clear
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-
-    {/* Target Audience */}
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <span>Target Audience</span>
-          <div className="flex items-center gap-2">
-            {selectedTargetAudienceIds.length > 0 && (
-              <Badge variant="secondary">{selectedTargetAudienceIds.length}</Badge>
-            )}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0">
-        <Command>
-          <CommandInput placeholder="Search audience..." />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              {targetAudienceOptions.map((opt) => {
-                const selected = selectedTargetAudienceIds.includes(opt.label);
-                return (
-                  <CommandItem
-                    key={opt.id}
-                    onSelect={() =>
-                      setSelectedTargetAudienceIds((prev) =>
-                        selected ? prev.filter((id) => id !== opt.label) : [...prev, opt.label]
-                      )
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    <div
-                      className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                        selected ? "bg-primary text-primary-foreground" : "opacity-50"
-                      }`}
-                    >
-                      {selected && <Check className="h-3 w-3" />}
-                    </div>
-                    <span>{opt.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-        <div className="flex justify-between items-center p-2 border-t">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              setSelectedTargetAudienceIds(targetAudienceOptions.map((o) => o.label))
-            }
-            disabled={
-              targetAudienceOptions.length === 0 ||
-              selectedTargetAudienceIds.length === targetAudienceOptions.length
-            }
-          >
-            Select all
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedTargetAudienceIds([])}
-            disabled={selectedTargetAudienceIds.length === 0}
-          >
-            Clear
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  </div>
-
-  {/* Active filter chips */}
-  {(selectedInstructorIds.length ||
-    selectedCategoryIds.length ||
-    selectedCourseTags.length ||
-    selectedTargetAudienceIds.length) > 0 && (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-muted-foreground">Active filters:</span>
-
-    {selectedInstructorIds.map((id) => {
-  const name = instructors.find((o) => o.id === id)?.name ?? id;
-  return (
-    <Badge key={`if-${id}`} variant="secondary" className="flex items-center gap-1">
-      {name}
-      <button
-        onClick={() =>
-          setSelectedInstructorIds((prev) => prev.filter((x) => x !== id))
-        }
-        className="ml-1 text-muted-foreground hover:text-foreground"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </Badge>
-  );
-})}
-
-  {selectedCategoryIds.map((id) => {
-  const label = categoryOptions.find((o) => o.id === id)?.label ?? id;
-  return (
-    <Badge key={`cf-${id}`} variant="secondary" className="flex items-center gap-1">
-      {label}
-      <button
-        onClick={() => setSelectedCategoryIds((prev) => prev.filter((x) => x !== id))}
-        className="ml-1 text-muted-foreground hover:text-foreground"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </Badge>
-  );
-})}
-
-{selectedTargetAudienceIds.map((id) => {
-  const label = targetAudienceOptions.find((o) => o.id === id)?.label ?? id;
-  return (
-    <Badge key={`af-${id}`} variant="secondary" className="flex items-center gap-1">
-      {label}
-      <button
-        onClick={() => setSelectedTargetAudienceIds((prev) => prev.filter((x) => x !== id))}
-        className="ml-1 text-muted-foreground hover:text-foreground"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </Badge>
-  );
-})}
-
-
- {selectedCourseTags.map((t) => (
-        <Badge key={`tf-${t}`} variant="secondary" className="flex items-center gap-1">
-          {t}
-          <button
-            onClick={() =>
-              setSelectedCourseTags((prev) => prev.filter((x) => x !== t))
-            }
-            className="ml-1 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
-    </div>
-  )}
-
-  {/* Row 4: Toggles + Bulk Actions */}
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div className="flex items-center gap-2">
-      <Checkbox
-        id="selectedOnly"
-        checked={showSelectedOnly}
-        onCheckedChange={(checked) => setShowSelectedOnly(Boolean(checked))}
-      />
-      <Label htmlFor="selectedOnly" className="text-sm">
-        Show selected only
-      </Label>
-    </div>
-
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleSelectAllFiltered}
-        disabled={
-          filteredCourses.length === 0 ||
-          filteredCourses.every((c) => selectedCourseIds.includes(c.id!))
-        }
-      >
-        <CheckCheck className="h-4 w-4 mr-1" />
-        Select all (filtered)
-      </Button>
-
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={handleClearSelectionFiltered}
-        disabled={filteredCourses.every((c) => !selectedCourseIds.includes(c.id!))}
-      >
-        <XCircle className="h-4 w-4 mr-1" />
-        Clear selection (filtered)
-      </Button>
-
-      <Button size="sm" variant="ghost" onClick={handleResetFilters}>
-        <RefreshCcw className="h-4 w-4 mr-1" />
-        Reset
-      </Button>
-    </div>
-  </div>
-
-  <div className="text-xs text-muted-foreground">
-    Showing {filteredCount} of {totalCount} courses • Selected {selectedCourseIds.length}
-  </div>
-</div>
-
-        {/* Filtered results */}
-        <div className="space-y-3">
-          {filteredCourses.map((course) => (
-            <div
-              key={course.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50"
-            >
-              <div className="flex items-start sm:items-center gap-3 flex-1">
-                <Checkbox
-                  checked={selectedCourseIds.includes(course.id!)}
-                  onCheckedChange={() =>
-                              handleCourseToggle(course.id!)
+                        {/* Type */}
+                        <div className="w-full lg:w-40 space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Type
+                          </Label>
+                          <Select
+                            value={priceType}
+                            onValueChange={(v) =>
+                              setPriceType(v as "all" | PricingModel)
                             }
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium">{course.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
-                    {course.description}
-                  </p>
-                </div>
-              </div>
-              <div className="text-left sm:text-right">
-                <p className="font-semibold">
-                  {formatCurrency(
-                    
-                              course.salePrice ?? course.regularPrice ?? 0
-                  
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="All" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value={PRICING_MODEL.FREE}>
+                                Free
+                              </SelectItem>
+                              <SelectItem value={PRICING_MODEL.PAID}>
+                                Paid
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Sort by */}
+                        <div className="w-full lg:w-48 space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Sort by
+                          </Label>
+                          <Select
+                            value={sortBy}
+                            onValueChange={(v) => setSortBy(v as SortKey)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={SORT_KEY.RELEVANCE} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={SORT_KEY.RELEVANCE}>
+                                Relevance
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.PRICE_ASC}>
+                                Price: Low to High
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.PRICE_DESC}>
+                                Price: High to Low
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.TITLE_ASC}>
+                                Title: A → Z
+                              </SelectItem>
+                              <SelectItem value={SORT_KEY.TITLE_DESC}>
+                                Title: Z → A
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Price Range */}
+                      <div className="w-full">
+                        <Label className="text-xs text-muted-foreground">
+                          Price range
+                        </Label>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium">
+                            {formatCurrency(priceRange[0] || 0)}
+                          </span>
+                          <Slider
+                            value={[priceRange[0], priceRange[1]]}
+                            onValueChange={(vals) =>
+                              setPriceRange([vals[0], vals[1]])
+                            }
+                            min={minCoursePrice}
+                            max={maxCoursePrice}
+                            step={1}
+                            className="flex-1"
+                            disabled={minCoursePrice === maxCoursePrice}
+                          />
+                          <span className="text-sm font-medium">
+                            {formatCurrency(priceRange[1] || 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Row 3: Advanced filters */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {/* Instructor */}
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Instructor</span>
+                              <div className="flex items-center gap-2">
+                                {selectedInstructorIds.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedInstructorIds.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search instructors..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {instructors.map((opt) => {
+                                    const selected =
+                                      selectedInstructorIds.includes(opt.name);
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        value={`${opt.name} ${opt.id}`} // better search
+                                        onSelect={() =>
+                                          setSelectedInstructorIds((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (id) => id !== opt.name
+                                                )
+                                              : [...prev, opt.name]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.name}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedInstructorIds(
+                                    instructors.map((o) => o.name)
+                                  )
+                                }
+                                disabled={
+                                  instructors.length === 0 ||
+                                  selectedInstructorIds.length ===
+                                    instructors.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedInstructorIds([])}
+                                disabled={selectedInstructorIds.length === 0}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Categories */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Categories</span>
+                              <div className="flex items-center gap-2">
+                                {selectedCategoryIds.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedCategoryIds.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search categories..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {categoryOptions.map((opt) => {
+                                    const selected =
+                                      selectedCategoryIds.includes(opt.label);
+                                    return (
+                                      <CommandItem
+                                        key={opt.label}
+                                        onSelect={() =>
+                                          setSelectedCategoryIds((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (name) => name !== opt.label
+                                                )
+                                              : [...prev, opt.label]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.label}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedCategoryIds(
+                                    categoryOptions.map((o) => o.label)
+                                  )
+                                }
+                                disabled={
+                                  categoryOptions.length === 0 ||
+                                  selectedCategoryIds.length ===
+                                    categoryOptions.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedCategoryIds([])}
+                                disabled={selectedCategoryIds.length === 0}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Tags */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Tags</span>
+                              <div className="flex items-center gap-2">
+                                {selectedCourseTags.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedCourseTags.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search tags..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {tagOptions.map((opt) => {
+                                    const selected =
+                                      selectedCourseTags.includes(opt.id);
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        onSelect={() =>
+                                          setSelectedCourseTags((prev) =>
+                                            selected
+                                              ? prev.filter((t) => t !== opt.id)
+                                              : [...prev, opt.id]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.label}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedCourseTags(
+                                    tagOptions.map((o) => o.id)
+                                  )
+                                }
+                                disabled={
+                                  tagOptions.length === 0 ||
+                                  selectedCourseTags.length ===
+                                    tagOptions.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedCourseTags([])}
+                                disabled={selectedCourseTags.length === 0}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Target Audience */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                            >
+                              <span>Target Audience</span>
+                              <div className="flex items-center gap-2">
+                                {selectedTargetAudienceIds.length > 0 && (
+                                  <Badge variant="secondary">
+                                    {selectedTargetAudienceIds.length}
+                                  </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search audience..." />
+                              <CommandList>
+                                <CommandEmpty>No results.</CommandEmpty>
+                                <CommandGroup>
+                                  {targetAudienceOptions.map((opt) => {
+                                    const selected =
+                                      selectedTargetAudienceIds.includes(
+                                        opt.label
+                                      );
+                                    return (
+                                      <CommandItem
+                                        key={opt.id}
+                                        onSelect={() =>
+                                          setSelectedTargetAudienceIds((prev) =>
+                                            selected
+                                              ? prev.filter(
+                                                  (id) => id !== opt.label
+                                                )
+                                              : [...prev, opt.label]
+                                          )
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
+                                        >
+                                          {selected && (
+                                            <Check className="h-3 w-3" />
+                                          )}
+                                        </div>
+                                        <span>{opt.label}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                            <div className="flex justify-between items-center p-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setSelectedTargetAudienceIds(
+                                    targetAudienceOptions.map((o) => o.label)
+                                  )
+                                }
+                                disabled={
+                                  targetAudienceOptions.length === 0 ||
+                                  selectedTargetAudienceIds.length ===
+                                    targetAudienceOptions.length
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedTargetAudienceIds([])}
+                                disabled={
+                                  selectedTargetAudienceIds.length === 0
+                                }
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Active filter chips */}
+                      {(selectedInstructorIds.length ||
+                        selectedCategoryIds.length ||
+                        selectedCourseTags.length ||
+                        selectedTargetAudienceIds.length) > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            Active filters:
+                          </span>
+
+                          {selectedInstructorIds.map((id) => {
+                            const name =
+                              instructors.find((o) => o.id === id)?.name ?? id;
+                            return (
+                              <Badge
+                                key={`if-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {name}
+                                <button
+                                  onClick={() =>
+                                    setSelectedInstructorIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedCategoryIds.map((id) => {
+                            const label =
+                              categoryOptions.find((o) => o.id === id)?.label ??
+                              id;
+                            return (
+                              <Badge
+                                key={`cf-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {label}
+                                <button
+                                  onClick={() =>
+                                    setSelectedCategoryIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedTargetAudienceIds.map((id) => {
+                            const label =
+                              targetAudienceOptions.find((o) => o.id === id)
+                                ?.label ?? id;
+                            return (
+                              <Badge
+                                key={`af-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {label}
+                                <button
+                                  onClick={() =>
+                                    setSelectedTargetAudienceIds((prev) =>
+                                      prev.filter((x) => x !== id)
+                                    )
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedCourseTags.map((t) => (
+                            <Badge
+                              key={`tf-${t}`}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {t}
+                              <button
+                                onClick={() =>
+                                  setSelectedCourseTags((prev) =>
+                                    prev.filter((x) => x !== t)
+                                  )
+                                }
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Row 4: Toggles + Bulk Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="selectedOnly"
+                            checked={showSelectedOnly}
+                            onCheckedChange={(checked) =>
+                              setShowSelectedOnly(Boolean(checked))
+                            }
+                          />
+                          <Label htmlFor="selectedOnly" className="text-sm">
+                            Show selected only
+                          </Label>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSelectAllFiltered}
+                            disabled={
+                              filteredCourses.length === 0 ||
+                              filteredCourses.every((c) =>
+                                selectedCourseIds.includes(c.id!)
+                              )
+                            }
+                          >
+                            <CheckCheck className="h-4 w-4 mr-1" />
+                            Select all (filtered)
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleClearSelectionFiltered}
+                            disabled={filteredCourses.every(
+                              (c) => !selectedCourseIds.includes(c.id!)
                             )}
-                </p>
-                <Badge variant="outline" className="text-xs">
-                  {course.status}
-                </Badge>
-              </div>
-            </div>
-          ))}
-          {filteredCourses.length === 0 && (
-            <div className="text-sm text-muted-foreground py-6 text-center">
-              No courses match your filters.
-            </div>
-          )}
-        </div>
-      </>
-    )}
-  </CardContent>
-</Card>
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Clear selection (filtered)
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleResetFilters}
+                          >
+                            <RefreshCcw className="h-4 w-4 mr-1" />
+                            Reset
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Showing {filteredCount} of {totalCount} courses •
+                        Selected {selectedCourseIds.length}
+                      </div>
+                    </div>
+
+                    {/* Filtered results */}
+                    <div className="space-y-3">
+                      {filteredCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50"
+                        >
+                          <div className="flex items-start sm:items-center gap-3 flex-1">
+                            <Checkbox
+                              checked={selectedCourseIds.includes(course.id!)}
+                              onCheckedChange={() =>
+                                handleCourseToggle(course.id!)
+                              }
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{course.title}</h4>
+                              <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
+                                {course.description}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-left sm:text-right">
+                            <p className="font-semibold">
+                              {formatCurrency(
+                                course.salePrice ?? course.regularPrice ?? 0
+                              )}
+                            </p>
+                            <Badge variant="outline" className="text-xs">
+                              {course.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                      {filteredCourses.length === 0 && (
+                        <div className="text-sm text-muted-foreground py-6 text-center">
+                          No courses match your filters.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Pricing & Preview */}
@@ -1805,8 +2068,8 @@ const handleResetFilters = () => {
                   !bundleData.description.trim()
                 }
                 className="w-full"
-                 variant="pill"
-                  size="sm"
+                variant="pill"
+                size="sm"
               >
                 {loading ? "Publishing..." : "Create & Publish Bundle"}
               </Button>

@@ -14,15 +14,26 @@ import { ArrowLeft, BookOpen, Clock, Trophy, PlayCircle, CheckCircle, Star } fro
 import CourseCard from '@/components/course/CourseCard';
 
 export default function BundleDashboardPage() {
-  const { bundleId } = useParams<{ bundleId: string }>();
+ const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isEnrolledInBundle } = useEnrollment();
 
-  const { data: bundle, isLoading, isError, error } = useBundleQuery(bundleId!);
-  console.log("dara", bundle)
+ const [bundleId, setBundleId] = useState("");
+
+ const {
+   data: bundle,
+   isLoading: bundleLoading,
+   error: bundleError,
+ } = useBundleQuery(param!);
+
+ useEffect(() => {
+   if (!param || bundleLoading || !bundle) return;
+   setBundleId(bundle.id);
+ }, [param, bundleLoading, bundle]);
+
   const { data: courses, isLoading: coursesLoading, isError: coursesError } = useBundleCoursesQuery(bundleId!);
-  console.log(courses, "dara 2")
+  
 
   const [isEnrolled, setIsEnrolled] = useState(false);
 
@@ -44,13 +55,13 @@ export default function BundleDashboardPage() {
   }
 
   // Only redirect if we have checked enrollment and user is not enrolled
-  if (bundle && !isEnrolled && !isLoading) {
+  if (bundle && !isEnrolled && !bundleLoading) {
     console.log('BundleDashboard - User not enrolled, redirecting to bundle page');
     navigate(`/bundle/${bundleId}`);
     return null;
   }
 
-  if (isLoading || coursesLoading) {
+  if (bundleLoading || coursesLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -61,13 +72,13 @@ export default function BundleDashboardPage() {
     );
   }
 
-  if (isError || coursesError || !bundle) {
+  if (bundleError || coursesError || !bundle) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container px-4 py-8">
           <ErrorState
-            error={error as Error}
+            error={bundleError as Error}
             onRetry={() => window.location.reload()}
             className="my-12"
           />

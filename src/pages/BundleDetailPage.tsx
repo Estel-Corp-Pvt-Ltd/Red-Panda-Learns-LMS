@@ -24,12 +24,23 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function BundleDetailPage() {
-  const { bundleId } = useParams<{ bundleId: string }>();
+const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { enrollments, isEnrolledInBundle, loading } = useEnrollment();
+  const [bundleId,setBundleId] = useState("")
 
-  const { data: bundle, isLoading, isError, error } = useBundleQuery(bundleId!);
+    const {
+      data: bundle,
+      isLoading: bundleLoading,
+      error: bundleError,
+    } = useBundleQuery(param!);
+
+    useEffect(() => {
+      if (!param || bundleLoading || !bundle) return;
+      setBundleId(bundle.id);
+    }, [param, bundleLoading, bundle]);
+
   const {
     data: courses,
     isLoading: coursesLoading,
@@ -121,7 +132,7 @@ export default function BundleDetailPage() {
     }
   };
 
-  if (isLoading || coursesLoading || loading || !enrollmentChecked) {
+  if (bundleLoading || coursesLoading || loading || !enrollmentChecked) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -132,13 +143,13 @@ export default function BundleDetailPage() {
     );
   }
 
-  if (isError || coursesError || !bundle) {
+  if (bundleError || coursesError || !bundle) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ErrorState
-            error={error as Error}
+            error={bundleError as Error}
             onRetry={() => window.location.reload()}
             className="my-12"
           />
@@ -167,7 +178,7 @@ export default function BundleDetailPage() {
           {/* Categories */}
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">Bundle</Badge>
-            {bundle.categories?.map((category) => (
+            {bundle.categoryIds?.map((category) => (
               <Badge key={category} variant="outline">
                 {category}
               </Badge>

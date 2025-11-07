@@ -128,6 +128,7 @@ class BundleService {
         id: bundleId,
         title: data.title,
         description: data.description,
+        url: data.url,
         courses: data.courses,
         regularPrice,
         salePrice,
@@ -245,6 +246,7 @@ class BundleService {
       // Update other fields
       if (updates.title) updateData.title = updates.title;
       if (updates.description) updateData.description = updates.description;
+      if (updates.url) updateData.url = updates.url;
       if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
       if (updates.targetAudienceIds)
         updateData.targetAudienceIds = updates.targetAudienceIds;
@@ -404,11 +406,11 @@ class BundleService {
   async deleteBundle(bundleId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.BUNDLES, bundleId));
-      console.log('BundleService - Bundle deleted successfully:', bundleId);
+      console.log("BundleService - Bundle deleted successfully:", bundleId);
       return ok(null);
     } catch (error) {
-      console.error('BundleService - Error deleting bundle:', error);
-      return fail('Failed to delete bundle');
+      console.error("BundleService - Error deleting bundle:", error);
+      return fail("Failed to delete bundle");
     }
   }
 
@@ -522,9 +524,9 @@ class BundleService {
     try {
       const {
         limit: itemsPerPage = 25,
-        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
-        pageDirection = 'next',
-        cursor = null
+        orderBy: orderByOption = { field: "createdAt", direction: "desc" },
+        pageDirection = "next",
+        cursor = null,
       } = options;
 
       let q: Query = collection(db, COLLECTION.BUNDLES);
@@ -541,7 +543,7 @@ class BundleService {
       const { field, direction } = orderByOption;
 
       // For pagination, we need to handle different scenarios
-      if (pageDirection === 'previous' && cursor) {
+      if (pageDirection === "previous" && cursor) {
         q = query(
           q,
           orderBy(field as string, direction),
@@ -556,26 +558,23 @@ class BundleService {
           limit(itemsPerPage)
         );
       } else {
-        q = query(
-          q,
-          orderBy(field as string, direction),
-          limit(itemsPerPage)
-        );
+        q = query(q, orderBy(field as string, direction), limit(itemsPerPage));
       }
 
       const querySnapshot = await getDocs(q);
       const documents = querySnapshot.docs;
 
-      if (pageDirection === 'previous') {
+      if (pageDirection === "previous") {
         documents.reverse();
       }
 
-      const bundles = documents.map(doc => {
+      const bundles = documents.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
           title: data.title,
           description: data.description,
+          url: data.url,
           regularPrice: data.regularPrice,
           salePrice: data.salePrice,
           courses: data.courses || [],
@@ -595,7 +594,9 @@ class BundleService {
 
       const hasNextPage = querySnapshot.docs.length === itemsPerPage;
       const hasPreviousPage = cursor !== null;
-      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const nextCursor = hasNextPage
+        ? querySnapshot.docs[querySnapshot.docs.length - 1]
+        : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
       return ok({
@@ -603,13 +604,63 @@ class BundleService {
         hasNextPage,
         hasPreviousPage,
         nextCursor,
-        previousCursor
+        previousCursor,
       });
     } catch (error) {
-      console.error('BundleService - Error fetching bundles:', error);
+      console.error("BundleService - Error fetching bundles:", error);
       return fail("Error fetching bundles");
     }
   }
-};
 
+async  isBundleUrlTaken(url: string, currentBundleId?: string): Promise<boolean> {
+  if (!url) return false;
+
+  const q = query(
+    collection(db, COLLECTION.BUNDLES),
+    where("url", "==", url)
+  );
+
+  const snap = await getDocs(q);
+
+  // If editing: ignore the current bundle
+  if (currentBundleId) {
+    return snap.docs.some((doc) => doc.id !== currentBundleId);
+  }
+
+  // If creating: any existing doc with the same URL means it's taken
+  return !snap.empty;
+}
+
+
+
+  async getBundleByUrl(url: string): Promise<Bundle | null> {
+    try {
+      const q = query(
+        collection(db, COLLECTION.BUNDLES),
+        where("url", "==", url)
+      );
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        console.log("BundleService - Bundle not found for URL:", url);
+        return null;
+      }
+
+      const bundleDoc = snap.docs[0];
+
+      const bundle = {
+        id: bundleDoc.id,
+        ...bundleDoc.data(),
+        createdAt: bundleDoc.data()?.createdAt?.toDate?.(),
+        updatedAt: bundleDoc.data()?.updatedAt?.toDate?.(),
+      } as Bundle;
+
+      return bundle;
+    } catch (error) {
+      console.error("CourseService - Error fetching course by URL:", error);
+      return null;
+    }
+  }
+
+}
 export const bundleService = new BundleService();
