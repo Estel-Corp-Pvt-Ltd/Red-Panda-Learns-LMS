@@ -29,14 +29,24 @@ export const usePublishedBundlesQuery = () => {
   });
 };
 
-export const useBundleQuery = (bundleId: string) => {
-  console.log("bundle", bundleId)
+export const useBundleQuery = (param: string) => {
+  console.log("bundle", param)
   return useQuery({
-    queryKey: bundleQueryKeys.bundle(bundleId),
-    queryFn: () => bundleService.getBundleById(bundleId),
-    enabled: !!bundleId,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
+    queryKey: bundleQueryKeys.bundle(param),
+    queryFn: async () => {
+      let data = await bundleService.getBundleByUrl(param);
+      if (!data) {
+        data = await bundleService.getBundleById(param);
+      }
+      console.log("the data from bundle api", data);
+      // If still not found, handle gracefully
+      if (!data) {
+        console.warn("Course not found for param:", param);
+        return null;
+      }
+      return data;
+    },
+    enabled: Boolean(param), // ✅ prevents empty param fetches
   });
 };
 

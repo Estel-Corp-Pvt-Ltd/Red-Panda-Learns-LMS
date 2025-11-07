@@ -24,15 +24,23 @@ export const useCoursesQuery = () => {
   });
 };
 
-export const useCourseQuery = (courseId: string) => {
+export const useCourseQuery = (param: string) => {
   return useQuery({
-    queryKey: queryKeys.course(courseId),
+    queryKey: queryKeys.course(param),
     queryFn: async () => {
-      const course = await courseService.getCourseById(courseId);
-      if (!course) return null;
-      return course;
+      let data = await courseService.getCourseByUrl(param);
+      if (!data) {
+        data = await courseService.getCourseById(param);
+      }
+
+      // If still not found, handle gracefully
+      if (!data) {
+        console.warn("Course not found for param:", param);
+        return;
+      }
+      return data;
     },
-    enabled: !!courseId,
+    enabled: !!param,
     staleTime: Infinity
   });
 };

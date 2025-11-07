@@ -81,6 +81,7 @@ import { title } from "process";
 type EditBundleFormData = {
   title: string;
   description: string;
+  url:string;
   regularPrice: string;
   salePrice: string;
   thumbnail: string;
@@ -92,6 +93,7 @@ type EditBundleFormData = {
 import { Slider } from "@/components/ui/slider";
 import { attributeService } from "@/services/attributeService";
 import { Attribute } from "@/types/attribute";
+import { bundleService } from "@/services/bundleService";
 
 interface Option {
   id: string;
@@ -99,7 +101,7 @@ interface Option {
 }
 export default function EditBundlePage() {
   const navigate = useNavigate();
-  const { bundleId } = useParams<{ bundleId: string }>();
+  const { param } = useParams<{ param: string }>();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(false);
@@ -130,17 +132,30 @@ export default function EditBundlePage() {
     string[]
   >([]);
   const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
+
+   const [checkingUrl, setCheckingUrl] = useState(false);
+     const [urlTaken, setUrlTaken] = useState(false);
+  const [bundleId,setBundleId] = useState("")
+
   // Fetch bundle data
   const {
     data: bundleData,
     isLoading: bundleLoading,
     error: bundleError,
-  } = useBundleQuery(bundleId!);
+  } = useBundleQuery(param!);
+
+console.log("this is bundle data",bundleData)
+  useEffect(() => {
+    if (!param || bundleLoading || !bundleData) return;
+    setBundleId(bundleData.id);
+  }, [param, bundleLoading, bundleData]);
+
   const { mutate: updateBundle } = useUpdateBundleMutation();
 
   const [formData, setFormData] = useState<EditBundleFormData>({
     title: "",
     description: "",
+    url:"",
     regularPrice: "",
     salePrice: "",
     thumbnail: "",
@@ -154,18 +169,26 @@ export default function EditBundlePage() {
   const { data: pricingData, isLoading: pricingLoading } =
     useBundlePricingQuery(selectedCourseIds);
 
-  // Redirect if bundle ID is missing
-  useEffect(() => {
-    if (!bundleId) {
-      toast({
-        title: "Error",
-        description: "Bundle ID is required.",
-        variant: "destructive",
-      });
-      navigate("/admin");
-      return;
-    }
-  }, [bundleId, navigate, toast]);
+useEffect(() => {
+  // Wait until query actually finishes loading
+  if (bundleLoading) return;
+
+  // If query errored out, or returned null, redirect
+  if (!bundleData) {
+    toast({
+      title: "Error",
+      description: "Bundle not found.",
+      variant: "destructive",
+    });
+    navigate("/admin");
+    return;
+  }
+
+  // If bundle exists, update ID
+  setBundleId(bundleData.id);
+}, [bundleData, bundleLoading, navigate, toast]);
+
+
 
   // Handle bundle loading error
   useEffect(() => {
@@ -484,6 +507,7 @@ export default function EditBundlePage() {
       setFormData({
         title: bundleData.title || "",
         description: bundleData.description || "",
+        url:bundleData.url || "",
         regularPrice: bundleData.regularPrice
           ? bundleData.regularPrice.toString()
           : "",
@@ -694,6 +718,7 @@ export default function EditBundlePage() {
           updatedData: {
             title: formData.title,
             description: formData.description,
+            url:formData.url,
             courses: courses
               .filter((course) => selectedCourseIds.includes(course.id!))
               .map((course) => ({ id: course.id, title: course.title })),
@@ -770,6 +795,7 @@ export default function EditBundlePage() {
           updatedData: {
             title: formData.title,
             description: formData.description,
+            url:formData.url,
             courses: courses
               .filter((course) => selectedCourseIds.includes(course.id!))
               .map((course) => ({ id: course.id, title: course.title })),
@@ -816,6 +842,22 @@ export default function EditBundlePage() {
       setLoading(false);
     }
   };
+useEffect(() => {
+  const u = formData.url?.trim();
+  if (!u) {
+    setUrlTaken(false);
+    return;
+  }
+
+  const timer = setTimeout(async () => {
+    setCheckingUrl(true);
+    const taken = await bundleService.isBundleUrlTaken(u, bundleData?.id);
+    setUrlTaken(taken);
+    setCheckingUrl(false);
+  }, 500);
+
+  return () => clearTimeout(timer);
+}, [formData.url, bundleData?.id]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -906,214 +948,298 @@ export default function EditBundlePage() {
                     }
                   />
                 </div>
+                <div>
+                  <Label htmlFor="bundle-url">Custom URL</Label>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {/* Categories */}
-  <Card className="rounded-xl border p-4">
-    <CardHeader className="pb-3">
-      <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <Layers className="h-5 w-5 text-primary" />
-        Categories
-      </CardTitle>
-      <p className="text-xs text-muted-foreground">
-        Pick one or more to help discovery
-      </p>
-    </CardHeader>
-
-    <CardContent className="space-y-3">
-      {selectedCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedCategories.map((cat) => (
-            <Badge
-              key={cat}
-              variant="secondary"
-              className="pl-2 pr-1 py-[2px] text-sm"
-            >
-              {cat}
-              <button
-                onClick={() =>
-                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
-                }
-                className="ml-1 rounded-full hover:bg-muted p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
-
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-full justify-between"
-          >
-            {selectedCategories.length > 0
-              ? `${selectedCategories.length} selected`
-              : "Select categories"}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0">
-          <Command>
-            <CommandInput placeholder="Search categories..." />
-            <CommandList>
-              <CommandEmpty>No category found.</CommandEmpty>
-              <CommandGroup>
-                {allCategories.map((cat) => (
-                  <CommandItem
-                    key={cat}
-                    onSelect={() =>
-                      setSelectedCategories((prev) =>
-                        prev.includes(cat)
-                          ? prev.filter((c) => c !== cat)
-                          : [...prev, cat],
-                      )
-                    }
-                  >
-                    <Checkbox
-                      checked={selectedCategories.includes(cat)}
-                      className="mr-2"
+                  <div className="flex items-start gap-2">
+                    <Textarea
+                      id="bundle-url"
+                      placeholder="Write Custom URL"
+                      rows={2}
+                      value={formData.url ?? ""}
+                      onChange={(e) => {
+                        const newUrl = e.target.value
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[^\w\s-]/g, "")
+                          .replace(/\s+/g, "-");
+                        setFormData((prev) => ({
+                          ...prev,
+                          url: newUrl,
+                        }));
+                      }}
                     />
-                    {cat}
-                    {selectedCategories.includes(cat) && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-            <div className="p-2 border-t">
-              <Input
-                placeholder="Add new category"
-                onKeyDown={async (e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                    const newCat = e.currentTarget.value.trim();
-                    if (!allCategories.includes(newCat)) {
-                      await attributeService.addAttribute(
-                        ATTRIBUTE_TYPE.CATEGORY,
-                        newCat,
-                      );
-                      setAllCategories((prev) => [...prev, newCat]);
-                      setSelectedCategories((prev) => [...prev, newCat]);
-                    }
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-            </div>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </CardContent>
-  </Card>
 
-  {/* Target Audience */}
-  <Card className="rounded-xl border p-4">
-    <CardHeader className="pb-3">
-      <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <UsersIcon className="h-5 w-5 text-primary" />
-        Target Audience
-      </CardTitle>
-      <p className="text-xs text-muted-foreground">Who is this content for?</p>
-    </CardHeader>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!formData.title?.trim()) return;
+                        const generatedUrl = formData.title
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[^\w\s-]/g, "")
+                          .replace(/\s+/g, "-");
+                        setFormData((prev) => ({
+                          ...prev,
+                          url: generatedUrl,
+                        }));
+                      }}
+                    >
+                      Generate URL
+                    </Button>
+                  </div>
 
-    <CardContent className="space-y-3">
-      {selectedTargetAudiences.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedTargetAudiences.map((aud) => (
-            <Badge
-              key={aud}
-              variant="secondary"
-              className="pl-2 pr-1 py-[2px] text-sm"
-            >
-              {aud}
-              <button
-                onClick={() =>
-                  setSelectedTargetAudiences((prev) =>
-                    prev.filter((a) => a !== aud),
-                  )
-                }
-                className="ml-1 rounded-full hover:bg-muted p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
+                  {checkingUrl && (
+                    <p className="text-xs text-muted-foreground">
+                      Checking availability...
+                    </p>
+                  )}
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-full justify-between"
-          >
-            {selectedTargetAudiences.length > 0
-              ? `${selectedTargetAudiences.length} selected`
-              : "Select target audience"}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0">
-          <Command>
-            <CommandInput placeholder="Search audiences..." />
-            <CommandList>
-              <CommandEmpty>No audience found.</CommandEmpty>
-              <CommandGroup>
-                {allTargetAudiences.map((aud) => (
-                  <CommandItem
-                    key={aud}
-                    onSelect={() =>
-                      setSelectedTargetAudiences((prev) =>
-                        prev.includes(aud)
-                          ? prev.filter((a) => a !== aud)
-                          : [...prev, aud],
-                      )
-                    }
-                  >
-                    <Checkbox
-                      checked={selectedTargetAudiences.includes(aud)}
-                      className="mr-2"
-                    />
-                    {aud}
-                    {selectedTargetAudiences.includes(aud) && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-            <div className="p-2 border-t">
-              <Input
-                placeholder="Add new audience"
-                onKeyDown={async (e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                    const newAud = e.currentTarget.value.trim();
-                    if (!allTargetAudiences.includes(newAud)) {
-                      await attributeService.addAttribute(
-                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
-                        newAud,
-                      );
-                      setAllTargetAudiences((prev) => [...prev, newAud]);
-                      setSelectedTargetAudiences((prev) => [...prev, newAud]);
-                    }
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-            </div>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </CardContent>
-  </Card>
-</div>
+                  {!checkingUrl && urlTaken && (
+                    <p className="text-xs text-red-500">
+                      This URL is already in use.
+                    </p>
+                  )}
+
+                  {!checkingUrl && !urlTaken && formData.url && (
+                    <p className="text-xs text-green-500">
+                      This URL is available.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Categories */}
+                  <Card className="rounded-xl border p-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        <Layers className="h-5 w-5 text-primary" />
+                        Categories
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Pick one or more to help discovery
+                      </p>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3">
+                      {selectedCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCategories.map((cat) => (
+                            <Badge
+                              key={cat}
+                              variant="secondary"
+                              className="pl-2 pr-1 py-[2px] text-sm"
+                            >
+                              {cat}
+                              <button
+                                onClick={() =>
+                                  setSelectedCategories((prev) =>
+                                    prev.filter((c) => c !== cat)
+                                  )
+                                }
+                                className="ml-1 rounded-full hover:bg-muted p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between"
+                          >
+                            {selectedCategories.length > 0
+                              ? `${selectedCategories.length} selected`
+                              : "Select categories"}
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search categories..." />
+                            <CommandList>
+                              <CommandEmpty>No category found.</CommandEmpty>
+                              <CommandGroup>
+                                {allCategories.map((cat) => (
+                                  <CommandItem
+                                    key={cat}
+                                    onSelect={() =>
+                                      setSelectedCategories((prev) =>
+                                        prev.includes(cat)
+                                          ? prev.filter((c) => c !== cat)
+                                          : [...prev, cat]
+                                      )
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={selectedCategories.includes(cat)}
+                                      className="mr-2"
+                                    />
+                                    {cat}
+                                    {selectedCategories.includes(cat) && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                            <div className="p-2 border-t">
+                              <Input
+                                placeholder="Add new category"
+                                onKeyDown={async (e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    e.key === "Enter" &&
+                                    e.currentTarget.value.trim()
+                                  ) {
+                                    const newCat = e.currentTarget.value.trim();
+                                    if (!allCategories.includes(newCat)) {
+                                      await attributeService.addAttribute(
+                                        ATTRIBUTE_TYPE.CATEGORY,
+                                        newCat
+                                      );
+                                      setAllCategories((prev) => [
+                                        ...prev,
+                                        newCat,
+                                      ]);
+                                      setSelectedCategories((prev) => [
+                                        ...prev,
+                                        newCat,
+                                      ]);
+                                    }
+                                    e.currentTarget.value = "";
+                                  }
+                                }}
+                              />
+                            </div>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </CardContent>
+                  </Card>
+
+                  {/* Target Audience */}
+                  <Card className="rounded-xl border p-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        <UsersIcon className="h-5 w-5 text-primary" />
+                        Target Audience
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Who is this content for?
+                      </p>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3">
+                      {selectedTargetAudiences.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTargetAudiences.map((aud) => (
+                            <Badge
+                              key={aud}
+                              variant="secondary"
+                              className="pl-2 pr-1 py-[2px] text-sm"
+                            >
+                              {aud}
+                              <button
+                                onClick={() =>
+                                  setSelectedTargetAudiences((prev) =>
+                                    prev.filter((a) => a !== aud)
+                                  )
+                                }
+                                className="ml-1 rounded-full hover:bg-muted p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between"
+                          >
+                            {selectedTargetAudiences.length > 0
+                              ? `${selectedTargetAudiences.length} selected`
+                              : "Select target audience"}
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search audiences..." />
+                            <CommandList>
+                              <CommandEmpty>No audience found.</CommandEmpty>
+                              <CommandGroup>
+                                {allTargetAudiences.map((aud) => (
+                                  <CommandItem
+                                    key={aud}
+                                    onSelect={() =>
+                                      setSelectedTargetAudiences((prev) =>
+                                        prev.includes(aud)
+                                          ? prev.filter((a) => a !== aud)
+                                          : [...prev, aud]
+                                      )
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={selectedTargetAudiences.includes(
+                                        aud
+                                      )}
+                                      className="mr-2"
+                                    />
+                                    {aud}
+                                    {selectedTargetAudiences.includes(aud) && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                            <div className="p-2 border-t">
+                              <Input
+                                placeholder="Add new audience"
+                                onKeyDown={async (e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    e.key === "Enter" &&
+                                    e.currentTarget.value.trim()
+                                  ) {
+                                    const newAud = e.currentTarget.value.trim();
+                                    if (!allTargetAudiences.includes(newAud)) {
+                                      await attributeService.addAttribute(
+                                        ATTRIBUTE_TYPE.TARGET_AUDIENCE,
+                                        newAud
+                                      );
+                                      setAllTargetAudiences((prev) => [
+                                        ...prev,
+                                        newAud,
+                                      ]);
+                                      setSelectedTargetAudiences((prev) => [
+                                        ...prev,
+                                        newAud,
+                                      ]);
+                                    }
+                                    e.currentTarget.value = "";
+                                  }
+                                }}
+                              />
+                            </div>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </CardContent>
+                  </Card>
+                </div>
 
                 {/* Tags */}
                 <div>

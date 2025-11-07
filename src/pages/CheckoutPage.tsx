@@ -8,7 +8,23 @@ import { TransactionLineItem } from "@/types/transaction";
 import PaymentCheckout from "@/components/payment/PaymentCheckout";
 
 export default function CheckoutPage() {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { param } = useParams<{ param: string }>();
+  const [courseId,setCourseId] = useState("");
+  
+   useEffect(() => {
+    if (!param || courseLoading || !course) return;
+    setCourseId(course.id);
+
+  }, [param, courseLoading, course?.id]);
+  const { data: course, isLoading: courseLoading } = useCourseQuery(param!);
+  useEffect(() => {
+    if (!user || !courseId || loadingEnrollments) return;
+
+    if (isEnrolled(courseId)) {
+      navigate(`/course/${course.url ? course.url : course.id}`);
+    }
+  }, [user, courseId, loadingEnrollments, navigate]);
+
   const [items, setItems] = useState<TransactionLineItem[]>([]);
 
   const { data, isLoading } = useCourseQuery(courseId);

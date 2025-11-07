@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Save,
   X,
+Copy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { CourseStatus } from "@/types/general";
-
+import { courseService } from "@/services/courseService";
 const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
 const isNum = (v: number | null): v is number => v !== null && Number.isFinite(v);
 /** Parent sends all data + callbacks here */
@@ -52,15 +53,27 @@ export type DurationForm = { hours: number | null; minutes: number | null };
 
 export type CourseBasicsTabProps = {
   course: Course | null;
-  title: string; setTitle: (v: string) => void;
-  description: string; setDescription: (v: string) => void;
-  instructorId: string; setInstructorId: (id: string) => void;
-  instructorName: string; setInstructorName: (name: string) => void;
+  title: string;
+  setTitle: (v: string) => void;
+  courseId: string;
+  setCourseId: (v: string) => void;
+  description: string;
+  setDescription: (v: string) => void;
+  url: string;
+  setUrl: (v: string) => void;
+  instructorId: string;
+  setInstructorId: (id: string) => void;
+  instructorName: string;
+  setInstructorName: (name: string) => void;
   instructors: { id: string; name: string }[];
-  regularPrice: number | null; setRegularPrice: (n: number | null) => void;
-  salePrice: number | null; setSalePrice: (n: number | null) => void;
-  duration: DurationForm; setDuration: (f: DurationForm) => void;
-  status: CourseStatus; setStatus: (s: CourseStatus) => void;
+  regularPrice: number | null;
+  setRegularPrice: (n: number | null) => void;
+  salePrice: number | null;
+  setSalePrice: (n: number | null) => void;
+  duration: DurationForm;
+  setDuration: (f: DurationForm) => void;
+  status: CourseStatus;
+  setStatus: (s: CourseStatus) => void;
   selectedCategories: string[];
   setSelectedCategories: (cats: string[]) => void;
   allCategories: string[];
@@ -78,16 +91,25 @@ export type CourseBasicsTabProps = {
   uploadingThumbnail: boolean;
   progress: number;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleCopyLink: () => void;
   onSave: () => void;
   canSaveBasics: boolean;
+  copied: boolean;
+  setCopied: (v: boolean) => void;
 };
 
 const CourseBasicsTab = ({
   course,
   title,
   setTitle,
+  courseId,
+  setCourseId,
+  copied,
+  setCopied,
   description,
   setDescription,
+  url,
+  setUrl,
   instructorId,
   setInstructorId,
   instructorName,
@@ -120,9 +142,30 @@ const CourseBasicsTab = ({
   handleFileChange,
   onSave,
   canSaveBasics,
+  handleCopyLink,
 }: CourseBasicsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [urlTaken, setUrlTaken] = useState(true);
+  const [checkingUrl, setCheckingUrl] = useState(true);
+
+  {/* 🧠 Debounced check logic */}
+useEffect(() => {
+  if (!url?.trim()) {
+    setUrlTaken(false);
+    return;
+  }
+
+  const handler = setTimeout(async () => {
+    setCheckingUrl(true);
+    const taken = await courseService.isCourseUrlTaken(url, courseId);
+    setUrlTaken(taken);
+    setCheckingUrl(false);
+  }, 600); // debounce delay (ms)
+
+  return () => clearTimeout(handler);
+}, [url, courseId]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -159,6 +202,69 @@ const CourseBasicsTab = ({
             />
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Course URL</CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-2">
+            <label className="text-sm font-medium">Custom URL</label>
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                value={url ?? ""}
+                onChange={(e) => {
+                  const newUrl = e.target.value
+                    .toLowerCase()
+                    .replace(/\s+/g, "-");
+                  setUrl(newUrl);
+                }}
+                placeholder="react-for-beginners"
+              />
+
+              {/* Generate URL Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!title?.trim()) return;
+
+                  const generatedUrl = title
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^\w\s-]/g, "") // remove special chars
+                    .replace(/\s+/g, "-"); // replace spaces with -
+
+                  setUrl(generatedUrl);
+                }}
+              >
+                Generate URL
+              </Button>
+            </div>
+
+            {/* URL availability feedback */}
+            {checkingUrl && (
+              <p className="text-xs text-muted-foreground">
+                Checking availability...
+              </p>
+            )}
+
+            {!checkingUrl && urlTaken && (
+              <p className="text-xs text-red-500">
+                This URL is already in use.
+              </p>
+            )}
+
+            {!checkingUrl && !urlTaken && url && (
+              <p className="text-xs text-green-500">This URL is available.</p>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Leave empty to use default: <code>course/{courseId}</code>
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Thumbnail */}
         <Card>
@@ -191,11 +297,7 @@ const CourseBasicsTab = ({
               </div>
             )}
             <div className="flex justify-between items-center">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
+              <input type="file" accept="image/*" onChange={handleFileChange} />
             </div>
           </CardContent>
         </Card>
@@ -261,9 +363,7 @@ const CourseBasicsTab = ({
                     {t}
                     <button
                       className="hover:text-red-500"
-                      onClick={() =>
-                        setTags(tags.filter((x) => x !== t))
-                      }
+                      onClick={() => setTags(tags.filter((x) => x !== t))}
                     >
                       ×
                     </button>
@@ -287,7 +387,7 @@ const CourseBasicsTab = ({
                       <button
                         onClick={() =>
                           setSelectedCategories(
-                            selectedCategories.filter((c) => c !== cat),
+                            selectedCategories.filter((c) => c !== cat)
                           )
                         }
                         className="ml-1 rounded-full hover:bg-muted p-0.5"
@@ -324,7 +424,7 @@ const CourseBasicsTab = ({
                               setSelectedCategories(
                                 selectedCategories.includes(cat)
                                   ? selectedCategories.filter((c) => c !== cat)
-                                  : [...selectedCategories, cat],
+                                  : [...selectedCategories, cat]
                               )
                             }
                             className="cursor-pointer"
@@ -346,12 +446,15 @@ const CourseBasicsTab = ({
                         placeholder="Add new category"
                         onKeyDown={async (e) => {
                           e.stopPropagation();
-                          if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                          if (
+                            e.key === "Enter" &&
+                            e.currentTarget.value.trim()
+                          ) {
                             const newCat = e.currentTarget.value.trim();
                             if (!allCategories.includes(newCat)) {
                               await attributeService.addAttribute(
                                 ATTRIBUTE_TYPE.CATEGORY,
-                                newCat,
+                                newCat
                               );
                               setAllCategories([...allCategories, newCat]);
                               setSelectedCategories([
@@ -385,7 +488,7 @@ const CourseBasicsTab = ({
                     <button
                       onClick={() =>
                         setSelectedTargetAudiences(
-                          selectedTargetAudiences.filter((a) => a !== aud),
+                          selectedTargetAudiences.filter((a) => a !== aud)
                         )
                       }
                       className="ml-1 rounded-full hover:bg-muted p-0.5"
@@ -421,8 +524,10 @@ const CourseBasicsTab = ({
                           onSelect={() =>
                             setSelectedTargetAudiences(
                               selectedTargetAudiences.includes(aud)
-                                ? selectedTargetAudiences.filter((a) => a !== aud)
-                                : [...selectedTargetAudiences, aud],
+                                ? selectedTargetAudiences.filter(
+                                    (a) => a !== aud
+                                  )
+                                : [...selectedTargetAudiences, aud]
                             )
                           }
                           className="cursor-pointer"
@@ -449,7 +554,7 @@ const CourseBasicsTab = ({
                           if (!allTargetAudiences.includes(newAud)) {
                             await attributeService.addAttribute(
                               ATTRIBUTE_TYPE.TARGET_AUDIENCE,
-                              newAud,
+                              newAud
                             );
                             setAllTargetAudiences([
                               ...allTargetAudiences,
@@ -476,19 +581,21 @@ const CourseBasicsTab = ({
       <div className="space-y-6">
         {/* Actions + Pricing */}
         <Card className="rounded-xl border p-4">
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Button onClick={onSave} disabled={!canSaveBasics}>
               <Save className="mr-2 h-4 w-4" />
               Save Basics
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin")}
-            >
+            <Button variant="outline" onClick={() => navigate("/admin")}>
               <ArrowLeft className="mr-2 h-4 w-3" />
               Back to Courses
             </Button>
+            <Button variant="outline" onClick={handleCopyLink}>
+              <Copy className="mr-2 h-4 w-3" />
+              {copied ? "Copied!" : "Copy Link"}
+            </Button>
           </div>
+
           <CardHeader className="pb-2">
             <CardTitle>Pricing</CardTitle>
           </CardHeader>
@@ -503,7 +610,9 @@ const CourseBasicsTab = ({
                   step="0.01"
                   min={0}
                   value={regularPrice ?? ""}
-                  onChange={(e) => setRegularPrice(toNumberOrNull(e.target.value))}
+                  onChange={(e) =>
+                    setRegularPrice(toNumberOrNull(e.target.value))
+                  }
                 />
               </div>
             </div>
@@ -537,7 +646,10 @@ const CourseBasicsTab = ({
               step={1}
               value={duration.hours ?? ""}
               onChange={(e) =>
-                setDuration({ ...duration, hours: toNumberOrNull(e.target.value) })
+                setDuration({
+                  ...duration,
+                  hours: toNumberOrNull(e.target.value),
+                })
               }
             />
             <Label>Minutes</Label>
@@ -548,7 +660,10 @@ const CourseBasicsTab = ({
               step={1}
               value={duration.minutes ?? ""}
               onChange={(e) =>
-                setDuration({ ...duration, minutes: toNumberOrNull(e.target.value) })
+                setDuration({
+                  ...duration,
+                  minutes: toNumberOrNull(e.target.value),
+                })
               }
             />
           </CardContent>

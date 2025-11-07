@@ -84,13 +84,25 @@ const METHOD_LOGOS: Record<
 };
 
 export default function BundleCheckoutPage() {
-  const { bundleId } = useParams<{ bundleId: string }>();
+ const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const [bundle, setBundle] = useState<null | Bundle>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+const [bundleId, setBundleId] = useState("");
 
+ const {
+   data: bundle,
+   isLoading: bundleLoading,
+   error: bundleError,
+ } = useBundleQuery(param!);
+
+ useEffect(() => {
+   if (!param || bundleLoading || !bundle) return;
+   setBundleId(bundle.id);
+ }, [param, bundleLoading, bundle]);
+  
   useEffect(() => {
     const fetchBundle = async () => {
       setIsLoading(true);
@@ -107,7 +119,7 @@ export default function BundleCheckoutPage() {
     fetchBundle();
   }, [bundleId]);
 
-  if (isLoading) {
+  if (bundleLoading) {
     return (
       <div className="min-h-screen bg-background dark:bg-[#0e0f11] p-6">
         <div className="max-w-2xl mx-auto">
