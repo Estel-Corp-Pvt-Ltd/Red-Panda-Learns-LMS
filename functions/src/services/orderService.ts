@@ -197,6 +197,8 @@ class OrderService {
         items: data.items,
         status: ORDER_STATUS.COMPLETED,
         provider: data.provider,
+        couponDiscount: 0,
+        promoCode: "",
         exchangeRate: 0,
         providerOrderId: "",
         originalAmount: 0,
