@@ -10,7 +10,6 @@ export interface Coupon {
   usageLimit: number;
   linkedCourseIds: string[];
   linkedBundleIds: string[];
-  linkedCohortIds: string[];
   createdById: string;
   createdbyMail: string;
   createdAt: Timestamp | FieldValue;

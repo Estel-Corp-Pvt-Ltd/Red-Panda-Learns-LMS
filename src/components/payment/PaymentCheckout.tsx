@@ -25,7 +25,7 @@ import { Currency, PaymentProvider } from "@/types/general";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { orderService } from "@/services/orderService";
-import { CouponSection } from "@/components/payment/CouponSection";
+import { CouponCard } from "@/components/payment/CouponCard";
 import { Coupon } from "@/types/coupon";
 import { couponUsageService } from "@/services/couponUsageService";
 import { Timestamp } from "firebase/firestore";
@@ -90,12 +90,8 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const [phoneError, setPhoneError] = useState("");
 
   // Coupon-related state
-  const [promoCode, setPromoCode] = useState("");
-  const [isCouponValid, setIsCouponValid] = useState(false);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  const [couponMessage, setCouponMessage] = useState("");
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // Location data state
   const [countries, setCountries] = useState<Country[]>([]);
@@ -280,20 +276,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     });
 
     try {
-      // Apply coupon if used
-      if (isCouponValid && appliedCoupon) {
-        try {
-          await handleUseCoupon();
-        } catch (error) {
-          console.error("Error applying coupon:", error);
-          toast({
-            title: "Coupon Error",
-            description: "There was an issue applying the coupon. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }
-
       await paymentService.processPayment({
         provider: selectedProvider,
         items: items.map(item => ({
@@ -401,12 +383,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>{formatMoney(regularTotal, selectedCurrency)}</span>
+                      <span>{formatMoney(regularTotal || subtotal, selectedCurrency)}</span>
                     </div>
 
                     {savings > 0 && (
                       <div className="flex justify-between text-green-600 dark:text-green-400">
-                        <span>Savings:</span>
+                        <span>Regular Savings:</span>
                         <span>-{formatMoney(savings, selectedCurrency)}</span>
                       </div>
                     )}
@@ -621,21 +603,10 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
             {/* Right Column - Coupon & Payment */}
             <div className="lg:col-span-5 space-y-6">
               {/* Coupon Section */}
-              <CouponSection
-                promoCode={promoCode}
-                setPromoCode={setPromoCode}
-                isCouponValid={isCouponValid}
-                setIsCouponValid={setIsCouponValid}
-                discountAmount={discountAmount}
+              <CouponCard
+                items={items}
                 setDiscountAmount={setDiscountAmount}
-                appliedCoupon={appliedCoupon}
                 setAppliedCoupon={setAppliedCoupon}
-                couponMessage={couponMessage}
-                setCouponMessage={setCouponMessage}
-                isValidatingCoupon={isValidatingCoupon}
-                setIsValidatingCoupon={setIsValidatingCoupon}
-                subtotal={subtotal}
-                isProcessing={isProcessing}
               />
 
               {/* Payment Methods */}
