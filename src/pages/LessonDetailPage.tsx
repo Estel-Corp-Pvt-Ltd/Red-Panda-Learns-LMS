@@ -14,19 +14,25 @@ import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 
 export default function LessonDetailPage() {
-  const { courseId, lessonId } = useParams<{
-    courseId: string;
+  const { param, lessonId } = useParams<{
+    param: string;
     lessonId: string;
   }>();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
-
+  const [courseId,setCourseId] = useState("")
   const {
     data: course,
     isLoading: courseLoading,
     error: courseError,
-  } = useCourseQuery(courseId!);
+  } = useCourseQuery(param!);
+  
+    useEffect(() => {
+      if (!param || courseLoading || !course) return;
+      setCourseId(course.id);
+    }, [param, courseLoading, course?.id]);
+    
 
   // Set document title to include course and current item
   useEffect(() => {

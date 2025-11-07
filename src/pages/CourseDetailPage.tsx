@@ -41,7 +41,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 export default function CourseDetailPage() {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { param } = useParams();
   const { cart, cartDispatch } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -51,6 +51,7 @@ export default function CourseDetailPage() {
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
   const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
   const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
+  const [courseId,setCourseId] = useState("")
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
   const {
@@ -59,7 +60,13 @@ export default function CourseDetailPage() {
     isError: courseError,
     error: courseErrorData,
     refetch: refetchCourse,
-  } = useCourseQuery(courseId!);
+  } = useCourseQuery(param!);
+     
+  useEffect(() => {
+    if (!param || courseLoading || !course) return;
+    setCourseId(course.id);
+  }, [param, courseLoading, course?.id]);
+ 
 
   const isLoading = courseLoading;
   const isError = courseError;

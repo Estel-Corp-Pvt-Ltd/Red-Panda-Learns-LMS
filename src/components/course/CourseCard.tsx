@@ -33,7 +33,7 @@ const CourseCard = ({
   const isFeatured = variant === "featured";
 
   const courseId = String(course?.id);
-  const courseUrl = `/course/${courseId}`;
+  const courseUrl = `/course/${course.url ? course.url : course.id}`;
   const userIsEnrolled = user && isEnrolled(courseId);
   const isAddedToCart = cart.some((item) => item.courseId === courseId);
 

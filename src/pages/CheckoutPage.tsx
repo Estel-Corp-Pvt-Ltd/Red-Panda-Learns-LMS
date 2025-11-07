@@ -47,9 +47,10 @@ export default function CheckoutPage() {
     PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
   };
 
-  const { courseId } = useParams<{ courseId: string }>();
+  const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [courseId,setCourseId] = useState("")
   const {
     refreshEnrollments,
     isEnrolled,
@@ -57,9 +58,14 @@ export default function CheckoutPage() {
   } = useEnrollment();
   const { toast } = useToast();
 
-  const { data: course, isLoading } = useCourseQuery(courseId!);
+  const { data: course, isLoading: courseLoading } = useCourseQuery(param!);
   const providers = paymentService.getAvailableProviders();
 
+  useEffect(() => {
+    if (!param || courseLoading || !course) return;
+    setCourseId(course.id);
+
+  }, [param, courseLoading, course?.id]);
   const [billingAddress, setBillingAddress] = useState<Address>({
     fullName: "",
     line1: "",
@@ -439,7 +445,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isLoading) {
+  if (courseLoading) {
     return (
       <div className="min-h-screen bg-background dark:bg-[#0e0f11] p-6">
         <div className="max-w-2xl mx-auto">
