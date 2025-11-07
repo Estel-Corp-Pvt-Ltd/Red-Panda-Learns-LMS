@@ -66,7 +66,7 @@ const CoursesPage = () => {
   const isLoggedIn = !!user;
 
   const enrolledCourseIds = enrollments.map(
-    (enrollment) => enrollment.targetId
+    (enrollment) => enrollment.courseId 
   );
 
   const publishedCourses = useMemo(
@@ -154,7 +154,7 @@ const CoursesPage = () => {
             </div>
           </div>
 
-          <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
+          {/* <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-primary/80 border-primary rounded-full border-4 text-white flex items-center justify-center">
                 <Users className="h-6 w-6" />
@@ -166,7 +166,7 @@ const CoursesPage = () => {
                 <p className="text-sm text-muted-foreground">Live Cohorts</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
@@ -353,19 +353,21 @@ const CoursesPage = () => {
 
               {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredCourses.map((course, index) => (
-                    <div
-                      key={course.id}
-                      className="animate-fade-in-up"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <CourseCard course={course} variant="default" />
-                    </div>
-                  ))}
-                </div>
+      {filteredCourses
+        .filter(course => course.salePrice > 0) 
+        .map((course, index) => (
+          <div
+            key={course.id}
+            className="animate-fade-in-up"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <CourseCard course={course} variant="default" />
+          </div>
+        ))}
+    </div>
               ) : (
                 <CourseListView
-                  courses={filteredCourses}
+                  courses={filteredCourses.filter(course => course.salePrice > 0)}
                   enrolledCourseIds={enrolledCourseIds}
                 />
               )}

@@ -121,7 +121,7 @@ export default function BundleCheckoutPage() {
     <PaymentCheckout
       items={[{
         itemId: bundle.id,
-        itemType: "BUNDLE",
+        itemType: ENROLLED_PROGRAM_TYPE.BUNDLE,
         name: bundle.title,
         amount: bundle.salePrice ?? bundle.regularPrice,
         originalAmount: bundle.regularPrice,
