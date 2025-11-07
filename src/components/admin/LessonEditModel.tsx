@@ -20,6 +20,7 @@ import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import MDEditor from "@uiw/react-md-editor";
+import { serverTimestamp, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 interface EditLessonModalProps {
@@ -45,10 +46,12 @@ export const EditLessonModal = ({
   // Detect dark/light mode for MDEditor
   const colorMode =
     typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
+    document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
+
+ 
   // Load lesson data when modal opens
   useEffect(() => {
     const fetchLesson = async () => {
@@ -61,7 +64,7 @@ export const EditLessonModal = ({
           toast({
             title: "Lesson not found",
             description: "The lesson you're trying to edit doesn't exist.",
-            variant: "destructive"
+            variant: "destructive",
           });
           onClose();
           return;
@@ -72,7 +75,7 @@ export const EditLessonModal = ({
         toast({
           title: "Failed to load lesson",
           description: "Please try again later.",
-          variant: "destructive"
+          variant: "destructive",
         });
         onClose();
       } finally {
@@ -85,23 +88,23 @@ export const EditLessonModal = ({
 
   const handleFieldChange = (field: string, value: any) => {
     if (field === "duration-hours") {
-      setLesson(prev => ({
+      setLesson((prev) => ({
         ...prev,
         duration: {
           hours: parseInt(value) || 0,
-          minutes: prev.duration?.minutes || 0
-        }
+          minutes: prev.duration?.minutes || 0,
+        },
       }));
     } else if (field === "duration-minutes") {
-      setLesson(prev => ({
+      setLesson((prev) => ({
         ...prev,
         duration: {
           hours: prev.duration?.hours || 0,
-          minutes: parseInt(value) || 0
-        }
+          minutes: parseInt(value) || 0,
+        },
       }));
     } else {
-      setLesson(prev => ({ ...prev, [field]: value }));
+      setLesson((prev) => ({ ...prev, [field]: value }));
     }
   };
 
@@ -109,7 +112,7 @@ export const EditLessonModal = ({
     if (!lesson.title?.trim()) {
       toast({
         title: "Lesson title is required",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -117,59 +120,74 @@ export const EditLessonModal = ({
       toast({
         title: "Description or embed URL required",
         description: "Please provide either a description or an embed URL.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
     if (!lesson.type) {
       toast({
         title: "Lesson type is required",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    if ((lesson.duration?.hours || 0) < 0 || (lesson.duration?.minutes || 0) < 0) {
+    if (
+      (lesson.duration?.hours || 0) < 0 ||
+      (lesson.duration?.minutes || 0) < 0
+    ) {
       toast({
         title: "Invalid duration",
         description: "Hours and minutes cannot be negative.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    setUpdating(true);
-    const result = await lessonService.updateLesson(lessonId, {
-      ...lesson,
-      courseId: courseId,
-    });
+   setUpdating(true);
+   try {
+   
+     const result = await lessonService.updateLesson(lessonId, {
+       ...lesson,
+       courseId: courseId,
+     });
+  
+     if (!result.success) {
+       toast({
+         title: "Failed to update lesson",
+         description: "Please try again later.",
+         variant: "destructive",
+       });
+       return;
+     }
 
-    if (!result.success) {
-      toast({
-        title: "Failed to update lesson",
-        description: "Please try again later.",
-        variant: "destructive"
-      });
-      return;
-    }
+     toast({
+       title: "Lesson updated successfully!",
+     });
 
-    toast({
-      title: "Lesson updated successfully!",
-      variant: "default"
-    });
-    onLessonUpdated?.({
-      id: lessonId,
-      courseId: courseId,
-      title: lesson.title || "",
-      type: lesson.type || LESSON_TYPE.SLIDE_DECK,
-      description: lesson.description || "",
-      embedUrl: lesson.embedUrl || "",
-      duration: lesson.duration || { hours: 0, minutes: 0 },
-      createdAt: lesson!.createdAt,
-      updatedAt: lesson!.updatedAt,
-    });
-    onClose();
+     onLessonUpdated?.({
+       id: lessonId,
+       courseId,
+       title: lesson.title || "",
+       type: lesson.type || LESSON_TYPE.SLIDE_DECK,
+       description: lesson.description || "",
+       embedUrl: lesson.embedUrl || "",
+       duration: lesson.duration || { hours: 0, minutes: 0 },
+       createdAt: lesson!.createdAt,
+       updatedAt: serverTimestamp(), // you can also fetch it again if you prefer
+     });
 
-    setUpdating(false);
+     onClose();
+   } catch (error) {
+     console.error("Error updating lesson:", error);
+     toast({
+       title: "Error updating lesson",
+       description: "Something went wrong.",
+       variant: "destructive",
+     });
+   } finally {
+     setUpdating(false);
+   }
+
   };
 
   const handleClose = () => {
@@ -220,7 +238,9 @@ export const EditLessonModal = ({
                   >
                     <MDEditor
                       value={lesson.description || ""}
-                      onChange={(value) => handleFieldChange("description", value || "")}
+                      onChange={(value) =>
+                        handleFieldChange("description", value || "")
+                      }
                       height={300}
                       preview="live"
                     />
@@ -257,7 +277,9 @@ export const EditLessonModal = ({
                     id="embed-url"
                     placeholder="Enter embed URL for the lesson content"
                     value={lesson.embedUrl || ""}
-                    onChange={(e) => handleFieldChange("embedUrl", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("embedUrl", e.target.value)
+                    }
                   />
                 </div>
 
@@ -266,7 +288,10 @@ export const EditLessonModal = ({
                   <Label>Duration *</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="duration-hours" className="text-sm font-normal">
+                      <Label
+                        htmlFor="duration-hours"
+                        className="text-sm font-normal"
+                      >
                         Hours
                       </Label>
                       <Input
@@ -276,11 +301,16 @@ export const EditLessonModal = ({
                         max="23"
                         step="1"
                         value={lesson.duration?.hours || 0}
-                        onChange={(e) => handleFieldChange("duration-hours", e.target.value)}
+                        onChange={(e) =>
+                          handleFieldChange("duration-hours", e.target.value)
+                        }
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="duration-minutes" className="text-sm font-normal">
+                      <Label
+                        htmlFor="duration-minutes"
+                        className="text-sm font-normal"
+                      >
                         Minutes
                       </Label>
                       <Input
@@ -290,12 +320,15 @@ export const EditLessonModal = ({
                         max="59"
                         step="1"
                         value={lesson.duration?.minutes || 0}
-                        onChange={(e) => handleFieldChange("duration-minutes", e.target.value)}
+                        onChange={(e) =>
+                          handleFieldChange("duration-minutes", e.target.value)
+                        }
                       />
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Total: {lesson.duration?.hours || 0}h {lesson.duration?.minutes || 0}m
+                    Total: {lesson.duration?.hours || 0}h{" "}
+                    {lesson.duration?.minutes || 0}m
                   </p>
                 </div>
               </div>

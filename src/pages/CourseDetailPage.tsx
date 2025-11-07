@@ -49,9 +49,9 @@ export default function CourseDetailPage() {
   const { toast } = useToast();
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
+  const isAddedToCart = cart.some((item) => item.type === "COURSE" && item.refId === courseId);
   const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
   const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
-  const isAddedToCart = cart.some((item) => item.courseId === courseId);
 
   const {
     data: course,
@@ -132,7 +132,7 @@ export default function CourseDetailPage() {
     if (!course) return;
     cartDispatch({
       type: CART_ACTION.ADD,
-      item: { courseId },
+      item: { type: "COURSE", refId: courseId },
     });
     toast({
       title: "Course Added",
@@ -421,11 +421,11 @@ export default function CourseDetailPage() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-baseline gap-2 whitespace-nowrap text-3xl">
-                    {course.salePrice && (
+                    {course.regularPrice && course.salePrice && course.salePrice !== 0 ? (
                       <span className="line-through text-muted-foreground">
                         {formatINR(course.regularPrice)}
                       </span>
-                    )}
+                    ) : (<span></span>)}
                     <span className="font-semibold text-primary">
                       {course.salePrice === 0 ? "FREE" : formatINR(course.salePrice)}
                     </span>
