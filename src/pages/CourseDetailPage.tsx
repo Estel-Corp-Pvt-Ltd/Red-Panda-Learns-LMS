@@ -262,34 +262,49 @@ export default function CourseDetailPage() {
 
   const { topicCount, lessonCount } = getCourseStructureCounts(course);
 
-  const renderTopic = (topic: Topic) => {
-    const { id, title, items = [] } = topic;
-    const hasItems = items.length > 0;
+const renderTopic = (topic: Topic) => {
+  const { id, title, items = [] } = topic;
+  const hasItems = items.length > 0;
 
-    return (
-      <Collapsible key={id}>
-        <CollapsibleTrigger
-          className={cn(
-            "group flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <ChevronRight
-              className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
-              aria-hidden="true"
-            />
-            <h4 className="text-[0.9rem] font-medium truncate">{title}</h4>
-          </div>
-          <span className="text-sm opacity-80">{items.length} lessons</span>
-        </CollapsibleTrigger>
+  return (
+    <Collapsible key={id}>
+      <CollapsibleTrigger
+        className={cn(
+          "group flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50"
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <ChevronRight
+            className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
+            aria-hidden="true"
+          />
+          <h4 className="text-[0.9rem] font-medium truncate">{title}</h4>
+        </div>
+        <span className="text-sm opacity-80">{items.length} lessons</span>
+      </CollapsibleTrigger>
 
-        <CollapsibleContent className="pl-7">
-          {hasItems ? (
-            items.map(({ id: lessonId, title: lessonTitle, type }) => (
+      <CollapsibleContent className="pl-7">
+        {hasItems ? (
+          items.map(({ id: lessonId, title: lessonTitle, type }) => {
+            const handleLockedClick = () => {
+              toast({
+                title: "Access Restricted",
+                description:
+                  "Please enroll in this course to view the lessons.",
+                variant: "destructive",
+              });
+            };
+
+            const baseClasses =
+              "block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border cursor-pointer";
+
+            return userIsEnrolled ? (
               <Link
                 key={lessonId}
-                to={`/course/${course.url ? course.url : course.id}/lesson/${lessonId}`}
-                className="block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border"
+                to={`/course/${
+                  course.url ? course.url : course.id
+                }/lesson/${lessonId}`}
+                className={baseClasses}
               >
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs">
@@ -303,26 +318,45 @@ export default function CourseDetailPage() {
                     {lessonTitle}
                   </p>
                   <div className="relative group">
-                    <Info className="text-muted-foreground hover:text-foreground cursor-pointer" size={16} />
+                    <Info
+                      className="text-muted-foreground hover:text-foreground cursor-pointer"
+                      size={16}
+                    />
                     <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block w-64 bg-popover text-popover-foreground p-1.5 text-sm rounded-md z-10 break-words border-l-2 border-b-2 border-primary/40 shadow-[2px_-2px_8px_rgba(0,0,0,0.15)]">
                       <p className="whitespace-pre-wrap leading-snug">
-                        {lessonDescriptions[lessonId] || "No description available."}
+                        {lessonDescriptions[lessonId] ||
+                          "No description available."}
                       </p>
                     </div>
                   </div>
                 </div>
               </Link>
-            ))
-          ) : (
-            <p className="py-2 text-sm text-muted-foreground">
-              No lessons available.
-            </p>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
-    );
-  };
-
+            ) : (
+              <div
+                key={lessonId}
+                onClick={handleLockedClick}
+                className={`${baseClasses} opacity-60 select-none pointer-events-auto`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs">
+                    <Lock className="text-primary" size={14} />
+                  </div>
+                  <p className="flex-1 min-w-0 text-[0.9rem] font-medium text-foreground/80 truncate">
+                    {lessonTitle}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p className="py-2 text-sm text-muted-foreground">
+            No lessons available.
+          </p>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
   const hasInstructor = !!course?.instructorName?.trim();
   const instructorInitial = course?.instructorName?.trim()?.[0]?.toUpperCase();
 
