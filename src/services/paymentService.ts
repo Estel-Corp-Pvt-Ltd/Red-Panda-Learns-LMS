@@ -28,6 +28,9 @@ export type PaymentProviderOption = {
   currency: Currency;
   isAvailable: boolean;
   description: string;
+  currencies: Currency[];
+  logos: { name: string; src: string; className: string }[];
+  icon: string;
 };
 
 class PaymentService {
@@ -42,15 +45,30 @@ class PaymentService {
       currency: "INR",
       isAvailable: !!import.meta.env.VITE_RAZORPAY_KEY_ID,
       description: "Pay with Cards, UPI, Net Banking & Wallets",
+      currencies: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+      logos: [
+        { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
+        { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
+        { name: "Mastercard", src: "/mastercard.svg", className: "h-[20px] w-[32px]" },
+        { name: "RuPay", src: "/rupay.png", className: "h-[30px] w-[40px]" },
+      ],
+      icon: "/razorpay-icon.svg"
     },
-    // {
-    //   id: PAYMENT_PROVIDER.PAYPAL,
-    //   name: "paypal",
-    //   displayName: "PayPal",
-    //   currency: "USD",
-    //   isAvailable: !!import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
-    //   description: "Pay securely with PayPal",
-    // },
+    {
+      id: PAYMENT_PROVIDER.PAYPAL,
+      name: "paypal",
+      displayName: "PayPal",
+      currency: "USD",
+      isAvailable: false, // Disable PayPal for now
+      description: "Pay securely with PayPal",
+      currencies: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
+      logos: [
+        { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
+        { name: "Mastercard", src: "/mastercard.svg", className: "h-[20px] w-[32px]" },
+        { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
+      ],
+      icon: "/paypal-icon.svg"
+    },
   ];
 
   getAvailableProviders(): PaymentProviderOption[] {

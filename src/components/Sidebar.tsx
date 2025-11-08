@@ -18,11 +18,11 @@ const Sidebar: React.FC = () => {
       path: "/dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />
     },
-    {
-      name: "Invoices",
-      path: "/invoices",
-      icon: <FileText className="h-5 w-5" />
-    },
+    // {
+    //   name: "Invoices",
+    //   path: "/invoices",
+    //   icon: <FileText className="h-5 w-5" />
+    // },
     {
       name: "Submissions",
       path: "/submissions",
