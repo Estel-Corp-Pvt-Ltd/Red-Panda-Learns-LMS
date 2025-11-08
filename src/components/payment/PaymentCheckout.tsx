@@ -32,27 +32,6 @@ import { Timestamp } from "firebase/firestore";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { currencyService } from "@/services/currencyService";
 
-const PROVIDER_CONFIG = {
-  RAZORPAY: {
-    currencies: [CURRENCY.INR, CURRENCY.USD],
-    logos: [
-      { name: "UPI", src: "/upi.webp", className: "h-[30px] w-[32px]" },
-      { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-      { name: "Mastercard", src: "/mastercard.svg", className: "h-[20px] w-[32px]" },
-      { name: "RuPay", src: "/rupay.png", className: "h-[30px] w-[40px]" },
-    ],
-    icon: "/razorpay-icon.svg"
-  },
-  PAYPAL: {
-    currencies: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
-    logos: [
-      { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-      { name: "Mastercard", src: "/mastercard.svg", className: "h-[20px] w-[32px]" },
-      { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
-    ],
-    icon: "/paypal-icon.svg"
-  }
-};
 
 interface PaymentCheckoutProps {
   items: TransactionLineItem[];
@@ -255,7 +234,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     const interval = setInterval(async () => {
       const order = await orderService.getOrderById(orderId);
       console.log("Verifying order status:", order);
-      if (order && order.status === "COMPLETED" ) {
+      if (order && order.status === "COMPLETED") {
         refreshEnrollments();
         clearInterval(interval);
         setIsOrderVerifying(false);
@@ -521,6 +500,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                             updateAddressField("country", e.target.value);
                             updateAddressField("state", "");
                             updateAddressField("city", "");
+                            if (e.target.value === "INDIA") {
+                              setSelectedCurrency(CURRENCY.INR);
+                            } else if (e.target.value != "") {
+                              setSelectedCurrency(CURRENCY.USD);
+                            }
                           }}
                           disabled={isProcessing}
                         />
@@ -633,7 +617,13 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                     return true;
                   }).map((provider) => {
                     const isSelected = selectedProvider === provider.id;
-                    const config = PROVIDER_CONFIG[provider.id];
+                    const supportedCurrencies = provider.currencies.filter((currency) => {
+                      if (!billingAddress.country) return true;
+                      if (billingAddress.country === "INDIA" && currency !== CURRENCY.INR) {
+                        return false;
+                      }
+                      return true;
+                    });
 
                     return (
                       <div
@@ -650,14 +640,14 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                               }`} />
                             <div>
                               <div className="flex items-center gap-2 font-medium">
-                                <img src={config.icon} className="h-5" alt={provider.id} />
+                                <img src={provider.icon} className="h-5" alt={provider.id} />
                                 {provider.name}
                               </div>
                               <p className="text-sm text-muted-foreground mt-1">
                                 {provider.description}
                               </p>
                               <div className="mt-2 flex gap-1.5">
-                                {config.logos.map((logo) => (
+                                {provider.logos.map((logo) => (
                                   <img
                                     key={logo.name}
                                     src={logo.src}
@@ -675,20 +665,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                             onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
                             className="px-2 py-1 text-sm border rounded bg-background"
                           >
-                            {config.currencies
-                              .filter((currency) => {
-                                if (!billingAddress.country) return true;
-                                if (billingAddress.country === "India") {
-                                  return currency === "INR";
-                                }
-                                return currency !== "INR";
-                              })
-                              .map((currency) => (
-                                <option key={currency} value={currency}>
-                                  {currency}
-                                </option>
-                              ))
-                            }
+                            {supportedCurrencies.map((currency) => (
+                              <option key={currency} value={currency}>
+                                {currency}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>
