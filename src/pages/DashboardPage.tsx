@@ -95,10 +95,10 @@ export default function DashboardPage() {
 
   const stats = {
     totalCourses: enrollments.length,
-    completedCourses: enrollments.filter(e => e.progressSummary?.percent === 100).length,
-    averageProgress: enrollments.length > 0
-      ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary?.percent, 0) / enrollments.length)
-      : 0,
+    // completedCourses: enrollments.filter(e => e.progressSummary?.percent === 100).length,
+    // averageProgress: enrollments.length > 0
+    //   ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary?.percent, 0) / enrollments.length)
+    //   : 0,
   };
 
   return (
@@ -130,7 +130,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Completed</CardTitle>
                 <Trophy className="h-4 w-4 text-muted-foreground" />
@@ -141,9 +141,9 @@ export default function DashboardPage() {
                   Courses finished
                 </p>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            <Card>
+            {/* <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                   Across all courses
                 </p>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Enrolled Courses */}
