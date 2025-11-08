@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
@@ -12,7 +12,8 @@ import { toast } from "@/hooks/use-toast";
 import { TopicItem } from "@/types/course";
 import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
-
+import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { useNavigate } from "react-router-dom";
 export default function LessonDetailPage() {
   const { param, lessonId } = useParams<{
     param: string;
@@ -22,6 +23,8 @@ export default function LessonDetailPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
   const [courseId,setCourseId] = useState("")
+  const { isEnrolled} = useEnrollment();
+  const navigate = useNavigate();
   const {
     data: course,
     isLoading: courseLoading,
@@ -33,6 +36,23 @@ export default function LessonDetailPage() {
       setCourseId(course.id);
     }, [param, courseLoading, course?.id]);
     
+
+    useEffect(() => {
+  if (!courseId || !user || courseLoading) return;
+
+  // If not enrolled, redirect back to admin course page
+  if (!isEnrolled(courseId)) {
+    toast({
+      title: "Access Denied",
+      description: "You are not enrolled in this course.",
+      variant: "destructive",
+    });
+
+    // Small delay for the toast to appear before redirect
+    navigate(`/course/${courseId}`)
+  }
+}, [courseId, user, courseLoading, isEnrolled]);
+
 
   // Set document title to include course and current item
   useEffect(() => {

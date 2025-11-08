@@ -109,7 +109,10 @@ export default function DashboardPage() {
         <div className="flex-1 w-full mx-auto p-6 overflow-y-scroll">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
+              <Link className='md:hidden' to="/submissions"><Button>View Submissions</Button> </Link>
+            </div>
             <p className="text-muted-foreground">
               Track your learning progress and continue your courses
             </p>

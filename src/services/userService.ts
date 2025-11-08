@@ -34,6 +34,11 @@ class UserService {
         uid: string,
         data: Omit<User, "createdAt" | "updatedAt">
     ): Promise<Result<void>> {
+        const userRef = doc(db, COLLECTION.USERS, uid);
+        if ((await getDoc(userRef)).exists()) {
+            console.warn("UserService - User already exists:", uid);
+            return fail("User already exists", "ALREADY_EXISTS");
+        }
         try {
             const user: User = {
                 id: uid,
@@ -44,7 +49,6 @@ class UserService {
                 lastName: data.lastName,
                 role: data.role,
                 status: data.status,
-                enrollments: [],
                 organizationId: data.organizationId || "",
                 photoURL: data.photoURL || "",
                 createdAt: serverTimestamp(),
