@@ -35,7 +35,7 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
 
     const idempotencyRef = admin
       .firestore()
-      .collection("idempotency")
+      .collection("Idempotency")
       .doc(idempotencyKey);
 
     const cached = await idempotencyRef.get();
