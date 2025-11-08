@@ -149,7 +149,7 @@ const CourseCard = ({
 
         {!isCompact && course.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {course.description}
+            {course.description.replace(/<[^>]+>/g, '')}
           </p>
         )}
 
