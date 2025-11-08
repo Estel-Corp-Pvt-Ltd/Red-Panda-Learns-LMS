@@ -96,11 +96,11 @@ export function CourseNavigator({
                 <div
                   className={cn(
                     "flex items-center justify-center w-6 h-6 rounded text-xs bg-muted text-muted-foreground",
-                    isLessonActive(lessonItem.id) && "bg-white text-primary-foreground"
+                    isLessonActive(lessonItem.id) && "bg-background text-primary-foreground "
                   )}
                 >
                   {lessonItem.type === "LESSON" ? (
-                    <BookOpen className="text-red-500" />
+                    <BookOpen className="text-pink-500" />
                   ) : (
                     <NotepadText className="text-blue-500" />
                   )}
