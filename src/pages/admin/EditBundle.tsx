@@ -768,19 +768,41 @@ useEffect(() => {
   };
 
   const handlePublishBundle = async () => {
-    if (
-      !formData.title.trim() ||
-      selectedCourseIds.length < 2 ||
-      !formData.description.trim()
-    ) {
-      toast({
-        title: "Error",
-        description:
-          "Please fill all required fields and select at least 2 courses.",
-        variant: "destructive",
-      });
-      return;
-    }
+     if (!bundleData.title.trim()) {
+       toast({
+         title: "Error",
+         description: "Please enter a bundle title.",
+         variant: "destructive",
+       });
+       return;
+     }
+
+     if (selectedCourseIds.length < 2) {
+       toast({
+         title: "Error",
+         description: "Please select at least 2 courses for the bundle.",
+         variant: "destructive",
+       });
+       return;
+     }
+
+     if (!bundleData.description.trim()) {
+       toast({
+         title: "Error",
+         description: "Please enter a bundle description.",
+         variant: "destructive",
+       });
+       return;
+     }
+
+     if (urlTaken) {
+       toast({
+         title: "Error",
+         description: "Please enter a  unique bundle URL.",
+         variant: "destructive",
+       });
+       return;
+     }
 
     try {
       setLoading(true);
@@ -1295,7 +1317,7 @@ useEffect(() => {
                       />
                       <Label htmlFor="paid">Paid</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    {/* <div className="flex items-center space-x-2">
                       <Checkbox
                         id="free"
                         checked={formData.pricingModel === PRICING_MODEL.FREE}
@@ -1307,7 +1329,7 @@ useEffect(() => {
                         }
                       />
                       <Label htmlFor="free">Free</Label>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 
@@ -2275,7 +2297,8 @@ useEffect(() => {
                   loading ||
                   selectedCourseIds.length < 2 ||
                   !formData.title.trim() ||
-                  !formData.description.trim()
+                  !formData.description.trim() ||
+                  uploadingThumbnail
                 }
                 className="w-full"
                 variant="default"

@@ -49,7 +49,6 @@ class UserService {
                 lastName: data.lastName,
                 role: data.role,
                 status: data.status,
-                enrollments: [],
                 organizationId: data.organizationId || "",
                 photoURL: data.photoURL || "",
                 createdAt: serverTimestamp(),
