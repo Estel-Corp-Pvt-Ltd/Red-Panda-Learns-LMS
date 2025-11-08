@@ -38,7 +38,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 flex flex-col border-r bg-card overflow-y-auto">
+    <aside className="w-64 flex-col border-r bg-card overflow-y-auto hidden md:flex">
       {/* Navigation Menu */}
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
