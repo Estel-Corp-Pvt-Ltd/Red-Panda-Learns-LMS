@@ -66,7 +66,7 @@ const CoursesPage = () => {
   const isLoggedIn = !!user;
 
   const enrolledCourseIds = enrollments.map(
-    (enrollment) => enrollment.courseId 
+    (enrollment) => enrollment.courseId
   );
 
   const publishedCourses = useMemo(
@@ -305,21 +305,21 @@ const CoursesPage = () => {
                   )}
                 >
                   {bundles.map((bundle, index) => (
-                      <BundleWrapper
+                    <BundleWrapper
                       key={bundle.id}
-                        bundle={bundle}
-                        index={index}
-                        user={user}
-                        isEnrolledInBundle={async (id) =>
-                          Promise.resolve(isEnrolledInBundle(id))
-                        }
-                        viewMode={viewMode}
-                        handleBundlePurchase={(id) => {
-                          // If your BundleWrapper includes CTA buttons,
-                          // ensure those buttons call e.stopPropagation() in their onClick handlers.
-                          handleBundlePurchase(id);
-                        }}
-                      />
+                      bundle={bundle}
+                      index={index}
+                      user={user}
+                      isEnrolledInBundle={async (id) =>
+                        Promise.resolve(isEnrolledInBundle(id))
+                      }
+                      viewMode={viewMode}
+                      handleBundlePurchase={(id) => {
+                        // If your BundleWrapper includes CTA buttons,
+                        // ensure those buttons call e.stopPropagation() in their onClick handlers.
+                        handleBundlePurchase(id);
+                      }}
+                    />
                   ))}
                 </div>
               </div>
@@ -340,18 +340,18 @@ const CoursesPage = () => {
 
               {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {filteredCourses
-        .filter(course => course.salePrice > 0) 
-        .map((course, index) => (
-          <div
-            key={course.id}
-            className="animate-fade-in-up"
-            style={{ animationDelay: `${index * 0.1}s` }}
-          >
-            <CourseCard course={course} variant="default" />
-          </div>
-        ))}
-    </div>
+                  {filteredCourses
+                    .filter(course => course.salePrice > 0)
+                    .map((course, index) => (
+                      <div
+                        key={course.id}
+                        className="animate-fade-in-up"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <CourseCard course={course} variant="default" />
+                      </div>
+                    ))}
+                </div>
               ) : (
                 <CourseListView
                   courses={filteredCourses.filter(course => course.salePrice > 0)}

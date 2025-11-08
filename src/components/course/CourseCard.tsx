@@ -99,7 +99,14 @@ const CourseCard = ({
       >
         {course.thumbnail && (
           <img
-            src={course.thumbnail}
+            src={
+              course.thumbnail.includes("https://vizuara.ai/")
+                ? course.thumbnail.replace(
+                  "https://vizuara.ai/",
+                  "https://vizuaracoin.wpcomstaging.com/"
+                )
+                : course.thumbnail
+            }
             alt={`${course.title} thumbnail`}
             className="w-full h-full object-cover"
             loading="lazy"

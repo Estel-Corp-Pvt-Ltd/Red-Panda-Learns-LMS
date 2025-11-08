@@ -58,7 +58,7 @@ export function BundleCard({
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
 
- 
+
   if (variant === "compact") {
     return (
       <Card
@@ -70,7 +70,14 @@ export function BundleCard({
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
           {bundle.thumbnail ? (
             <img
-              src={bundle.thumbnail}
+              src={
+                bundle.thumbnail.includes("https://vizuara.ai/")
+                  ? bundle.thumbnail.replace(
+                    "https://vizuara.ai/",
+                    "https://vizuaracoin.wpcomstaging.com/"
+                  )
+                  : bundle.thumbnail
+              }
               alt={bundle.title}
               className="w-full h-full object-cover"
             />
@@ -140,9 +147,8 @@ export function BundleCard({
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
-                  ? "Access Bundle"
-                  : `Buy Bundle - ${
-                      isFree ? "FREE" : formatCurrency(salePrice)
+                    ? "Access Bundle"
+                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)
                     }`}
               </Button>
             </div>
@@ -273,8 +279,8 @@ export function BundleCard({
           {fullOwnership
             ? "All Courses Owned"
             : isEnrolled
-            ? "Access Bundle"
-            : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
+              ? "Access Bundle"
+              : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
         </Button>
       </CardFooter>
     </Card>
