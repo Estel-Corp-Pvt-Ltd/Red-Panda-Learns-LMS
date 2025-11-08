@@ -102,296 +102,292 @@ export function Header({
           </Link>
 
           {/* Navigation Menu - hover to open */}
-          <NavigationMenu className="hidden lg:flex" delayDuration={0}>
+          {/* <NavigationMenu className="hidden lg:flex" delayDuration={0}>
             <NavigationMenuList>
-              {/* Products */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
-                  Products
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://dynaroute.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            DynaRoute
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            AI-powered routing and optimization solutions
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://vizz.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            Vizz-AI Tutor
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Your personal AI learning assistant
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Research */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
-                  Research
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://research.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            Research Domains
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            SciML, GenAI, Vision, Inference, and Reasoning
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://ai-highschool-research.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            AI Highschool Researcher Bootcamp
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Research training for aspiring high school AI
-                            researchers
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://flyvidesh.online/ml-bootcamp"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            SciML Research Bootcamp
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Deep dive into Scientific Machine Learning
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://flyvidesh.online/ml-dl-bootcamp"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            ML-DL Research Bootcamp
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Comprehensive ML and Deep Learning research
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://flyvidesh.online/gen-ai-professional-bootcamp"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            GenAI Professional Bootcamp
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Advanced Generative AI for professionals
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Courses */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
-                  Courses
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://minor.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            Minor in AI (LIVE)
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Comprehensive AI fundamentals program
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="http://genai-minor.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            Minor in GenAI (LIVE)
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Specialized generative AI curriculum
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://courses.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            For Undergrads, Grads & Professionals
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Self-paced courses by top instructors
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://interactive-ai-courses.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            For School Students (Grades 1-10)
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Interactive AI learning for all ages
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://www.youtube.com/@vizuara"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            YouTube Channel
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Free AI/ML tutorials and content
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* For Businesses */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
-                  For businesses
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                    <li>
-                      <div className="block select-none space-y-1 rounded-md p-3 leading-none">
-                        <div className="text-sm font-medium leading-none">
-                          Corporate AI Training
-                        </div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          Upskill your team with enterprise AI training programs
-                        </p>
+          <NavigationMenuItem>
+            <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
+              Products
+            </NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://dynaroute.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        DynaRoute
                       </div>
-                    </li>
-                    <li>
-                      <div className="block select-none space-y-1 rounded-md p-3 leading-none">
-                        <div className="text-sm font-medium leading-none">
-                          AI Product Development
-                        </div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          Build custom AI solutions for your business
-                        </p>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        AI-powered routing and optimization solutions
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://vizz.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        Vizz-AI Tutor
                       </div>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                          href="https://dynaroute.vizuara.ai/"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            DynaRoute API for Enterprises
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Enterprise-grade AI routing and optimization API
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li className="border-t border-border pt-3">
-                      <div className="space-y-2 px-3">
-                        <div className="text-sm font-medium leading-none flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          Contact for Business
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                            {email}
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={copyEmail}
-                            className="shrink-0"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Your personal AI learning assistant
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+
+          <NavigationMenuItem>
+            <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
+              Research
+            </NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://research.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        Research Domains
                       </div>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        SciML, GenAI, Vision, Inference, and Reasoning
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://ai-highschool-research.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        AI Highschool Researcher Bootcamp
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Research training for aspiring high school AI
+                        researchers
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://flyvidesh.online/ml-bootcamp"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        SciML Research Bootcamp
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Deep dive into Scientific Machine Learning
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://flyvidesh.online/ml-dl-bootcamp"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        ML-DL Research Bootcamp
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Comprehensive ML and Deep Learning research
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://flyvidesh.online/gen-ai-professional-bootcamp"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        GenAI Professional Bootcamp
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Advanced Generative AI for professionals
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+
+          <NavigationMenuItem>
+            <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
+              Courses
+            </NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://minor.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        Minor in AI (LIVE)
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Comprehensive AI fundamentals program
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="http://genai-minor.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        Minor in GenAI (LIVE)
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Specialized generative AI curriculum
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://courses.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        For Undergrads, Grads & Professionals
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Self-paced courses by top instructors
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://interactive-ai-courses.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        For School Students (Grades 1-10)
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Interactive AI learning for all ages
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://www.youtube.com/@vizuara"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        YouTube Channel
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Free AI/ML tutorials and content
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+
+          <NavigationMenuItem>
+            <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
+              For businesses
+            </NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                <li>
+                  <div className="block select-none space-y-1 rounded-md p-3 leading-none">
+                    <div className="text-sm font-medium leading-none">
+                      Corporate AI Training
+                    </div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                      Upskill your team with enterprise AI training programs
+                    </p>
+                  </div>
+                </li>
+                <li>
+                  <div className="block select-none space-y-1 rounded-md p-3 leading-none">
+                    <div className="text-sm font-medium leading-none">
+                      AI Product Development
+                    </div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                      Build custom AI solutions for your business
+                    </p>
+                  </div>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <a
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                      href="https://dynaroute.vizuara.ai/"
+                    >
+                      <div className="text-sm font-medium leading-none">
+                        DynaRoute API for Enterprises
+                      </div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Enterprise-grade AI routing and optimization API
+                      </p>
+                    </a>
+                  </NavigationMenuLink>
+                </li>
+                <li className="border-t border-border pt-3">
+                  <div className="space-y-2 px-3">
+                    <div className="text-sm font-medium leading-none flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Contact for Business
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        {email}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={copyEmail}
+                        className="shrink-0"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu> */}
         </div>
 
         {/* ----- Right: Actions ----- */}
         <div className="flex items-center gap-4">
           {/* Mobile Menu */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          {/* <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden">
                 <Menu className="h-5 w-5" />
@@ -399,7 +395,6 @@ export function Header({
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] overflow-y-auto">
               <div className="flex flex-col gap-6 mt-8">
-                {/* Login/Signup Buttons at Top for mobile */}
                 {!user && (
                   <div className="flex flex-col gap-2">
                     <Button
@@ -635,7 +630,7 @@ export function Header({
                 </div>
               </div>
             </SheetContent>
-          </Sheet>
+          </Sheet> */}
 
           {/* Contact Us Popover - Desktop only (kept as click to open) */}
           <Popover>
@@ -680,7 +675,7 @@ export function Header({
           {user ? (
             <div className="flex items-center">
               {user.role !== USER_ROLE.ADMIN && (
-                <Link to="/cart" className="relative mr-3 hidden lg:block">
+                <Link to="/cart" className="relative mr-3">
                   <ShoppingCart className="w-6 h-6" />
                   {cart.length > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -695,7 +690,7 @@ export function Header({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="relative hidden lg:flex"
+                    className="relative flex"
                     onMouseEnter={() => setAccountOpen(true)}
                     onMouseLeave={() => setAccountOpen(false)}
                   >
@@ -746,7 +741,8 @@ export function Header({
             </div>
           )}
         </div>
-      </div>
-    </header>
+
+      </div >
+    </header >
   );
 }
