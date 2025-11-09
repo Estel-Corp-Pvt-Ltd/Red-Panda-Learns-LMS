@@ -533,16 +533,16 @@ class CourseService {
     return snap.docs.some((doc) => doc.id !== currentCourseId);
   }
 
-  async getCourseByUrl(url: string): Promise<Course | null> {
+  async getCourseBySlug(slug: string): Promise<Course | null> {
     try {
       const q = query(
         collection(db, COLLECTION.COURSES),
-        where("url", "==", url)
+        where("slug", "==", slug)
       );
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        console.log("CourseService - Course not found for URL:", url);
+        console.log("CourseService - Course not found for slug:", slug);
         return null;
       }
 

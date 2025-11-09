@@ -121,7 +121,7 @@ export default function CourseDetailPage() {
     if (!user) {
       navigate("/auth/login", {
         state: {
-          from: `/course/${course.url ? course.url : course.id}`,
+          from: `/courses/${course.slug ? course.slug : course.id}`,
           message: "Please login to enroll in this course.",
         },
       });
@@ -131,7 +131,7 @@ export default function CourseDetailPage() {
     if (userIsEnrolled) {
       if (course.topics && course.topics.length > 0) {
         const firstTopic = course.topics[0];
-        navigate(`/course/${course.url ? course.url : course.id}/lesson/${firstTopic.items[0].id}`);
+        navigate(`/courses/${course.slug ? course.slug : course.id}/lesson/${firstTopic.items[0].id}`);
       }
     }
 
@@ -183,39 +183,26 @@ export default function CourseDetailPage() {
           description: "If you don't see the course, reload the page.",
         });
       }
-      navigate(`/course/${course.url ? course.url : course.id}`);
+      navigate(`/courses/${course.slug ? course.slug : course.id}`);
       return;
     }
-    navigate(`/checkout/${course.url ? course.url : course.id}`);
+    navigate(`/checkout/${course.slug ? course.slug : course.id}`);
   };
 
   const handleContinueLearning = () => {
     if (!course) return;
 
-    // Get first lesson based on course structure
-    let firstLessonId: string | null = null;
-
-    if (course.cohorts && course.cohorts.length > 0) {
-      const firstCohort = course.cohorts[0];
-      if (firstCohort.topics && firstCohort.topics.length > 0) {
-        const firstTopic = firstCohort.topics[0];
-        if (firstTopic.items && firstTopic.items.length > 0) {
-          firstLessonId = firstTopic.items[0].id;
-        }
-      }
-    } else if (course.topics && course.topics.length > 0) {
-      const firstTopic = course.topics[0];
-      if (firstTopic.items && firstTopic.items.length > 0) {
-        firstLessonId = firstTopic.items[0].id;
-      }
-    }
+    const firstLessonId = course.topics
+      ?.flatMap(topic => topic.items || [])
+      .find(item => item?.id)?.id;
 
     if (firstLessonId) {
-      navigate(`/course/${course.url ? course.url : course.id}/lesson/${firstLessonId}`);
+      const courseSlug = course.slug || course.id;
+      navigate(`/courses/${courseSlug}/lesson/${firstLessonId}`);
     } else {
       toast({
         title: "No content available",
-        description: `This course has no lessons available yet.`,
+        description: "This course has no lessons available yet.",
         variant: "destructive",
       });
     }
@@ -299,8 +286,7 @@ export default function CourseDetailPage() {
               return userIsEnrolled ? (
                 <Link
                   key={lessonId}
-                  to={`/course/${course.url ? course.url : course.id
-                    }/lesson/${lessonId}`}
+                  to={`/courses/${course.slug ? course.slug : course.id}/lesson/${lessonId}`}
                   className={baseClasses}
                 >
                   <div className="flex items-center gap-3">
@@ -516,7 +502,6 @@ export default function CourseDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Course Curriculum */}
             <Card>
               <CardHeader>

@@ -89,12 +89,12 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route
-                        path="/course/:param"
+                        path="/courses/:param"
                         element={<CourseDetailPage />}
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
-                        path="/course/:param/lesson/:lessonId"
+                        path="/courses/:param/lesson/:lessonId"
                         element={
                           <AuthGuard
                             requireAuth
