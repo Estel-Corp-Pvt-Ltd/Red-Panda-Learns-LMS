@@ -73,36 +73,37 @@ export function Header({
   };
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60",
-        className
-      )}
-    >
-      <div className="container flex h-16 items-center justify-between px-4">
-        {/* ----- Left: Logo + Navigation Menu ----- */}
-        <div className="flex items-center gap-8">
-          {showMenuButton && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onMenuClick}
-              className="md:hidden"
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60",
+          className
+        )}
+      >
+        <div className="container flex h-16 items-center justify-between px-4">
+          {/* ----- Left: Logo + Navigation Menu ----- */}
+          <div className="flex items-center gap-8">
+            {showMenuButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onMenuClick}
+                className="md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
+
+            <Link
+              to="/"
+              className="flex items-center gap-2 font-semibold text-xl"
             >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
+              <img src="/logo.png" className="w-10" alt="Logo" />
+              <span>Vizuara</span>
+            </Link>
 
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-semibold text-xl"
-          >
-            <img src="/logo.png" className="w-10" alt="Logo" />
-            <span>Vizuara</span>
-          </Link>
-
-          {/* Navigation Menu - hover to open */}
-          {/* <NavigationMenu className="hidden lg:flex" delayDuration={0}>
+            {/* Navigation Menu - hover to open */}
+            {/* <NavigationMenu className="hidden lg:flex" delayDuration={0}>
             <NavigationMenuList>
           <NavigationMenuItem>
             <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
@@ -382,12 +383,12 @@ export function Header({
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu> */}
-        </div>
+          </div>
 
-        {/* ----- Right: Actions ----- */}
-        <div className="flex items-center gap-4">
-          {/* Mobile Menu */}
-          {/* <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          {/* ----- Right: Actions ----- */}
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu */}
+            {/* <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden">
                 <Menu className="h-5 w-5" />
@@ -632,117 +633,127 @@ export function Header({
             </SheetContent>
           </Sheet> */}
 
-          {/* Contact Us Popover - Desktop only (kept as click to open) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                className="font-medium text-sm hidden lg:flex"
-              >
-                Contact us
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 bg-popover">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium leading-none flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Contact Us
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    Send us an email and we'll get back to you shortly.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    {email}
+            {/* Contact Us Popover - Desktop only (kept as click to open) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="font-medium text-sm hidden lg:flex"
+                >
+                  Contact us
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 bg-popover">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Contact Us
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Send us an email and we'll get back to you shortly.
+                    </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={copyEmail}
-                    className="shrink-0"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      {email}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={copyEmail}
+                      className="shrink-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
 
-          <ThemeToggle />
+            <ThemeToggle />
 
-          {user ? (
-            <div className="flex items-center">
-              {user.role !== USER_ROLE.ADMIN && (
-                <Link to="/cart" className="relative mr-3">
-                  <ShoppingCart className="w-6 h-6" />
-                  {cart.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {cart.length}
-                    </span>
-                  )}
-                </Link>
-              )}
-              {/* Logged-in dropdown (hover to open on desktop) */}
-              <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative flex"
+            {user ? (
+              <div className="flex items-center">
+                {user.role !== USER_ROLE.ADMIN && (
+                  <Link to="/cart" className="relative mr-3">
+                    <ShoppingCart className="w-6 h-6" />
+                    {cart.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {cart.length}
+                      </span>
+                    )}
+                  </Link>
+                )}
+                {/* Logged-in dropdown (hover to open on desktop) */}
+                <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="relative flex"
+                      onMouseEnter={() => setAccountOpen(true)}
+                      onMouseLeave={() => setAccountOpen(false)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-foreground" />
+                        </div>
+                        <span className="hidden sm:inline text-sm font-medium">
+                          {user.firstName && user.lastName
+                            ? `${user.firstName}`
+                            : user.firstName || "Account"}
+                        </span>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56"
                     onMouseEnter={() => setAccountOpen(true)}
                     onMouseLeave={() => setAccountOpen(false)}
                   >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-foreground" />
-                      </div>
-                      <span className="hidden sm:inline text-sm font-medium">
-                        {user.firstName && user.lastName
-                          ? `${user.firstName}`
-                          : user.firstName || "Account"}
-                      </span>
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
 
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56"
-                  onMouseEnter={() => setAccountOpen(true)}
-                  onMouseLeave={() => setAccountOpen(false)}
-                >
-                  <DropdownMenuItem asChild>
-                    <Link to="/dashboard">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
+                    <DropdownMenuSeparator />
 
-                  <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              // Logged-out: Login + Signup buttons
+              <div className="hidden lg:flex items-center gap-2">
+                <Button variant="ghost" asChild>
+                  <Link to="/auth/login">Login</Link>
+                </Button>
+                <Button variant="default" asChild>
+                  <Link to="/auth/signup">Sign Up</Link>
+                </Button>
+              </div>
+            )}
+          </div>
 
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : (
-            // Logged-out: Login + Signup buttons
-            <div className="hidden lg:flex items-center gap-2">
-              <Button variant="ghost" asChild>
-                <Link to="/auth/login">Login</Link>
-              </Button>
-              <Button variant="default" asChild>
-                <Link to="/auth/signup">Sign Up</Link>
-              </Button>
-            </div>
-          )}
+        </div >
+      </header >
+      <div className="w-full bg-amber-50 dark:bg-amber-900/30 border-y border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-50">
+        <div
+          className="mx-auto max-w-7xl px-4 py-2 text-center text-sm sm:text-base"
+          role="status"
+          aria-live="polite"
+        >
+          We are upgrading our website. Please expect disruption of features, services and access till Monday EOD IST.
         </div>
-
-      </div >
-    </header >
+      </div>
+    </>
   );
 }
