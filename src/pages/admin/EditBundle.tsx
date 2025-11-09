@@ -2225,8 +2225,6 @@ export default function EditBundlePage() {
                             regularPrice: e.target.value,
                           }))
                         }
-                        min={pricingData.maxDiscount}
-                        max={pricingData.regularPrice}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Range: {formatCurrency(pricingData.maxDiscount)} -{" "}

@@ -142,9 +142,9 @@ const CourseCard = ({
         )}
       </CardContent>
 
-      <CardFooter className={cn("px-4 pb-4 pt-0", isCompact && "px-3 pb-3")}>
+      <CardFooter className={cn("pb-4 pt-0", isCompact && "px-3 pb-3")}>
         <div className="w-full space-y-3">
-          <div className="flex flex-nowrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
+          <div className="flex flex-nowrap items-center justify-between gap-y-2 text-xs text-muted-foreground">
             <div className="flex flex-nowrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-1.5 whitespace-nowrap">
                 <BookOpen className="h-3 w-3 flex-shrink-0" />
@@ -161,13 +161,13 @@ const CourseCard = ({
             </div>
 
             {/* Slash pricing */}
-            <div className="flex items-baseline gap-2 whitespace-nowrap">
+            <div className="flex flex-col items-baseline whitespace-nowrap">
               {showSlash && (
-                <span className="line-through text-muted-foreground">
+                <span className="line-through text-[10px] text-muted-foreground">
                   {formatINR(regularPrice)}
                 </span>
               )}
-              <span className="font-semibold text-primary">
+              <span className="font-semibold text-base text-primary">
                 {isFree ? "FREE" : formatINR(salePrice)}
               </span>
             </div>

@@ -46,14 +46,10 @@ export function BundleCard({
   const isAddedToCart = cart.some((item) => item.refId == bundle.id);
 
   // Slash pricing helpers
-  const regularPrice =
-    typeof bundle.regularPrice === "number" ? bundle.regularPrice : 0;
 
-  const hasSale = typeof bundle.salePrice === "number";
-  const salePrice = hasSale ? (bundle.salePrice as number) : regularPrice;
 
-  const isFree = salePrice === 0; // keep your FREE label logic
-  const showSlash = hasSale; // show slash whenever a sale price exists
+  const isFree = bundle.salePrice === 0; // keep your FREE label logic
+
 
   const totalCourses = bundle.courses?.length || 0;
   const showPartialOwnership =
@@ -121,13 +117,13 @@ export function BundleCard({
             <div className="flex flex-col items-end gap-2 ml-4">
               <div className="text-right">
                 <div className="flex items-baseline gap-2">
-                  {showSlash && (
+                  {bundle.regularPrice && (
                     <span className="line-through text-muted-foreground">
-                      {formatCurrency(regularPrice)}
+                      {formatCurrency(bundle.regularPrice)}
                     </span>
                   )}
                   <span className="text-lg font-bold text-foreground">
-                    {isFree ? "FREE" : formatCurrency(salePrice)}
+                    {isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)}
                   </span>
                 </div>
               </div>
@@ -150,7 +146,7 @@ export function BundleCard({
                   ? "All Courses Owned"
                   : isEnrolled
                     ? "Access Bundle"
-                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)
+                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)
                     }`}
               </Button>
             </div>
@@ -234,13 +230,13 @@ export function BundleCard({
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline gap-2">
-              {showSlash && (
+              {bundle.regularPrice && (
                 <span className="line-through text-muted-foreground">
-                  {formatCurrency(regularPrice)}
+                  {formatCurrency(bundle.regularPrice)}
                 </span>
               )}
               <span className="text-2xl font-bold text-foreground">
-                {isFree ? "FREE" : formatCurrency(salePrice)}
+                {isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)}
               </span>
             </div>
           </div>
@@ -289,7 +285,7 @@ export function BundleCard({
                 ? "All Courses Owned"
                 : isEnrolled
                   ? "Access Bundle"
-                  : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
+                  : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)}`}
             </Button>
           </div>
         )}
