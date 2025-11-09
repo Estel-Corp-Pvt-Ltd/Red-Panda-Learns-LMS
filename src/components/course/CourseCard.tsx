@@ -148,8 +148,8 @@ const CourseCard = ({
         </h3>
 
         {!isCompact && course.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {course.description.replace(/<[^>]+>/g, '')}
+          <p className="text-sm text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
+            {/* {course.description.replace(/<[^>]+>/g, '')} */}
           </p>
         )}
 

@@ -165,10 +165,6 @@ async function handleOrderPaid(payload: RazorpayWebhookPayload) {
   }
 
   await orderService.updateOrderStatus(userOrder.data.orderId, ORDER_STATUS.COMPLETED);
-  // await transactionService.updateTransactionStatusByOrderId(
-  //   userOrder.data.orderId,
-  //   TRANSACTION_STATUS.COMPLETED
-  // );
   await enrollUserInPurchasedItems(userOrder.data.orderId);
 }
 
