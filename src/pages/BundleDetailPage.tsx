@@ -114,9 +114,9 @@ export default function BundleDetailPage() {
 
   const handleEnrollment = () => {
     if (isEnrolled) {
-      navigate(`/bundle/${bundleId}/dashboard`);
+      navigate(`/bundle/${bundle.id}/dashboard`);
     } else {
-      navigate(`/bundle/${bundleId}/checkout`);
+      navigate(`/bundle/${bundle.slug}/checkout`);
     }
   };
 
