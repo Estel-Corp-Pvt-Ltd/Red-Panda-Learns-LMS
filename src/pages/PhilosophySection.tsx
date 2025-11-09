@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Layers, Code2, Brain, LucideIcon } from "lucide-react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { useInView } from "./useInView";
 
 // Decryption config (shared by code + math)
 const DECRYPTION_CONFIG = {
@@ -69,7 +70,6 @@ const researchPapers: ResearchPaper[] = [
     year: 2025,
     link: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=qq8OirYAAAAJ&sortby=pubdate&citation_for_view=qq8OirYAAAAJ:ZeXyd9-uunAC",
   },
-  
 ];
 
 // Show at most 2 research papers (fits without scroll)
@@ -270,7 +270,6 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   useEffect(() => {
     if (!isComplete || !renderedRef.current) return;
     try {
-      // Render KaTeX but force mono font (to match code/research)
       katex.render(latex, renderedRef.current, {
         displayMode: false,
         throwOnError: false,
@@ -323,13 +322,13 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
       {lines.map((line, i) =>
         i < visibleLines ? (
           <DecryptedLine
-            key={i}
+            key={`${startTrigger}-${i}`}
             text={line || " "}
             fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
             onComplete={() => handleLineComplete(i)}
           />
         ) : (
-          <div key={i} className="h-[1.6em]" />
+          <div key={`${startTrigger}-spacer-${i}`} className="h-[1.6em]" />
         )
       )}
     </>
@@ -364,13 +363,13 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
       {lines.map((latex, i) =>
         i < visibleLines ? (
           <DecryptedMathLine
-            key={i}
+            key={`${startTrigger}-${i}`}
             latex={latex}
             fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
             onComplete={() => handleLineComplete(i)}
           />
         ) : (
-          <div key={i} className="h-[1.6em]" />
+          <div key={`${startTrigger}-spacer-${i}`} className="h-[1.6em]" />
         )
       )}
     </div>
@@ -378,6 +377,11 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
 };
 
 const PhilosophySection: React.FC = () => {
+  // Observe when this section is in view; retrigger every time
+  const { ref: sectionRef, inView } = useInView<HTMLElement>({
+    threshold: 0.25,
+  });
+
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [pulses, setPulses] = useState<Pulse[]>([]);
   const [decryptionTrigger, setDecryptionTrigger] = useState(0);
@@ -385,17 +389,31 @@ const PhilosophySection: React.FC = () => {
   const timeoutsRef = useRef<number[]>([]);
   const intervalsRef = useRef<number[]>([]);
 
-  useEffect(() => {
-    const start = window.setTimeout(() => {
-      setDecryptionTrigger(Date.now());
-    }, 500);
-    timeoutsRef.current.push(start);
+  const clearAllTimers = () => {
+    intervalsRef.current.forEach((id) => window.clearInterval(id));
+    timeoutsRef.current.forEach((id) => window.clearTimeout(id));
+    intervalsRef.current = [];
+    timeoutsRef.current = [];
+  };
 
+  // Re-trigger decrypt + start pulses every time the section enters view
+  useEffect(() => {
+    if (!inView) {
+      clearAllTimers();
+      return;
+    }
+
+    // Restart all decryption animations
+    const tick = Date.now();
+    setDecryptionTrigger(tick);
+
+    // Initial staggered pulses
     philosophyItems.forEach((_, index) => {
       const t = window.setTimeout(() => createPulse(index), index * 250);
       timeoutsRef.current.push(t);
     });
 
+    // Repeating pulses while in view
     const intervalId = window.setInterval(() => {
       philosophyItems.forEach((_, index) => {
         const t = window.setTimeout(() => createPulse(index), index * 250);
@@ -405,12 +423,10 @@ const PhilosophySection: React.FC = () => {
     intervalsRef.current.push(intervalId);
 
     return () => {
-      intervalsRef.current.forEach((id) => window.clearInterval(id));
-      timeoutsRef.current.forEach((id) => window.clearTimeout(id));
-      intervalsRef.current = [];
-      timeoutsRef.current = [];
+      clearAllTimers();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inView]);
 
   const createPulse = (cardIndex: number) => {
     const id = Date.now() + cardIndex + Math.floor(Math.random() * 1000);
@@ -423,15 +439,8 @@ const PhilosophySection: React.FC = () => {
   };
 
   const handleCardHover = (index: number, enter: boolean) => {
-    if (enter) {
-      setHoveredCard(index);
-      for (let i = 0; i < 3; i++) {
-        const t = window.setTimeout(() => createPulse(index), i * 120);
-        timeoutsRef.current.push(t);
-      }
-    } else {
-      setHoveredCard(null);
-    }
+    if (enter) setHoveredCard(index);
+    else setHoveredCard(null);
   };
 
   return (
@@ -448,9 +457,39 @@ const PhilosophySection: React.FC = () => {
         }
         .katex-display { margin: 0 !important; }
         .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Only the rotating ring behind the circle on hover */
+        @keyframes ring-rotate {
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .rotating-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(0deg);
+          width: calc(100% + 18px);
+          height: calc(100% + 18px);
+          border-radius: 9999px;
+          /* colored arc with transparent remainder */
+          background: conic-gradient(currentColor 0deg 80deg, transparent 80deg 360deg);
+          /* make it a thin ring */
+          -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+                  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+          animation: ring-rotate 1.6s linear infinite;
+          pointer-events: none;
+          z-index: 0;
+          filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        /* Existing pulse ring (auto pulses) */
+        @keyframes pulse-ring {
+          0%   { box-shadow: 0 0 0 0 rgba(0,0,0,0); opacity: 0.9; }
+          50%  { box-shadow: 0 0 24px 6px rgba(0,0,0,0.08); opacity: 0.5; }
+          100% { box-shadow: 0 0 64px 18px rgba(0,0,0,0); opacity: 0; }
+        }
       `}</style>
 
-      <section className="relative py-24 px-6 overflow-hidden">
+      <section ref={sectionRef} className="relative py-24 px-6 overflow-hidden">
         <div className="container relative mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-6xl font-semibold tracking-tight text-foreground mb-4">
@@ -486,6 +525,15 @@ const PhilosophySection: React.FC = () => {
                             transform: isHovered ? "scale(1.2)" : "scale(1)",
                           }}
                         >
+                          {/* Rotating ring behind the circle (hover only) */}
+                          {isHovered && (
+                            <span
+                              className="rotating-ring"
+                              style={{ color: item.color }}
+                            />
+                          )}
+
+                          {/* Icon */}
                           <Icon className="w-10 h-10 text-white relative z-10" />
                         </div>
                       </div>
@@ -494,7 +542,9 @@ const PhilosophySection: React.FC = () => {
                         className="text-2xl font-semibold mb-3"
                         style={{
                           color: isHovered ? item.color : "var(--foreground)",
-                          textShadow: isHovered ? `0 2px 8px ${item.color}40` : "none",
+                          textShadow: isHovered
+                            ? `0 2px 8px ${item.color}40`
+                            : "none",
                         }}
                       >
                         {item.title}
@@ -522,28 +572,35 @@ const PhilosophySection: React.FC = () => {
                         <div className="p-5 h-[calc(220px-40px)] text-left">
                           {index === 2 ? (
                             <div className="text-left h-full flex flex-col">
-                              <div className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}>
-                                {researchPapers.slice(0, MAX_PAPERS).map((p, i) => (
-                                  <a
-                                    key={p.link + i}
-                                    href={p.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
-                                  >
-                                    <DecryptedLine
-                                      text={p.title}
-                                      delay={i * 80}
-                                      fixedDuration={500}
-                                      bold
-                                    />
-                                    <div className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}>
-                                      {p.authors}
-                                      {p.venue ? ` — ${p.venue}` : ""}
-                                      {p.year ? ` ${p.year}` : ""}
-                                    </div>
-                                  </a>
-                                ))}
+                              <div
+                                className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}
+                              >
+                                {researchPapers
+                                  .slice(0, MAX_PAPERS)
+                                  .map((p, i) => (
+                                    <a
+                                      key={p.link + i}
+                                      href={p.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
+                                    >
+                                      <DecryptedLine
+                                        key={`research-${decryptionTrigger}-${i}`}
+                                        text={p.title}
+                                        delay={i * 80}
+                                        fixedDuration={500}
+                                        bold
+                                      />
+                                      <div
+                                        className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}
+                                      >
+                                        {p.authors}
+                                        {p.venue ? ` — ${p.venue}` : ""}
+                                        {p.year ? ` ${p.year}` : ""}
+                                      </div>
+                                    </a>
+                                  ))}
                               </div>
 
                               <a
@@ -559,14 +616,18 @@ const PhilosophySection: React.FC = () => {
                           ) : index === 0 ? (
                             <div className={CONTENT_FONT_CLASS}>
                               <DecryptedMathLineByLine
+                                key={`math-${decryptionTrigger}`}
                                 lines={foundationLatexLines}
                                 startTrigger={decryptionTrigger}
                               />
                             </div>
                           ) : (
-                            <pre className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}>
+                            <pre
+                              className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}
+                            >
                               <code>
                                 <DecryptedCodeLineByLine
+                                  key={`code-${decryptionTrigger}`}
                                   text={attentionSnippet}
                                   startTrigger={decryptionTrigger}
                                 />
@@ -575,6 +636,22 @@ const PhilosophySection: React.FC = () => {
                           )}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Periodic pulses (unchanged; optional visual depth) */}
+                    <div className="pointer-events-none absolute inset-0">
+                      {pulses
+                        .filter((p) => p.cardIndex === index)
+                        .map((p) => (
+                          <span
+                            key={p.id}
+                            className="absolute inset-0 rounded-2xl"
+                            style={{
+                              boxShadow: `0 0 0 0 ${item.color}44`,
+                              animation: "pulse-ring 1.5s ease-out forwards",
+                            }}
+                          />
+                        ))}
                     </div>
                   </div>
                 </div>
