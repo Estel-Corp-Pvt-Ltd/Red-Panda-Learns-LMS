@@ -22,7 +22,7 @@ import {
 import { COLLECTION, COURSE_STATUS, PRICING_MODEL } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Course } from "@/types/course";
-import { ok, Result } from "@/utils/response";
+import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 
 class CourseService {

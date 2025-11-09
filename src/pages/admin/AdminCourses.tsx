@@ -5,7 +5,19 @@ import { Course } from '@/types/course';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Loader2, PlusCircle, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  BookOpen,
+  Loader2,
+  PlusCircle,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+  Filter
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { COURSE_STATUS, CURRENCY } from '@/constants';
 
@@ -22,6 +34,8 @@ interface PaginatedCourses {
   totalCount: number;
 }
 
+type COURSE_STATUS = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
+
 const AdminCourses = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<PaginatedCourses>({
@@ -33,31 +47,174 @@ const AdminCourses = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [statusFilter, setStatusFilter] = useState<COURSE_STATUS | 'ALL'>('ALL');
+  const [searchField, setSearchField] = useState<'title' | 'description' | 'both'>('both');
+  const [allCourses, setAllCourses] = useState<Course[]>([]); // For client-side search
+  const [useClientSearch, setUseClientSearch] = useState(false);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
     currentPage: 1
   });
 
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Load all courses for client-side search
+  useEffect(() => {
+    if (useClientSearch) {
+      loadAllCourses();
+    }
+  }, [useClientSearch]);
+
+  // Load courses when filters or pagination change
+  useEffect(() => {
+    if (useClientSearch && searchQuery) {
+      // Use client-side search
+      performClientSearch();
+    } else {
+      // Use server-side search
+      loadCourses();
+    }
+  }, [searchQuery, statusFilter, paginationState.cursor, paginationState.pageDirection, useClientSearch]);
+
+  const loadAllCourses = async () => {
+    try {
+      const result = await courseService.getAllCourses();
+      setAllCourses(result);
+    } catch (error) {
+      console.error('Error loading all courses:', error);
+    }
+  };
+
+  const performClientSearch = () => {
+    setIsLoading(true);
+
+    try {
+      let filteredCourses = allCourses;
+
+      // Apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filteredCourses = filteredCourses.filter(course => {
+          const titleMatch = course.title?.toLowerCase().includes(query);
+          const descriptionMatch = course.description?.toLowerCase().includes(query);
+
+          if (searchField === 'title') return titleMatch;
+          if (searchField === 'description') return descriptionMatch;
+          return titleMatch || descriptionMatch;
+        });
+      }
+
+      // Apply status filter
+      if (statusFilter !== 'ALL') {
+        filteredCourses = filteredCourses.filter(course => course.status === statusFilter);
+      }
+
+      // Apply pagination
+      const startIndex = (paginationState.currentPage - 1) * 10;
+      const paginatedCourses = filteredCourses.slice(startIndex, startIndex + 10);
+
+      setCourses({
+        data: paginatedCourses,
+        hasNextPage: startIndex + 10 < filteredCourses.length,
+        hasPreviousPage: paginationState.currentPage > 1,
+        totalCount: filteredCourses.length
+      });
+    } catch (error) {
+      console.error('Error performing client search:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while searching courses',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loadCourses = async (options = {}) => {
     setIsLoading(true);
     try {
-      const result = await courseService.getCourses([], {
-        limit: 5,
+      // Build filters array for server-side search
+      const filters = [];
+
+      // Add search filter if query exists (server-side approach)
+      if (searchQuery.trim() && !useClientSearch) {
+        // For server-side, we'll use title search as Firestore doesn't support case-insensitive well
+        filters.push({
+          field: 'title',
+          op: '>=',
+          value: searchQuery.toLowerCase()
+        }, {
+          field: 'title',
+          op: '<=',
+          value: searchQuery.toLowerCase() + '\uf8ff'
+        });
+      }
+
+      // Add status filter if not 'ALL'
+      if (statusFilter !== 'ALL') {
+        filters.push({
+          field: 'status',
+          op: '==',
+          value: statusFilter
+        });
+      }
+
+      const result = await courseService.getCourses(filters, {
+        limit: 10,
         orderBy: { field: 'createdAt', direction: 'desc' },
+        cursor: paginationState.cursor,
+        pageDirection: paginationState.pageDirection,
         ...options
       });
 
       if (result.success) {
-        setCourses(prev => ({
+        // If we have a search query, perform case-insensitive filtering on client side
+        let finalCourses = result.data.data;
+
+        if (searchQuery.trim() && !useClientSearch) {
+          const query = searchQuery.toLowerCase();
+          finalCourses = finalCourses.filter(course => {
+            const titleMatch = course.title?.toLowerCase().includes(query);
+            const descriptionMatch = course.description?.toLowerCase().includes(query);
+
+            if (searchField === 'title') return titleMatch;
+            if (searchField === 'description') return descriptionMatch;
+            return titleMatch || descriptionMatch;
+          });
+        }
+
+        setCourses({
           ...result.data,
-          totalCount: result.data.data.length // You might want to get actual total count from your API
-        }));
+          data: finalCourses,
+          totalCount: finalCourses.length
+        });
       } else {
         console.error('Failed to load courses:', result.error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load courses',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       console.error('Error loading courses:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while loading courses',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -66,35 +223,70 @@ const AdminCourses = () => {
   const handleNextPage = async () => {
     if (!courses.hasNextPage) return;
 
-    setPaginationState(prev => ({
-      cursor: courses.nextCursor,
-      pageDirection: 'next',
-      currentPage: prev.currentPage + 1
-    }));
-
-    await loadCourses({
-      cursor: courses.nextCursor,
-      pageDirection: 'next'
-    });
+    if (useClientSearch && searchQuery) {
+      setPaginationState(prev => ({
+        ...prev,
+        currentPage: prev.currentPage + 1
+      }));
+    } else {
+      setPaginationState(prev => ({
+        cursor: courses.nextCursor,
+        pageDirection: 'next',
+        currentPage: prev.currentPage + 1
+      }));
+    }
   };
 
   const handlePreviousPage = async () => {
     if (!courses.hasPreviousPage) return;
 
-    setPaginationState(prev => ({
-      cursor: courses.previousCursor,
-      pageDirection: 'previous',
-      currentPage: prev.currentPage - 1
-    }));
+    if (useClientSearch && searchQuery) {
+      setPaginationState(prev => ({
+        ...prev,
+        currentPage: prev.currentPage - 1
+      }));
+    } else {
+      setPaginationState(prev => ({
+        cursor: courses.previousCursor,
+        pageDirection: 'previous',
+        currentPage: prev.currentPage - 1
+      }));
+    }
+  };
 
-    await loadCourses({
-      cursor: courses.previousCursor,
-      pageDirection: 'previous'
-    });
+  const handleSearch = (value: string) => {
+    setSearchInput(value);
+
+    // Switch to client-side search for better case-insensitive support
+    if (value.trim().length > 0 && !useClientSearch) {
+      setUseClientSearch(true);
+    } else if (value.trim().length === 0 && useClientSearch) {
+      setUseClientSearch(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setUseClientSearch(false);
+  };
+
+  const handleStatusFilter = (status: COURSE_STATUS | 'ALL') => {
+    setStatusFilter(status);
+    setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+  };
+
+  const handleSearchFieldChange = (field: 'title' | 'description' | 'both') => {
+    setSearchField(field);
+    // Trigger new search when field changes
+    if (searchQuery) {
+      setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+    }
   };
 
   const deleteCourse = async () => {
     if (!selectedCourse) return;
+
     const result = await courseService.deleteCourse(selectedCourse.id);
     if (!result.success) {
       toast({
@@ -104,11 +296,21 @@ const AdminCourses = () => {
       });
       return;
     }
+
     toast({
       title: 'Success',
       description: 'Course deleted successfully',
     });
-    await loadCourses();
+
+    // Reload courses to reflect deletion
+    if (useClientSearch) {
+      loadAllCourses();
+      performClientSearch();
+    } else {
+      await loadCourses();
+    }
+    setConfirmOpen(false);
+    setSelectedCourse(null);
   };
 
   const formatCurrency = (amount: number) => {
@@ -118,26 +320,37 @@ const AdminCourses = () => {
     }).format(amount);
   };
 
-  useEffect(() => {
-    loadCourses();
-  }, []);
+  const getStatusBadgeVariant = (status: COURSE_STATUS) => {
+    switch (status) {
+      case COURSE_STATUS.PUBLISHED:
+        return "default";
+      case COURSE_STATUS.DRAFT:
+        return "secondary";
+      case COURSE_STATUS.ARCHIVED:
+        return "outline";
+      default:
+        return "outline";
+    }
+  };
 
-  if (isLoading) {
+  if (isLoading && courses.data.length === 0) {
     return (
-      <div className="container mx-auto py-6">
-        <Card>
-          <CardContent className="flex justify-center items-center py-8">
-            <div className="text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-              <p className="mt-2">Loading courses...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AdminLayout>
+        <div className="container mx-auto py-6">
+          <Card>
+            <CardContent className="flex justify-center items-center py-8">
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                <p className="mt-2">Loading courses...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AdminLayout>
     );
   }
 
-    return (
+  return (
     <AdminLayout>
       <Card>
         <CardHeader>
@@ -159,29 +372,105 @@ const AdminCourses = () => {
               Create Course
             </Button>
           </div>
+
+          {/* Enhanced Search and Filter Controls */}
+          <div className="flex flex-col gap-4 mt-4">
+            {/* Search Row */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search courses by title or description..."
+                  value={searchInput}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchInput && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSearch}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Search Field Selector */}
+              {searchInput && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Search in:</span>
+                  <select
+                    value={searchField}
+                    onChange={(e) => handleSearchFieldChange(e.target.value as 'title' | 'description' | 'both')}
+                    className="border border-input rounded-md px-3 py-2 text-sm bg-background hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <option value="both">Title & Description</option>
+                    <option value="title">Title Only</option>
+                    <option value="description">Description Only</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => handleStatusFilter(e.target.value as COURSE_STATUS | 'ALL')}
+                  className="border border-input rounded-md px-3 py-2 text-sm bg-background hover:bg-accent hover:text-accent-foreground"
+                >
+                  <option value="ALL">All Status</option>
+                  <option value={COURSE_STATUS.DRAFT}>Draft</option>
+                  <option value={COURSE_STATUS.PUBLISHED}>Published</option>
+                  <option value={COURSE_STATUS.ARCHIVED}>Archived</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </CardHeader>
+
         <CardContent>
           {courses.data.length === 0 ? (
             <div className="text-center py-8">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                No courses
+                {searchQuery || statusFilter !== 'ALL' ? 'No courses found' : 'No courses'}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Get started by creating your first course.
+                {searchQuery || statusFilter !== 'ALL'
+                  ? 'Try adjusting your search or filters.'
+                  : 'Get started by creating your first course.'
+                }
               </p>
-              {/* Optional: show the same CTA here */}
-              <div className="mt-4">
+              {(searchQuery || statusFilter !== 'ALL') && (
                 <Button
-                  variant="pill"
-                  size="sm"
-                  onClick={() => navigate("/admin/create-course")}
-                  className="inline-flex items-center gap-2"
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    setSearchInput('');
+                    setStatusFilter('ALL');
+                    setUseClientSearch(false);
+                  }}
                 >
-                  <PlusCircle className="h-4 w-4" />
-                  Create Course
+                  Clear all filters
                 </Button>
-              </div>
+              )}
+              {!searchQuery && statusFilter === 'ALL' && (
+                <div className="mt-4">
+                  <Button
+                    variant="pill"
+                    size="sm"
+                    onClick={() => navigate("/admin/create-course")}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Create Course
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -191,6 +480,7 @@ const AdminCourses = () => {
                     <TableHead>Course</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Price</TableHead>
+                    <TableHead>Last Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -208,20 +498,17 @@ const AdminCourses = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            course.status === COURSE_STATUS.PUBLISHED
-                              ? "default"
-                              : course.status === COURSE_STATUS.DRAFT
-                                ? "secondary"
-                                : "outline"
-                          }
-                        >
+                        <Badge variant={getStatusBadgeVariant(course.status)}>
                           {course.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {formatCurrency(course.regularPrice)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {course.updatedAt?.toString?.() || 'N/A'}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -254,7 +541,7 @@ const AdminCourses = () => {
               {/* Pagination Controls */}
               <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  Showing {courses.data.length} courses
+                  Showing {courses.data.length} of {courses.totalCount} courses
                   {courses.totalCount > courses.data.length &&
                     ` (page ${paginationState.currentPage})`
                   }
@@ -284,15 +571,16 @@ const AdminCourses = () => {
           )}
         </CardContent>
       </Card>
+
       <ConfirmDialog
         open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          deleteCourse();
+        onCancel={() => {
           setConfirmOpen(false);
+          setSelectedCourse(null);
         }}
-        title="Delete"
-        body="This action cannot be undone."
+        onConfirm={deleteCourse}
+        title="Delete Course"
+        body={`Are you sure you want to delete "${selectedCourse?.title}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"

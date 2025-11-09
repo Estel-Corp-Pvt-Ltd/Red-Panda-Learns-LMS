@@ -121,6 +121,36 @@ class UserService {
     }
 
     /**
+     * Retrieves user by email
+     */
+    async getUserByEmail(email: string): Promise<Result<User | null>> {
+        try {
+            const usersRef = collection(db, COLLECTION.USERS);
+            const q = query(usersRef, where("email", "==", email));
+            // Execute query
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                return ok(null);
+            }
+
+            const userDoc = querySnapshot.docs[0];
+            const data = userDoc.data();
+
+            const user: User = {
+                ...data,
+                createdAt: data.createdAt?.toDate(),
+                updatedAt: data.updatedAt?.toDate(),
+            } as User;
+
+            return ok(user);
+        } catch (error) {
+            logError("UserService.getUserByEmail", error);
+            return fail("Failed to fetch user by email");
+        }
+    }
+
+    /**
      * Retrieves a single user by ID.
      */
     async getUserById(uid: string): Promise<Result<User | null>> {
