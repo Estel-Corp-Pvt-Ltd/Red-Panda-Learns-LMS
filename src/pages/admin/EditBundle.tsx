@@ -81,7 +81,7 @@ import { title } from "process";
 type EditBundleFormData = {
   title: string;
   description: string;
-  url:string;
+  slug: string;
   regularPrice: string;
   salePrice: string;
   thumbnail: string;
@@ -133,9 +133,9 @@ export default function EditBundlePage() {
   >([]);
   const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
 
-   const [checkingUrl, setCheckingUrl] = useState(false);
-     const [urlTaken, setUrlTaken] = useState(false);
-  const [bundleId,setBundleId] = useState("")
+  const [checkingSlug, setCheckingSlug] = useState(false);
+  const [slugTaken, setSlugTaken] = useState(false);
+  const [bundleId, setBundleId] = useState("")
 
   // Fetch bundle data
   const {
@@ -144,7 +144,7 @@ export default function EditBundlePage() {
     error: bundleError,
   } = useBundleQuery(param!);
 
-console.log("this is bundle data",bundleData)
+  console.log("this is bundle data", bundleData)
   useEffect(() => {
     if (!param || bundleLoading || !bundleData) return;
     setBundleId(bundleData.id);
@@ -155,7 +155,7 @@ console.log("this is bundle data",bundleData)
   const [formData, setFormData] = useState<EditBundleFormData>({
     title: "",
     description: "",
-    url:"",
+    slug: "",
     regularPrice: "",
     salePrice: "",
     thumbnail: "",
@@ -169,24 +169,24 @@ console.log("this is bundle data",bundleData)
   const { data: pricingData, isLoading: pricingLoading } =
     useBundlePricingQuery(selectedCourseIds);
 
-useEffect(() => {
-  // Wait until query actually finishes loading
-  if (bundleLoading) return;
+  useEffect(() => {
+    // Wait until query actually finishes loading
+    if (bundleLoading) return;
 
-  // If query errored out, or returned null, redirect
-  if (!bundleData) {
-    toast({
-      title: "Error",
-      description: "Bundle not found.",
-      variant: "destructive",
-    });
-    navigate("/admin");
-    return;
-  }
+    // If query errored out, or returned null, redirect
+    if (!bundleData) {
+      toast({
+        title: "Error",
+        description: "Bundle not found.",
+        variant: "destructive",
+      });
+      navigate("/admin/bundles");
+      return;
+    }
 
-  // If bundle exists, update ID
-  setBundleId(bundleData.id);
-}, [bundleData, bundleLoading, navigate, toast]);
+    // If bundle exists, update ID
+    setBundleId(bundleData.id);
+  }, [bundleData, bundleLoading, navigate, toast]);
 
 
 
@@ -198,7 +198,7 @@ useEffect(() => {
         description: "Failed to load bundle data. Please try again.",
         variant: "destructive",
       });
-      navigate("/admin");
+      navigate("/admin/bundles");
     }
   }, [bundleError, navigate, toast]);
 
@@ -507,7 +507,7 @@ useEffect(() => {
       setFormData({
         title: bundleData.title || "",
         description: bundleData.description || "",
-        url:bundleData.url || "",
+        slug: bundleData.slug || "",
         regularPrice: bundleData.regularPrice
           ? bundleData.regularPrice.toString()
           : "",
@@ -718,7 +718,7 @@ useEffect(() => {
           updatedData: {
             title: formData.title,
             description: formData.description,
-            url:formData.url,
+            slug: formData.slug,
             courses: courses
               .filter((course) => selectedCourseIds.includes(course.id!))
               .map((course) => ({ id: course.id, title: course.title })),
@@ -729,7 +729,7 @@ useEffect(() => {
             instructorId,
             instructorName,
             targetAudienceIds: selectedTargetAudiences,
-        categoryIds: selectedCategories,
+            categoryIds: selectedCategories,
             tags,
             status: formData.status,
           },
@@ -740,7 +740,7 @@ useEffect(() => {
               title: "Success",
               description: "Bundle updated successfully!",
             });
-            navigate("/admin");
+            navigate("/admin/bundles");
           },
           onError: (error) => {
             console.error("Error updating bundle:", error);
@@ -768,41 +768,41 @@ useEffect(() => {
   };
 
   const handlePublishBundle = async () => {
-     if (!bundleData.title.trim()) {
-       toast({
-         title: "Error",
-         description: "Please enter a bundle title.",
-         variant: "destructive",
-       });
-       return;
-     }
+    if (!bundleData.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a bundle title.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-     if (selectedCourseIds.length < 2) {
-       toast({
-         title: "Error",
-         description: "Please select at least 2 courses for the bundle.",
-         variant: "destructive",
-       });
-       return;
-     }
+    if (selectedCourseIds.length < 2) {
+      toast({
+        title: "Error",
+        description: "Please select at least 2 courses for the bundle.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-     if (!bundleData.description.trim()) {
-       toast({
-         title: "Error",
-         description: "Please enter a bundle description.",
-         variant: "destructive",
-       });
-       return;
-     }
+    if (!bundleData.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a bundle description.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-     if (urlTaken) {
-       toast({
-         title: "Error",
-         description: "Please enter a  unique bundle URL.",
-         variant: "destructive",
-       });
-       return;
-     }
+    if (slugTaken) {
+      toast({
+        title: "Error",
+        description: "Please enter a unique bundle slug.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -817,7 +817,7 @@ useEffect(() => {
           updatedData: {
             title: formData.title,
             description: formData.description,
-            url:formData.url,
+            slug: formData.slug,
             courses: courses
               .filter((course) => selectedCourseIds.includes(course.id!))
               .map((course) => ({ id: course.id, title: course.title })),
@@ -838,7 +838,7 @@ useEffect(() => {
               title: "Success",
               description: "Bundle updated successfully!",
             });
-            navigate("/admin");
+            navigate("/admin/bundles");
           },
           onError: (error) => {
             console.error("Error updating bundle:", error);
@@ -864,22 +864,22 @@ useEffect(() => {
       setLoading(false);
     }
   };
-useEffect(() => {
-  const u = formData.url?.trim();
-  if (!u) {
-    setUrlTaken(false);
-    return;
-  }
+  useEffect(() => {
+    const s = formData.slug?.trim();
+    if (!s) {
+      setSlugTaken(false);
+      return;
+    }
 
-  const timer = setTimeout(async () => {
-    setCheckingUrl(true);
-    const taken = await bundleService.isBundleUrlTaken(u, bundleData?.id);
-    setUrlTaken(taken);
-    setCheckingUrl(false);
-  }, 500);
+    const timer = setTimeout(async () => {
+      setCheckingSlug(true);
+      const taken = await bundleService.isBundleSlugTaken(s, bundleData?.id);
+      setSlugTaken(taken);
+      setCheckingSlug(false);
+    }, 500);
 
-  return () => clearTimeout(timer);
-}, [formData.url, bundleData?.id]);
+    return () => clearTimeout(timer);
+  }, [formData.slug, bundleData?.id]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -971,23 +971,22 @@ useEffect(() => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bundle-url">Custom URL</Label>
+                  <Label htmlFor="bundle-url">Custom Slug</Label>
 
                   <div className="flex items-start gap-2">
-                    <Textarea
+                    <Input
                       id="bundle-url"
-                      placeholder="Write Custom URL"
-                      rows={2}
-                      value={formData.url ?? ""}
+                      placeholder="Write Custom Slug"
+                      value={formData.slug ?? ""}
                       onChange={(e) => {
-                        const newUrl = e.target.value
+                        const newSlug = e.target.value
                           .toLowerCase()
                           .trim()
                           .replace(/[^\w\s-]/g, "")
                           .replace(/\s+/g, "-");
                         setFormData((prev) => ({
                           ...prev,
-                          url: newUrl,
+                          slug: newSlug,
                         }));
                       }}
                     />
@@ -997,14 +996,14 @@ useEffect(() => {
                       variant="outline"
                       onClick={() => {
                         if (!formData.title?.trim()) return;
-                        const generatedUrl = formData.title
+                        const generatedSlug = formData.title
                           .toLowerCase()
                           .trim()
                           .replace(/[^\w\s-]/g, "")
                           .replace(/\s+/g, "-");
                         setFormData((prev) => ({
                           ...prev,
-                          url: generatedUrl,
+                          slug: generatedSlug,
                         }));
                       }}
                     >
@@ -1012,21 +1011,21 @@ useEffect(() => {
                     </Button>
                   </div>
 
-                  {checkingUrl && (
+                  {checkingSlug && (
                     <p className="text-xs text-muted-foreground">
                       Checking availability...
                     </p>
                   )}
 
-                  {!checkingUrl && urlTaken && (
+                  {!checkingSlug && slugTaken && (
                     <p className="text-xs text-red-500">
-                      This URL is already in use.
+                      This slug is already in use.
                     </p>
                   )}
 
-                  {!checkingUrl && !urlTaken && formData.url && (
+                  {!checkingSlug && !slugTaken && formData.slug && (
                     <p className="text-xs text-green-500">
-                      This URL is available.
+                      This slug is available.
                     </p>
                   )}
                 </div>
@@ -1582,19 +1581,18 @@ useEffect(() => {
                                           setSelectedInstructorIds((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (id) => id !== opt.name
-                                                )
+                                                (id) => id !== opt.name
+                                              )
                                               : [...prev, opt.name]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1619,7 +1617,7 @@ useEffect(() => {
                                 disabled={
                                   instructors.length === 0 ||
                                   selectedInstructorIds.length ===
-                                    instructors.length
+                                  instructors.length
                                 }
                               >
                                 Select all
@@ -1670,19 +1668,18 @@ useEffect(() => {
                                           setSelectedCategoryIds((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (id) => id !== opt.label
-                                                )
+                                                (id) => id !== opt.label
+                                              )
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1707,7 +1704,7 @@ useEffect(() => {
                                 disabled={
                                   categoryOptions.length === 0 ||
                                   selectedCategoryIds.length ===
-                                    categoryOptions.length
+                                  categoryOptions.length
                                 }
                               >
                                 Select all
@@ -1758,19 +1755,18 @@ useEffect(() => {
                                           setSelectedCourseTags((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (t) => t !== opt.label
-                                                )
+                                                (t) => t !== opt.label
+                                              )
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1795,7 +1791,7 @@ useEffect(() => {
                                 disabled={
                                   tagOptions.length === 0 ||
                                   selectedCourseTags.length ===
-                                    tagOptions.length
+                                  tagOptions.length
                                 }
                               >
                                 Select all
@@ -1848,19 +1844,18 @@ useEffect(() => {
                                           setSelectedTargetAudienceIds((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (id) => id !== opt.label
-                                                )
+                                                (id) => id !== opt.label
+                                              )
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1885,7 +1880,7 @@ useEffect(() => {
                                 disabled={
                                   targetAudienceOptions.length === 0 ||
                                   selectedTargetAudienceIds.length ===
-                                    targetAudienceOptions.length
+                                  targetAudienceOptions.length
                                 }
                               >
                                 Select all
@@ -1910,25 +1905,119 @@ useEffect(() => {
                         selectedCategoryIds.length ||
                         selectedCourseTags.length ||
                         selectedTargetAudienceIds.length) > 0 && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            Active filters:
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              Active filters:
+                            </span>
 
-                          {selectedInstructorIds.map((id) => {
-                            const name =
-                              instructors.find((o) => o.id === id)?.name || id;
-                            return (
+                            {selectedInstructorIds.map((id) => {
+                              const name =
+                                instructors.find((o) => o.id === id)?.name || id;
+                              return (
+                                <Badge
+                                  key={`if-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {name}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedInstructorIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+
+                            {selectedInstructorIds.map((id) => {
+                              const name =
+                                instructors.find((o) => o.id === id)?.name ?? id;
+                              return (
+                                <Badge
+                                  key={`if-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {name}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedInstructorIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+
+                            {selectedCategoryIds.map((id) => {
+                              const label =
+                                categoryOptions.find((o) => o.id === id)?.label ??
+                                id;
+                              return (
+                                <Badge
+                                  key={`cf-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {label}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedCategoryIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+
+                            {selectedTargetAudienceIds.map((id) => {
+                              const label =
+                                targetAudienceOptions.find((o) => o.id === id)
+                                  ?.label ?? id;
+                              return (
+                                <Badge
+                                  key={`af-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {label}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedTargetAudienceIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+                            {selectedCourseTags.map((t) => (
                               <Badge
-                                key={`if-${id}`}
+                                key={`tf-${t}`}
                                 variant="secondary"
                                 className="flex items-center gap-1"
                               >
-                                {name}
+                                {t}
                                 <button
                                   onClick={() =>
-                                    setSelectedInstructorIds((prev) =>
-                                      prev.filter((x) => x !== id)
+                                    setSelectedCourseTags((prev) =>
+                                      prev.filter((x) => x !== t)
                                     )
                                   }
                                   className="ml-1 text-muted-foreground hover:text-foreground"
@@ -1936,103 +2025,9 @@ useEffect(() => {
                                   <X className="h-3 w-3" />
                                 </button>
                               </Badge>
-                            );
-                          })}
-
-                          {selectedInstructorIds.map((id) => {
-                            const name =
-                              instructors.find((o) => o.id === id)?.name ?? id;
-                            return (
-                              <Badge
-                                key={`if-${id}`}
-                                variant="secondary"
-                                className="flex items-center gap-1"
-                              >
-                                {name}
-                                <button
-                                  onClick={() =>
-                                    setSelectedInstructorIds((prev) =>
-                                      prev.filter((x) => x !== id)
-                                    )
-                                  }
-                                  className="ml-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            );
-                          })}
-
-                          {selectedCategoryIds.map((id) => {
-                            const label =
-                              categoryOptions.find((o) => o.id === id)?.label ??
-                              id;
-                            return (
-                              <Badge
-                                key={`cf-${id}`}
-                                variant="secondary"
-                                className="flex items-center gap-1"
-                              >
-                                {label}
-                                <button
-                                  onClick={() =>
-                                    setSelectedCategoryIds((prev) =>
-                                      prev.filter((x) => x !== id)
-                                    )
-                                  }
-                                  className="ml-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            );
-                          })}
-
-                          {selectedTargetAudienceIds.map((id) => {
-                            const label =
-                              targetAudienceOptions.find((o) => o.id === id)
-                                ?.label ?? id;
-                            return (
-                              <Badge
-                                key={`af-${id}`}
-                                variant="secondary"
-                                className="flex items-center gap-1"
-                              >
-                                {label}
-                                <button
-                                  onClick={() =>
-                                    setSelectedTargetAudienceIds((prev) =>
-                                      prev.filter((x) => x !== id)
-                                    )
-                                  }
-                                  className="ml-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            );
-                          })}
-                          {selectedCourseTags.map((t) => (
-                            <Badge
-                              key={`tf-${t}`}
-                              variant="secondary"
-                              className="flex items-center gap-1"
-                            >
-                              {t}
-                              <button
-                                onClick={() =>
-                                  setSelectedCourseTags((prev) =>
-                                    prev.filter((x) => x !== t)
-                                  )
-                                }
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
 
                       {/* Row 4: Toggles + Bulk Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2210,7 +2205,7 @@ useEffect(() => {
                         <span>
                           {formatCurrency(
                             pricingData.regularPrice -
-                              pricingData.suggestedPrice
+                            pricingData.suggestedPrice
                           )}
                         </span>
                       </div>

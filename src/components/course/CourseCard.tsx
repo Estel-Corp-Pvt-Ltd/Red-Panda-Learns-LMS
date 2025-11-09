@@ -172,7 +172,7 @@ const CourseCard = ({
               </span>
             </div>
           </div>
-          {user.role === USER_ROLE.ADMIN ? (
+          {user?.role === USER_ROLE.ADMIN ? (
             <div className="flex justify-between">
               <Link to={courseUrl}><Button>View Course</Button></Link>
               <Link to={`/admin/edit-course/${course.id}`}><Button>Edit Course</Button></Link>
