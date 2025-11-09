@@ -69,7 +69,6 @@ const researchPapers: ResearchPaper[] = [
     year: 2025,
     link: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=qq8OirYAAAAJ&sortby=pubdate&citation_for_view=qq8OirYAAAAJ:ZeXyd9-uunAC",
   },
-  
 ];
 
 // Show at most 2 research papers (fits without scroll)
@@ -494,7 +493,9 @@ const PhilosophySection: React.FC = () => {
                         className="text-2xl font-semibold mb-3"
                         style={{
                           color: isHovered ? item.color : "var(--foreground)",
-                          textShadow: isHovered ? `0 2px 8px ${item.color}40` : "none",
+                          textShadow: isHovered
+                            ? `0 2px 8px ${item.color}40`
+                            : "none",
                         }}
                       >
                         {item.title}
@@ -522,38 +523,44 @@ const PhilosophySection: React.FC = () => {
                         <div className="p-5 h-[calc(220px-40px)] text-left">
                           {index === 2 ? (
                             <div className="text-left h-full flex flex-col">
-                              <div className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}>
-                                {researchPapers.slice(0, MAX_PAPERS).map((p, i) => (
-                                  <a
-                                    key={p.link + i}
-                                    href={p.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
-                                  >
-                                    <DecryptedLine
-                                      text={p.title}
-                                      delay={i * 80}
-                                      fixedDuration={500}
-                                      bold
-                                    />
-                                    <div className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}>
-                                      {p.authors}
-                                      {p.venue ? ` — ${p.venue}` : ""}
-                                      {p.year ? ` ${p.year}` : ""}
-                                    </div>
-                                  </a>
-                                ))}
+                              <div
+                                className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}
+                              >
+                                {researchPapers
+                                  .slice(0, MAX_PAPERS)
+                                  .map((p, i) => (
+                                    <a
+                                      key={p.link + i}
+                                      href={p.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
+                                    >
+                                      <DecryptedLine
+                                        text={p.title}
+                                        delay={i * 80}
+                                        fixedDuration={500}
+                                        bold
+                                      />
+                                      <div
+                                        className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}
+                                      >
+                                        {p.authors}
+                                        {p.venue ? ` — ${p.venue}` : ""}
+                                        {p.year ? ` ${p.year}` : ""}
+                                      </div>
+                                    </a>
+                                  ))}
                               </div>
 
                               <a
-                                href="https://scholar.google.com/citations?hl=en&user=qq8OirYAAAAJ&view_op=list_works&sortby=pubdate"
+                                href="https://research.vizuara.ai/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 mt-2 text-xs underline underline-offset-4 decoration-dotted self-start"
                                 style={{ color: item.color }}
                               >
-                                View all on Google Scholar ↗
+                                Research Hub ↗
                               </a>
                             </div>
                           ) : index === 0 ? (
@@ -564,7 +571,9 @@ const PhilosophySection: React.FC = () => {
                               />
                             </div>
                           ) : (
-                            <pre className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}>
+                            <pre
+                              className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}
+                            >
                               <code>
                                 <DecryptedCodeLineByLine
                                   text={attentionSnippet}
