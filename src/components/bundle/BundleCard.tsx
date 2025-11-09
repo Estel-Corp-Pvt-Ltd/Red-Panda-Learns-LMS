@@ -92,8 +92,8 @@ export function BundleCard({
               <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
                 {bundle.title}
               </h3>
-              <p className="text-sm text-muted-foreground mb-2 line-clamp-2" dangerouslySetInnerHTML={{ __html: bundle.description }}>
-                {/* {bundle.description} */}
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2" >
+                {bundle.description}
               </p>
 
               {/* <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
@@ -196,11 +196,11 @@ export function BundleCard({
       </CardHeader>
 
       <CardContent className="p-6">
-        <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-2">
+        <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-1">
           {bundle.title}
         </h3>
 
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
+        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
           {bundle.description}
         </p>
 
