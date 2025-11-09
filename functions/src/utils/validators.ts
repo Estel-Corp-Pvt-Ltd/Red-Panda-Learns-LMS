@@ -56,3 +56,10 @@ export const PaymentRequestSchema = z.object({
 });
 
 export type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
+
+export const EnrollStudentSchema = z.object({
+  userEmail: z.string().email('Invalid email format'),
+  courseIds: z.array(z.string().min(1, 'Course ID cannot be empty'))
+    .min(1, 'At least one course ID is required')
+    .max(50, 'Cannot enroll in more than 50 courses at once'),
+});
