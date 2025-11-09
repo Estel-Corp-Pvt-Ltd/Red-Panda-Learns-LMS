@@ -119,7 +119,7 @@ const CourseCard = ({
       </div>
 
       <CardContent
-        className={cn("p-4 space-y-2", isCompact && "p-3 space-y-1")}
+        className={cn("p-4 space-y-2 px-2", isCompact && "p-3 space-y-1")}
       >
         <h3
           className={cn(
@@ -135,31 +135,31 @@ const CourseCard = ({
             {/* {course.description.replace(/<[^>]+>/g, '')} */}
           </div>
         )}
-        {course.instructorName && (
-          <p className="text-xs text-muted-foreground">
-            by {course.instructorName}
-          </p>
-        )}
       </CardContent>
-
-      <CardFooter className={cn("pb-4 pt-0", isCompact && "px-3 pb-3")}>
+      <CardFooter className={cn("pb-4 pt-0 px-2", isCompact && "px-3 pb-3")}>
         <div className="w-full space-y-3">
           <div className="flex flex-nowrap items-center justify-between gap-y-2 text-xs text-muted-foreground">
-            <div className="flex flex-nowrap items-center gap-x-4 gap-y-2">
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <BookOpen className="h-3 w-3 flex-shrink-0" />
-                <span>{lessonCount} lessons</span>
-              </div>
-              {course.duration && (
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <Clock className="h-3 w-3 flex-shrink-0" />
-                  <span>
-                    {course.duration.hours} hrs {course.duration.minutes} min
-                  </span>
-                </div>
+            <div>
+              {course.instructorName && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  by {course.instructorName}
+                </p>
               )}
+              <div className="flex flex-nowrap items-center gap-x-4 gap-y-2">
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <BookOpen className="h-3 w-3 flex-shrink-0" />
+                  <span>{lessonCount} lessons</span>
+                </div>
+                {course.duration && (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <Clock className="h-3 w-3 flex-shrink-0" />
+                    <span>
+                      {course.duration.hours} hrs {course.duration.minutes} min
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-
             {/* Slash pricing */}
             <div className="flex flex-col items-baseline whitespace-nowrap">
               {showSlash && (
