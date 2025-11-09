@@ -9,28 +9,29 @@ import ProductsSection from "./ProductsSection";
 import ResearchSection from "./ResearchSection";
 import AICoursesSection from "./AICoursesSection";
 import CorporatesSection from "./CorporatesSection";
-import  Footer  from "./Footer";
-import  TestimonialsSection  from "./TestimonialsSection";
+import Footer from "./Footer";
+import TestimonialsSection from "./TestimonialsSection";
 import OurImpactSection from "./OurImpactSection";
 
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
       <HeroSection />
       <PhilosophySection />
-      <ProductsSection/>
+      <ProductsSection />
       {/* <ServicesSection /> */}
 
-      <ResearchSection /> 
+      <ResearchSection />
       <AICoursesSection />
       <CorporatesSection />
       {/* <AudienceSection /> */}
       <TeamSection />
-      <OurImpactSection/>
+      <OurImpactSection />
       <TestimonialsSection />
       <NewsletterSection />
-      <Footer /> 
+      <Footer />
     </div>
   );
 };

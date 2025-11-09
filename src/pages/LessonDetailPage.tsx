@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCourseQuery } from "@/hooks/useCaching";
 import { useAuth } from "@/contexts/AuthContext";
-import { LEARNING_UNIT } from "@/constants";
+import { LEARNING_UNIT, USER_ROLE } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { TopicItem } from "@/types/course";
 import AssignmentView from "../components/course/AssignmentView";
@@ -22,36 +22,37 @@ export default function LessonDetailPage() {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
-  const [courseId,setCourseId] = useState("")
-  const { isEnrolled} = useEnrollment();
+  const [courseId, setCourseId] = useState("")
+  const { isEnrolled } = useEnrollment();
   const navigate = useNavigate();
   const {
     data: course,
     isLoading: courseLoading,
     error: courseError,
   } = useCourseQuery(param!);
-  
-    useEffect(() => {
-      if (!param || courseLoading || !course) return;
-      setCourseId(course.id);
-    }, [param, courseLoading, course?.id]);
-    
 
-    useEffect(() => {
-  if (!courseId || !user || courseLoading) return;
+  useEffect(() => {
+    if (!param || courseLoading || !course) return;
+    setCourseId(course.id);
+  }, [param, courseLoading, course?.id]);
 
-  // If not enrolled, redirect back to admin course page
-  if (!isEnrolled(courseId)) {
-    toast({
-      title: "Access Denied",
-      description: "You are not enrolled in this course.",
-      variant: "destructive",
-    });
 
-    // Small delay for the toast to appear before redirect
-    navigate(`/course/${courseId}`)
-  }
-}, [courseId, user, courseLoading, isEnrolled]);
+  useEffect(() => {
+    if (!courseId || !user || courseLoading) return;
+    if (user.role === USER_ROLE.ADMIN) return;
+
+    // If not enrolled, redirect back to admin course page
+    if (!isEnrolled(courseId)) {
+      toast({
+        title: "Access Denied",
+        description: "You are not enrolled in this course.",
+        variant: "destructive",
+      });
+
+      // Small delay for the toast to appear before redirect
+      navigate(`/courses/${param}`)
+    }
+  }, [courseId, user, courseLoading, isEnrolled]);
 
 
   // Set document title to include course and current item
@@ -59,11 +60,10 @@ export default function LessonDetailPage() {
     if (!course?.title) return;
 
     const prefix = selectedItem
-      ? `${
-          selectedItem.type === LEARNING_UNIT.ASSIGNMENT
-            ? "Assignment"
-            : "Lesson"
-        }: ${selectedItem.title}`
+      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT
+        ? "Assignment"
+        : "Lesson"
+      }: ${selectedItem.title}`
       : "Course";
 
     const prev = document.title;
@@ -136,7 +136,7 @@ export default function LessonDetailPage() {
       window.history.pushState(
         null,
         "",
-        `/course/${course.url ? course.url : course.id}/lesson/${item.id}`
+        `/coursescourse.slug ? course.slug : course.id}/lesson/${item.id}`
       );
     }
   };
@@ -147,9 +147,8 @@ export default function LessonDetailPage() {
     try {
       toast({
         title: "Success",
-        description: `${
-          selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
-        } marked as completed!`,
+        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+          } marked as completed!`,
       });
     } catch (error) {
       console.error("Error updating progress:", error);
@@ -225,7 +224,7 @@ export default function LessonDetailPage() {
                   The lesson or assignment you're looking for doesn't exist.
                 </p>
                 <Button asChild>
-                  <Link to={`/course/${course.url ? course.url : course.id}`}>Back to Course</Link>
+                  <Link to={`/courses/${course.slug ? course.slug : course.id}`}>Back to Course</Link>
                 </Button>
               </div>
             </div>

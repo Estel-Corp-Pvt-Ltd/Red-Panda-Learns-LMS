@@ -5,7 +5,6 @@ import {
   Building,
   BookOpen,
   Users,
-  ArrowRight,
   Sparkles,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -45,10 +44,6 @@ const AIForAllAnimation = () => {
   // Derived sizes
   const centerDiameterPx = size * CENTER_DIAM_RATIO;
   const nodeDotDiameterPx = size * DOT_DIAM_RATIO;
-
-  // Convert visual sizes back into base units for line geometry
-  const centerRadiusBase = (CENTER_DIAM_RATIO * BASE) / 2;
-  const nodeRadiusBase = (DOT_DIAM_RATIO * BASE) / 2;
 
   // Brand colors
   const brandMagenta = "#ff00ff";
@@ -141,21 +136,13 @@ const AIForAllAnimation = () => {
     };
   };
 
+  // Lines now connect from the center circle to the center of each node
   const getLinePoints = (nodeId: number) => {
     const nodePos = getNodePosition(nodeId);
-    const dx = nodePos.x - centerPos.x;
-    const dy = nodePos.y - centerPos.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    const ux = dx / distance;
-    const uy = dy / distance;
-
-    const startX = centerPos.x + ux * centerRadiusBase;
-    const startY = centerPos.y + uy * centerRadiusBase;
-
-    const endX = nodePos.x - ux * nodeRadiusBase;
-    const endY = nodePos.y - uy * nodeRadiusBase;
-
+    const startX = centerPos.x;
+    const startY = centerPos.y;
+    const endX = nodePos.x;
+    const endY = nodePos.y;
     return { startX, startY, endX, endY };
   };
 
@@ -493,7 +480,7 @@ const AIForAllAnimation = () => {
                   )}
                 </div>
 
-                {/* Floating Info Card */}
+                {/* Floating Info Card (CTA removed) */}
                 {isHovered && (
                   <div
                     className="info-card"
@@ -591,7 +578,7 @@ const AIForAllAnimation = () => {
                         background: `${node.color}15`,
                         border: `1px solid ${node.color}40`,
                         borderRadius: "20px",
-                        marginBottom: "14px",
+                        marginBottom: "4px",
                       }}
                     >
                       <Sparkles
@@ -611,52 +598,6 @@ const AIForAllAnimation = () => {
                         {node.stats}
                       </span>
                     </div>
-
-                    {/* CTA Button */}
-                    <button
-                      style={{
-                        width: "100%",
-                        padding: "10px 16px",
-                        background: `linear-gradient(135deg, ${node.color}, ${node.color}cc)`,
-                        border: "none",
-                        borderRadius: "10px",
-                        color: "#fff",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        transition: "all 0.3s ease",
-                        boxShadow: `0 4px 12px ${node.color}40`,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.boxShadow = `0 6px 20px ${node.color}60`;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = `0 4px 12px ${node.color}40`;
-                      }}
-                    >
-                      {node.cta}
-                      <ArrowRight style={{ width: "16px", height: "16px" }} />
-                    </button>
-
-                    {/* Decorative corner accent */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "-2px",
-                        right: "-2px",
-                        width: "40px",
-                        height: "40px",
-                        background: `radial-gradient(circle at top right, ${node.color}40, transparent 70%)`,
-                        borderRadius: "0 16px 0 0",
-                        pointerEvents: "none",
-                      }}
-                    />
                   </div>
                 )}
               </div>
@@ -692,22 +633,16 @@ const AIForAllAnimation = () => {
           );
         })}
 
-        {/* Connection Pulses */}
+        {/* Connection Pulses (center-to-center) */}
         {pulses.map((pulse) => {
           const dx = pulse.deltaX;
           const dy = pulse.deltaY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const ux = dx / distance;
-          const uy = dy / distance;
-
-          const startOffsetX = ux * centerRadiusBase;
-          const startOffsetY = uy * centerRadiusBase;
 
           // Convert base units to actual px using container size
-          const pxStartX = (startOffsetX / BASE) * size;
-          const pxStartY = (startOffsetY / BASE) * size;
-          const targetX = ((dx - startOffsetX) / BASE) * size;
-          const targetY = ((dy - startOffsetY) / BASE) * size;
+          const pxStartX = 0;
+          const pxStartY = 0;
+          const targetX = (dx / BASE) * size;
+          const targetY = (dy / BASE) * size;
 
           return (
             <div

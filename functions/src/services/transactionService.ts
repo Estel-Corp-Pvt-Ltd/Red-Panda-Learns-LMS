@@ -60,7 +60,7 @@ class TransactionService {
         amount: data.amount,
         currency: data.currency,
         paymentProvider: data.paymentProvider,
-        status: TRANSACTION_STATUS.PENDING,
+        status: data.status || TRANSACTION_STATUS.PENDING,
         paymentDetails: data.paymentDetails || {} as PaymentDetails,
         notes: data.notes || [],
         createdAt: FieldValue.serverTimestamp(),

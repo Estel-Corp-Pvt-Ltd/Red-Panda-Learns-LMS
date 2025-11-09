@@ -10,7 +10,7 @@ export interface Bundle {
   id: string;
   title: string;
   description: string;
-  url:string;
+  slug: string;
   regularPrice: number;
   salePrice: number;
   courses: BundleCourseItem[];

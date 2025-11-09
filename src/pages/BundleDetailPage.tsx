@@ -24,22 +24,22 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function BundleDetailPage() {
-const { param } = useParams<{ param: string }>();
+  const { param } = useParams<{ param: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { enrollments, isEnrolledInBundle, loading } = useEnrollment();
-  const [bundleId,setBundleId] = useState("")
+  const [bundleId, setBundleId] = useState("")
 
-    const {
-      data: bundle,
-      isLoading: bundleLoading,
-      error: bundleError,
-    } = useBundleQuery(param!);
+  const {
+    data: bundle,
+    isLoading: bundleLoading,
+    error: bundleError,
+  } = useBundleQuery(param!);
 
-    useEffect(() => {
-      if (!param || bundleLoading || !bundle) return;
-      setBundleId(bundle.id);
-    }, [param, bundleLoading, bundle]);
+  useEffect(() => {
+    if (!param || bundleLoading || !bundle) return;
+    setBundleId(bundle.id);
+  }, [param, bundleLoading, bundle]);
 
   const {
     data: courses,
@@ -208,7 +208,12 @@ const { param } = useParams<{ param: string }>();
                   {bundle.thumbnail ? (
                     <>
                       <img
-                        src={bundle.thumbnail}
+                        src={bundle.thumbnail.includes("https://vizuara.ai/")
+                          ? bundle.thumbnail.replace(
+                            "https://vizuara.ai/",
+                            "https://vizuaracoin.wpcomstaging.com/"
+                          )
+                          : bundle.thumbnail}
                         alt={`${bundle.title} thumbnail`}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -262,7 +267,7 @@ const { param } = useParams<{ param: string }>();
                     {Math.round(
                       ((bundle.regularPrice - bundle.salePrice) /
                         bundle.regularPrice) *
-                        100
+                      100
                     )}
                     %
                   </Badge>
@@ -408,7 +413,7 @@ const { param } = useParams<{ param: string }>();
                         ₹{(bundle.regularPrice - bundle.salePrice).toFixed(2)}
                       </span>
                     </div>
-                     <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
                       <span>Progress tracking across all courses</span>
                     </div>
@@ -416,7 +421,7 @@ const { param } = useParams<{ param: string }>();
                 </CardContent>
               </Card>
 
-              
+
             </div>
           </div>
         </div>

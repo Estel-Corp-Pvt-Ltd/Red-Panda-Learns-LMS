@@ -472,6 +472,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                         <Select
                           value={billingAddress.country}
                           onValueChange={(val) => {
+                            if (val === "India") {
+                              setSelectedCurrency(CURRENCY.INR);
+                            } else if (val != "") {
+                              setSelectedCurrency(CURRENCY.USD);
+                            }
                             updateAddressField("country", val);
                             updateAddressField("state", "");
                             updateAddressField("city", "");
@@ -500,7 +505,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                             updateAddressField("country", e.target.value);
                             updateAddressField("state", "");
                             updateAddressField("city", "");
-                            if (e.target.value === "INDIA") {
+                            if (e.target.value.toLowerCase() === "india") {
                               setSelectedCurrency(CURRENCY.INR);
                             } else if (e.target.value != "") {
                               setSelectedCurrency(CURRENCY.USD);
@@ -611,7 +616,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                 <CardContent className="pt-6 space-y-4">
                   {providers.filter((provider) => {
                     if (!billingAddress.country) return true;
-                    if (billingAddress.country === "India") {
+                    if (billingAddress.country.toLowerCase() === "india") {
                       return provider.id === PAYMENT_PROVIDER.RAZORPAY;
                     }
                     return true;
@@ -619,7 +624,9 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                     const isSelected = selectedProvider === provider.id;
                     const supportedCurrencies = provider.currencies.filter((currency) => {
                       if (!billingAddress.country) return true;
-                      if (billingAddress.country === "INDIA" && currency !== CURRENCY.INR) {
+                      if (billingAddress.country.toLowerCase() === "india" && currency !== CURRENCY.INR) {
+                        return false;
+                      } else if (billingAddress.country.toLowerCase() !== "india" && currency === CURRENCY.INR) {
                         return false;
                       }
                       return true;

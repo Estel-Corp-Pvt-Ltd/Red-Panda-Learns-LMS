@@ -89,12 +89,12 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route
-                        path="/course/:param"
+                        path="/courses/:param"
                         element={<CourseDetailPage />}
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
-                        path="/course/:param/lesson/:lessonId"
+                        path="/courses/:param/lesson/:lessonId"
                         element={
                           <AuthGuard
                             requireAuth
@@ -257,7 +257,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="admin/edit-bundle/:param"
+                        path="/admin/edit-bundle/:param"
                         element={
                           <AuthGuard requireAdmin>
                             <EditBundlePage />
@@ -297,11 +297,11 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/bundle/:param"
+                        path="/course-bundle/:param"
                         element={<BundleDetailPage />}
                       />
                       <Route
-                        path="/bundle/:param/checkout"
+                        path="/course-bundle/:param/checkout"
                         element={
                           <AuthGuard>
                             <BundleCheckoutPage />

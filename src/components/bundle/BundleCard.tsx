@@ -6,12 +6,13 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { CURRENCY } from "@/constants";
+import { CURRENCY, USER_ROLE } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { Bundle } from "@/types/bundle";
 import { BookOpen, Tag } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface BundleCardProps {
   bundle: Bundle;
@@ -32,6 +33,7 @@ export function BundleCard({
   onAccess,
   ownedCoursesCount = 0,
 }: BundleCardProps) {
+  const { user } = useAuth();
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -58,7 +60,7 @@ export function BundleCard({
     ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
 
- 
+
   if (variant === "compact") {
     return (
       <Card
@@ -70,7 +72,14 @@ export function BundleCard({
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
           {bundle.thumbnail ? (
             <img
-              src={bundle.thumbnail}
+              src={
+                bundle.thumbnail.includes("https://vizuara.ai/")
+                  ? bundle.thumbnail.replace(
+                    "https://vizuara.ai/",
+                    "https://vizuaracoin.wpcomstaging.com/"
+                  )
+                  : bundle.thumbnail
+              }
               alt={bundle.title}
               className="w-full h-full object-cover"
             />
@@ -85,7 +94,7 @@ export function BundleCard({
               <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
                 {bundle.title}
               </h3>
-              <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2" >
                 {bundle.description}
               </p>
 
@@ -140,9 +149,8 @@ export function BundleCard({
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
-                  ? "Access Bundle"
-                  : `Buy Bundle - ${
-                      isFree ? "FREE" : formatCurrency(salePrice)
+                    ? "Access Bundle"
+                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)
                     }`}
               </Button>
             </div>
@@ -190,11 +198,11 @@ export function BundleCard({
       </CardHeader>
 
       <CardContent className="p-6">
-        <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-2">
+        <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-1">
           {bundle.title}
         </h3>
 
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
+        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
           {bundle.description}
         </p>
 
@@ -239,43 +247,52 @@ export function BundleCard({
         </div>
       </CardContent>
 
-      <CardFooter className="p-6 pt-0 flex justify-between gap-6">
-        <Button
-          className="flex-grow"
-          hidden={fullOwnership}
-          onClick={() => {
-            if (isAddedToCart) {
-              cartDispatch({ type: "REMOVE", id: bundle.id });
-            } else {
-              cartDispatch({
-                type: "ADD",
-                item: { type: "BUNDLE", refId: bundle.id },
-              });
-            }
-          }}
-        >
-          {isAddedToCart ? "Remove from Cart" : "Add to Cart"}
-        </Button>
-        <Button
-          className="flex-grow"
-          disabled={fullOwnership}
-          title={
-            fullOwnership
-              ? `You already own all courses in ${bundle.title} bundle`
-              : undefined
-          }
-          onClick={() => {
-            if (!fullOwnership) {
-              navigate(`/bundle/${bundle.id}`);
-            }
-          }}
-        >
-          {fullOwnership
-            ? "All Courses Owned"
-            : isEnrolled
-            ? "Access Bundle"
-            : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
-        </Button>
+      <CardFooter>
+        {user.role === USER_ROLE.ADMIN ? (
+          <div className="pt-0 flex justify-between gap-6 w-full">
+            <Link to={`/admin/edit-bundle/${bundle.slug}`}><Button>Edit Bundle</Button></Link>
+            <Link to={`/course-bundle/${bundle.slug}`}><Button>View Bundle</Button></Link>
+          </div>
+        ) : (
+          <div className="p-6 pt-0 flex justify-between gap-6">
+            <Button
+              className="flex-grow"
+              hidden={fullOwnership}
+              onClick={() => {
+                if (isAddedToCart) {
+                  cartDispatch({ type: "REMOVE", id: bundle.id });
+                } else {
+                  cartDispatch({
+                    type: "ADD",
+                    item: { type: "BUNDLE", refId: bundle.id },
+                  });
+                }
+              }}
+            >
+              {isAddedToCart ? "Remove from Cart" : "Add to Cart"}
+            </Button>
+            <Button
+              className="flex-grow"
+              disabled={fullOwnership}
+              title={
+                fullOwnership
+                  ? `You already own all courses in ${bundle.title} bundle`
+                  : undefined
+              }
+              onClick={() => {
+                if (!fullOwnership) {
+                  navigate(`/bundle/${bundle.id}`);
+                }
+              }}
+            >
+              {fullOwnership
+                ? "All Courses Owned"
+                : isEnrolled
+                  ? "Access Bundle"
+                  : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(salePrice)}`}
+            </Button>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

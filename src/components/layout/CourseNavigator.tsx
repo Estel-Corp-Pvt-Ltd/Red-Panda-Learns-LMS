@@ -35,6 +35,7 @@ export function CourseNavigator({
       }
       return -1;
     }
+
     const allLessons = [...course.cohorts.flatMap(c => c.topics).flatMap(t => t.items)];
     const lessonIndex = findLessonIndex(allLessons, lessonId);
     const currentLessonIndex = findLessonIndex(allLessons, currentLesson.id);
@@ -77,7 +78,7 @@ export function CourseNavigator({
           {topic.items?.map((lessonItem: TopicItem) => (
             <Link
               key={lessonItem.id}
-              to={`/course/${course.id}/lesson/${lessonItem.id}`}
+              to={`/courses/${course.slug}/lesson/${lessonItem.id}`}
               className={cn(
                 "max-w-full block ml-6 p-3 rounded-lg border border-transparent transition-all duration-200",
                 isLessonActive(lessonItem.id) && [
@@ -96,11 +97,11 @@ export function CourseNavigator({
                 <div
                   className={cn(
                     "flex items-center justify-center w-6 h-6 rounded text-xs bg-muted text-muted-foreground",
-                    isLessonActive(lessonItem.id) && "bg-white text-primary-foreground"
+                    isLessonActive(lessonItem.id) && "bg-background text-primary-foreground "
                   )}
                 >
                   {lessonItem.type === "LESSON" ? (
-                    <BookOpen className="text-red-500" />
+                    <BookOpen className="text-pink-500" />
                   ) : (
                     <NotepadText className="text-blue-500" />
                   )}

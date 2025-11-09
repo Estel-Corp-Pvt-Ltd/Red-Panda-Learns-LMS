@@ -4,7 +4,7 @@ import {
   ChevronDown,
   Save,
   X,
-Copy,
+  Copy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ATTRIBUTE_TYPE, COURSE_STATUS } from "@/constants";
 import { attributeService } from "@/services/attributeService";
-import {  Course } from "@/types/course";
+import { Course } from "@/types/course";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,8 +59,8 @@ export type CourseBasicsTabProps = {
   setCourseId: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
-  url: string;
-  setUrl: (v: string) => void;
+  slug: string;
+  setSlug: (v: string) => void;
   instructorId: string;
   setInstructorId: (id: string) => void;
   instructorName: string;
@@ -108,8 +108,8 @@ const CourseBasicsTab = ({
   setCopied,
   description,
   setDescription,
-  url,
-  setUrl,
+  slug,
+  setSlug,
   instructorId,
   setInstructorId,
   instructorName,
@@ -146,25 +146,25 @@ const CourseBasicsTab = ({
 }: CourseBasicsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [urlTaken, setUrlTaken] = useState(true);
-  const [checkingUrl, setCheckingUrl] = useState(true);
+  const [slugTaken, setSlugTaken] = useState(true);
+  const [checkingSlug, setCheckingSlug] = useState(true);
 
-  {/* 🧠 Debounced check logic */}
-useEffect(() => {
-  if (!url?.trim()) {
-    setUrlTaken(false);
-    return;
-  }
+  {/* 🧠 Debounced check logic */ }
+  useEffect(() => {
+    if (!slug?.trim()) {
+      setSlugTaken(false);
+      return;
+    }
 
-  const handler = setTimeout(async () => {
-    setCheckingUrl(true);
-    const taken = await courseService.isCourseUrlTaken(url, courseId);
-    setUrlTaken(taken);
-    setCheckingUrl(false);
-  }, 600); // debounce delay (ms)
+    const handler = setTimeout(async () => {
+      setCheckingSlug(true);
+      const taken = await courseService.isCourseUrlTaken(slug, courseId);
+      setSlugTaken(taken);
+      setCheckingSlug(false);
+    }, 600); // debounce delay (ms)
 
-  return () => clearTimeout(handler);
-}, [url, courseId]);
+    return () => clearTimeout(handler);
+  }, [slug, courseId]);
 
 
   return (
@@ -204,21 +204,21 @@ useEffect(() => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Course URL</CardTitle>
+            <CardTitle>Course Slug</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-2">
-            <label className="text-sm font-medium">Custom URL</label>
+            <label className="text-sm font-medium">Custom Slug</label>
 
             <div className="flex items-center gap-2">
               <Input
                 type="text"
-                value={url ?? ""}
+                value={slug ?? ""}
                 onChange={(e) => {
-                  const newUrl = e.target.value
+                  const newSlug = e.target.value
                     .toLowerCase()
                     .replace(/\s+/g, "-");
-                  setUrl(newUrl);
+                  setSlug(newSlug);
                 }}
                 placeholder="react-for-beginners"
               />
@@ -236,28 +236,28 @@ useEffect(() => {
                     .replace(/[^\w\s-]/g, "") // remove special chars
                     .replace(/\s+/g, "-"); // replace spaces with -
 
-                  setUrl(generatedUrl);
+                  setSlug(generatedUrl);
                 }}
               >
-                Generate URL
+                Generate Slug
               </Button>
             </div>
 
-            {/* URL availability feedback */}
-            {checkingUrl && (
+            {/* Slug availability feedback */}
+            {checkingSlug && (
               <p className="text-xs text-muted-foreground">
                 Checking availability...
               </p>
             )}
 
-            {!checkingUrl && urlTaken && (
+            {!checkingSlug && slugTaken && (
               <p className="text-xs text-red-500">
-                This URL is already in use.
+                This slug is already in use.
               </p>
             )}
 
-            {!checkingUrl && !urlTaken && url && (
-              <p className="text-xs text-green-500">This URL is available.</p>
+            {!checkingSlug && !slugTaken && slug && (
+              <p className="text-xs text-green-500">This slug is available.</p>
             )}
 
             <p className="text-xs text-muted-foreground">
@@ -525,8 +525,8 @@ useEffect(() => {
                             setSelectedTargetAudiences(
                               selectedTargetAudiences.includes(aud)
                                 ? selectedTargetAudiences.filter(
-                                    (a) => a !== aud
-                                  )
+                                  (a) => a !== aud
+                                )
                                 : [...selectedTargetAudiences, aud]
                             )
                           }
