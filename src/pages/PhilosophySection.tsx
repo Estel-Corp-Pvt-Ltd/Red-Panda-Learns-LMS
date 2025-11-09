@@ -586,7 +586,6 @@ const PhilosophySection: React.FC = () => {
                                       className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
                                     >
                                       <DecryptedLine
-                                        key={`research-${decryptionTrigger}-${i}`}
                                         text={p.title}
                                         delay={i * 80}
                                         fixedDuration={500}
@@ -604,13 +603,13 @@ const PhilosophySection: React.FC = () => {
                               </div>
 
                               <a
-                                href="https://scholar.google.com/citations?hl=en&user=qq8OirYAAAAJ&view_op=list_works&sortby=pubdate"
+                                href="https://research.vizuara.ai/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 mt-2 text-xs underline underline-offset-4 decoration-dotted self-start"
                                 style={{ color: item.color }}
                               >
-                                View all on Google Scholar ↗
+                                Research Hub ↗
                               </a>
                             </div>
                           ) : index === 0 ? (
