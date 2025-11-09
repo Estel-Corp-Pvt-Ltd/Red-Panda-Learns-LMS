@@ -281,7 +281,7 @@ export function BundleCard({
               }
               onClick={() => {
                 if (!fullOwnership) {
-                  navigate(`/bundle/${bundle.id}`);
+                  navigate(`/course-bundle/${bundle.slug}`);
                 }
               }}
             >

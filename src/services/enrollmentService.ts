@@ -59,9 +59,8 @@ class EnrollmentService {
   async enrollUser(
     userEmail: string,
     courseIds: string[]
-  ): Promise<Result<string[]>> {
+  ): Promise<Result<any[]>> {
     if (!courseIds || courseIds.length === 0) return ok([]);
-
     try {
       const idToken = await authService.getToken();
       const response = await fetch(`${this.backendUrl}/enrollStudent`, {
@@ -81,7 +80,7 @@ class EnrollmentService {
       }
 
       const data = await response.json();
-      return ok(data.enrollmentIds);
+      return ok(data.enrolledCourses);
     } catch (error) {
       logError("EnrollmentService.enrollUser", error);
       return fail("Enrollment failed", error.message);
