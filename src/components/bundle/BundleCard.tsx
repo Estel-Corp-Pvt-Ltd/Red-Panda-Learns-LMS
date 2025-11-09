@@ -243,14 +243,14 @@ export function BundleCard({
         </div>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="px-4">
         {user?.role === USER_ROLE.ADMIN ? (
           <div className="pt-0 flex justify-between gap-6 w-full">
             <Link to={`/admin/edit-bundle/${bundle.slug}`}><Button>Edit Bundle</Button></Link>
             <Link to={`/course-bundle/${bundle.slug}`}><Button>View Bundle</Button></Link>
           </div>
         ) : (
-          <div className="p-6 pt-0 flex justify-between gap-6">
+          <div className="pt-0 flex justify-between gap-6 w-full">
             <Button
               className="flex-grow"
               hidden={fullOwnership}

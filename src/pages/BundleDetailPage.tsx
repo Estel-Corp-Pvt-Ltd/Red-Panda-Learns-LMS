@@ -116,7 +116,7 @@ export default function BundleDetailPage() {
     if (isEnrolled) {
       navigate(`/bundle/${bundle.id}/dashboard`);
     } else {
-      navigate(`/bundle/${bundle.slug}/checkout`);
+      navigate(`/course-bundle/${bundle.slug}/checkout`);
     }
   };
 
