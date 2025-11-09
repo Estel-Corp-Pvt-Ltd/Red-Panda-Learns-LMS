@@ -93,7 +93,7 @@ class CourseService {
       const course: Partial<Course> = {
         id: courseId,
         title: data.title,
-        url: "",
+        slug: "",
         description: data.description,
         regularPrice: 0,
         salePrice: 0,
@@ -169,7 +169,7 @@ class CourseService {
       if (updates.description) updateData.description = updates.description;
       if (updates.thumbnail) updateData.thumbnail = updates.thumbnail;
       if (updates.duration) updateData.duration = updates.duration;
-      if (updates.url) updateData.url = updates.url;
+      if (updates.slug) updateData.slug = updates.slug;
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
       if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
@@ -335,7 +335,7 @@ class CourseService {
         return {
           id: doc.id,
           title: data.title,
-          url: data.url,
+          slug: data.slug,
           description: data.description,
           duration: data.duration,
           thumbnail: data.thumbnail,

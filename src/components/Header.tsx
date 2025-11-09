@@ -715,14 +715,12 @@ export function Header({
                     onMouseLeave={() => setAccountOpen(false)}
                   >
                     <DropdownMenuItem asChild>
-                      <Link to="/dashboard">
+                      <Link to={user.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"}>
                         <User className="mr-2 h-4 w-4" />
                         <span>Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
-
                     <DropdownMenuSeparator />
-
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Sign out</span>

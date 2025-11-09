@@ -34,7 +34,7 @@ export const useBundleQuery = (param: string) => {
   return useQuery({
     queryKey: bundleQueryKeys.bundle(param),
     queryFn: async () => {
-      let data = await bundleService.getBundleByUrl(param);
+      let data = await bundleService.getBundleBySlug(param);
       if (!data) {
         data = await bundleService.getBundleById(param);
       }

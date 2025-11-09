@@ -128,7 +128,7 @@ class BundleService {
         id: bundleId,
         title: data.title,
         description: data.description,
-        url: data.url,
+        slug: data.slug,
         courses: data.courses,
         regularPrice,
         salePrice,
@@ -246,7 +246,7 @@ class BundleService {
       // Update other fields
       if (updates.title) updateData.title = updates.title;
       if (updates.description) updateData.description = updates.description;
-      if (updates.url) updateData.url = updates.url;
+      if (updates.slug) updateData.slug = updates.slug;
       if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
       if (updates.targetAudienceIds)
         updateData.targetAudienceIds = updates.targetAudienceIds;
@@ -605,7 +605,7 @@ class BundleService {
           id: doc.id,
           title: data.title,
           description: data.description,
-          url: data.url,
+          slug: data.slug,
           regularPrice: data.regularPrice,
           salePrice: data.salePrice,
           courses: data.courses || [],
@@ -643,37 +643,37 @@ class BundleService {
     }
   }
 
-async  isBundleUrlTaken(url: string, currentBundleId?: string): Promise<boolean> {
-  if (!url) return false;
+  async isBundleSlugTaken(slug: string, currentBundleId?: string): Promise<boolean> {
+    if (!slug) return false;
 
-  const q = query(
-    collection(db, COLLECTION.BUNDLES),
-    where("url", "==", url)
-  );
+    const q = query(
+      collection(db, COLLECTION.BUNDLES),
+      where("slug", "==", slug)
+    );
 
-  const snap = await getDocs(q);
+    const snap = await getDocs(q);
 
-  // If editing: ignore the current bundle
-  if (currentBundleId) {
-    return snap.docs.some((doc) => doc.id !== currentBundleId);
+    // If editing: ignore the current bundle
+    if (currentBundleId) {
+      return snap.docs.some((doc) => doc.id !== currentBundleId);
+    }
+
+    // If creating: any existing doc with the same URL means it's taken
+    return !snap.empty;
   }
 
-  // If creating: any existing doc with the same URL means it's taken
-  return !snap.empty;
-}
 
 
-
-  async getBundleByUrl(url: string): Promise<Bundle | null> {
+  async getBundleBySlug(slug: string): Promise<Bundle | null> {
     try {
       const q = query(
         collection(db, COLLECTION.BUNDLES),
-        where("url", "==", url)
+        where("slug", "==", slug)
       );
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        console.log("BundleService - Bundle not found for URL:", url);
+        console.log("BundleService - Bundle not found for slug:", slug);
         return null;
       }
 

@@ -14,6 +14,7 @@ import {
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,
   ORDER_STATUS,
+  USER_ROLE,
 } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -255,17 +256,17 @@ export default function CourseDetailPage() {
       <Collapsible key={id}>
         <CollapsibleTrigger
           className={cn(
-            "group flex w-full items-center justify-between gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50"
+            "flex w-full items-center gap-3 my-2 p-3 rounded-lg text-muted-foreground hover:no-underline transition-colors border-muted border-2 hover:bg-muted/50"
           )}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full">
             <ChevronRight
               className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
               aria-hidden="true"
             />
-            <h4 className="text-[0.9rem] font-medium truncate">{title}</h4>
+            <div className="text-[0.9rem] font-medium truncate flex-grow text-left">{title}</div>
+            <span className="text-sm opacity-80 text-nowrap">{items.length} lessons</span>
           </div>
-          <span className="text-sm opacity-80">{items.length} lessons</span>
         </CollapsibleTrigger>
 
         <CollapsibleContent className="pl-7">
@@ -462,42 +463,52 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {enrollmentLoading ? (
-                      <Button className="w-full" size="lg" disabled>
-                        <div className="flex items-center gap-2">
-                          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          Loading...
-                        </div>
-                      </Button>
-                    ) : userIsEnrolled ? (
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={handleContinueLearning}
-                      >
+                    {user.role == USER_ROLE.ADMIN ? (
+                      <Button className="w-full" size="lg" onClick={handleContinueLearning} >
                         <Play className="h-4 w-4 mr-2" />
-                        Continue Learning
+                        Continue as Admin
                       </Button>
                     ) : (
                       <>
-                        {isAddedToCart ? (
-                          <Link to="/cart">
-                            <Button className="w-full">Go to Cart</Button>
-                          </Link>
-                        ) : (
+                        {enrollmentLoading ? (
+                          <Button className="w-full" size="lg" disabled>
+                            <div className="flex items-center gap-2">
+                              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              Loading...
+                            </div>
+                          </Button>
+                        ) : userIsEnrolled ? (
                           <Button
                             className="w-full"
                             size="lg"
-                            onClick={handleAddToCart}
+                            onClick={handleContinueLearning}
                           >
-                            Add to Cart
+                            <Play className="h-4 w-4 mr-2" />
+                            Continue Learning
                           </Button>
+                        ) : (
+                          <>
+                            {isAddedToCart ? (
+                              <Link to="/cart">
+                                <Button className="w-full">Go to Cart</Button>
+                              </Link>
+                            ) : (
+                              <Button
+                                className="w-full"
+                                size="lg"
+                                onClick={handleAddToCart}
+                              >
+                                Add to Cart
+                              </Button>
+                            )}
+                            <Button className="w-full" onClick={handleCheckout}>
+                              Go To Checkout
+                            </Button>
+                          </>
                         )}
-                        <Button className="w-full" onClick={handleCheckout}>
-                          Go To Checkout
-                        </Button>
                       </>
                     )}
+
                   </div>
                 </div>
               </CardContent>
@@ -532,14 +543,6 @@ export default function CourseDetailPage() {
                   </div>
                 )}
                 {course.topics.map((topic) => renderTopic(topic))}
-                {course.cohorts?.map((cohort, cohortIndex) => (
-                  <div key={`cohort-${cohortIndex}`} className="mt-6">
-                    <h3 className="text-2xl font-semibold mb-2">
-                      {cohort.title || `Cohort ${cohortIndex + 1}`}
-                    </h3>
-                    {cohort.topics?.map((topic) => renderTopic(topic))}
-                  </div>
-                ))}
               </CardContent>
             </Card>
 
