@@ -28,7 +28,7 @@ export const useCourseQuery = (param: string) => {
   return useQuery({
     queryKey: queryKeys.course(param),
     queryFn: async () => {
-      let data = await courseService.getCourseByUrl(param);
+      let data = await courseService.getCourseBySlug(param);
       if (!data) {
         data = await courseService.getCourseById(param);
       }

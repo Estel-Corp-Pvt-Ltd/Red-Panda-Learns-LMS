@@ -21,6 +21,7 @@ import Sidebar from '@/components/Sidebar';
 
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
+  const navigate = useNavigate();
   const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
   if (isLoading) {
     return <LoadingSkeleton className="h-48" />;
@@ -28,14 +29,32 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
 
   if (!course) return null;
 
+  const handleContinueLearning = () => {
+    if (!course) return;
+
+    const firstLessonId = course.topics
+      ?.flatMap(topic => topic.items || [])
+      .find(item => item?.id)?.id;
+
+    if (firstLessonId) {
+      const courseSlug = course.slug || course.id;
+      navigate(`/courses/${courseSlug}/lesson/${firstLessonId}`);
+    } else {
+      toast({
+        title: "No content available",
+        description: "This course has no lessons available yet.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex-1">
             <h3 className="font-semibold text-lg mb-2">{enrollment.courseName || course.title}</h3>
-            <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-              {course.description}
+            <p className="text-muted-foreground text-sm mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
             </p>
 
             {/* <div className="space-y-3 mb-4">
@@ -57,11 +76,9 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                   {enrollment.status}
                 </Badge>
               </div>
-              <Button asChild size="sm">
-                <Link to={`/course/${enrollment.courseId}`}>
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  Continue
-                </Link>
+              <Button size="sm" onClick={handleContinueLearning}>
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Continue
               </Button>
             </div>
           </div>
