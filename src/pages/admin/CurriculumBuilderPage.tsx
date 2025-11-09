@@ -74,10 +74,9 @@ const CurriculumBuilderPage = () => {
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [progress, setProgress] = useState(0);
   const [urlTaken, setUrlTaken] = useState(true);
-  const [checkingUrl, setCheckingUrl] = useState(true);
-  const [url, setUrl] = useState("");
+  const [slug, setSlug] = useState("");
   const [courseId, setCourseId] = useState("");
-   const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -149,16 +148,8 @@ const CurriculumBuilderPage = () => {
     if (!param) return;
     const loadCourse = async () => {
       try {
-        showOverlay("Loading course data...");
-        console.log("this is param",param)
-        let data = await courseService.getCourseByUrl(param);
+        let data = await courseService.getCourseById(param);
 
-        // Fallback: try fetching by ID if not found
-        if (!data) {
-          data = await courseService.getCourseById(param);
-        }
-        
-        // If still not found, handle gracefully
         if (!data) {
           console.warn("Course not found for param:", param);
           return;
@@ -168,9 +159,7 @@ const CurriculumBuilderPage = () => {
         setCourseId(data.id);
         setTitle(data.title);
         setDescription(data.description);
-          setUrl(
-            data.url ? `${data.url}` : `${data.id ?? param}`
-          );
+        setSlug(data.slug ? `${data.slug}` : `${data.id ?? param}`);
         setStatus(data.status);
         setDuration({
           hours: data.duration?.hours ?? 0,
@@ -293,7 +282,7 @@ const CurriculumBuilderPage = () => {
   const canSaveBasics =
     title.trim() &&
     description.trim() &&
-    url.trim().length > 0 &&
+    slug.trim().length > 0 &&
     isNum(regularPrice) &&
     isNum(salePrice) &&
     isNum(duration.hours) &&
@@ -307,7 +296,7 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, {
         title: title.trim(),
         description: description.trim(),
-        url: url.trim(),
+        slug: slug.trim(),
         duration,
         regularPrice: regularPrice!,
         salePrice: salePrice!,
@@ -331,14 +320,14 @@ const CurriculumBuilderPage = () => {
     }
   };
 
-   const handleCopyLink = async () => {
-     const baseUrl = window.location.origin || "http://localhost:8080";
-     const link = `${baseUrl}/course/${url ? url : courseId}`;
-     await navigator.clipboard.writeText(link);
+  const handleCopyLink = async () => {
+    const baseUrl = window.location.origin || "http://localhost:8080";
+    const link = `${baseUrl}/courses/${slug ? slug : courseId}`;
+    await navigator.clipboard.writeText(link);
 
-     setCopied(true);
-     setTimeout(() => setCopied(false), 2000);
-   };
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   // ───────────────────────────────────────────────────────────────
   // ─── CURRICULUM TAB LOGIC ──────────────────────────────────────
   // ───────────────────────────────────────────────────────────────
@@ -752,8 +741,8 @@ const CurriculumBuilderPage = () => {
               setCourseId={setCourseId}
               description={description}
               setDescription={setDescription}
-              url={url}
-              setUrl={setUrl}
+              slug={slug}
+              setSlug={setSlug}
               instructorId={instructorId}
               setInstructorId={setInstructorId}
               instructorName={instructorName}
