@@ -73,6 +73,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/organizations',
       icon: <Building2 className="h-5 w-5" />
     },
+    {
+      name: 'Enroll Student',
+      path: '/admin/enroll-student',
+      icon: <UserPen className="h-5 w-5" />
+    }
   ];
 
   const isActive = (path: string) => {

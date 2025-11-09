@@ -1436,7 +1436,6 @@ export default function EditBundlePage() {
                 ) : (
                   <>
                     {/* Filter toolbar */}
-                    {/* Filter toolbar */}
                     <div className="p-3 border rounded-lg bg-muted/20 space-y-3 mb-4">
                       {/* Row 1: Search, Type, Sort */}
                       <div className="flex flex-col lg:flex-row lg:items-end gap-3">

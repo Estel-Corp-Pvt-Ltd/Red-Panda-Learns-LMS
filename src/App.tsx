@@ -65,6 +65,7 @@ import PopUpContainer from "./components/PopUpContainer";
 import InvoicePage from "./pages/InvoicePage";
 import MyInvoicesPage from "./pages/MyInvoices";
 import AuthRedirection from "./components/auth/AuthRedirection";
+import EnrollStudent from "./pages/admin/EnrollStudent";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
@@ -189,6 +190,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminPopUps />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/enroll-student"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <EnrollStudent />
                           </AuthGuard>
                         }
                       />
