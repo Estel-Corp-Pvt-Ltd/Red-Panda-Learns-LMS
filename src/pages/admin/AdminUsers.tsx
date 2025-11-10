@@ -163,12 +163,19 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const getInitials = (user: User) => {
-  const parts = [];
-  if (user.firstName) parts.push(user.firstName[0]);
-  if (user.lastName) parts.push(user.lastName[0]);
-  // fallback to email initial if no names
-  return parts.length > 0 ? parts.join('') : user.email?.charAt(0)?.toUpperCase() || '?';
+const getInitials = (user: User) => {
+  if (!user) return "?";
+
+  const { firstName, lastName, email } = user;
+
+  const parts: string[] = [];
+  if (firstName?.trim()) parts.push(firstName.trim()[0].toUpperCase());
+  if (lastName?.trim()) parts.push(lastName.trim()[0].toUpperCase());
+
+  if (parts.length > 0) return parts.join("");
+
+  // fallback: first character of email
+  return email?.trim()?.charAt(0)?.toUpperCase() || "?";
 };
 
   const getEnrollmentsCount = (user: User) => {
