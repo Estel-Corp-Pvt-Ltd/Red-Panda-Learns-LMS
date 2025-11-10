@@ -19,7 +19,7 @@ export default function AboutUsPage() {
             <section>
               <h2 className="font-semibold mb-2">Overview</h2>
               <p className="mb-3">
-                We are Vizuara — a fast-growing Indian startup backed by the MIT ecosystem —
+                We are Vizuara - a fast-growing Indian startup backed by the MIT ecosystem —
                 revolutionizing AI education for students and professionals. Our mission is to
                 make world-class, hands-on AI learning accessible to everyone.
               </p>
@@ -35,7 +35,7 @@ export default function AboutUsPage() {
               <h2 className="font-semibold mb-2">Our Mission</h2>
               <p>
                 Democratize high-quality AI education through structured programs, actionable
-                projects, and mentorship — enabling learners to go from fundamentals to real-world
+                projects, and mentorship - enabling learners to go from fundamentals to real-world
                 impact.
               </p>
             </section>
@@ -43,7 +43,7 @@ export default function AboutUsPage() {
             <section>
               <h2 className="font-semibold mb-2">Our Vision</h2>
               <p>
-                To become the most trusted platform for AI education in emerging markets — where
+                To become the most trusted platform for AI education in emerging markets - where
                 ambitious learners build portfolios, publish work, and land meaningful opportunities.
               </p>
             </section>
@@ -55,7 +55,7 @@ export default function AboutUsPage() {
                 <li>Project-based AI, ML, and Generative AI programs with mentorship</li>
                 <li>University application guidance and profile-building support</li>
                 <li>Industry-relevant capstones, papers, and portfolio curation</li>
-                <li>Career enablement — demos, reviews, and interview preparation</li>
+                <li>Career enablement - demos, reviews, and interview preparation</li>
               </ul>
             </section>
 
@@ -75,7 +75,7 @@ export default function AboutUsPage() {
               <p>
                 Starting with small cohorts and research-driven bootcamps, we saw how learners
                 thrive when rigor meets relevance. Today, Vizuara brings that high-touch model
-                to a broader audience — without compromising on depth, expectations, or outcomes.
+                to a broader audience - without compromising on depth, expectations, or outcomes.
               </p>
             </section>
 
@@ -83,10 +83,10 @@ export default function AboutUsPage() {
             <section>
               <h2 className="font-semibold mb-2">Our Values</h2>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Excellence over shortcuts — real skills, real outcomes</li>
-                <li>Builder mindset — learn by creating, shipping, and iterating</li>
-                <li>Clarity and honesty — in feedback, curriculum, and expectations</li>
-                <li>Student-first — design every experience for learner success</li>
+                <li>Excellence over shortcuts - real skills, real outcomes</li>
+                <li>Builder mindset - learn by creating, shipping, and iterating</li>
+                <li>Clarity and honesty - in feedback, curriculum, and expectations</li>
+                <li>Student-first - design every experience for learner success</li>
               </ul>
             </section>
 
