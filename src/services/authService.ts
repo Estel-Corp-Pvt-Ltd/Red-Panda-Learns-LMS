@@ -172,7 +172,6 @@ class AuthService {
         lastName,
         role: USER_ROLE.STUDENT,
         status: USER_STATUS.ACTIVE,
-        enrollments: [],
         organizationId: null,
         photoURL: firebaseUser.photoURL || null,
       });
@@ -231,7 +230,6 @@ class AuthService {
         lastName,
         role: USER_ROLE.STUDENT,
         status: USER_STATUS.ACTIVE,
-        enrollments: [],
         organizationId: null,
         photoURL: firebaseUser.photoURL || null,
       });
@@ -288,7 +286,6 @@ class AuthService {
           lastName,
           role: USER_ROLE.STUDENT,
           status: USER_STATUS.ACTIVE,
-          enrollments: [],
           organizationId: null,
           photoURL: firebaseUser.photoURL || null,
         });
