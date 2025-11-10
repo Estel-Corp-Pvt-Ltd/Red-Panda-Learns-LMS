@@ -1,4 +1,4 @@
-import { ArrowLeft, CreditCard, Loader2, Lock, Shield, ShoppingCart, MapPin, Building2 } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2, Lock, Shield, ShoppingCart, MapPin, Building2, MapPinHouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -325,7 +325,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
               <Card className="border rounded-xl">
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
+                    <ShoppingCart size={25} />
                     Order Summary ({items.length} items)
                   </CardTitle>
                 </CardHeader>
@@ -406,9 +406,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
               <Card className="border rounded-xl">
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">1</span>
-                    </div>
+                    <MapPinHouse size={25} />
                     Billing Address
                   </CardTitle>
                 </CardHeader>

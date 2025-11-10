@@ -132,12 +132,6 @@ export default function LessonDetailPage() {
     ) {
       setSelectedItem(item);
       setSidebarOpen(false);
-      // Update URL when selecting a different item
-      window.history.pushState(
-        null,
-        "",
-        `/coursescourse.slug ? course.slug : course.id}/lesson/${item.id}`
-      );
     }
   };
 

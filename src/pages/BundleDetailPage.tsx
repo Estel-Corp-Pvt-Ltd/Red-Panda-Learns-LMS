@@ -398,13 +398,13 @@ export default function BundleDetailPage() {
                     <div className="flex justify-between">
                       <span>Individual Course Prices:</span>
                       <span className="font-medium">
-                        ₹{bundle.salePrice.toFixed(2)}
+                        ₹{bundle.regularPrice.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Bundle Price:</span>
                       <span className="font-medium text-success">
-                        ₹{bundle.regularPrice.toFixed(2)}
+                        ₹{bundle.salePrice.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t pt-2">

@@ -1,6 +1,5 @@
-import { BookOpen, Check, ChevronDown, ChevronRight, NotepadText } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronRight, Lock, NotepadText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -36,7 +35,7 @@ export function CourseNavigator({
       return -1;
     }
 
-    const allLessons = [...course.cohorts.flatMap(c => c.topics).flatMap(t => t.items)];
+    const allLessons = [...course.topics.flatMap(t => t.items)];
     const lessonIndex = findLessonIndex(allLessons, lessonId);
     const currentLessonIndex = findLessonIndex(allLessons, currentLesson.id);
     console.log({ lessonIndex, currentLessonIndex });
@@ -121,7 +120,7 @@ export function CourseNavigator({
                 <div
                   className={`w-5 h-5 flex items-center justify-center border rounded-full ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
                     }`}
-                >{isCompleted(lessonItem.id) ? (<Check className="w-4 h-4 text-white" />) : null}</div>
+                >{isCompleted(lessonItem.id) ? (<Check className="w-4 h-4 text-white" />) : !isLessonActive(lessonItem.id) && <Lock className="w-4 h-4 text-muted-foreground" />}</div>
               </div>
             </Link>
           ))}
