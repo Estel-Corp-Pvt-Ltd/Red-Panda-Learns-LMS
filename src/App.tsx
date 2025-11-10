@@ -67,7 +67,10 @@ import MyInvoicesPage from "./pages/MyInvoices";
 import AuthRedirection from "./components/auth/AuthRedirection";
 import EnrollStudent from "./pages/admin/EnrollStudent";
 
+
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const ContactPage = lazy(() => import("./pages/Contact"));
+const AboutUsPage = lazy(() => import("./pages/AboutUs"));
 const RefundPage = lazy(() => import("./pages/RefundPolicy"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 
@@ -381,6 +384,10 @@ const App = () => (
                       />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />
+
+                      <Route path="/about-us" element={<AboutUsPage />} />
+                      <Route path="/contact-us" element={<ContactPage />} />
+
                       <Route path="/privacy" element={<PrivacyPage />} />
                       <Route path="/refund-policy" element={<RefundPage />} />
                     </Routes>
