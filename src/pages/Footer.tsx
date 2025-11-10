@@ -1,8 +1,8 @@
 import { Mail, Linkedin, Youtube, Instagram, BookOpen } from "lucide-react";
 
 const XIcon = ({ className }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 24 24" 
+  <svg
+    viewBox="0 0 24 24"
     className={className}
     fill="currentColor"
     aria-hidden="true"
@@ -20,7 +20,8 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">Vizuara</h3>
             <p className="text-sm text-muted-foreground">
-              Making AI accessible for all through innovative education and research.
+              Making AI accessible for all through innovative education and
+              research.
             </p>
           </div>
 
@@ -29,12 +30,18 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-foreground">Products</h4>
             <ul className="space-y-2">
               <li>
-                <a href="https://dynaroute.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://dynaroute.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   DynaRoute
                 </a>
               </li>
               <li>
-                <a href="https://vizz.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://vizz.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Vizz AI
                 </a>
               </li>
@@ -46,17 +53,26 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-foreground">Research</h4>
             <ul className="space-y-2">
               <li>
-                <a href="https://research.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://research.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Research Domains
                 </a>
               </li>
               <li>
-                <a href="https://ai-highschool-research.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://ai-highschool-research.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   AI Researcher Bootcamp
                 </a>
               </li>
               <li>
-                <a href="https://flyvidesh.online/ml-bootcamp" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://flyvidesh.online/ml-bootcamp"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   SciML Bootcamp
                 </a>
               </li>
@@ -68,22 +84,34 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-foreground">Courses</h4>
             <ul className="space-y-2">
               <li>
-                <a href="https://minor.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://minor.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Minor in AI
                 </a>
               </li>
               <li>
-                <a href="http://genai-minor.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="http://genai-minor.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Minor in GenAI
                 </a>
               </li>
               <li>
-                <a href="https://courses.vizuara.ai/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://courses.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Course Library
                 </a>
               </li>
               <li>
-                <a href="https://www.youtube.com/@vizuara" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="https://www.youtube.com/@vizuara"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   YouTube
                 </a>
               </li>
@@ -95,28 +123,36 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-foreground">Company</h4>
             <ul className="space-y-2">
               <li>
-                <a href="/about-us" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="/about-us"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   About Us
                 </a>
               </li>
               <li>
-                <a href="/contact-us" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="/contact-us"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Contact
                 </a>
               </li>
             </ul>
             <div className="pt-2">
-              <h4 className="text-sm font-semibold text-foreground mb-3">Follow Us</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">
+                Follow Us
+              </h4>
               <div className="flex flex-wrap gap-3">
-                <a 
-                  href="mailto:hello@vizuara.com" 
+                <a
+                  href="mailto:hello@vizuara.com"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="Email"
                 >
                   <Mail className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://www.linkedin.com/company/vizuara" 
+                <a
+                  href="https://www.linkedin.com/company/vizuara"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -124,8 +160,8 @@ const Footer = () => {
                 >
                   <Linkedin className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://x.com/vizuara" 
+                <a
+                  href="https://x.com/vizuara"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -133,8 +169,8 @@ const Footer = () => {
                 >
                   <XIcon className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://www.youtube.com/@vizuara" 
+                <a
+                  href="https://www.youtube.com/@vizuara"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -142,8 +178,8 @@ const Footer = () => {
                 >
                   <Youtube className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://www.instagram.com/vizuara_ai" 
+                <a
+                  href="https://www.instagram.com/vizuara_ai"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -151,8 +187,8 @@ const Footer = () => {
                 >
                   <Instagram className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://www.vizuaranewsletter.com/" 
+                <a
+                  href="https://www.vizuaranewsletter.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -172,16 +208,28 @@ const Footer = () => {
               © {new Date().getFullYear()} Vizuara. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <a href="/about-us" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="/about-us"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 About Us
               </a>
-              <a href="/contact-us" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="/contact-us"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 Contact
               </a>
-              <a href="/privacy-policy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="/privacy"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 Privacy Policy
               </a>
-              <a href="/terms-and-conditions" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="/terms"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 Terms of Service
               </a>
             </div>
