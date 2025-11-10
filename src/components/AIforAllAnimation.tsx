@@ -136,7 +136,6 @@ const AIForAllAnimation = () => {
     };
   };
 
-  // Lines now connect from the center circle to the center of each node
   const getLinePoints = (nodeId: number) => {
     const nodePos = getNodePosition(nodeId);
     const startX = centerPos.x;
@@ -196,6 +195,14 @@ const AIForAllAnimation = () => {
     }
   };
 
+  // Mobile tap toggle (so cards can open on touch devices)
+  const handleNodeTouch = (nodeId: number) => {
+    setHoveredNode((prev) => (prev === nodeId ? null : nodeId));
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => createPulse(nodeId), i * 80);
+    }
+  };
+
   const strokeW = (hover: boolean) => {
     // Scales slightly with container size; keeps similar visual weight
     const base = hover ? 4 : 2;
@@ -203,16 +210,12 @@ const AIForAllAnimation = () => {
     return Math.max(base, scaled);
   };
 
-  // Helper to determine card position based on node location
+  // Helper to determine card position based on node location (we’ll use only top/bottom)
   const getCardAlignment = (nodeId: number) => {
-    // Node 1 (Schools), 2 (Universities), 6 (Businesses) - card goes down
-    // Node 3 (Industry Professionals), 4 (School Students), 5 (Grads & Undergrads) - card goes up
     if (nodeId === 1 || nodeId === 2 || nodeId === 6) {
-      // Schools, Universities, Businesses - card goes down
-      return { top: "calc(100% + 20px)", transform: "translateX(-50%)" };
+      return { top: "calc(100% + var(--card-gap, 20px))" };
     } else {
-      // Industry Professionals, School Students, Grads & Undergrads - card goes up
-      return { bottom: "calc(100% + 20px)", transform: "translateX(-50%)" };
+      return { bottom: "calc(100% + var(--card-gap, 20px))" };
     }
   };
 
@@ -238,6 +241,7 @@ const AIForAllAnimation = () => {
             "--center-d": `${centerDiameterPx}px`,
             "--dot-d": `${nodeDotDiameterPx}px`,
             "--orbit-r": `${size * ORBIT_RAD_RATIO}px`,
+            "--card-gap": "clamp(12px, 2.2vmin, 24px)",
           } as React.CSSProperties
         }
       >
@@ -354,6 +358,10 @@ const AIForAllAnimation = () => {
               key={node.id}
               onMouseEnter={() => handleNodeHover(node.id, true)}
               onMouseLeave={() => handleNodeHover(node.id, false)}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                handleNodeTouch(node.id);
+              }}
               style={{
                 position: "absolute",
                 left: `${(pos.x / BASE) * 100}%`,
@@ -480,123 +488,135 @@ const AIForAllAnimation = () => {
                   )}
                 </div>
 
-                {/* Floating Info Card (CTA removed) */}
+                {/* Floating Info Card - responsive scale on small screens */}
                 {isHovered && (
                   <div
-                    className="info-card"
+                    className="info-card-wrapper"
                     style={{
                       position: "absolute",
-                      ...cardAlignment,
+                      ...("top" in cardAlignment
+                        ? { top: cardAlignment.top }
+                        : { bottom: (cardAlignment as any).bottom }),
                       left: "50%",
-                      minWidth: "220px",
-                      maxWidth: "280px",
-                      background: "rgba(0, 0, 0, 0.95)",
-                      backdropFilter: "blur(20px)",
-                      border: `2px solid ${node.color}`,
-                      borderRadius: "16px",
-                      padding: "16px",
-                      boxShadow: `
-                        0 20px 60px ${node.color}40,
-                        0 0 40px ${node.color}20,
-                        inset 0 0 20px rgba(0, 0, 0, 0.5)
-                      `,
-                      animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+                      transform: "translateX(-50%) scale(var(--card-scale, 1))",
+                      transformOrigin:
+                        "top" in cardAlignment ? "top center" : "bottom center",
                       zIndex: 1000,
                     }}
                   >
-                    {/* Card Header */}
                     <div
+                      className="info-card"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        marginBottom: "12px",
+                        minWidth: "clamp(180px, 42vw, 280px)",
+                        maxWidth: "min(80vw, 300px)",
+                        background: "rgba(0, 0, 0, 0.95)",
+                        backdropFilter: "blur(20px)",
+                        border: `2px solid ${node.color}`,
+                        borderRadius: "16px",
+                        padding: "clamp(12px, 2.5vmin, 16px)",
+                        boxShadow: `
+                          0 20px 60px ${node.color}40,
+                          0 0 40px ${node.color}20,
+                          inset 0 0 20px rgba(0, 0, 0, 0.5)
+                        `,
+                        animation:
+                          "card-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
                       }}
                     >
+                      {/* Card Header */}
                       <div
                         style={{
-                          width: "36px",
-                          height: "36px",
-                          borderRadius: "10px",
-                          background: `linear-gradient(135deg, ${node.color}40, ${node.color}20)`,
-                          border: `1.5px solid ${node.color}60`,
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
+                          gap: "10px",
+                          marginBottom: "12px",
                         }}
                       >
-                        <Icon
+                        <div
                           style={{
-                            width: "20px",
-                            height: "20px",
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "10px",
+                            background: `linear-gradient(135deg, ${node.color}40, ${node.color}20)`,
+                            border: `1.5px solid ${node.color}60`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Icon
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              color: node.color,
+                            }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              fontSize: "16px",
+                              fontWeight: 700,
+                              color: node.color,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {node.label.replace("\n", " ")}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div
+                        style={{
+                          height: "1px",
+                          background: `linear-gradient(90deg, transparent, ${node.color}60, transparent)`,
+                          marginBottom: "12px",
+                        }}
+                      />
+
+                      {/* Description */}
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "rgba(255, 255, 255, 0.8)",
+                          lineHeight: 1.5,
+                          marginBottom: "12px",
+                        }}
+                      >
+                        {node.description}
+                      </p>
+
+                      {/* Stats Badge */}
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 12px",
+                          background: `${node.color}15`,
+                          border: `1px solid ${node.color}40`,
+                          borderRadius: "20px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <Sparkles
+                          style={{
+                            width: "14px",
+                            height: "14px",
                             color: node.color,
                           }}
                         />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div
+                        <span
                           style={{
-                            fontSize: "16px",
-                            fontWeight: 700,
+                            fontSize: "12px",
+                            fontWeight: 600,
                             color: node.color,
-                            lineHeight: 1.2,
                           }}
                         >
-                          {node.label.replace('\n', ' ')}
-                        </div>
+                          {node.stats}
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Divider */}
-                    <div
-                      style={{
-                        height: "1px",
-                        background: `linear-gradient(90deg, transparent, ${node.color}60, transparent)`,
-                        marginBottom: "12px",
-                      }}
-                    />
-
-                    {/* Description */}
-                    <p
-                      style={{
-                        fontSize: "13px",
-                        color: "rgba(255, 255, 255, 0.8)",
-                        lineHeight: 1.5,
-                        marginBottom: "12px",
-                      }}
-                    >
-                      {node.description}
-                    </p>
-
-                    {/* Stats Badge */}
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 12px",
-                        background: `${node.color}15`,
-                        border: `1px solid ${node.color}40`,
-                        borderRadius: "20px",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <Sparkles
-                        style={{
-                          width: "14px",
-                          height: "14px",
-                          color: node.color,
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          color: node.color,
-                        }}
-                      >
-                        {node.stats}
-                      </span>
                     </div>
                   </div>
                 )}
@@ -748,15 +768,10 @@ const AIForAllAnimation = () => {
             100% { transform: rotate(360deg); }
           }
 
-          @keyframes slideUp {
-            0% {
-              opacity: 0;
-              transform: translate(-50%, 20px);
-            }
-            100% {
-              opacity: 1;
-              transform: translate(-50%, 0);
-            }
+          /* Card appear uses only Y translation to avoid clashing with wrapper scale/translateX */
+          @keyframes card-appear {
+            0% { opacity: 0; transform: translateY(12px); }
+            100% { opacity: 1; transform: translateY(0); }
           }
 
           .ai-node:hover .ai-node-icon {
@@ -823,12 +838,18 @@ const AIForAllAnimation = () => {
           .sparkle-3 { top: 50%; left: -10px; animation: sparkle 1.5s ease-in-out infinite 0.75s; }
           .sparkle-4 { top: 50%; right: -10px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
 
-          .info-card {
-            pointer-events: auto;
-          }
+          .info-card { pointer-events: auto; }
 
-          .info-card button:active {
-            transform: translateY(0) scale(0.98) !important;
+          /* Make cards smaller on phones */
+          .info-card-wrapper { --card-scale: 1; }
+          @media (max-width: 640px) {
+            .info-card-wrapper { --card-scale: 0.9; }
+          }
+          @media (max-width: 480px) {
+            .info-card-wrapper { --card-scale: 0.82; }
+          }
+          @media (max-width: 360px) {
+            .info-card-wrapper { --card-scale: 0.76; }
           }
         `}</style>
       </div>

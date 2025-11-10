@@ -1,4 +1,7 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 const impactItems = [
   {
@@ -75,6 +78,128 @@ const impactItems = [
   },
 ];
 
+/**
+ * CountUp component
+ * - Animates number part of a string (supports commas and trailing '+')
+ * - Starts when it becomes visible
+ * - Respects prefers-reduced-motion
+ */
+const CountUp = ({
+  target,
+  duration = 1200,
+  delay = 0,
+  className,
+}: {
+  target: string | number;
+  duration?: number;
+  delay?: number;
+  className?: string;
+}) => {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [display, setDisplay] = useState<string>("0");
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const str = String(target).trim();
+    const match = str.match(/-?\d[\d,]*(?:\.\d+)?/);
+    const before = match && match.index !== undefined ? str.slice(0, match.index) : "";
+    const numericPart = match ? match[0] : "0";
+    const after = match ? str.slice(match.index! + match[0].length) : "";
+
+    const decimals = numericPart.includes(".")
+      ? (numericPart.split(".")[1] || "").length
+      : 0;
+
+    const endVal = parseFloat(numericPart.replace(/,/g, "")) || 0;
+    const formatter = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let rafId = 0;
+    let started = false;
+
+    const startAnimation = () => {
+      if (started || hasAnimated) return;
+      started = true;
+
+      if (reduceMotion || duration <= 0) {
+        setDisplay(before + formatter.format(endVal) + after);
+        setHasAnimated(true);
+        return;
+      }
+
+      const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+      let startTs: number | null = null;
+
+      const tick = (ts: number) => {
+        if (startTs === null) startTs = ts;
+        const elapsed = ts - startTs;
+
+        if (elapsed < delay) {
+          setDisplay(before + formatter.format(0) + after);
+          rafId = requestAnimationFrame(tick);
+          return;
+        }
+
+        const t = Math.min(1, (elapsed - delay) / duration);
+        const eased = easeOutCubic(t);
+        const current = endVal * eased;
+
+        setDisplay(before + formatter.format(current) + after);
+
+        if (t < 1) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          setHasAnimated(true);
+        }
+      };
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    let observer: IntersectionObserver | null = null;
+
+    if ("IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              startAnimation();
+              observer?.disconnect();
+            }
+          });
+        },
+        { threshold: 0.35 }
+      );
+      observer.observe(element);
+    } else {
+      startAnimation();
+    }
+
+    return () => {
+      if (observer) observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, duration, delay]);
+
+  return (
+    <span ref={ref} className={className} aria-label={String(target)}>
+      {display}
+    </span>
+  );
+};
+
 const OurImpactSection = () => {
   return (
     <section className="relative flex items-center justify-center py-20 px-4 overflow-hidden bg-background">
@@ -102,14 +227,18 @@ const OurImpactSection = () => {
               </h3>
 
               <div className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
-                {item.number}
+                <CountUp
+                  target={item.number}
+                  duration={1200}
+                  className="tabular-nums"
+                />
               </div>
 
               <p className="text-foreground/70 text-sm leading-relaxed">
                 {item.description}
               </p>
 
-              {/* Optional CTA (kept ArrowRight import if you want this) */}
+              {/* Optional CTA */}
               {/* <button className="mt-4 inline-flex items-center gap-2 text-sm text-primary hover:underline underline-offset-4">
                 Learn more <ArrowRight className="w-4 h-4" />
               </button> */}
