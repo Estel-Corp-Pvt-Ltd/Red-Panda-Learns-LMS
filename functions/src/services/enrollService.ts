@@ -7,6 +7,7 @@ import { Enrollment } from '../types/enrollment';
 import { FieldValue } from 'firebase-admin/firestore';
 import { TransactionLineItem } from '../types/transaction';
 import { courseService } from './courseService';
+import { User } from '../types/user';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -27,7 +28,7 @@ class EnrollmentService {
    * Creates enrollment intent with PENDING status (before payment)
    */
   async enrollUser(
-    userId: string,
+    user: User,
     items: TransactionLineItem[],
     orderId: string
   ): Promise<Result<string[]>> {
@@ -39,13 +40,15 @@ class EnrollmentService {
     try {
       for (const item of items) {
         if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE) {
-          const enrollmentId = this.generateEnrollmentId(userId, item.itemId);
+          const enrollmentId = this.generateEnrollmentId(user.id, item.itemId);
           enrollmentIds.push(enrollmentId);
 
           // Create enrollment for single course
           const enrollment: Enrollment = {
             id: enrollmentId,
-            userId,
+            userId: user.id,
+            userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+            userEmail: user.email,
             courseId: item.itemId,
             courseName: item.name,
             bundleId: '', // Empty for course enrollments
@@ -69,12 +72,14 @@ class EnrollmentService {
 
           // Create individual course enrollments for each course in the bundle
           for (const course of bundleCourses) {
-            const courseEnrollmentId = this.generateEnrollmentId(userId, course.id);
+            const courseEnrollmentId = this.generateEnrollmentId(user.id, course.id);
             enrollmentIds.push(courseEnrollmentId);
 
             const courseEnrollment: Enrollment = {
               id: courseEnrollmentId,
-              userId,
+              userId: user.id,
+              userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+              userEmail: user.email,
               courseId: course.id,
               courseName: course.title,
               bundleId: item.itemId, // Reference to parent bundle
@@ -92,7 +97,7 @@ class EnrollmentService {
 
       // Commit the batch
       await batch.commit();
-      functions.logger.info(`Created enrollment intent for user ${userId} with order ${orderId}`);
+      functions.logger.info(`Created enrollment intent for user ${user.id} with order ${orderId}`);
 
       return ok(enrollmentIds);
 
@@ -106,10 +111,10 @@ class EnrollmentService {
    * Enroll user in free course (immediately active)
    */
   async enrollUserInFreeCourse(
-    userId: string,
+    user: User,
     courseId: string
   ): Promise<Result<string>> {
-    if (!userId) return fail("Invalid user ID");
+    if (!user) return fail("Invalid user");
     if (!courseId) return fail("Invalid course ID");
 
     try {
@@ -117,7 +122,7 @@ class EnrollmentService {
       if (!courseResult.success || !courseResult.data) {
         return fail("Course not found");
       }
-      const enrollmentId = this.generateEnrollmentId(userId, courseId);
+      const enrollmentId = this.generateEnrollmentId(user.id, courseId);
       const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
       const enrollmentSnap = await enrollmentRef.get();
 
@@ -127,7 +132,9 @@ class EnrollmentService {
 
       const enrollment: Enrollment = {
         id: enrollmentId,
-        userId,
+        userId: user.id,
+        userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+        userEmail: user.email,
         courseId: courseId,
         courseName: courseResult.data.title,
         bundleId: '', // Empty for free course
@@ -139,7 +146,7 @@ class EnrollmentService {
       };
 
       await enrollmentRef.set(enrollment);
-      functions.logger.info(`Successfully enrolled user ${userId} in free course ${courseId}`);
+      functions.logger.info(`Successfully enrolled user ${user.id} in free course ${courseId}`);
 
       return ok(enrollmentId);
     } catch (error: any) {

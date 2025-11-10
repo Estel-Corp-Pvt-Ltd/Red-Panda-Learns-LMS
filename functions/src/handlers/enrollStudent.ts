@@ -59,7 +59,7 @@ async function enrollStudentHandler(req: Request, res: Response) {
       }
     }
 
-    await enrollmentService.enrollUser(userResult.data.id, courses, "Admin Enrollment");
+    await enrollmentService.enrollUser(userResult.data, courses, "Admin Enrollment");
     functions.logger.info("student enrolled by admin", { userEmail, courseIds, admin: user });
 
     res.status(200).json({
