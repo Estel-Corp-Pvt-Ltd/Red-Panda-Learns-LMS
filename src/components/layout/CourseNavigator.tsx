@@ -77,7 +77,7 @@ export function CourseNavigator({
           {topic.items?.map((lessonItem: TopicItem) => (
             <Link
               key={lessonItem.id}
-              to={`/courses/${course.slug}/lesson/${lessonItem.id}`}
+              to={`/courses/${course.slug ? course.slug : course.id}/lesson/${lessonItem.id}`}
               className={cn(
                 "max-w-full block ml-6 p-3 rounded-lg border border-transparent transition-all duration-200",
                 isLessonActive(lessonItem.id) && [

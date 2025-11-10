@@ -95,7 +95,7 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       provider: PAYMENT_PROVIDER.RAZORPAY,
       providerOrderId: "", // to be updated after Razorpay order creation
       couponDiscount: discount,
-      amount: originalAmount - discount,
+      amount: currencyResult.data.toAmount,
       currency: selectedCurrency,
       promoCode: promoCode || "",
       metadata: {},

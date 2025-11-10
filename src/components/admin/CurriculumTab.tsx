@@ -41,7 +41,7 @@ import type { Lesson } from "@/types/lesson";
 import type { Assignment } from "@/types/assignment";
 import { LearningUnit } from "@/types/general";
 import { Topic } from "@/types/course";
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItem = {
@@ -161,7 +161,7 @@ const CurriculumTab = ({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
- const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
+  const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
 
 
   return (
@@ -194,7 +194,7 @@ const CurriculumTab = ({
 
             {/* Preview */}
             <Link
-              to={`/course/${courseId}/lesson/${firstLessonId}`}
+              to={`/courses/${courseId}/lesson/${firstLessonId}`}
               target="_blank"
             >
               <Button size="sm" className="flex items-center gap-1">
@@ -347,37 +347,37 @@ const CurriculumTab = ({
 
                         {(item.type === LEARNING_UNIT.LESSON ||
                           item.type === LEARNING_UNIT.ASSIGNMENT) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                if (item.type === LEARNING_UNIT.LESSON) {
-                                  setEditingItemId(item.id);
-                                  setIsLessonEditModelOpen(true);
-                                } else if (
-                                  item.type === LEARNING_UNIT.ASSIGNMENT
-                                ) {
-                                  setEditingItemId(item.id);
-                                  setIsAssignmentEditModalOpen(true);
-                                }
-                              }}
-                              className="opacity-0 group-hover:opacity-100"
-                              title="Edit"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteItem(item.id, item)}
-                              className="opacity-0 group-hover:opacity-100 text-destructive"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (item.type === LEARNING_UNIT.LESSON) {
+                                    setEditingItemId(item.id);
+                                    setIsLessonEditModelOpen(true);
+                                  } else if (
+                                    item.type === LEARNING_UNIT.ASSIGNMENT
+                                  ) {
+                                    setEditingItemId(item.id);
+                                    setIsAssignmentEditModalOpen(true);
+                                  }
+                                }}
+                                className="opacity-0 group-hover:opacity-100"
+                                title="Edit"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteItem(item.id, item)}
+                                className="opacity-0 group-hover:opacity-100 text-destructive"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                       </div>
                     </div>
                   </SortableItem>
@@ -424,7 +424,7 @@ const CurriculumTab = ({
           onCancel={() => {
             setIsAssignmentModelOpen(false);
             setEditingItemId(null);
-            setActiveParentId(null); 
+            setActiveParentId(null);
           }}
           onSave={handleAssignment}
         />

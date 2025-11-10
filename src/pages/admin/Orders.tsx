@@ -21,6 +21,7 @@ import {
 import { WhereFilterOp } from 'firebase/firestore';
 import { CURRENCY, ORDER_STATUS } from '@/constants';
 import { OrderStatus } from '@/types/general';
+import { formatDateTime } from '@/utils/date-time';
 
 interface PaginatedOrders {
   data: Order[];
@@ -226,6 +227,7 @@ const AdminOrders: React.FC = () => {
                     <TableHead>Amount</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Created At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -272,6 +274,9 @@ const AdminOrders: React.FC = () => {
                         <Badge variant={getStatusBadgeVariant(order.status)}>
                           {order.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {formatDateTime(order.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

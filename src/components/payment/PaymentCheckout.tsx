@@ -1,4 +1,4 @@
-import { ArrowLeft, CreditCard, Loader2, Lock, Shield, ShoppingCart, MapPin, Building2, MapPinHouse } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2, Lock, Shield, ShoppingCart, MapPin, Building2, MapPinHouse, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -729,7 +729,10 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                   className="w-full"
                 >
                   {isProcessing ? (
-                    "Processing..."
+                    <>
+                      <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                      Processing...
+                    </>
                   ) : (
                     <>
                       <Lock className="h-4 w-4 mr-2" />

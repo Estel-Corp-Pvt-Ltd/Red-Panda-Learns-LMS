@@ -137,25 +137,25 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
           return (
             <iframe
               src={lesson.embedUrl}
-              width="100%"
-              height="500"
-              style={{ border: 0 }}
+              // height="500"
+              style={{ border: 0, width: '100%' }}
               allowFullScreen
               loading="lazy">
             </iframe>
           );
         return (
           <div
-            className="prose prose-sm max-w-none dark:prose-invert leading-relaxed"
+            className="prose prose-sm max-w-none dark:prose-invert leading-relaxed w-full section-with-iframe"
             dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
           />
         );
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
       default:
+        console.log("lesson.embedUrl", lesson.embedUrl);
         return lesson.embedUrl ? (
           <div
-            className="prose prose-sm max-w-none dark:prose-invert leading-relaxed"
+            className="prose prose-sm max-w-none dark:prose-invert leading-relaxed w-full"
             dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
           />
         ) : null;
@@ -163,8 +163,8 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   };
 
   return (
-    <div className={`bg-white dark:bg-background space-y-6 mx-auto ${isFullscreen ? 'p-10 overflow-y-scroll' : ''}`} ref={containerRef}>
-      <div className="flex items-start justify-between gap-4">
+    <div className={`relative bg-white dark:bg-background space-y-6 mx-auto ${isFullscreen ? 'p-10 overflow-y-scroll' : ''}`} ref={containerRef}>
+      <div className="flex items-start justify-between gap-4 w-full">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             {lesson.title}
@@ -194,7 +194,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       </div>
 
       {/* Lesson Content */}
-      <div className="w-full">
+      <div className="w-full" >
         {getLessonContent()}
       </div>
 
