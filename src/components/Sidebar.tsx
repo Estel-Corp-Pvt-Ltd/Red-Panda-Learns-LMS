@@ -43,6 +43,7 @@ const Sidebar: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
+      localStorage.clear();
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);

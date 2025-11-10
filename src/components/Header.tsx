@@ -59,6 +59,7 @@ export function Header({
     try {
       await logout();
       navigate("/");
+      localStorage.clear();
     } catch (error) {
       console.error("Logout failed:", error);
     }
