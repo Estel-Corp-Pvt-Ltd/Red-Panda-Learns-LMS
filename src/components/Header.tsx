@@ -675,7 +675,7 @@ export function Header({
 
             {user ? (
               <div className="flex items-center">
-                {user.role !== USER_ROLE.ADMIN && (
+                {user?.role !== USER_ROLE.ADMIN && (
                   <Link to="/cart" className="relative mr-3">
                     <ShoppingCart className="w-6 h-6" />
                     {cart.length > 0 && (
@@ -715,7 +715,7 @@ export function Header({
                     onMouseLeave={() => setAccountOpen(false)}
                   >
                     <DropdownMenuItem asChild>
-                      <Link to={user.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"}>
+                      <Link to={user?.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"}>
                         <User className="mr-2 h-4 w-4" />
                         <span>Dashboard</span>
                       </Link>

@@ -275,8 +275,8 @@ const AdminUsers: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {user.role}
+                        <Badge variant={getRoleBadgeVariant(user?.role)}>
+                          {user?.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
