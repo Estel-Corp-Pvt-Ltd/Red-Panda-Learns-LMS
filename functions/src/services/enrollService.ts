@@ -147,6 +147,24 @@ class EnrollmentService {
       return fail("Enrollment in free course failed", error.message);
     }
   }
-}
 
+  isUserEnrolledInCourse = async (userId: string, courseId: string): Promise<Result<boolean>> => {
+    try {
+      const enrollmentId = this.generateEnrollmentId(userId, courseId);
+      const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
+      const enrollmentSnap = await enrollmentRef.get();
+
+      if (enrollmentSnap.exists) {
+        const enrollmentData = enrollmentSnap.data() as Enrollment;
+        if (enrollmentData.status === ENROLLMENT_STATUS.ACTIVE) {
+          return ok(true);
+        }
+      }
+      return ok(false);
+    } catch (error: any) {
+      functions.logger.error('Error checking enrollment status:', error);
+      return fail("Failed to check enrollment status", error.message);
+    }
+  }
+}
 export const enrollmentService = new EnrollmentService();
