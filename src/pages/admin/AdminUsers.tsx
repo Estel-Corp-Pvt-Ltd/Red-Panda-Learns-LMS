@@ -163,6 +163,14 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const getInitials = (user: User) => {
+  const parts = [];
+  if (user.firstName) parts.push(user.firstName[0]);
+  if (user.lastName) parts.push(user.lastName[0]);
+  // fallback to email initial if no names
+  return parts.length > 0 ? parts.join('') : user.email?.charAt(0)?.toUpperCase() || '?';
+};
+
   const getEnrollmentsCount = (user: User) => {
     return user.enrollments?.length || 0;
   };
@@ -195,7 +203,8 @@ const AdminUsers: React.FC = () => {
               <CardTitle>Users</CardTitle>
               <CardDescription>
                 Manage platform users, their roles, and statuses.
-                {users.totalCount > 0 && ` (Page ${paginationState.currentPage})`}
+                {users.totalCount > 0 &&
+                  ` (Page ${paginationState.currentPage})`}
               </CardDescription>
             </div>
             {/* <Button
@@ -211,9 +220,7 @@ const AdminUsers: React.FC = () => {
           {users.data.length === 0 ? (
             <div className="text-center py-8">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-semibold">
-                No users
-              </h3>
+              <h3 className="mt-2 text-sm font-semibold">No users</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Get started by inviting or creating a user.
               </p>
@@ -252,8 +259,11 @@ const AdminUsers: React.FC = () => {
                               className="h-8 w-8 rounded-full object-cover"
                             />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                              <UserIcon className="h-4 w-4" />
+                            <div
+                              className="h-8 w-8 rounded-full flex items-center justify-center font-semibold text-xs uppercase 
+                  text-white bg-gradient-to-br from-blue-500 to-indigo-500"
+                            >
+                              {getInitials(user)}
                             </div>
                           )}
                           <div>
@@ -294,7 +304,9 @@ const AdminUsers: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/edit-user/${user.id}`)}
+                            onClick={() =>
+                              navigate(`/admin/edit-user/${user.id}`)
+                            }
                             title="Edit User"
                           >
                             <Edit className="h-4 w-4" />
@@ -322,8 +334,7 @@ const AdminUsers: React.FC = () => {
                 <div className="flex-1 text-sm text-muted-foreground">
                   Showing {users.data.length} users
                   {users.totalCount > users.data.length &&
-                    ` (page ${paginationState.currentPage})`
-                  }
+                    ` (page ${paginationState.currentPage})`}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
