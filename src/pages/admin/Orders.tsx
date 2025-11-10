@@ -235,7 +235,7 @@ const AdminOrders: React.FC = () => {
                   {orders.data.map((order) => (
                     <TableRow key={order.orderId}>
                       <TableCell className="font-mono text-sm">
-                        {order.orderId.slice(-8).toUpperCase()}
+                        {order.orderId}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

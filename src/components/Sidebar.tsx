@@ -1,7 +1,8 @@
 import React from "react";
 import { LayoutDashboard, FileText, Upload, LogOut } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MenuItem {
   name: string;
@@ -10,6 +11,8 @@ interface MenuItem {
 }
 
 const Sidebar: React.FC = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems: MenuItem[] = [
@@ -35,6 +38,15 @@ const Sidebar: React.FC = () => {
       return location.pathname === "/dashboard";
     }
     return location.pathname.startsWith(path);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
@@ -68,6 +80,7 @@ const Sidebar: React.FC = () => {
             "flex items-center gap-3 w-full rounded-lg px-3 py-3 text-sm font-medium transition-all",
             "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
+          onClick={handleLogout}
         >
           <LogOut className="h-5 w-5" />
           <span>Logout</span>
