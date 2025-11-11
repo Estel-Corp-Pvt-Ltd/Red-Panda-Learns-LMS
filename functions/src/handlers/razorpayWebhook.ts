@@ -9,6 +9,7 @@ import { enrollmentService } from "../services/enrollService";
 import { TRANSACTION_STATUS, ORDER_STATUS, TRANSACTION_TYPE } from "../constants";
 import { rawBodyMiddleware } from "../middlewares/rawBody";
 import { defineSecret } from "firebase-functions/params";
+import { userService } from '../services/userService';
 
 const RAZORPAY_WEBHOOK_SECRET = defineSecret("RAZORPAY_WEBHOOK_SECRET");
 
@@ -199,8 +200,14 @@ async function enrollUserInPurchasedItems(orderId: string) {
     const order = orderResult.data;
     const { userId, items } = order;
 
+    const userResult = await userService.getUserById(userId);
+    if (!userResult.success || !userResult.data) {
+      functions.logger.warn("User not found for user ID:", userId);
+      return;
+    }
+
     // Enroll user in each purchased item
-    await enrollmentService.enrollUser(userId, items, orderId);
+    await enrollmentService.enrollUser(userResult.data, items, orderId);
 
   } catch (error) {
     functions.logger.error("❌ Failed to enroll user in purchased items:", error);

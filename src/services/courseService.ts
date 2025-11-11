@@ -24,6 +24,7 @@ import { db } from "@/firebaseConfig";
 import { Course } from "@/types/course";
 import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { Enrollment } from "@/types/enrollment";
 
 class CourseService {
   /**
