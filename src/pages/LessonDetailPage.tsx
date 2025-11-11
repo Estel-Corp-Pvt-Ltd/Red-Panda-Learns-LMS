@@ -39,7 +39,7 @@ export default function LessonDetailPage() {
 
   useEffect(() => {
     if (!courseId || !user || courseLoading) return;
-    if (user.role === USER_ROLE.ADMIN) return;
+    if (user?.role === USER_ROLE.ADMIN) return;
 
     // If not enrolled, redirect back to admin course page
     if (!isEnrolled(courseId)) {

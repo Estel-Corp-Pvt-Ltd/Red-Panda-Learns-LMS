@@ -550,7 +550,7 @@ const PhilosophySection: React.FC = () => {
                         {item.title}
                       </h3>
 
-                      <p className="text-foreground/70 leading-relaxed font-light clamp-2 min-h-[48px]">
+                      <p className="text-foreground/70 leading-relaxed font-light  min-h-[48px]">
                         {item.description}
                       </p>
                     </div>

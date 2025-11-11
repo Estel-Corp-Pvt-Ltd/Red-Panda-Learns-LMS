@@ -98,7 +98,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     );
   }
 
-  if (requireStudent &&   user.role != USER_ROLE.STUDENT) {
+  if (requireStudent && user && user.role != USER_ROLE.STUDENT) {
     return (
       <Navigate
         to="/auth/login"

@@ -463,7 +463,7 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {user.role == USER_ROLE.ADMIN ? (
+                    {user?.role == USER_ROLE.ADMIN ? (
                       <Button className="w-full" size="lg" onClick={handleContinueLearning} >
                         <Play className="h-4 w-4 mr-2" />
                         Continue as Admin

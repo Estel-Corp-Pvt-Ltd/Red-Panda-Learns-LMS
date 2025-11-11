@@ -1,6 +1,6 @@
-import { LogOut, Menu, ShoppingCart, User, Copy, Mail } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Copy, LogOut, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,27 +11,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 
-import { cn } from "@/lib/utils";
 import { USER_ROLE } from "@/constants";
+import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -389,250 +381,250 @@ export function Header({
           {/* ----- Right: Actions ----- */}
           <div className="flex items-center gap-4">
             {/* Mobile Menu */}
-            {/* <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] overflow-y-auto">
-              <div className="flex flex-col gap-6 mt-8">
-                {!user && (
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="ghost"
-                      asChild
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link to="/auth/login">Login</Link>
-                    </Button>
-                    <Button
-                      variant="default"
-                      asChild
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link to="/auth/signup">Sign Up</Link>
-                    </Button>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="font-semibold mb-3 text-foreground">
-                    Products
-                  </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="https://dynaroute.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">DynaRoute</div>
-                      <p className="text-xs text-muted-foreground">
-                        AI-powered routing solutions
-                      </p>
-                    </a>
-                    <a
-                      href="https://vizz.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">Vizz-AI Tutor</div>
-                      <p className="text-xs text-muted-foreground">
-                        Your personal AI assistant
-                      </p>
-                    </a>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3 text-foreground">
-                    Research
-                  </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="https://research.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        Research Domains
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        SciML, GenAI, Vision & more
-                      </p>
-                    </a>
-                    <a
-                      href="https://ai-highschool-research.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        AI Highschool Researcher
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Research training
-                      </p>
-                    </a>
-                    <a
-                      href="https://flyvidesh.online/ml-bootcamp"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        SciML Research Bootcamp
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Scientific ML training
-                      </p>
-                    </a>
-                    <a
-                      href="https://flyvidesh.online/ml-dl-bootcamp"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        ML-DL Research Bootcamp
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        ML & DL research
-                      </p>
-                    </a>
-                    <a
-                      href="https://flyvidesh.online/gen-ai-professional-bootcamp"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        GenAI Professional
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Advanced GenAI
-                      </p>
-                    </a>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3 text-foreground">
-                    Courses
-                  </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="https://minor.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        Minor in AI (LIVE)
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        AI fundamentals
-                      </p>
-                    </a>
-                    <a
-                      href="http://genai-minor.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        Minor in GenAI (LIVE)
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        GenAI curriculum
-                      </p>
-                    </a>
-                    <a
-                      href="https://courses.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        For Undergrads & Professionals
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Self-paced courses
-                      </p>
-                    </a>
-                    <a
-                      href="https://interactive-ai-courses.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">
-                        For School Students
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Interactive learning
-                      </p>
-                    </a>
-                    <a
-                      href="https://www.youtube.com/@vizuara"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">YouTube Channel</div>
-                      <p className="text-xs text-muted-foreground">
-                        Free tutorials
-                      </p>
-                    </a>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3 text-foreground">
-                    For Businesses
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="block p-2 rounded-md">
-                      <div className="font-medium text-sm">
-                        Corporate AI Training
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Enterprise training
-                      </p>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] overflow-y-auto">
+                <div className="flex flex-col gap-6 mt-8">
+                  {!user && (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant="ghost"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/auth/login">Login</Link>
+                      </Button>
+                      <Button
+                        variant="default"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/auth/signup">Sign Up</Link>
+                      </Button>
                     </div>
-                    <div className="block p-2 rounded-md">
-                      <div className="font-medium text-sm">
-                        AI Product Development
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Custom AI solutions
-                      </p>
+                  )}
+
+                  <div>
+                    <h3 className="font-semibold mb-3 text-foreground">
+                      Products
+                    </h3>
+                    <div className="space-y-2">
+                      <a
+                        href="https://dynaroute.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">DynaRoute</div>
+                        <p className="text-xs text-muted-foreground">
+                          AI-powered routing solutions
+                        </p>
+                      </a>
+                      <a
+                        href="https://vizz.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">Vizz-AI Tutor</div>
+                        <p className="text-xs text-muted-foreground">
+                          Your personal AI assistant
+                        </p>
+                      </a>
                     </div>
-                    <a
-                      href="https://dynaroute.vizuara.ai/"
-                      className="block p-2 rounded-md hover:bg-muted"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="font-medium text-sm">DynaRoute API</div>
-                      <p className="text-xs text-muted-foreground">
-                        Enterprise API
-                      </p>
-                    </a>
-                    <div className="p-2 mt-3 border-t border-border">
-                      <div className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        Contact for Business
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-xs">
-                          {email}
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3 text-foreground">
+                      Research
+                    </h3>
+                    <div className="space-y-2">
+                      <a
+                        href="https://research.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          Research Domains
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={copyEmail}
-                          className="shrink-0"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          SciML, GenAI, Vision & more
+                        </p>
+                      </a>
+                      <a
+                        href="https://ai-highschool-research.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          AI Highschool Researcher
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Research training
+                        </p>
+                      </a>
+                      <a
+                        href="https://flyvidesh.online/ml-bootcamp"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          SciML Research Bootcamp
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Scientific ML training
+                        </p>
+                      </a>
+                      <a
+                        href="https://flyvidesh.online/ml-dl-bootcamp"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          ML-DL Research Bootcamp
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          ML & DL research
+                        </p>
+                      </a>
+                      <a
+                        href="https://flyvidesh.online/gen-ai-professional-bootcamp"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          GenAI Professional
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Advanced GenAI
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3 text-foreground">
+                      Courses
+                    </h3>
+                    <div className="space-y-2">
+                      <a
+                        href="https://minor.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          Minor in AI (LIVE)
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          AI fundamentals
+                        </p>
+                      </a>
+                      <a
+                        href="http://genai-minor.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          Minor in GenAI (LIVE)
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          GenAI curriculum
+                        </p>
+                      </a>
+                      <a
+                        href="https://courses.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          For Undergrads & Professionals
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Self-paced courses
+                        </p>
+                      </a>
+                      <a
+                        href="https://interactive-ai-courses.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">
+                          For School Students
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Interactive learning
+                        </p>
+                      </a>
+                      <a
+                        href="https://www.youtube.com/@vizuara"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">YouTube Channel</div>
+                        <p className="text-xs text-muted-foreground">
+                          Free tutorials
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3 text-foreground">
+                      For Businesses
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="block p-2 rounded-md">
+                        <div className="font-medium text-sm">
+                          Corporate AI Training
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enterprise training
+                        </p>
+                      </div>
+                      <div className="block p-2 rounded-md">
+                        <div className="font-medium text-sm">
+                          AI Product Development
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Custom AI solutions
+                        </p>
+                      </div>
+                      <a
+                        href="https://dynaroute.vizuara.ai/"
+                        className="block p-2 rounded-md hover:bg-muted"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="font-medium text-sm">DynaRoute API</div>
+                        <p className="text-xs text-muted-foreground">
+                          Enterprise API
+                        </p>
+                      </a>
+                      <div className="p-2 mt-3 border-t border-border">
+                        <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Contact for Business
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-xs">
+                            {email}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={copyEmail}
+                            className="shrink-0"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet> */}
+              </SheetContent>
+            </Sheet>
 
             {/* Contact Us Popover - Desktop only (kept as click to open) */}
             <Popover>
@@ -676,7 +668,7 @@ export function Header({
 
             {user ? (
               <div className="flex items-center">
-                {user.role !== USER_ROLE.ADMIN && (
+                {user?.role !== USER_ROLE.ADMIN && (
                   <Link to="/cart" className="relative mr-3">
                     <ShoppingCart className="w-6 h-6" />
                     {cart.length > 0 && (
@@ -716,7 +708,7 @@ export function Header({
                     onMouseLeave={() => setAccountOpen(false)}
                   >
                     <DropdownMenuItem asChild>
-                      <Link to={user.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"}>
+                      <Link to={user?.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"}>
                         <User className="mr-2 h-4 w-4" />
                         <span>Dashboard</span>
                       </Link>
