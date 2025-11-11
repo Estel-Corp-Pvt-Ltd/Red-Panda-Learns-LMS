@@ -736,15 +736,7 @@ export function Header({
 
         </div >
       </header >
-      <div className="w-full bg-amber-50 dark:bg-amber-900/30 border-y border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-50">
-        <div
-          className="mx-auto max-w-7xl px-4 py-2 text-center text-sm sm:text-base"
-          role="status"
-          aria-live="polite"
-        >
-          We are upgrading our website. Please expect disruption of features, services and access till Monday EOD IST.
-        </div>
-      </div>
+   
     </>
   );
 }
