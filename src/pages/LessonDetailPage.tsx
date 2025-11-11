@@ -237,7 +237,7 @@ export default function LessonDetailPage() {
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             {/* Course title bigger */}
-            <h1 className="truncate text-lg md:text-xl font-semibold leading-tight">
+            <h1 className=" text-lg md:text-xl font-semibold leading-tight">
               {course.title}
             </h1>
             {/* Lesson title smaller */}
@@ -305,22 +305,16 @@ export default function LessonDetailPage() {
             <div className="p-4 border-b flex items-center justify-between shrink-0">
               <div className="min-w-0">
                 {/* Course bigger in sheet header too */}
-                <h2 className="truncate text-base md:text-lg font-semibold">
+                <h2 className=" text-base md:text-lg font-semibold">
                   {course.title}
                 </h2>
                 {selectedItem && (
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className=" text-xs text-muted-foreground">
                     {selectedItem.title}
                   </p>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(false)}
-              >
-                Close
-              </Button>
+              
             </div>
             <div className="flex-1 overflow-auto">
               <CourseNavigator

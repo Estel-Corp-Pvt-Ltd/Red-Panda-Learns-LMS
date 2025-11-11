@@ -55,12 +55,14 @@ export function CourseNavigator({
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full justify-between p-3 h-auto text-left hover:bg-muted/50 transition-colors"
+            className="w-full justify-between p-3 h-auto text-left hover:bg-muted/50 transition-colors whitespace-normal items-start"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-foreground text-wrap">{topic.title}</div>
-                <div className="text-xs text-muted-foreground">{topic.items?.length || 0} lessons</div>
+                <div className="font-medium text-sm text-foreground text-wrap whitespace-normal break-words leading-snug">
+                  {topic.title}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{topic.items?.length || 0} lessons</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -92,7 +94,7 @@ export function CourseNavigator({
                 title: lessonItem.title
               })}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div
                   className={cn(
                     "flex items-center justify-center w-6 h-6 rounded text-xs bg-muted text-muted-foreground",
@@ -107,10 +109,10 @@ export function CourseNavigator({
                 </div>
 
                 {/* Lesson title */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 min-w-0">
                   <div
                     className={cn(
-                      "text-sm font-medium truncate",
+                      "text-sm font-medium whitespace-normal break-words leading-snug",
                       isLessonActive(lessonItem.id) ? "text-primary" : "text-foreground"
                     )}
                   >
@@ -118,7 +120,7 @@ export function CourseNavigator({
                   </div>
                 </div>
                 <div
-                  className={`w-5 h-5 flex items-center justify-center border rounded-full ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
+                  className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
                     }`}
                 >{isCompleted(lessonItem.id) ? (<Check className="w-4 h-4 text-white" />) : !isLessonActive(lessonItem.id) && <Lock className="w-4 h-4 text-muted-foreground" />}</div>
               </div>
