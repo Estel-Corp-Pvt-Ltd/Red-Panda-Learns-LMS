@@ -5,6 +5,8 @@ import { EnrollmentStatus } from "./general";
 export interface Enrollment {
     id: string;
     userId: string;
+    userName: string;
+    userEmail: string;
     courseId: string;
     courseName: string;
     bundleId?: string;

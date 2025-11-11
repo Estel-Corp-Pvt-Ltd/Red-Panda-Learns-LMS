@@ -35,7 +35,7 @@ import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SORT_OPTIONS } from "@/types/course-filters";
-import { COURSE_STATUS } from "@/constants";
+import { COURSE_STATUS, USER_ROLE } from "@/constants";
 
 const CoursesPage = () => {
   const { enrollments, isEnrolledInBundle } = useEnrollment();
@@ -341,7 +341,7 @@ const CoursesPage = () => {
               {viewMode === "grid" ? (
                 <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredCourses
-                    .filter(course => course.salePrice > 0)
+                    .filter(course => user?.role === USER_ROLE.ADMIN || course.salePrice > 0)
                     .map((course, index) => (
                       <div
                         key={course.id}
@@ -354,7 +354,7 @@ const CoursesPage = () => {
                 </div>
               ) : (
                 <CourseListView
-                  courses={filteredCourses.filter(course => course.salePrice > 0)}
+                  courses={user?.role === USER_ROLE.ADMIN ? filteredCourses : filteredCourses.filter(course => course.salePrice > 0)}
                   enrolledCourseIds={enrolledCourseIds}
                 />
               )}

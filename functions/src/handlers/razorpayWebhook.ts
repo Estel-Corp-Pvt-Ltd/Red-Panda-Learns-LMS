@@ -9,8 +9,12 @@ import { enrollmentService } from "../services/enrollService";
 import { TRANSACTION_STATUS, ORDER_STATUS, TRANSACTION_TYPE } from "../constants";
 import { rawBodyMiddleware } from "../middlewares/rawBody";
 import { defineSecret } from "firebase-functions/params";
+import { userService } from '../services/userService';
+import { PubSub } from "@google-cloud/pubsub";
+import { PaymentDetails } from "../utils/invoice";
 
 const RAZORPAY_WEBHOOK_SECRET = defineSecret("RAZORPAY_WEBHOOK_SECRET");
+const pubsub = new PubSub();
 
 interface RazorpayWebhookPayload {
   event: string;
@@ -199,9 +203,23 @@ async function enrollUserInPurchasedItems(orderId: string) {
     const order = orderResult.data;
     const { userId, items } = order;
 
-    // Enroll user in each purchased item
-    await enrollmentService.enrollUser(userId, items, orderId);
+    const userResult = await userService.getUserById(userId);
+    if (!userResult.success || !userResult.data) {
+      functions.logger.warn("User not found for user ID:", userId);
+      return;
+    }
 
+    // Enroll user in each purchased item
+    await enrollmentService.enrollUser(userResult.data, items, orderId);
+    await pubsub.topic("send-mail").publishMessage({
+      json: {
+        name: userResult.data.firstName + " " + userResult.data.lastName,
+        email: userResult.data.email,
+        amount: order.amount,
+        currency: order.currency,
+        items: order.items
+      } as PaymentDetails,
+    });
   } catch (error) {
     functions.logger.error("❌ Failed to enroll user in purchased items:", error);
   }

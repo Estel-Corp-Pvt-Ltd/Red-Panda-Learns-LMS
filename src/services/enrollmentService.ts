@@ -3,12 +3,20 @@ import {
   collection,
   deleteDoc,
   doc,
+  endBefore,
   getDoc,
   getDocs,
+  limit,
+  limitToLast,
   onSnapshot,
+  orderBy,
+  Query,
   query,
   serverTimestamp,
+  startAfter,
+  updateDoc,
   where,
+  WhereFilterOp,
   writeBatch
 } from "firebase/firestore";
 
@@ -30,6 +38,7 @@ import { bundleService } from "./bundleService";
 import { learningProgressService } from "./learningProgressService";
 import { userService } from "./userService";
 import { authService } from "./authService";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 
 type EnrollmentItem = {
   itemId: string;
@@ -244,6 +253,23 @@ class EnrollmentService {
     }
   }
 
+  async updateEnrollmentStatus(
+    enrollmentId: string,
+    status: EnrollmentStatus
+  ): Promise<Result<void>> {
+    try {
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      await updateDoc(enrollmentRef, {
+        status,
+        updatedAt: serverTimestamp(),
+      });
+
+      return ok(undefined);
+    } catch (error: any) {
+      return fail("Error updating enrollment status", error.message);
+    }
+  }
+
   /**
    * Resolves when all courses are enrolled, or rejects after timeout
    */
@@ -345,6 +371,144 @@ class EnrollmentService {
         "Failed to delete enrollment.",
         error.code || error.message
       );
+    }
+  }
+
+  /**
+   * Get enrollments with filtering and pagination
+   */
+  async getEnrollments(
+    filters?: {
+      field: keyof Enrollment;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Enrollment> = {}
+  ): Promise<Result<PaginatedResult<Enrollment>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: "enrollmentDate", direction: "desc" },
+        pageDirection = "next",
+        cursor = null,
+      } = options;
+
+      let q: Query = collection(db, COLLECTION.ENROLLMENTS);
+
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        // For string search (courseName, userName, userEmail), we need separate handling
+        // since we can't mix range queries on different fields without composite indexes
+        const stringSearchFilters = filters.filter(f =>
+          ['courseName', 'userName', 'userEmail'].includes(f.field as string) &&
+          f.op === '>=' &&
+          typeof f.value === 'string'
+        );
+
+        const otherFilters = filters.filter(f =>
+          !(['courseName', 'userName', 'userEmail'].includes(f.field as string) && f.op === '>=')
+        );
+
+        // Apply string search filters (only one at a time)
+        if (stringSearchFilters.length > 0) {
+          // Take only the first string search filter to avoid composite index requirements
+          const searchFilter = stringSearchFilters[0];
+          q = query(
+            q,
+            where(searchFilter.field as string, '>=', searchFilter.value),
+            where(searchFilter.field as string, '<=', searchFilter.value + '\uf8ff')
+          );
+        }
+
+        // Apply other filters (date ranges, etc.)
+        if (otherFilters.length > 0) {
+          const whereClauses = otherFilters.map((f) =>
+            where(f.field as string, f.op, f.value)
+          );
+          q = query(q, ...whereClauses);
+        }
+      }
+
+      // Apply ordering
+      const { field, direction } = orderByOption;
+
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === "previous" && cursor) {
+        // Previous page - use endBefore with limitToLast
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        // Next page - use startAfter
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
+      } else {
+        // First page - simple limit
+        q = query(q, orderBy(field as string, direction), limit(itemsPerPage));
+      }
+
+      const querySnapshot = await getDocs(q);
+
+      // Get the documents for pagination cursors
+      const documents = querySnapshot.docs;
+
+      if (pageDirection === "previous") {
+        // For previous page, we need to reverse the order since we used limitToLast
+        documents.reverse();
+      }
+
+      const enrollments = documents.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          userId: data.userId,
+          userName: data.userName || '',
+          userEmail: data.userEmail || '',
+          courseId: data.courseId,
+          courseName: data.courseName,
+          bundleId: data.bundleId || '',
+          enrollmentDate: data.enrollmentDate,
+          status: data.status,
+          orderId: data.orderId || '',
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        } as Enrollment;
+      });
+
+      // Determine pagination metadata
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+
+      // Get cursors for next and previous pages
+      const nextCursor = hasNextPage
+        ? querySnapshot.docs[querySnapshot.docs.length - 1]
+        : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      console.log("EnrollmentService - Fetched enrollments:", {
+        count: enrollments.length,
+        hasNextPage,
+        hasPreviousPage,
+        filters: filters?.length || 0
+      });
+
+      return ok({
+        data: enrollments,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor,
+      });
+    } catch (error: any) {
+      console.error("EnrollmentService - Error fetching enrollments:", error);
+      return fail("Error fetching enrollments", error.message);
     }
   }
 }

@@ -237,7 +237,7 @@ export default function LessonDetailPage() {
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             {/* Course title bigger */}
-            <h1 className="truncate text-lg md:text-xl font-semibold leading-tight">
+            <h1 className=" text-lg md:text-xl font-semibold leading-tight">
               {course.title}
             </h1>
             {/* Lesson title smaller */}
@@ -259,21 +259,22 @@ export default function LessonDetailPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <CourseNavigator
-            course={course}
-            currentLesson={selectedItem}
-            className="h-screen sticky top-0"
-            onLessonClick={handleItemSelect}
-          />
-        </div>
+      <div className="flex h-screen overflow-hidden">
+        {/* Fixed Sidebar */}
+        <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm">
+          <div className="flex-1 overflow-y-auto p-4">
+            <CourseNavigator
+              course={course}
+              currentLesson={selectedItem}
+              onLessonClick={handleItemSelect}
+            />
+          </div>
+        </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-scroll">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           {!selectedItem ? (
-            <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="flex items-center justify-center min-h-[80vh]">
               <div className="text-center">
                 <h2 className="text-2xl font-bold mb-2">
                   Select content to start learning
@@ -304,22 +305,16 @@ export default function LessonDetailPage() {
             <div className="p-4 border-b flex items-center justify-between shrink-0">
               <div className="min-w-0">
                 {/* Course bigger in sheet header too */}
-                <h2 className="truncate text-base md:text-lg font-semibold">
+                <h2 className=" text-base md:text-lg font-semibold">
                   {course.title}
                 </h2>
                 {selectedItem && (
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className=" text-xs text-muted-foreground">
                     {selectedItem.title}
                   </p>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(false)}
-              >
-                Close
-              </Button>
+              
             </div>
             <div className="flex-1 overflow-auto">
               <CourseNavigator

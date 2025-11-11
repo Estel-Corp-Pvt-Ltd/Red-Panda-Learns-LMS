@@ -55,12 +55,14 @@ export function CourseNavigator({
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full justify-between p-3 h-auto text-left hover:bg-muted/50 transition-colors"
+            className="w-full justify-between p-3 h-auto text-left hover:bg-muted/50 transition-colors whitespace-normal items-start"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-foreground text-wrap">{topic.title}</div>
-                <div className="text-xs text-muted-foreground">{topic.items?.length || 0} lessons</div>
+                <div className="font-medium text-sm text-foreground text-wrap whitespace-normal break-words leading-snug">
+                  {topic.title}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{topic.items?.length || 0} lessons</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -92,7 +94,7 @@ export function CourseNavigator({
                 title: lessonItem.title
               })}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div
                   className={cn(
                     "flex items-center justify-center w-6 h-6 rounded text-xs bg-muted text-muted-foreground",
@@ -107,10 +109,10 @@ export function CourseNavigator({
                 </div>
 
                 {/* Lesson title */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 min-w-0">
                   <div
                     className={cn(
-                      "text-sm font-medium truncate",
+                      "text-sm font-medium whitespace-normal break-words leading-snug",
                       isLessonActive(lessonItem.id) ? "text-primary" : "text-foreground"
                     )}
                   >
@@ -118,7 +120,7 @@ export function CourseNavigator({
                   </div>
                 </div>
                 <div
-                  className={`w-5 h-5 flex items-center justify-center border rounded-full ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
+                  className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
                     }`}
                 >{isCompleted(lessonItem.id) ? (<Check className="w-4 h-4 text-white" />) : !isLessonActive(lessonItem.id) && <Lock className="w-4 h-4 text-muted-foreground" />}</div>
               </div>
@@ -130,10 +132,14 @@ export function CourseNavigator({
   };
 
   return (
-    <div className={cn("w-80 border-r bg-card/50 backdrop-blur-sm", className)}>
-      <div className="h-full max-w-full p-4 overflow-y-scroll">
+    <div
+      className={cn(
+        "w-80 h-full border-r bg-card/50 backdrop-blur-sm flex flex-col",
+        className
+      )}
+    >
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
-
           {/* === Top-level course topics === */}
           {course.topics?.length > 0 && (
             <div className="space-y-2">
@@ -142,15 +148,15 @@ export function CourseNavigator({
           )}
 
           {/* === Cohort Topics === */}
-          {course.cohorts?.length > 0 && course.cohorts.map((cohort, cohortIndex) => (
-            <div key={`cohort-${cohortIndex}`} className="space-y-2">
-              <div className="text-muted-foreground text-sm font-medium px-1">
-                {cohort.title || `Cohort ${cohortIndex + 1}`}
+          {course.cohorts?.length > 0 &&
+            course.cohorts.map((cohort, cohortIndex) => (
+              <div key={`cohort-${cohortIndex}`} className="space-y-2">
+                <div className="text-muted-foreground text-sm font-medium px-1">
+                  {cohort.title || `Cohort ${cohortIndex + 1}`}
+                </div>
+                {cohort.topics?.map((topic: any) => renderTopic(topic))}
               </div>
-              {cohort.topics?.map((topic: any) => renderTopic(topic))}
-            </div>
-          ))}
-
+            ))}
         </div>
       </div>
     </div>

@@ -67,7 +67,7 @@ import MyInvoicesPage from "./pages/MyInvoices";
 import AuthRedirection from "./components/auth/AuthRedirection";
 import EnrollStudent from "./pages/admin/EnrollStudent";
 import AdminBulkStudentEnroll from "./pages/admin/AdminBulkStudentEnroll";
-
+import StudentEnrollments from "./components/admin/StudentEnrollments";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -165,6 +165,11 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      <Route path="/admin/enrollments" element={
+                        <AuthGuard requireAdmin>
+                          <StudentEnrollments />
+                        </AuthGuard>
+                      } />
                       <Route
                         path="/admin/bulk-student-enroll"
                         element={
