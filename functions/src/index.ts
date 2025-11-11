@@ -20,5 +20,5 @@ export {
   razorpayWebhook,
   sendMailWorker,
   courseDeleteCascade,
-  lessonDeleteCascade
+  lessonDeleteCascade,
 };
