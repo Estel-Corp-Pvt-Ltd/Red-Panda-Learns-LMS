@@ -259,21 +259,22 @@ export default function LessonDetailPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <CourseNavigator
-            course={course}
-            currentLesson={selectedItem}
-            className="h-screen sticky top-0"
-            onLessonClick={handleItemSelect}
-          />
-        </div>
+      <div className="flex h-screen overflow-hidden">
+        {/* Fixed Sidebar */}
+        <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm">
+          <div className="flex-1 overflow-y-auto p-4">
+            <CourseNavigator
+              course={course}
+              currentLesson={selectedItem}
+              onLessonClick={handleItemSelect}
+            />
+          </div>
+        </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-scroll">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           {!selectedItem ? (
-            <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="flex items-center justify-center min-h-[80vh]">
               <div className="text-center">
                 <h2 className="text-2xl font-bold mb-2">
                   Select content to start learning

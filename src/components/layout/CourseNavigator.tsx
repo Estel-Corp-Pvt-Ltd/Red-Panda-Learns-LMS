@@ -130,10 +130,14 @@ export function CourseNavigator({
   };
 
   return (
-    <div className={cn("w-80 border-r bg-card/50 backdrop-blur-sm", className)}>
-      <div className="h-full max-w-full p-4 overflow-y-scroll">
+    <div
+      className={cn(
+        "w-80 h-full border-r bg-card/50 backdrop-blur-sm flex flex-col",
+        className
+      )}
+    >
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
-
           {/* === Top-level course topics === */}
           {course.topics?.length > 0 && (
             <div className="space-y-2">
@@ -142,15 +146,15 @@ export function CourseNavigator({
           )}
 
           {/* === Cohort Topics === */}
-          {course.cohorts?.length > 0 && course.cohorts.map((cohort, cohortIndex) => (
-            <div key={`cohort-${cohortIndex}`} className="space-y-2">
-              <div className="text-muted-foreground text-sm font-medium px-1">
-                {cohort.title || `Cohort ${cohortIndex + 1}`}
+          {course.cohorts?.length > 0 &&
+            course.cohorts.map((cohort, cohortIndex) => (
+              <div key={`cohort-${cohortIndex}`} className="space-y-2">
+                <div className="text-muted-foreground text-sm font-medium px-1">
+                  {cohort.title || `Cohort ${cohortIndex + 1}`}
+                </div>
+                {cohort.topics?.map((topic: any) => renderTopic(topic))}
               </div>
-              {cohort.topics?.map((topic: any) => renderTopic(topic))}
-            </div>
-          ))}
-
+            ))}
         </div>
       </div>
     </div>
