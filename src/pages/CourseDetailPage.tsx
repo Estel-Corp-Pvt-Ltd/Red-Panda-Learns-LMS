@@ -148,42 +148,20 @@ export default function CourseDetailPage() {
   };
 
   const handleCheckout = async () => {
-    if (course.salePrice === 0) {
+    if (course.salePrice === 0 && course.regularPrice === 0) {
       // Enroll Directly
-      const enrollmentResult = await enrollmentService.enrollUserInFreeCourse(
-        user.id,
-        courseId,
-        lessonCount
-      );
-
-      const orderCreationResult = await orderService.createOrderForFreeCourse({
-        userId: user.id,
-        items: [
-          {
-            itemId: courseId,
-            itemType: ENROLLED_PROGRAM_TYPE.COURSE,
-            name: course.title,
-            amount: 0,
-            originalAmount: course.regularPrice,
-          },
-        ],
-        status: ORDER_STATUS.COMPLETED,
-        amount: 0,
-        currency: CURRENCY.INR,
-        billingAddress: null,
-      });
-
-      if (enrollmentResult.success && orderCreationResult.success) {
+      const enrollmentResult = await enrollmentService.enrollUserInFreeCourse(courseId);
+      if (!enrollmentResult.success) {
         toast({
-          title: "Enrollment Successful!",
-          description: "If you don't see the course, reload the page.",
-        });
-      } else {
-        toast({
-          title: "Enrollment Successful!",
-          description: "If you don't see the course, reload the page.",
+          title: "Enrollment Failed",
+          description: `Could not enroll in ${course.title}. Please try again.`,
+          variant: "destructive",
         });
       }
+      toast({
+        title: "Enrolled Successfully",
+        description: `You have been enrolled in ${course.title}.`,
+      });
       navigate(`/courses/${course.slug ? course.slug : course.id}`);
       return;
     }
@@ -343,7 +321,7 @@ export default function CourseDetailPage() {
   };
   const hasInstructor = !!course?.instructorName?.trim();
   const instructorInitial = course?.instructorName?.trim()?.[0]?.toUpperCase();
-
+  console.log("Rendering CourseDetailPage for course:", course);
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -502,7 +480,7 @@ export default function CourseDetailPage() {
                               </Button>
                             )}
                             <Button className="w-full" onClick={handleCheckout}>
-                              Go To Checkout
+                              {course.salePrice === 0 ? "Enroll for Free" : `Go To Checkout`}
                             </Button>
                           </>
                         )}

@@ -1,20 +1,17 @@
 import * as functions from "firebase-functions";
 import { Request, Response } from "express";
-import { withMiddleware } from "../middlewares";
-import { corsMiddleware } from "../middlewares/cors";
-import { authMiddleware } from "../middlewares/auth";
+import { withMiddleware } from "../../middlewares";
+import { corsMiddleware } from "../../middlewares/cors";
+import { authMiddleware } from "../../middlewares/auth";
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/https";
-import { EnrollStudentSchema } from "../utils/validators";
-import { defineSecret } from "firebase-functions/params";
-import { userService } from "../services/userService";
-import { enrollmentService } from "../services/enrollService";
-import { getItemsDetails } from "../utils/orderUtils";
+import { EnrollStudentSchema } from "../../utils/validators";
+import { userService } from "../../services/userService";
+import { enrollmentService } from "../../services/enrollService";
+import { getItemsDetails } from "../../utils/orderUtils";
 
 if (!admin.apps.length) admin.initializeApp();
 
-const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
-const RAZORPAY_SECRET_KEY = defineSecret("RAZORPAY_KEY_SECRET");
 
 // ------------------ Enroll Student ------------------
 async function enrollStudentHandler(req: Request, res: Response) {
@@ -62,7 +59,6 @@ async function enrollStudentHandler(req: Request, res: Response) {
 
 export const enrollStudent = onRequest({
   region: "us-central1",
-  secrets: [RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY]
 }, withMiddleware(
   corsMiddleware,
   authMiddleware,

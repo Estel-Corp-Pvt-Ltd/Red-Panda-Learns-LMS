@@ -90,7 +90,7 @@ class EnrollmentService {
       }
 
       const data = await response.json();
-      return ok(data.enrolledCourses);
+      return ok(data.items);
     } catch (error) {
       logError("EnrollmentService.enrollUser", error);
       return fail("Enrollment failed", error.message);
@@ -98,82 +98,35 @@ class EnrollmentService {
   }
 
   async enrollUserInFreeCourse(
-    userId: string,
     courseId: string,
-    totalLessons: number
   ): Promise<Result<string>> {
 
-    if (!userId) return fail("Invalid user ID");
     if (!courseId) return fail("Invalid course ID");
 
-    const batch = writeBatch(db);
-
     try {
-
-      const userDocRef = doc(db, COLLECTION.USERS, userId);
-      const userSnap = await getDoc(userDocRef);
-
-      if (!userSnap.exists()) {
-        return fail("User does not exist");
-      }
-
-      const userData = userSnap.data();
-      const alreadyEnrolled = (userData.enrollments || []).some(
-        (e: any) =>
-          e.targetId === courseId &&
-          e.targetType === ENROLLED_PROGRAM_TYPE.COURSE
-      );
-
-      const enrollmentId = this.generateEnrollmentId(userId, courseId);
-      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
-
-      const enrollmentSnap = await getDoc(enrollmentRef);
-
-      if (enrollmentSnap.exists() || alreadyEnrolled) {
-        return ok(enrollmentId);
-      }
-
-      const progressResult = await learningProgressService.createLessonProgress(courseId, 0);
-
-      if (!progressResult.success) {
-        return fail("Failed to create progress for single course", progressResult.error.message);
-      }
-
-      const enrollment = {
-        id: enrollmentId,
-        userId,
-        targetId: courseId,
-        targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-        enrollmentDate: serverTimestamp(),
-        status: ENROLLMENT_STATUS.ACTIVE,
-        role: USER_ROLE.STUDENT,
-        progressId: progressResult.data.progressId,
-        progressSummary: { completedLessons: 0, totalLessons: totalLessons ?? 0, percent: 0 },
-        pricingModel: PRICING_MODEL.FREE,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-
-      batch.set(doc(db, COLLECTION.ENROLLMENTS, enrollmentId), enrollment);
-
-      batch.set(
-        userDocRef,
-        {
-          enrollments: arrayUnion({
-            targetId: courseId,
-            targetType: ENROLLED_PROGRAM_TYPE.COURSE,
-          }),
+      const idToken = await authService.getToken();
+      const response = await fetch(`${this.backendUrl}/enrollFreeCourse`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
-        { merge: true }
-      );
+        body: JSON.stringify({
+          courseId: courseId,
+        }),
+      });
 
-      await batch.commit();
-
-      return ok(enrollmentId);
-
-    } catch (error: any) {
-      logError("EnrollmentService.enrollUserInFreeCourse", error);
-      return fail("Enrollment in free course failed.", error.code || error.message);
+      if (!response.ok) {
+        throw new Error("Failed to enroll student");
+      }
+      if (response.status === 400) {
+        const data = await response.json();
+        return ok(data?.items);
+      }
+      return fail("Enrollment in free course failed");
+    } catch (error) {
+      logError("EnrollmentService.enrollUser", error);
+      return fail("Enrollment failed", error.message);
     }
   }
 
