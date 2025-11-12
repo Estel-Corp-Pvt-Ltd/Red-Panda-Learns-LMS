@@ -24,6 +24,7 @@ import { COURSE_STATUS, CURRENCY } from '@/constants';
 import AdminLayout from '@/components/AdminLayout';
 import { toast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PaginatedCourses {
   data: Course[];
@@ -32,9 +33,11 @@ interface PaginatedCourses {
   nextCursor?: any;
   previousCursor?: any;
   totalCount: number;
-}
+};
 
 type COURSE_STATUS = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
+
+type CoursePriceFilter = "Zero" | "Non Zero" | "All";
 
 const AdminCourses = () => {
   const navigate = useNavigate();
@@ -58,6 +61,7 @@ const AdminCourses = () => {
     pageDirection: 'next' as 'next' | 'previous',
     currentPage: 1
   });
+  const [coursePriceFilterValue, setCoursePriceFilterValue] = useState<CoursePriceFilter>("All");
 
   // Debounced search effect
   useEffect(() => {
@@ -428,6 +432,27 @@ const AdminCourses = () => {
                   <option value={COURSE_STATUS.ARCHIVED}>Archived</option>
                 </select>
               </div>
+
+              <Select
+                value={coursePriceFilterValue}
+                onValueChange={(val) => setCoursePriceFilterValue(val as CoursePriceFilter)}
+              >
+                <SelectTrigger className='w-fit'>
+                  <SelectValue placeholder="Select Pricing" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"All"}>
+                    ALL
+                  </SelectItem>
+                  <SelectItem value={"Zero"}>
+                    ZERO
+                  </SelectItem>
+                  <SelectItem value={"Non Zero"}>
+                    NON ZERO
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
             </div>
           </div>
         </CardHeader>
@@ -485,7 +510,9 @@ const AdminCourses = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {courses.data.map((course) => (
+                  {courses.data.filter(course => coursePriceFilterValue === "All" ? true : (
+                    coursePriceFilterValue === "Non Zero" ? course.salePrice > 0 : course.salePrice === 0
+                  )).map((course) => (
                     <TableRow key={course.id}>
                       <TableCell>
                         <div>
