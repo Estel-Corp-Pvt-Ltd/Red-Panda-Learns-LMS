@@ -31,19 +31,7 @@ import { COLLECTION, ENVIRONMENT } from "@/constants";
 import { Duration } from "@/types/general";
 import { logError } from "@/utils/logger";
 import { authService } from "./authService";
-/** Deep‑cleans objects before sending to Firestore */
-function deepClean(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-  if (Array.isArray(obj)) return obj.map(deepClean);
-  if (typeof obj === "object") {
-    return Object.fromEntries(
-      Object.entries(obj)
-        .filter(([_, v]) => v !== undefined && !Number.isNaN(v))
-        .map(([k, v]) => [k, deepClean(v)])
-    );
-  }
-  return obj;
-}
+
 
 class LessonService {
   private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ?

@@ -113,7 +113,7 @@ export default function Login() {
   return (
     <div className="min-h-screen">
       <Header />
-      <div className="w-full bg-blue-50 dark:bg-blue-950/30 border-y border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-100">
+      {/* <div className="w-full bg-blue-50 dark:bg-blue-950/30 border-y border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-100">
         <div
           className="mx-auto max-w-7xl px-4 py-2 text-center text-sm sm:text-base"
           role="status"
@@ -121,7 +121,7 @@ export default function Login() {
         >
           If you are not able to log in, your password might have expired. Please click on <Link to="/auth/forgot-password" className="text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 underline font-medium">forgot password</Link>.
         </div>
-      </div>
+      </div> */}
       <div className="flex justify-center items-center py-12 px-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="space-y-1 text-center">

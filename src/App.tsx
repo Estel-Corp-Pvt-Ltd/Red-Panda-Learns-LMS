@@ -66,7 +66,7 @@ import InvoicePage from "./pages/InvoicePage";
 import MyInvoicesPage from "./pages/MyInvoices";
 import AuthRedirection from "./components/auth/AuthRedirection";
 import EnrollStudent from "./pages/admin/EnrollStudent";
-import AdminBulkStudentEnroll from "./pages/admin/AdminBulkStudentEnroll";
+// import AdminBulkStudentEnroll from "./pages/admin/AdminBulkStudentEnroll";
 import StudentEnrollments from "./components/admin/StudentEnrollments";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
@@ -170,14 +170,14 @@ const App = () => (
                           <StudentEnrollments />
                         </AuthGuard>
                       } />
-                      <Route
+                      {/* <Route
                         path="/admin/bulk-student-enroll"
                         element={
                           <AuthGuard requireAdmin>
                             <AdminBulkStudentEnroll />
                           </AuthGuard>
                         }
-                      />
+                      /> */}
                       <Route
                         path="/admin/users"
                         element={
