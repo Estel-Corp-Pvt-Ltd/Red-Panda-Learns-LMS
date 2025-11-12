@@ -441,14 +441,14 @@ const AdminCourses = () => {
                   <SelectValue placeholder="Select Pricing" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={"All"}>
-                    ALL
+                  <SelectItem value={"All Prices"}>
+                    All Prices
                   </SelectItem>
                   <SelectItem value={"Zero Price"}>
-                    ZERO
+                    Zero Price
                   </SelectItem>
                   <SelectItem value={"Non Zero Price"}>
-                    NON ZERO
+                    Non Zero Price
                   </SelectItem>
                 </SelectContent>
               </Select>
