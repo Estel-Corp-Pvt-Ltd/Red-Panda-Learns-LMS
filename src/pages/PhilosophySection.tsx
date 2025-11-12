@@ -39,6 +39,7 @@ interface DecryptedLineProps {
 interface DecryptedCodeLineByLineProps {
   text: string;
   startTrigger: number;
+  speedFactor?: number; // 1 = normal, 2 = 2x faster, etc.
 }
 
 interface DecryptedMathLineProps {
@@ -51,6 +52,7 @@ interface DecryptedMathLineProps {
 interface DecryptedMathLineByLineProps {
   lines: string[];
   startTrigger: number;
+  speedFactor?: number; // 1 = normal, 3 = 3x faster, etc.
 }
 
 interface ResearchPaper {
@@ -61,7 +63,7 @@ interface ResearchPaper {
   link: string;
 }
 
-// Scholar items (add more as needed)
+// Scholar items
 const researchPapers: ResearchPaper[] = [
   {
     title: "Decoders Laugh as Loud as Encoders",
@@ -296,10 +298,21 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
 const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
   text,
   startTrigger,
+  speedFactor = 1,
 }) => {
   const [visibleLines, setVisibleLines] = useState(0);
   const lines = text.split("\n");
   const startedRef = useRef(false);
+
+  // speed-scaled durations
+  const perLineDuration = Math.max(
+    120,
+    Math.floor(DECRYPTION_CONFIG.TIME_PER_LINE / speedFactor)
+  );
+  const lineDelay = Math.max(
+    50,
+    Math.floor(DECRYPTION_CONFIG.LINE_TRANSITION_DELAY / speedFactor)
+  );
 
   useEffect(() => {
     if (startTrigger > 0 && !startedRef.current) {
@@ -310,10 +323,7 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
 
   const handleLineComplete = (index: number) => {
     if (index < lines.length - 1) {
-      window.setTimeout(
-        () => setVisibleLines(index + 2),
-        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
-      );
+      window.setTimeout(() => setVisibleLines(index + 2), lineDelay);
     }
   };
 
@@ -324,7 +334,7 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
           <DecryptedLine
             key={`${startTrigger}-${i}`}
             text={line || " "}
-            fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
+            fixedDuration={perLineDuration}
             onComplete={() => handleLineComplete(i)}
           />
         ) : (
@@ -338,9 +348,19 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
 const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
   lines,
   startTrigger,
+  speedFactor = 1,
 }) => {
   const [visibleLines, setVisibleLines] = useState(0);
   const startedRef = useRef(false);
+
+  const perLineDuration = Math.max(
+    120,
+    Math.floor(DECRYPTION_CONFIG.TIME_PER_LINE / speedFactor)
+  );
+  const lineDelay = Math.max(
+    50,
+    Math.floor(DECRYPTION_CONFIG.LINE_TRANSITION_DELAY / speedFactor)
+  );
 
   useEffect(() => {
     if (startTrigger > 0 && !startedRef.current) {
@@ -351,10 +371,7 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
 
   const handleLineComplete = (index: number) => {
     if (index < lines.length - 1) {
-      window.setTimeout(
-        () => setVisibleLines(index + 2),
-        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
-      );
+      window.setTimeout(() => setVisibleLines(index + 2), lineDelay);
     }
   };
 
@@ -365,7 +382,7 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
           <DecryptedMathLine
             key={`${startTrigger}-${i}`}
             latex={latex}
-            fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
+            fixedDuration={perLineDuration}
             onComplete={() => handleLineComplete(i)}
           />
         ) : (
@@ -470,9 +487,7 @@ const PhilosophySection: React.FC = () => {
           width: calc(100% + 18px);
           height: calc(100% + 18px);
           border-radius: 9999px;
-          /* colored arc with transparent remainder */
           background: conic-gradient(currentColor 0deg 80deg, transparent 80deg 360deg);
-          /* make it a thin ring */
           -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
                   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
           animation: ring-rotate 1.6s linear infinite;
@@ -481,7 +496,7 @@ const PhilosophySection: React.FC = () => {
           filter: drop-shadow(0 0 8px currentColor);
         }
 
-        /* Existing pulse ring (auto pulses) */
+        /* Pulse ring */
         @keyframes pulse-ring {
           0%   { box-shadow: 0 0 0 0 rgba(0,0,0,0); opacity: 0.9; }
           50%  { box-shadow: 0 0 24px 6px rgba(0,0,0,0.08); opacity: 0.5; }
@@ -525,7 +540,7 @@ const PhilosophySection: React.FC = () => {
                             transform: isHovered ? "scale(1.2)" : "scale(1)",
                           }}
                         >
-                          {/* Rotating ring behind the circle (hover only) */}
+                          {/* Rotating ring on hover */}
                           {isHovered && (
                             <span
                               className="rotating-ring"
@@ -550,12 +565,12 @@ const PhilosophySection: React.FC = () => {
                         {item.title}
                       </h3>
 
-                      <p className="text-foreground/70 leading-relaxed font-light  min-h-[48px]">
+                      <p className="text-foreground/70 leading-relaxed font-light min-h-[48px]">
                         {item.description}
                       </p>
                     </div>
 
-                    {/* Content area (same height + same font across all) */}
+                    {/* Content area */}
                     <div className="mt-6 w-full flex-1">
                       <div
                         className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden h-[220px]"
@@ -571,6 +586,7 @@ const PhilosophySection: React.FC = () => {
 
                         <div className="p-5 h-[calc(220px-40px)] text-left">
                           {index === 2 ? (
+                            // Research
                             <div className="text-left h-full flex flex-col">
                               <div
                                 className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}
@@ -613,14 +629,17 @@ const PhilosophySection: React.FC = () => {
                               </a>
                             </div>
                           ) : index === 0 ? (
+                            // Foundations — 3x faster
                             <div className={CONTENT_FONT_CLASS}>
                               <DecryptedMathLineByLine
                                 key={`math-${decryptionTrigger}`}
                                 lines={foundationLatexLines}
                                 startTrigger={decryptionTrigger}
+                                speedFactor={3}
                               />
                             </div>
                           ) : (
+                            // Practicals — 2x faster
                             <pre
                               className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}
                             >
@@ -629,6 +648,7 @@ const PhilosophySection: React.FC = () => {
                                   key={`code-${decryptionTrigger}`}
                                   text={attentionSnippet}
                                   startTrigger={decryptionTrigger}
+                                  speedFactor={2}
                                 />
                               </code>
                             </pre>
@@ -637,7 +657,7 @@ const PhilosophySection: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Periodic pulses (unchanged; optional visual depth) */}
+                    {/* Periodic pulses */}
                     <div className="pointer-events-none absolute inset-0">
                       {pulses
                         .filter((p) => p.cardIndex === index)
