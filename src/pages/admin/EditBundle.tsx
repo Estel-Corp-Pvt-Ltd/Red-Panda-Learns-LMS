@@ -873,8 +873,8 @@ export default function EditBundlePage() {
 
     const timer = setTimeout(async () => {
       setCheckingSlug(true);
-      const taken = await bundleService.isBundleSlugTaken(s, bundleData?.id);
-      setSlugTaken(taken);
+      const bundle = await bundleService.getBundleBySlug(s);
+      setSlugTaken(!!bundle && bundle.id !== bundleData?.id);
       setCheckingSlug(false);
     }, 500);
 

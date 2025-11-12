@@ -368,7 +368,6 @@ class BundleService {
 
   async getBundleById(bundleId: string): Promise<Bundle | null> {
     try {
-      console.log("fetching bundles", bundleId);
       const bundleDoc = await getDoc(doc(db, COLLECTION.BUNDLES, bundleId));
 
       if (!bundleDoc.exists()) {
@@ -642,27 +641,6 @@ class BundleService {
       return fail("Error fetching bundles");
     }
   }
-
-  async isBundleSlugTaken(slug: string, currentBundleId?: string): Promise<boolean> {
-    if (!slug) return false;
-
-    const q = query(
-      collection(db, COLLECTION.BUNDLES),
-      where("slug", "==", slug)
-    );
-
-    const snap = await getDocs(q);
-
-    // If editing: ignore the current bundle
-    if (currentBundleId) {
-      return snap.docs.some((doc) => doc.id !== currentBundleId);
-    }
-
-    // If creating: any existing doc with the same URL means it's taken
-    return !snap.empty;
-  }
-
-
 
   async getBundleBySlug(slug: string): Promise<Bundle | null> {
     try {

@@ -1,4 +1,4 @@
-import { useState, useEffect , useMemo} from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,7 +10,8 @@ import {
   X,
   Layers,
   Users as UsersIcon,
- Search, RefreshCcw, CheckCheck, XCircle, Filter, Check, ChevronDown } from "lucide-react";
+  Search, RefreshCcw, CheckCheck, XCircle, Filter, Check, ChevronDown
+} from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,14 +28,14 @@ import { courseService } from "@/services/courseService";
 import { bundleService } from "@/services/bundleService";
 import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
-import { PricingModel ,SortKey,AttributeType } from "@/types/general";
+import { PricingModel, SortKey, AttributeType } from "@/types/general";
 import { Header } from "@/components/Header";
 import { getDownloadURL } from "firebase/storage";
 import {
   BUNDLE_STATUS,
   COURSE_STATUS,
   CURRENCY,
-  PRICING_MODEL,SORT_KEY,ATTRIBUTE_TYPE,
+  PRICING_MODEL, SORT_KEY, ATTRIBUTE_TYPE,
 } from "@/constants";
 import { instructorService } from "@/services/instructorService";
 import {
@@ -73,55 +74,55 @@ export default function CreateBundlePage() {
   const [instructors, setInstructors] = useState<
     { id: string; name: string }[]
   >([]);
-   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [progress, setProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState(0);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
-   const [preview, setPreview] = useState<string | null>(null);
-   const [checkingUrl, setCheckingUrl] = useState(false);
-   const [urlTaken, setUrlTaken] = useState(false);
-  const [url,setURl] = useState("")
+  const [preview, setPreview] = useState<string | null>(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
+  const [slugTaken, setSlugTaken] = useState(false);
+  const [slug, setSlug] = useState("")
   // Helper to get a course's effective price (salePrice takes precedence)
-const getCoursePrice = (course: Course) =>
-  Number(course.salePrice ?? course.regularPrice ?? 0);
+  const getCoursePrice = (course: Course) =>
+    Number(course.salePrice ?? course.regularPrice ?? 0);
 
-// Search (debounced)
-const [search, setSearch] = useState("");
-const [debouncedSearch, setDebouncedSearch] = useState("");
-useEffect(() => {
-  const id = setTimeout(
-    () => setDebouncedSearch(search.trim().toLowerCase()),
-    300
+  // Search (debounced)
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const id = setTimeout(
+      () => setDebouncedSearch(search.trim().toLowerCase()),
+      300
+    );
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Price range setup from current courses
+  const prices = useMemo(() => courses.map(getCoursePrice), [courses]);
+  const minCoursePrice = useMemo(
+    () => (prices.length ? Math.min(...prices) : 0),
+    [prices]
   );
-  return () => clearTimeout(id);
-}, [search]);
+  const maxCoursePrice = useMemo(
+    () => (prices.length ? Math.max(...prices) : 0),
+    [prices]
+  );
 
-// Price range setup from current courses
-const prices = useMemo(() => courses.map(getCoursePrice), [courses]);
-const minCoursePrice = useMemo(
-  () => (prices.length ? Math.min(...prices) : 0),
-  [prices]
-);
-const maxCoursePrice = useMemo(
-  () => (prices.length ? Math.max(...prices) : 0),
-  [prices]
-);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+  useEffect(() => {
+    setPriceRange([minCoursePrice, maxCoursePrice]);
+  }, [minCoursePrice, maxCoursePrice]);
 
-const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
-useEffect(() => {
-  setPriceRange([minCoursePrice, maxCoursePrice]);
-}, [minCoursePrice, maxCoursePrice]);
-
-const [sortBy, setSortBy] = useState<SortKey>(SORT_KEY.RELEVANCE);
-const [priceType, setPriceType] = useState<"all" | PricingModel >("all");
-const [showSelectedOnly, setShowSelectedOnly] = useState(false);
-const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
-const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-const [selectedCourseTags, setSelectedCourseTags] = useState<string[]>([]);
-const [selectedTargetAudienceIds, setSelectedTargetAudienceIds] = useState<string[]>([]);
-const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
-const [targetAudienceOptions , settargetAudienceOptions ] = useState<Option[]>([]);
-const [tagOptions, setTagOptions] = useState<Option[]>([]);
+  const [sortBy, setSortBy] = useState<SortKey>(SORT_KEY.RELEVANCE);
+  const [priceType, setPriceType] = useState<"all" | PricingModel>("all");
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedCourseTags, setSelectedCourseTags] = useState<string[]>([]);
+  const [selectedTargetAudienceIds, setSelectedTargetAudienceIds] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+  const [targetAudienceOptions, settargetAudienceOptions] = useState<Option[]>([]);
+  const [tagOptions, setTagOptions] = useState<Option[]>([]);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
@@ -132,213 +133,213 @@ const [tagOptions, setTagOptions] = useState<Option[]>([]);
 
 
 
-useEffect(() => {
-  const fetchInstructors = async () => {
-    const result = await instructorService.getAllInstructors();
-    if (result.success) {
-      const formatted = result.data.map((i) => ({
-        id: i.id,
-        name: getFullName(i.firstName, i.middleName, i.lastName),
-      }));
-      setInstructors(formatted);
-    } else {
-      console.error("Failed to fetch instructors:", result.error);
-      toast({
-        title: "Error",
-        description: "Could not load instructors' list.",
-        variant: "destructive",
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      const result = await instructorService.getAllInstructors();
+      if (result.success) {
+        const formatted = result.data.map((i) => ({
+          id: i.id,
+          name: getFullName(i.firstName, i.middleName, i.lastName),
+        }));
+        setInstructors(formatted);
+      } else {
+        console.error("Failed to fetch instructors:", result.error);
+        toast({
+          title: "Error",
+          description: "Could not load instructors' list.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchInstructors();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
+        setCategoryOptions(categoriesData.map((a) => ({ id: a.id, label: a.name })));
+        setAllCategories(categoriesData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load categories.",
+          variant: "destructive",
+        });
+      }
+
+      try {
+        const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
+        settargetAudienceOptions(targetAudienceData.map((a) => ({ id: a.id, label: a.name })));
+        setAllTargetAudiences(targetAudienceData.map((a) => a.name));
+      } catch (error) {
+        console.error("Error fetching target audiences:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load target audiences.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchAttributes();
+  }, [toast]);
+
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const tags = await courseService.getAllTags();
+
+
+        const formattedTags = tags.map((t) => ({ id: t, label: t }));
+        setTagOptions(formattedTags);
+      } catch (error) {
+        console.error("Failed to fetch tags:", error);
+        toast({
+          title: "Error",
+          description: "Could not load tags.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchTags();
+  }, [toast]);
+
+
+
+  // Filtered + sorted list
+  const filteredCourses = useMemo(() => {
+    let list = [...courses];
+
+    // search
+    if (debouncedSearch) {
+      list = list.filter((c) =>
+        [c.title, c.description]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(debouncedSearch))
+      );
+    }
+
+    // price type
+    list = list.filter((c) => {
+      const p = getCoursePrice(c);
+      if (priceType === PRICING_MODEL.FREE) return p <= 0;
+      if (priceType === PRICING_MODEL.PAID) return p > 0;
+      return true;
+    });
+
+    // price range
+    list = list.filter((c) => {
+      const p = getCoursePrice(c);
+      return p >= priceRange[0] && p <= priceRange[1];
+    });
+
+    // Advanced filters
+    if (selectedInstructorIds.length) {
+      list = list.filter((c) => {
+        const instructorId = (c as any).instructorId as string;
+        return selectedInstructorIds.includes(instructorId ?? "");
       });
     }
+    if (selectedCategoryIds.length) {
+      list = list.filter((c) =>
+        c.categoryIds?.some((id) => selectedCategoryIds.includes(id))
+      );
+    }
+    if (selectedCourseTags.length) {
+      list = list.filter((c) => c.tags?.some((t) => selectedCourseTags.includes(t)));
+    }
+    if (selectedTargetAudienceIds.length) {
+      list = list.filter((c) =>
+        c.targetAudienceIds?.some((id) => selectedTargetAudienceIds.includes(id))
+      );
+    }
+
+    // show selected only
+    if (showSelectedOnly) {
+      list = list.filter((c) => selectedCourseIds.includes(c.id!));
+    }
+
+    // sort
+    switch (sortBy) {
+      case SORT_KEY.PRICE_ASC:
+        list.sort((a, b) => getCoursePrice(a) - getCoursePrice(b));
+        break;
+      case SORT_KEY.PRICE_DESC:
+        list.sort((a, b) => getCoursePrice(b) - getCoursePrice(a));
+        break;
+      case SORT_KEY.TITLE_ASC:
+        list.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case SORT_KEY.TITLE_DESC:
+        list.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case SORT_KEY.RELEVANCE:
+      default:
+        list.sort((a, b) => {
+          const as = selectedCourseIds.includes(a.id!);
+          const bs = selectedCourseIds.includes(b.id!);
+          if (as !== bs) return as ? -1 : 1;
+          if (debouncedSearch) {
+            const at = a.title?.toLowerCase().includes(debouncedSearch) ? 1 : 0;
+            const bt = b.title?.toLowerCase().includes(debouncedSearch) ? 1 : 0;
+            if (at !== bt) return bt - at;
+          }
+          return a.title.localeCompare(b.title);
+        });
+    }
+
+    return list;
+  }, [
+    courses,
+    debouncedSearch,
+    priceType,
+    priceRange,
+    sortBy,
+    showSelectedOnly,
+    selectedCourseIds,
+    selectedInstructorIds,
+    selectedCategoryIds,
+    selectedCourseTags,
+    selectedTargetAudienceIds,
+  ]);
+  // Bulk actions + helpers
+  const totalCount = courses.length;
+  const filteredCount = filteredCourses.length;
+
+  const handleSelectAllFiltered = () => {
+    setSelectedCourses((prev) => {
+      const toAdd = filteredCourses
+        .map((c) => c.id!)
+        .filter((id) => !prev.includes(id));
+      return [...prev, ...toAdd];
+    });
   };
-  fetchInstructors();
-}, [toast]);
 
-useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-      const categoriesData = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
-      setCategoryOptions(categoriesData.map((a) => ({ id: a.id, label: a.name })));
-      setAllCategories(categoriesData.map((a) => a.name));
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load categories.",
-        variant: "destructive",
-      });
-    }
 
-    try {
-      const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
-      settargetAudienceOptions(targetAudienceData.map((a) => ({ id: a.id, label: a.name })));
-      setAllTargetAudiences(targetAudienceData.map((a) => a.name));
-    } catch (error) {
-      console.error("Error fetching target audiences:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load target audiences.",
-        variant: "destructive",
-      });
-    }
+
+
+
+  const handleClearSelectionFiltered = () => {
+    setSelectedCourses((prev) =>
+      prev.filter((id) => !filteredCourses.some((c) => c.id === id))
+    );
   };
 
-  fetchAttributes();
-}, [toast]);
-
-
-useEffect(() => {
-  const fetchTags = async () => {
-    try {
-      const tags = await courseService.getAllTags();
-
-     
-      const formattedTags = tags.map((t) => ({ id: t, label: t }));
-      setTagOptions(formattedTags);
-    } catch (error) {
-      console.error("Failed to fetch tags:", error);
-      toast({
-        title: "Error",
-        description: "Could not load tags.",
-        variant: "destructive",
-      });
-    }
+  const handleResetFilters = () => {
+    setSearch("");
+    setPriceType("all");
+    setSortBy(SORT_KEY.RELEVANCE);
+    setShowSelectedOnly(false);
+    setPriceRange([minCoursePrice, maxCoursePrice]);
+    setSelectedInstructorIds([]);
+    setSelectedCategoryIds([]);
+    setSelectedCourseTags([]);
+    setSelectedTargetAudienceIds([]);
   };
-
-  fetchTags();
-}, [toast]);
-
-
-
-// Filtered + sorted list
-const filteredCourses = useMemo(() => {
-  let list = [...courses];
-
-  // search
-  if (debouncedSearch) {
-    list = list.filter((c) =>
-      [c.title, c.description]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(debouncedSearch))
-    );
-  }
-
-  // price type
-  list = list.filter((c) => {
-    const p = getCoursePrice(c);
-    if (priceType === PRICING_MODEL.FREE) return p <= 0;
-    if (priceType === PRICING_MODEL.PAID) return p > 0;
-    return true;
-  });
-
-  // price range
-  list = list.filter((c) => {
-    const p = getCoursePrice(c);
-    return p >= priceRange[0] && p <= priceRange[1];
-  });
-
-  // Advanced filters
- if (selectedInstructorIds.length) {
-  list = list.filter((c) => {
-    const instructorId = (c as any).instructorId as string;
-    return selectedInstructorIds.includes(instructorId ?? "");
-  });
-}
-  if (selectedCategoryIds.length) {
-    list = list.filter((c) =>
-      c.categoryIds?.some((id) => selectedCategoryIds.includes(id))
-    );
-  }
-  if (selectedCourseTags.length) {
-    list = list.filter((c) => c.tags?.some((t) => selectedCourseTags.includes(t)));
-  }
-  if (selectedTargetAudienceIds.length) {
-    list = list.filter((c) =>
-      c.targetAudienceIds?.some((id) => selectedTargetAudienceIds.includes(id))
-    );
-  }
-
-  // show selected only
-  if (showSelectedOnly) {
-    list = list.filter((c) => selectedCourseIds.includes(c.id!));
-  }
-
-  // sort
-  switch (sortBy) {
-    case SORT_KEY.PRICE_ASC:
-      list.sort((a, b) => getCoursePrice(a) - getCoursePrice(b));
-      break;
-    case SORT_KEY.PRICE_DESC:
-      list.sort((a, b) => getCoursePrice(b) - getCoursePrice(a));
-      break;
-    case SORT_KEY.TITLE_ASC:
-      list.sort((a, b) => a.title.localeCompare(b.title));
-      break;
-    case SORT_KEY.TITLE_DESC:
-      list.sort((a, b) => b.title.localeCompare(a.title));
-      break;
-    case SORT_KEY.RELEVANCE:
-    default:
-      list.sort((a, b) => {
-        const as = selectedCourseIds.includes(a.id!);
-        const bs = selectedCourseIds.includes(b.id!);
-        if (as !== bs) return as ? -1 : 1;
-        if (debouncedSearch) {
-          const at = a.title?.toLowerCase().includes(debouncedSearch) ? 1 : 0;
-          const bt = b.title?.toLowerCase().includes(debouncedSearch) ? 1 : 0;
-          if (at !== bt) return bt - at;
-        }
-        return a.title.localeCompare(b.title);
-      });
-  }
-
-  return list;
-}, [
-  courses,
-  debouncedSearch,
-  priceType,
-  priceRange,
-  sortBy,
-  showSelectedOnly,
-  selectedCourseIds,
-  selectedInstructorIds,
-  selectedCategoryIds,
-  selectedCourseTags,
-  selectedTargetAudienceIds,
-]);
-// Bulk actions + helpers
-const totalCount = courses.length;
-const filteredCount = filteredCourses.length;
-
-const handleSelectAllFiltered = () => {
-  setSelectedCourses((prev) => {
-    const toAdd = filteredCourses
-      .map((c) => c.id!)
-      .filter((id) => !prev.includes(id));
-    return [...prev, ...toAdd];
-  });
-};
-
-
-
-
-
-const handleClearSelectionFiltered = () => {
-  setSelectedCourses((prev) =>
-    prev.filter((id) => !filteredCourses.some((c) => c.id === id))
-  );
-};
-
-const handleResetFilters = () => {
-  setSearch("");
-  setPriceType("all");
-  setSortBy(SORT_KEY.RELEVANCE);
-  setShowSelectedOnly(false);
-  setPriceRange([minCoursePrice, maxCoursePrice]);
-  setSelectedInstructorIds([]);
-  setSelectedCategoryIds([]);
-  setSelectedCourseTags([]);
-  setSelectedTargetAudienceIds([]);
-};
 
   useEffect(() => {
     const fetchInstructors = async () => {
@@ -370,12 +371,12 @@ const handleResetFilters = () => {
   const [bundleData, setBundleData] = useState({
     title: "",
     description: "",
-    url: "",
+    slug: "",
     regularPrice: "",
-    categories:"",
-    taregetAudience:"",
+    categories: "",
+    targetAudience: "",
     salePrice: "",
-    thumbnailUrl:"",
+    thumbnailUrl: "",
     pricingModel: PRICING_MODEL.PAID as PricingModel,
     status: BUNDLE_STATUS.DRAFT,
   });
@@ -407,7 +408,7 @@ const handleResetFilters = () => {
   };
 
 
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     if (!file) return;
@@ -425,74 +426,74 @@ const handleResetFilters = () => {
     uploadThumbnail(file);
   };
 
-  
-    const uploadThumbnail = async (selectedFile: File) => {
-      if (!selectedFile) return;
-  
-      // Check file size (3MB limit)
-      const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
-      if (selectedFile.size > MAX_SIZE) {
+
+  const uploadThumbnail = async (selectedFile: File) => {
+    if (!selectedFile) return;
+
+    // Check file size (3MB limit)
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+    if (selectedFile.size > MAX_SIZE) {
+      toast({
+        title: "File Too Large",
+        description: "The selected file exceeds the 3MB size limit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const tempId = crypto.randomUUID();
+    const uploadResult = fileService.startResumableUpload(
+      `/bundles/${tempId}/thumbnail.png`,
+      selectedFile,
+    );
+    if (!uploadResult.success) {
+      toast({
+        title: "Upload Failed",
+        description: "Unable to upload the file. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadResult.data.on(
+      "state_changed",
+      (snapshot) => {
+        setUploadingThumbnail(true);
+        // Calculate progress
+        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setProgress(Math.round(prog));
+      },
+      (error) => {
         toast({
-          title: "File Too Large",
-          description: "The selected file exceeds the 3MB size limit.",
+          title: "Failed to upload thumbnail.",
+          description: "Something went wrong",
           variant: "destructive",
         });
-        return;
-      }
-      const tempId = crypto.randomUUID();
-      const uploadResult = fileService.startResumableUpload(
-        `/bundles/${tempId}/thumbnail.png`,
-        selectedFile,
-      );
-      if (!uploadResult.success) {
-        toast({
-          title: "Upload Failed",
-          description: "Unable to upload the file. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-  
-      uploadResult.data.on(
-        "state_changed",
-        (snapshot) => {
-          setUploadingThumbnail(true);
-          // Calculate progress
-          const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setProgress(Math.round(prog));
-        },
-        (error) => {
+        console.error(error);
+        setUploadingThumbnail(false);
+      },
+      async () => {
+        try {
+          setProgress(100);
+          setUploadingThumbnail(false);
+          const url = await getDownloadURL(uploadResult.data.snapshot.ref);
+          setThumbnailUrl(url);
+
           toast({
-            title: "Failed to upload thumbnail.",
+            title: "Thumbnail Uploaded",
+            description: "Thumbnail has been successfully uploaded",
+            variant: "default",
+          });
+        } catch (error) {
+          toast({
+            title: "Thumbnail not uploaded",
             description: "Something went wrong",
             variant: "destructive",
           });
-          console.error(error);
-          setUploadingThumbnail(false);
-        },
-        async () => {
-          try {
-            setProgress(100);
-            setUploadingThumbnail(false);
-            const url = await getDownloadURL(uploadResult.data.snapshot.ref);
-            setThumbnailUrl(url);
-     
-            toast({
-              title: "Thumbnail Uploaded",
-              description: "Thumbnail has been successfully uploaded",
-              variant: "default",
-            });
-          } catch (error) {
-            toast({
-              title: "Thumbnail not uploaded",
-              description: "Something went wrong",
-              variant: "destructive",
-            });
-            logError("Error getting download URL:", error);
-          }
-        },
-      );
-    };
+          logError("Error getting download URL:", error);
+        }
+      },
+    );
+  };
 
   const handleCourseToggle = (courseId: string) => {
     setSelectedCourses((prev) =>
@@ -551,10 +552,10 @@ const handleResetFilters = () => {
       return;
     }
 
-    if (urlTaken) {
+    if (slugTaken) {
       toast({
         title: "Error",
-        description: "Please enter a  unique bundle URL.",
+        description: "Please enter a  unique bundle slug.",
         variant: "destructive",
       });
       return;
@@ -569,11 +570,11 @@ const handleResetFilters = () => {
       const salePrice = bundleData.salePrice
         ? parseFloat(bundleData.salePrice)
         : 0;
-  
+
       await bundleService.createBundle({
         title: bundleData.title,
         description: bundleData.description,
-        url:bundleData.url,
+        slug: bundleData.slug,
         courses: courses
           .filter((course) => selectedCourseIds.includes(course.id!))
           .map((course) => ({ id: course.id, title: course.title })),
@@ -585,10 +586,10 @@ const handleResetFilters = () => {
         targetAudienceIds: selectedTargetAudiences,
         categoryIds: selectedCategories,
         tags,
-        thumbnail:thumbnailUrl,
+        thumbnail: thumbnailUrl,
         status: bundleData.status,
       });
-     
+
       toast({
         title: "Success",
         description: "Bundle created successfully!",
@@ -606,7 +607,7 @@ const handleResetFilters = () => {
       setLoading(false);
     }
   };
-console.log(urlTaken)
+
   const handlePublishBundle = async () => {
     if (!bundleData.title.trim()) {
       toast({
@@ -635,10 +636,10 @@ console.log(urlTaken)
       return;
     }
 
-    if (urlTaken) {
+    if (slugTaken) {
       toast({
         title: "Error",
-        description: "Please enter a  unique bundle URL.",
+        description: "Please enter a  unique bundle slug.",
         variant: "destructive",
       });
       return;
@@ -657,7 +658,7 @@ console.log(urlTaken)
       await bundleService.createBundle({
         title: bundleData.title,
         description: bundleData.description,
-        url:bundleData.url,
+        slug: bundleData.slug,
         courses: courses
           .filter((course) => selectedCourseIds.includes(course.id!))
           .map((course) => ({ id: course.id, title: course.title })),
@@ -666,9 +667,9 @@ console.log(urlTaken)
         pricingModel: bundleData.pricingModel,
         instructorId: instructorId,
         instructorName: instructorName,
-       targetAudienceIds: selectedTargetAudiences,
+        targetAudienceIds: selectedTargetAudiences,
         categoryIds: selectedCategories,
-        thumbnail:thumbnailUrl,
+        thumbnail: thumbnailUrl,
         tags,
         status: BUNDLE_STATUS.PUBLISHED,
       });
@@ -678,7 +679,7 @@ console.log(urlTaken)
         description: "Bundle created and published successfully!",
       });
 
-      navigate("/admin");
+      navigate("/admin/bundles");
     } catch (error) {
       console.error("Error creating and publishing bundle:", error);
       toast({
@@ -690,18 +691,18 @@ console.log(urlTaken)
       setLoading(false);
     }
   };
-useEffect(() => {
-  if (!bundleData.url) return;
+  useEffect(() => {
+    if (!bundleData.slug) return;
 
-  const check = setTimeout(async () => {
-    setCheckingUrl(true);
-    const res = await bundleService.isBundleUrlTaken(url);
-    setUrlTaken(res);
-    setCheckingUrl(false);
-  }, 500);
+    const check = setTimeout(async () => {
+      setCheckingSlug(true);
+      const res = await bundleService.getBundleBySlug(slug);
+      setSlugTaken(!!res);
+      setCheckingSlug(false);
+    }, 500);
 
-  return () => clearTimeout(check);
-}, [bundleData.url]);
+    return () => clearTimeout(check);
+  }, [bundleData.slug]);
 
 
   const formatCurrency = (amount: number) => {
@@ -786,24 +787,23 @@ useEffect(() => {
                 </div>
 
                 <div>
-                  <Label htmlFor="bundle-url">Custom URL</Label>
+                  <Label htmlFor="bundle-slug">Custom Slug</Label>
 
-                  <div className="flex items-start gap-2">
-                    <Textarea
-                      id="bundle-url"
-                      placeholder="Write Custom URL"
-                      rows={2}
-                      value={bundleData.url ?? ""}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="bundle-slug"
+                      placeholder="Write Custom Slug here..."
+                      value={bundleData.slug ?? ""}
                       onChange={(e) => {
-                        const newUrl = e.target.value
+                        const newSlug = e.target.value
                           .toLowerCase()
                           .trim()
                           .replace(/[^\w\s-]/g, "") // remove special chars
                           .replace(/\s+/g, "-"); // replace spaces with hyphens
-                          setURl(newUrl)
+                        setSlug(newSlug)
                         setBundleData((prev) => ({
                           ...prev,
-                          url: newUrl,
+                          slug: newSlug,
                         }));
                       }}
                     />
@@ -815,7 +815,7 @@ useEffect(() => {
                       onClick={() => {
                         if (!bundleData.title?.trim()) return;
 
-                        const generatedUrl = bundleData.title
+                        const generatedSlug = bundleData.title
                           .toLowerCase()
                           .trim()
                           .replace(/[^\w\s-]/g, "") // remove special chars
@@ -823,34 +823,35 @@ useEffect(() => {
 
                         setBundleData((prev) => ({
                           ...prev,
-                          url: generatedUrl,
+                          slug: generatedSlug,
                         }));
                       }}
+                      className="p-3 mt-0"
                     >
-                      Generate URL
+                      Generate Slug
                     </Button>
                   </div>
 
-                  {/* URL availability feedback */}
-                  {checkingUrl && (
+                  {/* Slug availability feedback */}
+                  {checkingSlug && (
                     <p className="text-xs text-muted-foreground">
                       Checking availability...
                     </p>
                   )}
 
-                  {!checkingUrl && urlTaken && (
+                  {!checkingSlug && slugTaken && (
                     <p className="text-xs text-red-500">
-                      This URL is already in use.
+                      This slug is already in use.
                     </p>
                   )}
 
-                  {!checkingUrl && !urlTaken && bundleData.url && (
+                  {!checkingSlug && !slugTaken && bundleData.slug && (
                     <p className="text-xs text-green-500">
-                      This URL is available.
+                      This slug is available.
                     </p>
                   )}
 
-                 
+
                 </div>
 
                 {/* Categories + Target Audience side-by-side */}
@@ -1404,19 +1405,18 @@ useEffect(() => {
                                           setSelectedInstructorIds((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (id) => id !== opt.name
-                                                )
+                                                (id) => id !== opt.name
+                                              )
                                               : [...prev, opt.name]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1441,7 +1441,7 @@ useEffect(() => {
                                 disabled={
                                   instructors.length === 0 ||
                                   selectedInstructorIds.length ===
-                                    instructors.length
+                                  instructors.length
                                 }
                               >
                                 Select all
@@ -1492,19 +1492,18 @@ useEffect(() => {
                                           setSelectedCategoryIds((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (name) => name !== opt.label
-                                                )
+                                                (name) => name !== opt.label
+                                              )
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1529,7 +1528,7 @@ useEffect(() => {
                                 disabled={
                                   categoryOptions.length === 0 ||
                                   selectedCategoryIds.length ===
-                                    categoryOptions.length
+                                  categoryOptions.length
                                 }
                               >
                                 Select all
@@ -1586,11 +1585,10 @@ useEffect(() => {
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1615,7 +1613,7 @@ useEffect(() => {
                                 disabled={
                                   tagOptions.length === 0 ||
                                   selectedCourseTags.length ===
-                                    tagOptions.length
+                                  tagOptions.length
                                 }
                               >
                                 Select all
@@ -1668,19 +1666,18 @@ useEffect(() => {
                                           setSelectedTargetAudienceIds((prev) =>
                                             selected
                                               ? prev.filter(
-                                                  (id) => id !== opt.label
-                                                )
+                                                (id) => id !== opt.label
+                                              )
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
-                                            selected
-                                              ? "bg-primary text-primary-foreground"
-                                              : "opacity-50"
-                                          }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
+                                            ? "bg-primary text-primary-foreground"
+                                            : "opacity-50"
+                                            }`}
                                         >
                                           {selected && (
                                             <Check className="h-3 w-3" />
@@ -1705,7 +1702,7 @@ useEffect(() => {
                                 disabled={
                                   targetAudienceOptions.length === 0 ||
                                   selectedTargetAudienceIds.length ===
-                                    targetAudienceOptions.length
+                                  targetAudienceOptions.length
                                 }
                               >
                                 Select all
@@ -1730,25 +1727,96 @@ useEffect(() => {
                         selectedCategoryIds.length ||
                         selectedCourseTags.length ||
                         selectedTargetAudienceIds.length) > 0 && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            Active filters:
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              Active filters:
+                            </span>
 
-                          {selectedInstructorIds.map((id) => {
-                            const name =
-                              instructors.find((o) => o.id === id)?.name ?? id;
-                            return (
+                            {selectedInstructorIds.map((id) => {
+                              const name =
+                                instructors.find((o) => o.id === id)?.name ?? id;
+                              return (
+                                <Badge
+                                  key={`if-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {name}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedInstructorIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+
+                            {selectedCategoryIds.map((id) => {
+                              const label =
+                                categoryOptions.find((o) => o.id === id)?.label ??
+                                id;
+                              return (
+                                <Badge
+                                  key={`cf-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {label}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedCategoryIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+
+                            {selectedTargetAudienceIds.map((id) => {
+                              const label =
+                                targetAudienceOptions.find((o) => o.id === id)
+                                  ?.label ?? id;
+                              return (
+                                <Badge
+                                  key={`af-${id}`}
+                                  variant="secondary"
+                                  className="flex items-center gap-1"
+                                >
+                                  {label}
+                                  <button
+                                    onClick={() =>
+                                      setSelectedTargetAudienceIds((prev) =>
+                                        prev.filter((x) => x !== id)
+                                      )
+                                    }
+                                    className="ml-1 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+
+                            {selectedCourseTags.map((t) => (
                               <Badge
-                                key={`if-${id}`}
+                                key={`tf-${t}`}
                                 variant="secondary"
                                 className="flex items-center gap-1"
                               >
-                                {name}
+                                {t}
                                 <button
                                   onClick={() =>
-                                    setSelectedInstructorIds((prev) =>
-                                      prev.filter((x) => x !== id)
+                                    setSelectedCourseTags((prev) =>
+                                      prev.filter((x) => x !== t)
                                     )
                                   }
                                   className="ml-1 text-muted-foreground hover:text-foreground"
@@ -1756,80 +1824,9 @@ useEffect(() => {
                                   <X className="h-3 w-3" />
                                 </button>
                               </Badge>
-                            );
-                          })}
-
-                          {selectedCategoryIds.map((id) => {
-                            const label =
-                              categoryOptions.find((o) => o.id === id)?.label ??
-                              id;
-                            return (
-                              <Badge
-                                key={`cf-${id}`}
-                                variant="secondary"
-                                className="flex items-center gap-1"
-                              >
-                                {label}
-                                <button
-                                  onClick={() =>
-                                    setSelectedCategoryIds((prev) =>
-                                      prev.filter((x) => x !== id)
-                                    )
-                                  }
-                                  className="ml-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            );
-                          })}
-
-                          {selectedTargetAudienceIds.map((id) => {
-                            const label =
-                              targetAudienceOptions.find((o) => o.id === id)
-                                ?.label ?? id;
-                            return (
-                              <Badge
-                                key={`af-${id}`}
-                                variant="secondary"
-                                className="flex items-center gap-1"
-                              >
-                                {label}
-                                <button
-                                  onClick={() =>
-                                    setSelectedTargetAudienceIds((prev) =>
-                                      prev.filter((x) => x !== id)
-                                    )
-                                  }
-                                  className="ml-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            );
-                          })}
-
-                          {selectedCourseTags.map((t) => (
-                            <Badge
-                              key={`tf-${t}`}
-                              variant="secondary"
-                              className="flex items-center gap-1"
-                            >
-                              {t}
-                              <button
-                                onClick={() =>
-                                  setSelectedCourseTags((prev) =>
-                                    prev.filter((x) => x !== t)
-                                  )
-                                }
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
 
                       {/* Row 4: Toggles + Bulk Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2007,7 +2004,7 @@ useEffect(() => {
                         <span>
                           {formatCurrency(
                             pricingData.regularPrice -
-                              pricingData.suggestedPrice
+                            pricingData.suggestedPrice
                           )}
                         </span>
                       </div>
@@ -2087,8 +2084,8 @@ useEffect(() => {
                   loading ||
                   selectedCourseIds.length < 2 ||
                   !bundleData.title.trim() ||
-                  !bundleData.description.trim() 
-                 
+                  !bundleData.description.trim()
+
                 }
                 className="w-full"
                 variant="pill"
