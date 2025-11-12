@@ -12,7 +12,6 @@ import { getItemsDetails } from "../../utils/orderUtils";
 
 if (!admin.apps.length) admin.initializeApp();
 
-
 // ------------------ Enroll Student ------------------
 async function enrollStudentHandler(req: Request, res: Response) {
   try {

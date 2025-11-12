@@ -9,6 +9,7 @@ import { sendMailWorker } from './workers/sendMailWorker';
 import { getLessons } from './handlers/getLessons';
 import { enrollFreeCourse } from './handlers/enrollments/enrollFreeCourse';
 import { resetUserPassword } from './handlers/resetUserPassword';
+import { enrollStudentsInBulk, processEnrollmentTask } from './handlers/enrollments/enrollStudentsInBulk';
 // Cascade delete workers
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
@@ -26,5 +27,7 @@ export {
   lessonDeleteCascade,
   getLessons,
   enrollFreeCourse,
-  resetUserPassword
+  resetUserPassword,
+  enrollStudentsInBulk,
+  processEnrollmentTask
 };
