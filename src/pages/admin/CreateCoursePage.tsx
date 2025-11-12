@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 type CourseFormData = {
   title: string;
+  slug: string;
   description: string;
   instructorName: string;
   instructorId: string;
@@ -38,6 +39,7 @@ const CreateCoursePage = () => {
 
   const [formData, setFormData] = useState<CourseFormData>({
     title: "",
+    slug: "",
     description: "",
     instructorName: "",
     instructorId: "",
@@ -45,6 +47,77 @@ const CreateCoursePage = () => {
 
   const [instructors, setInstructors] = useState<InstructorOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+  const [slugError, setSlugError] = useState<string>("");
+
+  // Generate slug from title
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "") // Remove special characters except spaces and hyphens
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+      .replace(/(^-|-$)+/g, ""); // Remove leading/trailing hyphens
+  };
+
+  // Check if slug is available
+  const checkSlugAvailability = async (slug: string): Promise<boolean> => {
+    if (!slug.trim()) return true;
+
+    setIsCheckingSlug(true);
+    try {
+      const existingCourse = await courseService.getCourseBySlug(slug);
+      return !existingCourse; // Return true if available (no existing course)
+    } catch (error) {
+      console.error("Error checking slug availability:", error);
+      return true; // Assume available if there's an error
+    } finally {
+      setIsCheckingSlug(false);
+    }
+  };
+
+  // Handle title change and auto-generate slug
+  const handleTitleChange = async (title: string) => {
+    setFormData((prev) => ({ ...prev, title }));
+
+    // Auto-generate slug from title
+    if (title.trim()) {
+      const generatedSlug = generateSlug(title);
+      setFormData((prev) => ({ ...prev, slug: generatedSlug }));
+
+      // Check slug availability
+      if (generatedSlug) {
+        const isAvailable = await checkSlugAvailability(generatedSlug);
+        if (!isAvailable) {
+          setSlugError("This URL slug is already taken. Please modify it.");
+        } else {
+          setSlugError("");
+        }
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, slug: "" }));
+      setSlugError("");
+    }
+  };
+
+  // Handle manual slug change
+  const handleSlugChange = async (slug: string) => {
+    const cleanedSlug = generateSlug(slug); // Clean the slug
+    setFormData((prev) => ({ ...prev, slug: cleanedSlug }));
+
+    // Check slug availability
+    if (cleanedSlug) {
+      const isAvailable = await checkSlugAvailability(cleanedSlug);
+      if (!isAvailable) {
+        setSlugError("This URL slug is already taken. Please modify it.");
+      } else {
+        setSlugError("");
+      }
+    } else {
+      setSlugError("");
+    }
+  };
 
   const handleInputChange = (field: keyof CourseFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -53,6 +126,7 @@ const CreateCoursePage = () => {
   const handleCreateCourse = async () => {
     const requiredFields: { field: keyof CourseFormData; label: string }[] = [
       { field: "title", label: "Course Title" },
+      { field: "slug", label: "URL Slug" },
       { field: "description", label: "Course Description" },
       { field: "instructorId", label: "Instructor" },
     ];
@@ -68,10 +142,34 @@ const CreateCoursePage = () => {
       }
     }
 
-    setIsLoading(true);
+    // Validate slug format
+    if (!/^[a-z0-9-]+$/.test(formData.slug)) {
+      toast({
+        title: "Invalid URL Slug",
+        description: "URL slug can only contain lowercase letters, numbers, and hyphens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check slug availability one more time before creating
+    setIsCheckingSlug(true);
     try {
+      const isAvailable = await checkSlugAvailability(formData.slug);
+      if (!isAvailable) {
+        toast({
+          title: "URL Slug Taken",
+          description: "This URL slug is already in use. Please choose a different one.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Proceed with course creation
+      setIsLoading(true);
       const courseData = {
         title: formData.title.trim(),
+        slug: formData.slug.trim(),
         description: formData.description.trim(),
         instructorId: formData.instructorId,
         instructorName: formData.instructorName,
@@ -94,6 +192,7 @@ const CreateCoursePage = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsCheckingSlug(false);
     }
   };
 
@@ -165,8 +264,6 @@ const CreateCoursePage = () => {
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-3xl mx-auto">
           <Card className="bg-card shadow-md rounded-xl pt-4">
-           
-
             <CardContent className="space-y-6">
               {/* Course Title */}
               <div className="space-y-2">
@@ -175,9 +272,39 @@ const CreateCoursePage = () => {
                   id="title"
                   placeholder="Enter course title"
                   value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  onChange={(e) => handleTitleChange(e.target.value)}
                   className="bg-background text-foreground"
                 />
+              </div>
+
+              {/* URL Slug */}
+              <div className="space-y-2">
+                <Label htmlFor="slug">Course Slug *</Label>
+                <div className="relative">
+                  <Input
+                    id="slug"
+                    placeholder="course-url-slug"
+                    value={formData.slug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    className="bg-background text-foreground pr-10"
+                  />
+                  {isCheckingSlug && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                {slugError && (
+                  <p className="text-sm text-destructive">{slugError}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  This will be used in the course URL. Only lowercase letters, numbers, and hyphens are allowed.
+                </p>
+                {formData.slug && !slugError && !isCheckingSlug && (
+                  <p className="text-sm text-green-600">
+                    ✓ URL slug is available
+                  </p>
+                )}
               </div>
 
               {/* Course Description */}
@@ -219,10 +346,17 @@ const CreateCoursePage = () => {
                 <Button
                   variant="secondary"
                   onClick={handleCreateCourse}
-                  disabled={isLoading}
+                  disabled={isLoading || isCheckingSlug || !!slugError}
                   className="flex-1"
                 >
-                  {isLoading ? "Creating..." : "Save & Build Curriculum"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Save & Build Curriculum"
+                  )}
                 </Button>
               </div>
             </CardContent>

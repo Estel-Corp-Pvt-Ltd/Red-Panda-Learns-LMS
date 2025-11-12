@@ -3,6 +3,7 @@ import {
   deleteDoc,
   doc,
   endBefore,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -296,6 +297,10 @@ class CourseService {
         q = query(q, ...whereClauses);
       }
 
+      const countQuery = query(q); // Same query without pagination
+      const countSnapshot = await getCountFromServer(countQuery);
+      const totalCount = countSnapshot.data().count;
+
       // Apply ordering
       const { field, direction } = orderByOption;
 
@@ -381,6 +386,7 @@ class CourseService {
         hasPreviousPage,
         nextCursor,
         previousCursor,
+        totalCount,
       });
     } catch (error) {
       console.error(

@@ -17,5 +17,5 @@ export interface PaginatedResult<T> {
   hasPreviousPage: boolean;
   nextCursor: DocumentSnapshot | null;
   previousCursor: DocumentSnapshot | null;
-  totalCount?: number;
+  totalCount: number;
 }

@@ -678,8 +678,14 @@ export function Header({
                     )}
                   </Link>
                 )}
+                <Link to={user?.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"} className="ml-2">
+                  <Button variant="default" size="sm" className="relative flex">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Button>
+                </Link>
                 {/* Logged-in dropdown (hover to open on desktop) */}
-                <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
+                {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
@@ -719,7 +725,7 @@ export function Header({
                       <span>Sign out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu> */}
               </div>
             ) : (
               // Logged-out: Login + Signup buttons
@@ -736,7 +742,7 @@ export function Header({
 
         </div >
       </header >
-   
+
     </>
   );
 }

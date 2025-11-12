@@ -246,6 +246,15 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const handlePayment = async () => {
     if (!user || !canProceed) return;
 
+    if (finalAmount === 0) {
+      toast({
+        title: "No Payment Required",
+        description: "Please directly enroll in the from course page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     toast({

@@ -22,9 +22,9 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
     // --- Prepare and send email via Brevo ---
     const sendSmtpEmail = {
-      sender: { name: "Vizuara", email: "support@vizuara.com" },
+      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
       to: [{ email }],
-      bcc: [{ email: "thesreedath@gmail.com" }],
+      // bcc: [{ email: "thesreedath@gmail.com" }],
       subject: "Payment Confirmation - Vizuara",
       htmlContent: `
     <p>Dear ${name},</p>
@@ -59,7 +59,7 @@ export async function sendPaymentFailedEmail({ email, name, }: { email: string, 
     );
 
     const sendSmtpEmail = {
-      sender: { name: "Vizuara", email: "support@vizuara.com" },
+      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
       to: [{ email }],
       bcc: [{ email: "thesreedath@gmail.com" }], // internal monitoring copy
       subject: "Payment Failed - Action Required",

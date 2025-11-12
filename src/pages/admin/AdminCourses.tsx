@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Search,
   X,
-  Filter
+  Filter,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { COURSE_STATUS, CURRENCY } from '@/constants';
@@ -39,6 +40,8 @@ type COURSE_STATUS = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
 
 type CoursePriceFilter = "Zero Price" | "Non Zero Price" | "All Prices";
 
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50, 100];
+
 const AdminCourses = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<PaginatedCourses>({
@@ -54,8 +57,9 @@ const AdminCourses = () => {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<COURSE_STATUS | 'ALL'>('ALL');
   const [searchField, setSearchField] = useState<'title' | 'description' | 'both'>('both');
-  const [allCourses, setAllCourses] = useState<Course[]>([]); // For client-side search
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [useClientSearch, setUseClientSearch] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -82,21 +86,35 @@ const AdminCourses = () => {
 
   // Load courses when filters or pagination change
   useEffect(() => {
-    if (useClientSearch && searchQuery) {
-      // Use client-side search
+    if (useClientSearch && (searchQuery || statusFilter !== 'ALL' || coursePriceFilterValue !== "All Prices")) {
       performClientSearch();
     } else {
-      // Use server-side search
       loadCourses();
     }
-  }, [searchQuery, statusFilter, paginationState.cursor, paginationState.pageDirection, useClientSearch]);
+  }, [
+    searchQuery,
+    statusFilter,
+    coursePriceFilterValue,
+    paginationState.cursor,
+    paginationState.pageDirection,
+    useClientSearch,
+    itemsPerPage
+  ]);
 
   const loadAllCourses = async () => {
     try {
+      setIsLoading(true);
       const result = await courseService.getAllCourses();
       setAllCourses(result);
     } catch (error) {
       console.error('Error loading all courses:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load courses',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -124,14 +142,24 @@ const AdminCourses = () => {
         filteredCourses = filteredCourses.filter(course => course.status === statusFilter);
       }
 
-      // Apply pagination
-      const startIndex = (paginationState.currentPage - 1) * 10;
-      const paginatedCourses = filteredCourses.slice(startIndex, startIndex + 10);
+      // Apply price filter
+      if (coursePriceFilterValue !== "All Prices") {
+        filteredCourses = filteredCourses.filter(course =>
+          coursePriceFilterValue === "Non Zero Price" ? course.salePrice > 0 : course.salePrice === 0
+        );
+      }
+
+      // Calculate pagination
+      const startIndex = (paginationState.currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
 
       setCourses({
         data: paginatedCourses,
-        hasNextPage: startIndex + 10 < filteredCourses.length,
+        hasNextPage: endIndex < filteredCourses.length,
         hasPreviousPage: paginationState.currentPage > 1,
+        nextCursor: null,
+        previousCursor: null,
         totalCount: filteredCourses.length
       });
     } catch (error) {
@@ -146,15 +174,14 @@ const AdminCourses = () => {
     }
   };
 
-  const loadCourses = async (options = {}) => {
+  const loadCourses = async () => {
     setIsLoading(true);
     try {
       // Build filters array for server-side search
       const filters = [];
 
-      // Add search filter if query exists (server-side approach)
+      // Add search filter if query exists
       if (searchQuery.trim() && !useClientSearch) {
-        // For server-side, we'll use title search as Firestore doesn't support case-insensitive well
         filters.push({
           field: 'title',
           op: '>=',
@@ -176,17 +203,16 @@ const AdminCourses = () => {
       }
 
       const result = await courseService.getCourses(filters, {
-        limit: 10,
+        limit: itemsPerPage,
         orderBy: { field: 'createdAt', direction: 'desc' },
         cursor: paginationState.cursor,
         pageDirection: paginationState.pageDirection,
-        ...options
       });
 
-      if (result.success) {
-        // If we have a search query, perform case-insensitive filtering on client side
+      if (result.success && result.data) {
         let finalCourses = result.data.data;
 
+        // Apply client-side filtering for better search when using server-side base
         if (searchQuery.trim() && !useClientSearch) {
           const query = searchQuery.toLowerCase();
           finalCourses = finalCourses.filter(course => {
@@ -199,10 +225,20 @@ const AdminCourses = () => {
           });
         }
 
+        // Apply price filter client-side for server-side results
+        if (coursePriceFilterValue !== "All Prices") {
+          finalCourses = finalCourses.filter(course =>
+            coursePriceFilterValue === "Non Zero Price" ? course.salePrice > 0 : course.salePrice === 0
+          );
+        }
+
         setCourses({
-          ...result.data,
           data: finalCourses,
-          totalCount: finalCourses.length
+          hasNextPage: result.data.hasNextPage,
+          hasPreviousPage: result.data.hasPreviousPage,
+          nextCursor: result.data.nextCursor,
+          previousCursor: result.data.previousCursor,
+          totalCount: result.data.totalCount
         });
       } else {
         console.error('Failed to load courses:', result.error);
@@ -224,15 +260,28 @@ const AdminCourses = () => {
     }
   };
 
-  const handleNextPage = async () => {
-    if (!courses.hasNextPage) return;
+  const handleItemsPerPageChange = (value: string) => {
+    const newItemsPerPage = parseInt(value, 10);
+    setItemsPerPage(newItemsPerPage);
+    setPaginationState(prev => ({
+      ...prev,
+      cursor: null,
+      currentPage: 1
+    }));
+  };
 
-    if (useClientSearch && searchQuery) {
+  const handleNextPage = () => {
+    if (!courses.hasNextPage || isLoading) return;
+
+    if (useClientSearch && (searchQuery || statusFilter !== 'ALL' || coursePriceFilterValue !== "All Prices")) {
+      // Client-side pagination
       setPaginationState(prev => ({
         ...prev,
-        currentPage: prev.currentPage + 1
+        currentPage: prev.currentPage + 1,
+        cursor: null
       }));
     } else {
+      // Server-side pagination
       setPaginationState(prev => ({
         cursor: courses.nextCursor,
         pageDirection: 'next',
@@ -241,15 +290,18 @@ const AdminCourses = () => {
     }
   };
 
-  const handlePreviousPage = async () => {
-    if (!courses.hasPreviousPage) return;
+  const handlePreviousPage = () => {
+    if (!courses.hasPreviousPage || isLoading) return;
 
-    if (useClientSearch && searchQuery) {
+    if (useClientSearch && (searchQuery || statusFilter !== 'ALL' || coursePriceFilterValue !== "All Prices")) {
+      // Client-side pagination
       setPaginationState(prev => ({
         ...prev,
-        currentPage: prev.currentPage - 1
+        currentPage: prev.currentPage - 1,
+        cursor: null
       }));
     } else {
+      // Server-side pagination
       setPaginationState(prev => ({
         cursor: courses.previousCursor,
         pageDirection: 'previous',
@@ -261,10 +313,17 @@ const AdminCourses = () => {
   const handleSearch = (value: string) => {
     setSearchInput(value);
 
-    // Switch to client-side search for better case-insensitive support
-    if (value.trim().length > 0 && !useClientSearch) {
+    // Reset pagination when search changes
+    setPaginationState(prev => ({
+      ...prev,
+      currentPage: 1,
+      cursor: null
+    }));
+
+    // Switch to client-side search for complex filtering
+    if (value.trim().length > 0) {
       setUseClientSearch(true);
-    } else if (value.trim().length === 0 && useClientSearch) {
+    } else if (value.trim().length === 0 && statusFilter === 'ALL' && coursePriceFilterValue === "All Prices") {
       setUseClientSearch(false);
     }
   };
@@ -272,49 +331,113 @@ const AdminCourses = () => {
   const clearSearch = () => {
     setSearchInput('');
     setSearchQuery('');
-    setUseClientSearch(false);
+    setPaginationState(prev => ({
+      ...prev,
+      currentPage: 1,
+      cursor: null
+    }));
+
+    // Only switch back to server-side if no other filters are active
+    if (statusFilter === 'ALL' && coursePriceFilterValue === "All Prices") {
+      setUseClientSearch(false);
+    }
   };
 
   const handleStatusFilter = (status: COURSE_STATUS | 'ALL') => {
     setStatusFilter(status);
-    setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+    setPaginationState(prev => ({
+      ...prev,
+      cursor: null,
+      currentPage: 1
+    }));
+
+    // Use client-side search when filtering by status
+    if (status !== 'ALL') {
+      setUseClientSearch(true);
+    } else if (searchQuery === '' && coursePriceFilterValue === "All Prices") {
+      setUseClientSearch(false);
+    }
+  };
+
+  const handlePriceFilter = (priceFilter: CoursePriceFilter) => {
+    setCoursePriceFilterValue(priceFilter);
+    setPaginationState(prev => ({
+      ...prev,
+      cursor: null,
+      currentPage: 1
+    }));
+
+    // Use client-side search when filtering by price
+    if (priceFilter !== "All Prices") {
+      setUseClientSearch(true);
+    } else if (searchQuery === '' && statusFilter === 'ALL') {
+      setUseClientSearch(false);
+    }
   };
 
   const handleSearchFieldChange = (field: 'title' | 'description' | 'both') => {
     setSearchField(field);
     // Trigger new search when field changes
     if (searchQuery) {
-      setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+      setPaginationState(prev => ({
+        ...prev,
+        cursor: null,
+        currentPage: 1
+      }));
     }
+  };
+
+  const clearAllFilters = () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setCoursePriceFilterValue("All Prices");
+    setUseClientSearch(false);
+    setItemsPerPage(10);
+    setPaginationState({
+      cursor: null,
+      pageDirection: 'next',
+      currentPage: 1
+    });
   };
 
   const deleteCourse = async () => {
     if (!selectedCourse) return;
 
-    const result = await courseService.deleteCourse(selectedCourse.id);
-    if (!result.success) {
+    try {
+      const result = await courseService.deleteCourse(selectedCourse.id);
+      if (!result.success) {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete course',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Course deleted successfully',
+      });
+
+      // Reload courses to reflect deletion
+      if (useClientSearch) {
+        await loadAllCourses();
+        performClientSearch();
+      } else {
+        await loadCourses();
+      }
+    } catch (error) {
+      console.error('Error deleting course:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete course',
+        description: 'An error occurred while deleting the course',
         variant: 'destructive'
       });
-      return;
+    } finally {
+      setConfirmOpen(false);
+      setSelectedCourse(null);
     }
-
-    toast({
-      title: 'Success',
-      description: 'Course deleted successfully',
-    });
-
-    // Reload courses to reflect deletion
-    if (useClientSearch) {
-      loadAllCourses();
-      performClientSearch();
-    } else {
-      await loadCourses();
-    }
-    setConfirmOpen(false);
-    setSelectedCourse(null);
   };
 
   const formatCurrency = (amount: number) => {
@@ -336,6 +459,9 @@ const AdminCourses = () => {
         return "outline";
     }
   };
+
+  // Determine if we're in filtered state
+  const isFiltered = searchQuery || statusFilter !== 'ALL' || coursePriceFilterValue !== "All Prices";
 
   if (isLoading && courses.data.length === 0) {
     return (
@@ -435,7 +561,7 @@ const AdminCourses = () => {
 
               <Select
                 value={coursePriceFilterValue}
-                onValueChange={(val) => setCoursePriceFilterValue(val as CoursePriceFilter)}
+                onValueChange={handlePriceFilter}
               >
                 <SelectTrigger className='w-fit'>
                   <SelectValue placeholder="Select Pricing" />
@@ -462,28 +588,24 @@ const AdminCourses = () => {
             <div className="text-center py-8">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                {searchQuery || statusFilter !== 'ALL' ? 'No courses found' : 'No courses'}
+                {isFiltered ? 'No courses found' : 'No courses'}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchQuery || statusFilter !== 'ALL'
+                {isFiltered
                   ? 'Try adjusting your search or filters.'
                   : 'Get started by creating your first course.'
                 }
               </p>
-              {(searchQuery || statusFilter !== 'ALL') && (
+              {isFiltered && (
                 <Button
                   variant="outline"
                   className="mt-4"
-                  onClick={() => {
-                    setSearchInput('');
-                    setStatusFilter('ALL');
-                    setUseClientSearch(false);
-                  }}
+                  onClick={clearAllFilters}
                 >
                   Clear all filters
                 </Button>
               )}
-              {!searchQuery && statusFilter === 'ALL' && (
+              {!isFiltered && (
                 <div className="mt-4">
                   <Button
                     variant="pill"
@@ -499,6 +621,32 @@ const AdminCourses = () => {
             </div>
           ) : (
             <>
+              {/* Items Per Page Selector and Summary */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {courses.data.length} of {courses.totalCount} total courses
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Show:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={handleItemsPerPageChange}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ITEMS_PER_PAGE_OPTIONS.map(option => (
+                        <SelectItem key={option} value={option.toString()}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
+                </div>
+              </div>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -510,9 +658,7 @@ const AdminCourses = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {courses.data.filter(course => coursePriceFilterValue === "All Prices" ? true : (
-                    coursePriceFilterValue === "Non Zero Price" ? course.salePrice > 0 : course.salePrice === 0
-                  )).map((course) => (
+                  {courses.data.map((course) => (
                     <TableRow key={course.id}>
                       <TableCell>
                         <div>
@@ -530,7 +676,7 @@ const AdminCourses = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {formatCurrency(course.regularPrice)}
+                        {formatCurrency(course.salePrice || course.regularPrice)}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
@@ -546,6 +692,14 @@ const AdminCourses = () => {
                             title="Edit course"
                           >
                             <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/courses/${course.slug}`)}
+                            title="View course"
+                          >
+                            <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -568,17 +722,14 @@ const AdminCourses = () => {
               {/* Pagination Controls */}
               <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  Showing {courses.data.length} of {courses.totalCount} courses
-                  {courses.totalCount > courses.data.length &&
-                    ` (page ${paginationState.currentPage})`
-                  }
+                  Page {paginationState.currentPage} of {Math.ceil(courses.totalCount / itemsPerPage)}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePreviousPage}
-                    disabled={!courses.hasPreviousPage || isLoading}
+                    disabled={!courses.hasPreviousPage || paginationState.currentPage === 1 || isLoading}
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous

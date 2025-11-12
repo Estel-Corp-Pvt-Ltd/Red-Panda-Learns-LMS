@@ -79,7 +79,7 @@ const Sidebar: React.FC = () => {
         <button
           className={cn(
             "flex items-center gap-3 w-full rounded-lg px-3 py-3 text-sm font-medium transition-all",
-            "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            "text-muted-foreground hover:bg-accent hover:text-accent-foreground bg-red-500 hover:bg-red-600 text-white"
           )}
           onClick={handleLogout}
         >
