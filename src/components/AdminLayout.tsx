@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, KeyRound, LayoutDashboard, Menu, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, Users, X } from 'lucide-react';
+import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, KeyRound, LayoutDashboard, LogOut, Menu, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -15,6 +16,8 @@ interface MenuItem {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const menuItems: MenuItem[] = [
@@ -85,14 +88,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       name: "Enroll Student",
       path: "/admin/enroll-student",
-      icon: <UserPen className="h-5 w-5" />,
+      icon: <UserPlus className="h-5 w-5" />,
     },
     {
       name: "Bulk Enroll Students",
       path: "/admin/bulk-student-enroll",
-      icon: <UserPen className="h-5 w-5" />,
+      icon: <UserPlus className="h-5 w-5" />,
     },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+      localStorage.clear();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const isActive = (path: string) => {
     if (path === "/admin") {
@@ -167,6 +180,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               ))}
             </ul>
           </nav>
+          <div className="p-4 border-t">
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground bg-red-500 hover:bg-red-600 text-white"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              LogOut
+            </button>
+          </div>
         </div>
 
         {/* Main Content */}
