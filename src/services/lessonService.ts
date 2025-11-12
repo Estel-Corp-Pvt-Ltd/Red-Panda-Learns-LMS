@@ -27,24 +27,16 @@ import { db } from "@/firebaseConfig";
 import { Lesson } from "@/types/lesson";
 import { ok, fail, Result } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
-import { COLLECTION } from "@/constants";
+import { COLLECTION, ENVIRONMENT } from "@/constants";
 import { Duration } from "@/types/general";
 import { logError } from "@/utils/logger";
-/** Deep‑cleans objects before sending to Firestore */
-function deepClean(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-  if (Array.isArray(obj)) return obj.map(deepClean);
-  if (typeof obj === "object") {
-    return Object.fromEntries(
-      Object.entries(obj)
-        .filter(([_, v]) => v !== undefined && !Number.isNaN(v))
-        .map(([k, v]) => [k, deepClean(v)])
-    );
-  }
-  return obj;
-}
+import { authService } from "./authService";
+
 
 class LessonService {
+  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ?
+    import.meta.env.VITE_DEV_BACKEND_URL :
+    import.meta.env.VITE_PROD_BACKEND_URL;
   // ───────────────────────────────────────────────
   private async generateLessonId(): Promise<string> {
     const counterRef = doc(db, COLLECTION.COUNTERS, "lessonCounter");
@@ -144,14 +136,21 @@ class LessonService {
   // ───────────────────────────────────────────────
   async getLessonById(lessonId: string): Promise<Lesson | null> {
     try {
-      const snap = await getDoc(doc(db, COLLECTION.LESSONS, lessonId));
-      if (!snap.exists()) return null;
+      const idToken = await authService.getToken();
+      const response = await fetch(`${this.backendUrl}/getLessons?id=${lessonId}&type=lesson`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+      });
+      if (response.status !== 200) return null;
 
-      const data = snap.data();
+      const result = await response.json();
+      const data = result?.data;
       return {
         ...data,
-        createdAt: data.createdAt?.toDate?.() ?? data.createdAt ?? null,
-        updatedAt: data.updatedAt?.toDate?.() ?? data.updatedAt ?? null,
+        createdAt: data?.createdAt?.toDate?.() ?? data?.createdAt ?? null,
+        updatedAt: data?.updatedAt?.toDate?.() ?? data?.updatedAt ?? null,
       } as Lesson;
     } catch (err) {
       console.error("❌ LessonService.getLessonById:", err);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CheckCircle, Video, FileText, Minimize2, Maximize2 } from "lucide-react";
+import { CheckCircle, Video, FileText, Minimize2, Maximize2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -100,7 +100,11 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
   };
 
   if (isLoading) {
-    return <LoadingSkeleton />;
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2 className="animate-spin mx-auto mt-20 text-muted-foreground" size={50} />
+      </div>
+    );
   }
 
   if (error || !lesson) {
