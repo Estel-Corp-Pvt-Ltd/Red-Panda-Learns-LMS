@@ -27,8 +27,8 @@ import { fileService } from "@/services/fileService";
 /** Convert empty string to null or valid number */
 const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
 /** Type guard for numeric checks */
-const isNum = (v: number | null): v is number =>
-  v !== null && Number.isFinite(v);
+const isNum = (v: number | null | undefined): v is number =>
+  typeof v === "number" && Number.isFinite(v);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -281,7 +281,6 @@ const CurriculumBuilderPage = () => {
   /** Can the basic course info be saved (validation) */
   const canSaveBasics =
     title.trim() &&
-    description.trim() &&
     slug.trim().length > 0 &&
     isNum(regularPrice) &&
     isNum(salePrice) &&
