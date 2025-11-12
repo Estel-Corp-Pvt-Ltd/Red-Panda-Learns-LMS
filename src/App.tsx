@@ -68,6 +68,7 @@ import AuthRedirection from "./components/auth/AuthRedirection";
 import EnrollStudent from "./pages/admin/EnrollStudent";
 // import AdminBulkStudentEnroll from "./pages/admin/AdminBulkStudentEnroll";
 import StudentEnrollments from "./components/admin/StudentEnrollments";
+import FreeCourses from "./pages/FreeCourses";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -391,11 +392,11 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      <Route path="*" element={<NotFound />} />
                       <Route
                         path="/invoices/:orderId"
                         element={<InvoicePage />}
                       />
+                      <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />
 
@@ -404,6 +405,7 @@ const App = () => (
 
                       <Route path="/privacy" element={<PrivacyPage />} />
                       <Route path="/refund-policy" element={<RefundPage />} />
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>
                 </BrowserRouter>
