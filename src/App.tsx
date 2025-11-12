@@ -69,6 +69,7 @@ import EnrollStudent from "./pages/admin/EnrollStudent";
 // import AdminBulkStudentEnroll from "./pages/admin/AdminBulkStudentEnroll";
 import StudentEnrollments from "./components/admin/StudentEnrollments";
 import FreeCourses from "./pages/FreeCourses";
+import AdminResetPassword from "./pages/admin/AdminResetPassword";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -348,6 +349,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <CreateCouponPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/reset-password"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminResetPassword />
                           </AuthGuard>
                         }
                       />

@@ -8,6 +8,7 @@ import { razorpayWebhook } from './handlers/razorpayWebhook';
 import { sendMailWorker } from './workers/sendMailWorker';
 import { getLessons } from './handlers/getLessons';
 import { enrollFreeCourse } from './handlers/enrollments/enrollFreeCourse';
+import { resetUserPassword } from './handlers/resetUserPassword';
 // Cascade delete workers
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
@@ -25,4 +26,5 @@ export {
   lessonDeleteCascade,
   getLessons,
   enrollFreeCourse,
+  resetUserPassword
 };
