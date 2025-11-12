@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Search,
   X,
-  Filter
+  Filter,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { COURSE_STATUS, CURRENCY } from '@/constants';
@@ -39,6 +40,8 @@ type COURSE_STATUS = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
 
 type CoursePriceFilter = "Zero Price" | "Non Zero Price" | "All Prices";
 
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50, 100];
+
 const AdminCourses = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<PaginatedCourses>({
@@ -56,6 +59,7 @@ const AdminCourses = () => {
   const [searchField, setSearchField] = useState<'title' | 'description' | 'both'>('both');
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [useClientSearch, setUseClientSearch] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
     pageDirection: 'next' as 'next' | 'previous',
@@ -93,7 +97,8 @@ const AdminCourses = () => {
     coursePriceFilterValue,
     paginationState.cursor,
     paginationState.pageDirection,
-    useClientSearch
+    useClientSearch,
+    itemsPerPage
   ]);
 
   const loadAllCourses = async () => {
@@ -145,7 +150,6 @@ const AdminCourses = () => {
       }
 
       // Calculate pagination
-      const itemsPerPage = 10;
       const startIndex = (paginationState.currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
@@ -199,7 +203,7 @@ const AdminCourses = () => {
       }
 
       const result = await courseService.getCourses(filters, {
-        limit: 10,
+        limit: itemsPerPage,
         orderBy: { field: 'createdAt', direction: 'desc' },
         cursor: paginationState.cursor,
         pageDirection: paginationState.pageDirection,
@@ -234,7 +238,7 @@ const AdminCourses = () => {
           hasPreviousPage: result.data.hasPreviousPage,
           nextCursor: result.data.nextCursor,
           previousCursor: result.data.previousCursor,
-          totalCount: finalCourses.length
+          totalCount: result.data.totalCount
         });
       } else {
         console.error('Failed to load courses:', result.error);
@@ -254,6 +258,16 @@ const AdminCourses = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    const newItemsPerPage = parseInt(value, 10);
+    setItemsPerPage(newItemsPerPage);
+    setPaginationState(prev => ({
+      ...prev,
+      cursor: null,
+      currentPage: 1
+    }));
   };
 
   const handleNextPage = () => {
@@ -379,6 +393,7 @@ const AdminCourses = () => {
     setStatusFilter('ALL');
     setCoursePriceFilterValue("All Prices");
     setUseClientSearch(false);
+    setItemsPerPage(10);
     setPaginationState({
       cursor: null,
       pageDirection: 'next',
@@ -606,6 +621,32 @@ const AdminCourses = () => {
             </div>
           ) : (
             <>
+              {/* Items Per Page Selector and Summary */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {courses.data.length} of {courses.totalCount} total courses
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Show:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={handleItemsPerPageChange}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ITEMS_PER_PAGE_OPTIONS.map(option => (
+                        <SelectItem key={option} value={option.toString()}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
+                </div>
+              </div>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -655,6 +696,14 @@ const AdminCourses = () => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => navigate(`/courses/${course.slug}`)}
+                            title="View course"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                               setSelectedCourse(course);
                               setConfirmOpen(true);
@@ -673,8 +722,7 @@ const AdminCourses = () => {
               {/* Pagination Controls */}
               <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  Showing {courses.data.length} of {courses.totalCount} courses
-                  {courses.totalCount > courses.data.length && ` (page ${paginationState.currentPage})`}
+                  Page {paginationState.currentPage} of {Math.ceil(courses.totalCount / itemsPerPage)}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
