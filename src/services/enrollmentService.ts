@@ -39,6 +39,7 @@ import { learningProgressService } from "./learningProgressService";
 import { userService } from "./userService";
 import { authService } from "./authService";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { TransactionLineItem } from "@/types/transaction";
 
 type EnrollmentItem = {
   itemId: string;
@@ -67,9 +68,9 @@ class EnrollmentService {
    */
   async enrollUser(
     userEmail: string,
-    courseIds: string[]
+    items: TransactionLineItem[]
   ): Promise<Result<any[]>> {
-    if (!courseIds || courseIds.length === 0) return ok([]);
+    if (!items || items.length === 0) return fail("No items to enroll");
     try {
       const idToken = await authService.getToken();
       const response = await fetch(`${this.backendUrl}/enrollStudent`, {
@@ -80,7 +81,7 @@ class EnrollmentService {
         },
         body: JSON.stringify({
           userEmail,
-          courseIds,
+          items,
         }),
       });
 
