@@ -46,22 +46,6 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen">
       <Header />
-      <div className="bg-blue-50 dark:bg-blue-950/40 border-y border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-100">
-        <div
-          className="mx-auto max-w-7xl px-4 py-3 text-center text-sm sm:text-base"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <span>
-              If you don't see the password reset email in your inbox, please check your <span className="font-semibold text-blue-900 dark:text-blue-50">email spam folder</span>.
-            </span>
-          </div>
-        </div>
-      </div>
       <div className="flex justify-center items-center py-12 px-4">
         <Card className="w-full max-w-md shadow-lg">
 

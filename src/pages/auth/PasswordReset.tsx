@@ -59,17 +59,17 @@ export default function SetNewPassword() {
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md shadow-md">
         <CardHeader className="text-center space-y-4">
-  {/* Centered logo */}
-  <div className="flex justify-center">
-    <img src="/logo.png" alt="Vizuara AI Labs" className="w-14 h-14" />
-  </div>
+          {/* Centered logo */}
+          <div className="flex justify-center">
+            <img src="/logo.png" alt="Vizuara AI Labs" className="w-14 h-14" />
+          </div>
 
-  {/* Brand name under logo */}
-  <div>
-    <h2 className="text-2xl font-bold">Vizuara AI Labs</h2>
-    <p className="text-muted-foreground text-sm mt-1">Set a new password to continue</p>
-  </div>
-</CardHeader>
+          {/* Brand name under logo */}
+          <div>
+            <h2 className="text-2xl font-bold">Vizuara AI Labs</h2>
+            <p className="text-muted-foreground text-sm mt-1">Set a new password to continue</p>
+          </div>
+        </CardHeader>
 
         <CardContent className="space-y-4">
           {message && (
