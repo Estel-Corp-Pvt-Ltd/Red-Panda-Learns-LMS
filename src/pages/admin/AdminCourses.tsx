@@ -37,7 +37,7 @@ interface PaginatedCourses {
 
 type COURSE_STATUS = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
 
-type CoursePriceFilter = "Zero" | "Non Zero" | "All";
+type CoursePriceFilter = "Zero Price" | "Non Zero Price" | "All Prices";
 
 const AdminCourses = () => {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ const AdminCourses = () => {
     pageDirection: 'next' as 'next' | 'previous',
     currentPage: 1
   });
-  const [coursePriceFilterValue, setCoursePriceFilterValue] = useState<CoursePriceFilter>("All");
+  const [coursePriceFilterValue, setCoursePriceFilterValue] = useState<CoursePriceFilter>("All Prices");
 
   // Debounced search effect
   useEffect(() => {
@@ -444,10 +444,10 @@ const AdminCourses = () => {
                   <SelectItem value={"All"}>
                     ALL
                   </SelectItem>
-                  <SelectItem value={"Zero"}>
+                  <SelectItem value={"Zero Price"}>
                     ZERO
                   </SelectItem>
-                  <SelectItem value={"Non Zero"}>
+                  <SelectItem value={"Non Zero Price"}>
                     NON ZERO
                   </SelectItem>
                 </SelectContent>
@@ -510,8 +510,8 @@ const AdminCourses = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {courses.data.filter(course => coursePriceFilterValue === "All" ? true : (
-                    coursePriceFilterValue === "Non Zero" ? course.salePrice > 0 : course.salePrice === 0
+                  {courses.data.filter(course => coursePriceFilterValue === "All Prices" ? true : (
+                    coursePriceFilterValue === "Non Zero Price" ? course.salePrice > 0 : course.salePrice === 0
                   )).map((course) => (
                     <TableRow key={course.id}>
                       <TableCell>
