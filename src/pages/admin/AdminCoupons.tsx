@@ -161,8 +161,7 @@ const AdminCoupons: React.FC = () => {
   const getLinkedItemsCount = (coupon: Coupon) => {
     const courses = coupon.linkedCourseIds?.length || 0;
     const bundles = coupon.linkedBundleIds?.length || 0;
-    const cohorts = coupon.linkedCohortIds?.length || 0;
-    return courses + bundles + cohorts;
+    return courses + bundles;
   };
 
   useEffect(() => {
@@ -199,8 +198,8 @@ const AdminCoupons: React.FC = () => {
             <Button
               onClick={() => navigate("/admin/create-coupon")}
               className="flex items-center gap-2"
-               variant="pill"
-                  size="sm"
+              variant="pill"
+              size="sm"
             >
               <Plus className="h-4 w-4" />
               Create Coupon
