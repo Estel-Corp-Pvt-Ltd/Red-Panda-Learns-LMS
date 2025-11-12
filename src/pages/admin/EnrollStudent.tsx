@@ -2,125 +2,123 @@ import AdminLayout from '@/components/AdminLayout';
 import { enrollmentService } from '@/services/enrollmentService';
 import { courseService } from '@/services/courseService';
 import { userService } from '@/services/userService';
+import { bundleService } from '@/services/bundleService';
 import { Course } from '@/types/course';
 import { User } from '@/types/user';
+import { Bundle } from '@/types/bundle';
 import { PaginatedResult } from '@/utils/pagination';
-import { Search, Mail, BookOpen, CheckCircle, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Mail, BookOpen, CheckCircle, Loader2, X, ChevronLeft, ChevronRight, Package, Trash2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { COURSE_STATUS } from '@/constants';
+import { COURSE_STATUS, BUNDLE_STATUS } from '@/constants';
 import { WhereFilterOp } from 'firebase/firestore';
+import { TransactionLineItem } from '@/types/transaction';
 
 const EnrollStudent: React.FC = () => {
   const [studentEmail, setStudentEmail] = useState('');
   const [student, setStudent] = useState<User | null>(null);
-  const [allCourses, setAllCourses] = useState<Course[]>([]);
-  const [paginatedCourses, setPaginatedCourses] = useState<PaginatedResult<Course>>({
-    data: [],
-    hasNextPage: false,
-    hasPreviousPage: false,
-    nextCursor: null,
-    previousCursor: null
-  });
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
+  const [selectedBundles, setSelectedBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [courseSearch, setCourseSearch] = useState('');
-  const [paginationState, setPaginationState] = useState({
-    cursor: null as any,
-    pageDirection: 'next' as 'next' | 'previous',
+  const [bundleSearch, setBundleSearch] = useState('');
+  const [pagination, setPagination] = useState({
+    hasNextPage: false,
+    hasPreviousPage: false,
+    nextCursor: null as any,
+    previousCursor: null as any,
     currentPage: 1
   });
-  const [loadingAllCourses, setLoadingAllCourses] = useState(false);
 
-  // Load all courses for comprehensive search
+  // Load courses and bundles
   useEffect(() => {
-    if (courseSearch.trim()) {
-      loadAllCourses();
-    } else {
-      loadPaginatedCourses();
-    }
-  }, [courseSearch, paginationState.cursor, paginationState.pageDirection]);
+    loadCourses();
+    loadBundles();
+  }, [courseSearch, bundleSearch, pagination.currentPage]);
 
-  const loadAllCourses = async () => {
-    setLoadingAllCourses(true);
-    try {
-      const filters: { field: keyof Course; op: WhereFilterOp; value: any }[] = [
-        { field: 'status', op: '==', value: COURSE_STATUS.PUBLISHED }
-      ];
-
-      // Load all published courses without pagination for comprehensive search
-      let allCoursesData: Course[] = [];
-      let hasMore = true;
-      let currentCursor = null;
-
-      while (hasMore) {
-        const result = await courseService.getCourses(filters, {
-          limit: 50,
-          orderBy: { field: 'title', direction: 'asc' },
-          cursor: currentCursor,
-          pageDirection: 'next',
-        });
-
-        if (result.success && result.data) {
-          allCoursesData = [...allCoursesData, ...result.data.data];
-          hasMore = result.data.hasNextPage;
-          currentCursor = result.data.nextCursor;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      setAllCourses(allCoursesData);
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to load courses', variant: 'destructive' });
-    } finally {
-      setLoadingAllCourses(false);
-    }
-  };
-
-  const loadPaginatedCourses = async () => {
+  const loadCourses = async () => {
     setLoading(true);
     try {
       const filters: { field: keyof Course; op: WhereFilterOp; value: any }[] = [
         { field: 'status', op: '==', value: COURSE_STATUS.PUBLISHED }
       ];
 
+      if (courseSearch.trim()) {
+        filters.push({ field: 'title', op: '>=', value: courseSearch });
+        filters.push({ field: 'title', op: '<=', value: courseSearch + '\uf8ff' });
+      }
+
       const result = await courseService.getCourses(filters, {
         limit: 10,
         orderBy: { field: 'title', direction: 'asc' },
-        cursor: paginationState.cursor,
-        pageDirection: paginationState.pageDirection,
+        cursor: courseSearch.trim() ? null : pagination.nextCursor || pagination.previousCursor,
+        pageDirection: pagination.nextCursor ? 'next' : 'previous',
       });
 
       if (result.success && result.data) {
-        setPaginatedCourses(result.data);
+        setCourses(result.data.data);
+        setPagination(prev => ({
+          ...prev,
+          hasNextPage: result.data!.hasNextPage,
+          hasPreviousPage: result.data!.hasPreviousPage,
+          nextCursor: result.data!.nextCursor,
+          previousCursor: result.data!.previousCursor
+        }));
       }
     } catch (error) {
+      console.error('Failed to load courses:', error);
       toast({ title: 'Error', description: 'Failed to load courses', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
+  const loadBundles = async () => {
+    try {
+      const filters: { field: keyof Bundle; op: WhereFilterOp; value: any }[] = [
+        { field: 'status', op: '==', value: BUNDLE_STATUS.PUBLISHED }
+      ];
+
+      if (bundleSearch.trim()) {
+        filters.push({ field: 'title', op: '>=', value: bundleSearch });
+        filters.push({ field: 'title', op: '<=', value: bundleSearch + '\uf8ff' });
+      }
+
+      const result = await bundleService.getBundles(filters, {
+        limit: 10,
+        orderBy: { field: 'title', direction: 'asc' },
+        cursor: null,
+        pageDirection: 'next',
+      });
+
+      if (result.success && result.data) {
+        setBundles(result.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load bundles:', error);
+      toast({ title: 'Error', description: 'Failed to load bundles', variant: 'destructive' });
+    }
+  };
+
   const handleNextPage = () => {
-    if (!paginatedCourses.hasNextPage) return;
-    setPaginationState(prev => ({
-      cursor: paginatedCourses.nextCursor,
-      pageDirection: 'next',
+    if (!pagination.hasNextPage || loading) return;
+    setPagination(prev => ({
+      ...prev,
       currentPage: prev.currentPage + 1
     }));
   };
 
   const handlePreviousPage = () => {
-    if (!paginatedCourses.hasPreviousPage) return;
-    setPaginationState(prev => ({
-      cursor: paginatedCourses.previousCursor,
-      pageDirection: 'previous',
+    if (!pagination.hasPreviousPage || loading) return;
+    setPagination(prev => ({
+      ...prev,
       currentPage: prev.currentPage - 1
     }));
   };
@@ -142,6 +140,7 @@ const EnrollStudent: React.FC = () => {
         toast({ title: 'Error', description: 'Student not found', variant: 'destructive' });
       }
     } catch (error) {
+      console.error('Student search failed:', error);
       toast({ title: 'Error', description: 'Search failed', variant: 'destructive' });
     } finally {
       setSearching(false);
@@ -153,65 +152,105 @@ const EnrollStudent: React.FC = () => {
       toast({ title: 'Error', description: 'Find student first', variant: 'destructive' });
       return;
     }
-    if (selectedCourses.length === 0) {
-      toast({ title: 'Error', description: 'Select at least one course', variant: 'destructive' });
+    if (selectedCourses.length === 0 && selectedBundles.length === 0) {
+      toast({ title: 'Error', description: 'Select at least one course or bundle', variant: 'destructive' });
       return;
     }
 
+    const items: TransactionLineItem[] = [];
+    selectedCourses.forEach(course => items.push({ itemId: course.id, itemType: 'COURSE', amount: 0, name: course.title }));
+    selectedBundles.forEach(bundle => items.push({ itemId: bundle.id, itemType: 'BUNDLE', amount: 0, name: bundle.title }));
+
     setLoading(true);
     try {
-      const result = await enrollmentService.enrollUser(student.email, selectedCourses);
+      const result = await enrollmentService.enrollUser(
+        student.email,
+        items,
+      );
       if (result.success) {
         toast({ title: 'Success', description: 'Student enrolled successfully' });
         // Reset form
         setSelectedCourses([]);
+        setSelectedBundles([]);
         setStudent(null);
         setStudentEmail('');
       } else {
         throw new Error('Enrollment failed');
       }
     } catch (error) {
+      console.error('Enrollment failed:', error);
       toast({ title: 'Error', description: 'Enrollment failed', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleCourse = (courseId: string, selected: boolean) => {
+  const toggleCourse = (course: Course, selected: boolean) => {
     setSelectedCourses(prev =>
-      selected ? [...prev, courseId] : prev.filter(id => id !== courseId)
+      selected ? [...prev, course] : prev.filter(c => c.id !== course.id)
     );
+  };
+
+  const toggleBundle = (bundle: Bundle, selected: boolean) => {
+    setSelectedBundles(prev =>
+      selected ? [...prev, bundle] : prev.filter(b => b.id !== bundle.id)
+    );
+  };
+
+  const removeCourse = (courseId: string) => {
+    setSelectedCourses(prev => prev.filter(c => c.id !== courseId));
+  };
+
+  const removeBundle = (bundleId: string) => {
+    setSelectedBundles(prev => prev.filter(b => b.id !== bundleId));
   };
 
   const clearCourseSearch = () => {
     setCourseSearch('');
-    setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+    setPagination({
+      hasNextPage: false,
+      hasPreviousPage: false,
+      nextCursor: null,
+      previousCursor: null,
+      currentPage: 1
+    });
+  };
+
+  const clearBundleSearch = () => {
+    setBundleSearch('');
+  };
+
+  const handleCourseSearchChange = (searchTerm: string) => {
+    setCourseSearch(searchTerm);
+    if (searchTerm !== courseSearch) {
+      setPagination({
+        hasNextPage: false,
+        hasPreviousPage: false,
+        nextCursor: null,
+        previousCursor: null,
+        currentPage: 1
+      });
+    }
+  };
+
+  const handleBundleSearchChange = (searchTerm: string) => {
+    setBundleSearch(searchTerm);
   };
 
   const getStudentName = (user: User) => {
     return `${user.firstName} ${user.lastName}`.trim() || user.email;
   };
 
-  // Client-side search filtering across all courses
-  const filteredCourses = courseSearch.trim()
-    ? allCourses.filter(course => {
-      const searchTerm = courseSearch.toLowerCase();
-      const titleMatch = course.title?.toLowerCase().includes(searchTerm);
-      const descriptionMatch = course.description?.toLowerCase().includes(searchTerm);
-      return titleMatch || descriptionMatch;
-    })
-    : paginatedCourses.data;
-
-  const isSearching = courseSearch.trim().length > 0;
-  const displayCourses = isSearching ? filteredCourses : paginatedCourses.data;
-  const isLoading = loading || (isSearching && loadingAllCourses);
+  const getTotalSelected = () => {
+    return selectedCourses.length + selectedBundles.length;
+  };
 
   return (
     <AdminLayout>
       <div className="mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Enroll Student</h1>
-          <p className="text-muted-foreground">Manually enroll students in courses</p>
+          <p className="text-muted-foreground">Manually enroll students in courses and bundles</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -262,15 +301,65 @@ const EnrollStudent: React.FC = () => {
                   <span className="font-medium">{student ? getStudentName(student) : 'Not selected'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Courses Selected:</span>
-                  <span className="font-medium">{selectedCourses.length}</span>
+                  <span>Total Items:</span>
+                  <span className="font-bold">{getTotalSelected()}</span>
                 </div>
               </div>
+
+              {/* Selected Courses List */}
+              {selectedCourses.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Selected Courses
+                  </div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {selectedCourses.map((course) => (
+                      <div key={course.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                        <span className="truncate flex-1">{course.title}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCourse(course.id)}
+                          className="h-6 w-6 p-0 ml-2"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Bundles List */}
+              {selectedBundles.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Selected Bundles
+                  </div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {selectedBundles.map((bundle) => (
+                      <div key={bundle.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                        <span className="truncate flex-1">{bundle.title}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeBundle(bundle.id)}
+                          className="h-6 w-6 p-0 ml-2"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <Button
                 className="w-full"
                 onClick={enrollStudent}
-                disabled={!student || selectedCourses.length === 0 || loading}
+                disabled={!student || getTotalSelected() === 0 || loading}
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -283,111 +372,181 @@ const EnrollStudent: React.FC = () => {
           </Card>
         </div>
 
-        {/* Course Selection */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Available Courses
-                {displayCourses.length > 0 && (
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({displayCourses.length} {isSearching ? 'found' : 'courses'})
-                  </span>
-                )}
-              </CardTitle>
+        {/* Course and Bundle Selection */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Courses Column */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Available Courses
+                </CardTitle>
 
-              <div className="flex items-center gap-4">
-                {/* Course Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search courses by title or description..."
-                    value={courseSearch}
-                    onChange={(e) => setCourseSearch(e.target.value)}
-                    className="pl-10 pr-10 w-64"
-                  />
-                  {courseSearch && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearCourseSearch}
-                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search courses..."
+                      value={courseSearch}
+                      onChange={(e) => handleCourseSearchChange(e.target.value)}
+                      className="pl-10 pr-10 w-64"
+                    />
+                    {courseSearch && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearCourseSearch}
+                        className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="ml-2">
-                  {isSearching ? 'Searching all courses...' : 'Loading courses...'}
-                </span>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Loading courses...</span>
+                </div>
+              ) : courses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {courseSearch
+                    ? `No courses found matching "${courseSearch}"`
+                    : 'No published courses available'
+                  }
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {courses.map((course) => (
+                      <div key={course.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                        <Checkbox
+                          checked={selectedCourses.some(c => c.id === course.id)}
+                          onCheckedChange={(checked) => toggleCourse(course, checked as boolean)}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{course.title}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-2">
+                            {course.description}
+                          </div>
+                          <div className="text-sm text-green-600 font-medium mt-1">
+                            ${course.salePrice || course.regularPrice}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {!courseSearch && courses.length > 0 && (
+                    <div className="flex items-center justify-between space-x-2 py-4">
+                      <div className="flex-1 text-sm text-muted-foreground">
+                        Page {pagination.currentPage}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handlePreviousPage}
+                          disabled={!pagination.hasPreviousPage || loading}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleNextPage}
+                          disabled={!pagination.hasNextPage || loading}
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Bundles Column */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Available Bundles
+                </CardTitle>
+
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search bundles..."
+                      value={bundleSearch}
+                      onChange={(e) => handleBundleSearchChange(e.target.value)}
+                      className="pl-10 pr-10 w-64"
+                    />
+                    {bundleSearch && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearBundleSearch}
+                        className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
-            ) : displayCourses.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {isSearching
-                  ? `No courses found matching "${courseSearch}"`
-                  : 'No published courses available'
-                }
-              </div>
-            ) : (
-              <>
+            </CardHeader>
+            <CardContent>
+              {bundles.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {bundleSearch
+                    ? `No bundles found matching "${bundleSearch}"`
+                    : 'No published bundles available'
+                  }
+                </div>
+              ) : (
                 <div className="space-y-3">
-                  {displayCourses.map((course) => (
-                    <div key={course.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                  {bundles.map((bundle) => (
+                    <div key={bundle.id} className="flex items-center gap-4 p-4 border rounded-lg">
                       <Checkbox
-                        checked={selectedCourses.includes(course.id)}
-                        onCheckedChange={(checked) => toggleCourse(course.id, checked as boolean)}
+                        checked={selectedBundles.some(b => b.id === bundle.id)}
+                        onCheckedChange={(checked) => toggleBundle(bundle, checked as boolean)}
                       />
                       <div className="flex-1">
-                        <div className="font-medium">{course.title}</div>
+                        <div className="font-medium">{bundle.title}</div>
                         <div className="text-sm text-muted-foreground line-clamp-2">
-                          {course.description}
+                          {bundle.description}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="text-sm text-green-600 font-medium">
+                            ${bundle.salePrice}
+                          </div>
+                          {bundle.regularPrice > bundle.salePrice && (
+                            <div className="text-sm text-muted-foreground line-through">
+                              ${bundle.regularPrice}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            • {bundle.courses?.length || 0} courses
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-
-                {/* Pagination Controls - Only show when not searching */}
-                {!isSearching && paginatedCourses.data.length > 0 && (
-                  <div className="flex items-center justify-between space-x-2 py-4">
-                    <div className="flex-1 text-sm text-muted-foreground">
-                      Page {paginationState.currentPage}
-                      {paginatedCourses.hasNextPage && ` (${paginatedCourses.data.length} of many)`}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePreviousPage}
-                        disabled={!paginatedCourses.hasPreviousPage || loading}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleNextPage}
-                        disabled={!paginatedCourses.hasNextPage || loading}
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AdminLayout>
   );

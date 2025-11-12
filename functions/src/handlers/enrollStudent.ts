@@ -9,8 +9,7 @@ import { EnrollStudentSchema } from "../utils/validators";
 import { defineSecret } from "firebase-functions/params";
 import { userService } from "../services/userService";
 import { enrollmentService } from "../services/enrollService";
-import { TransactionLineItem } from "../types/transaction";
-import { courseService } from "../services/courseService";
+import { getItemsDetails } from "../utils/orderUtils";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -34,7 +33,7 @@ async function enrollStudentHandler(req: Request, res: Response) {
       return;
     }
 
-    const { userEmail, courseIds } = result.data;
+    const { userEmail, items } = result.data;
 
     const userResult = await userService.getUserByEmail(userEmail);
 
@@ -43,28 +42,14 @@ async function enrollStudentHandler(req: Request, res: Response) {
       return;
     }
 
-    const courses: TransactionLineItem[] = [];
+    const { itemsDetails } = await getItemsDetails(items);
 
-    for (const courseId of courseIds) {
-      const courseResponse = await courseService.getCourseById(courseId);
-      if (courseResponse.success && courseResponse.data) {
-        const course = courseResponse.data;
-        courses.push({
-          itemId: course.id,
-          amount: course.salePrice,
-          itemType: "COURSE",
-          name: course.title,
-          originalAmount: course.regularPrice
-        });
-      }
-    }
-
-    await enrollmentService.enrollUser(userResult.data, courses, "Admin Enrollment");
-    functions.logger.info("student enrolled by admin", { userEmail, courseIds, admin: user });
+    await enrollmentService.enrollUser(userResult.data, itemsDetails, "Admin Enrollment");
+    functions.logger.info("student enrolled by admin", { userEmail, itemsDetails, admin: user });
 
     res.status(200).json({
       success: true,
-      enrolledCourses: courses
+      items: itemsDetails
     });
   } catch (err: any) {
     console.error("❌ Razorpay order creation failed:", err);
