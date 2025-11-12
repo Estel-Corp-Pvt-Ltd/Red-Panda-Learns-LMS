@@ -1,9 +1,8 @@
-import React, { ReactNode } from 'react';
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Users, Settings, Book, TicketPercent, Building2, ShoppingBag, UserPen, PictureInPicture, NotepadText, GrapeIcon, ChartBar, AlarmClockPlus ,Menu ,X } from 'lucide-react';
-import { Header } from './Header';
 import { cn } from '@/lib/utils';
+import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, KeyRound, LayoutDashboard, Menu, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, Users, X } from 'lucide-react';
+import React, { ReactNode, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Header } from './Header';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -17,7 +16,7 @@ interface MenuItem {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const menuItems: MenuItem[] = [
     {
       name: "Dashboard",
@@ -72,6 +71,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Users",
       path: "/admin/users",
       icon: <Users className="h-5 w-5" />,
+    },
+    {
+      name: "Reset Password",
+      path: "/admin/reset-password",
+      icon: <KeyRound className="h-5 w-5" />,
     },
     {
       name: "Organizations",
