@@ -1,4 +1,4 @@
-import { Network, Scale, Sparkles, Eye, GraduationCap, Atom, ArrowRight } from "lucide-react";
+import { Network, Scale, Sparkles, Eye, GraduationCap, Atom, ArrowRight, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
@@ -36,6 +36,13 @@ const researchDomains = [
 ];
 
 const researchBootcamps = [
+  {
+    icon: Bot,
+    title: "Reinforcement Learning Research Bootcamp",
+    description: "Comprehensive program to write high-quality research papers in the field of Reinforcement Learning",
+    link: "https://rlresearcherbootcamp.vizuara.ai/",
+    color: "#44ff3b",
+  },
   {
     icon: GraduationCap,
     title: "AI Highschool Researcher Bootcamp",
@@ -273,20 +280,20 @@ const ResearchSection = () => {
               </div>
               <div className="space-y-8">
                 {researchDomains.map((domain, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="space-y-4 opacity-0 animate-slide-in-left"
                     style={{ animationDelay: `${400 + index * 150}ms` }}
                   >
                     <div className="flex items-center gap-3 group">
-                      <div 
+                      <div
                         className="p-2 rounded-lg transition-all duration-300 group-hover:scale-110"
                         style={{
                           background: `linear-gradient(135deg, ${domain.color}20, ${domain.color}10)`,
                         }}
                       >
-                        <domain.icon 
-                          className="w-5 h-5 transition-colors duration-300" 
+                        <domain.icon
+                          className="w-5 h-5 transition-colors duration-300"
                           style={{ color: domain.color }}
                         />
                       </div>
@@ -299,10 +306,10 @@ const ResearchSection = () => {
                           <div
                             key={topicIndex}
                             className="topic-tag px-4 py-2 rounded-lg bg-background/60 dark:bg-background/40 backdrop-blur-sm border-2 hover:shadow-lg hover:scale-110 hover:-translate-y-1 transition-all duration-300 cursor-pointer opacity-0 animate-tag-pop"
-                            style={{ 
+                            style={{
                               animationDelay: `${600 + index * 150 + topicIndex * 100}ms`,
                               borderColor: isHovered ? domain.color : `${domain.color}20`,
-                              boxShadow: isHovered 
+                              boxShadow: isHovered
                                 ? `0 8px 24px ${domain.color}40, 0 0 40px ${domain.color}20`
                                 : undefined,
                             }}
@@ -311,53 +318,53 @@ const ResearchSection = () => {
                           >
                             {/* Shimmer background effect */}
                             <div className="topic-tag-shimmer" />
-                            
+
                             {/* Floating particles */}
                             {isHovered && (
                               <>
-                                <span 
-                                  className="topic-tag-particle" 
-                                  style={{ 
-                                    top: '20%', 
-                                    left: '20%', 
+                                <span
+                                  className="topic-tag-particle"
+                                  style={{
+                                    top: '20%',
+                                    left: '20%',
                                     background: domain.color,
                                     animationDelay: '0s',
-                                  }} 
+                                  }}
                                 />
-                                <span 
-                                  className="topic-tag-particle" 
-                                  style={{ 
-                                    top: '20%', 
-                                    right: '20%', 
+                                <span
+                                  className="topic-tag-particle"
+                                  style={{
+                                    top: '20%',
+                                    right: '20%',
                                     background: domain.color,
                                     animationDelay: '0.3s',
-                                  }} 
+                                  }}
                                 />
-                                <span 
-                                  className="topic-tag-particle" 
-                                  style={{ 
-                                    bottom: '20%', 
-                                    left: '30%', 
+                                <span
+                                  className="topic-tag-particle"
+                                  style={{
+                                    bottom: '20%',
+                                    left: '30%',
                                     background: domain.color,
                                     animationDelay: '0.6s',
-                                  }} 
+                                  }}
                                 />
-                                <span 
-                                  className="topic-tag-particle" 
-                                  style={{ 
-                                    bottom: '20%', 
-                                    right: '30%', 
+                                <span
+                                  className="topic-tag-particle"
+                                  style={{
+                                    bottom: '20%',
+                                    right: '30%',
                                     background: domain.color,
                                     animationDelay: '0.9s',
-                                  }} 
+                                  }}
                                 />
                               </>
                             )}
-                            
+
                             {/* Content - always visible on top */}
                             <div className="topic-tag-content">
                               {/* Accent dot */}
-                              <span 
+                              <span
                                 className="inline-block w-1.5 h-1.5 rounded-full mr-2 transition-all duration-300 flex-shrink-0"
                                 style={{
                                   background: domain.color,
@@ -366,9 +373,9 @@ const ResearchSection = () => {
                                   boxShadow: isHovered ? `0 0 8px ${domain.color}` : 'none',
                                 }}
                               />
-                              <span 
+                              <span
                                 className="font-medium text-sm transition-colors duration-300"
-                                style={{ 
+                                style={{
                                   color: isHovered ? domain.color : 'inherit'
                                 }}
                               >
@@ -390,7 +397,7 @@ const ResearchSection = () => {
               <div className="relative space-y-6">
                 {/* Vertical Progress Line */}
                 <div className="absolute left-[23px] top-0 bottom-0 w-0.5 bg-border/30 dark:bg-border/20">
-                  <div 
+                  <div
                     className="w-full bg-gradient-to-b from-purple-500 via-blue-500 to-pink-500 animate-progress-line"
                     style={{ animationDelay: '400ms' }}
                   />
@@ -412,16 +419,16 @@ const ResearchSection = () => {
                       onMouseLeave={() => setHoveredBootcamp(null)}
                     >
                       {/* Progress Dot */}
-                      <div 
+                      <div
                         className="absolute left-0 top-6 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300"
                         style={{
-                          background: isVisible 
+                          background: isVisible
                             ? `linear-gradient(135deg, ${bootcamp.color}40, ${bootcamp.color}20)`
                             : 'transparent',
                           transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                         }}
                       >
-                        <div 
+                        <div
                           className="w-6 h-6 rounded-full flex items-center justify-center"
                           style={{
                             background: bootcamp.color,
@@ -445,20 +452,20 @@ const ResearchSection = () => {
                       >
                         <div className="flex flex-col space-y-4">
                           <div className="flex items-start gap-4">
-                            <div 
+                            <div
                               className="p-3 rounded-full shrink-0 transition-all duration-300"
                               style={{
                                 background: `linear-gradient(135deg, ${bootcamp.color}20, ${bootcamp.color}10)`,
                                 transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)',
                               }}
                             >
-                              <bootcamp.icon 
-                                className="w-6 h-6" 
+                              <bootcamp.icon
+                                className="w-6 h-6"
                                 style={{ color: bootcamp.color }}
                               />
                             </div>
                             <div className="flex-1">
-                              <h4 
+                              <h4
                                 className="text-lg font-semibold mb-2 transition-colors duration-300"
                                 style={{
                                   color: isHovered ? bootcamp.color : 'var(--foreground)',
@@ -472,14 +479,21 @@ const ResearchSection = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="rounded-full border-2 transition-all duration-300 group/btn"
+                                className="rounded-full border-2 transition-all duration-300 group/btn
+             border-[var(--bootcamp-color)] text-[var(--bootcamp-color)]
+             hover:bg-[var(--bootcamp-color)] hover:text-white"
                                 style={{
-                                  borderColor: isHovered ? bootcamp.color : undefined,
-                                  color: isHovered ? bootcamp.color : undefined,
+                                  // pass bootcamp color dynamically via CSS variable
+                                  ['--bootcamp-color' as any]: bootcamp.color,
                                 }}
                                 asChild
                               >
-                                <a href={bootcamp.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                                <a
+                                  href={bootcamp.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2"
+                                >
                                   <span>Learn More</span>
                                   <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
                                 </a>
