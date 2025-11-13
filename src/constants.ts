@@ -110,8 +110,7 @@ export const CURRENCY = {
 export const LEARNING_UNIT = {
   ASSIGNMENT: "ASSIGNMENT",
   LESSON: "LESSON",
-  TOPIC: "TOPIC",
-  COHORT: "COHORT"
+  TOPIC: "TOPIC"
 } as const;
 
 export const ENVIRONMENT = {
