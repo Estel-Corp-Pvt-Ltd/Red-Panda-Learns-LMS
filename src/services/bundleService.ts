@@ -15,7 +15,8 @@ import {
   endBefore,
   limitToLast,
   startAfter,
-  limit
+  limit,
+  getCountFromServer
 } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import {
@@ -303,7 +304,12 @@ class BundleService {
 
   async getAllBundles(): Promise<Bundle[]> {
     try {
-      const querySnapshot = await getDocs(collection(db, COLLECTION.BUNDLES));
+      const q = query(
+        collection(db, COLLECTION.BUNDLES),
+        where("status", "==", BUNDLE_STATUS.PUBLISHED)
+      );
+
+      const querySnapshot = await getDocs(q);
 
       const bundles = querySnapshot.docs.map((doc) => ({
         ...doc.data(),
@@ -561,6 +567,10 @@ class BundleService {
 
       let q: Query = collection(db, COLLECTION.BUNDLES);
 
+      const countQuery = query(q); // Same query without pagination
+      const countSnapshot = await getCountFromServer(countQuery);
+      const totalCount = countSnapshot.data().count;
+
       // Apply filters if provided
       if (filters && filters.length > 0) {
         const whereClauses = filters.map((f) =>
@@ -635,6 +645,7 @@ class BundleService {
         hasPreviousPage,
         nextCursor,
         previousCursor,
+        totalCount
       });
     } catch (error) {
       console.error("BundleService - Error fetching bundles:", error);
