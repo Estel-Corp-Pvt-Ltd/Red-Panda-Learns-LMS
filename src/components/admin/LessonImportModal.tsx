@@ -22,7 +22,7 @@ import {
 import { Lesson } from "@/types/lesson";
 import { lessonService } from "@/services/lessonService";
 import { useToast } from "@/hooks/use-toast";
-import { CreateLessonModal } from "./AddLesson";
+import { CreateLessonModal } from "../lesson/AddLesson";
 import { Duration } from "@/types/general";
 import { WhereFilterOp } from "firebase/firestore";
 

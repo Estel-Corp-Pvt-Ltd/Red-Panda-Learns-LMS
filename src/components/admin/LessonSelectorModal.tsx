@@ -13,7 +13,7 @@ import { Loader2, BookOpen, Search, Plus } from "lucide-react";
 import { Lesson } from "@/types/lesson";
 import { lessonService } from "@/services/lessonService";
 import { useToast } from "@/hooks/use-toast";
-import { CreateLessonModal } from "./AddLesson";
+import { CreateLessonModal } from "../lesson/AddLesson";
 
 interface LessonSelectModalProps {
   courseId: string;

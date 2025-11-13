@@ -70,6 +70,7 @@ import AdminBulkStudentEnroll from "./pages/admin/AdminBulkStudentEnroll";
 import StudentEnrollments from "./components/admin/StudentEnrollments";
 import FreeCourses from "./pages/FreeCourses";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
+import ArrangeCourses from "./pages/admin/ArrangeCourses";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -313,6 +314,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <CurriculumBuilderPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/arrange-courses"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <ArrangeCourses />
                           </AuthGuard>
                         }
                       />

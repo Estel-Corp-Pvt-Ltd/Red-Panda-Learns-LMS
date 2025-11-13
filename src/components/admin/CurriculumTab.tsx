@@ -39,7 +39,7 @@ import { LessonImportModal } from "@/components/admin/LessonImportModal";
 import { EditLessonModal } from "@/components/admin/LessonEditModel";
 import AssignmentModal from "@/components/AssignmentModal";
 import EditAssignmentModal from "./EditAssignmentModal";
-import { CreateLessonModal } from "@/components/admin/AddLesson";
+import { CreateLessonModal } from "@/components/lesson/AddLesson";
 import type { Lesson } from "@/types/lesson";
 import type { Assignment } from "@/types/assignment";
 import { LearningUnit } from "@/types/general";
