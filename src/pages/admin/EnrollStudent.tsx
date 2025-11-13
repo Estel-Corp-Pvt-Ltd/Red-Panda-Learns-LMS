@@ -434,7 +434,7 @@ const EnrollStudent: React.FC = () => {
                             {course.description}
                           </div>
                           <div className="text-sm text-green-600 font-medium mt-1">
-                            ${course.salePrice || course.regularPrice}
+                            ₹{course.salePrice || course.regularPrice}
                           </div>
                         </div>
                       </div>
@@ -528,11 +528,11 @@ const EnrollStudent: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <div className="text-sm text-green-600 font-medium">
-                            ${bundle.salePrice}
+                            ₹{bundle.salePrice}
                           </div>
                           {bundle.regularPrice > bundle.salePrice && (
                             <div className="text-sm text-muted-foreground line-through">
-                              ${bundle.regularPrice}
+                              ₹{bundle.regularPrice}
                             </div>
                           )}
                           <div className="text-xs text-muted-foreground">

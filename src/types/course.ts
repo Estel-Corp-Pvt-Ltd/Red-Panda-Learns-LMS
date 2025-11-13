@@ -49,7 +49,6 @@ export interface Course {
   instructorName: string;
   status: CourseStatus;
   certificateTemplateId?: string;
-  cohorts: Cohort[];
   topics: Topic[];
   isEnrollmentPaused: boolean;
   createdAt: Timestamp | FieldValue;
