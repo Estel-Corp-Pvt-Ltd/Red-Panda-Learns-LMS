@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Edit2,
   Eye,
+  FolderClosed,
   FolderOpen,
   GripVertical,
   NotebookPen,
@@ -626,9 +627,9 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                     <div className="flex items-center justify-between w-full group">
                       {/* ───── Left: icon + title ───────────── */}
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {item.type === LEARNING_UNIT.TOPIC && (
+                        {item.type === LEARNING_UNIT.TOPIC ? activeTopicIds.has(item.id) ? (
                           <FolderOpen className="h-6 w-6 text-primary" />
-                        )}
+                        ) : <FolderClosed className="h-6 w-6 text-primary" /> : null}
                         {item.type === LEARNING_UNIT.LESSON && (
                           <BookOpen className="h-6 w-6 text-red-500" />
                         )}
@@ -698,7 +699,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                               <Plus className="h-4 w-4" />
                             </Button>
                             {/* Import Lesson */}
-                            <Button
+                            {/* <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => addLessonToParent(item.id)}
@@ -706,7 +707,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                               title="Import Lesson"
                             >
                               <Search className="h-4 w-4" />
-                            </Button>
+                            </Button> */}
                             {/* Add Assignment */}
                             <Button
                               variant="ghost"
