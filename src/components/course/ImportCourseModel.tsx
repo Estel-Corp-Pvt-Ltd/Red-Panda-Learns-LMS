@@ -114,11 +114,11 @@ export const ImportCourseModal = ({
         filters.push({
           field: 'title',
           op: '>=',
-          value: searchQuery.toLowerCase()
+          value: searchQuery
         }, {
           field: 'title',
           op: '<=',
-          value: searchQuery.toLowerCase() + '\uf8ff'
+          value: searchQuery + '\uf8ff'
         });
       }
 
