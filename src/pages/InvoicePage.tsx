@@ -29,7 +29,7 @@ const InvoicePage: React.FC = () => {
     return {
       name: address.fullName,
       address: {
-        line1: address.landmark + ' ' + address.line1,
+        line1: (address.line1 || ""),
         city: address.city,
         state: address.state,
         country: address.country,
@@ -45,7 +45,7 @@ const InvoicePage: React.FC = () => {
 
   const invoiceData = {
     // Invoice basic info
-    invoiceNumber: "INV-2024-001",
+    invoiceNumber: order.orderId.replace('order_', 'INV-'),
     invoiceDate: "2024-01-15",
     // Billing and shipping
     billTo: formatAddress(order?.billingAddress),
@@ -55,21 +55,21 @@ const InvoicePage: React.FC = () => {
     items: order.items.map(item => ({
       description: item.name,
       quantity: 1,
-      rate: item.amount,
+      rate: item.amount - (item.amount) * 0.18,
       hsnSac: "998314",
-      igstPercentage: 18,
-      igstAmount: 1800,
+      gstPercentage: 18,
+      gstAmount: (item.amount) * 0.18,
       amount: item.amount
     })),
 
     // Financial calculations
-    subtotal: order.items.reduce((acc, item) => acc + item.amount, 0),
-    totalTax: order.items.reduce((acc, item) => acc + (item.amount) / 100, 0),
+    subtotal: order.items.reduce((acc, item) => acc + item.amount, 0) - order.items.reduce((acc, item) => acc + (item.amount) * 0.18, 0),
+    totalTax: order.items.reduce((acc, item) => acc + (item.amount) * 0.18, 0),
     total: order.amount,
     currency: order.currency,
     paymentMade: order.amount,
     balanceDue: 0,
-    note: "Bank Name: State Bank of India\nBranch: Main Branch\nAccount No: 12345678901\nRTGS/NEFT IFSC: SBIN0001234"
+    // note: "Bank Name: State Bank of India\nBranch: Main Branch\nAccount No: 12345678901\nRTGS/NEFT IFSC: SBIN0001234"
   };
 
   return (

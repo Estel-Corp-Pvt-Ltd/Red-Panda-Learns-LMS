@@ -3,8 +3,8 @@ export interface InvoiceItem {
   hsnSac: string;
   quantity: number;
   rate: number;
-  igstPercentage: number;
-  igstAmount: number;
+  gstPercentage: number;
+  gstAmount: number;
   amount: number;
 }
 
