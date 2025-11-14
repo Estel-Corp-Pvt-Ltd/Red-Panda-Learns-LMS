@@ -55,16 +55,16 @@ const InvoicePage: React.FC = () => {
     items: order.items.map(item => ({
       description: item.name,
       quantity: 1,
-      rate: item.amount - (item.amount) * 0.18,
+      rate: (item.amount - (item.amount) * 0.18) * order.exchangeRate,
       hsnSac: "998314",
       gstPercentage: 18,
-      gstAmount: (item.amount) * 0.18,
-      amount: item.amount
+      gstAmount: ((item.amount) * 0.18) * order.exchangeRate,
+      amount: item.amount * order.exchangeRate
     })),
 
     // Financial calculations
-    subtotal: order.items.reduce((acc, item) => acc + item.amount, 0) - order.items.reduce((acc, item) => acc + (item.amount) * 0.18, 0),
-    totalTax: order.items.reduce((acc, item) => acc + (item.amount) * 0.18, 0),
+    subtotal: (order.items.reduce((acc, item) => acc + item.amount, 0) - order.items.reduce((acc, item) => acc + (item.amount) * 0.18, 0)) * order.exchangeRate,
+    totalTax: order.items.reduce((acc, item) => acc + (item.amount) * 0.18, 0) * order.exchangeRate,
     total: order.amount,
     currency: order.currency,
     paymentMade: order.amount,

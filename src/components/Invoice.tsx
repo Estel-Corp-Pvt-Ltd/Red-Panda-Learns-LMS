@@ -10,10 +10,12 @@ interface InvoiceComponentProps {
 export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
-  const formatCurrency = (amount: number): string => {
+  const formatCurrency = (amount: number, currency: string): string => {
     return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
+      currency: currency,
     }).format(amount);
   };
 
@@ -256,27 +258,27 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                         <td className="border border-gray-300 p-1 print:border print:p-1">{item.description}</td>
                         <td className="border border-gray-300 p-1 text-center print:border print:p-1">{item.hsnSac}</td>
                         <td className="border border-gray-300 p-1 text-center print:border print:p-1">{item.quantity.toFixed(2)}</td>
-                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(item.rate)}</td>
+                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(item.rate, invoiceData.currency)}</td>
 
                         {/* Dynamic GST columns */}
                         {isSameState ? (
                           <>
                             {/* SGST Columns */}
                             <td className="border border-gray-300 p-1 text-center print:border print:p-1">{itemSgstCgstPercentage.toFixed(2)}%</td>
-                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemSgstCgstAmount)}</td>
+                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemSgstCgstAmount, invoiceData.currency)}</td>
                             {/* CGST Columns */}
                             <td className="border border-gray-300 p-1 text-center print:border print:p-1">{itemSgstCgstPercentage.toFixed(2)}%</td>
-                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemSgstCgstAmount)}</td>
+                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemSgstCgstAmount, invoiceData.currency)}</td>
                           </>
                         ) : (
                           <>
                             {/* IGST Columns */}
                             <td className="border border-gray-300 p-1 text-center print:border print:p-1">{itemGstPercentage}%</td>
-                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemGstAmount)}</td>
+                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemGstAmount, invoiceData.currency)}</td>
                           </>
                         )}
 
-                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(item.amount)}</td>
+                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(item.amount, invoiceData.currency)}</td>
                       </tr>
                     );
                   })}
@@ -306,7 +308,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                   <tbody>
                     <tr>
                       <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">Sub Total</td>
-                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(invoiceData.subtotal)}</td>
+                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(invoiceData.subtotal, invoiceData.currency)}</td>
                     </tr>
 
                     {/* Dynamic GST rows based on state */}
@@ -314,31 +316,31 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                       <>
                         <tr>
                           <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">SGST</td>
-                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.sgstAmount)}</td>
+                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.sgstAmount, invoiceData.currency)}</td>
                         </tr>
                         <tr>
                           <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">CGST</td>
-                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.cgstAmount)}</td>
+                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.cgstAmount, invoiceData.currency)}</td>
                         </tr>
                       </>
                     ) : (
                       <tr>
                         <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">IGST</td>
-                        <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.igstAmount)}</td>
+                        <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.igstAmount, invoiceData.currency)}</td>
                       </tr>
                     )}
 
                     <tr className="total-row border-t border-gray-400 print:border-t">
                       <td className="total-label text-right font-bold text-gray-900 py-1 pr-2 print:font-bold print:py-1 print:pr-2"><strong>Total</strong></td>
-                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2"><strong>₹{formatCurrency(invoiceData.total)}</strong></td>
+                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2"><strong>{formatCurrency(invoiceData.total, invoiceData.currency)}</strong></td>
                     </tr>
                     <tr>
                       <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">Payment Made</td>
-                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">(-) {formatCurrency(invoiceData.paymentMade)}</td>
+                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">(-) {formatCurrency(invoiceData.paymentMade, invoiceData.currency)}</td>
                     </tr>
                     <tr className="balance-row border-t border-gray-400 print:border-t">
                       <td className="total-label text-right font-bold text-gray-900 py-1 pr-2 print:font-bold print:py-1 print:pr-2"><strong>Balance Due</strong></td>
-                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2"><strong>{invoiceData.currency}{formatCurrency(invoiceData.balanceDue)}</strong></td>
+                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2"><strong>{formatCurrency(invoiceData.balanceDue, invoiceData.currency)}</strong></td>
                     </tr>
                   </tbody>
                 </table>
@@ -346,17 +348,17 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
             </div>
 
             {/* Signature Section */}
-            <div className="signature-section flex justify-between items-end border-t border-gray-300 pt-4 mt-24 print:flex print:justify-between print:border-t print:pt-4 print:mt-24 ">
+            {/* <div className="signature-section flex justify-between items-end border-t border-gray-300 pt-4 mt-24 print:flex print:justify-between print:border-t print:pt-4 print:mt-24 ">
               <div className="signature-left print:block">
                 <p className="text-sm text-gray-700 print:text-sm">Dr. Rajat Dandekar</p>
               </div>
               <div className="signature-right print:block">
                 <p className="text-sm text-gray-700 print:text-sm">Authorized Signature</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Policy Links Section */}
-            <div className="policy-links border-t border-gray-300 pt-4 mt-4 text-center print:border-t print:pt-4 print:mt-4">
+            <div className="policy-links border-t border-gray-300 pt-4 mt-36 text-center print:border-t print:pt-4 print:mt-36">
               <p className="text-xs text-gray-600 mb-1 print:text-xs print:mb-1">
                 <a href="https://vizuara.ai/terms" target="_blank" rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 print:text-black">Payment Terms and Conditions</a> |
