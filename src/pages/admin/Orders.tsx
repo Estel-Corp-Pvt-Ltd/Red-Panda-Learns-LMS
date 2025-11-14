@@ -247,14 +247,11 @@ const AdminOrders: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="text-sm font-medium">
-                            {getItemsCount(order.items)} items
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {getUniqueItemTypes(order.items).map((type) => (
-                              <Badge key={type} variant="outline" className="text-xs">
-                                {type}
-                              </Badge>
+                          <div className="text-sm font-medium flex flex-col">
+                            {order.items.map(item => (
+                              <div key={item.itemId} className='flex'>
+                                <p className='max-w-80 overflow-hidden text-ellipsis whitespace-nowrap'>{item.name}</p><Badge key={item.itemType} variant="outline" className="text-xs">{item.itemType}</Badge>
+                              </div>
                             ))}
                           </div>
                         </div>
