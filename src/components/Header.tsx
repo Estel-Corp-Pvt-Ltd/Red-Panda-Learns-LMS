@@ -381,7 +381,7 @@ export function Header({
           {/* ----- Right: Actions ----- */}
           <div className="flex items-center gap-4">
             {/* Mobile Menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            {/* <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden">
                   <Menu className="h-5 w-5" />
@@ -624,7 +624,7 @@ export function Header({
                   </div>
                 </div>
               </SheetContent>
-            </Sheet>
+            </Sheet> */}
 
             {/* Contact Us Popover - Desktop only (kept as click to open) */}
             <Popover>

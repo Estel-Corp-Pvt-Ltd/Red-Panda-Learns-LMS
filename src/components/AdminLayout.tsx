@@ -137,33 +137,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col border-r z-40 transition-transform duration-300 ease-in-out",
+            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col border-r z-40 transition-transform duration-300 ease-in-out bg-white border border-white/40 shadow-lg dark:bg-neutral-900 dark:border-white/10 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]",
             sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
           )}
         >
-          {/* Background layer with adaptive glass effect */}
-          <div
-            className={cn(
-              "absolute inset-0 sm:hidden backdrop-blur-2xl transition duration-300 ease-out",
-              // light mode (default)
-              "bg-white-10 border border-white/40 shadow-lg",
-              // dark mode override
-              "dark:bg-neutral-900/70 dark:border-white/10 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]"
-            )}
-          ></div>
-
-          {/* Mobile close bar */}
-          <div className="sm:hidden relative z-10 flex items-center justify-between px-4 py-3 bg-transparent border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+          <nav className="relative z-10 flex-1 p-4 overflow-y-auto mt-14 sm:mt-0">
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground"
+              className="absolute right-5 top-2 p-0 rounded-full hover:bg-accent hover:text-accent-foreground mt-4 text-black sm:hidden border bg-white hover:bg-sky-600"
             >
               <X className="h-5 w-5" />
             </button>
-          </div>
-
-          <nav className="relative z-10 flex-1 p-4 overflow-y-auto">
             <ul className="space-y-1">
               {menuItems.map((item) => (
                 <li key={item.name}>
