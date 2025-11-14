@@ -504,8 +504,8 @@ const PhilosophySection: React.FC = () => {
         }
       `}</style>
 
-      <section ref={sectionRef} className="relative py-24 px-6 overflow-hidden">
-        <div className="container relative mx-auto max-w-6xl">
+      <section ref={sectionRef} className="relative py-24 px-4 sm:px-6 overflow-hidden">
+        <div className="container relative mx-auto max-w-6xl px-0">
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-6xl font-semibold tracking-tight text-foreground mb-4">
               Our Philosophy
@@ -515,7 +515,7 @@ const PhilosophySection: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 items-stretch">
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
             {philosophyItems.map((item, index) => {
               const isHovered = hoveredCard === index;
               const Icon = item.icon;
@@ -527,7 +527,7 @@ const PhilosophySection: React.FC = () => {
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
                 >
-                  <div className="relative w-full p-10 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col h-full">
+                 <div className="relative w-full p-6 sm:p-8 lg:p-10 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col h-full">
                     {/* Header */}
                     <div className="flex flex-col items-center text-center">
                       <div className="relative mb-6">
@@ -584,7 +584,7 @@ const PhilosophySection: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="p-5 h-[calc(220px-40px)] text-left">
+                        <div className="p-4 sm:p-5 h-[calc(220px-40px)] text-left">
                           {index === 2 ? (
                             // Research
                             <div className="text-left h-full flex flex-col">
