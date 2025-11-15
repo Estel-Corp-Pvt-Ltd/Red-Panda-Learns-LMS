@@ -146,19 +146,8 @@ export function CourseNavigator({
               {course.topics.map((topic) => renderTopic(topic))}
             </div>
           )}
-
-          {/* === Cohort Topics === */}
-          {course.cohorts?.length > 0 &&
-            course.cohorts.map((cohort, cohortIndex) => (
-              <div key={`cohort-${cohortIndex}`} className="space-y-2">
-                <div className="text-muted-foreground text-sm font-medium px-1">
-                  {cohort.title || `Cohort ${cohortIndex + 1}`}
-                </div>
-                {cohort.topics?.map((topic: any) => renderTopic(topic))}
-              </div>
-            ))}
         </div>
       </div>
     </div>
   );
-}
+};
