@@ -107,7 +107,6 @@ class CourseService {
         status: COURSE_STATUS.DRAFT,
         certificateTemplateId: data.certificateTemplateId || "",
         topics: [],
-        cohorts: [],
         duration: { hours: 0, minutes: 0 },
         isEnrollmentPaused: true,
         createdAt: serverTimestamp(),
@@ -188,7 +187,6 @@ class CourseService {
         updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
       if (updates.certificateTemplateId)
         updateData.certificateTemplateId = updates.certificateTemplateId;
-      if (updates.cohorts) updateData.cohorts = updates.cohorts;
       if (updates.duration !== undefined) {
         updateData.duration.hours = updates.duration.hours;
         updateData.duration.minutes = updates.duration.minutes;
