@@ -12,10 +12,8 @@ interface AuthGuardProps {
   requireAuth?: boolean;
   requireStudent?: boolean;
   requireEnrollment?: boolean;
-  requireCohortAccess?: boolean;
   requireAdmin?: boolean;
   requireEnrollmentOrAdmin?: boolean;
-  weekNumber?: number;
   message?: string;
 };
 
@@ -24,13 +22,12 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireAuth = true,
   requireStudent = false,
   requireEnrollment = false,
-  requireCohortAccess = false,
   requireAdmin = false,
   requireEnrollmentOrAdmin = false,
-  message = 'Please login to access this lesson.',
+  message = 'Please login to access this page',
 }) => {
   const { user, loading: authLoading } = useAuth();
-  const { isEnrolled, loading: enrollmentLoading, refreshEnrollments, enrollments } = useEnrollment();
+  const { isEnrolled, loading: enrollmentLoading, refreshEnrollments } = useEnrollment();
   const location = useLocation();
   const params = useParams();
 
@@ -38,7 +35,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   const courseId = params.courseId;
-  const cohortId = params.cohortId;
 
   // Check admin role if required
   useEffect(() => {
