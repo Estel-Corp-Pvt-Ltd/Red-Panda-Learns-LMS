@@ -1,9 +1,9 @@
 import {
-  arrayUnion,
   collection,
   deleteDoc,
   doc,
   endBefore,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -16,30 +16,24 @@ import {
   startAfter,
   updateDoc,
   where,
-  WhereFilterOp,
-  writeBatch
+  WhereFilterOp
 } from "firebase/firestore";
 
 import {
   COLLECTION,
   ENROLLED_PROGRAM_TYPE,
   ENROLLMENT_STATUS,
-  ENVIRONMENT,
-  PRICING_MODEL,
-  USER_ROLE
+  ENVIRONMENT
 } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Enrollment } from "@/types/enrollment";
 import { EnrolledProgramType, EnrollmentStatus } from "@/types/general";
+import { TransactionLineItem } from "@/types/transaction";
 import { convertToDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
-import { fail, ok, Result } from "@/utils/response";
-import { bundleService } from "./bundleService";
-import { learningProgressService } from "./learningProgressService";
-import { userService } from "./userService";
-import { authService } from "./authService";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
-import { TransactionLineItem } from "@/types/transaction";
+import { fail, ok, Result } from "@/utils/response";
+import { authService } from "./authService";
 
 type EnrollmentItem = {
   itemId: string;
@@ -383,6 +377,10 @@ class EnrollmentService {
         }
       }
 
+      const countQuery = query(q); // Same query without pagination
+      const countSnapshot = await getCountFromServer(countQuery);
+      const totalCount = countSnapshot.data().count;
+
       // Apply ordering
       const { field, direction } = orderByOption;
 
@@ -459,6 +457,7 @@ class EnrollmentService {
         hasPreviousPage,
         nextCursor,
         previousCursor,
+        totalCount
       });
     } catch (error: any) {
       console.error("EnrollmentService - Error fetching enrollments:", error);
