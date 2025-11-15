@@ -93,24 +93,6 @@ export default function LessonDetailPage() {
       }
     }
 
-    // If not found, check cohorts
-    if (!foundItem && course.cohorts && course.cohorts.length > 0) {
-      for (const cohort of course.cohorts) {
-        if (cohort.topics) {
-          for (const topic of cohort.topics) {
-            if (topic.items) {
-              const item = topic.items.find((it) => it.id === lessonId);
-              if (item) {
-                foundItem = item;
-                break;
-              }
-            }
-          }
-        }
-        if (foundItem) break;
-      }
-    }
-
     if (foundItem) {
       setSelectedItem(foundItem);
     } else {
