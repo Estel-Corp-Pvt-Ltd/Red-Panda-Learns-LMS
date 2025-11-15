@@ -168,6 +168,10 @@ export default function CourseDetailPage() {
     navigate(`/checkout/${course.slug ? course.slug : course.id}`);
   };
 
+  const goToEditCourse = () => {
+    navigate(`/admin/edit-course/${course.id}`);
+  };
+
   const handleContinueLearning = () => {
     if (!course) return;
 
@@ -442,10 +446,16 @@ export default function CourseDetailPage() {
 
                   <div className="space-y-2">
                     {user?.role == USER_ROLE.ADMIN ? (
-                      <Button className="w-full" size="lg" onClick={handleContinueLearning} >
-                        <Play className="h-4 w-4 mr-2" />
-                        Continue as Admin
-                      </Button>
+                      <>
+                        <Button className="w-full" size="lg" onClick={goToEditCourse} >
+                          <Play className="h-4 w-4 mr-2" />
+                          Edit Course
+                        </Button>
+                        <Button className="w-full" size="lg" onClick={handleContinueLearning} >
+                          <Play className="h-4 w-4 mr-2" />
+                          Continue as Admin
+                        </Button>
+                      </>
                     ) : (
                       <>
                         {enrollmentLoading ? (
@@ -514,12 +524,6 @@ export default function CourseDetailPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {course.topics.length === 0 && course.cohorts.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No curriculum available yet.</p>
-                  </div>
-                )}
                 {course.topics.map((topic) => renderTopic(topic))}
               </CardContent>
             </Card>
