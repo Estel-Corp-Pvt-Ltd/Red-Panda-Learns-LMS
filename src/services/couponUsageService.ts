@@ -130,7 +130,7 @@ class CouponUsageService {
         }
       }
 
-  
+
 
       // Check coupon status
       if (coupon.status !== COUPON_STATUS.ACTIVE) {
@@ -185,11 +185,9 @@ class CouponUsageService {
   ): boolean {
     const linkedCourses = coupon.linkedCourseIds || [];
     const linkedBundles = coupon.linkedBundleIds || [];
-    const linkedCohorts = coupon.linkedCohortIds || [];
 
     const cleanCourseId = courseId?.trim() || "";
     const cleanBundleId = bundleId?.trim() || "";
-    const cleanCohortId = cohortId?.trim() || "";
 
     // Check if any provided ID matches linked IDs
     if (cleanCourseId && linkedCourses.includes(cleanCourseId)) {
@@ -200,16 +198,11 @@ class CouponUsageService {
       return true;
     }
 
-    if (cleanCohortId && linkedCohorts.includes(cleanCohortId)) {
-      return true;
-    }
-
     // If no IDs provided, check if coupon is universal
-    if (!cleanCourseId && !cleanBundleId && !cleanCohortId) {
+    if (!cleanCourseId && !cleanBundleId) {
       return (
         linkedCourses.length === 0 &&
-        linkedBundles.length === 0 &&
-        linkedCohorts.length === 0
+        linkedBundles.length === 0
       );
     }
 

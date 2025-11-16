@@ -19,6 +19,7 @@ import {
   limitToLast,
   startAfter,
   limit,
+  getCountFromServer,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -362,6 +363,10 @@ class CouponService {
         );
       }
 
+      const countQuery = query(q); // Same query without pagination
+      const countSnapshot = await getCountFromServer(countQuery);
+      const totalCount = countSnapshot.data().count;
+
       const querySnapshot = await getDocs(q);
       const documents = querySnapshot.docs;
 
@@ -398,7 +403,8 @@ class CouponService {
         hasNextPage,
         hasPreviousPage,
         nextCursor,
-        previousCursor
+        previousCursor,
+        totalCount
       });
     } catch (error) {
       console.error('CouponService - Error fetching coupons:', error);
