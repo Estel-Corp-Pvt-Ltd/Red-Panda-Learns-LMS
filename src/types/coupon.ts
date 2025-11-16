@@ -23,5 +23,4 @@ export interface CouponUsage {
   usedAt: Timestamp;
   courseId?: string;
   bundleId?: string;
-  cohortId?: string;
-}
+};
