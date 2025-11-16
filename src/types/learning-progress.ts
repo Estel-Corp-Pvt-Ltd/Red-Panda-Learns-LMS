@@ -5,23 +5,17 @@ import {
 
 export interface LearningProgress {
   id: string;
-  courseId?: string;
-  currentLessonId?: string | null;
-  lastAccessed?: Timestamp | FieldValue;
-
-  completedLessons: number;
+  userId: string;
+  courseId: string;
+  currentLessonId: string | null;
+  lastAccessed: Timestamp | FieldValue;
   lessonHistory: string[];
-  totalLessons: number;
-  percentage: number;
-
-  certification: {
+  certification?: {
     issued: boolean;
-    issuedAt?: Timestamp | FieldValue;
-    certificateId?: string;
+    issuedAt: Timestamp | FieldValue;
+    certificateId: string;
+    grade?: number | string | null;
   };
-
-  grade?: number | string | null;
-
   completionDate?: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };
