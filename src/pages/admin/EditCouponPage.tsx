@@ -1,39 +1,39 @@
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Percent, Calendar, Hash, Package, Users, Tag, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import { COUPON_STATUS } from '@/constants';
+import { bundleService } from '@/services/bundleService';
 import { couponService } from '@/services/couponService';
 import { courseService } from '@/services/courseService';
-import { cohortService } from '@/services/cohortService';
-import { bundleService } from '@/services/bundleService';
-import { Header } from '@/components/Header';
-import { COUPON_STATUS } from '@/constants';
 import { Coupon } from '@/types/coupon';
 import { CouponStatus } from '@/types/general';
 import { toDateSafe } from '@/utils/date-time';
-import { Timestamp } from 'firebase/firestore';
 import { logError } from '@/utils/logger';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Timestamp } from 'firebase/firestore';
+import { AlertCircle, Calendar, Hash, Package, Percent, Tag } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useNavigate, useParams } from 'react-router-dom';
+import { z } from 'zod';
+
 const createCouponSchema = z.object({
   code: z.string().min(3, 'Coupon code is required'),
   discountPercentage: z.number().min(1).max(100, '1–100% allowed'),
-   expiryDate: z.string()
-     .min(1, "Expiry date is required")
-     .refine((val) => {
-       const date = toDateSafe(val);
-       if (!date) return false; // Invalid date string
-       const today = new Date();
-       today.setHours(0, 0, 0, 0);
-       return date >= today; // No past dates
-     }, "Expiry date cannot be in the past"),
+  expiryDate: z.string()
+    .min(1, "Expiry date is required")
+    .refine((val) => {
+      const date = toDateSafe(val);
+      if (!date) return false; // Invalid date string
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return date >= today; // No past dates
+    }, "Expiry date cannot be in the past"),
   usageLimit: z.number().min(0, 'At least 1 usage allowed'),
   linkedCourseIds: z.array(z.string()).optional(),
   status: z.nativeEnum(COUPON_STATUS),
@@ -46,26 +46,22 @@ export default function EditCouponPage() {
   const { couponId } = useParams<{ couponId: string }>();
   const { toast } = useToast();
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
-  const [cohorts, setCohorts] = useState<{ id: string; title: string }[]>([]);
   const [bundles, setBundles] = useState<{ id: string; title: string }[]>([]);
   const [currentCoupon, setCurrentCoupon] = useState<CreateCouponFormData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const [selectedCohorts, setSelectedCohorts] = useState<string[]>([]);
   const [selectedBundles, setSelectedBundles] = useState<string[]>([]);
 
-  // Load courses, cohorts, and bundles
+  // Load courses and bundles
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [coursesList, cohortsList, bundlesList] = await Promise.all([
+        const [coursesList, bundlesList] = await Promise.all([
           courseService.getAllCourses(),
-          cohortService.getAllCohorts(),
           bundleService.getAllBundles(),
         ]);
 
         setCourses(coursesList.map(course => ({ id: course.id, title: course.title })));
-        setCohorts(cohortsList.map(cohort => ({ id: cohort.id, title: cohort.title })));
         setBundles(bundlesList.map(bundle => ({ id: bundle.id, title: bundle.title })));
       } catch (error) {
         toast({
@@ -82,55 +78,54 @@ export default function EditCouponPage() {
   }, []);
 
   // Load current coupon data
-  
-useEffect(() => {
-  if (!couponId) return;
 
-  const loadCoupon = async () => {
-    try {
-      const couponDate = await couponService.getCouponById(couponId);
-      const coupon = couponDate.data
-      if (!coupon) {
+  useEffect(() => {
+    if (!couponId) return;
+
+    const loadCoupon = async () => {
+      try {
+        const couponDate = await couponService.getCouponById(couponId);
+        const coupon = couponDate.data
+        if (!coupon) {
+          toast({
+            title: 'Error',
+            description: 'Coupon not found',
+            variant: 'destructive',
+          });
+          navigate('/admin');
+          return;
+        }
+
+        // Convert Firestore Timestamp → string for form state
+        setCurrentCoupon({
+          code: coupon.code,
+          discountPercentage: coupon.discountPercentage,
+          expiryDate: (() => {
+            const d = toDateSafe(coupon.expiryDate);
+            return d ? d.toISOString().split('T')[0] : '';
+          })(),
+          usageLimit: coupon.usageLimit,
+          status: coupon.status,
+          linkedCourseIds: coupon.linkedCourseIds || [],
+        });
+
+        // Set initial selections
+        setSelectedCourses(coupon.linkedCourseIds || []);
+        setSelectedBundles(coupon.linkedBundleIds || []);
+      } catch (error) {
         toast({
           title: 'Error',
-          description: 'Coupon not found',
+          description: 'Failed to load coupon',
           variant: 'destructive',
         });
-        navigate('/admin');
-        return;
+
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Convert Firestore Timestamp → string for form state
-      setCurrentCoupon({
-        code: coupon.code,
-        discountPercentage: coupon.discountPercentage,
-        expiryDate: (() => {
-          const d = toDateSafe(coupon.expiryDate);
-          return d ? d.toISOString().split('T')[0] : '';
-        })(),
-        usageLimit: coupon.usageLimit,
-        status: coupon.status,
-        linkedCourseIds: coupon.linkedCourseIds || [],
-      });
-
-      // Set initial selections
-      setSelectedCourses(coupon.linkedCourseIds || []);
-      setSelectedCohorts(coupon.linkedCohortIds || []);
-      setSelectedBundles(coupon.linkedBundleIds || []);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load coupon',
-        variant: 'destructive',
-      });
-  
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  loadCoupon();
-}, [couponId, navigate, toast]);
+    loadCoupon();
+  }, [couponId, navigate, toast]);
 
   const {
     register,
@@ -157,20 +152,20 @@ useEffect(() => {
         return;
       }
 
-     try {
-  const allCouponsResult = await couponService.getAllCoupons();
+      try {
+        const allCouponsResult = await couponService.getAllCoupons();
 
-  const duplicate = allCouponsResult.success
-    ? allCouponsResult.data?.find(
-        (c) => c.code === codeValue.trim() && c.id !== couponId
-      )
-    : null;
+        const duplicate = allCouponsResult.success
+          ? allCouponsResult.data?.find(
+            (c) => c.code === codeValue.trim() && c.id !== couponId
+          )
+          : null;
 
-  setExistingCoupon(duplicate || null);
-} catch (error: any) {
-  logError("CheckDuplicateCoupon", error);
-  setExistingCoupon(null);
-}
+        setExistingCoupon(duplicate || null);
+      } catch (error: any) {
+        logError("CheckDuplicateCoupon", error);
+        setExistingCoupon(null);
+      }
     };
 
     checkDuplicate();
@@ -207,12 +202,11 @@ useEffect(() => {
       const couponData = {
         code: data.code.trim(),
         discountPercentage: data.discountPercentage,
-       expiryDate: date ? Timestamp.fromDate(date) : null,
+        expiryDate: date ? Timestamp.fromDate(date) : null,
         // expiryDate: Timestamp.fromDate(new Date(data.expiryDate)),
         usageLimit: data.usageLimit,
         linkedCourseIds: selectedCourses,
         linkedBundleIds: selectedBundles,
-        linkedCohortIds: selectedCohorts,
         status: data.status,
       };
 
@@ -237,14 +231,6 @@ useEffect(() => {
       prev.includes(courseId)
         ? prev.filter(id => id !== courseId)
         : [...prev, courseId]
-    );
-  };
-
-  const toggleCohortSelection = (cohortId: string) => {
-    setSelectedCohorts(prev =>
-      prev.includes(cohortId)
-        ? prev.filter(id => id !== cohortId)
-        : [...prev, cohortId]
     );
   };
 
@@ -394,31 +380,6 @@ useEffect(() => {
                           onCheckedChange={() => toggleCourseSelection(course.id)}
                         />
                         <span className="text-sm truncate">{course.title}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Select Cohorts */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Select Cohorts to Link
-                </Label>
-                {loading ? (
-                  <p className="text-sm text-muted">Loading cohorts...</p>
-                ) : cohorts.length === 0 ? (
-                  <p className="text-sm text-muted">No cohorts available.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-auto border p-3 rounded-md">
-                    {cohorts.map(cohort => (
-                      <label key={cohort.id} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                        <Checkbox
-                          checked={selectedCohorts.includes(cohort.id)}
-                          onCheckedChange={() => toggleCohortSelection(cohort.id)}
-                        />
-                        <span className="text-sm truncate">{cohort.title}</span>
                       </label>
                     ))}
                   </div>
