@@ -1,22 +1,18 @@
 import {
   BookOpen,
+  ChartBarStacked,
   CheckCircle,
   Clock,
-  Grid,
   Layers,
-  List,
-  TrendingUp,
-  Users,
   Search,
-  FolderOpen,
-  ChartBarStacked,
+  TrendingUp,
+  Users
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Header } from "@/components/Header";
 import { BundleWrapper } from "@/components/bundle/BundleWrapper";
 import CourseCard from "@/components/course/CourseCard";
-import CourseFilters from "@/components/course/CourseFilters";
 import CourseListView from "@/components/course/CourseListView";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,24 +20,15 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
-import { useCourseFilters } from "@/hooks/use-course-filters";
-import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
-import { useCohortsQuery, useCoursesQuery } from "@/hooks/useCaching";
-import { useEnrollment } from "@/contexts/EnrollmentContext";
-import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { SORT_OPTIONS } from "@/types/course-filters";
 import { COURSE_STATUS, USER_ROLE } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
+import { useCoursesQuery } from "@/hooks/useCaching";
+import { cn } from "@/lib/utils";
 import { courseArrangementService } from "@/services/courseArrangementService";
 import { CoursePageHeading } from "@/types/courseArrangement";
+import { useNavigate } from "react-router-dom";
 
 interface ArrangedContent {
   heading: CoursePageHeading;
@@ -171,9 +158,6 @@ const CoursesPage = () => {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const totalArrangedCourses = arrangedContent.reduce((sum, content) => sum + content.courses.length, 0);
-    const totalArrangedBundles = arrangedContent.reduce((sum, content) => sum + content.bundles.length, 0);
-
     return {
       total: publishedCourses.length || 0,
       completed: 0,

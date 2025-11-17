@@ -1,51 +1,47 @@
+import AdminLayout from "@/components/AdminLayout";
+import { ImportBundleModal } from "@/components/bundle/ImportBundleModel";
+import { ImportCourseModal } from "@/components/course/ImportCourseModel";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
+import { useToast } from "@/hooks/use-toast";
+import { courseArrangementService } from "@/services/courseArrangementService";
+import { Bundle } from "@/types/bundle";
+import { Course } from "@/types/course";
+import { CoursePageHeading } from "@/types/courseArrangement";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   DragEndEvent,
+  DragMoveEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragMoveEvent,
 } from "@dnd-kit/core";
 import {
+  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
   useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   BookOpen,
   ChevronRight,
-  Edit2,
   Eye,
   GripVertical,
-  Plus,
-  Save,
-  Search,
-  Trash2,
   Heading,
   Package,
+  Plus,
   RefreshCcw,
+  Save,
+  Trash2
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Course } from "@/types/course";
-import { useEffect, useMemo, useState } from "react";
-import { courseService } from "@/services/courseService";
-import { useToast } from "@/hooks/use-toast";
-import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
-import { arrayMove } from "@dnd-kit/sortable";
-import { ImportCourseModal } from "@/components/course/ImportCourseModel";
-import { ImportBundleModal } from "@/components/bundle/ImportBundleModel";
-import { Bundle } from "@/types/bundle";
-import { courseArrangementService } from "@/services/courseArrangementService";
-import AdminLayout from "@/components/AdminLayout";
-import { CoursePageHeading } from "@/types/courseArrangement";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItemType = "HEADING" | "COURSE" | "BUNDLE";

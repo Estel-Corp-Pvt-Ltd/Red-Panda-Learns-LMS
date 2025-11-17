@@ -1,21 +1,19 @@
+import { COLLECTION } from '@/constants';
+import { db } from '@/firebaseConfig';
+import { CourseArrangement, CoursePageHeading } from '@/types/courseArrangement';
+import { fail, ok, Result } from '@/utils/response';
 import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
   collection,
-  query,
-  where,
-  getDocs,
   deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
   runTransaction,
   serverTimestamp,
+  setDoc,
+  updateDoc
 } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { fail, ok, Result } from '@/utils/response';
-import { COLLECTION } from '@/constants';
-import { CourseArrangement, CoursePageHeading } from '@/types/courseArrangement';
-
 
 class CourseArrangementService {
   /**
