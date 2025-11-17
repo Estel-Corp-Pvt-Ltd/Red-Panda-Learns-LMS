@@ -329,7 +329,8 @@ class PopUpService {
                 hasNextPage,
                 hasPreviousPage,
                 nextCursor,
-                previousCursor
+                previousCursor,
+                totalCount: querySnapshot.size
             });
         } catch (error) {
             console.error('PopUpService - Error fetching pop-ups:', error);
