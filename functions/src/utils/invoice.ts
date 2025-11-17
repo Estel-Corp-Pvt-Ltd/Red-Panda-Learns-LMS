@@ -24,7 +24,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
     const sendSmtpEmail = {
       sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
       to: [{ email }],
-      // bcc: [{ email: "thesreedath@gmail.com" }],
+      bcc: [{ email: "thesreedath@gmail.com" }],
       subject: "Payment Confirmation - Vizuara",
       htmlContent: `
     <p>Dear ${name},</p>

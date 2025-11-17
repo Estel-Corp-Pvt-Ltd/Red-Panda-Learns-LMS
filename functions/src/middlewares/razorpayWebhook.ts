@@ -58,7 +58,7 @@ export const razorpayWebhookMiddleware = (secretParam: ReturnType<typeof defineS
           secretLength: webhookSecret.length,
           bodyLength: rawBody.length
         });
-        res.status(401).json({
+        res.status(200).json({
           error: "Unauthorized",
           message: "Invalid webhook signature"
         });
@@ -70,7 +70,7 @@ export const razorpayWebhookMiddleware = (secretParam: ReturnType<typeof defineS
 
     } catch (error: any) {
       functions.logger.error("❌ Webhook verification failed:", error);
-      res.status(500).json({
+      res.status(200).json({
         error: "Internal Server Error",
         message: "Webhook verification failed"
       });
