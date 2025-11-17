@@ -117,47 +117,47 @@ const AdminUsers: React.FC = () => {
 
 
   const findUser = async () => {
-  if (!searchQuery.trim()) {
-    toast({
-      title: 'Error',
-      description: 'Enter a user email to search',
-      variant: 'destructive',
-    });
-    return;
-  }
-
-  setIsSearching(true);
-  try {
-    const result = await userService.getUserByEmail(searchQuery.trim());
-    if (result.success && result.data) {
-      // show the found user only
-      setUsers({
-        data: [result.data],
-        hasNextPage: false,
-        hasPreviousPage: false,
-        totalCount: 1,
-      });
-      toast({
-        title: 'Success',
-        description: `Found ${result.data.firstName || 'user'}`,
-      });
-    } else {
+    if (!searchQuery.trim()) {
       toast({
         title: 'Error',
-        description: 'User not found',
+        description: 'Enter a user email to search',
         variant: 'destructive',
       });
+      return;
     }
-  } catch (error) {
-    toast({
-      title: 'Error',
-      description: 'Search failed. Please try again.',
-      variant: 'destructive',
-    });
-  } finally {
-    setIsSearching(false);
-  }
-};
+
+    setIsSearching(true);
+    try {
+      const result = await userService.getUserByEmail(searchQuery.trim());
+      if (result.success && result.data) {
+        // show the found user only
+        setUsers({
+          data: [result.data],
+          hasNextPage: false,
+          hasPreviousPage: false,
+          totalCount: 1,
+        });
+        toast({
+          title: 'Success',
+          description: `Found ${result.data.firstName || 'user'}`,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'User not found',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Search failed. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
 
 
@@ -213,23 +213,19 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-const getInitials = (user: User) => {
-  if (!user) return "?";
+  const getInitials = (user: User) => {
+    if (!user) return "?";
 
-  const { firstName, lastName, email } = user;
+    const { firstName, lastName, email } = user;
 
-  const parts: string[] = [];
-  if (firstName?.trim()) parts.push(firstName.trim()[0].toUpperCase());
-  if (lastName?.trim()) parts.push(lastName.trim()[0].toUpperCase());
+    const parts: string[] = [];
+    if (firstName?.trim()) parts.push(firstName.trim()[0].toUpperCase());
+    if (lastName?.trim()) parts.push(lastName.trim()[0].toUpperCase());
 
-  if (parts.length > 0) return parts.join("");
+    if (parts.length > 0) return parts.join("");
 
-  // fallback: first character of email
-  return email?.trim()?.charAt(0)?.toUpperCase() || "?";
-};
-
-  const getEnrollmentsCount = (user: User) => {
-    return user.enrollments?.length || 0;
+    // fallback: first character of email
+    return email?.trim()?.charAt(0)?.toUpperCase() || "?";
   };
 
   useEffect(() => {
@@ -389,7 +385,7 @@ const getInitials = (user: User) => {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm text-muted-foreground">
-                            {getEnrollmentsCount(user)} enrolled
+                            N/A
                           </div>
                         </TableCell>
                         <TableCell className="text-right">

@@ -371,7 +371,8 @@ class UserService {
                 hasNextPage,
                 hasPreviousPage,
                 nextCursor,
-                previousCursor
+                previousCursor,
+                totalCount: querySnapshot.size
             });
         } catch (error) {
             console.error('UserService - Error fetching users:', error);

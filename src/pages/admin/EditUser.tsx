@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,16 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { Label } from "@radix-ui/react-dropdown-menu";
 import { Header } from "@/components/Header";
-import { useNavigate, useParams } from "react-router-dom";
-import { userService } from "@/services/userService";
-import { User } from "@/types/user";
-import { UserRole, UserStatus } from "@/types/general";
 import { USER_ROLE, USER_STATUS } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
+import { userService } from "@/services/userService";
+import { UserRole, UserStatus } from "@/types/general";
+import { User } from "@/types/user";
+import { Label } from "@radix-ui/react-dropdown-menu";
+import { useNavigate, useParams } from "react-router-dom";
 
 const EditUserPage = () => {
   const { toast } = useToast();
