@@ -103,6 +103,7 @@ class OrderService {
           status: data.status,
           amount: data.amount,
           currency: data.currency,
+          exchangeRate: data.exchangeRate,
           billingAddress: data.billingAddress,
           shippingAddress: data.shippingAddress,
           transactionId: data.transactionId,
@@ -137,6 +138,7 @@ class OrderService {
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
         currency: data.currency,
+        exchangeRate: data.exchangeRate,
         transactionId: data.transactionId || null,
         metadata: data.metadata || {},
         billingAddress: data.billingAddress,
@@ -198,6 +200,7 @@ class OrderService {
         status: ORDER_STATUS.COMPLETED,
         amount: data.amount,
         currency: data.currency,
+        exchangeRate: data.exchangeRate,
         transactionId: null,
         metadata: data.metadata ?? {},
         billingAddress: data.billingAddress ?? null,
@@ -346,7 +349,8 @@ class OrderService {
         hasNextPage,
         hasPreviousPage,
         nextCursor,
-        previousCursor
+        previousCursor,
+        totalCount: querySnapshot.size
       });
     } catch (error) {
       console.error('OrderService - Error fetching orders:', error);
