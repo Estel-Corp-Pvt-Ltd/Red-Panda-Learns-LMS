@@ -15,9 +15,10 @@ import MarkdownViewer from "../MarkdownViewer";
 interface LessonViewProps {
   lessonId: string;
   onComplete: () => void;
+  completed: boolean;
 }
 
-export function LessonView({ lessonId, onComplete }: LessonViewProps) {
+export function LessonView({ lessonId, onComplete,completed }: LessonViewProps) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,7 +157,7 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
       default:
-        console.log("lesson.embedUrl", lesson.embedUrl);
+        // console.log("lesson.embedUrl", lesson.embedUrl);
         return lesson.embedUrl ? (
           <div
             className="prose prose-sm max-w-none dark:prose-invert leading-relaxed w-full"
@@ -188,10 +189,22 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
           </div>
         </div>
 
-        <Button variant="outline" size="sm" onClick={handleMarkComplete}>
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Mark Complete
-        </Button>
+       {completed ? (
+  <Button
+    variant="default"
+    size="sm"
+    disabled
+    className="cursor-default bg-green-600 text-white hover:bg-green-600"
+  >
+    <CheckCircle className="h-4 w-4 mr-2" />
+    Completed
+  </Button>
+) : (
+  <Button variant="outline" size="sm" onClick={handleMarkComplete}>
+    <CheckCircle className="h-4 w-4 mr-2" />
+    Mark Complete
+  </Button>
+)}
         <Button onClick={toggleFullscreen}>
           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </Button>
@@ -211,17 +224,17 @@ export function LessonView({ lessonId, onComplete }: LessonViewProps) {
       }
 
       {/* Progress Indicator */}
-      <Card className="bg-muted/30">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Lesson Progress</span>
-            <span className="text-sm text-muted-foreground">
-              0% complete
-            </span>
-          </div>
-          <Progress value={0} className="h-2" />
-        </CardContent>
-      </Card>
+     <Card className="bg-muted/30">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Lesson Progress</span>
+          <span className="text-sm text-muted-foreground">
+            {completed ? "100% complete" : "0% complete"}
+          </span>
+        </div>
+        <Progress value={completed ? 100 : 0} className="h-2" />
+      </CardContent>
+    </Card>
     </div>
   );
 }
