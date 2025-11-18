@@ -217,7 +217,9 @@ async function enrollUserInPurchasedItems(orderId: string) {
         email: userResult.data.email,
         amount: order.amount,
         currency: order.currency,
-        items: order.items
+        items: order.items,
+        orderId: order.orderId,
+        purchaseDate: order.createdAt.toString(),
       } as PaymentDetails,
     });
   } catch (error) {
