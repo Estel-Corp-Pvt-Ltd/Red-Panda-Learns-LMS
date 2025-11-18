@@ -34,10 +34,6 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
     <ul>
       ${items.map(item => `<li>${item.name}</li>`).join('')}
     </ul>
-    <p>If you have any questions, feel free to contact our support team at 
-      <a href="mailto:support@vizuara.com">support@vizuara.com</a>.
-    </p>
-    <p>Best regards,<br/>Vizuara Team</p>
   `,
     };
 
