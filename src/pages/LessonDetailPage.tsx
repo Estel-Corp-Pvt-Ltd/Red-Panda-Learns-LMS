@@ -14,6 +14,9 @@ import AssignmentView from "../components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useNavigate } from "react-router-dom";
+import { learningProgressService } from "@/services/learningProgressService";
+import { LearningProgress } from "@/types/learning-progress";
+
 export default function LessonDetailPage() {
   const { param, lessonId } = useParams<{
     param: string;
@@ -31,6 +34,7 @@ export default function LessonDetailPage() {
     error: courseError,
   } = useCourseQuery(param!);
 
+  const [userProgress, setUserProgress] = useState<LearningProgress[]>([]);
   useEffect(() => {
     if (!param || courseLoading || !course) return;
     setCourseId(course.id);
@@ -53,7 +57,6 @@ export default function LessonDetailPage() {
       navigate(`/courses/${param}`)
     }
   }, [courseId, user, courseLoading, isEnrolled]);
-
 
   // Set document title to include course and current item
   useEffect(() => {
@@ -117,21 +120,49 @@ export default function LessonDetailPage() {
     }
   };
 
+  const fetchUserProgress = async (userId: string) => {
+    const result = await learningProgressService.getUserProgress(userId);
+    if (result.success) {
+      setUserProgress(result.data);
+
+    } else {
+      console.error("Failed to fetch progress:", result.error);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserProgress(user.id);
+
+    }
+  }, [user?.id]);
+
+  const courseProgress = userProgress.find(p => p.courseId === courseId);
+  const lessonCompleted = courseProgress?.lessonHistory.includes(selectedItem.id) ?? false;
+
   const handleMarkComplete = async () => {
     if (!user || !courseId || !selectedItem) return;
 
-    try {
+    const result = await learningProgressService.completeLesson(
+      user.id,
+      courseId,
+      selectedItem.id
+    );
+
+    if (result.success) {
+      // update local state to show 100% immediately
+      setUserProgress(prev =>
+        prev.map(p =>
+          p.courseId === courseId
+            ? { ...p, lessonHistory: [...p.lessonHistory, selectedItem.id] }
+            : p
+        )
+      );
+
       toast({
         title: "Success",
         description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
           } marked as completed!`,
-      });
-    } catch (error) {
-      console.error("Error updating progress:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mark as complete",
-        variant: "destructive",
       });
     }
   };
@@ -188,6 +219,7 @@ export default function LessonDetailPage() {
             <CourseNavigator
               course={course}
               currentLesson={selectedItem}
+              lessonHistory={userProgress.find(progress => progress.courseId === courseId)?.lessonHistory}
               className="h-screen sticky top-0"
               onLessonClick={handleItemSelect}
             />
@@ -248,6 +280,7 @@ export default function LessonDetailPage() {
             <CourseNavigator
               course={course}
               currentLesson={selectedItem}
+              lessonHistory={userProgress.find(progress => progress.courseId === courseId)?.lessonHistory}
               onLessonClick={handleItemSelect}
             />
           </div>
@@ -270,11 +303,13 @@ export default function LessonDetailPage() {
             <AssignmentView
               assignmentId={selectedItem.id}
               onComplete={handleMarkComplete}
+
             />
           ) : (
             <LessonView
               lessonId={selectedItem.id}
               onComplete={handleMarkComplete}
+              completed={lessonCompleted}
             />
           )}
         </main>
@@ -296,12 +331,13 @@ export default function LessonDetailPage() {
                   </p>
                 )}
               </div>
-              
+
             </div>
             <div className="flex-1 overflow-auto">
               <CourseNavigator
                 course={course}
                 currentLesson={selectedItem}
+                lessonHistory={userProgress.find(progress => progress.courseId === courseId)?.lessonHistory}
                 onLessonClick={handleItemSelect}
               />
             </div>
@@ -310,4 +346,4 @@ export default function LessonDetailPage() {
       </Sheet>
     </div>
   );
-}
+};

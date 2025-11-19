@@ -9,6 +9,7 @@ import { Course, Topic, TopicItem } from "@/types/course";
 interface CourseNavigatorProps {
   course: Course;
   currentLesson: TopicItem | null;
+  lessonHistory: string[];
   className?: string;
   onLessonClick: (lesson: TopicItem) => void;
 }
@@ -17,6 +18,7 @@ export function CourseNavigator({
   course,
   currentLesson,
   className,
+  lessonHistory,
   onLessonClick
 }: CourseNavigatorProps) {
   const params = useParams();
@@ -26,20 +28,9 @@ export function CourseNavigator({
   };
 
   const isCompleted = (lessonId: string) => {
-    if (!currentLesson) return false;
-    // course curricullum is linear, currentLesson and all before it are completed
-    const findLessonIndex = (items: TopicItem[], id: string): number => {
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].id === id) return i;
-      }
-      return -1;
-    }
-
-    const allLessons = [...course.topics.flatMap(t => t.items)];
-    const lessonIndex = findLessonIndex(allLessons, lessonId);
-    const currentLessonIndex = findLessonIndex(allLessons, currentLesson.id);
-    console.log({ lessonIndex, currentLessonIndex });
-    return lessonIndex !== -1 && lessonIndex < currentLessonIndex;
+    if (!lessonHistory || lessonHistory.length === 0)
+      return false;
+    return lessonHistory.includes(lessonId);
   }
 
   // Reusable rendering for topics
@@ -122,7 +113,7 @@ export function CourseNavigator({
                 <div
                   className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
                     }`}
-                >{isCompleted(lessonItem.id) ? (<Check className="w-4 h-4 text-white" />) : !isLessonActive(lessonItem.id) && <Lock className="w-4 h-4 text-muted-foreground" />}</div>
+                >{isCompleted(lessonItem.id) && (<Check className="w-4 h-4 text-white" />)}</div>
               </div>
             </Link>
           ))}
