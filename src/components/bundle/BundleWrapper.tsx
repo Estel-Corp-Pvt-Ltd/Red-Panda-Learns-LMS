@@ -39,14 +39,17 @@ export const BundleWrapper = ({
         if (!user?.id || !bundle?.id) return;
 
         // 1) If you still track bundle purchases, keep this call.
-        const enrolledInBundle = await isEnrolledInBundle(bundle.id).catch(() => false);
+        const enrolledInBundle = await isEnrolledInBundle(bundle.id).catch(
+          () => false
+        );
         if (cancelled) return;
 
         // 2) Build owned courseId set from new Enrollment schema
         // Optional: filter by "active" statuses only if you have them
-        const userEnrollments: Enrollment[] =
-          (enrollments ?? []).filter((e) => e.userId === user.id);
-          // .filter((e) => ["ACTIVE", "COMPLETED"].includes(e.status as unknown as string));
+        const userEnrollments: Enrollment[] = (enrollments ?? []).filter(
+          (e) => e.userId === user.id
+        );
+        // .filter((e) => ["ACTIVE", "COMPLETED"].includes(e.status as unknown as string));
 
         const ownedCourseIds = new Set(userEnrollments.map((e) => e.courseId));
 
@@ -57,7 +60,8 @@ export const BundleWrapper = ({
 
         setOwnedCoursesCount(ownedCourses.length);
 
-        const ownsAll = totalCourses > 0 && ownedCourses.length === totalCourses;
+        const ownsAll =
+          totalCourses > 0 && ownedCourses.length === totalCourses;
         setOwnsAllBundleCourses(ownsAll);
         setIsEnrolledInThisBundle(enrolledInBundle);
       } catch (err) {
@@ -88,23 +92,24 @@ export const BundleWrapper = ({
     if (ownsAllBundleCourses) {
       // Optional: show a toast/snackbar here
       // toast.info("You already own all courses in this bundle.");
-      return; 
+      return;
     }
     handleBundlePurchase(bundle.id);
   };
-if(ownsAllBundleCourses){
-  return <></>
-}
+  if (ownsAllBundleCourses) {
+    return <></>;
+  }
   return (
     <div
-      className="animate-fade-in-up"
+      onClick={() => navigate(`/course-bundle/${bundle.id}`)}
+      className="cursor-pointer hover:shadow-lg transition-all animate-fade-in-up"
       style={{ animationDelay: `${index * 0.1}s` }}
       onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                navigate(`/bundle/${bundle.id}`);
-                              }
-                            }}
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate(`/bundle/${bundle.id}`);
+        }
+      }}
     >
       <BundleCard
         bundle={bundle}
