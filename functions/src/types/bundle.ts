@@ -9,6 +9,7 @@ export type BundleCourseItem = {
 export interface Bundle {
   id: string;
   title: string;
+  slug: string;
   description: string;
   regularPrice: number;
   salePrice: number;
