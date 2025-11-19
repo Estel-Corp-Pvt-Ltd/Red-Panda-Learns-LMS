@@ -38,7 +38,7 @@ export function CourseNavigator({
     const allLessons = [...course.topics.flatMap(t => t.items)];
     const lessonIndex = findLessonIndex(allLessons, lessonId);
     const currentLessonIndex = findLessonIndex(allLessons, currentLesson.id);
-    console.log({ lessonIndex, currentLessonIndex });
+  
     return lessonIndex !== -1 && lessonIndex < currentLessonIndex;
   }
 

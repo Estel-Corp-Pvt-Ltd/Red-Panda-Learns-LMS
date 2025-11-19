@@ -2,9 +2,12 @@ import {
     collection,
     doc,
     getDoc,
+    getDocs,
+    query,
     serverTimestamp,
     setDoc,
-    updateDoc
+    updateDoc,
+    where
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -56,35 +59,106 @@ class LearningProgressService {
     * @param progressId - The ID of the LearningProgress document.
     * @param completedLessonId - The ID of the lesson that was just completed.
     */
-    async completeLesson(
-        progressId: string,
-        completedLessonId: string
-    ): Promise<Result<null>> {
-        try {
-            const progressRef = doc(db, COLLECTION.LEARNING_PROGRESS, progressId);
-            const docSnap = await getDoc(progressRef);
+async completeLesson(
+  userId: string,
+  courseId: string,
+  completedLessonId: string
+): Promise<Result<null>> {
+  try {
+    // 1️⃣ Query progress document for this user + course
+    const progressQuery = query(
+      collection(db, COLLECTION.LEARNING_PROGRESS),
+      where("userId", "==", userId),
+      where("courseId", "==", courseId)
+    );
 
-            if (!docSnap.exists()) {
-                return fail("Progress document not found.");
-            }
+    const snapshot = await getDocs(progressQuery);
 
-            const progress = docSnap.data() as LearningProgress;
+    let progressRef;
+    let progress: LearningProgress | null = null;
 
-            const updatedLessonHistory = [...(progress.lessonHistory || []), completedLessonId];
+    if (snapshot.empty) {
+      console.log("No existing progress found — creating new one...");
+      // Create a brand new progress document
+      const createResult = await this.createLessonProgress(userId, courseId);
+      if (!createResult.success) {
+        return fail(
+          "Failed to create new progress document.",
+          
+        );
+      }
 
-            await updateDoc(progressRef, {
-                currentLessonId: completedLessonId,
-                lessonHistory: updatedLessonHistory,
-                lastAccessed: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
-
-            return ok(null);
-        } catch (error: any) {
-            logError("LearningProgressService.completeLesson", error);
-            return fail("Failed to update progress.", error.code || error.message);
-        }
+      // Retrieve the new doc reference
+      progressRef = doc(db, COLLECTION.LEARNING_PROGRESS, createResult.data.progressId);
+      progress = {
+        id: createResult.data.progressId,
+        userId,
+        courseId,
+        currentLessonId: null,
+        lessonHistory: [],
+        completionDate: null,
+        lastAccessed: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+    } else {
+      // There should be exactly one document
+      const progressDoc = snapshot.docs[0];
+      progressRef = progressDoc.ref;
+      progress = progressDoc.data() as LearningProgress;
     }
+
+    // 2️⃣ Update lesson history safely (avoid duplicates)
+    const updatedLessonHistory = [
+      ...(progress.lessonHistory || []),
+      completedLessonId,
+    ].filter((v, i, a) => a.indexOf(v) === i);
+
+    // 3️⃣ Write update to Firestore
+    await updateDoc(progressRef, {
+      currentLessonId: completedLessonId,
+      lessonHistory: updatedLessonHistory,
+      lastAccessed: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return ok(null);
+  } catch (error: any) {
+    logError("LearningProgressService.completeLesson", error);
+    return fail("Failed to update progress.", error.code || error.message);
+  }
+}
+
+
+async getUserProgress(
+    userId: string
+  ): Promise<Result<LearningProgress[]>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return ok([]); // no progress found, return empty array
+      }
+
+      const progressList: LearningProgress[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as LearningProgress),
+      }));
+
+      return ok(progressList);
+
+    } catch (error: any) {
+      logError("LearningProgressService.getUserProgress", error);
+      return fail("Failed to fetch user progress.", error.code || error.message);
+    }
+  
+
+ }
+
 }
 
 export const learningProgressService = new LearningProgressService();
