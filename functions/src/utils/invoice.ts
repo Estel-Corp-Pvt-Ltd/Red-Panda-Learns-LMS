@@ -50,7 +50,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
         </p>
 
         <!-- Section Title -->
-        <h3 style="margin:0 0 12px 0; font-size:17px; color:#b71c1c; font-weight:600;">
+        <h3 style="margin:0 0 12px 0; font-size:17px; color:#0f4396; font-weight:600;">
           Order Summary
         </h3>
 
@@ -83,7 +83,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
         </div>
 
         <!-- Access Section -->
-        <h3 style="margin:22px 0 12px 0; font-size:17px; color:#b71c1c; font-weight:600;">
+        <h3 style="margin:22px 0 12px 0; font-size:17px; color:#0f4396; font-weight:600;">
           Access Your Learning
         </h3>
         ${items.map(item => {
@@ -91,7 +91,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
         return `
             <p style="margin:6px 0; font-size:15px;">
               <strong>${item.name}:</strong><br>
-              <a href="${courseLink}" style="color:#d32f2f; text-decoration:none; word-break:break-all;">
+              <a href="${courseLink}" style="color:#0f4396; text-decoration:none; word-break:break-all;">
                 ${courseLink}
               </a>
             </p>
@@ -120,7 +120,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
         <p style="margin-top:16px; font-size:15px;">
           Best regards<br>
-          <strong style="color:#b71c1c;">Team Vizuara</strong>
+          <strong style="color:#0f4396;">Team Vizuara</strong>
         </p>
 
       </div>
