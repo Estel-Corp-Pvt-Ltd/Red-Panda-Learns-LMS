@@ -21,31 +21,22 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
       brevoApiKey
     );
 
+    const formattedPurchaseDate = (new Date(purchaseDate)).toLocaleDateString();
+
     // --- Prepare and send email via Brevo ---
     const sendSmtpEmail = {
-      sender: { name: "Videsh", email: "no_reply@flyvidesh.com" },
+      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
       to: [{ email }],
       bcc: [{ email: "thesreedath@gmail.com" }, { email: "raj.dandekar8@gmail.com" }, { email: "rajatdandekar@gmail.com" }],
-      subject: "Payment Confirmation - Vizuara",
+      subject: `[Team Vizuara] Payment Confirmation - Order #${orderId}`,
       htmlContent: `
-    <p>Dear ${name},</p>
-    <p>Thank you for your purchase.</p>
-    <p><strong>Amount:</strong> ${currency}${amount}</p>
-    <p><strong>Items Purchased:</strong></p>
-    <ul>
-      ${items.map(item => `<li>${item.name}</li>`).join('')}
-    </ul>
-    <p>If you have any questions, feel free to contact our support team at 
-      <a href="mailto:support@vizuara.com">support@vizuara.com</a>.
-    </p>
-    <p>Best regards,<br/>Vizuara Team</p>
     <div style="font-family: Arial, sans-serif; background:#f2f2f2; padding:16px;">
 
     <!-- Outer Container -->
     <div style="max-width:560px; width:100 percent; margin:auto; background:#ffffff; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,0.08); overflow:hidden;">
 
       <!-- Header -->
-      <div style="background:#b71c1c; padding:18px 10px; text-align:center;">
+      <div style="padding:18px 10px; text-align:center;">
         <img src="https://vizuara.ai/logo.png" alt="Team Vizuara" style="max-width:150px; width:100 percent; height:auto; display:block; margin:auto;">
       </div>
 
@@ -73,7 +64,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
             </tr>
             <tr>
               <td style="padding:6px 0; font-weight:bold;">Purchase Date</td>
-              <td style="padding:6px 0;">${purchaseDate}</td>
+              <td style="padding:6px 0;">${formattedPurchaseDate}</td>
             </tr>
             <tr>
               <td style="padding:6px 0; font-weight:bold;">Amount Paid</td>
@@ -129,7 +120,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
         <p style="margin-top:16px; font-size:15px;">
           Best regards<br>
-          <strong style="color:#b71c1c;">Team Videsh</strong>
+          <strong style="color:#b71c1c;">Team Vizuara</strong>
         </p>
 
       </div>
@@ -158,16 +149,13 @@ export async function sendPaymentFailedEmail({ email, name, }: { email: string, 
     const sendSmtpEmail = {
       sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
       to: [{ email }],
-      bcc: [{ email: "thesreedath@gmail.com" }], // internal monitoring copy
-      subject: "Payment Failed - Action Required",
+      bcc: [{ email: "thesreedath@gmail.com" }, { email: "raj.dandekar8@gmail.com" }, { email: "rajatdandekar@gmail.com" }], // internal monitoring copy
+      subject: `[Team Vizuara] Payment Failed`,
       htmlContent: `
         <p>Dear ${name},</p>
         <p>We're sorry, but your recent payment, could not be processed.</p>
         <p>Please check your payment details or try again later.</p>
-        <p>If the issue persists, contact our support team at 
-          <a href="mailto:support@vizuara.com">support@vizuara.com</a>.
-        </p>
-        <p>Best regards,<br/>Vizuara Team</p>
+        <p>Best regards,<br/>Team Vizuara</p>
       `,
     };
 
