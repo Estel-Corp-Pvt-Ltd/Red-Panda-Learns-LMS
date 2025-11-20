@@ -14,7 +14,7 @@ const products = [
     bgClass: "bg-black dark:bg-gray-900",
   },
   {
-    logo: "/vizlogo.png",
+    logo: "/vizz-logo.png",
     title: "Vizz-AI",
     description: "Your Personalized AI Tutor for Every Vizuara's Course",
     link: "https://vizz.vizuara.ai/",
