@@ -82,6 +82,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     setMessage('');
 
     try {
+      if (assignment.deadline && new Date() > assignment.deadline.toDate()) {
+        setMessage('Assignment deadline has passed. Submission is not allowed.');
+        setIsSubmitting(false);
+        setUploading(false);
+        return;
+      }
+
       // Upload files
       const uploadedUrls: string[] = [];
       for (const file of submissionFiles) {

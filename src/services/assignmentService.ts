@@ -249,6 +249,10 @@ class AssignmentService {
         return fail('Student has already submitted this assignment');
       }
 
+      if (assignment.deadline && new Date() > assignment.deadline.toDate()) {
+        return fail('Assignment deadline has passed');
+      }
+
       // Validate file upload limits
       if (submission.submissionFiles.length > assignment.fileUploadLimit) {
         return fail(`Exceeds maximum file upload limit of ${assignment.fileUploadLimit}`);
