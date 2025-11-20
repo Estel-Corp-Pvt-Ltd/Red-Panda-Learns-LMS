@@ -2,9 +2,12 @@ import {
     collection,
     doc,
     getDoc,
+    getDocs,
+    query,
     serverTimestamp,
     setDoc,
-    updateDoc
+    updateDoc,
+    where
 } from "firebase/firestore";
 
 import { COLLECTION } from "@/constants";
@@ -153,6 +156,35 @@ class QuizService {
         } catch (error: any) {
             logError("QuizService.setQuestions", error);
             return fail("Failed to update questions.", error.code || error.message);
+        }
+    }
+
+    /**
+     * Fetches all quizzes belonging to a specific course.
+     *
+     * @param courseId - The ID of the course whose quizzes should be retrieved.
+     */
+    async getQuizzesByCourse(
+        courseId: string
+    ): Promise<Result<Quiz[]>> {
+        try {
+            const quizzesQuery = query(
+                collection(db, COLLECTION.QUIZZES),
+                where("courseId", "==", courseId)
+            );
+
+            const snapshot = await getDocs(quizzesQuery);
+
+            const quizzes: Quiz[] = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...(doc.data() as Quiz),
+            }));
+
+            return ok(quizzes);
+
+        } catch (error: any) {
+            logError("QuizService.getQuizzesByCourse", error);
+            return fail("Failed to fetch quizzes.", error.code || error.message);
         }
     }
 
