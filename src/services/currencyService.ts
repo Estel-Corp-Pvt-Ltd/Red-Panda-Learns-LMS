@@ -62,10 +62,6 @@ class CurrencyService {
 
       // Fetch fresh rate from API
       const freshRate = await this.fetchFreshRate(from, to);
-
-      // Cache the new rate
-      await this.cacheRate(from, to, freshRate);
-
       return freshRate;
 
       // TODO: Have a better fallback mechanism, if required
@@ -216,66 +212,6 @@ class CurrencyService {
     }
 
     return rate;
-  }
-
-  /**
- * Caches an exchange rate snapshot in Firestore for auditing, analytics,
- * and reuse throughout the day.
- *
- * This function creates a **daily snapshot** of the exchange rate for a given
- * currency pair. The snapshot is uniquely identified by a composite ID of the form:
- *   `${from}_${to}_${YYYY-MM-DD}`
- *
- * Steps:
- * 1. Generates today’s date in `YYYY-MM-DD` format.
- * 2. Builds a unique document ID (`rateId`) using the base currency, target currency,
- *    and date (ensuring only one snapshot per day per currency pair).
- * 3. Constructs a `CurrencyRate` object containing:
- *    - The base and target currencies.
- *    - The numeric exchange rate.
- *    - The snapshot date (for historical lookups).
- *    - The source of the data (hardcoded here as `"exchangerate-api"`).
- *    - A `createdAt` timestamp indicating when this snapshot was stored.
- * 4. Stores the document in Firestore under the `Currency Rates` collection.
- *
- * @param from - The base currency code (e.g., "USD").
- * @param to - The target currency code (e.g., "INR").
- * @param rate - The numeric exchange rate (`from → to`) to be cached.
- * @returns A `Promise<void>` that resolves once the snapshot has been persisted.
- *
- * @remarks
- * - If a snapshot already exists for the same currency pair and date,
- *   this will overwrite it with the latest rate.
- * - The `createdAt` field captures the *storage time*, which may differ from
- *   the snapshot `date` if backfilled or delayed writes occur.
- * - Useful for building **historical exchange rate charts, audits,
- *   and fallback lookups** when the external API is unavailable.
- *
- * @example
- * ```ts
- * await cacheRate("USD", "INR", 83.42);
- * // Stores a document with id "USD_INR_2025-09-04"
- * ```
- */
-  private async cacheRate(from: Currency, to: Currency, rate: number): Promise<void> {
-    try {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const rateId = `${from}_${to}_${today}`; // daily snapshot ID
-
-      const currencyRate: CurrencyRate = {
-        id: rateId,
-        baseCurrency: from,
-        targetCurrency: to,
-        rate,
-        date: today,               // snapshot day
-        source: "exchangerate-api",
-        createdAt: serverTimestamp()     // when this record was stored
-      };
-
-      await setDoc(doc(db, COLLECTION.CURRENCY_RATES, rateId), currencyRate);
-    } catch (error) {
-      console.error("Error caching rate:", error);
-    }
   }
 
   /**
