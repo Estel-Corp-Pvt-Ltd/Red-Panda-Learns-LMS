@@ -48,9 +48,15 @@ const CouponCard: React.FC<CouponCardProps> = ({ items, setDiscountAmount, setAp
 
     const result = await couponService.getCouponByCode(code);
 
-    if (!result.success) {
+    if (!result.success || !result.data) {
       clearCoupon();
       setCouponMessage("Invalid promo code");
+      setIsValidating(false);
+      return;
+    }
+
+    if (result.data.totalUsed >= result.data.usageLimit) {
+      setCouponMessage("This promo code has reached its usage limit");
       setIsValidating(false);
       return;
     }

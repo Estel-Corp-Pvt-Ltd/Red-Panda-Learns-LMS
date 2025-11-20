@@ -63,6 +63,34 @@ class CouponService {
       return fail("Failed to create coupon usage");
     }
   }
+
+  async getCouponUsageByUserAndCoupon(userId: string, couponId: string): Promise<Result<CouponUsage | null>> {
+    try {
+      const usageRef = db.collection(COLLECTION.COUPON_USAGES)
+        .where('userId', '==', userId)
+        .where('couponId', '==', couponId)
+        .limit(1);
+
+      const snapshot = await usageRef.get();
+
+      if (snapshot.empty) {
+        return fail("Coupon usage not found");
+      }
+
+      const usageDoc = snapshot.docs[0];
+      const data = usageDoc.data();
+
+      const usage: CouponUsage = {
+        id: usageDoc.id,
+        ...data,
+        usedAt: data?.usedAt?.toDate(),
+      } as CouponUsage;
+
+      return ok(usage);
+    } catch (error) {
+      return fail("Failed to fetch coupon usage");
+    }
+  }
 }
 
 export const couponService = new CouponService();

@@ -383,6 +383,7 @@ class CouponService {
           discountPercentage: data.discountPercentage,
           status: data.status,
           usageLimit: data.usageLimit,
+          totalUsed: data.totalUsed,
           linkedCourseIds: data.linkedCourseIds || [],
           linkedBundleIds: data.linkedBundleIds || [],
           linkedCohortIds: data.linkedCohortIds || [],

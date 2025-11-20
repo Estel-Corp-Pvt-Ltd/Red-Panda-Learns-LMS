@@ -73,23 +73,30 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
         functions.logger.info(`Invalid promo code: ${promoCode}`);
       }
       const { couponId, discountItems, totalDiscount } = discountResult.data!;
-      discount = totalDiscount;
 
-      // Record coupon usage
-      discountItems.forEach(async (item) => {
-        await couponService.createCouponUsage({
-          userId: user.uid,
-          couponId: couponId,
-          refId: item.itemId,
-          refType: item.itemType,
-          usedAt: FieldValue.serverTimestamp(),
+      const coupanUsageResult = await couponService.getCouponUsageByUserAndCoupon(user.uid, couponId);
+      if (!coupanUsageResult.success) {
+        discount = totalDiscount;
+
+        // Record coupon usage
+        discountItems.forEach(async (item) => {
+          await couponService.createCouponUsage({
+            userId: user.uid,
+            couponId: couponId,
+            refId: item.itemId,
+            refType: item.itemType,
+            usedAt: FieldValue.serverTimestamp(),
+          });
         });
-      });
 
-      // Update coupon usage total
-      await couponService.updateCouponUsageTotal(promoCode, discountItems.length);
+        // Update coupon usage total
+        await couponService.updateCouponUsageTotal(promoCode, discountItems.length);
 
-      functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
+        functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
+      } else {
+        functions.logger.info(`Promo code ${promoCode} has already been used by user ${user.uid}`);
+        discount = 0;
+      }
     }
 
     const currencyResult = await currencyService.convertCurrency(originalAmount - discount, 'INR', selectedCurrency);

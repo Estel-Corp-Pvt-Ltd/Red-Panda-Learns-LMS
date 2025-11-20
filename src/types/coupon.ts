@@ -8,6 +8,7 @@ export interface Coupon {
   discountPercentage: number;
   status: CouponStatus;
   usageLimit: number;
+  totalUsed: number;
   linkedCourseIds: string[];
   linkedBundleIds: string[];
   createdById: string;

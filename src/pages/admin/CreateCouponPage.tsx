@@ -163,6 +163,7 @@ export default function CreateCouponPage() {
         discountPercentage: data.discountPercentage,
         expiryDate: date ? Timestamp.fromDate(date) : null,
         usageLimit: data.usageLimit,
+        totalUsed: 0,
         linkedCourseIds: selectedCourses,
         linkedBundleIds: selectedBundles,
         linkedCohortIds: selectedCohorts,
@@ -422,7 +423,7 @@ export default function CreateCouponPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !!existingCoupon}
-                   variant="pill"
+                  variant="pill"
                   size="sm"
                 >
                   {isSubmitting ? "Creating..." : "Create Coupon"}
