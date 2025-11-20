@@ -26,7 +26,7 @@ class QuizService {
      */
     async createQuiz(
         createdBy: string, // uid
-        quiz: Omit<Quiz, "id" | "createdBy" | "createdAt" | "updatedAt">
+        quiz: Omit<Quiz, "id" | "createdBy" | "totalMarks" | "createdAt" | "updatedAt">
     ): Promise<Result<{ quizId: string }>> {
         try {
             const quizRef = doc(collection(db, COLLECTION.QUIZZES));
@@ -176,7 +176,6 @@ class QuizService {
             const snapshot = await getDocs(quizzesQuery);
 
             const quizzes: Quiz[] = snapshot.docs.map(doc => ({
-                id: doc.id,
                 ...(doc.data() as Quiz),
             }));
 

@@ -5,6 +5,7 @@ import CurriculumTab from "@/components/admin/CurriculumTab";
 import QuizTab from "@/components/admin/QuizTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ATTRIBUTE_TYPE, COURSE_STATUS } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { useToast } from "@/hooks/use-toast";
 import { attributeService } from "@/services/attributeService";
@@ -44,6 +45,8 @@ const CurriculumBuilderPage = () => {
     hours: 0,
     minutes: 0,
   });
+
+  const { user } = useAuth();
 
   // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -386,7 +389,7 @@ const CurriculumBuilderPage = () => {
           </TabsContent>
 
           <TabsContent value="quizzes">
-            <QuizTab courseId={courseId} />
+            <QuizTab courseId={courseId} userId={user.id} />
           </TabsContent>
         </Tabs>
       </main>

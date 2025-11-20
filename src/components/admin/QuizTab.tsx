@@ -1,36 +1,31 @@
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
-import { Plus, Folder, Pencil, Trash2, ListChecks } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { quizService } from "@/services/quizService";
+import { Folder, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import CreateQuizModal from "./CreateQuizModal";
 
-const QuizTab = ({ courseId }: { courseId: string }) => {
+const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => {
     const [quizzes, setQuizzes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [openModal, setOpenModal] = useState(false);
 
     useEffect(() => {
         const fetchQuizzes = async () => {
-            try {
-                const q = query(
-                    collection(db, "quizzes"),
-                    where("courseId", "==", courseId)
-                );
-
-                const snap = await getDocs(q);
-                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-                setQuizzes(list);
-            } catch (err) {
+            const quizListResponse = await quizService.getQuizzesByCourse(courseId);
+            if (quizListResponse.success) {
+                setQuizzes(quizListResponse.data);
+            } else {
                 toast({
                     title: "Failed to fetch quizzes"
                 });
-            } finally {
-                setLoading(false);
             }
+            setLoading(false);
         };
 
-        fetchQuizzes();
-    }, [courseId]);
+        if (!openModal) {
+            fetchQuizzes();
+        }
+    }, [courseId, openModal]);
 
     return (
         <div className="w-full">
@@ -41,13 +36,13 @@ const QuizTab = ({ courseId }: { courseId: string }) => {
                 </h2>
 
                 <button
+                    onClick={() => setOpenModal(true)}
                     className="bg-[#ff00ff] hover:bg-pink-500 text-white px-5 py-2 rounded-full flex items-center gap-2 transition"
                 >
                     <Plus size={16} />
                     Add Quiz
                 </button>
             </div>
-
             <div className="border border-gray-200 rounded-xl bg-white shadow-sm p-4">
                 {loading ? (
                     <div className="text-gray-500 text-center py-10">
@@ -88,6 +83,13 @@ const QuizTab = ({ courseId }: { courseId: string }) => {
                     </div>
                 )}
             </div>
+
+            <CreateQuizModal
+                open={openModal}
+                onClose={() => setOpenModal(false)}
+                createdBy={userId}
+                courseId={courseId}
+            />
         </div>
     );
 };

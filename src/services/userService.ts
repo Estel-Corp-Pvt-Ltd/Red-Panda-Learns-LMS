@@ -388,6 +388,56 @@ class UserService {
             options
         );
     }
+
+    /**
+ * Accepts a comma-separated list of emails and returns a mapping of email -> uid.
+ */
+    async getUidListForEmails(
+        emailCsv: string
+    ): Promise<Result<(string | null)[]>> {
+        try {
+            const emails = emailCsv
+                .split(",")
+                .map((e) => e.trim().toLowerCase())
+                .filter((e) => e.length > 0);
+
+            if (emails.length === 0) {
+                return ok([]);
+            }
+
+            const resultList: (string | null)[] = Array(emails.length).fill(null);
+
+            const batches: string[][] = [];
+            const batchSize = 10;
+
+            for (let i = 0; i < emails.length; i += batchSize) {
+                batches.push(emails.slice(i, i + batchSize));
+            }
+
+            const usersRef = collection(db, COLLECTION.USERS);
+
+            for (const batch of batches) {
+                const q = query(usersRef, where("email", "in", batch));
+                const snapshot = await getDocs(q);
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const emailFound = data.email?.toLowerCase();
+                    const uid = data.id || docSnap.id;
+
+                    const index = emails.indexOf(emailFound);
+                    if (index !== -1) {
+                        resultList[index] = uid;
+                    }
+                });
+            }
+
+            return ok(resultList);
+        } catch (error) {
+            logError("UserService.getEmailsToUids", error);
+            return fail("Failed to map emails to user IDs");
+        }
+    }
 }
 
 export const userService = new UserService();
