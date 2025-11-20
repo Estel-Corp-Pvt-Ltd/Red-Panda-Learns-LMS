@@ -54,13 +54,24 @@ class CouponService {
     }
   }
 
-  async createCouponUsage(usage: Omit<CouponUsage, "id">): Promise<Result<null>> {
+  async createCouponUsages(
+    usages: Array<Omit<CouponUsage, "id">>
+  ): Promise<Result<null>> {
     try {
-      const id = usage.userId + "_" + usage.couponId;
-      await db.collection(COLLECTION.COUPON_USAGES).doc(id).set(usage);
+      const batch = db.batch();
+      const col = db.collection(COLLECTION.COUPON_USAGES);
+
+      for (const usage of usages) {
+        const id = usage.userId + "_" + usage.couponId;
+        const ref = col.doc(id);
+        batch.set(ref, usage);
+      }
+
+      await batch.commit();
       return ok(null);
-    } catch {
-      return fail("Failed to create coupon usage");
+    } catch (e) {
+      console.error(e);
+      return fail("Failed to create coupon usages");
     }
   }
 

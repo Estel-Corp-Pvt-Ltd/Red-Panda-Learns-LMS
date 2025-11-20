@@ -78,19 +78,18 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       if (!coupanUsageResult.success) {
         discount = totalDiscount;
 
-        // Record coupon usage
-        discountItems.forEach(async (item) => {
-          await couponService.createCouponUsage({
+        await couponService.createCouponUsages(
+          discountItems.map((item) => ({
             userId: user.uid,
             couponId: couponId,
             refId: item.itemId,
             refType: item.itemType,
             usedAt: FieldValue.serverTimestamp(),
-          });
-        });
+          }))
+        );
 
         // Update coupon usage total
-        await couponService.updateCouponUsageTotal(promoCode, discountItems.length);
+        await couponService.updateCouponUsageTotal(couponId, discountItems.length);
 
         functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
       } else {
