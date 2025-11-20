@@ -12,6 +12,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { orderService } from "../services/orderService";
 import { ORDER_STATUS, PAYMENT_PROVIDER } from "../constants";
 import { currencyService } from "../services/currencyService";
+import { couponService } from "../services/couponService";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -71,7 +72,23 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       if (!discountResult.success || !discountResult.data) {
         functions.logger.info(`Invalid promo code: ${promoCode}`);
       }
-      discount = discountResult.data || 0;
+      const { couponId, discountItems, totalDiscount } = discountResult.data!;
+      discount = totalDiscount;
+
+      // Record coupon usage
+      discountItems.forEach(async (item) => {
+        await couponService.createCouponUsage({
+          userId: user.uid,
+          couponId: couponId,
+          refId: item.itemId,
+          refType: item.itemType,
+          usedAt: FieldValue.serverTimestamp(),
+        });
+      });
+
+      // Update coupon usage total
+      await couponService.updateCouponUsageTotal(promoCode, discountItems.length);
+
       functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
     }
 
