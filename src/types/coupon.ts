@@ -21,7 +21,7 @@ export interface CouponUsage {
   id: string;
   userId: string;
   couponId: string;
-  usedAt: Timestamp;
-  courseId?: string;
-  bundleId?: string;
+  usedAt: Timestamp | FieldValue;
+  refId: string;
+  refType: "COURSE" | "BUNDLE";
 };
