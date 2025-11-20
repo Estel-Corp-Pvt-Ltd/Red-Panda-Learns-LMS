@@ -4,12 +4,17 @@ import { Folder, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import CreateQuizModal from "./CreateQuizModal";
 import EditQuizModal from "./EditQuizModal";
+import ConfirmDialog from "../ConfirmDialog";
+import { Quiz } from "@/types/quiz";
 
-const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => {
+const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => {
     const [quizzes, setQuizzes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openCreateModal, setOpenCreateModal] = useState(false);
-    const [idToOpenEditModal, setIdToOpenEditModal] = useState("");
+    const [openEditModal, setOpenEditModal] = useState(false);
+    const [openDeleteModal, setOpenDeleteModal] = useState(false);
+    const [selectedQuizId, setSelectedQuizId] = useState("");
+    const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null)
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -24,10 +29,50 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
             setLoading(false);
         };
 
-        if (!openCreateModal) {
+        if (!openCreateModal && !openEditModal && !openDeleteModal) {
             fetchQuizzes();
         }
-    }, [courseId, openCreateModal]);
+    }, [courseId, openCreateModal, openEditModal, openDeleteModal]);
+
+    useEffect(() => {
+        const matchedQuiz = quizzes.find(quiz => quiz.id === selectedQuizId);
+        if (matchedQuiz) {
+            setSelectedQuiz(matchedQuiz);
+        } else {
+            setSelectedQuiz(null);
+        }
+    }, [selectedQuizId]);
+
+    const deleteQuiz = async () => {
+        if (!selectedQuiz) return;
+
+        try {
+            const result = await quizService.deleteQuiz(selectedQuizId);
+            if (!result.success) {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to delete quiz',
+                    variant: 'destructive'
+                });
+                return;
+            }
+
+            toast({
+                title: 'Success',
+                description: 'Quiz deleted successfully',
+            });
+        } catch (error) {
+            console.error('Error deleting quiz:', error);
+            toast({
+                title: 'Error',
+                description: 'An error occurred while deleting the quiz',
+                variant: 'destructive'
+            });
+        } finally {
+            setOpenDeleteModal(false);
+            setSelectedQuizId("");
+        }
+    };
 
     return (
         <div className="w-full">
@@ -71,14 +116,17 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
 
                                 <div className="flex items-center gap-3">
                                     <button
-                                        onClick={() => setIdToOpenEditModal(quiz.id)}
+                                        onClick={() => { setSelectedQuizId(quiz.id); setOpenEditModal(true); }}
                                         className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition flex items-center gap-2"
                                     >
                                         <Pencil size={14} />
                                         Update
                                     </button>
 
-                                    <button className="px-4 py-1.5 text-sm rounded-full border border-red-300 text-red-500 hover:bg-red-50 transition flex items-center gap-2">
+                                    <button
+                                        onClick={() => { setSelectedQuizId(quiz.id); setOpenDeleteModal(true); }}
+                                        className="px-4 py-1.5 text-sm rounded-full border border-red-300 text-red-500 hover:bg-red-50 transition flex items-center gap-2"
+                                    >
                                         <Trash2 size={14} />
                                         Delete
                                     </button>
@@ -90,9 +138,9 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
             </div>
 
             <EditQuizModal
-                open={idToOpenEditModal ? true : false}
-                onClose={() => setIdToOpenEditModal("")}
-                quiz={quizzes.find(quiz => quiz.id === idToOpenEditModal)}
+                open={openEditModal}
+                onClose={() => { setSelectedQuizId(""); setOpenEditModal(false); }}
+                quiz={selectedQuiz}
             />
 
             <CreateQuizModal
@@ -100,6 +148,21 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
                 onClose={() => setOpenCreateModal(false)}
                 createdBy={userId}
                 courseId={courseId}
+            />
+
+            <ConfirmDialog
+                open={openDeleteModal}
+                onCancel={() => {
+                    setSelectedQuizId("");
+                    setOpenDeleteModal(false);
+                }}
+                onConfirm={deleteQuiz}
+                title="Delete Quiz"
+                body={`Are you sure you want to delete the quiz titled "${selectedQuiz?.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                dismissible
             />
         </div>
     );

@@ -1,5 +1,6 @@
 import {
     collection,
+    deleteDoc,
     doc,
     getDoc,
     getDocs,
@@ -182,6 +183,22 @@ class QuizService {
         } catch (error: any) {
             logError("QuizService.getQuizzesByCourse", error);
             return fail("Failed to fetch quizzes.", error.code || error.message);
+        }
+    }
+
+    async deleteQuiz(quizId: string): Promise<Result<null>> {
+        try {
+            if (!quizId || quizId.trim().length === 0) {
+                return fail("Invalid quiz ID");
+            }
+
+            const quizRef = doc(db, COLLECTION.QUIZZES, quizId);
+            await deleteDoc(quizRef);
+
+            return ok(null);
+        } catch (error) {
+            logError("QuizService.deleteQuiz", error);
+            return fail("Failed to delete quiz");
         }
     }
 
