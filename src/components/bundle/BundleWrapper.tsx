@@ -101,7 +101,7 @@ export const BundleWrapper = ({
   }
   return (
     <div
-      onClick={() => navigate(`/course-bundle/${bundle.id}`)}
+      onClick={() => navigate(`/course-bundle/${bundle.slug}`)}
       className="cursor-pointer hover:shadow-lg transition-all animate-fade-in-up"
       style={{ animationDelay: `${index * 0.1}s` }}
       onKeyDown={(e) => {

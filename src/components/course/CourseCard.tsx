@@ -73,7 +73,7 @@ const CourseCard = ({
 
   return (
      <div
-      onClick={() => navigate(`/courses/${course.id}`)}
+      onClick={() => navigate(`/courses/${course.slug}`)}
       className="cursor-pointer hover:shadow-lg transition-all"
     >
     <Card
