@@ -7,7 +7,7 @@ import { assignmentService } from "@/services/assignmentService";
 import { fileService } from "@/services/fileService";
 import { Assignment } from "@/types/assignment";
 import { logError } from "@/utils/logger";
-import { formatDate } from "@/utils/date-time";
+import { timestampToLocalInput } from "@/utils/date-time";
 import { Timestamp } from "firebase/firestore";
 import { Result } from "@/utils/response";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
   onClose,
   onUpdated,
 }) => {
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [assignment, setAssignment] = useState<Omit<Assignment, "deadline"> & { deadline: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -37,30 +37,22 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
 
   // ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Don't fetch unless modal is really open and has an ID
 
     if (!isOpen || !assignmentId) return;
 
-    let cancelled = false;
     const fetchData = async () => {
       try {
         setLoading(true);
         const res = await assignmentService.getAssignmentById(assignmentId);
-        if (!cancelled && res.success) setAssignment(res.data);
+        if (res.success) setAssignment({ ...res.data, deadline: timestampToLocalInput(res.data.deadline?.toDate()) });
       } catch (err) {
-        if (!cancelled) logError("Error loading assignment", err);
-        alert("Failed to load assignment.");
         onClose();
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     };
 
     fetchData();
-    // cleanup in case modal closes quickly mid‑fetch
-    return () => {
-      cancelled = true;
-    };
   }, [isOpen, assignmentId]);
 
   // ──────────────────────────────────────────────────────────────
@@ -101,7 +93,6 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
         }
         setUploading(false);
       }
-
       const updated: Assignment = {
         ...assignment,
         deadline: assignment.deadline
@@ -134,7 +125,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
 
   const colorMode =
     typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
+      document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
@@ -295,7 +286,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
                 </label>
                 <input
                   type="datetime-local"
-                  value={formatDate(assignment.deadline)}
+                  value={assignment.deadline || ''}
                   onChange={(e) => handleChange("deadline", e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
