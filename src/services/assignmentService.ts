@@ -113,8 +113,7 @@ class AssignmentService {
         ...updates,
         updatedAt: serverTimestamp(),
       });
-      return ok(undefined)
-     
+      return ok(null)
     } catch (error) {
       console.error('AssignmentService - Error updating assignment:', error);
       throw new Error('Failed to update assignment');
@@ -231,12 +230,12 @@ class AssignmentService {
  * @param submission - The submission data including assignmentId, studentId, and submissionFiles
  * @returns The generated submission ID
  */
-  async createSubmission(submission: Omit<AssignmentSubmission, 'id'>): Promise<string> {
+  async createSubmission(submission: Omit<AssignmentSubmission, 'id'>): Promise<Result<string>> {
     try {
       // Validate that the assignment exists
       const result = await this.getAssignmentById(submission.assignmentId);
       if (!result.success) {
-        throw new Error('Assignment not found');
+        return fail('Assignment not found');
       }
       const assignment = result.data;
 
@@ -246,13 +245,17 @@ class AssignmentService {
         submission.assignmentId
       );
 
-      if (existingSubmission) {
-        throw new Error('Student has already submitted this assignment');
+      if (existingSubmission.success) {
+        return fail('Student has already submitted this assignment');
+      }
+
+      if (assignment.deadline && new Date() > assignment.deadline.toDate()) {
+        return fail('Assignment deadline has passed');
       }
 
       // Validate file upload limits
       if (submission.submissionFiles.length > assignment.fileUploadLimit) {
-        throw new Error(`Exceeds maximum file upload limit of ${assignment.fileUploadLimit}`);
+        return fail(`Exceeds maximum file upload limit of ${assignment.fileUploadLimit}`);
       }
 
       const submissionData = {
@@ -268,10 +271,10 @@ class AssignmentService {
       });
 
       console.log('AssignmentService - Assignment submitted successfully:', docRef.id);
-      return docRef.id;
+      return ok(docRef.id);
     } catch (error) {
       console.error('AssignmentService - Error submitting assignment:', error);
-      throw error instanceof Error ? error : new Error('Failed to submit assignment');
+      return fail('Failed to submit assignment');
     }
   }
 
@@ -349,7 +352,7 @@ class AssignmentService {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        return null;
+        return fail("Submission not found");
       }
 
       // There should only be one submission per student per assignment
@@ -501,7 +504,9 @@ class AssignmentService {
         );
         q = query(q, ...whereClauses);
       }
-
+      // Get total count before pagination
+      const totalSnapshot = await getDocs(q);
+      const totalCount = totalSnapshot.size;
       // Apply ordering
       const { field, direction } = orderByOption;
 
@@ -576,7 +581,8 @@ class AssignmentService {
         hasNextPage,
         hasPreviousPage,
         nextCursor,
-        previousCursor
+        previousCursor,
+        totalCount
       });
     } catch (error) {
       logError('AssignmentService - Error fetching submissions with pagination:', error);

@@ -6,7 +6,7 @@ export interface Assignment {
   title: string;
   content: string;
   attachments: string[];
-  deadline?: Timestamp | FieldValue | null;
+  deadline: Timestamp | null;
   fileUploadLimit: number;
   maximumUploadSize: number;
   totalPoints: number;
