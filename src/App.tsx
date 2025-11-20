@@ -71,6 +71,7 @@ import StudentEnrollments from "./components/admin/StudentEnrollments";
 import FreeCourses from "./pages/FreeCourses";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import ArrangeCourses from "./pages/admin/ArrangeCourses";
+import Quizzes from "./pages/Quizzes";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -140,6 +141,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAuth requireStudent>
                             <DashboardPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/quizzes"
+                        element={
+                          <AuthGuard requireAuth requireStudent>
+                            <Quizzes />
                           </AuthGuard>
                         }
                       />
