@@ -95,8 +95,7 @@ const AdminCourses = () => {
     searchQuery,
     statusFilter,
     coursePriceFilterValue,
-    paginationState.cursor,
-    paginationState.pageDirection,
+    paginationState,
     useClientSearch,
     itemsPerPage
   ]);

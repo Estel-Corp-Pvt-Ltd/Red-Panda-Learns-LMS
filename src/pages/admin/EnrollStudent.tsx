@@ -431,7 +431,7 @@ const EnrollStudent: React.FC = () => {
                         <div className="flex-1">
                           <div className="font-medium">{course.title}</div>
                           <div className="text-sm text-muted-foreground line-clamp-2">
-                            {course.description}
+                            {course.description.replace(/<[^>]+>/g, '')}
                           </div>
                           <div className="text-sm text-green-600 font-medium mt-1">
                             ₹{course.salePrice || course.regularPrice}

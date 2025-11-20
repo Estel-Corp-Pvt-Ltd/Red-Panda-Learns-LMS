@@ -99,14 +99,14 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
         <p style="margin:6px 0; font-size:15px;">
           <strong>Dashboard:</strong><br>
-          <a href="https://vizuara.ai/dashboard" style="color:#d32f2f; text-decoration:none; word-break:break-all;">
+          <a href="https://vizuara.ai/dashboard" style="color:#0f4396; text-decoration:none; word-break:break-all;">
             https://vizuara.ai/dashboard
           </a>
         </p>
 
         <p style="margin:6px 0 20px 0; font-size:15px;">
           <strong>Your Invoice:</strong><br>
-          <a href="https://vizuara.ai/invoices/${orderId}" style="color:#d32f2f; text-decoration:none; word-break:break-all;">
+          <a href="https://vizuara.ai/invoices/${orderId}" style="color:#0f4396; text-decoration:none; word-break:break-all;">
             https://vizuara.ai/invoices/${orderId}
           </a>
         </p>
