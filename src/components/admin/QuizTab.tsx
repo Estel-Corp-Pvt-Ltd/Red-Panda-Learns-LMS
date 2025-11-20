@@ -3,11 +3,13 @@ import { quizService } from "@/services/quizService";
 import { Folder, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import CreateQuizModal from "./CreateQuizModal";
+import EditQuizModal from "./EditQuizModal";
 
 const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => {
     const [quizzes, setQuizzes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [openModal, setOpenModal] = useState(false);
+    const [openCreateModal, setOpenCreateModal] = useState(false);
+    const [idToOpenEditModal, setIdToOpenEditModal] = useState("");
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -22,10 +24,10 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
             setLoading(false);
         };
 
-        if (!openModal) {
+        if (!openCreateModal) {
             fetchQuizzes();
         }
-    }, [courseId, openModal]);
+    }, [courseId, openCreateModal]);
 
     return (
         <div className="w-full">
@@ -36,7 +38,7 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
                 </h2>
 
                 <button
-                    onClick={() => setOpenModal(true)}
+                    onClick={() => setOpenCreateModal(true)}
                     className="bg-[#ff00ff] hover:bg-pink-500 text-white px-5 py-2 rounded-full flex items-center gap-2 transition"
                 >
                     <Plus size={16} />
@@ -68,7 +70,10 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <button className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition flex items-center gap-2">
+                                    <button
+                                        onClick={() => setIdToOpenEditModal(quiz.id)}
+                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition flex items-center gap-2"
+                                    >
                                         <Pencil size={14} />
                                         Update
                                     </button>
@@ -84,9 +89,15 @@ const QuizTab = ({ courseId, userId }: { courseId: string, userId: string }) => 
                 )}
             </div>
 
+            <EditQuizModal
+                open={idToOpenEditModal ? true : false}
+                onClose={() => setIdToOpenEditModal("")}
+                quiz={quizzes.find(quiz => quiz.id === idToOpenEditModal)}
+            />
+
             <CreateQuizModal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
+                open={openCreateModal}
+                onClose={() => setOpenCreateModal(false)}
                 createdBy={userId}
                 courseId={courseId}
             />

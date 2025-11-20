@@ -1,6 +1,9 @@
+"use client";
+
 import { quizService } from "@/services/quizService";
+import { userService } from "@/services/userService";
 import { Timestamp } from "firebase/firestore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
     Dialog,
@@ -15,32 +18,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { userService } from "@/services/userService";
 import { X } from "lucide-react";
 
-const CreateQuizModal = ({
+const EditQuizModal = ({
     open,
     onClose,
-    createdBy,
-    courseId
+    quiz
 }: {
     open: boolean;
     onClose: () => void;
-    createdBy: string;
-    courseId: string;
+    quiz: any;
 }) => {
-
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
     const [allowAllStudents, setAllowAllStudents] = useState(true);
     const [allowedStudentEmails, setAllowedStudentEmails] = useState<string[]>([]);
+    const [newEmailInput, setNewEmailInput] = useState("");
 
     const [passingPercentage, setPassingPercentage] = useState<number>(40);
 
-    // 🔥 NEW — separate date + time states
-    const [scheduledDate, setScheduledDate] = useState(""); // yyyy-mm-dd
-    const [scheduledTime, setScheduledTime] = useState(""); // hh:mm
+    const [scheduledDate, setScheduledDate] = useState("");
+    const [scheduledTime, setScheduledTime] = useState("");
 
     const [durationMinutes, setDurationMinutes] = useState<number>(30);
     const [enableSidebarNavigation, setEnableSidebarNavigation] = useState(true);
@@ -50,9 +49,42 @@ const CreateQuizModal = ({
     const [error, setError] = useState("");
 
 
-    /** ------------------------------
-     *  Combine Date + Time -> Timestamp
-     *  ------------------------------ */
+    /** --------------------------------------------
+     *   Load quiz data on open
+     * -------------------------------------------- */
+    useEffect(() => {
+        if (!quiz || !open) return;
+
+        setTitle(quiz.title || "");
+        setDescription(quiz.description || "");
+        setAllowAllStudents(quiz.allowAllStudents ?? true);
+        setPassingPercentage(quiz.passingPercentage ?? 40);
+        setDurationMinutes(quiz.durationMinutes ?? 30);
+        setEnableSidebarNavigation(quiz.enableSidebarNavigation ?? true);
+        setIsVisible(quiz.isVisible ?? true);
+
+        // Convert timestamp → date + time
+        if (quiz.scheduledAt) {
+            const d = quiz.scheduledAt.toDate();
+            setScheduledDate(d.toISOString().split("T")[0]);
+            setScheduledTime(d.toTimeString().slice(0, 5)); // hh:mm
+        }
+
+        // Convert UIDs → Emails
+        if (quiz.allowedStudentUids && quiz.allowedStudentUids.length > 0) {
+            userService.getEmailsForUidList(quiz.allowedStudentUids).then((res) => {
+                if (res.success) {
+                    setAllowedStudentEmails(res.data.filter(Boolean));
+                }
+            });
+        } else {
+            setAllowedStudentEmails([]);
+        }
+
+    }, [quiz, open]);
+
+
+    /** Combine date + time → Timestamp */
     const getCombinedTimestamp = () => {
         if (!scheduledDate || !scheduledTime) return null;
 
@@ -66,11 +98,40 @@ const CreateQuizModal = ({
     };
 
 
-    const handleCreate = async () => {
+    /** --------------------------------------------
+     *   Add emails from text input
+     * -------------------------------------------- */
+    const addEmailsFromInput = () => {
+        if (!newEmailInput.trim()) return;
+
+        const parts = newEmailInput
+            .split(",")
+            .map((e) => e.trim().toLowerCase())
+            .filter((e) => e.length > 0);
+
+        setAllowedStudentEmails((prev) => {
+            const merged = [...prev];
+            parts.forEach((em) => {
+                if (!merged.includes(em)) merged.push(em);
+            });
+            return merged;
+        });
+
+        setNewEmailInput("");
+    };
+
+    const removeEmail = (email: string) => {
+        setAllowedStudentEmails((prev) => prev.filter((e) => e !== email));
+    };
+
+
+    /** --------------------------------------------
+     *   Save changes
+     * -------------------------------------------- */
+    const handleSave = async () => {
         setError("");
 
         if (!title.trim()) return setError("Title is required.");
-        if (!courseId.trim()) return setError("Course ID is required.");
         if (!scheduledDate || !scheduledTime)
             return setError("Both date and time are required.");
         if (passingPercentage < 1 || passingPercentage > 100)
@@ -79,19 +140,27 @@ const CreateQuizModal = ({
             return setError("Duration must be greater than 0 minutes.");
 
         const ts = getCombinedTimestamp();
-        if (!ts) return setError("Invalid scheduled date/time.");
+        if (!ts) return setError("Invalid date/time.");
 
         setLoading(true);
 
-        const uidListResponse = await userService.getUidListForEmails(allowedStudentEmails.join(","));
-        let allowedStudentUids: string[];
-        if (uidListResponse) {
-            allowedStudentUids = uidListResponse.data;
+        let allowedStudentUids: string[] = [];
+
+        if (!allowAllStudents) {
+            const response = await userService.getUidListForEmails(
+                allowedStudentEmails.join(",")
+            );
+
+            if (!response.success) {
+                setLoading(false);
+                return setError(response.error.message);
+            }
+
+            allowedStudentUids = response.data;
         }
 
-        const quizData = {
+        const updated = {
             title,
-            courseId,
             description,
             allowAllStudents: allowAllStudents || allowedStudentUids.length === 0,
             allowedStudentUids,
@@ -102,12 +171,11 @@ const CreateQuizModal = ({
             isVisible
         };
 
-        const result = await quizService.createQuiz(createdBy, quizData);
-
+        const result = await quizService.updateQuiz(quiz.id, updated);
         setLoading(false);
 
         if (!result.success) {
-            setError(result.error.message || "Failed to create quiz.");
+            setError(result.error.message || "Failed to update quiz.");
             return;
         }
 
@@ -118,42 +186,31 @@ const CreateQuizModal = ({
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl w-[95%] rounded-xl">
                 <DialogHeader>
-                    <DialogTitle>Create Quiz</DialogTitle>
+                    <DialogTitle>Edit Quiz</DialogTitle>
                 </DialogHeader>
 
                 {error && <p className="text-red-600 text-sm">{error}</p>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
 
-                    {/* LEFT COLUMN */}
+                    {/* LEFT */}
                     <div className="space-y-4">
-                        {/* Title */}
-                        <div className="space-y-1">
-                            <Label htmlFor="title">Quiz Title</Label>
-                            <Input
-                                id="title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Enter quiz title"
-                            />
+                        <div>
+                            <Label>Quiz Title</Label>
+                            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
                         </div>
 
-                        {/* Description */}
-                        <div className="space-y-1">
-                            <Label htmlFor="description">Description</Label>
+                        <div>
+                            <Label>Description</Label>
                             <Textarea
-                                id="description"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Optional description"
                             />
                         </div>
 
-                        {/* Passing Percentage */}
-                        <div className="space-y-1">
-                            <Label htmlFor="passing">Passing Percentage</Label>
+                        <div>
+                            <Label>Passing Percentage</Label>
                             <Input
-                                id="passing"
                                 type="number"
                                 value={passingPercentage}
                                 onChange={(e) => setPassingPercentage(Number(e.target.value))}
@@ -161,127 +218,97 @@ const CreateQuizModal = ({
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN */}
+                    {/* RIGHT */}
                     <div className="space-y-4">
 
-                        {/* 🔥 NEW — Separate date */}
-                        <div className="space-y-1">
-                            <Label htmlFor="scheduledDate">Quiz Date</Label>
+                        <div>
+                            <Label>Quiz Date</Label>
                             <Input
-                                id="scheduledDate"
                                 type="date"
                                 value={scheduledDate}
                                 onChange={(e) => setScheduledDate(e.target.value)}
                             />
                         </div>
 
-                        {/* 🔥 NEW — Separate time */}
-                        <div className="space-y-1">
-                            <Label htmlFor="scheduledTime">Quiz Time</Label>
+                        <div>
+                            <Label>Quiz Time</Label>
                             <Input
-                                id="scheduledTime"
                                 type="time"
                                 value={scheduledTime}
                                 onChange={(e) => setScheduledTime(e.target.value)}
                             />
                         </div>
 
-                        {/* Duration */}
-                        <div className="space-y-1">
-                            <Label htmlFor="duration">Duration (minutes)</Label>
+                        <div>
+                            <Label>Duration (minutes)</Label>
                             <Input
-                                id="duration"
                                 type="number"
                                 value={durationMinutes}
                                 onChange={(e) => setDurationMinutes(Number(e.target.value))}
                             />
                         </div>
 
-                        {/* Allow all students */}
                         <div className="flex items-center space-x-2">
                             <Checkbox
-                                id="allowAll"
                                 checked={allowAllStudents}
                                 onCheckedChange={(v) => setAllowAllStudents(Boolean(v))}
                             />
-                            <Label htmlFor="allowAll">Allow all students</Label>
+                            <Label>Allow all students</Label>
                         </div>
 
+                        {/* Email selection */}
                         {!allowAllStudents && (
                             <div className="space-y-2">
+                                <Label>Allowed Students</Label>
 
-                                <Label>Allowed Student Emails</Label>
-
-                                {/* Badges */}
+                                {/* BADGES */}
                                 <div className="flex flex-wrap gap-2">
                                     {allowedStudentEmails.map((email) => (
                                         <span
                                             key={email}
-                                            className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
+                                            className="px-2 py-1 bg-gray-200 rounded-full flex items-center gap-1 text-sm"
                                         >
                                             {email}
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setAllowedStudentEmails(
-                                                        allowedStudentEmails.filter((e) => e !== email)
-                                                    )
-                                                }
-                                                className="text-blue-500 hover:text-blue-700"
-                                            >
-                                                <X size={12} />
-                                            </button>
+                                            <X
+                                                className="h-3 w-3 cursor-pointer"
+                                                onClick={() => removeEmail(email)}
+                                            />
                                         </span>
                                     ))}
                                 </div>
 
-                                {/* Add emails input */}
+                                {/* ADD INPUT */}
                                 <Input
-                                    placeholder="Add email or comma-separated emails"
+                                    placeholder="Add email(s)…"
+                                    value={newEmailInput}
+                                    onChange={(e) => setNewEmailInput(e.target.value)}
+                                    onBlur={addEmailsFromInput}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
+                                        if (e.key === "Enter" || e.key === ",") {
                                             e.preventDefault();
-
-                                            const raw = (e.target as HTMLInputElement).value.trim();
-                                            if (!raw) return;
-
-                                            const newEmails = raw
-                                                .split(",")
-                                                .map((v) => v.trim().toLowerCase())
-                                                .filter((v) => v.length > 0);
-
-                                            setAllowedStudentEmails((prev) => {
-                                                const merged = new Set([...prev, ...newEmails]);
-                                                return Array.from(merged);
-                                            });
-
-                                            (e.target as HTMLInputElement).value = "";
+                                            addEmailsFromInput();
                                         }
                                     }}
                                 />
                             </div>
                         )}
 
-                        {/* Sidebar navigation */}
                         <div className="flex items-center space-x-2">
                             <Checkbox
-                                id="sidebarNav"
                                 checked={enableSidebarNavigation}
                                 onCheckedChange={(v) =>
                                     setEnableSidebarNavigation(Boolean(v))
                                 }
                             />
-                            <Label htmlFor="sidebarNav">Enable sidebar navigation</Label>
+                            <Label>Enable sidebar navigation</Label>
                         </div>
 
-                        {/* Visibility */}
                         <div className="flex items-center space-x-2">
                             <Checkbox
-                                id="isVisible"
                                 checked={isVisible}
                                 onCheckedChange={(v) => setIsVisible(Boolean(v))}
                             />
-                            <Label htmlFor="isVisible">Quiz visible to students</Label>
+                            <Label>Quiz visible to students</Label>
                         </div>
                     </div>
                 </div>
@@ -291,8 +318,8 @@ const CreateQuizModal = ({
                         Cancel
                     </Button>
 
-                    <Button onClick={handleCreate} disabled={loading}>
-                        {loading ? "Creating…" : "Create"}
+                    <Button disabled={loading} onClick={handleSave}>
+                        {loading ? "Saving…" : "Save Changes"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -300,4 +327,4 @@ const CreateQuizModal = ({
     );
 };
 
-export default CreateQuizModal;
+export default EditQuizModal;

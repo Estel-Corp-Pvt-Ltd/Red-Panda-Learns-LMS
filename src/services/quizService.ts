@@ -26,7 +26,7 @@ class QuizService {
      */
     async createQuiz(
         createdBy: string, // uid
-        quiz: Omit<Quiz, "id" | "createdBy" | "totalMarks" | "createdAt" | "updatedAt">
+        quiz: Omit<Quiz, "id" | "createdBy" | "totalMarks" | "questions" | "createdAt" | "updatedAt">
     ): Promise<Result<{ quizId: string }>> {
         try {
             const quizRef = doc(collection(db, COLLECTION.QUIZZES));
@@ -39,8 +39,8 @@ class QuizService {
                 description: quiz.description || "",
                 allowAllStudents: quiz.allowAllStudents,
                 allowedStudentUids: quiz.allowedStudentUids || [],
-                questions: quiz.questions,
-                totalMarks: this.calculateTotalMarks(quiz.questions || []),
+                questions: [],
+                totalMarks: 0,
                 passingPercentage: quiz.passingPercentage,
                 scheduledAt: quiz.scheduledAt,
                 durationMinutes: quiz.durationMinutes,
@@ -77,7 +77,6 @@ class QuizService {
             const allowedUpdates: (keyof Quiz)[] = [
                 "title",
                 "description",
-                "courseId",
                 "allowAllStudents",
                 "allowedStudentUids",
                 "questions",
@@ -99,7 +98,7 @@ class QuizService {
             }
 
             // Prevent updating sensitive fields
-            const forbidden = ["id", "createdAt", "createdBy"];
+            const forbidden = ["id", "createdAt", "createdBy", "courseId"];
             for (const field of forbidden) {
                 if (field in updates) {
                     return fail(
@@ -113,7 +112,6 @@ class QuizService {
                 return fail("No valid fields provided for update.");
             }
 
-            // Always update the timestamp
             safeUpdates.updatedAt = serverTimestamp();
 
             await updateDoc(quizRef, safeUpdates);

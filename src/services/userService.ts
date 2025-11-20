@@ -1,30 +1,30 @@
 import {
-    doc,
-    setDoc,
-    getDoc,
-    updateDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-    deleteDoc,
-    WhereFilterOp,
-    serverTimestamp,
     Query,
-    orderBy,
+    WhereFilterOp,
+    collection,
+    deleteDoc,
+    doc,
     endBefore,
-    limitToLast,
+    getDoc,
+    getDocs,
     limit,
+    limitToLast,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
     startAfter,
+    updateDoc,
+    where,
 } from "firebase/firestore";
 
+import { COLLECTION } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { UserRole, UserStatus } from "@/types/general";
 import { User } from "@/types/user";
-import { COLLECTION } from "@/constants";
-import { Result, ok, fail } from "@/utils/response";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { Result, fail, ok } from "@/utils/response";
 
 class UserService {
     /**
@@ -436,6 +436,54 @@ class UserService {
         } catch (error) {
             logError("UserService.getEmailsToUids", error);
             return fail("Failed to map emails to user IDs");
+        }
+    }
+
+    /**
+ * Accepts an array of UIDs and returns an array of emails (or null).
+ * Output order matches input order.
+ */
+    async getEmailsForUidList(
+        uidList: string[]
+    ): Promise<Result<(string | null)[]>> {
+        try {
+            const uids = uidList.map((u) => u.trim()).filter((u) => u.length > 0);
+
+            if (uids.length === 0) {
+                return ok([]);
+            }
+
+            const resultList: (string | null)[] = Array(uids.length).fill(null);
+
+            const batches: string[][] = [];
+            const batchSize = 10;
+
+            for (let i = 0; i < uids.length; i += batchSize) {
+                batches.push(uids.slice(i, i + batchSize));
+            }
+
+            const usersRef = collection(db, COLLECTION.USERS);
+
+            for (const batch of batches) {
+                const q = query(usersRef, where("id", "in", batch));
+                const snapshot = await getDocs(q);
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const foundUid = data.id || docSnap.id;
+                    const email = data.email || null;
+
+                    const index = uids.indexOf(foundUid);
+                    if (index !== -1) {
+                        resultList[index] = email;
+                    }
+                });
+            }
+
+            return ok(resultList);
+        } catch (error) {
+            logError("UserService.getEmailsForUidList", error);
+            return fail("Failed to map UIDs to emails");
         }
     }
 }
