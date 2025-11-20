@@ -72,6 +72,10 @@ const CourseCard = ({
     }).format(amount);
 
   return (
+     <div
+      onClick={() => navigate(`/courses/${course.id}`)}
+      className="cursor-pointer hover:shadow-lg transition-all"
+    >
     <Card
       role="link"
       tabIndex={0}
@@ -222,6 +226,7 @@ const CourseCard = ({
         </div>
       </CardFooter>
     </Card>
+    </div>
   );
 };
 
