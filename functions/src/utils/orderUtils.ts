@@ -44,24 +44,31 @@ export const getItemsDetails = async (items: OrderItem[]) => {
 
 
 export const getCouponDiscount = async (items: ItemsDetails[], couponCode: string) => {
+  const discountItems: ItemsDetails[] = [];
   const couponResult = await couponService.getCouponByCode(couponCode);
 
+  let restUsages = 0;
+
   if (couponResult.success && couponResult.data) {
+    restUsages = couponResult.data.usageLimit - couponResult.data.totalUsed;
     const { discountPercentage, linkedCourseIds, linkedBundleIds } = couponResult.data;
 
-    const totalDiscount = items.reduce((acc, item) => {
-      const { itemType, itemId, amount } = item;
+    items.forEach((item) => {
+      if (restUsages <= 0) return;
+      if (item.itemType === "COURSE" && linkedCourseIds.includes(item.itemId)) {
+        discountItems.push(item);
+        restUsages--;
+      } else if (item.itemType === "BUNDLE" && linkedBundleIds.includes(item.itemId)) {
+        discountItems.push(item);
+        restUsages--;
+      }
+    });
 
-      if (itemType === "COURSE" && linkedCourseIds.includes(itemId)) {
-        return acc + (amount * (discountPercentage ?? 0)) / 100;
-      }
-      if (itemType === "BUNDLE" && linkedBundleIds.includes(itemId)) {
-        return acc + (amount * (discountPercentage ?? 0)) / 100;
-      }
-      return 0;
+    const totalDiscount = discountItems.reduce((acc, item) => {
+      return acc + (item.amount * (discountPercentage ?? 0)) / 100;
     }, 0);
 
-    return ok(totalDiscount);
+    return ok({ couponId: couponResult.data.id, discountItems, totalDiscount });
   }
   return fail("Invalid coupon code");
 };

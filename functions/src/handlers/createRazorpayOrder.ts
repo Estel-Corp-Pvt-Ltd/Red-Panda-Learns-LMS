@@ -12,6 +12,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { orderService } from "../services/orderService";
 import { ORDER_STATUS, PAYMENT_PROVIDER } from "../constants";
 import { currencyService } from "../services/currencyService";
+import { couponService } from "../services/couponService";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -71,8 +72,30 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
       if (!discountResult.success || !discountResult.data) {
         functions.logger.info(`Invalid promo code: ${promoCode}`);
       }
-      discount = discountResult.data || 0;
-      functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
+      const { couponId, discountItems, totalDiscount } = discountResult.data!;
+
+      const coupanUsageResult = await couponService.getCouponUsageByUserAndCoupon(user.uid, couponId);
+      if (!coupanUsageResult.success) {
+        discount = totalDiscount;
+
+        await couponService.createCouponUsages(
+          discountItems.map((item) => ({
+            userId: user.uid,
+            couponId: couponId,
+            refId: item.itemId,
+            refType: item.itemType,
+            usedAt: FieldValue.serverTimestamp(),
+          }))
+        );
+
+        // Update coupon usage total
+        await couponService.updateCouponUsageTotal(couponId, discountItems.length);
+
+        functions.logger.info(`Applying promo code: ${promoCode} with discount: ${discount}`);
+      } else {
+        functions.logger.info(`Promo code ${promoCode} has already been used by user ${user.uid}`);
+        discount = 0;
+      }
     }
 
     const currencyResult = await currencyService.convertCurrency(originalAmount - discount, 'INR', selectedCurrency);
