@@ -14,6 +14,10 @@ export interface Quiz {
     scheduledAt: FieldValue | Timestamp;
     durationMinutes: number;
     enableSidebarNavigation: boolean;
+    isVisible: boolean;
+    createdBy: string; // uid
+    createdAt: FieldValue | Timestamp;
+    updatedAt: FieldValue | Timestamp;
 };
 
 export interface Question {
