@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { assignmentService } from '@/services/assignmentService';
 import { fileService } from '@/services/fileService';
-import { Assignment } from '@/types/assignment';
+import { Assignment, AssignmentSubmission } from '@/types/assignment';
 import { formatDate } from '@/utils/date-time';
 import { logError } from '@/utils/logger';
 import {
@@ -32,6 +32,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
+  const [existingSubmission, setExistingSubmission] = useState<AssignmentSubmission | null>(null);
 
   // ✅ Load assignment by ID
   useEffect(() => {
@@ -44,8 +45,18 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
       }
       setIsLoading(false);
     };
+
+    const fetchSubmission = async () => {
+      if (!assignmentId || !user) return;
+      const submissionResult = await assignmentService.getSubmissionByStudentAndAssignment(user.id, assignmentId);
+      if (submissionResult.success && submissionResult.data) {
+        setExistingSubmission(submissionResult.data);
+      }
+    };
+
     fetchAssignment();
-  }, [assignmentId]);
+    fetchSubmission();
+  }, [assignmentId, user]);
 
   // ✅ Handle file selection
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -74,7 +85,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
       // Upload files
       const uploadedUrls: string[] = [];
       for (const file of submissionFiles) {
-        const result = await fileService.uploadAttachment(`submissions/${assignmentId}`, file);
+        const result = await fileService.uploadAttachment(`/submissions/${assignmentId}`, file);
         if (result.success) {
           uploadedUrls.push(result.data);
         }
@@ -90,7 +101,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
       await assignmentService.createSubmission(submission);
       await onComplete();
-      setMessage('✅ Assignment submitted successfully!');
+      setMessage('Assignment submitted successfully!');
       setSubmissionFiles([]);
     } catch (error) {
       logError('Error submitting assignment', error);
@@ -98,6 +109,24 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     } finally {
       setIsSubmitting(false);
       setUploading(false);
+    }
+  };
+
+  const handleDeleteSubmission = async () => {
+    if (!existingSubmission) return;
+    setIsSubmitting(true);
+    setMessage('');
+
+    try {
+      await assignmentService.deleteSubmission(existingSubmission.id);
+      setExistingSubmission(null);
+      setMessage('Submission deleted successfully!');
+      await onComplete();
+    } catch (error) {
+      logError('Error deleting submission', error);
+      setMessage('❌ Failed to delete submission. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -191,21 +220,49 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
           <Upload className="h-5 w-5 text-primary" /> Submit Your Work
         </h2>
 
-        <label
-          htmlFor="submission-files"
-          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer mb-4"
-        >
-          <Upload className="h-4 w-4 mr-2" /> Upload Files
-        </label>
-        <input
-          id="submission-files"
-          type="file"
-          multiple
-          onChange={handleFileChange}
-          className="hidden"
-        />
-
-        {submissionFiles.length > 0 ? (
+        {existingSubmission ? (
+          <ul className="space-y-2 mb-4">
+            {existingSubmission.submissionFiles.map((url, idx) => (
+              <li
+                key={idx}
+                className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+              >
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  File {idx + 1}
+                </a>
+                <a
+                  href={url}
+                  download
+                  className="text-primary-600 dark:text-primary-400 text-xs hover:underline"
+                >
+                  Download
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div>
+            <label
+              htmlFor="submission-files"
+              className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer mb-4"
+            >
+              <Upload className="h-4 w-4 mr-2" /> Upload Files
+            </label>
+            <input
+              id="submission-files"
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        )}
+        {submissionFiles.length > 0 && (
           <ul className="space-y-2 mb-4">
             {submissionFiles.map((file, idx) => (
               <li
@@ -223,34 +280,34 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-sm text-gray-500 italic mb-4">No files selected yet.</p>
         )}
-
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || uploading}
-          className="px-6 py-2 bg-primary text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <>
-              <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4" /> Submit Assignment
-            </>
-          )}
-        </button>
-
+        {existingSubmission ? (
+          <button className='bg-red-500 text-white px-3 py-2 rounded-sm' onClick={handleDeleteSubmission}>Delete Submission</button>
+        ) : (
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || uploading}
+            className="px-6 py-2 bg-primary text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" /> Submit Assignment
+              </>
+            )}
+          </button>
+        )}
         {message && (
-          <p className={`mt-4 text-sm ${message.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>
+          <p className={`mt-4 text-sm text-red-500`}>
             {message}
           </p>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 
