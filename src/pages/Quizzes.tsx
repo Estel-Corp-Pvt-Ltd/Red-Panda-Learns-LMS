@@ -133,7 +133,9 @@ const Quizzes = () => {
                                             <span className="font-medium text-gray-600">Passing:</span>
                                             <span>{quiz.passingPercentage}%</span>
                                         </div>
-                                        <div></div>
+                                        <div className="flex items-center">
+                                            <strong className="text-nowrap text-red-500">*Note: Clicking on Start Quiz will start the timer.</strong>
+                                        </div>
                                         <div className="mt-4 flex justify-end">
                                             <button
                                                 onClick={async () => {
