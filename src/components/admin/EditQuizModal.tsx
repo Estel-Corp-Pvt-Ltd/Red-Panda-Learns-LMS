@@ -20,6 +20,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
 
+import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectItem,
+    SelectValue
+} from "@/components/ui/select";
+
+import { QUIZ_STATUS } from "@/constants";
+
 const EditQuizModal = ({
     open,
     onClose,
@@ -29,6 +39,7 @@ const EditQuizModal = ({
     onClose: () => void;
     quiz: any;
 }) => {
+
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
@@ -43,7 +54,8 @@ const EditQuizModal = ({
 
     const [durationMinutes, setDurationMinutes] = useState<number>(30);
     const [enableSidebarNavigation, setEnableSidebarNavigation] = useState(true);
-    const [isVisible, setIsVisible] = useState(true);
+
+    const [status, setStatus] = useState(QUIZ_STATUS.DRAFT);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -61,17 +73,15 @@ const EditQuizModal = ({
         setPassingPercentage(quiz.passingPercentage ?? 40);
         setDurationMinutes(quiz.durationMinutes ?? 30);
         setEnableSidebarNavigation(quiz.enableSidebarNavigation ?? true);
-        setIsVisible(quiz.isVisible ?? true);
+        setStatus(quiz.status || QUIZ_STATUS.DRAFT);
 
-        // Convert timestamp → date + time
         if (quiz.scheduledAt) {
             const d = quiz.scheduledAt.toDate();
             setScheduledDate(d.toISOString().split("T")[0]);
-            setScheduledTime(d.toTimeString().slice(0, 5)); // hh:mm
+            setScheduledTime(d.toTimeString().slice(0, 5));
         }
 
-        // Convert UIDs → Emails
-        if (quiz.allowedStudentUids && quiz.allowedStudentUids.length > 0) {
+        if (quiz.allowedStudentUids?.length > 0) {
             userService.getEmailsForUidList(quiz.allowedStudentUids).then((res) => {
                 if (res.success) {
                     setAllowedStudentEmails(res.data.filter(Boolean));
@@ -98,16 +108,13 @@ const EditQuizModal = ({
     };
 
 
-    /** --------------------------------------------
-     *   Add emails from text input
-     * -------------------------------------------- */
     const addEmailsFromInput = () => {
         if (!newEmailInput.trim()) return;
 
         const parts = newEmailInput
             .split(",")
             .map((e) => e.trim().toLowerCase())
-            .filter((e) => e.length > 0);
+            .filter(Boolean);
 
         setAllowedStudentEmails((prev) => {
             const merged = [...prev];
@@ -168,7 +175,7 @@ const EditQuizModal = ({
             scheduledAt: ts,
             durationMinutes,
             enableSidebarNavigation,
-            isVisible
+            status
         };
 
         const result = await quizService.updateQuiz(quiz.id, updated);
@@ -181,6 +188,7 @@ const EditQuizModal = ({
 
         onClose();
     };
+
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -206,6 +214,22 @@ const EditQuizModal = ({
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
+                        </div>
+
+                        <div>
+                            <Label>Status</Label>
+                            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.values(QUIZ_STATUS).map((s) => (
+                                        <SelectItem key={s} value={s}>
+                                            {s.charAt(0) + s.slice(1).toLowerCase()}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div>
@@ -256,12 +280,10 @@ const EditQuizModal = ({
                             <Label>Allow all students</Label>
                         </div>
 
-                        {/* Email selection */}
                         {!allowAllStudents && (
                             <div className="space-y-2">
                                 <Label>Allowed Students</Label>
 
-                                {/* BADGES */}
                                 <div className="flex flex-wrap gap-2">
                                     {allowedStudentEmails.map((email) => (
                                         <span
@@ -277,7 +299,6 @@ const EditQuizModal = ({
                                     ))}
                                 </div>
 
-                                {/* ADD INPUT */}
                                 <Input
                                     placeholder="Add email(s)…"
                                     value={newEmailInput}
@@ -296,20 +317,11 @@ const EditQuizModal = ({
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 checked={enableSidebarNavigation}
-                                onCheckedChange={(v) =>
-                                    setEnableSidebarNavigation(Boolean(v))
-                                }
+                                onCheckedChange={(v) => setEnableSidebarNavigation(Boolean(v))}
                             />
                             <Label>Enable sidebar navigation</Label>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                checked={isVisible}
-                                onCheckedChange={(v) => setIsVisible(Boolean(v))}
-                            />
-                            <Label>Quiz visible to students</Label>
-                        </div>
                     </div>
                 </div>
 

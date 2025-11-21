@@ -15,8 +15,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { QUIZ_STATUS } from "@/constants";
 import { userService } from "@/services/userService";
+import { QuizStatus } from "@/types/general";
 import { X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const CreateQuizModal = ({
     open,
@@ -38,21 +41,19 @@ const CreateQuizModal = ({
 
     const [passingPercentage, setPassingPercentage] = useState<number>(40);
 
-    // 🔥 NEW — separate date + time states
-    const [scheduledDate, setScheduledDate] = useState(""); // yyyy-mm-dd
-    const [scheduledTime, setScheduledTime] = useState(""); // hh:mm
+    const [scheduledDate, setScheduledDate] = useState("");
+    const [scheduledTime, setScheduledTime] = useState("");
 
     const [durationMinutes, setDurationMinutes] = useState<number>(30);
     const [enableSidebarNavigation, setEnableSidebarNavigation] = useState(true);
     const [isVisible, setIsVisible] = useState(true);
 
+    const [status, setStatus] = useState<QuizStatus>(QUIZ_STATUS.DRAFT);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-
-    /** ------------------------------
-     *  Combine Date + Time -> Timestamp
-     *  ------------------------------ */
+    /** Combine date + time → Timestamp */
     const getCombinedTimestamp = () => {
         if (!scheduledDate || !scheduledTime) return null;
 
@@ -71,6 +72,7 @@ const CreateQuizModal = ({
 
         if (!title.trim()) return setError("Title is required.");
         if (!courseId.trim()) return setError("Course ID is required.");
+        if (!status) return setError("Status is required.");
         if (!scheduledDate || !scheduledTime)
             return setError("Both date and time are required.");
         if (passingPercentage < 1 || passingPercentage > 100)
@@ -83,9 +85,13 @@ const CreateQuizModal = ({
 
         setLoading(true);
 
-        const uidListResponse = await userService.getUidListForEmails(allowedStudentEmails.join(","));
-        let allowedStudentUids: string[];
-        if (uidListResponse) {
+        const uidListResponse = await userService.getUidListForEmails(
+            allowedStudentEmails.join(",")
+        );
+
+        let allowedStudentUids: string[] = [];
+
+        if (uidListResponse.success) {
             allowedStudentUids = uidListResponse.data;
         }
 
@@ -99,7 +105,7 @@ const CreateQuizModal = ({
             scheduledAt: ts,
             durationMinutes,
             enableSidebarNavigation,
-            isVisible
+            status
         };
 
         const result = await quizService.createQuiz(createdBy, quizData);
@@ -127,6 +133,7 @@ const CreateQuizModal = ({
 
                     {/* LEFT COLUMN */}
                     <div className="space-y-4">
+
                         {/* Title */}
                         <div className="space-y-1">
                             <Label htmlFor="title">Quiz Title</Label>
@@ -159,12 +166,32 @@ const CreateQuizModal = ({
                                 onChange={(e) => setPassingPercentage(Number(e.target.value))}
                             />
                         </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="status">Status</Label>
+                            <Select
+                                value={status}
+                                onValueChange={(v) => setStatus(v as QuizStatus)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {Object.values(QUIZ_STATUS).map((s) => (
+                                        <SelectItem key={s} value={s}>
+                                            {s.charAt(0) + s.slice(1).toLowerCase()}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {/* RIGHT COLUMN */}
                     <div className="space-y-4">
 
-                        {/* 🔥 NEW — Separate date */}
+                        {/* Date */}
                         <div className="space-y-1">
                             <Label htmlFor="scheduledDate">Quiz Date</Label>
                             <Input
@@ -175,7 +202,7 @@ const CreateQuizModal = ({
                             />
                         </div>
 
-                        {/* 🔥 NEW — Separate time */}
+                        {/* Time */}
                         <div className="space-y-1">
                             <Label htmlFor="scheduledTime">Quiz Time</Label>
                             <Input
@@ -209,10 +236,8 @@ const CreateQuizModal = ({
 
                         {!allowAllStudents && (
                             <div className="space-y-2">
-
                                 <Label>Allowed Student Emails</Label>
 
-                                {/* Badges */}
                                 <div className="flex flex-wrap gap-2">
                                     {allowedStudentEmails.map((email) => (
                                         <span
@@ -235,7 +260,6 @@ const CreateQuizModal = ({
                                     ))}
                                 </div>
 
-                                {/* Add emails input */}
                                 <Input
                                     placeholder="Add email or comma-separated emails"
                                     onKeyDown={(e) => {
@@ -272,16 +296,6 @@ const CreateQuizModal = ({
                                 }
                             />
                             <Label htmlFor="sidebarNav">Enable sidebar navigation</Label>
-                        </div>
-
-                        {/* Visibility */}
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="isVisible"
-                                checked={isVisible}
-                                onCheckedChange={(v) => setIsVisible(Boolean(v))}
-                            />
-                            <Label htmlFor="isVisible">Quiz visible to students</Label>
                         </div>
                     </div>
                 </div>
