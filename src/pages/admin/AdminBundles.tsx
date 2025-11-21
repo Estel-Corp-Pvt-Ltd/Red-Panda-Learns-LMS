@@ -1,13 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminLayout from '@/components/AdminLayout';
-import { bundleService } from '@/services/bundleService';
-import { Bundle } from '@/types/bundle';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import AdminLayout from "@/components/AdminLayout";
+import { bundleService } from "@/services/bundleService";
+import { Bundle } from "@/types/bundle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   BookOpen,
   PlusCircle,
@@ -19,12 +32,18 @@ import {
   Loader2,
   Search,
   X,
-  Filter
-} from 'lucide-react';
-import { BUNDLE_STATUS, CURRENCY } from '@/constants';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { toast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+  Filter,
+} from "lucide-react";
+import { BUNDLE_STATUS, CURRENCY } from "@/constants";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { toast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PaginatedBundles {
   data: Bundle[];
@@ -35,7 +54,7 @@ interface PaginatedBundles {
   totalCount: number;
 }
 
-type BUNDLE_STATUS = typeof BUNDLE_STATUS[keyof typeof BUNDLE_STATUS];
+type BUNDLE_STATUS = (typeof BUNDLE_STATUS)[keyof typeof BUNDLE_STATUS];
 
 type BundlePriceFilter = "Zero Price" | "Non Zero Price" | "All Prices";
 
@@ -47,29 +66,32 @@ const AdminBundles: React.FC = () => {
     data: [],
     hasNextPage: false,
     hasPreviousPage: false,
-    totalCount: 0
+    totalCount: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [statusFilter, setStatusFilter] = useState<BUNDLE_STATUS | 'ALL'>('ALL');
-  const [bundlePriceFilterValue, setBundlePriceFilterValue] = useState<BundlePriceFilter>("All Prices");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [statusFilter, setStatusFilter] = useState<BUNDLE_STATUS | "ALL">(
+    "ALL"
+  );
+  const [bundlePriceFilterValue, setBundlePriceFilterValue] =
+    useState<BundlePriceFilter>("All Prices");
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [allBundles, setAllBundles] = useState<Bundle[]>([]);
   const [useClientSearch, setUseClientSearch] = useState(false);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
-    pageDirection: 'next' as 'next' | 'previous',
-    currentPage: 1
+    pageDirection: "next" as "next" | "previous",
+    currentPage: 1,
   });
 
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
-      setPaginationState(prev => ({ ...prev, cursor: null, currentPage: 1 }));
+      setPaginationState((prev) => ({ ...prev, cursor: null, currentPage: 1 }));
     }, 500);
 
     return () => clearTimeout(timer);
@@ -84,7 +106,12 @@ const AdminBundles: React.FC = () => {
 
   // Load bundles when filters or pagination change
   useEffect(() => {
-    if (useClientSearch && (searchQuery || statusFilter !== 'ALL' || bundlePriceFilterValue !== "All Prices")) {
+    if (
+      useClientSearch &&
+      (searchQuery ||
+        statusFilter !== "ALL" ||
+        bundlePriceFilterValue !== "All Prices")
+    ) {
       performClientSearch();
     } else {
       loadBundles();
@@ -96,7 +123,7 @@ const AdminBundles: React.FC = () => {
     paginationState.cursor,
     paginationState.pageDirection,
     useClientSearch,
-    itemsPerPage
+    itemsPerPage,
   ]);
 
   const loadAllBundles = async () => {
@@ -105,11 +132,11 @@ const AdminBundles: React.FC = () => {
       const result = await bundleService.getAllBundles();
       setAllBundles(result);
     } catch (error) {
-      console.error('Error loading all bundles:', error);
+      console.error("Error loading all bundles:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load bundles',
-        variant: 'destructive'
+        title: "Error",
+        description: "Failed to load bundles",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -125,22 +152,28 @@ const AdminBundles: React.FC = () => {
       // Apply search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        filteredBundles = filteredBundles.filter(bundle => {
+        filteredBundles = filteredBundles.filter((bundle) => {
           const titleMatch = bundle.title?.toLowerCase().includes(query);
-          const descriptionMatch = bundle.description?.toLowerCase().includes(query);
+          const descriptionMatch = bundle.description
+            ?.toLowerCase()
+            .includes(query);
           return titleMatch || descriptionMatch;
         });
       }
 
       // Apply status filter
-      if (statusFilter !== 'ALL') {
-        filteredBundles = filteredBundles.filter(bundle => bundle.status === statusFilter);
+      if (statusFilter !== "ALL") {
+        filteredBundles = filteredBundles.filter(
+          (bundle) => bundle.status === statusFilter
+        );
       }
 
       // Apply price filter
       if (bundlePriceFilterValue !== "All Prices") {
-        filteredBundles = filteredBundles.filter(bundle =>
-          bundlePriceFilterValue === "Non Zero Price" ? bundle.salePrice > 0 : bundle.salePrice === 0
+        filteredBundles = filteredBundles.filter((bundle) =>
+          bundlePriceFilterValue === "Non Zero Price"
+            ? bundle.salePrice > 0
+            : bundle.salePrice === 0
         );
       }
 
@@ -155,14 +188,14 @@ const AdminBundles: React.FC = () => {
         hasPreviousPage: paginationState.currentPage > 1,
         nextCursor: null,
         previousCursor: null,
-        totalCount: filteredBundles.length
+        totalCount: filteredBundles.length,
       });
     } catch (error) {
-      console.error('Error performing client search:', error);
+      console.error("Error performing client search:", error);
       toast({
-        title: 'Error',
-        description: 'An error occurred while searching bundles',
-        variant: 'destructive'
+        title: "Error",
+        description: "An error occurred while searching bundles",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -177,29 +210,32 @@ const AdminBundles: React.FC = () => {
 
       // Add search filter if query exists
       if (searchQuery.trim() && !useClientSearch) {
-        filters.push({
-          field: 'title',
-          op: '>=',
-          value: searchQuery.toLowerCase()
-        }, {
-          field: 'title',
-          op: '<=',
-          value: searchQuery.toLowerCase() + '\uf8ff'
-        });
+        filters.push(
+          {
+            field: "title",
+            op: ">=",
+            value: searchQuery.toLowerCase(),
+          },
+          {
+            field: "title",
+            op: "<=",
+            value: searchQuery.toLowerCase() + "\uf8ff",
+          }
+        );
       }
 
       // Add status filter if not 'ALL'
-      if (statusFilter !== 'ALL') {
+      if (statusFilter !== "ALL") {
         filters.push({
-          field: 'status',
-          op: '==',
-          value: statusFilter
+          field: "status",
+          op: "==",
+          value: statusFilter,
         });
       }
 
       const result = await bundleService.getBundles(filters, {
         limit: itemsPerPage,
-        orderBy: { field: 'createdAt', direction: 'desc' },
+        orderBy: { field: "createdAt", direction: "desc" },
         cursor: paginationState.cursor,
         pageDirection: paginationState.pageDirection,
       });
@@ -210,17 +246,21 @@ const AdminBundles: React.FC = () => {
         // Apply client-side filtering for better search when using server-side base
         if (searchQuery.trim() && !useClientSearch) {
           const query = searchQuery.toLowerCase();
-          finalBundles = finalBundles.filter(bundle => {
+          finalBundles = finalBundles.filter((bundle) => {
             const titleMatch = bundle.title?.toLowerCase().includes(query);
-            const descriptionMatch = bundle.description?.toLowerCase().includes(query);
+            const descriptionMatch = bundle.description
+              ?.toLowerCase()
+              .includes(query);
             return titleMatch || descriptionMatch;
           });
         }
 
         // Apply price filter client-side for server-side results
         if (bundlePriceFilterValue !== "All Prices") {
-          finalBundles = finalBundles.filter(bundle =>
-            bundlePriceFilterValue === "Non Zero Price" ? bundle.salePrice > 0 : bundle.salePrice === 0
+          finalBundles = finalBundles.filter((bundle) =>
+            bundlePriceFilterValue === "Non Zero Price"
+              ? bundle.salePrice > 0
+              : bundle.salePrice === 0
           );
         }
 
@@ -230,22 +270,22 @@ const AdminBundles: React.FC = () => {
           hasPreviousPage: result.data.hasPreviousPage,
           nextCursor: result.data.nextCursor,
           previousCursor: result.data.previousCursor,
-          totalCount: result.data.totalCount
+          totalCount: result.data.totalCount,
         });
       } else {
-        console.error('Failed to load bundles:', result.error);
+        console.error("Failed to load bundles:", result.error);
         toast({
-          title: 'Error',
-          description: 'Failed to load bundles',
-          variant: 'destructive'
+          title: "Error",
+          description: "Failed to load bundles",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error loading bundles:', error);
+      console.error("Error loading bundles:", error);
       toast({
-        title: 'Error',
-        description: 'An error occurred while loading bundles',
-        variant: 'destructive'
+        title: "Error",
+        description: "An error occurred while loading bundles",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -255,29 +295,34 @@ const AdminBundles: React.FC = () => {
   const handleItemsPerPageChange = (value: string) => {
     const newItemsPerPage = parseInt(value, 10);
     setItemsPerPage(newItemsPerPage);
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       ...prev,
       cursor: null,
-      currentPage: 1
+      currentPage: 1,
     }));
   };
 
   const handleNextPage = () => {
     if (!bundles.hasNextPage || isLoading) return;
 
-    if (useClientSearch && (searchQuery || statusFilter !== 'ALL' || bundlePriceFilterValue !== "All Prices")) {
+    if (
+      useClientSearch &&
+      (searchQuery ||
+        statusFilter !== "ALL" ||
+        bundlePriceFilterValue !== "All Prices")
+    ) {
       // Client-side pagination
-      setPaginationState(prev => ({
+      setPaginationState((prev) => ({
         ...prev,
         currentPage: prev.currentPage + 1,
-        cursor: null
+        cursor: null,
       }));
     } else {
       // Server-side pagination
-      setPaginationState(prev => ({
+      setPaginationState((prev) => ({
         cursor: bundles.nextCursor,
-        pageDirection: 'next',
-        currentPage: prev.currentPage + 1
+        pageDirection: "next",
+        currentPage: prev.currentPage + 1,
       }));
     }
   };
@@ -285,19 +330,24 @@ const AdminBundles: React.FC = () => {
   const handlePreviousPage = () => {
     if (!bundles.hasPreviousPage || isLoading) return;
 
-    if (useClientSearch && (searchQuery || statusFilter !== 'ALL' || bundlePriceFilterValue !== "All Prices")) {
+    if (
+      useClientSearch &&
+      (searchQuery ||
+        statusFilter !== "ALL" ||
+        bundlePriceFilterValue !== "All Prices")
+    ) {
       // Client-side pagination
-      setPaginationState(prev => ({
+      setPaginationState((prev) => ({
         ...prev,
         currentPage: prev.currentPage - 1,
-        cursor: null
+        cursor: null,
       }));
     } else {
       // Server-side pagination
-      setPaginationState(prev => ({
+      setPaginationState((prev) => ({
         cursor: bundles.previousCursor,
-        pageDirection: 'previous',
-        currentPage: prev.currentPage - 1
+        pageDirection: "previous",
+        currentPage: prev.currentPage - 1,
       }));
     }
   };
@@ -306,78 +356,82 @@ const AdminBundles: React.FC = () => {
     setSearchInput(value);
 
     // Reset pagination when search changes
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       ...prev,
       currentPage: 1,
-      cursor: null
+      cursor: null,
     }));
 
     // Switch to client-side search for complex filtering
     if (value.trim().length > 0) {
       setUseClientSearch(true);
-    } else if (value.trim().length === 0 && statusFilter === 'ALL' && bundlePriceFilterValue === "All Prices") {
+    } else if (
+      value.trim().length === 0 &&
+      statusFilter === "ALL" &&
+      bundlePriceFilterValue === "All Prices"
+    ) {
       setUseClientSearch(false);
     }
   };
 
   const clearSearch = () => {
-    setSearchInput('');
-    setSearchQuery('');
-    setPaginationState(prev => ({
+    setSearchInput("");
+    setSearchQuery("");
+    setPaginationState((prev) => ({
       ...prev,
       currentPage: 1,
-      cursor: null
+      cursor: null,
     }));
 
     // Only switch back to server-side if no other filters are active
-    if (statusFilter === 'ALL' && bundlePriceFilterValue === "All Prices") {
+    if (statusFilter === "ALL" && bundlePriceFilterValue === "All Prices") {
       setUseClientSearch(false);
     }
   };
 
-  const handleStatusFilter = (status: BUNDLE_STATUS | 'ALL') => {
+  const handleStatusFilter = (status: BUNDLE_STATUS | "ALL") => {
     setStatusFilter(status);
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       ...prev,
       cursor: null,
-      currentPage: 1
+      currentPage: 1,
     }));
 
     // Use client-side search when filtering by status
-    if (status !== 'ALL') {
+    if (status !== "ALL") {
       setUseClientSearch(true);
-    } else if (searchQuery === '' && bundlePriceFilterValue === "All Prices") {
+    } else if (searchQuery === "" && bundlePriceFilterValue === "All Prices") {
       setUseClientSearch(false);
     }
   };
 
   const handlePriceFilter = (priceFilter: BundlePriceFilter) => {
     setBundlePriceFilterValue(priceFilter);
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       ...prev,
       cursor: null,
-      currentPage: 1
+      currentPage: 1,
     }));
 
     // Use client-side search when filtering by price
     if (priceFilter !== "All Prices") {
       setUseClientSearch(true);
-    } else if (searchQuery === '' && statusFilter === 'ALL') {
+    } else if (searchQuery === "" && statusFilter === "ALL") {
       setUseClientSearch(false);
     }
   };
 
   const clearAllFilters = () => {
-    setSearchInput('');
-    setSearchQuery('');
-    setStatusFilter('ALL');
+    setSearchInput("");
+    setSearchQuery("");
+    setStatusFilter("ALL");
     setBundlePriceFilterValue("All Prices");
     setUseClientSearch(false);
     setItemsPerPage(10);
     setPaginationState({
       cursor: null,
-      pageDirection: 'next',
-      currentPage: 1
+      pageDirection: "next",
+      currentPage: 1,
     });
   };
 
@@ -390,14 +444,14 @@ const AdminBundles: React.FC = () => {
         toast({
           title: "Error",
           description: "Failed to delete bundle.",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       toast({
         title: "Success",
-        description: "Bundle deleted successfully."
+        description: "Bundle deleted successfully.",
       });
 
       // Reload bundles to reflect deletion
@@ -408,11 +462,11 @@ const AdminBundles: React.FC = () => {
         await loadBundles();
       }
     } catch (error) {
-      console.error('Error deleting bundle:', error);
+      console.error("Error deleting bundle:", error);
       toast({
-        title: 'Error',
-        description: 'An error occurred while deleting the bundle',
-        variant: 'destructive'
+        title: "Error",
+        description: "An error occurred while deleting the bundle",
+        variant: "destructive",
       });
     } finally {
       setConfirmOpen(false);
@@ -421,16 +475,16 @@ const AdminBundles: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: CURRENCY.INR
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY.INR,
     }).format(amount);
   };
 
   const truncateText = (text: string, maxLength: number) => {
-    if (!text) return '';
+    if (!text) return "";
     if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+    return text.substring(0, maxLength) + "...";
   };
 
   const getBadgeVariant = (status: string) => {
@@ -447,7 +501,10 @@ const AdminBundles: React.FC = () => {
   };
 
   // Determine if we're in filtered state
-  const isFiltered = searchQuery || statusFilter !== 'ALL' || bundlePriceFilterValue !== "All Prices";
+  const isFiltered =
+    searchQuery ||
+    statusFilter !== "ALL" ||
+    bundlePriceFilterValue !== "All Prices";
 
   if (isLoading && bundles.data.length === 0) {
     return (
@@ -473,7 +530,8 @@ const AdminBundles: React.FC = () => {
               <CardTitle>Course Bundles</CardTitle>
               <CardDescription>
                 Manage your course bundles and bundle enrollments.
-                {bundles.totalCount > 0 && ` (Page ${paginationState.currentPage})`}
+                {bundles.totalCount > 0 &&
+                  ` (Page ${paginationState.currentPage})`}
               </CardDescription>
             </div>
             <Button
@@ -516,7 +574,9 @@ const AdminBundles: React.FC = () => {
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <select
                   value={statusFilter}
-                  onChange={(e) => handleStatusFilter(e.target.value as BUNDLE_STATUS | 'ALL')}
+                  onChange={(e) =>
+                    handleStatusFilter(e.target.value as BUNDLE_STATUS | "ALL")
+                  }
                   className="border border-input rounded-md px-3 py-2 text-sm bg-background hover:bg-accent hover:text-accent-foreground"
                 >
                   <option value="ALL">All Status</option>
@@ -531,16 +591,12 @@ const AdminBundles: React.FC = () => {
                 value={bundlePriceFilterValue}
                 onValueChange={handlePriceFilter}
               >
-                <SelectTrigger className='w-fit'>
+                <SelectTrigger className="w-fit">
                   <SelectValue placeholder="Select Pricing" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={"All Prices"}>
-                    All Prices
-                  </SelectItem>
-                  <SelectItem value={"Zero Price"}>
-                    Zero Price
-                  </SelectItem>
+                  <SelectItem value={"All Prices"}>All Prices</SelectItem>
+                  <SelectItem value={"Zero Price"}>Zero Price</SelectItem>
                   <SelectItem value={"Non Zero Price"}>
                     Non Zero Price
                   </SelectItem>
@@ -554,13 +610,12 @@ const AdminBundles: React.FC = () => {
             <div className="text-center py-8">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                {isFiltered ? 'No bundles found' : 'No bundles'}
+                {isFiltered ? "No bundles found" : "No bundles"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
                 {isFiltered
-                  ? 'Try adjusting your search or filters.'
-                  : 'Get started by creating your first course bundle.'
-                }
+                  ? "Try adjusting your search or filters."
+                  : "Get started by creating your first course bundle."}
               </p>
               {isFiltered && (
                 <Button
@@ -588,10 +643,13 @@ const AdminBundles: React.FC = () => {
               {/* Items Per Page Selector and Summary */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {bundles.data.length} of {bundles.totalCount} total bundles
+                  Showing {bundles.data.length} of {bundles.totalCount} total
+                  bundles
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">Show:</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    Show:
+                  </span>
                   <Select
                     value={itemsPerPage.toString()}
                     onValueChange={handleItemsPerPageChange}
@@ -600,14 +658,16 @@ const AdminBundles: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ITEMS_PER_PAGE_OPTIONS.map(option => (
+                      {ITEMS_PER_PAGE_OPTIONS.map((option) => (
                         <SelectItem key={option} value={option.toString()}>
                           {option}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    per page
+                  </span>
                 </div>
               </div>
 
@@ -615,6 +675,7 @@ const AdminBundles: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Bundle</TableHead>
+                    <TableHead>BundleId</TableHead>
                     <TableHead>Courses</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Pricing Model</TableHead>
@@ -635,13 +696,16 @@ const AdminBundles: React.FC = () => {
                             />
                           )}
                           <div>
-                            <div className="font-medium">
-                              {bundle.title}
-                            </div>
+                            <div className="font-medium">{bundle.title}</div>
                             <div className="text-sm text-muted-foreground line-clamp-2">
                               {truncateText(bundle.description, 80)}
                             </div>
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="font-medium">{bundle.id}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -650,7 +714,9 @@ const AdminBundles: React.FC = () => {
                           {bundle.courses.length > 0 && (
                             <div className="text-xs text-muted-foreground mt-1">
                               {truncateText(
-                                bundle.courses.map(course => course.title).join(', '),
+                                bundle.courses
+                                  .map((course) => course.title)
+                                  .join(", "),
                                 60
                               )}
                             </div>
@@ -684,7 +750,9 @@ const AdminBundles: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/edit-bundle/${bundle.id}`)}
+                            onClick={() =>
+                              navigate(`/admin/edit-bundle/${bundle.id}`)
+                            }
                             title="Edit Bundle"
                           >
                             <Edit className="h-4 w-4" />
@@ -692,7 +760,9 @@ const AdminBundles: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/course-bundle/${bundle.slug}`)}
+                            onClick={() =>
+                              navigate(`/course-bundle/${bundle.slug}`)
+                            }
                             title="View Bundle"
                           >
                             <Eye className="h-4 w-4" />
@@ -718,14 +788,19 @@ const AdminBundles: React.FC = () => {
               {/* Pagination Controls */}
               <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  Page {paginationState.currentPage} of {Math.ceil(bundles.totalCount / itemsPerPage)}
+                  Page {paginationState.currentPage} of{" "}
+                  {Math.ceil(bundles.totalCount / itemsPerPage)}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePreviousPage}
-                    disabled={!bundles.hasPreviousPage || paginationState.currentPage === 1 || isLoading}
+                    disabled={
+                      !bundles.hasPreviousPage ||
+                      paginationState.currentPage === 1 ||
+                      isLoading
+                    }
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
