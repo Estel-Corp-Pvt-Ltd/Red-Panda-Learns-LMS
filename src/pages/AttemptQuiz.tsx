@@ -1,12 +1,11 @@
-import { Header } from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
 import { QUIZ_QUESTION_TYPE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { quizService } from "@/services/quizService";
 import { Question, Quiz } from "@/types/quiz";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { useEffect, useState, useRef } from "react";
+import { Flag } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 const AttemptQuiz = () => {
@@ -155,9 +154,7 @@ const AttemptQuiz = () => {
 
     return (
         <div className="h-screen flex flex-col bg-gray-50">
-            <Header />
             <div className="flex flex-1 overflow-hidden">
-                <Sidebar />
 
                 <div className="w-full max-w-4xl mx-auto p-6 overflow-y-auto">
 
@@ -179,8 +176,25 @@ const AttemptQuiz = () => {
                                 <div className="text-xl font-bold text-pink-600">
                                     ⏳ {formatTime(timeLeft)}
                                 </div>
+
+                                <button
+                                    onClick={() => navigate("/quizzes")}
+                                    className="
+        flex items-center gap-2 
+        bg-pink-500 text-white px-4 py-2 rounded-xl text-sm font-semibold
+        hover:bg-pink-600 active:scale-95 transition
+        shadow-sm hover:shadow-md
+    "
+                                >
+                                    <Flag size={18} />
+                                    End Quiz
+                                </button>
+
                             </div>
 
+                            <strong className="font-thin text-gray-700 text-xl">{quiz.description}</strong>
+                            <br />
+                            <br />
                             {/* Question Navigation Circles */}
                             <div className="flex gap-3 mb-6 flex-wrap">
                                 {questions.map(q => {
