@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
-import { Lesson } from "@/types/lesson";
+import { Lesson, LessonAttachment } from "@/types/lesson";
 import { ok, fail, Result } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { COLLECTION, ENVIRONMENT } from "@/constants";
@@ -277,6 +277,7 @@ class LessonService {
         hasPreviousPage: hasPrev,
         nextCursor: hasNext ? docs[docs.length - 1] : null,
         previousCursor: hasPrev ? docs[0] : null,
+        totalCount: 0,
       });
     } catch (err) {
       console.error("❌ LessonService.getLessons:", err);
@@ -335,6 +336,64 @@ class LessonService {
     } catch (error) {
       logError("LessonService.getLessonDescriptionsByCourseId", error);
       return fail("Error fetching lesson descriptions and duration by courseId");
+    }
+  }
+
+  // lesson attachments methods can go here
+  async createLessonAttachment(
+    data: Omit<LessonAttachment, "id" | "createdAt" | "updatedAt">
+  ): Promise<LessonAttachment> {
+    try {
+      const attachmentId = `${data.lessonId}_attachment_${Date.now()}`;
+
+      const attachment: LessonAttachment = {
+        id: attachmentId,
+        lessonId: data.lessonId,
+        name: data.name,
+        url: data.url,
+        type: data.type,
+        size: data.size,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(doc(db, COLLECTION.LESSON_ATTACHMENTS, attachmentId), attachment);
+
+      return attachment;
+    } catch (err) {
+      console.error("❌ LessonService.createLessonAttachment:", err);
+      throw new Error("Failed to create lesson attachment");
+    }
+  }
+
+  async deleteLessonAttachment(attachmentId: string): Promise<Result<void>> {
+    try {
+      await deleteDoc(doc(db, COLLECTION.LESSON_ATTACHMENTS, attachmentId));
+      return ok(null);
+    } catch (err) {
+      console.error("❌ LessonService.deleteLessonAttachment:", err);
+      return fail("Failed to delete lesson attachment");
+    }
+  }
+
+  async getAttachmentsByLessonId(lessonId: string): Promise<LessonAttachment[]> {
+    try {
+      const q = query(
+        collection(db, COLLECTION.LESSON_ATTACHMENTS),
+        where("lessonId", "==", lessonId)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          ...data,
+          createdAt: data.createdAt?.toDate?.() ?? data.createdAt ?? null,
+          updatedAt: data.updatedAt?.toDate?.() ?? data.updatedAt ?? null,
+        } as LessonAttachment;
+      });
+    } catch (err) {
+      console.error("❌ LessonService.getAttachmentsByLessonId:", err);
+      return [];
     }
   }
 }

@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import VideoPlayer from "@/components/VideoPlayer";
 import { LESSON_TYPE } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
-import { Lesson } from "@/types/lesson";
+import { Lesson, LessonAttachment } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import { CheckCircle, FileText, Loader2, Maximize2, Minimize2, Video } from "lucide-react";
+import { CheckCircle, FileText, Loader2, Maximize2, Minimize2, Video, Download } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
 
@@ -23,6 +23,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -54,8 +55,19 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       }
     };
 
+    const fetchLessonAttachments = async () => {
+      try {
+        if (!lessonId) return;
+        const attachments = await lessonService.getAttachmentsByLessonId(lessonId);
+        setAttachments(attachments);
+      } catch (error) {
+        logError("fetchLessonAttachments", error);
+      }
+    };
+
     if (lessonId) {
       fetchLesson();
+      fetchLessonAttachments();
     }
   }, [lessonId]);
 
@@ -96,6 +108,14 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
         variant: "destructive",
       });
     }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
   if (isLoading) {
@@ -143,6 +163,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   const getLessonContent = () => {
     switch (lesson.type) {
       case LESSON_TYPE.SLIDE_DECK:
+      case LESSON_TYPE.PDF:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
@@ -268,22 +289,89 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       <div className={`w-full ${isFullscreen ? 'flex-1' : ''}`}>
         {getLessonContent()}
       </div>
-
-      {/* Footer */}
-      {!isFullscreen && (
-        <>
-          {lesson.description && <MarkdownViewer value={lesson.description} />}
-          <Card className="bg-muted/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Lesson Progress</span>
-                <span className="text-sm text-muted-foreground">{completed ? "100%" : "0%"}</span>
+      {/* Progress Indicator */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Lesson Progress</span>
+            <span className="text-sm text-muted-foreground">
+              {completed ? "100% complete" : "0% complete"}
+            </span>
+          </div>
+          <Progress value={completed ? 100 : 0} className="h-2" />
+        </CardContent>
+      </Card>
+      {/* Lesson Description */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <Card className="md:w-2/3 bg-muted/30">
+          <CardContent className="py-4">
+            <h2 className="text-lg font-semibold mb-2">Lesson Description</h2>
+            {lesson.description ? (
+              <MarkdownViewer value={lesson.description} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No description provided for this lesson.</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="w-full md:w-1/3">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Attachments</h2>
+              <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                {attachments.length} file{attachments.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            {attachments.length === 0 ? (
+              <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground">No attachments for this lesson</p>
               </div>
-              <Progress value={completed ? 100 : 0} className="h-2" />
-            </CardContent>
-          </Card>
-        </>
-      )}
+            ) : (
+              <div className="space-y-2">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate" title={attachment.name}>
+                          {attachment.name}
+                        </p>
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <span className="capitalize">{attachment.type.toLowerCase()}</span>
+                          <span>•</span>
+                          <span>{formatFileSize(attachment.size)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1 ml-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        asChild
+                      >
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={attachment.name}
+                          title="Download file"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

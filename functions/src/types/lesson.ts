@@ -21,11 +21,11 @@ export type Lesson = {
 
 export type LessonAttachment = {
   id: string;
+  lessonId: string;
   name: string;
   url: string;
   type: Attachment;
-  videoSource?: VideoSource;
-  size?: number;
+  size: number;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

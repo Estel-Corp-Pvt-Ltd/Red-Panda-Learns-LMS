@@ -385,6 +385,7 @@ export const COLLECTION = {
   TRANSACTIONS: "Transactions",
   COUNTERS: "Counters",
   LEARNING_PROGRESS: "LearningProgress",
+  LESSON_ATTACHMENTS: "LessonAttachments",
   ENROLLMENTS: "Enrollments",
   QUIZZES: "Quizzes",
   QUIZ_SUBMISSIONS: "QuizSubmissions",
