@@ -385,7 +385,9 @@ export const COLLECTION = {
   TRANSACTIONS: "Transactions",
   COUNTERS: "Counters",
   LEARNING_PROGRESS: "LearningProgress",
-  ENROLLMENTS: "Enrollments"
+  ENROLLMENTS: "Enrollments",
+  QUIZZES: "Quizzes",
+  QUIZ_SUBMISSIONS: "QuizSubmissions",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -428,3 +430,19 @@ export const POPUP_COURSE_TYPE = {
   LIVE: "LIVE",
   SELF_PACED: "SELF-PACED",
 } as const;
+
+export const QUIZ_QUESTION_TYPE = {
+  MCQ: "MCQ",
+  MULTIPLE_ANSWER: "MULTIPLE ANSWER",
+} as const;
+
+export const QUIZ_SUBMISSION_STATUS = {
+  IN_PROGRESS: "IN PROGRESS",
+  SUBMITTED: "SUBMITTED",
+  AUTO_SUBMITTED: "AUTO_SUBMITTED"
+} as const;
+
+export const QUIZ_STATUS = {
+  DRAFT: "DRAFT",
+  PUBLISHED: "PUBLISHED"
+};
