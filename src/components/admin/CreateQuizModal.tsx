@@ -45,8 +45,7 @@ const CreateQuizModal = ({
     const [scheduledTime, setScheduledTime] = useState("");
 
     const [durationMinutes, setDurationMinutes] = useState<number>(30);
-    const [enableSidebarNavigation, setEnableSidebarNavigation] = useState(true);
-    const [isVisible, setIsVisible] = useState(true);
+    const [enableFreeNavigation, setEnableFreeNavigation] = useState(true);
 
     const [status, setStatus] = useState<QuizStatus>(QUIZ_STATUS.DRAFT);
 
@@ -104,7 +103,7 @@ const CreateQuizModal = ({
             passingPercentage,
             scheduledAt: ts,
             durationMinutes,
-            enableSidebarNavigation,
+            enableFreeNavigation,
             status
         };
 
@@ -290,9 +289,9 @@ const CreateQuizModal = ({
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 id="sidebarNav"
-                                checked={enableSidebarNavigation}
+                                checked={enableFreeNavigation}
                                 onCheckedChange={(v) =>
-                                    setEnableSidebarNavigation(Boolean(v))
+                                    setEnableFreeNavigation(Boolean(v))
                                 }
                             />
                             <Label htmlFor="sidebarNav">Enable sidebar navigation</Label>

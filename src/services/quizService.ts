@@ -45,7 +45,7 @@ class QuizService {
                 passingPercentage: quiz.passingPercentage,
                 scheduledAt: quiz.scheduledAt,
                 durationMinutes: quiz.durationMinutes,
-                enableSidebarNavigation: quiz.enableSidebarNavigation,
+                enableFreeNavigation: quiz.enableFreeNavigation,
                 status: quiz.status,
                 createdBy: createdBy,
                 createdAt: serverTimestamp(),
@@ -85,7 +85,7 @@ class QuizService {
                 "passingPercentage",
                 "scheduledAt",
                 "durationMinutes",
-                "enableSidebarNavigation",
+                "enableFreeNavigation",
                 "status"
             ];
 

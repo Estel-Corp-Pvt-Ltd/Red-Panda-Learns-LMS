@@ -17,6 +17,11 @@ const AttemptQuiz = () => {
 
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
+    const [activeQ, setActiveQ] = useState<number>(1);
+    const [answers, setAnswers] = useState<{
+        [key: number]: { selectedOptions: string[]; markedForReview: boolean };
+    }>({});
+
     const [loading, setLoading] = useState(true);
 
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -86,6 +91,47 @@ const AttemptQuiz = () => {
         }, 1000);
     };
 
+    const handleOptionChange = (qNo: number, option: string, type: string) => {
+        setAnswers(prev => {
+            const existing = prev[qNo] || { selectedOptions: [], markedForReview: false };
+
+            let updated: string[] = [];
+
+            if (type === QUIZ_QUESTION_TYPE.MCQ) {
+                updated = [option]; // Single choice
+            } else {
+                updated = existing.selectedOptions.includes(option)
+                    ? existing.selectedOptions.filter(o => o !== option)
+                    : [...existing.selectedOptions, option];
+            }
+
+            return {
+                ...prev,
+                [qNo]: {
+                    selectedOptions: updated,
+                    markedForReview: existing.markedForReview
+                }
+            };
+        });
+    };
+
+    const resetAnswer = (qNo: number) => {
+        setAnswers(prev => ({
+            ...prev,
+            [qNo]: { ...prev[qNo], selectedOptions: [] }
+        }));
+    };
+
+    const toggleReview = (qNo: number) => {
+        setAnswers(prev => {
+            const existing = prev[qNo] || { selectedOptions: [], markedForReview: false };
+            return {
+                ...prev,
+                [qNo]: { ...existing, markedForReview: !existing.markedForReview }
+            };
+        });
+    };
+
     useEffect(() => {
         const init = async () => {
             await canTakeQuiz();
@@ -135,30 +181,134 @@ const AttemptQuiz = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                {questions.map((q) => (
-                                    <div key={q.questionNo} className="bg-white p-5 rounded-xl shadow border">
-                                        <h3 className="font-semibold text-lg text-gray-800 mb-2">
-                                            Q{q.questionNo}. {q.description}
-                                        </h3>
+                            {/* Question Navigation Circles */}
+                            <div className="flex gap-3 mb-6 flex-wrap">
+                                {questions.map(q => {
+                                    const ans = answers[q.questionNo];
+                                    const attempted = ans && ans.selectedOptions.length > 0;
+                                    const review = ans && ans.markedForReview;
 
-                                        {(q.type === QUIZ_QUESTION_TYPE.MCQ || q.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) && (
-                                            <div className="space-y-2">
-                                                {q.options.map((opt, idx) => (
-                                                    <label key={idx} className="flex items-center gap-2 cursor-pointer">
-                                                        <input
-                                                            type={q.type === "MCQ" ? "radio" : "checkbox"}
-                                                            name={`q-${q.questionNo}`}
-                                                            value={opt}
-                                                            className="accent-pink-500 w-4 h-4"
-                                                        />
-                                                        <span>{opt}</span>
-                                                    </label>
-                                                ))}
+                                    let circleColor = "border-pink-400 text-pink-500";
+                                    if (attempted) circleColor = "bg-green-500 text-white border-green-600";
+                                    if (review) circleColor = "bg-gray-400 text-white border-gray-500";
+
+                                    return (
+                                        <button
+                                            key={q.questionNo}
+                                            onClick={() => setActiveQ(q.questionNo)}
+                                            className={`w-8 h-8 rounded-full flex justify-center items-center border text-sm 
+                    ${activeQ === q.questionNo ? "ring-2 ring-pink-500" : ""}
+                    ${circleColor}
+                `}
+                                        >
+                                            {q.questionNo}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Show Only the Selected Question */}
+                            <div className="space-y-6">
+                                {questions
+                                    .filter(q => q.questionNo === activeQ)
+                                    .map(q => {
+                                        const ans = answers[q.questionNo] || { selectedOptions: [], markedForReview: false };
+
+                                        return (
+                                            <div
+                                                key={q.questionNo}
+                                                className="bg-white p-6 rounded-2xl shadow-md border border-pink-200 transition-all"
+                                            >
+                                                {/* Question header */}
+                                                <h3 className="font-semibold text-xl mb-4 text-gray-800">
+                                                    Q{q.questionNo}. {q.description}
+                                                </h3>
+
+                                                {/* Options */}
+                                                {(q.type === QUIZ_QUESTION_TYPE.MCQ ||
+                                                    q.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) && (
+                                                        <div className="space-y-3">
+                                                            {q.options.map((opt, idx) => (
+                                                                <label
+                                                                    key={idx}
+                                                                    className="flex items-center gap-3 group cursor-pointer"
+                                                                >
+                                                                    <input
+                                                                        type={q.type === "MCQ" ? "radio" : "checkbox"}
+                                                                        checked={ans.selectedOptions.includes(opt)}
+                                                                        onChange={() =>
+                                                                            handleOptionChange(q.questionNo, opt, q.type)
+                                                                        }
+                                                                        className="accent-pink-500 w-4 h-4"
+                                                                    />
+                                                                    <span className="group-hover:text-pink-600 transition">
+                                                                        {opt}
+                                                                    </span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                {/* Action Buttons */}
+                                                <div className="flex gap-3 mt-6">
+                                                    {/* Reset */}
+                                                    <button
+                                                        disabled={ans.selectedOptions.length === 0}
+                                                        onClick={() => resetAnswer(q.questionNo)}
+                                                        className={`
+        px-4 py-2 rounded-lg text-sm font-medium border transition active:scale-95
+        ${ans.selectedOptions.length === 0
+                                                                ? "border-pink-300 text-pink-300 cursor-not-allowed opacity-50"
+                                                                : "border-pink-500 text-pink-600 hover:bg-pink-50"}
+    `}
+                                                    >
+                                                        Reset Answer
+                                                    </button>
+
+                                                    {/* Mark / Unmark Review */}
+                                                    <button
+                                                        onClick={() => toggleReview(q.questionNo)}
+                                                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition active:scale-95 
+                                ${ans.markedForReview
+                                                                ? "border-gray-500 text-gray-600 hover:bg-gray-100"
+                                                                : "border-pink-500 text-pink-600 hover:bg-pink-50"
+                                                            }`}
+                                                    >
+                                                        {ans.markedForReview ? "Unmark" : "Mark for Review"}
+                                                    </button>
+                                                </div>
+
+                                                {/* Navigation Buttons */}
+                                                <div className="flex justify-between mt-8">
+                                                    <button
+                                                        disabled={activeQ === 1}
+                                                        onClick={() => setActiveQ(prev => prev - 1)}
+                                                        className={`px-4 py-2 rounded-lg text-sm font-medium border border-pink-400
+                                transition active:scale-95
+                                ${activeQ === 1
+                                                                ? "opacity-40 cursor-not-allowed"
+                                                                : "hover:bg-pink-50 text-pink-600"
+                                                            }`}
+                                                    >
+                                                        ⬅ Previous
+                                                    </button>
+
+                                                    <button
+                                                        disabled={activeQ === questions.length}
+                                                        onClick={() => setActiveQ(prev => prev + 1)}
+                                                        className={`px-4 py-2 rounded-lg text-sm font-medium border border-pink-400
+                                transition active:scale-95
+                                ${activeQ === questions.length
+                                                                ? "opacity-40 cursor-not-allowed"
+                                                                : "hover:bg-pink-50 text-pink-600"
+                                                            }`}
+                                                    >
+                                                        Next ➜
+                                                    </button>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                        );
+                                    })}
                             </div>
                         </div>
                     )}

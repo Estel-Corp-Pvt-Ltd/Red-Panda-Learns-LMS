@@ -13,7 +13,7 @@ export interface Quiz {
     passingPercentage: number;
     scheduledAt: FieldValue | Timestamp;
     durationMinutes: number;
-    enableSidebarNavigation: boolean;
+    enableFreeNavigation: boolean;
     status: QuizStatus;
     createdBy: string; // uid
     createdAt: FieldValue | Timestamp;

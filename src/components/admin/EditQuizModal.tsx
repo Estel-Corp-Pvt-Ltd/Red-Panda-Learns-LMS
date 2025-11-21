@@ -53,17 +53,13 @@ const EditQuizModal = ({
     const [scheduledTime, setScheduledTime] = useState("");
 
     const [durationMinutes, setDurationMinutes] = useState<number>(30);
-    const [enableSidebarNavigation, setEnableSidebarNavigation] = useState(true);
+    const [enableFreeNavigation, setEnableFreeNavigation] = useState(true);
 
     const [status, setStatus] = useState(QUIZ_STATUS.DRAFT);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-
-    /** --------------------------------------------
-     *   Load quiz data on open
-     * -------------------------------------------- */
     useEffect(() => {
         if (!quiz || !open) return;
 
@@ -72,7 +68,7 @@ const EditQuizModal = ({
         setAllowAllStudents(quiz.allowAllStudents ?? true);
         setPassingPercentage(quiz.passingPercentage ?? 40);
         setDurationMinutes(quiz.durationMinutes ?? 30);
-        setEnableSidebarNavigation(quiz.enableSidebarNavigation ?? true);
+        setEnableFreeNavigation(quiz.enableFreeNavigation ?? true);
         setStatus(quiz.status || QUIZ_STATUS.DRAFT);
 
         if (quiz.scheduledAt) {
@@ -94,7 +90,6 @@ const EditQuizModal = ({
     }, [quiz, open]);
 
 
-    /** Combine date + time → Timestamp */
     const getCombinedTimestamp = () => {
         if (!scheduledDate || !scheduledTime) return null;
 
@@ -131,10 +126,6 @@ const EditQuizModal = ({
         setAllowedStudentEmails((prev) => prev.filter((e) => e !== email));
     };
 
-
-    /** --------------------------------------------
-     *   Save changes
-     * -------------------------------------------- */
     const handleSave = async () => {
         setError("");
 
@@ -174,7 +165,7 @@ const EditQuizModal = ({
             passingPercentage,
             scheduledAt: ts,
             durationMinutes,
-            enableSidebarNavigation,
+            enableFreeNavigation,
             status
         };
 
@@ -316,8 +307,8 @@ const EditQuizModal = ({
 
                         <div className="flex items-center space-x-2">
                             <Checkbox
-                                checked={enableSidebarNavigation}
-                                onCheckedChange={(v) => setEnableSidebarNavigation(Boolean(v))}
+                                checked={enableFreeNavigation}
+                                onCheckedChange={(v) => setEnableFreeNavigation(Boolean(v))}
                             />
                             <Label>Enable sidebar navigation</Label>
                         </div>
