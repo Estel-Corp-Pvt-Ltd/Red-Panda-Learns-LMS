@@ -1,25 +1,25 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
+import type { DurationForm } from "@/components/admin/CourseBasicsTab";
 import CourseBasicsTab from "@/components/admin/CourseBasicsTab";
 import CurriculumTab from "@/components/admin/CurriculumTab";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import QuizTab from "@/components/admin/QuizTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ATTRIBUTE_TYPE, COURSE_STATUS } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
-import { courseService } from "@/services/courseService";
+import { useToast } from "@/hooks/use-toast";
 import { attributeService } from "@/services/attributeService";
+import { courseService } from "@/services/courseService";
+import { fileService } from "@/services/fileService";
 import { instructorService } from "@/services/instructorService";
-import { getFullName } from "@/utils/name";
-import { ATTRIBUTE_TYPE, COURSE_STATUS, LEARNING_UNIT } from "@/constants";
-import { logError } from "@/utils/logger";
 import type { Course } from "@/types/course";
 import type { CourseStatus, LearningUnit } from "@/types/general";
-import type { DurationForm } from "@/components/admin/CourseBasicsTab";
+import { logError } from "@/utils/logger";
+import { getFullName } from "@/utils/name";
 import { getDownloadURL } from "firebase/storage";
-import { fileService } from "@/services/fileService";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 
-/** Convert empty string to null or valid number */
-const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
 /** Type guard for numeric checks */
 const isNum = (v: number | null | undefined): v is number =>
   typeof v === "number" && Number.isFinite(v);
@@ -45,6 +45,8 @@ const CurriculumBuilderPage = () => {
     hours: 0,
     minutes: 0,
   });
+
+  const { user } = useAuth();
 
   // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -326,6 +328,7 @@ const CurriculumBuilderPage = () => {
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
           </TabsList>
 
           {/* ─── BASICS TAB ───────────────────────────────────────── */}
@@ -383,6 +386,10 @@ const CurriculumBuilderPage = () => {
             <CurriculumTab
               course={course}
             />
+          </TabsContent>
+
+          <TabsContent value="quizzes">
+            <QuizTab courseId={courseId} userId={user.id} />
           </TabsContent>
         </Tabs>
       </main>
