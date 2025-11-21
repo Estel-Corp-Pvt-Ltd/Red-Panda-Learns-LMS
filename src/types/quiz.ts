@@ -1,5 +1,5 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
-import { QuizQuestionType, QuizSubmissionStatus } from "./general";
+import { QuizQuestionType, QuizStatus, QuizSubmissionStatus } from "./general";
 
 export interface Quiz {
     id: string;
@@ -14,7 +14,7 @@ export interface Quiz {
     scheduledAt: FieldValue | Timestamp;
     durationMinutes: number;
     enableSidebarNavigation: boolean;
-    isVisible: boolean;
+    status: QuizStatus;
     createdBy: string; // uid
     createdAt: FieldValue | Timestamp;
     updatedAt: FieldValue | Timestamp;
