@@ -8,10 +8,14 @@ import { Quiz } from "@/types/quiz";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { Folder, ListChecks, Clock, BookOpen, CheckSquare } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Quizzes = () => {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [loading, setLoading] = useState(true);
+    const [checkingIfQuizCanBeStarted, setCheckingIfQuizCanBeStarted] = useState(false);
+
+    const navigate = useNavigate();
 
     const { user } = useAuth();
     const { enrollments, loading: loadingEnrollments } = useEnrollment();
@@ -49,10 +53,14 @@ const Quizzes = () => {
 
     const canStartQuiz = async (quizId: string) => {
         try {
+            setCheckingIfQuizCanBeStarted(true);
             const canStartQuiz = httpsCallable(functions, "canStartQuiz");
 
             const result = await canStartQuiz({ quizId });
             const data = result.data as { success: boolean; message: string };
+
+            setCheckingIfQuizCanBeStarted(false);
+
             return { canStart: data.success, message: data.message };
 
         } catch (error: any) {
@@ -138,10 +146,13 @@ const Quizzes = () => {
                                                             variant: "destructive",
                                                         });
                                                     }
+
+                                                    navigate(`/quizzes/${quiz.id}`);
                                                 }}
-                                                className="px-4 py-2 rounded-lg bg-pink-500 text-white hover:bg-pink-600 transition"
+                                                disabled={checkingIfQuizCanBeStarted}
+                                                className={`px-4 py-2 rounded-lg ${checkingIfQuizCanBeStarted ? "bg-pink-700" : "hover:bg-pink-500 bg-primary"} text-white transition`}
                                             >
-                                                Start Quiz
+                                                {checkingIfQuizCanBeStarted ? "Loading Quiz ..." : "Start Quiz"}
                                             </button>
                                         </div>
 

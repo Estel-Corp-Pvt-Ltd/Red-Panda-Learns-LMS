@@ -249,6 +249,75 @@ class QuizService {
         }
     }
 
+    /**
+     * Checks if a user is allowed to take a quiz AND the quiz is active.
+     */
+    async isUserAllowedToTakeQuiz(
+        quizId: string,
+        userId: string
+    ): Promise<Result<{ allowed: boolean }>> {
+        try {
+            if (!quizId || !userId) {
+                return ok({ allowed: false });
+            }
+
+            const ref = doc(db, COLLECTION.QUIZZES, quizId);
+            const snap = await getDoc(ref);
+
+            if (!snap.exists()) {
+                return ok({ allowed: false });
+            }
+
+            const quiz = snap.data() as Quiz;
+
+            if (quiz.status !== QUIZ_STATUS.PUBLISHED) {
+                return ok({ allowed: false });
+            }
+
+            const isAllowed =
+                quiz.allowAllStudents ||
+                quiz.allowedStudentUids?.includes(userId);
+
+            if (!isAllowed) {
+                return ok({ allowed: false });
+            }
+
+            return ok({ allowed: true });
+
+        } catch (error: any) {
+            logError("QuizService.isUserAllowedAndQuizActive", error);
+            return ok({ allowed: false });
+        }
+    }
+
+    /**
+     * Fetch a single quiz by its ID.
+     *
+     * @param quizId - The ID of the quiz to fetch.
+     */
+    async getQuizById(quizId: string): Promise<Result<Quiz | null>> {
+        try {
+            if (!quizId || quizId.trim().length === 0) {
+                return fail("Invalid quiz ID");
+            }
+
+            const quizRef = doc(db, COLLECTION.QUIZZES, quizId);
+            const snap = await getDoc(quizRef);
+
+            if (!snap.exists()) {
+                return ok(null);
+            }
+
+            const quiz = snap.data() as Quiz;
+
+            return ok(quiz);
+
+        } catch (error: any) {
+            logError("QuizService.getQuizById", error);
+            return fail("Failed to fetch quiz", error.code || error.message);
+        }
+    }
+
     private calculateTotalMarks(questions: Question[]): number {
         return questions.reduce((sum, q) => sum + (q.marks ?? 0), 0);
     }
