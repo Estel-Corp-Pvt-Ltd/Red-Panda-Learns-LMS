@@ -666,6 +666,58 @@ class QuizService {
         }
     }
 
+    /**
+     * Fetch submissions for a user for multiple quizzes.
+     *
+     * @param quizInfoArr - Array of quizzes with { id: string; releaseScores: boolean }
+     * @param userId - UID of the user
+     * @returns Array of submission info: { quizId, releaseScores, status, totalScore }
+     */
+    async getUserSubmissionsStatus(
+        quizInfoArr: { id: string; releaseScores: boolean }[],
+        userId: string
+    ): Promise<Result<{ quizId: string; releaseScores: boolean; status: string; totalScore: number, passed: boolean }[]>> {
+        try {
+            if (!quizInfoArr || !Array.isArray(quizInfoArr) || !userId) {
+                return fail("Invalid input", "invalid-input");
+            }
+
+            const results: { quizId: string; releaseScores: boolean; status: string; totalScore: number, passed: boolean }[] = [];
+
+            for (const quizInfo of quizInfoArr) {
+                const submissionId = `${quizInfo.id}_${userId}`;
+                const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+                const submissionSnap = await getDoc(submissionRef);
+
+                if (!submissionSnap.exists()) {
+                    results.push({
+                        quizId: quizInfo.id,
+                        releaseScores: quizInfo.releaseScores,
+                        status: QUIZ_SUBMISSION_STATUS.NOT_SUBMITTED,
+                        totalScore: 0,
+                        passed: false
+                    });
+                    continue;
+                }
+
+                const submission = submissionSnap.data() as QuizSubmission;
+
+                results.push({
+                    quizId: quizInfo.id,
+                    releaseScores: quizInfo.releaseScores,
+                    status: submission.status,
+                    totalScore: submission.totalScore ?? 0,
+                    passed: submission.passed
+                });
+            }
+
+            return ok(results);
+        } catch (error: any) {
+            logError("QuizService.getUserSubmissionsStatus", error);
+            return fail("Failed to fetch submissions status", error.code || error.message);
+        }
+    }
+
     private calculateTotalMarks(questions: Question[]): number {
         return questions.reduce((sum, q) => sum + (q.marks ?? 0), 0);
     }

@@ -179,7 +179,7 @@ const SortableQuestionCard = ({
                                                 onValueChange={(val) => updateCorrectAnswer(id, val)}
                                             >
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select Question Type" />
+                                                    <SelectValue placeholder="Select Correct Option" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {question.options.filter(q => q.trim() !== "").map((o, idx) => (

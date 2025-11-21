@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
+import { QUIZ_SUBMISSION_STATUS } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { toast } from "@/hooks/use-toast";
@@ -12,6 +13,14 @@ import { useNavigate } from "react-router-dom";
 
 const Quizzes = () => {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+    const [submissionsData, setSubmissionsData] = useState<{
+        quizId: string;
+        releaseScores: boolean;
+        status: string;
+        totalScore: number;
+        passed: boolean;
+    }[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [checkingIfQuizCanBeStarted, setCheckingIfQuizCanBeStarted] = useState(false);
 
@@ -25,6 +34,16 @@ const Quizzes = () => {
         const quizResponse = await quizService.getQuizzesByCoursesForUser(enrolledCourseIds, user.id);
         if (quizResponse.success) {
             setQuizzes(quizResponse.data);
+            const quizInfoArr = quizResponse.data.map(q => ({
+                id: q.id,
+                releaseScores: q.releaseScores ?? false
+            }));
+
+            const submissionResp = await quizService.getUserSubmissionsStatus(quizInfoArr, user.id);
+            if (submissionResp.success) {
+                const submissions = submissionResp.data;
+                setSubmissionsData(submissions);
+            }
         }
     };
 
@@ -93,74 +112,96 @@ const Quizzes = () => {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {quizzes.map((quiz) => (
-                                <div
-                                    key={quiz.id}
-                                    className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 border border-gray-100"
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <Folder className="w-5 h-5 text-pink-500" />
-                                            <h3 className="text-lg font-semibold text-gray-800">
-                                                {quiz.title}
-                                            </h3>
+                            {quizzes.map((quiz) => {
+                                const submission = submissionsData.find(s => s.quizId === quiz.id);
+                                const hasSubmitted = submission?.status === QUIZ_SUBMISSION_STATUS.SUBMITTED;
+                                const showScore = submission?.releaseScores && hasSubmitted;
+                                const hasPassed = submission?.passed;
+
+                                return (
+                                    <div
+                                        key={quiz.id}
+                                        className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 border border-gray-100"
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Folder className="w-5 h-5 text-pink-500" />
+                                                <h3 className="text-lg font-semibold text-gray-800">
+                                                    {quiz.title}
+                                                </h3>
+                                            </div>
+                                            <span className="text-sm text-gray-500">
+                                                {formatDate(quiz.scheduledAt)}
+                                            </span>
+                                            {hasSubmitted && (
+                                                <div className="text-sm font-medium text-green-600 mt-1">
+                                                    Status: Submitted
+                                                    {showScore && submission?.totalScore !== undefined
+                                                        ? ` | Score: ${submission.totalScore}/${quiz.totalMarks}`
+                                                        : ""}
+                                                    {showScore && hasPassed !== undefined
+                                                        ? ` | ${hasPassed ? "Passed ✅" : "Failed ❌"}`
+                                                        : ""}
+                                                </div>
+                                            )}
+
                                         </div>
-                                        <span className="text-sm text-gray-500">
-                                            {formatDate(quiz.scheduledAt)}
-                                        </span>
+
+                                        {quiz.description && (
+                                            <p className="text-gray-600 mb-4 text-sm line-clamp-3">
+                                                {quiz.description}
+                                            </p>
+                                        )}
+
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-gray-700 text-sm">
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="w-4 h-4 text-pink-500" />
+                                                <span>{quiz.durationMinutes} mins</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <BookOpen className="w-4 h-4 text-pink-500" />
+                                                <span>{quiz.questions.length} questions</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <CheckSquare className="w-4 h-4 text-pink-500" />
+                                                <span>Total Marks: {quiz.totalMarks}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-medium text-gray-600">Passing:</span>
+                                                <span>{quiz.passingPercentage}%</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <strong className="text-nowrap text-red-500">*Note: Clicking on Start Quiz will start the timer.</strong>
+                                            </div>
+                                            <div className="mt-4 flex justify-end">
+                                                <button
+                                                    onClick={async () => {
+                                                        const response = await canStartQuiz(quiz.id);
+
+                                                        if (!response.canStart) {
+                                                            return toast({
+                                                                title: "You cannot start this quiz right now",
+                                                                description: `${response.message}`,
+                                                                variant: "destructive",
+                                                            });
+                                                        }
+
+                                                        navigate(`/quizzes/${quiz.id}`);
+                                                    }}
+                                                    disabled={checkingIfQuizCanBeStarted || hasSubmitted}
+                                                    className={`px-4 py-2 rounded-lg 
+        ${checkingIfQuizCanBeStarted || hasSubmitted ? "bg-pink-700" : "hover:bg-pink-500 bg-primary"} 
+        text-white transition`}
+                                                >
+                                                    {checkingIfQuizCanBeStarted ? "Loading Quiz ..." : hasSubmitted ? "Already Submitted" : "Start Quiz"}
+                                                </button>
+                                            </div>
+
+                                        </div>
                                     </div>
-
-                                    {quiz.description && (
-                                        <p className="text-gray-600 mb-4 text-sm line-clamp-3">
-                                            {quiz.description}
-                                        </p>
-                                    )}
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-gray-700 text-sm">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-4 h-4 text-pink-500" />
-                                            <span>{quiz.durationMinutes} mins</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <BookOpen className="w-4 h-4 text-pink-500" />
-                                            <span>{quiz.questions.length} questions</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckSquare className="w-4 h-4 text-pink-500" />
-                                            <span>Total Marks: {quiz.totalMarks}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <span className="font-medium text-gray-600">Passing:</span>
-                                            <span>{quiz.passingPercentage}%</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <strong className="text-nowrap text-red-500">*Note: Clicking on Start Quiz will start the timer.</strong>
-                                        </div>
-                                        <div className="mt-4 flex justify-end">
-                                            <button
-                                                onClick={async () => {
-                                                    const response = await canStartQuiz(quiz.id);
-
-                                                    if (!response.canStart) {
-                                                        return toast({
-                                                            title: "You cannot start this quiz right now",
-                                                            description: `${response.message}`,
-                                                            variant: "destructive",
-                                                        });
-                                                    }
-
-                                                    navigate(`/quizzes/${quiz.id}`);
-                                                }}
-                                                disabled={checkingIfQuizCanBeStarted}
-                                                className={`px-4 py-2 rounded-lg ${checkingIfQuizCanBeStarted ? "bg-pink-700" : "hover:bg-pink-500 bg-primary"} text-white transition`}
-                                            >
-                                                {checkingIfQuizCanBeStarted ? "Loading Quiz ..." : "Start Quiz"}
-                                            </button>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            }
+                            )}
                         </div>
                     )}
                 </div>
