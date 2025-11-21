@@ -247,6 +247,30 @@ export const EditLessonModal = ({
     onClose();
   };
 
+
+  const handlePdfUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      if (file.type !== "application/pdf") {
+        toast({ title: "Please upload a valid PDF file", variant: "destructive" });
+        setUploading(false);
+        return;
+      }
+      const fileUrl = await fileService.uploadAttachment(`/courses/${courseId}/lessons`, file);
+      if (!fileUrl.success) {
+        toast({ title: "Failed to upload PDF", variant: "destructive" });
+        setUploading(false);
+        return;
+      }
+      setLesson({ ...lesson, embedUrl: fileUrl.data });
+    } catch (error) {
+      toast({ title: "Failed to upload PDF", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const getFileIcon = (type: string) => {
     const icons = {
       [ATTACHMENT_TYPE.VIDEO]: <FileText className="h-4 w-4 text-blue-500" />,
@@ -340,19 +364,40 @@ export const EditLessonModal = ({
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="embed-url">Embed URL</Label>
-                      <Input
-                        id="embed-url"
-                        placeholder="Enter embed URL for the lesson content"
-                        value={lesson?.embedUrl || ""}
-                        onChange={(e) =>
-                          handleFieldChange("embedUrl", e.target.value)
-                        }
-                      />
-                    </div>
-
+                    {lesson?.type === LESSON_TYPE.PDF ? (
+                      <div className="space-y-2">
+                        <Label>PDF Resource *</Label>
+                        <label
+                          htmlFor="pdf-upload"
+                          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {uploading ? "Uploading..." : lesson.embedUrl
+                            ? `File Uploaded`
+                            : "No PDF uploaded yet."}
+                        </label>
+                        <Input
+                          id="pdf-upload"
+                          type="file"
+                          placeholder="Upload PDF resource"
+                          onChange={(e) => handlePdfUpload(e.target.files?.[0]!)}
+                          disabled={uploading}
+                          className="hidden"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="embed-url">Embed URL</Label>
+                        <Input
+                          id="embed-url"
+                          placeholder="Enter embed URL for the lesson content"
+                          value={lesson?.embedUrl || ""}
+                          onChange={(e) =>
+                            handleFieldChange("embedUrl", e.target.value)
+                          }
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label>Duration *</Label>
                       <div className="grid grid-cols-2 gap-3">

@@ -61,9 +61,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       try {
         if (!lessonId) return;
         const attachments = await lessonService.getAttachmentsByLessonId(lessonId);
-        if (attachments.length > 0) {
-          setAttachments(attachments);
-        }
+        setAttachments(attachments);
       } catch (error) {
         logError("fetchLessonAttachments", error);
       }
@@ -160,12 +158,12 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   const getLessonContent = () => {
     switch (lesson.type) {
       case LESSON_TYPE.SLIDE_DECK:
+      case LESSON_TYPE.PDF:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
               src={lesson.embedUrl}
-              // height="500"
-              style={{ border: 0, width: '100%' }}
+              className="border-0 w-full min-h-[500px]"
               allowFullScreen
               loading="lazy">
             </iframe>
@@ -249,8 +247,8 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
         </CardContent>
       </Card>
       {/* Lesson Description */}
-      <div className="flex gap-4">
-        <Card className="w-2/3 hidden md:block bg-muted/30">
+      <div className="flex flex-col md:flex-row gap-4">
+        <Card className="md:w-2/3 bg-muted/30">
           <CardContent className="py-4">
             <h2 className="text-lg font-semibold mb-2">Lesson Description</h2>
             {lesson.description ? (
