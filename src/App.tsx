@@ -41,6 +41,11 @@ const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 
+
+//Instructor
+
+import InstructorLayout from "./components/InstructorLayout";
+import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 // user pages
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
 import BundleDashboardPage from "./pages/BundleDashboardPage";
@@ -71,6 +76,8 @@ import StudentEnrollments from "./components/admin/StudentEnrollments";
 import FreeCourses from "./pages/FreeCourses";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import ArrangeCourses from "./pages/admin/ArrangeCourses";
+import Quizzes from "./pages/Quizzes";
+import AttemptQuiz from "./pages/AttemptQuiz";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -140,6 +147,22 @@ const App = () => (
                         element={
                           <AuthGuard requireAuth requireStudent>
                             <DashboardPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/quizzes"
+                        element={
+                          <AuthGuard requireAuth requireStudent>
+                            <Quizzes />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/quizzes/:quizId"
+                        element={
+                          <AuthGuard requireAuth requireStudent>
+                            <AttemptQuiz />
                           </AuthGuard>
                         }
                       />
@@ -221,6 +244,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      
                       <Route
                         path="/admin/statistics"
                         element={
@@ -414,6 +438,18 @@ const App = () => (
                         path="/invoices/:orderId"
                         element={<InvoicePage />}
                       />
+
+   
+<Route
+  path="/instructor"
+  element={
+    <AuthGuard requireInstructor  >
+      <InstructorLayout>
+        <InstructorDashboard />
+      </InstructorLayout>
+    </AuthGuard>
+  }
+/>
                       <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />

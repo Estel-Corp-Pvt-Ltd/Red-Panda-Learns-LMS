@@ -1,24 +1,18 @@
 import { Header } from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { Progress } from '@/components/ui/progress';
-import { COLLECTION, USER_ROLE } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/firebaseConfig';
+import { toast } from '@/hooks/use-toast';
 import { useCourseQuery } from '@/hooks/useCaching';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
 import { formatDate } from '@/utils/date-time';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { BookOpen, Clock, PlayCircle, Trophy } from 'lucide-react';
+import { BookOpen, Clock, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PRICING_MODEL, ENROLLED_PROGRAM_TYPE } from '@/constants';
-import { toast, useToast } from '@/hooks/use-toast';
-import Sidebar from '@/components/Sidebar';
-
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const navigate = useNavigate();
@@ -86,7 +80,7 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
       </CardContent>
     </Card>
   );
-}
+};
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -213,4 +207,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
+};

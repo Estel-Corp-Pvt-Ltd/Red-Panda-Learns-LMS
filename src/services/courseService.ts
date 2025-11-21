@@ -26,6 +26,7 @@ import { Course } from "@/types/course";
 import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { Enrollment } from "@/types/enrollment";
+import { logError } from "@/utils/logger";
 
 class CourseService {
   /**
@@ -114,7 +115,7 @@ class CourseService {
       };
 
       await setDoc(doc(db, COLLECTION.COURSES, courseId), course);
-      console.log("CourseService - Course created successfully:", courseId);
+    
 
       return courseId;
     } catch (error) {
@@ -268,6 +269,37 @@ class CourseService {
       return [];
     }
   }
+
+
+  async  getCourseByInstructor(
+  userId: string
+): Promise<Result<Course[]>> {
+  try {
+    const courseQuery = query(
+      collection(db, COLLECTION.COURSES),
+      where('instructorId', '==', userId)
+    );
+
+    const snapshot = await getDocs(courseQuery);
+
+    if (snapshot.empty) {
+      return ok([]); // no courses found, return empty array
+    }
+
+    const courseList: Course[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Course),
+    }));
+
+    return ok(courseList);
+  } catch (error: any) {
+    logError('CourseService.getCourseByInstructor', error);
+    return fail(
+      'Failed to fetch Instructor Courses.',
+      error.code || error.message
+    );
+  }
+}
 
   async getCourses(
     filters?: {
@@ -664,7 +696,7 @@ class CourseService {
   async deleteCourse(courseId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.COURSES, courseId));
-      console.log("CourseService - Course deleted successfully:", courseId);
+  
       return ok(null);
     } catch (error) {
       console.error("CourseService - Error deleting course:", error);

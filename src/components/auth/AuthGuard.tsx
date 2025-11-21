@@ -13,6 +13,7 @@ interface AuthGuardProps {
   requireStudent?: boolean;
   requireEnrollment?: boolean;
   requireAdmin?: boolean;
+  requireInstructor?:boolean;
   requireEnrollmentOrAdmin?: boolean;
   message?: string;
 };
@@ -23,6 +24,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireStudent = false,
   requireEnrollment = false,
   requireAdmin = false,
+  requireInstructor = false,
   requireEnrollmentOrAdmin = false,
   message = 'Please login to access this page',
 }) => {
@@ -33,7 +35,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
   const [enrollmentChecked, setEnrollmentChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-
+  const [isInstructor,setIsInstructor] = useState<boolean | null>(null);
   const courseId = params.courseId;
 
   // Check admin role if required
@@ -55,6 +57,26 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     checkAdminRole();
   }, [requireAdmin, user]);
 
+useEffect(()=>{
+  const checkInstructorRole = async () =>{
+    if (requireInstructor && user){
+      try{  
+         const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
+          const data = docSnap.data();
+          setIsInstructor(data.role === USER_ROLE.INSTRUCTOR)
+      }
+      catch{
+        setIsInstructor(false)
+      }
+    }
+    else{
+      setIsInstructor(false)
+    }
+  }
+  checkInstructorRole();
+},[requireInstructor,user]);
+
+
   // Refresh enrollments if needed
   useEffect(() => {
     if (requireEnrollment && user && courseId && !enrollmentChecked) {
@@ -74,7 +96,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     authLoading ||
     (requireEnrollment && enrollmentLoading) ||
     (requireEnrollment && user && courseId && !enrollmentChecked) ||
-    (requireAdmin && isAdmin === null)
+    (requireAdmin && isAdmin === null) ||
+    (requireInstructor && isInstructor === null)
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -110,6 +133,16 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       <Navigate
         to="/dashboard"
         state={{ from: location, message: 'You must be an admin to access this page.' }}
+        replace
+      />
+    );
+  }
+  // Require Instructor
+  if (requireInstructor && !isInstructor) {
+    return (
+      <Navigate
+        to="/dashboard"
+        state={{ from: location, message: 'You must be an Instructor to access this page.' }}
         replace
       />
     );

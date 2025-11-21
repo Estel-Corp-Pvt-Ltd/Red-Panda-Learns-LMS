@@ -325,7 +325,6 @@ export default function CourseDetailPage() {
   };
   const hasInstructor = !!course?.instructorName?.trim();
   const instructorInitial = course?.instructorName?.trim()?.[0]?.toUpperCase();
-  console.log("Rendering CourseDetailPage for course:", course);
   return (
     <div className="min-h-screen bg-background">
       <Header />
