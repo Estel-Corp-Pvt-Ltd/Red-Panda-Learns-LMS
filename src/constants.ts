@@ -373,6 +373,7 @@ export const COLLECTION = {
   USERS: 'Users',
   CARTS: 'Carts',
   LESSONS: 'Lessons',
+  LESSON_ATTACHMENTS: 'LessonAttachments',
   COUPONS: 'Coupons',
   COUPON_USAGES: 'CouponUsages',
   ORGANIZATIONS: 'Organizations',
