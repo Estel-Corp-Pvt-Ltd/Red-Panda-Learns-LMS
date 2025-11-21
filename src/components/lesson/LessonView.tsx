@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { CheckCircle, Video, FileText, Minimize2, Maximize2, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import VideoPlayer from "@/components/VideoPlayer";
-import { Lesson, LessonAttachment } from "@/types/lesson";
 import { LESSON_TYPE } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
+import { Lesson, LessonAttachment } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import { LoadingSkeleton } from "../ui/loading-skeleton";
+import { CheckCircle, FileText, Loader2, Maximize2, Minimize2, Video, Download } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
 
 interface LessonViewProps {
@@ -35,7 +34,6 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
     document.addEventListener('fullscreenchange', handleChange);
     return () => document.removeEventListener('fullscreenchange', handleChange);
   }, []);
-
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -146,6 +144,13 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
 
   const hasVideo = lesson.type === LESSON_TYPE.VIDEO_LECTURE;
 
+
+  const extractIframeSrc = (html: string): string | null => {
+  // Very simple regex to grab src="...".
+  const match = html.match(/src="([^"]+)"/);
+  return match ? match[1] : null;
+};
+
   const isValidHttpUrl = (value: string): boolean => {
     try {
       const url = new URL(value);
@@ -163,10 +168,10 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
           return (
             <iframe
               src={lesson.embedUrl}
-              className="border-0 w-full min-h-[500px]"
+              style={{ border: 0, width: '100%', height: isFullscreen ? '100%' : '500px' }}
               allowFullScreen
-              loading="lazy">
-            </iframe>
+              loading="lazy"
+            />
           );
         return (
           <div
@@ -174,22 +179,77 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
             dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
           />
         );
+
+   case LESSON_TYPE.INTERACTIVE_PROJECT: {
+  // Try to treat embedUrl as HTML that contains an <iframe>
+  const srcFromHtml = extractIframeSrc(lesson.embedUrl);
+
+  if (srcFromHtml) {
+    // We control sizing here, ignoring width/height in the original HTML
+    return (
+      <div
+        className={
+          isFullscreen
+            ? "w-full h-full bg-neutral-900"
+            : "w-full h-[600px] bg-muted"
+        }
+      >
+        <iframe
+          src={srcFromHtml}
+          className="w-full h-full block"
+          style={{ border: 0 }}
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  // Fallback: if we couldn't parse src, just render raw HTML
+  return (
+    <div
+      className={
+        isFullscreen
+          ? "w-full h-full overflow-auto flex items-center justify-center bg-neutral-900"
+          : "w-full flex items-center justify-center bg-muted"
+      }
+    >
+      <div className="w-full h-full max-w-6xl max-h-[80vh]">
+        <div
+          className="w-full h-full"
+          dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
+        />
+      </div>
+    </div>
+  );
+}
+
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
+
       default:
-        // console.log("lesson.embedUrl", lesson.embedUrl);
         return lesson.embedUrl ? (
-          <div
-            className="prose prose-sm max-w-none dark:prose-invert leading-relaxed w-full"
-            dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
-          />
+          <div className={isFullscreen ? "w-full h-full overflow-auto" : "w-full"}>
+            <div
+              className="prose prose-sm max-w-none dark:prose-invert leading-relaxed w-full"
+              dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
+            />
+          </div>
         ) : null;
     }
   };
 
   return (
-    <div className={`relative bg-white dark:bg-background space-y-6 mx-auto ${isFullscreen ? 'p-10 overflow-y-scroll' : ''}`} ref={containerRef}>
-      <div className="flex items-start justify-between gap-4 w-full">
+    <div
+      ref={containerRef}
+      // FIX: Ensure fullscreen container takes full viewport
+      className={
+        isFullscreen
+          ? "fixed inset-0 z-50 flex flex-col bg-background p-0 m-0 overflow-hidden"
+          : "relative bg-white dark:bg-background space-y-6 mx-auto"
+      }
+    >
+      {/* Header */}
+      <div className={`flex items-start justify-between gap-4 w-full ${isFullscreen ? 'p-4 border-b' : ''}`}>
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             {lesson.title}
@@ -209,29 +269,24 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
           </div>
         </div>
 
-        {completed ? (
-          <Button
-            variant="default"
-            size="sm"
-            disabled
-            className="cursor-default bg-green-600 text-white hover:bg-green-600"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Completed
+        <div className="flex gap-2">
+          {completed ? (
+            <Button variant="default" size="sm" disabled className="cursor-default bg-green-600 text-white">
+              <CheckCircle className="h-4 w-4 mr-2" /> Completed
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleMarkComplete}>
+              <CheckCircle className="h-4 w-4 mr-2" /> Mark Complete
+            </Button>
+          )}
+          <Button onClick={toggleFullscreen} variant="outline" size="icon">
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </Button>
-        ) : (
-          <Button variant="outline" size="sm" onClick={handleMarkComplete}>
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Mark Complete
-          </Button>
-        )}
-        <Button onClick={toggleFullscreen}>
-          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-        </Button>
+        </div>
       </div>
 
-      {/* Lesson Content */}
-      <div className="w-full" >
+      {/* Content Wrapper: Use flex-1 only when in fullscreen */}
+      <div className={`w-full ${isFullscreen ? 'flex-1' : ''}`}>
         {getLessonContent()}
       </div>
       {/* Progress Indicator */}
