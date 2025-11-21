@@ -25,6 +25,7 @@ import { QuizQuestionType } from "@/types/general";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
+import { Switch } from "../ui/switch";
 
 type SortableQuestionCardProps = {
     id: number;
@@ -614,6 +615,29 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                                             <Trash2 size={14} />
                                             Delete
                                         </button>
+
+                                        <div className="flex items-center gap-3">
+                                            <label className="flex items-center gap-2 text-sm">
+                                                <span>Release Scores</span>
+                                                <Switch
+                                                    checked={quiz.releaseScores ?? false}
+                                                    onCheckedChange={async (val) => {
+                                                        const res = await quizService.setReleaseScores(quiz.id, val);
+                                                        if (!res.success) {
+                                                            toast({
+                                                                title: "Failed to update release scores",
+                                                                variant: "destructive"
+                                                            });
+                                                            return;
+                                                        }
+
+                                                        setQuizzes(prev =>
+                                                            prev.map(q => q.id === quiz.id ? { ...q, releaseScores: val } : q)
+                                                        );
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
 

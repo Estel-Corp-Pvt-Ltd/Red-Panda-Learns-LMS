@@ -14,6 +14,7 @@ export interface Quiz {
     scheduledAt: FieldValue | Timestamp;
     durationMinutes: number;
     enableFreeNavigation: boolean;
+    releaseScores?: boolean;
     status: QuizStatus;
     createdBy: string; // uid
     createdAt: FieldValue | Timestamp;

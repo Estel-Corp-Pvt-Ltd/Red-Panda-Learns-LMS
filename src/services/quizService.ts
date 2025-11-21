@@ -521,6 +521,40 @@ class QuizService {
         }
     }
 
+    /**
+     * Set or unset the releaseScores flag on a quiz.
+     *
+     * @param quizId - ID of the quiz
+     * @param release - true to release scores, false to hide
+     */
+    async setReleaseScores(
+        quizId: string,
+        release: boolean
+    ): Promise<Result<null>> {
+        try {
+            if (!quizId) {
+                return fail("Missing quizId", "invalid-input");
+            }
+
+            const quizRef = doc(db, COLLECTION.QUIZZES, quizId);
+            const snap = await getDoc(quizRef);
+
+            if (!snap.exists()) {
+                return fail("Quiz not found", "not-found");
+            }
+
+            await updateDoc(quizRef, {
+                releaseScores: release,
+                updatedAt: serverTimestamp()
+            });
+
+            return ok(null);
+        } catch (error: any) {
+            logError("QuizService.setReleaseScores", error);
+            return fail("Failed to update releaseScores", error.code || error.message);
+        }
+    }
+
     private calculateTotalMarks(questions: Question[]): number {
         return questions.reduce((sum, q) => sum + (q.marks ?? 0), 0);
     }
