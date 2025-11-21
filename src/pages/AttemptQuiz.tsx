@@ -26,6 +26,16 @@ const AttemptQuiz = () => {
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+    const getServerTimeLeft = async () => {
+        const functions = getFunctions();
+        const getQuizTimeLeft = httpsCallable(functions, "getQuizTimeLeft");
+        const result = await getQuizTimeLeft({ quizId });
+        const data = result.data as { success: boolean, message?: string, timeLeftSeconds?: number };
+        if (data.success) {
+            return data.timeLeftSeconds;
+        }
+    };
+
     const canTakeQuiz = async () => {
         try {
             const allowedResp = await quizService.isUserAllowedToTakeQuiz(quizId!, user.id);
@@ -63,12 +73,7 @@ const AttemptQuiz = () => {
         }
 
         setQuiz(response.data);
-        console.log(response.data.questions)
         setQuestions(response.data.questions);
-
-        if (response.data.durationMinutes) {
-            setTimeLeft(response.data.durationMinutes * 60);
-        }
     };
 
     const startTimer = () => {
@@ -144,6 +149,35 @@ const AttemptQuiz = () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, []);
+
+    // Poll server time every 3 minutes (180000 ms)
+    useEffect(() => {
+        if (!quizId) return;
+
+        const poll = async () => {
+            try {
+                const serverTime = await getServerTimeLeft();
+
+                setTimeLeft(prev => {
+                    if (prev === null) return serverTime;
+                    const diff = Math.abs(prev - serverTime);
+                    if (diff > 5) {
+                        return serverTime; // Sync only when drift is large
+                    }
+                    return prev;
+                });
+
+            } catch (e) { }
+        };
+
+        // Run once immediately
+        poll();
+
+        // Then run every 3 minutes
+        const interval = setInterval(poll, 180_000);
+
+        return () => clearInterval(interval);
+    }, [quizId]);
 
     const formatTime = (seconds: number | null) => {
         if (seconds === null) return "--:--";
