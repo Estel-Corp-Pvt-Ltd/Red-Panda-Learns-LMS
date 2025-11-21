@@ -132,7 +132,7 @@ export const EditLessonModal = ({
 
     setUploading(true);
     try {
-      const fileResult = await fileService.uploadAttachment(`/lessons/${lessonId}/attachments`, selectedFile);
+      const fileResult = await fileService.uploadAttachment(`/courses/${courseId}/lessons/${lessonId}/attachments`, selectedFile);
       if (!fileResult.success || !fileResult.data) {
         throw new Error("File upload failed");
       }
