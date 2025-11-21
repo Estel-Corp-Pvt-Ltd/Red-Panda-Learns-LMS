@@ -41,6 +41,11 @@ const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 
+
+//Instructor
+
+import InstructorLayout from "./components/InstructorLayout";
+import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 // user pages
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
 import BundleDashboardPage from "./pages/BundleDashboardPage";
@@ -221,6 +226,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                      
                       <Route
                         path="/admin/statistics"
                         element={
@@ -414,6 +420,18 @@ const App = () => (
                         path="/invoices/:orderId"
                         element={<InvoicePage />}
                       />
+
+   
+<Route
+  path="/instructor"
+  element={
+    <AuthGuard requireInstructor  >
+      <InstructorLayout>
+        <InstructorDashboard />
+      </InstructorLayout>
+    </AuthGuard>
+  }
+/>
                       <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />

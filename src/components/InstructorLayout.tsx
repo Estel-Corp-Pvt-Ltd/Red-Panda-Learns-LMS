@@ -1,0 +1,125 @@
+import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  X,
+} from 'lucide-react';
+import React, { ReactNode, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Header } from './Header';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface InstructorLayoutProps {
+  children: ReactNode;
+}
+
+interface MenuItem {
+  name: string;
+  path: string;
+  icon: React.ReactNode;
+}
+
+const InstructorLayout: React.FC<InstructorLayoutProps> = ({ children }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const menuItems: MenuItem[] = [
+    {
+      name: 'Dashboard',
+      path: '/instructor',
+      icon: <LayoutDashboard className="h-5 w-5" />,
+    },
+  ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+      localStorage.clear();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const isActive = (path: string) => {
+    if (path === '/instructor') {
+      return location.pathname === '/instructor';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      <Header />
+
+      {/* Mobile Header */}
+      <div className="sm:hidden flex items-center justify-between px-4 py-2 border-b bg-card">
+        <h1 className="text-lg font-bold">Instructor</h1>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-md border hover:bg-accent hover:text-accent-foreground"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Sidebar */}
+        <div
+          className={cn(
+            'fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col border-r z-40 transition-transform duration-300 ease-in-out bg-white border border-white/40 shadow-lg dark:bg-neutral-900 dark:border-white/10 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
+          )}
+        >
+          <nav className="relative z-10 flex-1 p-4 overflow-y-auto mt-14 sm:mt-0">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute right-5 top-2 p-0 rounded-full hover:bg-accent hover:text-accent-foreground mt-4 text-black sm:hidden border bg-white hover:bg-sky-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <ul className="space-y-1">
+              {menuItems.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground',
+                      isActive(item.path)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    {item.icon}
+                    <span>{item.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="p-4 border-t">
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground bg-red-500 hover:bg-red-600 text-white"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              LogOut
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 p-4 sm:p-6 overflow-y-auto">{children}</main>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InstructorLayout;
