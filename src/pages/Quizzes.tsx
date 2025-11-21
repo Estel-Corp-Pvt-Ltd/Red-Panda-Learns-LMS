@@ -2,8 +2,10 @@ import { Header } from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
+import { toast } from "@/hooks/use-toast";
 import { quizService } from "@/services/quizService";
 import { Quiz } from "@/types/quiz";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { Folder, ListChecks, Clock, BookOpen, CheckSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -13,6 +15,7 @@ const Quizzes = () => {
 
     const { user } = useAuth();
     const { enrollments, loading: loadingEnrollments } = useEnrollment();
+    const functions = getFunctions();
 
     const fetchAvailableQuizzes = async (enrolledCourseIds: string[]) => {
         const quizResponse = await quizService.getQuizzesByCoursesForUser(enrolledCourseIds, user.id);
@@ -42,6 +45,23 @@ const Quizzes = () => {
             hour: "2-digit",
             minute: "2-digit"
         });
+    };
+
+    const canStartQuiz = async (quizId: string) => {
+        try {
+            const canStartQuiz = httpsCallable(functions, "canStartQuiz");
+
+            const result = await canStartQuiz({ quizId });
+            const data = result.data as { success: boolean; message: string };
+            return { canStart: data.success, message: data.message };
+
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: "Something went wrong. Please try again later.",
+                variant: "destructive",
+            });
+        }
     };
 
     return (
@@ -105,6 +125,26 @@ const Quizzes = () => {
                                             <span className="font-medium text-gray-600">Passing:</span>
                                             <span>{quiz.passingPercentage}%</span>
                                         </div>
+                                        <div></div>
+                                        <div className="mt-4 flex justify-end">
+                                            <button
+                                                onClick={async () => {
+                                                    const response = await canStartQuiz(quiz.id);
+
+                                                    if (!response.canStart) {
+                                                        return toast({
+                                                            title: "You cannot start this quiz right now",
+                                                            description: `${response.message}`,
+                                                            variant: "destructive",
+                                                        });
+                                                    }
+                                                }}
+                                                className="px-4 py-2 rounded-lg bg-pink-500 text-white hover:bg-pink-600 transition"
+                                            >
+                                                Start Quiz
+                                            </button>
+                                        </div>
+
                                     </div>
                                 </div>
                             ))}
