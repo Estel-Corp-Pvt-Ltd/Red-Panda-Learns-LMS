@@ -11,7 +11,7 @@ import {
     where
 } from "firebase/firestore";
 
-import { COLLECTION } from "@/constants";
+import { COLLECTION, QUIZ_STATUS } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Question, Quiz } from "@/types/quiz";
 import { logError } from "@/utils/logger";
@@ -46,7 +46,7 @@ class QuizService {
                 scheduledAt: quiz.scheduledAt,
                 durationMinutes: quiz.durationMinutes,
                 enableSidebarNavigation: quiz.enableSidebarNavigation,
-                isVisible: quiz.isVisible,
+                status: quiz.status,
                 createdBy: createdBy,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -86,7 +86,7 @@ class QuizService {
                 "scheduledAt",
                 "durationMinutes",
                 "enableSidebarNavigation",
-                "isVisible"
+                "status"
             ];
 
             const safeUpdates: Partial<Quiz> = {};
@@ -199,6 +199,53 @@ class QuizService {
         } catch (error) {
             logError("QuizService.deleteQuiz", error);
             return fail("Failed to delete quiz");
+        }
+    }
+
+    /**
+     * Fetches all quizzes for multiple course IDs and filters by allowed student.
+     *
+     * @param courseIds - Array of course IDs
+     * @param userId - UID of the student
+     */
+    async getQuizzesByCoursesForUser(
+        courseIds: string[],
+        userId: string
+    ): Promise<Result<Quiz[]>> {
+        try {
+            if (!courseIds || courseIds.length === 0) {
+                return ok([]); // return empty if no courseIds provided
+            }
+
+            const chunkSize = 10; // Firestore 'in' operator limit
+            const chunks: string[][] = [];
+            for (let i = 0; i < courseIds.length; i += chunkSize) {
+                chunks.push(courseIds.slice(i, i + chunkSize));
+            }
+
+            const allQuizzes: Quiz[] = [];
+
+            for (const chunk of chunks) {
+                const quizzesQuery = query(
+                    collection(db, COLLECTION.QUIZZES),
+                    where("courseId", "in", chunk)
+                );
+
+                const snapshot = await getDocs(quizzesQuery);
+                const quizzes: Quiz[] = snapshot.docs.map(doc => doc.data() as Quiz);
+                // Filter quizzes that allow this user
+                const userQuizzes = quizzes.filter(q =>
+                    q.status === QUIZ_STATUS.PUBLISHED && (q.allowAllStudents || q.allowedStudentUids.includes(userId))
+                );
+
+                allQuizzes.push(...userQuizzes);
+            }
+
+            return ok(allQuizzes);
+
+        } catch (error: any) {
+            logError("QuizService.getQuizzesByCoursesForUser", error);
+            return fail("Failed to fetch quizzes.", error.code || error.message);
         }
     }
 
