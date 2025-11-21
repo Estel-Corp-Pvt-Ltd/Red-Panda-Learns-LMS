@@ -334,7 +334,8 @@ class QuizService {
         quizId: string,
         userId: string,
         questionNo: number,
-        answer: string | string[] | null
+        answer: string | string[] | null,
+        markedForReview: boolean
     ): Promise<Result<null>> {
         try {
             if (!quizId || !userId) {
@@ -377,7 +378,8 @@ class QuizService {
             const submittedAnswer: SubmittedAnswer = {
                 questionNo,
                 type: question.type,
-                answer
+                answer,
+                markedForReview
             };
 
             const answersCopy = [...(submission.answers || [])];
@@ -445,6 +447,53 @@ class QuizService {
         }
     }
 
+    async markAnswerForReview(
+        quizId: string,
+        userId: string,
+        questionNo: number,
+        markedForReview: boolean
+    ): Promise<Result<null>> {
+        try {
+            if (!quizId || !userId) {
+                return fail("Missing quizId or userId", "invalid-input");
+            }
+
+            const submissionId = `${quizId}_${userId}`;
+            const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+            const submissionSnap = await getDoc(submissionRef);
+
+            if (!submissionSnap.exists()) {
+                return fail("Submission not found", "not-found");
+            }
+
+            const submission = submissionSnap.data() as QuizSubmission;
+            submission.answers = submission.answers ?? [];
+
+            const idx = submission.answers.findIndex(a => a.questionNo === questionNo);
+
+            if (idx !== -1) {
+                submission.answers[idx] = {
+                    ...submission.answers[idx],
+                    markedForReview
+                };
+
+                await setDoc(
+                    submissionRef,
+                    {
+                        lastSavedAt: serverTimestamp(),
+                        answers: submission.answers
+                    },
+                    { merge: true }
+                );
+            }
+
+            return ok(null);
+        } catch (error: any) {
+            logError("QuizService.markAnswerForReview", error);
+            return fail("Failed to mark/unmark answer", error.code || error.message);
+        }
+    }
+
     async getSubmission(
         quizId: string,
         userId: string
@@ -459,7 +508,7 @@ class QuizService {
             const submissionSnap = await getDoc(submissionRef);
 
             if (!submissionSnap.exists()) {
-                return ok(null); // no submission exists yet
+                return ok(null);
             }
 
             const submission = submissionSnap.data() as QuizSubmission;

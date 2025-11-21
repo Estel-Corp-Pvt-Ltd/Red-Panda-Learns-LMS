@@ -42,7 +42,7 @@ const AttemptQuiz = () => {
                     : ans.answer
                         ? [ans.answer]
                         : [],
-                markedForReview: false
+                markedForReview: ans.markedForReview ?? false
             };
         });
 
@@ -150,7 +150,9 @@ const AttemptQuiz = () => {
             return next.length > 0 ? next : null;
         })();
 
-        const res = await quizService.saveSingleAnswer(quizId!, user.id, qNo, updatedAnswerValue);
+        const existing = answers[qNo] || { selectedOptions: [], markedForReview: false };
+
+        const res = await quizService.saveSingleAnswer(quizId!, user.id, qNo, updatedAnswerValue, existing.markedForReview);
         if (!res.success) {
             toast({
                 title: "Save failed",
@@ -360,7 +362,10 @@ const AttemptQuiz = () => {
 
                                                     {/* Mark / Unmark Review */}
                                                     <button
-                                                        onClick={() => toggleReview(q.questionNo)}
+                                                        onClick={async () => {
+                                                            toggleReview(q.questionNo);
+                                                            quizService.markAnswerForReview(quizId, user.id, q.questionNo, !ans.markedForReview)
+                                                        }}
                                                         className={`px-4 py-2 rounded-lg text-sm font-medium border transition active:scale-95 
                                 ${ans.markedForReview
                                                                 ? "border-gray-500 text-gray-600 hover:bg-gray-100"

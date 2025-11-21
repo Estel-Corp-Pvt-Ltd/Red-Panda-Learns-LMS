@@ -46,6 +46,7 @@ export interface SubmittedAnswer {
     questionNo: number;
     type: QuizQuestionType;
     answer: string | string[] | null;
+    markedForReview: boolean;
     isCorrect?: boolean;
     obtainedMarks?: number;
 };
