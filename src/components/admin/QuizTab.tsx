@@ -207,6 +207,19 @@ const SortableQuestionCard = ({
                                 </div>
                             )}
                         </div>
+
+                        <div className="mt-3">
+                            <label className="text-sm font-medium">Marks: </label>
+                            <input
+                                type="number"
+                                min={1}
+                                className="mt-1 w-24 border px-3 py-2 rounded-md"
+                                value={question.marks ?? 1}
+                                onChange={e =>
+                                    updateQuestion(id, { marks: parseInt(e.target.value) || 1 })
+                                }
+                            />
+                        </div>
                     </>
                 )
             }
@@ -251,6 +264,13 @@ const Questions = ({
 
         setQuestions(newList);
     };
+
+
+    const isSaveDisabled = questions.some(q =>
+        q.type === QUIZ_QUESTION_TYPE.MCQ
+            ? !q.correctAnswer
+            : Array.isArray(q.correctAnswer) && q.correctAnswer.length === 0
+    );
 
     return (
         <div className="mt-4">
@@ -298,8 +318,9 @@ const Questions = ({
             {
                 questions.length > 0 ?
                     <button
-                        className="px-4 py-2 text-white rounded-full bg-[#ff00ff] hover:bg-pink-500"
+                        className={`px-4 py-2 text-white rounded-full ${isSaveDisabled ? "bg-pink-700" : "bg-[#ff00ff] hover:bg-pink-500 cursor-pointer"}`}
                         onClick={handleSaveQuestions}
+                        disabled={isSaveDisabled}
                     >
                         Save Questions
                     </button>
