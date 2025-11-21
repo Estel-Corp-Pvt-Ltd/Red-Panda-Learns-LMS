@@ -48,5 +48,4 @@ export interface SubmittedAnswer {
     answer: string | string[] | null;
     isCorrect?: boolean;
     obtainedMarks?: number;
-    attempted: boolean;
 };

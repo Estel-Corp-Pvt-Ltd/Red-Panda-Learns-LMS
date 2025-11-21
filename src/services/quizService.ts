@@ -11,9 +11,9 @@ import {
     where
 } from "firebase/firestore";
 
-import { COLLECTION, QUIZ_STATUS } from "@/constants";
+import { COLLECTION, QUIZ_STATUS, QUIZ_SUBMISSION_STATUS } from "@/constants";
 import { db } from "@/firebaseConfig";
-import { Question, Quiz } from "@/types/quiz";
+import { Question, Quiz, QuizSubmission, SubmittedAnswer } from "@/types/quiz";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 
@@ -315,6 +315,160 @@ class QuizService {
         } catch (error: any) {
             logError("QuizService.getQuizById", error);
             return fail("Failed to fetch quiz", error.code || error.message);
+        }
+    }
+
+    /**
+     * Save (upsert) a single answer inside the student's QuizSubmission document.
+     *
+     * The submission document id is: `${quizId}_${userId}` and lives under COLLECTION.QUIZ_SUBMISSIONS.
+     * This method:
+     * - fetches the quiz to determine question type
+     * - loads (or creates) the submission doc following your QuizSubmission schema
+     * - replaces or inserts the SubmittedAnswer for the given questionNo
+     * - updates lastSavedAt (serverTimestamp)
+     *
+     * NOTE: does NOT calculate isCorrect / obtainedMarks / totalScore / passed / submittedAt.
+     */
+    async saveSingleAnswer(
+        quizId: string,
+        userId: string,
+        questionNo: number,
+        answer: string | string[] | null
+    ): Promise<Result<null>> {
+        try {
+            if (!quizId || !userId) {
+                return fail("Missing quizId or userId", "invalid-input");
+            }
+
+            const quizRef = doc(db, COLLECTION.QUIZZES, quizId);
+            const quizSnap = await getDoc(quizRef);
+            if (!quizSnap.exists()) {
+                return fail("Quiz not found", "not-found");
+            }
+            const quiz = quizSnap.data() as Quiz;
+
+            const question = quiz.questions.find(q => q.questionNo === questionNo);
+            if (!question) {
+                return fail("Question not found", "invalid-question");
+            }
+
+            const submissionId = `${quizId}_${userId}`;
+            const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+
+            const submissionSnap = await getDoc(submissionRef);
+
+            let submission: QuizSubmission;
+            if (!submissionSnap.exists()) {
+                submission = {
+                    id: submissionId,
+                    quizId,
+                    userId,
+                    startedAt: serverTimestamp(),
+                    lastSavedAt: serverTimestamp(),
+                    answers: [],
+                    status: QUIZ_SUBMISSION_STATUS.IN_PROGRESS
+                };
+            } else {
+                submission = submissionSnap.data() as QuizSubmission;
+                submission.answers = submission.answers ?? [];
+            }
+
+            const submittedAnswer: SubmittedAnswer = {
+                questionNo,
+                type: question.type,
+                answer
+            };
+
+            const answersCopy = [...(submission.answers || [])];
+            const idx = answersCopy.findIndex(a => a.questionNo === questionNo);
+            if (idx !== -1) {
+                answersCopy[idx] = submittedAnswer;
+            } else {
+                answersCopy.push(submittedAnswer);
+            }
+
+            await setDoc(
+                submissionRef,
+                {
+                    id: submissionId,
+                    quizId,
+                    userId,
+                    startedAt: submission.startedAt || serverTimestamp(),
+                    lastSavedAt: serverTimestamp(),
+                    answers: answersCopy,
+                    status: submission.status || QUIZ_SUBMISSION_STATUS.IN_PROGRESS
+                },
+                { merge: true }
+            );
+
+            return ok(null);
+        } catch (error: any) {
+            logError("QuizService.saveSingleAnswer", error);
+            return fail("Failed to save answer", error.code || error.message);
+        }
+    }
+
+    async createSubmission(
+        quizId: string,
+        userId: string
+    ): Promise<Result<QuizSubmission>> {
+        try {
+            if (!quizId || !userId) {
+                return fail("Missing quizId or userId", "invalid-input");
+            }
+
+            const submissionId = `${quizId}_${userId}`;
+            const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+            const submissionSnap = await getDoc(submissionRef);
+
+            if (submissionSnap.exists()) {
+                return ok(submissionSnap.data() as QuizSubmission);
+            }
+
+            const newSubmission: QuizSubmission = {
+                id: submissionId,
+                quizId,
+                userId,
+                startedAt: serverTimestamp(),
+                lastSavedAt: serverTimestamp(),
+                answers: [],
+                status: QUIZ_SUBMISSION_STATUS.IN_PROGRESS
+            };
+
+            await setDoc(submissionRef, newSubmission);
+
+            return ok(newSubmission);
+        } catch (error: any) {
+            logError("QuizService.createSubmission", error);
+            return fail("Failed to create submission", error.code || error.message);
+        }
+    }
+
+    async getSubmission(
+        quizId: string,
+        userId: string
+    ): Promise<Result<QuizSubmission | null>> {
+        try {
+            if (!quizId || !userId) {
+                return fail("Missing quizId or userId", "invalid-input");
+            }
+
+            const submissionId = `${quizId}_${userId}`;
+            const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+            const submissionSnap = await getDoc(submissionRef);
+
+            if (!submissionSnap.exists()) {
+                return ok(null); // no submission exists yet
+            }
+
+            const submission = submissionSnap.data() as QuizSubmission;
+            submission.answers = submission.answers ?? [];
+
+            return ok(submission);
+        } catch (error: any) {
+            logError("QuizService.getSubmission", error);
+            return fail("Failed to fetch submission", error.code || error.message);
         }
     }
 

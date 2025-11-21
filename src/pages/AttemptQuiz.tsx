@@ -26,6 +26,29 @@ const AttemptQuiz = () => {
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+    const fetchSubmissionAndPopulateAnswers = async () => {
+        if (!quizId || !user?.id) return;
+
+        const res = await quizService.getSubmission(quizId, user.id);
+        if (!res.success || !res.data) return;
+
+        const submission = res.data;
+
+        const populatedAnswers: typeof answers = {};
+        submission.answers.forEach(ans => {
+            populatedAnswers[ans.questionNo] = {
+                selectedOptions: Array.isArray(ans.answer)
+                    ? ans.answer
+                    : ans.answer
+                        ? [ans.answer]
+                        : [],
+                markedForReview: false
+            };
+        });
+
+        setAnswers(populatedAnswers);
+    };
+
     const getServerTimeLeft = async () => {
         const functions = getFunctions();
         const getQuizTimeLeft = httpsCallable(functions, "getQuizTimeLeft");
@@ -95,7 +118,7 @@ const AttemptQuiz = () => {
         }, 1000);
     };
 
-    const handleOptionChange = (qNo: number, option: string, type: string) => {
+    const handleOptionChange = async (qNo: number, option: string, type: string) => {
         setAnswers(prev => {
             const existing = prev[qNo] || { selectedOptions: [], markedForReview: false };
 
@@ -117,6 +140,24 @@ const AttemptQuiz = () => {
                 }
             };
         });
+
+        const updatedAnswerValue = (() => {
+            if (type === QUIZ_QUESTION_TYPE.MCQ) return option;
+            const existing = answers[qNo]?.selectedOptions || [];
+            const next = existing.includes(option)
+                ? existing.filter(o => o !== option)
+                : [...existing, option];
+            return next.length > 0 ? next : null;
+        })();
+
+        const res = await quizService.saveSingleAnswer(quizId!, user.id, qNo, updatedAnswerValue);
+        if (!res.success) {
+            toast({
+                title: "Save failed",
+                description: "Could not save answer. Try again.",
+                variant: "destructive"
+            });
+        }
     };
 
     const resetAnswer = (qNo: number) => {
@@ -140,6 +181,10 @@ const AttemptQuiz = () => {
         const init = async () => {
             await canTakeQuiz();
             await fetchQuizAndSetQuestions();
+            if (quizId && user?.id) {
+                await quizService.createSubmission(quizId, user.id);
+                await fetchSubmissionAndPopulateAnswers();
+            }
             setLoading(false);
             startTimer();
         };
