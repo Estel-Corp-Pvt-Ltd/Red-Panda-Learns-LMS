@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/select";
 import { LESSON_TYPE } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
+import { fileService } from "@/services/fileService";
 import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import MDEditor from "@uiw/react-md-editor";
+import { Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type CreateLessonModalProps = {
@@ -39,11 +41,11 @@ export const CreateLessonModal = ({
 }: CreateLessonModalProps) => {
 
   const { toast } = useToast();
-
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lesson, setLesson] = useState({
     title: "",
-    type: LESSON_TYPE.SLIDE_DECK,
+    type: LESSON_TYPE.SLIDE_DECK as Lesson["type"],
     description: "",
     embedUrl: "",
     duration: { hours: 0, minutes: 0 },
@@ -81,6 +83,29 @@ export const CreateLessonModal = ({
     }
   };
 
+  const handlePdfUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      if (file.type !== "application/pdf") {
+        toast({ title: "Please upload a valid PDF file", variant: "destructive" });
+        setUploading(false);
+        return;
+      }
+      const fileUrl = await fileService.uploadAttachment(`/courses/${courseId}/lessons`, file);
+      if (!fileUrl.success) {
+        toast({ title: "Failed to upload PDF", variant: "destructive" });
+        setUploading(false);
+        return;
+      }
+      setLesson({ ...lesson, embedUrl: fileUrl.data });
+    } catch (error) {
+      toast({ title: "Failed to upload PDF", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const resetForm = () => {
     setLesson({
       title: "",
@@ -103,6 +128,10 @@ export const CreateLessonModal = ({
       }
       if (lesson.duration.hours < 0 || lesson.duration.minutes < 0) {
         toast({ title: "Hours and minutes cannot be negative", variant: "destructive" });
+        return;
+      }
+      if (lesson.type === LESSON_TYPE.PDF && !lesson.embedUrl.trim()) {
+        toast({ title: "Please upload a PDF file.", variant: "destructive" });
         return;
       }
 
@@ -195,18 +224,38 @@ export const CreateLessonModal = ({
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Embed URL */}
-                <div className="space-y-1">
-                  <Label>Embed URL</Label>
-                  <Input
-                    placeholder="Enter embed URL or resource link"
-                    value={lesson.embedUrl}
-                    onChange={(e) => handleFieldChange("embedUrl", e.target.value)}
-                    className="dark:bg-neutral-800 dark:border-neutral-700"
-                  />
-                </div>
-
+                {lesson.type === LESSON_TYPE.PDF ? (
+                  <div className="space-y-1">
+                    <Label>PDF Resource *</Label>
+                    <label
+                      htmlFor="pdf-upload"
+                      className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer w-full"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {uploading ? "Uploading..." : lesson.embedUrl
+                        ? `File Uploaded`
+                        : "No PDF uploaded yet."}
+                    </label>
+                    <Input
+                      id="pdf-upload"
+                      type="file"
+                      accept="application/pdf"
+                      placeholder="Upload PDF resource"
+                      onChange={(e) => handlePdfUpload(e.target.files[0])}
+                      className="hidden"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Label>Embed URL</Label>
+                    <Input
+                      placeholder="Enter embed URL or resource link"
+                      value={lesson.embedUrl}
+                      onChange={(e) => handleFieldChange("embedUrl", e.target.value)}
+                      className="dark:bg-neutral-800 dark:border-neutral-700"
+                    />
+                  </div>
+                )}
                 <div className="space-y-1">
                   <Label>Duration (Hours and Minutes)</Label>
                   <div className="flex gap-2">

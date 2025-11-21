@@ -5,7 +5,6 @@ import { Duration } from "./general";
 export type Attachment = typeof ATTACHMENT_TYPE[keyof typeof ATTACHMENT_TYPE];
 export type LessonType = typeof LESSON_TYPE[keyof typeof LESSON_TYPE];
 export type LearningContentType = typeof LEARNING_CONTENT[keyof typeof LEARNING_CONTENT]
-export type VideoSource = typeof VIDEO_SOURCE[keyof typeof VIDEO_SOURCE];
 
 export type Lesson = {
     id: string;
@@ -21,11 +20,11 @@ export type Lesson = {
 
 export type LessonAttachment = {
     id: string;
+    lessonId: string;
     name: string;
     url: string;
     type: Attachment;
-    videoSource?: VideoSource;
-    size?: number;
+    size: number;
     createdAt: Timestamp | FieldValue;
     updatedAt: Timestamp | FieldValue;
 };

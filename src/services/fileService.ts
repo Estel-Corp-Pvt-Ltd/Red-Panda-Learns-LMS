@@ -1,6 +1,6 @@
 import { storage } from "@/firebaseConfig";
 import { logError } from "@/utils/logger";
-import { ok, Result } from "@/utils/response";
+import { fail, ok, Result } from "@/utils/response";
 import { getDownloadURL, ref, uploadBytes, uploadBytesResumable, UploadTask } from "firebase/storage";
 
 

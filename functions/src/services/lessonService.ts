@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { Lesson } from '../types/lesson';
+import { Lesson, LessonAttachment } from '../types/lesson';
 import { ok, fail, Result } from '../utils/response';
 import { COLLECTION } from "../constants";
 import { Duration } from '../types/general';
@@ -287,6 +287,35 @@ class LessonService {
       return ok(lessons);
     } catch (error) {
       return fail("Failed to fetch lessons by course ID");
+    }
+  }
+
+
+  // Lesson Attachments methods
+  async getLessonAttachments(lessonId: string): Promise<Result<LessonAttachment[]>> {
+    try {
+      const snapshot = await db.collection(COLLECTION.LESSON_ATTACHMENTS)
+        .where("lessonId", "==", lessonId)
+        .get();
+
+      const attachments: LessonAttachment[] = [];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        attachments.push({
+          id: doc.id,
+          name: data.name,
+          url: data.url,
+          type: data.type,
+          size: data.size,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null,
+        } as LessonAttachment);
+      });
+
+      return ok(attachments);
+    } catch (error) {
+      return fail("Failed to fetch lesson attachments");
     }
   }
 }

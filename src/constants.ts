@@ -14,6 +14,7 @@ export const LESSON_TYPE = {
   SLIDE_DECK: "SLIDE DECK",
   VIDEO_LECTURE: "VIDEO LECTURE",
   INTERACTIVE_PROJECT: "INTERACTIVE PROJECT",
+  PDF: "PDF",
 } as const;
 
 export const VIDEO_SOURCE = {
@@ -373,6 +374,7 @@ export const COLLECTION = {
   USERS: 'Users',
   CARTS: 'Carts',
   LESSONS: 'Lessons',
+  LESSON_ATTACHMENTS: 'LessonAttachments',
   COUPONS: 'Coupons',
   COUPON_USAGES: 'CouponUsages',
   ORGANIZATIONS: 'Organizations',
