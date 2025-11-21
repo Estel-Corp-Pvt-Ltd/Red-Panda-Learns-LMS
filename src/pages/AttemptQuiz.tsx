@@ -1,3 +1,4 @@
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { QUIZ_QUESTION_TYPE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -22,9 +23,27 @@ const AttemptQuiz = () => {
     }>({});
 
     const [loading, setLoading] = useState(true);
+    const [openSubmissionModal, setOpenSubmissionModal] = useState(false);
+    const [openEndModal, setOpenEndModal] = useState(false);
 
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const submitQuiz = async () => {
+        const response = await quizService.submitQuiz(quizId, user.id, answers);
+
+        if (response.success) {
+            toast({
+                title: "Quiz submitted successfully",
+                variant: "default"
+            });
+        } else {
+            toast({
+                title: "Submission failed",
+                variant: "destructive"
+            });
+        }
+    };
 
     const fetchSubmissionAndPopulateAnswers = async () => {
         if (!quizId || !user?.id) return;
@@ -105,18 +124,25 @@ const AttemptQuiz = () => {
                 if (prev === null) return null;
                 if (prev <= 1) {
                     clearInterval(timerRef.current!);
-                    toast({
-                        title: "Time Over",
-                        description: "Your quiz time has ended.",
-                        variant: "destructive"
-                    });
-                    navigate("/quizzes");
+                    handleTimeOver();
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
     };
+
+    const handleTimeOver = async () => {
+        toast({
+            title: "Time Over",
+            description: "Your quiz time has ended. Submitting automatically...",
+            variant: "destructive"
+        });
+
+        await submitQuiz();
+        navigate("/quizzes");
+    };
+
 
     const handleOptionChange = async (qNo: number, option: string, type: string) => {
         setAnswers(prev => {
@@ -259,7 +285,7 @@ const AttemptQuiz = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => navigate("/quizzes")}
+                                    onClick={() => setOpenEndModal(true)}
                                     className="
         flex items-center gap-2 
         bg-pink-500 text-white px-4 py-2 rounded-xl text-sm font-semibold
@@ -408,8 +434,50 @@ const AttemptQuiz = () => {
                                         );
                                     })}
                             </div>
+
+                            {/* Final Submit Button */}
+                            <div className="flex justify-center mt-8">
+                                <button
+                                    onClick={() => setOpenSubmissionModal(true)}
+                                    className="bg-pink-600 text-white px-6 py-3 rounded-xl text-lg font-semibold shadow-md hover:bg-pink-700 transition active:scale-95"
+                                >
+                                    Submit Quiz
+                                </button>
+                            </div>
                         </div>
                     )}
+                    <ConfirmDialog
+                        open={openSubmissionModal}
+                        onCancel={() => {
+                            setOpenSubmissionModal(false);
+                        }}
+                        onConfirm={async () => {
+                            await submitQuiz();
+                            navigate("/quizzes");
+                        }}
+                        title="Submit Quiz"
+                        body={"Are you sure you want to submit the quiz? You will not be able to change your answers after submitting."}
+                        confirmText="Submit"
+                        cancelText="Cancel"
+                        variant="default"
+                        dismissible
+                    />
+                    <ConfirmDialog
+                        open={openEndModal}
+                        onCancel={() => {
+                            setOpenEndModal(false);
+                        }}
+                        onConfirm={async () => {
+                            await submitQuiz();
+                            navigate("/quizzes");
+                        }}
+                        title="End Quiz"
+                        body={"Are you sure you want to end the quiz? This will count as a submission. You will not be able to change your answers after ending."}
+                        confirmText="End"
+                        cancelText="Cancel"
+                        variant="default"
+                        dismissible
+                    />
                 </div>
             </div>
         </div>

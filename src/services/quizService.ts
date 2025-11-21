@@ -11,7 +11,7 @@ import {
     where
 } from "firebase/firestore";
 
-import { COLLECTION, QUIZ_STATUS, QUIZ_SUBMISSION_STATUS } from "@/constants";
+import { COLLECTION, QUIZ_QUESTION_TYPE, QUIZ_STATUS, QUIZ_SUBMISSION_STATUS } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Question, Quiz, QuizSubmission, SubmittedAnswer } from "@/types/quiz";
 import { logError } from "@/utils/logger";
@@ -552,6 +552,117 @@ class QuizService {
         } catch (error: any) {
             logError("QuizService.setReleaseScores", error);
             return fail("Failed to update releaseScores", error.code || error.message);
+        }
+    }
+
+    /**
+ * Final submission of a quiz by a user using the latest frontend answers state.
+ *
+ * @param quizId - The quiz being submitted
+ * @param userId - The student's UID
+ * @param answers - Latest answers from frontend
+ */
+    async submitQuiz(
+        quizId: string,
+        userId: string,
+        answers: Record<number, { selectedOptions: string[]; markedForReview: boolean }>
+    ): Promise<Result<QuizSubmission>> {
+        try {
+            if (!quizId || !userId) {
+                return fail("Missing quizId or userId", "invalid-input");
+            }
+
+            const quizRef = doc(db, COLLECTION.QUIZZES, quizId);
+            const quizSnap = await getDoc(quizRef);
+            if (!quizSnap.exists()) {
+                return fail("Quiz not found", "not-found");
+            }
+            const quiz = quizSnap.data() as Quiz;
+
+            const submissionId = `${quizId}_${userId}`;
+            const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+            const submissionSnap = await getDoc(submissionRef);
+
+            let submission: QuizSubmission;
+            if (!submissionSnap.exists()) {
+                // Create a new submission if it does not exist
+                submission = {
+                    id: submissionId,
+                    quizId,
+                    userId,
+                    startedAt: serverTimestamp(),
+                    lastSavedAt: serverTimestamp(),
+                    answers: [],
+                    status: QUIZ_SUBMISSION_STATUS.IN_PROGRESS
+                };
+            } else {
+                submission = submissionSnap.data() as QuizSubmission;
+            }
+
+            const submittedAnswers: SubmittedAnswer[] = quiz.questions.map(q => {
+                const ans = answers[q.questionNo];
+                return {
+                    questionNo: q.questionNo,
+                    type: q.type,
+                    answer: ans?.selectedOptions ?? null,
+                    markedForReview: ans?.markedForReview ?? false
+                };
+            });
+
+            let totalScore = 0;
+
+            const evaluatedAnswers = submittedAnswers.map((ans) => {
+                const question = quiz.questions.find(q => q.questionNo === ans.questionNo);
+                if (!question) return ans;
+
+                let obtainedMarks = 0;
+                const fullMarks = question.marks ?? 0;
+
+                if (ans.answer != null) {
+                    if (question.type === QUIZ_QUESTION_TYPE.MCQ) {
+                        if (ans.answer[0] === question.correctAnswer) {
+                            obtainedMarks = fullMarks;
+                        }
+                    } else if (question.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) {
+                        const correctArr = Array.isArray(question.correctAnswer) ? question.correctAnswer : [];
+                        const answerArr = Array.isArray(ans.answer) ? ans.answer : [];
+
+                        const allCorrect = correctArr.length === answerArr.length &&
+                            correctArr.every(a => answerArr.includes(a));
+
+                        if (allCorrect) obtainedMarks = fullMarks;
+                    }
+                }
+
+                totalScore += obtainedMarks;
+
+                return {
+                    ...ans,
+                    obtainedMarks,
+                    isCorrect: obtainedMarks === fullMarks
+                };
+            });
+
+            const passingPercentage = quiz.passingPercentage ?? 0;
+            const passed = quiz.totalMarks > 0 ? (totalScore / quiz.totalMarks) * 100 >= passingPercentage : false;
+
+            const finalSubmission: QuizSubmission = {
+                ...submission,
+                answers: evaluatedAnswers,
+                totalScore,
+                passed,
+                status: QUIZ_SUBMISSION_STATUS.SUBMITTED,
+                submittedAt: serverTimestamp(),
+                lastSavedAt: serverTimestamp()
+            };
+
+            await setDoc(submissionRef, finalSubmission, { merge: true });
+
+            return ok(finalSubmission);
+
+        } catch (error: any) {
+            logError("QuizService.submitQuiz", error);
+            return fail("Failed to submit quiz", error.code || error.message);
         }
     }
 
