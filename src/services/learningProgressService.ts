@@ -128,6 +128,37 @@ async completeLesson(
   }
 }
 
+async getUserCourseProgress(
+    userId: string,
+    courseId:string,
+  ): Promise<Result<LearningProgress[]>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId","==",courseId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return ok([]); // no progress found, return empty array
+      }
+
+      const progressList: LearningProgress[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as LearningProgress),
+      }));
+
+      return ok(progressList);
+
+    } catch (error: any) {
+      logError("LearningProgressService.getUserProgress", error);
+      return fail("Failed to fetch user progress.", error.code || error.message);
+    }
+  
+
+ }
 
 async getUserProgress(
     userId: string
