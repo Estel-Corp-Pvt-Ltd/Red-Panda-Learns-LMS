@@ -22,6 +22,9 @@ import EditQuizModal from "./EditQuizModal";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { QuizQuestionType } from "@/types/general";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Input } from "../ui/input";
+import { Checkbox } from "../ui/checkbox";
 
 type SortableQuestionCardProps = {
     id: number;
@@ -81,14 +84,11 @@ const SortableQuestionCard = ({
                     <GripVertical className="text-gray-500 cursor-grab" />
                 </div>
 
-                <input
-                    type="text"
-                    className="flex-1 px-3 py-2 border rounded-md"
+                <Input
+                    className="flex-1"
                     placeholder="Question description"
                     value={question.description}
-                    onChange={e =>
-                        updateQuestion(id, { description: e.target.value })
-                    }
+                    onChange={(e) => updateQuestion(id, { description: e.target.value })}
                 />
 
                 <button
@@ -114,16 +114,24 @@ const SortableQuestionCard = ({
                     <>
                         <div className="mb-3">
                             <label className="text-sm font-medium">Type</label>
-                            <select
-                                className="mt-1 w-full border px-3 py-2 rounded-md"
+                            <Select
                                 value={question.type}
-                                onChange={e =>
-                                    updateQuestion(id, { type: e.target.value as QuizQuestionType })
+                                onValueChange={(val) =>
+                                    updateQuestion(id, { type: val as QuizQuestionType })
                                 }
                             >
-                                <option value="mcq">MCQ</option>
-                                <option value="multiple">Multiple answers</option>
-                            </select>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select Question Type" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {Object.values(QUIZ_QUESTION_TYPE).map(t => (
+                                        <SelectItem key={t} value={t}>
+                                            {t === QUIZ_QUESTION_TYPE.MCQ ? "MCQ" : "Multiple Answers"}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="flex justify-between items-center mb-2">
@@ -140,14 +148,11 @@ const SortableQuestionCard = ({
 
                         {question.options.map((opt, idx) => (
                             <div key={idx} className="flex gap-2 items-center mb-2">
-                                <input
-                                    type="text"
-                                    className="flex-1 px-3 py-2 border rounded-md"
+                                <Input
+                                    className="flex-1"
                                     placeholder={`Option ${idx + 1}`}
                                     value={opt}
-                                    onChange={e =>
-                                        updateOption(id, idx, e.target.value)
-                                    }
+                                    onChange={(e) => updateOption(id, idx, e.target.value)}
                                 />
 
                                 <button
@@ -159,54 +164,60 @@ const SortableQuestionCard = ({
                             </div>
                         ))}
 
-                        <div>
-                            <label className="text-sm font-medium">
-                                Correct Answer
-                            </label>
+                        {
+                            question.options.length > 0 &&
+                            (
+                                <div>
+                                    <label className="text-sm font-medium">
+                                        Correct Answer
+                                    </label>
+                                    {
+                                        question.type === QUIZ_QUESTION_TYPE.MCQ ? (
+                                            <Select
+                                                value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
+                                                onValueChange={(val) => updateCorrectAnswer(id, val)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select Question Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {question.options.filter(q => q.trim() !== "").map((o, idx) => (
+                                                        <SelectItem key={idx} value={o}>
+                                                            {o}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <div className="flex flex-col gap-1 mt-2">
+                                                {question.options.map((o, idx) => {
+                                                    const arr = Array.isArray(question.correctAnswer)
+                                                        ? question.correctAnswer
+                                                        : [];
 
-                            {question.type === QUIZ_QUESTION_TYPE.MCQ ? (
-                                <select
-                                    className="mt-1 w-full border px-3 py-2 rounded-md"
-                                    value={question.correctAnswer || ""}
-                                    onChange={e =>
-                                        updateCorrectAnswer(id, e.target.value)
+                                                    const checked = arr.includes(o);
+
+                                                    return (
+                                                        <div key={idx} className="flex gap-2 items-center">
+                                                            <Checkbox
+                                                                checked={checked}
+                                                                onCheckedChange={() => {
+                                                                    let next = checked
+                                                                        ? arr.filter(x => x !== o)
+                                                                        : [...arr, o];
+                                                                    updateCorrectAnswer(id, next);
+                                                                }}
+                                                            />
+                                                            <span>{o}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )
                                     }
-                                >
-                                    <option value="">Select</option>
-                                    {question.options.map((o, idx) => (
-                                        <option key={idx} value={o}>{o}</option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    {question.options.map((o, idx) => {
-                                        const arr = Array.isArray(question.correctAnswer)
-                                            ? question.correctAnswer
-                                            : [];
-
-                                        const checked = arr.includes(o);
-
-                                        return (
-                                            <label key={idx} className="flex gap-2 items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={checked}
-                                                    onChange={() => {
-                                                        let next = checked
-                                                            ? arr.filter(x => x !== o)
-                                                            : [...arr, o];
-
-                                                        updateCorrectAnswer(id, next);
-                                                    }}
-                                                />
-
-                                                <span>{o}</span>
-                                            </label>
-                                        );
-                                    })}
                                 </div>
-                            )}
-                        </div>
+                            )
+                        }
 
                         <div className="mt-3">
                             <label className="text-sm font-medium">Marks: </label>
@@ -266,11 +277,12 @@ const Questions = ({
     };
 
 
-    const isSaveDisabled = questions.some(q =>
-        q.type === QUIZ_QUESTION_TYPE.MCQ
-            ? !q.correctAnswer
-            : Array.isArray(q.correctAnswer) && q.correctAnswer.length === 0
-    );
+    const isSaveDisabled = questions.some(q => {
+        if (q.type === QUIZ_QUESTION_TYPE.MCQ) {
+            return typeof q.correctAnswer !== "string" || q.correctAnswer.trim() === "";
+        }
+        return !Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0;
+    });
 
     return (
         <div className="mt-4">
@@ -422,7 +434,7 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
         setQuestions(prev =>
             prev.map(q => {
                 if (q.questionNo !== questionNo) return q;
-                return { ...q, options: [...q.options, ""] };
+                return { ...q, options: [...q.options, "New Option"] };
             })
         );
     };
