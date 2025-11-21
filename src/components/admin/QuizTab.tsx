@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "../ui/switch";
+import { parseQuizQuestionsFromExcel } from "@/utils/parse-quiz-questions-from-excel";
 
 type SortableQuestionCardProps = {
     id: number;
@@ -285,10 +286,52 @@ const Questions = ({
         return !Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0;
     });
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const buffer = await file.arrayBuffer();
+
+            const questionsFromExcel = await parseQuizQuestionsFromExcel(buffer);
+
+            setQuestions(prev => {
+                const startNo = prev.length + 1;
+                const adjustedQuestions = questionsFromExcel.map((q, idx) => ({
+                    ...q,
+                    questionNo: startNo + idx
+                }));
+                console.log([...prev, ...adjustedQuestions])
+                return [...prev, ...adjustedQuestions];
+            });
+
+            toast({ title: `Imported ${questionsFromExcel.length} questions successfully` });
+        } catch (error: any) {
+            toast({ title: "Failed to import questions", description: error, variant: "destructive" });
+        } finally {
+            e.target.value = "";
+        }
+    };
+
     return (
         <div className="mt-4">
             <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-semibold">Questions</h3>
+
+                <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    id="excelUpload"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                />
+
+                <button
+                    onClick={() => document.getElementById("excelUpload")?.click()}
+                    className="px-4 py-2 text-white rounded-full bg-pink-600 hover:bg-pink-700"
+                >
+                    Import Questions from Excel
+                </button>
 
                 <button
                     className="px-4 py-2 text-white rounded-full bg-[#ff00ff] hover:bg-pink-500"
