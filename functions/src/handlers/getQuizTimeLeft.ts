@@ -41,12 +41,32 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
             };
         }
 
-        const scheduledAt = quiz.scheduledAt as admin.firestore.Timestamp;
+        // const startMillis = quiz.scheduledAt.toMillis();
+        const endAt = quiz.endAt as admin.firestore.Timestamp | undefined;
         const durationMs = quiz.durationMinutes * 60 * 1000;
 
         const now = admin.firestore.Timestamp.now().toMillis();
-        const startMillis = scheduledAt.toMillis();
-        const endMillis = startMillis + durationMs;
+        let endMillis = endAt ? endAt.toMillis() : now + durationMs;
+
+        // Find Quiz attempt time
+        const quizSubmissionSnap = await admin
+            .firestore()
+            .collection(COLLECTION.QUIZ_SUBMISSIONS)
+            .where("quizId", "==", quizId)
+            .where("userId", "==", req.auth.uid)
+            .limit(1)
+            .get();
+
+        if (!quizSubmissionSnap.empty) {
+            const submissionData = quizSubmissionSnap.docs[0].data() as any;
+            if (submissionData.startedAt) {
+                const startedAtMillis = new Date(submissionData.startedAt).getTime();   // it is Firebase FieldValue
+                const adjustedEndMillis = startedAtMillis + durationMs;
+                if (adjustedEndMillis < endMillis) {
+                    endMillis = adjustedEndMillis;
+                }
+            }
+        }
 
         const timeLeftSeconds = Math.max(0, Math.floor((endMillis - now) / 1000));
 
