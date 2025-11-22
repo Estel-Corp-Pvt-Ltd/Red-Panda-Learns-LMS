@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { QUIZ_STATUS } from "@/constants";
 import { userService } from "@/services/userService";
 import { QuizStatus } from "@/types/general";
-import { X } from "lucide-react";
+import { X, Calendar, Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const CreateQuizModal = ({
@@ -43,6 +43,8 @@ const CreateQuizModal = ({
 
     const [scheduledDate, setScheduledDate] = useState("");
     const [scheduledTime, setScheduledTime] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [endTime, setEndTime] = useState("");
 
     const [durationMinutes, setDurationMinutes] = useState<number>(30);
     const [enableFreeNavigation, setEnableFreeNavigation] = useState(true);
@@ -53,11 +55,11 @@ const CreateQuizModal = ({
     const [error, setError] = useState("");
 
     /** Combine date + time → Timestamp */
-    const getCombinedTimestamp = () => {
-        if (!scheduledDate || !scheduledTime) return null;
+    const getCombinedTimestamp = (date: string, time: string) => {
+        if (!date || !time) return null;
 
-        const [hours, minutes] = scheduledTime.split(":").map(Number);
-        const combined = new Date(scheduledDate);
+        const [hours, minutes] = time.split(":").map(Number);
+        const combined = new Date(date);
         combined.setHours(hours);
         combined.setMinutes(minutes);
         combined.setSeconds(0);
@@ -65,6 +67,30 @@ const CreateQuizModal = ({
         return Timestamp.fromDate(combined);
     };
 
+    /** Calculate end date/time based on start date/time and duration */
+    const calculateEndDateTime = () => {
+        if (!scheduledDate || !scheduledTime || !durationMinutes) return { date: "", time: "" };
+
+        const startDateTime = getCombinedTimestamp(scheduledDate, scheduledTime);
+        if (!startDateTime) return { date: "", time: "" };
+
+        const startDate = startDateTime.toDate();
+        const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+
+        const dateStr = endDate.toISOString().split('T')[0];
+        const timeStr = endDate.toTimeString().slice(0, 5); // HH:MM format
+
+        return { date: dateStr, time: timeStr };
+    };
+
+    /** Auto-fill end date/time when start date/time or duration changes */
+    const autoFillEndDateTime = () => {
+        const { date, time } = calculateEndDateTime();
+        if (date && time) {
+            setEndDate((prev) => prev > date ? prev : date);
+            setEndTime((prev) => prev > time ? prev : time);
+        }
+    };
 
     const handleCreate = async () => {
         setError("");
@@ -73,14 +99,29 @@ const CreateQuizModal = ({
         if (!courseId.trim()) return setError("Course ID is required.");
         if (!status) return setError("Status is required.");
         if (!scheduledDate || !scheduledTime)
-            return setError("Both date and time are required.");
+            return setError("Both start date and time are required.");
+        if (!endDate || !endTime)
+            return setError("Both end date and time are required.");
         if (passingPercentage < 1 || passingPercentage > 100)
             return setError("Passing percentage must be 1–100.");
         if (durationMinutes <= 0)
             return setError("Duration must be greater than 0 minutes.");
 
-        const ts = getCombinedTimestamp();
-        if (!ts) return setError("Invalid scheduled date/time.");
+        const scheduledAt = getCombinedTimestamp(scheduledDate, scheduledTime);
+        const endAt = getCombinedTimestamp(endDate, endTime);
+
+        if (!scheduledAt || !endAt) return setError("Invalid date/time format.");
+
+        // Validate that end time is after start time
+        if (endAt.toDate() <= scheduledAt.toDate()) {
+            return setError("End time must be after start time.");
+        }
+
+        // Validate that duration matches the time range
+        const calculatedDuration = Math.round((endAt.toDate().getTime() - scheduledAt.toDate().getTime()) / (1000 * 60));
+        if (calculatedDuration < durationMinutes) {
+            return setError(`Duration (${durationMinutes} minutes) doesn't match the time range between start and end (${calculatedDuration} minutes).`);
+        }
 
         setLoading(true);
 
@@ -101,7 +142,8 @@ const CreateQuizModal = ({
             allowAllStudents: allowAllStudents || allowedStudentUids.length === 0,
             allowedStudentUids,
             passingPercentage,
-            scheduledAt: ts,
+            scheduledAt,
+            endAt,
             durationMinutes,
             enableFreeNavigation,
             status
@@ -121,12 +163,15 @@ const CreateQuizModal = ({
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl w-[95%] rounded-xl">
+            <DialogContent className="max-w-2xl w-[95%] rounded-xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Create Quiz</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Create Quiz
+                    </DialogTitle>
                 </DialogHeader>
 
-                {error && <p className="text-red-600 text-sm">{error}</p>}
+                {error && <p className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">{error}</p>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
 
@@ -135,7 +180,7 @@ const CreateQuizModal = ({
 
                         {/* Title */}
                         <div className="space-y-1">
-                            <Label htmlFor="title">Quiz Title</Label>
+                            <Label htmlFor="title">Quiz Title *</Label>
                             <Input
                                 id="title"
                                 value={title}
@@ -152,22 +197,25 @@ const CreateQuizModal = ({
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Optional description"
+                                rows={3}
                             />
                         </div>
 
                         {/* Passing Percentage */}
                         <div className="space-y-1">
-                            <Label htmlFor="passing">Passing Percentage</Label>
+                            <Label htmlFor="passing">Passing Percentage *</Label>
                             <Input
                                 id="passing"
                                 type="number"
+                                min="1"
+                                max="100"
                                 value={passingPercentage}
                                 onChange={(e) => setPassingPercentage(Number(e.target.value))}
                             />
                         </div>
 
                         <div className="space-y-1">
-                            <Label htmlFor="status">Status</Label>
+                            <Label htmlFor="status">Status *</Label>
                             <Select
                                 value={status}
                                 onValueChange={(v) => setStatus(v as QuizStatus)}
@@ -190,36 +238,82 @@ const CreateQuizModal = ({
                     {/* RIGHT COLUMN */}
                     <div className="space-y-4">
 
-                        {/* Date */}
-                        <div className="space-y-1">
-                            <Label htmlFor="scheduledDate">Quiz Date</Label>
-                            <Input
-                                id="scheduledDate"
-                                type="date"
-                                value={scheduledDate}
-                                onChange={(e) => setScheduledDate(e.target.value)}
-                            />
+                        {/* Start Date & Time */}
+                        <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <Label className="text-blue-700 font-semibold flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                Start Time *
+                            </Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
+                                    <Input
+                                        id="scheduledDate"
+                                        type="date"
+                                        value={scheduledDate}
+                                        onChange={(e) => {
+                                            setScheduledDate(e.target.value);
+                                            autoFillEndDateTime();
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="scheduledTime" className="text-sm">Time</Label>
+                                    <Input
+                                        id="scheduledTime"
+                                        type="time"
+                                        value={scheduledTime}
+                                        onChange={(e) => {
+                                            setScheduledTime(e.target.value);
+                                            autoFillEndDateTime();
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Time */}
-                        <div className="space-y-1">
-                            <Label htmlFor="scheduledTime">Quiz Time</Label>
-                            <Input
-                                id="scheduledTime"
-                                type="time"
-                                value={scheduledTime}
-                                onChange={(e) => setScheduledTime(e.target.value)}
-                            />
+                        {/* End Date & Time */}
+                        <div className="space-y-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <Label className="text-orange-700 font-semibold flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                End Time *
+                            </Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <Label htmlFor="endDate" className="text-sm">Date</Label>
+                                    <Input
+                                        id="endDate"
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        min={scheduledDate}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="endTime" className="text-sm">Time</Label>
+                                    <Input
+                                        id="endTime"
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Duration */}
                         <div className="space-y-1">
-                            <Label htmlFor="duration">Duration (minutes)</Label>
+                            <Label htmlFor="duration">Duration (minutes) *</Label>
                             <Input
                                 id="duration"
                                 type="number"
+                                min="1"
                                 value={durationMinutes}
-                                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                                onChange={(e) => {
+                                    const newDuration = Number(e.target.value);
+                                    setDurationMinutes(newDuration);
+                                    autoFillEndDateTime();
+                                }}
                             />
                         </div>
 
@@ -305,7 +399,7 @@ const CreateQuizModal = ({
                     </Button>
 
                     <Button onClick={handleCreate} disabled={loading}>
-                        {loading ? "Creating…" : "Create"}
+                        {loading ? "Creating…" : "Create Quiz"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

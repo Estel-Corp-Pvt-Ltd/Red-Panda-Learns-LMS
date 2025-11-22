@@ -44,6 +44,7 @@ class QuizService {
                 totalMarks: 0,
                 passingPercentage: quiz.passingPercentage,
                 scheduledAt: quiz.scheduledAt,
+                endAt: quiz.endAt,
                 durationMinutes: quiz.durationMinutes,
                 enableFreeNavigation: quiz.enableFreeNavigation,
                 status: quiz.status,
@@ -84,6 +85,7 @@ class QuizService {
                 "totalMarks",
                 "passingPercentage",
                 "scheduledAt",
+                "endAt",
                 "durationMinutes",
                 "enableFreeNavigation",
                 "status"
