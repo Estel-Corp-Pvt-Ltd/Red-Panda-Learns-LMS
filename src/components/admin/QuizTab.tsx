@@ -27,7 +27,7 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "../ui/switch";
 import { parseQuizQuestionsFromExcel } from "@/utils/parse-quiz-questions-from-excel";
-import QuizSubmissionModal from "../quiz/QuizSubmission";
+import QuizSubmissionModal from "../quiz/QuizSubmissionModel";
 
 type SortableQuestionCardProps = {
     id: number;

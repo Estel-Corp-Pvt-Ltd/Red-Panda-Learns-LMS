@@ -181,7 +181,7 @@ const QuizSubmissionModal: React.FC<QuizSubmissionModalProps> = ({
       } else {
         toast({
           title: "Reset Failed",
-          description: result.error || "Failed to reset quiz submission",
+          description: "Failed to reset quiz submission",
           variant: "destructive",
         });
       }
