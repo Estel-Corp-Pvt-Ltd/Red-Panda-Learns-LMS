@@ -196,6 +196,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       >
         <iframe
           src={srcFromHtml}
+          allow="camera; microphone"
           className="w-full h-full block"
           style={{ border: 0 }}
           allowFullScreen
