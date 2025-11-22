@@ -757,6 +757,17 @@ class QuizService {
         }
     }
 
+    async deleteQuizSubmission(submissionId: string): Promise<Result<void>> {
+        try {
+            const submissionRef = doc(db, COLLECTION.QUIZ_SUBMISSIONS, submissionId);
+            await deleteDoc(submissionRef);
+            return ok(null);
+        } catch (error: any) {
+            logError("QuizService.resetQuizSubmission", error);
+            return fail("Failed to reset quiz submission", error.code || error.message);
+        }
+    }
+
     private calculateTotalMarks(questions: Question[]): number {
         return questions.reduce((sum, q) => sum + (q.marks ?? 0), 0);
     }
