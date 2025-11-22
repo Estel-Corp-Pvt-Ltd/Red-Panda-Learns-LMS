@@ -130,6 +130,13 @@ const AdminCourses = () => {
     itemsPerPage,
   ]);
 
+    const isProbablyHtml = (text?: string | null) => {
+  if (!text) return false;
+  const trimmed = text.trim();
+  // Simple heuristic: starts with '<' and has at least one closing tag
+  return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
+};
+
   const loadAllCourses = async () => {
     try {
       setIsLoading(true);
@@ -732,7 +739,14 @@ const AdminCourses = () => {
                         <div>
                           <div className="font-medium">{course.title}</div>
                           <div className="text-sm text-muted-foreground line-clamp-2">
-                            {course.description}
+                           {isProbablyHtml(course.description) ? (
+    <div
+      className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
+      dangerouslySetInnerHTML={{ __html: course.description || '' }}
+    />
+  ) : (
+    <span>{course.description}</span>
+  )}
                           </div>
                         </div>
                       </TableCell>

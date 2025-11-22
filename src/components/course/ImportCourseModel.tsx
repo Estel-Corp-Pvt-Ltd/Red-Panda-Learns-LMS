@@ -157,6 +157,14 @@ export const ImportCourseModal = ({
     }
   };
 
+
+    const isProbablyHtml = (text?: string | null) => {
+  if (!text) return false;
+  const trimmed = text.trim();
+  // Simple heuristic: starts with '<' and has at least one closing tag
+  return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
+};
+
   const handleItemsPerPageChange = (value: string) => {
     const newItemsPerPage = parseInt(value, 10);
     setItemsPerPage(newItemsPerPage);
@@ -345,7 +353,14 @@ export const ImportCourseModal = ({
                           </div>
                           {course.description && (
                             <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                              {course.description}
+                            {isProbablyHtml(course.description) ? (
+    <div
+      className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
+      dangerouslySetInnerHTML={{ __html: course.description || '' }}
+    />
+  ) : (
+    <span>{course.description}</span>
+  )}
                             </p>
                           )}
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
