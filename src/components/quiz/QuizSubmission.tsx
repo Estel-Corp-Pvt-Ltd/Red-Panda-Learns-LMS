@@ -52,14 +52,8 @@ const QuizSubmissionModal: React.FC<QuizSubmissionModalProps> = ({
       try {
         const result = await quizService.getAllSubmissionsForQuiz(quiz.id);
         if (result.success) {
-          const submissionsWithCalculations = result.data.map(submission => ({
-            ...submission,
-            percentageScore: submission.totalScore ?
-              Math.round((submission.totalScore / getTotalMarks()) * 100) : 0,
-            timeSpentMinutes: calculateTimeSpent(submission)
-          }));
-          setQuizSubmissions(submissionsWithCalculations);
-          setFilteredSubmissions(submissionsWithCalculations);
+          setQuizSubmissions(result.data);
+          setFilteredSubmissions(result.data);
         } else {
           toast({
             title: "Error",
@@ -91,11 +85,6 @@ const QuizSubmissionModal: React.FC<QuizSubmissionModalProps> = ({
     );
     setFilteredSubmissions(filtered);
   }, [searchTerm, quizSubmissions]);
-
-  const getTotalMarks = () => {
-    // This should come from the quiz data - you might need to pass quiz details as prop
-    return 100; // Default value, replace with actual total marks
-  };
 
   const calculateTimeSpent = (submission: QuizSubmission): number => {
     if (!submission.submittedAt) return 0;
@@ -156,18 +145,45 @@ const QuizSubmissionModal: React.FC<QuizSubmissionModalProps> = ({
   };
 
   const exportToCSV = () => {
-    const headers = ['User', 'Email', 'Score', 'Percentage', 'Status', 'Time Spent', 'Submitted At'];
-    const csvData = filteredSubmissions.map(sub => {
+    // Calculate attempted questions for each submission
+    const getAttemptedQuestionsCount = (submission: QuizSubmission): number => {
+      if (!submission.answers || submission.answers.length === 0) return 0;
+      return submission.answers.length;
+    };
+
+    const getResultStatus = (submission: QuizSubmission): string => {
+      if (submission.status !== QUIZ_SUBMISSION_STATUS.SUBMITTED) return 'Not Submitted';
+      if (submission.passed === undefined) return 'Pending';
+      return submission.passed ? 'Pass' : 'Fail';
+    };
+
+    const headers = [
+      'Sr. No.',
+      'Email',
+      'Name',
+      'Total no of Questions',
+      'Attempted Questions',
+      'Marks Scored',
+      'Total marks',
+      'Result - Pass/Fail'
+    ];
+
+    const csvData = filteredSubmissions.map((submission, index) => {
+      const attemptedQuestions = getAttemptedQuestionsCount(submission);
+      const totalQuestions = quiz.questions.length;
+      const marksScored = submission.totalScore || 0;
+      const totalMarks = quiz.totalMarks;
+      const resultStatus = getResultStatus(submission);
+
       return [
-        sub.userName || 'N/A',
-        sub.userEmail || 'N/A',
-        sub.totalScore || 'N/A',
-        getPercentageScore(sub),
-        sub.status,
-        sub.passed !== undefined ? (sub.passed ? 'Yes' : 'No') : 'N/A',
-        calculateTimeSpent(sub).toString(),
-        formatDate(sub.startedAt),
-        formatDate(sub.submittedAt)
+        (index + 1).toString(),
+        submission.userEmail || "",
+        submission.userName || "",
+        totalQuestions.toString(),
+        attemptedQuestions.toString(),
+        marksScored.toString(),
+        totalMarks.toString(),
+        resultStatus
       ];
     });
 
@@ -180,19 +196,24 @@ const QuizSubmissionModal: React.FC<QuizSubmissionModalProps> = ({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `quiz-submissions-${quiz.id}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `quiz-results-${quiz.title}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV Exported Successfully",
+      description: "Quiz results have been downloaded as CSV",
+    });
   };
 
   const stats = {
     total: quizSubmissions.length,
-    submitted: quizSubmissions.filter(s => s.status === 'SUBMITTED').length,
+    submitted: quizSubmissions.filter(s => s.status === QUIZ_SUBMISSION_STATUS.SUBMITTED).length,
     passed: quizSubmissions.filter(s => s.passed).length
   };
 
   if (!quiz) {
-    return null; // or some fallback UI
+    return null;
   }
 
   return (
