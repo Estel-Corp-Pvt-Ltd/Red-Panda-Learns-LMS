@@ -167,6 +167,10 @@ async function handleOrderPaid(payload: RazorpayWebhookPayload) {
     functions.logger.warn("Order not found for provider order ID:", order.entity.id);
     return;
   }
+  if (userOrder.data.status === ORDER_STATUS.COMPLETED) {
+    functions.logger.info("Order already completed:", userOrder.data.orderId);
+    return;
+  }
 
   await orderService.updateOrderStatus(userOrder.data.orderId, ORDER_STATUS.COMPLETED);
   await enrollUserInPurchasedItems(userOrder.data.orderId);
