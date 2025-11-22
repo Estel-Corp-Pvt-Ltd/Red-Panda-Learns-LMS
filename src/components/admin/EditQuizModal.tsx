@@ -1,5 +1,3 @@
-"use client";
-
 import { quizService } from "@/services/quizService";
 import { userService } from "@/services/userService";
 import { Timestamp } from "firebase/firestore";
@@ -18,13 +16,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Calendar, Clock, AlertCircle } from "lucide-react";
+import { AlertCircle, Calendar, Clock, X } from "lucide-react";
 
 import {
     Select,
-    SelectTrigger,
     SelectContent,
     SelectItem,
+    SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
 

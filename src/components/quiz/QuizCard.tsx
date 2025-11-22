@@ -2,8 +2,8 @@ import { QUIZ_SUBMISSION_STATUS } from '@/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Quiz } from '@/types/quiz';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { BookOpen, CheckSquare, Clock, Folder, Play, Calendar, Ban } from 'lucide-react';
-import React from 'react'
+import { Ban, BookOpen, Calendar, CheckSquare, Clock, Folder, Play } from 'lucide-react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface QuizCardProps {

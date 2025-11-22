@@ -1,6 +1,3 @@
-"use client";
-
-import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const impactItems = [
