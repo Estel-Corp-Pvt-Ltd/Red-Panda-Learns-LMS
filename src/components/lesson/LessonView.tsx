@@ -146,10 +146,10 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
 
 
   const extractIframeSrc = (html: string): string | null => {
-  // Very simple regex to grab src="...".
-  const match = html.match(/src="([^"]+)"/);
-  return match ? match[1] : null;
-};
+    // Very simple regex to grab src="...".
+    const match = html.match(/src="([^"]+)"/);
+    return match ? match[1] : null;
+  };
 
   const isValidHttpUrl = (value: string): boolean => {
     try {
@@ -180,49 +180,51 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
           />
         );
 
-   case LESSON_TYPE.INTERACTIVE_PROJECT: {
-  // Try to treat embedUrl as HTML that contains an <iframe>
-  const srcFromHtml = extractIframeSrc(lesson.embedUrl);
-
-  if (srcFromHtml) {
-    // We control sizing here, ignoring width/height in the original HTML
-    return (
-      <div
-        className={
-          isFullscreen
-            ? "w-full h-full bg-neutral-900"
-            : "w-full h-[600px] bg-muted"
+      case LESSON_TYPE.INTERACTIVE_PROJECT: {
+        // Try to treat embedUrl as HTML that contains an <iframe>
+        const srcFromHtml = extractIframeSrc(lesson.embedUrl);
+        if (srcFromHtml) {
+          // We control sizing here, ignoring width/height in the original HTML
+          return (
+            <div
+              className={
+                isFullscreen
+                  ? "w-full h-full bg-neutral-900"
+                  : "w-full h-[600px] bg-muted"
+              }
+            >
+              <iframe
+                src={srcFromHtml}
+                // -----------------------------------------------------
+                // FIX 1: Added allow attribute for Camera/Microphone
+                // -----------------------------------------------------
+                allow="camera; microphone; accelerometer; gyroscope; magnetometer"
+                className="w-full h-full block"
+                style={{ border: 0 }}
+                allowFullScreen
+              />
+            </div>
+          );
         }
-      >
-        <iframe
-          src={srcFromHtml}
-          allow="camera; microphone"
-          className="w-full h-full block"
-          style={{ border: 0 }}
-          allowFullScreen
-        />
-      </div>
-    );
-  }
 
-  // Fallback: if we couldn't parse src, just render raw HTML
-  return (
-    <div
-      className={
-        isFullscreen
-          ? "w-full h-full overflow-auto flex items-center justify-center bg-neutral-900"
-          : "w-full flex items-center justify-center bg-muted"
+        // Fallback: if we couldn't parse src, just render raw HTML
+        return (
+          <div
+            className={
+              isFullscreen
+                ? "w-full h-full overflow-auto flex items-center justify-center bg-neutral-900"
+                : "w-full flex items-center justify-center bg-muted"
+            }
+          >
+            <div className="w-full h-full max-w-6xl max-h-[80vh]">
+              <div
+                className="w-full h-full"
+                dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
+              />
+            </div>
+          </div>
+        );
       }
-    >
-      <div className="w-full h-full max-w-6xl max-h-[80vh]">
-        <div
-          className="w-full h-full"
-          dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
-        />
-      </div>
-    </div>
-  );
-}
 
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
@@ -239,10 +241,15 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
     }
   };
 
+  // Helper to determine if details should be hidden.
+  // Currently hides details for ANY fullscreen mode to ensure best experience,
+  // but satisfies your request specifically for Interactive Projects.
+  const shouldHideDetails = isFullscreen; 
+
   return (
     <div
       ref={containerRef}
-      // FIX: Ensure fullscreen container takes full viewport
+      // FIX: Ensure fullscreen container takes full viewport and handles scrolling internally
       className={
         isFullscreen
           ? "fixed inset-0 z-50 flex flex-col bg-background p-0 m-0 overflow-hidden"
@@ -250,24 +257,27 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       }
     >
       {/* Header */}
-      <div className={`flex items-start justify-between gap-4 w-full ${isFullscreen ? 'p-4 border-b' : ''}`}>
+      <div className={`flex items-start justify-between gap-4 w-full ${isFullscreen ? 'p-4 border-b shrink-0' : ''}`}>
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             {lesson.title}
           </h1>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            {hasVideo ? (
-              <>
-                <Video className="h-4 w-4" />
-                <span>Video Lesson</span>
-              </>
-            ) : (
-              <>
-                <FileText className="h-4 w-4" />
-                <span>Lesson</span>
-              </>
-            )}
-          </div>
+          {/* Hide metadata in fullscreen to save space */}
+          {!isFullscreen && (
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              {hasVideo ? (
+                <>
+                  <Video className="h-4 w-4" />
+                  <span>Video Lesson</span>
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  <span>Lesson</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -286,93 +296,108 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
         </div>
       </div>
 
-      {/* Content Wrapper: Use flex-1 only when in fullscreen */}
-      <div className={`w-full ${isFullscreen ? 'flex-1' : ''}`}>
+      {/* Content Wrapper: 
+         - In Fullscreen: flex-1 allows it to take ALL remaining height.
+         - overflow-hidden prevents double scrollbars if the iframe has its own scroll.
+      */}
+      <div className={`w-full ${isFullscreen ? 'flex-1 h-full overflow-hidden' : ''}`}>
         {getLessonContent()}
       </div>
-      {/* Progress Indicator */}
-      <Card className="bg-muted/30">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Lesson Progress</span>
-            <span className="text-sm text-muted-foreground">
-              {completed ? "100% complete" : "0% complete"}
-            </span>
-          </div>
-          <Progress value={completed ? 100 : 0} className="h-2" />
-        </CardContent>
-      </Card>
-      {/* Lesson Description */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <Card className="md:w-2/3 bg-muted/30">
-          <CardContent className="py-4">
-            <h2 className="text-lg font-semibold mb-2">Lesson Description</h2>
-            {lesson.description ? (
-              <MarkdownViewer value={lesson.description} />
-            ) : (
-              <p className="text-sm text-muted-foreground">No description provided for this lesson.</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="w-full md:w-1/3">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Attachments</h2>
-              <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                {attachments.length} file{attachments.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4">
-            {attachments.length === 0 ? (
-              <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                <p className="text-sm text-muted-foreground">No attachments for this lesson</p>
+
+      {/* 
+        -----------------------------------------------------
+        FIX 2: Only render Progress and Attachments if NOT in fullscreen.
+        This ensures the interactive project takes the whole space.
+        -----------------------------------------------------
+      */}
+      {!shouldHideDetails && (
+        <>
+          {/* Progress Indicator */}
+          <Card className="bg-muted/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Lesson Progress</span>
+                <span className="text-sm text-muted-foreground">
+                  {completed ? "100% complete" : "0% complete"}
+                </span>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3 min-w-0 flex-1">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate" title={attachment.name}>
-                          {attachment.name}
-                        </p>
-                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                          <span className="capitalize">{attachment.type.toLowerCase()}</span>
-                          <span>•</span>
-                          <span>{formatFileSize(attachment.size)}</span>
+              <Progress value={completed ? 100 : 0} className="h-2" />
+            </CardContent>
+          </Card>
+
+          {/* Lesson Description */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <Card className="md:w-2/3 bg-muted/30">
+              <CardContent className="py-4">
+                <h2 className="text-lg font-semibold mb-2">Lesson Description</h2>
+                {lesson.description ? (
+                  <MarkdownViewer value={lesson.description} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No description provided for this lesson.</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="w-full md:w-1/3">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Attachments</h2>
+                  <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                    {attachments.length} file{attachments.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4">
+                {attachments.length === 0 ? (
+                  <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground">No attachments for this lesson</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate" title={attachment.name}>
+                              {attachment.name}
+                            </p>
+                            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                              <span className="capitalize">{attachment.type.toLowerCase()}</span>
+                              <span>•</span>
+                              <span>{formatFileSize(attachment.size)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1 ml-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            asChild
+                          >
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={attachment.name}
+                              title="Download file"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-1 ml-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        asChild
-                      >
-                        <a
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={attachment.name}
-                          title="Download file"
-                        >
-                          <Download className="h-4 w-4" />
-                        </a>
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }
