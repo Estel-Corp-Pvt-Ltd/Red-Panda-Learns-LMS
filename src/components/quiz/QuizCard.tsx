@@ -2,8 +2,8 @@ import { QUIZ_SUBMISSION_STATUS } from '@/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Quiz } from '@/types/quiz';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { BookOpen, CheckSquare, Clock, Folder, Play, Calendar, Ban } from 'lucide-react';
-import React from 'react'
+import { Ban, BookOpen, Calendar, CheckSquare, Clock, Folder, Play } from 'lucide-react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface QuizCardProps {
@@ -27,8 +27,6 @@ const QuizCard: React.FC<QuizCardProps> = ({ submissionsData, quiz }) => {
   const showScore = submission?.releaseScores && hasSubmitted;
   const hasPassed = submission?.passed;
 
-  console.log("QuizCard Rendered for quiz:", quiz.id, "Has Submitted:", hasSubmitted);
-
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "TBD";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -42,15 +40,15 @@ const QuizCard: React.FC<QuizCardProps> = ({ submissionsData, quiz }) => {
     });
   };
 
-  // Determine quiz status
+  // Determine quiz status with endAt support
   const getQuizStatus = () => {
     const now = new Date();
-    const scheduledDate = quiz.scheduledAt.toDate ? quiz.scheduledAt.toDate() : new Date("");
-    const endTime = new Date(scheduledDate.getTime() + quiz.durationMinutes * 60000);
+    const scheduledDate = quiz.scheduledAt.toDate();
+    const endDate = quiz.endAt ? quiz.endAt.toDate() : null;
 
     if (now < scheduledDate) {
       return { status: 'upcoming', color: 'bg-blue-100 text-blue-800 border-blue-200' };
-    } else if (now >= scheduledDate && now <= endTime) {
+    } else if (now >= scheduledDate && (!endDate || now <= endDate)) {
       return { status: 'running', color: 'bg-green-100 text-green-800 border-green-200' };
     } else {
       return { status: 'expired', color: 'bg-gray-100 text-gray-800 border-gray-200' };
@@ -120,10 +118,16 @@ const QuizCard: React.FC<QuizCardProps> = ({ submissionsData, quiz }) => {
         </div>
       </div>
 
-      {/* Schedule Date */}
-      <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
-        <Clock className="w-4 h-4" />
-        <span>{formatDate(quiz.scheduledAt)}</span>
+      {/* Schedule and End Dates */}
+      <div className="space-y-1 mb-3 flex justify-between">
+        <div className="flex items-center gap-1 text-sm text-gray-500">
+          <Calendar className="w-4 h-4" />
+          <span>Starts: {formatDate(quiz.scheduledAt)}</span>
+        </div>
+        <div className="flex items-center gap-1 text-sm text-gray-500">
+          <Clock className="w-4 h-4" />
+          <span>Ends: {formatDate(quiz.endAt)}</span>
+        </div>
       </div>
 
       {/* Submission Status */}

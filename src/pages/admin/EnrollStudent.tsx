@@ -107,6 +107,14 @@ const EnrollStudent: React.FC = () => {
     }
   };
 
+
+    const isProbablyHtml = (text?: string | null) => {
+  if (!text) return false;
+  const trimmed = text.trim();
+  // Simple heuristic: starts with '<' and has at least one closing tag
+  return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
+};
+
   const handleNextPage = () => {
     if (!pagination.hasNextPage || loading) return;
     setPagination(prev => ({
@@ -265,7 +273,7 @@ const EnrollStudent: React.FC = () => {
                   placeholder="Student email"
                   value={studentEmail}
                   onChange={(e) => setStudentEmail(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && findStudent()}
+                  onKeyDown={(e) => e.key === 'Enter' && findStudent()}
                   className="flex-1"
                 />
                 <Button onClick={findStudent} disabled={searching}>
@@ -431,7 +439,14 @@ const EnrollStudent: React.FC = () => {
                         <div className="flex-1">
                           <div className="font-medium">{course.title}</div>
                           <div className="text-sm text-muted-foreground line-clamp-2">
-                            {course.description.replace(/<[^>]+>/g, '')}
+                           {isProbablyHtml(course.description) ? (
+    <div
+      className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
+      dangerouslySetInnerHTML={{ __html: course.description || '' }}
+    />
+  ) : (
+    <span>{course.description}</span>
+  )}
                           </div>
                           <div className="text-sm text-green-600 font-medium mt-1">
                             ₹{course.salePrice || course.regularPrice}

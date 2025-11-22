@@ -12,6 +12,7 @@ export interface Quiz {
     totalMarks: number;
     passingPercentage: number;
     scheduledAt: Timestamp;
+    endAt: Timestamp;
     durationMinutes: number;
     enableFreeNavigation: boolean;
     releaseScores?: boolean;

@@ -47,8 +47,15 @@ export const canStartQuizHandler = async (req: functions.https.CallableRequest) 
 
         const serverTime = admin.firestore.Timestamp.now();
         const scheduledAt = quiz.scheduledAt as admin.firestore.Timestamp;
+        const endAt = quiz.endAt as admin.firestore.Timestamp;
 
-        const quizEndMillis = scheduledAt.toMillis() + quiz.durationMinutes * 60 * 1000;
+        if (!endAt) {
+            return {
+                success: true,
+                message: "Quiz end time not configured."
+            };
+        }
+        const quizEndMillis = endAt.toMillis();
 
         const now = serverTime.toMillis();
         const start = scheduledAt.toMillis();

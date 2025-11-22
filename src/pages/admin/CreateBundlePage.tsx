@@ -495,6 +495,13 @@ export default function CreateBundlePage() {
     );
   };
 
+    const isProbablyHtml = (text?: string | null) => {
+  if (!text) return false;
+  const trimmed = text.trim();
+  // Simple heuristic: starts with '<' and has at least one closing tag
+  return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
+};
+
   const handleCourseToggle = (courseId: string) => {
     setSelectedCourses((prev) =>
       prev.includes(courseId)
@@ -1905,7 +1912,14 @@ export default function CreateBundlePage() {
                             <div className="flex-1">
                               <h4 className="font-medium">{course.title}</h4>
                               <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
-                                {course.description}
+                              {isProbablyHtml(course.description) ? (
+    <div
+      className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
+      dangerouslySetInnerHTML={{ __html: course.description || '' }}
+    />
+  ) : (
+    <span>{course.description}</span>
+  )}
                               </p>
                             </div>
                           </div>
