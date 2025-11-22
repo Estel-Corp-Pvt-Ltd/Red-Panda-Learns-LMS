@@ -12,6 +12,8 @@ import { defineSecret } from "firebase-functions/params";
 import { userService } from '../services/userService';
 import { PubSub } from "@google-cloud/pubsub";
 import { PaymentDetails } from "../utils/invoice";
+import { courseService } from '../services/courseService';
+import { bundleService } from '../services/bundleService';
 
 const RAZORPAY_WEBHOOK_SECRET = defineSecret("RAZORPAY_WEBHOOK_SECRET");
 const pubsub = new PubSub();
@@ -215,13 +217,39 @@ async function enrollUserInPurchasedItems(orderId: string) {
 
     // Enroll user in each purchased item
     await enrollmentService.enrollUser(userResult.data, items, orderId);
+
+    const enrolledItems = [];
+    for (const item of items) {
+      if (item.itemType === "COURSE") {
+        const courseResult = await courseService.getCourseById(item.itemId);
+        if (courseResult.success && courseResult.data) {
+          enrolledItems.push({
+            name: courseResult.data.title,
+            slug: courseResult.data.slug,
+            itemType: "COURSE",
+            itemId: item.itemId
+          });
+        }
+      } else if (item.itemType === "BUNDLE") {
+        const bundleResult = await bundleService.getBundleById(item.itemId);
+        if (bundleResult.success && bundleResult.data) {
+          enrolledItems.push({
+            name: bundleResult.data.title,
+            slug: bundleResult.data.slug,
+            itemType: "BUNDLE",
+            itemId: item.itemId
+          });
+        }
+      }
+    }
+
     await pubsub.topic("send-mail").publishMessage({
       json: {
         name: userResult.data.firstName + " " + userResult.data.lastName,
         email: userResult.data.email,
         amount: order.amount,
         currency: order.currency,
-        items: order.items,
+        items: enrolledItems,
         orderId: order.orderId,
         purchaseDate: order.createdAt.toString(),
       } as PaymentDetails,

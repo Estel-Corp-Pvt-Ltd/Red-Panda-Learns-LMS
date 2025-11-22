@@ -37,7 +37,7 @@ export interface Enrollment {
 export interface Course {
   id: string;
   title: string;
-  url: string;
+  slug: string;
   description: string;
   duration: Duration;
   thumbnail?: string;

@@ -1,13 +1,12 @@
 import * as brevo from "@getbrevo/brevo";
 import { logger } from "firebase-functions";
-import { TransactionLineItem } from "../types/transaction";
 
 export type PaymentDetails = {
   name: string;
   email: string,
   amount: number,
   currency: string,
-  items: TransactionLineItem[],
+  items: { itemType: "COURSE" | "BUNDLE", itemId: string, name: string, slug: string }[],
   orderId: string;
   purchaseDate: string;
 };
@@ -87,12 +86,12 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
           Access Your Learning
         </h3>
         ${items.map(item => {
-        const courseLink = `https://vizuara.ai/courses/${item.itemId}`;
+        const itemLink = `https://vizuara.ai/${item.itemType.toLowerCase()}s/${item.slug}`;
         return `
             <p style="margin:6px 0; font-size:15px;">
               <strong>${item.name}:</strong><br>
-              <a href="${courseLink}" style="color:#0f4396; text-decoration:none; word-break:break-all;">
-                ${courseLink}
+              <a href="${itemLink}" style="color:#d32f2f; text-decoration:none; word-break:break-all;">
+                ${itemLink}
               </a>
             </p>
           `;

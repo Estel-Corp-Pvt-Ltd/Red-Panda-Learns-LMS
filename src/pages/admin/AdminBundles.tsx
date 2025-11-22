@@ -120,8 +120,7 @@ const AdminBundles: React.FC = () => {
     searchQuery,
     statusFilter,
     bundlePriceFilterValue,
-    paginationState.cursor,
-    paginationState.pageDirection,
+    paginationState,
     useClientSearch,
     itemsPerPage,
   ]);
