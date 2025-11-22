@@ -11,7 +11,7 @@ export interface Quiz {
     questions: Question[];
     totalMarks: number;
     passingPercentage: number;
-    scheduledAt: FieldValue | Timestamp;
+    scheduledAt: Timestamp;
     durationMinutes: number;
     enableFreeNavigation: boolean;
     releaseScores?: boolean;
