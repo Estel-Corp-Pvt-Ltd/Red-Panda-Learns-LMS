@@ -333,6 +333,8 @@ class QuizService {
     async saveSingleAnswer(
         quizId: string,
         userId: string,
+        userName: string,
+        userEmail: string,
         questionNo: number,
         answer: string | string[] | null,
         markedForReview: boolean
@@ -365,6 +367,8 @@ class QuizService {
                     id: submissionId,
                     quizId,
                     userId,
+                    userName,
+                    userEmail,
                     startedAt: serverTimestamp(),
                     lastSavedAt: serverTimestamp(),
                     answers: [],
@@ -413,7 +417,9 @@ class QuizService {
 
     async createSubmission(
         quizId: string,
-        userId: string
+        userId: string,
+        userName: string,
+        userEmail: string
     ): Promise<Result<QuizSubmission>> {
         try {
             if (!quizId || !userId) {
@@ -432,6 +438,8 @@ class QuizService {
                 id: submissionId,
                 quizId,
                 userId,
+                userName,
+                userEmail,
                 startedAt: serverTimestamp(),
                 lastSavedAt: serverTimestamp(),
                 answers: [],
@@ -565,6 +573,8 @@ class QuizService {
     async submitQuiz(
         quizId: string,
         userId: string,
+        userName: string,
+        userEmail: string,
         answers: Record<number, { selectedOptions: string[]; markedForReview: boolean }>
     ): Promise<Result<QuizSubmission>> {
         try {
@@ -590,6 +600,8 @@ class QuizService {
                     id: submissionId,
                     quizId,
                     userId,
+                    userName,
+                    userEmail,
                     startedAt: serverTimestamp(),
                     lastSavedAt: serverTimestamp(),
                     answers: [],
@@ -715,6 +727,33 @@ class QuizService {
         } catch (error: any) {
             logError("QuizService.getUserSubmissionsStatus", error);
             return fail("Failed to fetch submissions status", error.code || error.message);
+        }
+    }
+
+    async getAllSubmissionsForQuiz(
+        quizId: string
+    ): Promise<Result<QuizSubmission[]>> {
+        try {
+            if (!quizId || quizId.trim().length === 0) {
+                return fail("Invalid quiz ID");
+            }
+
+            const submissionsQuery = query(
+                collection(db, COLLECTION.QUIZ_SUBMISSIONS),
+                where("quizId", "==", quizId)
+            );
+
+            const snapshot = await getDocs(submissionsQuery);
+
+            const submissions: QuizSubmission[] = snapshot.docs.map(doc => ({
+                ...(doc.data() as QuizSubmission),
+            }));
+
+            return ok(submissions);
+
+        } catch (error: any) {
+            logError("QuizService.getAllSubmissionsForQuiz", error);
+            return fail("Failed to fetch submissions.", error.code || error.message);
         }
     }
 

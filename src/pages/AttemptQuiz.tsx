@@ -30,7 +30,10 @@ const AttemptQuiz = () => {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const submitQuiz = async () => {
-        const response = await quizService.submitQuiz(quizId, user.id, answers);
+        const userName = [user.firstName, user.middleName, user.lastName]
+            .filter(Boolean) // removes undefined, null, empty string
+            .join(" ");
+        const response = await quizService.submitQuiz(quizId, user.id, userName, user.email, answers);
 
         if (response.success) {
             toast({
@@ -177,8 +180,10 @@ const AttemptQuiz = () => {
         })();
 
         const existing = answers[qNo] || { selectedOptions: [], markedForReview: false };
-
-        const res = await quizService.saveSingleAnswer(quizId!, user.id, qNo, updatedAnswerValue, existing.markedForReview);
+        const userName = [user.firstName, user.middleName, user.lastName]
+            .filter(Boolean) // removes undefined, null, empty string
+            .join(" ");
+        const res = await quizService.saveSingleAnswer(quizId!, user.id, userName, user.email, qNo, updatedAnswerValue, existing.markedForReview);
         if (!res.success) {
             toast({
                 title: "Save failed",
@@ -209,8 +214,11 @@ const AttemptQuiz = () => {
         const init = async () => {
             await canTakeQuiz();
             await fetchQuizAndSetQuestions();
+            const userName = [user.firstName, user.middleName, user.lastName]
+                .filter(Boolean) // removes undefined, null, empty string
+                .join(" ");
             if (quizId && user?.id) {
-                await quizService.createSubmission(quizId, user.id);
+                await quizService.createSubmission(quizId, user.id, userName, user.email);
                 await fetchSubmissionAndPopulateAnswers();
             }
             setLoading(false);

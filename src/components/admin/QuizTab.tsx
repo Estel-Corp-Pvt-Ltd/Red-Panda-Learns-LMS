@@ -14,7 +14,7 @@ import {
     SortableContext,
     verticalListSortingStrategy
 } from "@dnd-kit/sortable";
-import { ChevronDown, Folder, GripVertical, ListChecks, Pencil, Plus, PlusCircle, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, GripVertical, ListChecks, Pencil, Plus, PlusCircle, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ConfirmDialog from "../ConfirmDialog";
 import CreateQuizModal from "./CreateQuizModal";
@@ -27,6 +27,7 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "../ui/switch";
 import { parseQuizQuestionsFromExcel } from "@/utils/parse-quiz-questions-from-excel";
+import QuizSubmissionModal from "../quiz/QuizSubmission";
 
 type SortableQuestionCardProps = {
     id: number;
@@ -396,6 +397,7 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
     const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null)
     const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
+    const [openSubmissionsModal, setOpenSubmissionsModal] = useState(false);
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -618,6 +620,16 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                                 {/* Header Row */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
+                                        {/* Expand/Collapse Button */}
+                                        <button
+                                            onClick={() => handleExpandQuiz(quiz.id)}
+                                            className="p-2 rounded-full hover:bg-gray-100 transition"
+                                        >
+                                            <ChevronRight
+                                                size={18}
+                                                className={`transition-transform duration-200 ${expandedQuizId === quiz.id ? "rotate-90" : ""}`}
+                                            />
+                                        </button>
                                         <Folder className="w-5 h-5 text-pink-500" />
                                         <span className="font-medium text-gray-800">
                                             {quiz.title || `Quiz ${idx + 1}`}
@@ -625,18 +637,15 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        {/* Expand/Collapse Button */}
                                         <button
-                                            onClick={() => handleExpandQuiz(quiz.id)}
-                                            className="p-2 rounded-full hover:bg-gray-100 transition"
+                                            className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition flex items-center gap-2"
+                                            onClick={() => {
+                                                setSelectedQuizId(quiz.id);
+                                                setOpenSubmissionsModal(true);
+                                            }}
                                         >
-                                            <ChevronDown
-                                                size={18}
-                                                className={`transition-transform duration-200 ${expandedQuizId === quiz.id ? "rotate-180" : ""
-                                                    }`}
-                                            />
-                                        </button>
-
+                                            <ListChecks size={14} />
+                                            Submissions</button>
                                         <button
                                             onClick={() => {
                                                 setSelectedQuizId(quiz.id);
@@ -735,6 +744,13 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                 variant="danger"
                 dismissible
             />
+            {selectedQuizId && (
+                <QuizSubmissionModal
+                    open={openSubmissionsModal}
+                    onClose={() => setOpenSubmissionsModal(false)}
+                    quiz={quizzes.find(q => q.id === selectedQuizId) || null}
+                />
+            )}
         </div>
     );
 };
