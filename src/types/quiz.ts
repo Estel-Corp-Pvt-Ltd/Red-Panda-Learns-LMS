@@ -11,7 +11,7 @@ export interface Quiz {
     questions: Question[];
     totalMarks: number;
     passingPercentage: number;
-    scheduledAt: FieldValue | Timestamp;
+    scheduledAt: Timestamp;
     durationMinutes: number;
     enableFreeNavigation: boolean;
     releaseScores?: boolean;
@@ -34,9 +34,11 @@ export interface QuizSubmission {
     id: string;
     quizId: string;
     userId: string;
-    startedAt: FieldValue | Timestamp;
-    submittedAt?: FieldValue | Timestamp;
-    lastSavedAt: FieldValue | Timestamp;
+    userName: string;
+    userEmail: string;
+    startedAt: FieldValue;
+    submittedAt?: FieldValue;
+    lastSavedAt: FieldValue;
     answers: SubmittedAnswer[];
     totalScore?: number;
     passed?: boolean;
