@@ -241,7 +241,8 @@ const AdminOrders: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {order.billingAddress?.fullName || 'Unknown'}
+                            {order.userName || 'Unknown'}
+                            {order.userEmail ? ` (${order.userEmail})` : ''}
                           </span>
                         </div>
                       </TableCell>
