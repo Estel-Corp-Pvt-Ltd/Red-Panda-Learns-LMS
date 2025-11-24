@@ -19,6 +19,8 @@ export interface Address {
 export interface Order {
   orderId: string;
   userId: string;
+  userName: string;
+  userEmail: string;
   items: TransactionLineItem[];
   status: OrderStatus;
   amount: number;

@@ -107,10 +107,12 @@ async function createRazorpayOrderHandler(req: Request, res: Response) {
 
     const amountInPaise = Math.round((currencyResult.data.toAmount) * 100);
 
-    functions.logger.info("💰 Creating Razorpay order for amount (in paise):", amountInPaise);
+    functions.logger.info("💰 Creating Razorpay order for amount (in paise):", amountInPaise, user);
     // Create an order in database
     const orderResult = await orderService.createOrder({
       userId: user.uid,
+      userEmail: user.email || "",
+      userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(" "),
       items: itemsDetails,
       status: ORDER_STATUS.PENDING,
       originalAmount: originalAmount,
