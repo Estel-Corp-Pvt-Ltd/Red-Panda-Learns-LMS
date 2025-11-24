@@ -148,6 +148,8 @@ class OrderService {
       const order: Order = {
         orderId,
         userId: data.userId,
+        userName: data.userName,
+        userEmail: data.userEmail,
         items: data.items,
         status: data.status || ORDER_STATUS.PENDING,
         amount: data.amount,
@@ -194,6 +196,8 @@ class OrderService {
       const order: Order = {
         orderId,
         userId: data.userId,
+        userName: data.userName,
+        userEmail: data.userEmail,
         items: data.items,
         status: ORDER_STATUS.COMPLETED,
         provider: data.provider,
