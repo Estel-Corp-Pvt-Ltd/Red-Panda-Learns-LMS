@@ -6,6 +6,8 @@ export interface Assignment {
   title: string;
   content: string;
   attachments: string[];
+  textSubmission : string[];
+  link : string[];
   deadline: Timestamp | null;
   fileUploadLimit: number;
   maximumUploadSize: number;
@@ -24,6 +26,8 @@ export interface AssignmentSubmission {
   feedback?: string;
   marks?: number;
   submissionFiles: string[];
+  textSubmission:string[];
+  link:string[];
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
 }
