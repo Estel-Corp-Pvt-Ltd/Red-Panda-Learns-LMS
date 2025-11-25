@@ -298,21 +298,12 @@ export default function RecentPurchasesToasts({
                       {item.buyer
                         ? `${item.buyer} enrolled in `
                         : "New enrollment "}
-                      <span className="text-primary break-words">
-                        {item.course}
-                      </span>
+                      <a href={item.href}>
+                        <span className="text-primary break-words">
+                          {item.course}
+                        </span>
+                      </a>
                     </div>
-
-                    {item.href && (
-                      <div className="mt-1 text-[11px] md:text-xs">
-                        <a
-                          href={item.href}
-                          className="text-primary hover:underline underline-offset-4"
-                        >
-                          View course
-                        </a>
-                      </div>
-                    )}
                   </div>
 
                   <button
