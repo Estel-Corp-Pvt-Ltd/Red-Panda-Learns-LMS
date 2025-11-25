@@ -11,6 +11,7 @@ import {
   documentId,
   Timestamp,
 } from "firebase/firestore";
+import { courseService } from "@/services/courseService";
 import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
 
@@ -58,16 +59,6 @@ const getDevicePixelRatio = (): number => {
   );
 };
 
-// const generateStaticMapUrl = (coords: Coords, size = 48, zoom = 13): string => {
-//   const pixelSize = Math.min(512, Math.round(size * getDevicePixelRatio() * 3));
-
-//   if (GEOAPIFY_KEY) {
-//     return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=${pixelSize}&height=${pixelSize}&center=lonlat:${coords.lon},${coords.lat}&zoom=${zoom}&marker=lonlat:${coords.lon},${coords.lat};type:awesome;color:%23ffffff;size:small&scaleFactor=2&apiKey=${GEOAPIFY_KEY}`;
-//   }
-
-//   return `https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lon}&zoom=${zoom}&size=${pixelSize}x${pixelSize}&maptype=mapnik&markers=${coords.lat},${coords.lon},lightblue1`;
-// };
-
 const formatTimeAgo = (date: Date): string => {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 
@@ -83,7 +74,7 @@ const formatTimeAgo = (date: Date): string => {
   return `${days}d ago`;
 };
 
-const chunkArray = <T>(array: T[], size: number): T[][] => {
+const chunkArray = <T,>(array: T[], size: number): T[][] => {
   const chunks: T[][] = [];
   for (let i = 0; i < array.length; i += size) {
     chunks.push(array.slice(i, i + size));
@@ -91,32 +82,24 @@ const chunkArray = <T>(array: T[], size: number): T[][] => {
   return chunks;
 };
 
-// Firebase Functions
 export const fetchOrderDataByIds = async (
   orderIds: string[]
 ): Promise<Record<string, OrderData>> => {
   const orderData: Record<string, OrderData> = {};
 
-  // Filter out invalid IDs
   const validIds = orderIds.filter((id) => id && typeof id === "string");
   if (validIds.length === 0) return orderData;
 
-  // Process in batches due to Firestore limitations
   const batches = chunkArray(validIds, FIRESTORE_BATCH_LIMIT);
 
   for (const batch of batches) {
     try {
       const ordersQuery = query(
         collection(db, COLLECTION.ORDERS),
-        where(
-          documentId(),
-          "in",
-          batch 
-        )
+        where(documentId(), "in", batch)
       );
 
       const snapshot = await getDocs(ordersQuery);
-      // console.log(snapshot)
       snapshot.forEach((doc) => {
         const data = doc.data() as any;
         const billingAddress = data?.billingAddress;
@@ -132,14 +115,23 @@ export const fetchOrderDataByIds = async (
       });
     } catch (error) {
       console.error(`Error fetching orders batch:`, error);
-      // Continue processing other batches even if one fails
     }
   }
 
   return orderData;
 };
 
-// Main Hook
+// Normalize slug/url to href
+const toCourseHref = (slugOrUrl?: string | null): string | undefined => {
+  if (!slugOrUrl) return undefined;
+  const s = String(slugOrUrl).trim();
+  if (!s) return undefined;
+  if (s.startsWith("https")) return s; // full URL returned
+  if (s.startsWith("/")) return s; // already a path
+  // treat as slug
+  return `/courses/${s}`;
+};
+
 export function useRecentEnrollments() {
   const [items, setItems] = useState<EnrollmentToast[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,28 +140,28 @@ export function useRecentEnrollments() {
   useEffect(() => {
     let isCancelled = false;
 
-    // In useRecentEnrollments hook, modify the base enrollments processing:
-
     const fetchEnrollments = async () => {
       try {
-        // Fetch recent enrollments
+        setLoading(true);
+
+        // Fetch recent enrollments (server-side filter)
         const enrollmentsQuery = query(
           collection(db, COLLECTION.ENROLLMENTS),
-          where("orderId", "not-in", ["Admin Enrollment", "Free Course Enrollment"]),
+          where("orderId", "not-in", [
+            "Admin Enrollment",
+            "Free Course Enrollment",
+          ]),
           orderBy("createdAt", "desc"),
-          
           limit(MAX_ENROLLMENTS)
         );
 
         const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-
         if (isCancelled) return;
 
-        // Process enrollments into base items
+        // Base items
         const allEnrollments = enrollmentsSnapshot.docs.map((doc) => {
           const data = doc.data() as any;
 
-          // Extract timestamp
           const timestamp =
             data?.createdAt instanceof Timestamp
               ? data.createdAt.toDate()
@@ -177,15 +169,14 @@ export function useRecentEnrollments() {
               ? data.enrollmentDate.toDate()
               : new Date();
 
-          // Extract course name
           const courseName =
             data?.courseName ||
             data?.courseTitle ||
             data?.courseId ||
             "New course";
 
-          // Generate course URL
-          const courseHref =
+          // We’ll resolve href via slug later; keep any provided href as fallback
+          const providedHref =
             data?.href ||
             (data?.courseId ? `/courses/${data.courseId}` : undefined);
 
@@ -193,72 +184,95 @@ export function useRecentEnrollments() {
             id: doc.id,
             course: courseName,
             timeAgo: formatTimeAgo(timestamp),
-            href: courseHref,
+            href: providedHref,
             orderId: data?.orderId as string | undefined,
+            courseId: data?.courseId as string | undefined, // keep for slug lookup
             buyer: undefined,
             location: undefined,
             coords: null,
             mapUrl: null,
             lat: undefined,
             lon: undefined,
-          } as EnrollmentToast & { orderId?: string };
+          } as EnrollmentToast & { orderId?: string; courseId?: string };
         });
-        // // FILTER OUT Admin Enrollments
-        // const baseEnrollments = allEnrollments.filter((enrollment) => {
-        //   const orderId = (enrollment as any).orderId;
-        //   // Exclude if orderId is "Admin Enrollment" or undefined/null
-        //   return orderId && orderId !== "Admin Enrollment" && orderId !== "Free Course Enrollment";
-        // });
 
-   
-
-        // If no valid enrollments after filtering, just return empty
-        // if (baseEnrollments.length === 0) {
-        //   // console.log("No valid enrollments found (all were admin or invalid)");
-        //   setItems([]);
-        //   setLoading(false);
-        //   return; // This will trigger the demo fallback in PopUpContainer
-        // }
-
-        // Set initial items
-        setItems(allEnrollments);
-        setLoading(false);
-
-        // Extract order IDs for enrichment (now guaranteed no "Admin Enrollment")
-        const orderIds = allEnrollments
-          .map((item) => (item as any).orderId)
-          .filter((id): id is string => Boolean(id));
-
-        if (orderIds.length === 0) {
-          // console.log("No order IDs to fetch");
+        // If nothing returned, clear and exit
+        if (allEnrollments.length === 0) {
+          if (!isCancelled) {
+            setItems([]);
+            setLoading(false);
+          }
           return;
         }
 
-        // Fetch order data for location and buyer info
-        const orderData = await fetchOrderDataByIds(orderIds);
+        // Prepare lookups
+        const orderIds = allEnrollments
+          .map((i) => (i as any).orderId)
+          .filter((id): id is string => Boolean(id));
+
+        const courseIds = Array.from(
+          new Set(
+            allEnrollments
+              .map((i) => (i as any).courseId)
+              .filter((id): id is string => Boolean(id))
+          )
+        );
+
+        // Fetch order data and course slugs in parallel
+        const [orderData, slugEntries] = await Promise.all([
+          orderIds.length ? fetchOrderDataByIds(orderIds) : Promise.resolve({}),
+          courseIds.length
+            ? Promise.all(
+                courseIds.map(async (cid) => {
+                  try {
+                    const slugOrUrl = await courseService.getCourseSlugById(cid);
+                    return [cid, slugOrUrl] as const;
+                  } catch {
+                    return [cid, null] as const;
+                  }
+                })
+              )
+            : Promise.resolve([] as readonly (readonly [string, string | null])[])
+        ]);
 
         if (isCancelled) return;
 
-        // Enrich items with order data
-        setItems((prevItems) =>
-          prevItems.map((item) => {
-            const orderId = (item as any).orderId;
-
-            if (orderId && orderData[orderId]) {
-              const order = orderData[orderId];
-              const firstName = order.fullName?.trim().split(" ")[0];
-
-              return {
-                ...item,
-                buyer: firstName || item.buyer,
-                location: order.city || item.location,
-              };
-            }
-
-            // Return unchanged if no order data found
-            return item;
-          })
+        const slugMap: Record<string, string | null> = Object.fromEntries(
+          slugEntries
         );
+
+        // Enrich items (buyer/location + href from slug)
+        const enriched = allEnrollments.map((item) => {
+          const orderId = (item as any).orderId as string | undefined;
+          const courseId = (item as any).courseId as string | undefined;
+
+          // Build href from slug/url if available
+          const slugOrUrl =
+            (courseId && slugMap[courseId]) ? slugMap[courseId] : null;
+          const hrefFromSlug = toCourseHref(slugOrUrl);
+          const finalHref = hrefFromSlug || item.href;
+
+          // Buyer/location
+          let buyer = item.buyer;
+          let location = item.location;
+
+          if (orderId && orderData[orderId]) {
+            const order = orderData[orderId];
+            const firstName = order.fullName?.trim().split(" ")[0];
+            buyer = firstName || buyer;
+            location = order.city || location;
+          }
+
+          return {
+            ...item,
+            href: finalHref,
+            buyer,
+            location,
+          };
+        });
+
+        setItems(enriched);
+        setLoading(false);
       } catch (err) {
         if (!isCancelled) {
           const errorMessage =
@@ -274,7 +288,6 @@ export function useRecentEnrollments() {
 
     fetchEnrollments();
 
-    // Cleanup function
     return () => {
       isCancelled = true;
     };

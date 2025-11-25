@@ -676,6 +676,23 @@ class CourseService {
     return courses;
   }
 
+  async getCourseSlugById(courseId: string): Promise<string | null> {
+  try {
+    const ref = doc(db, COLLECTION.COURSES, courseId);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) return null;
+
+    const data = snap.data() as Partial<Course>;
+    const slug = (data.slug ??  "").trim();
+
+    return slug.length ? slug : null;
+  } catch (error: any) {
+    logError("CourseService.getCourseSlugById", error);
+    return null;
+  }
+}
+
   /**
    * Deletes a course from the Firestore `courses` collection by its ID.
    *
@@ -703,6 +720,8 @@ class CourseService {
       return fail("Failed to delete course");
     }
   }
+
+  
 }
 
 export const courseService = new CourseService();
