@@ -16,13 +16,14 @@ import {
   ChevronRight,
   Loader2,
   MapPin,
-  User
+  User,
+  Copy
 } from 'lucide-react';
 import { WhereFilterOp } from 'firebase/firestore';
 import { CURRENCY, ORDER_STATUS } from '@/constants';
 import { OrderStatus } from '@/types/general';
 import { formatDateTime } from '@/utils/date-time';
-
+import { userService } from '@/services/userService';
 interface PaginatedOrders {
   data: Order[];
   hasNextPage: boolean;
@@ -50,42 +51,72 @@ const AdminOrders: React.FC = () => {
     currentPage: 1
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-
-  const loadOrders = async (options = {}) => {
-    setIsLoading(true);
-    try {
-      const filters = statusFilter !== 'ALL'
-        ? [{ field: 'status' as keyof Order, op: '==' as WhereFilterOp, value: statusFilter }]
+  const [userEmails, setUserEmails] = useState<Record<string, string>>({});
+const loadOrders = async (options = {}) => {
+  setIsLoading(true);
+  try {
+    const filters =
+      statusFilter !== "ALL"
+        ? [
+            {
+              field: "status" as keyof Order,
+              op: "==" as WhereFilterOp,
+              value: statusFilter,
+            },
+          ]
         : [];
 
-      const result = await orderService.getOrders(filters, {
-        limit: 10,
-        orderBy: { field: 'createdAt', direction: 'desc' },
-        ...options
-      });
+    const result = await orderService.getOrders(filters, {
+      limit: 10,
+      orderBy: { field: "createdAt", direction: "desc" },
+      ...options,
+    });
 
-      if (result.success) {
-        setOrders(prev => ({
-          ...result.data,
-          totalCount: result.data.data.length
-        }));
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load orders",
-          variant: "destructive",
+    if (result.success) {
+      const pageOrders = result.data.data;
+
+      // 1. Update orders state
+      setOrders((prev) => ({
+        ...result.data,
+        totalCount: result.data.data.length,
+      }));
+
+      // 2. Collect userIds from orders
+      const userIds = pageOrders
+        .map((o: Order) => o.userId)
+        .filter((id: string | undefined | null): id is string => !!id);
+
+      // 3. Fetch user docs in batch and update emails map
+      if (userIds.length > 0) {
+        const usersMap = await userService.getUsersByIds(userIds);
+
+        setUserEmails((prev) => {
+          const updated = { ...prev };
+          for (const userId of userIds) {
+            const userDoc = usersMap[userId];
+            if (userDoc?.email) {
+              updated[userId] = userDoc.email;
+            }
+          }
+          return updated;
         });
       }
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to load orders",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load orders",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }};
 
   const handleNextPage = async () => {
     if (!orders.hasNextPage) return;
@@ -101,6 +132,24 @@ const AdminOrders: React.FC = () => {
       pageDirection: 'next'
     });
   };
+
+
+
+  const handleCopyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Email address copied to clipboard.",
+    });
+  } catch (err) {
+    toast({
+      title: "Copy failed",
+      description: "Could not copy to clipboard. Please try manually.",
+      variant: "destructive",
+    });
+  }
+};
 
   const handlePreviousPage = async () => {
     if (!orders.hasPreviousPage) return;
@@ -223,6 +272,7 @@ const AdminOrders: React.FC = () => {
                   <TableRow>
                     <TableHead>Order ID</TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Items</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Location</TableHead>
@@ -231,66 +281,112 @@ const AdminOrders: React.FC = () => {
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {orders.data.map((order) => (
-                    <TableRow key={order.orderId}>
-                      <TableCell className="font-mono text-sm">
-                        {order.orderId}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {order.userName || 'Unknown'}
-                            {order.userEmail ? ` (${order.userEmail})` : ''}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="text-sm font-medium flex flex-col">
-                            {order.items.map(item => (
-                              <div key={item.itemId} className='flex'>
-                                <p className='max-w-80 overflow-hidden text-ellipsis whitespace-nowrap'>{item.name}</p><Badge key={item.itemType} variant="outline" className="text-xs">{item.itemType}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {formatCurrency(order.amount, order.currency)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {order.billingAddress?.city || 'Unknown'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(order.status)}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatDateTime(order.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/invoices/${order.orderId}`)}
-                            title="View Order Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                  <TableBody>
+  {orders.data.map((order) => {
+    const email = order.userId ? userEmails[order.userId] : undefined;
+
+    return (
+      <TableRow key={order.orderId}>
+        <TableCell className="font-mono text-sm">
+          {order.orderId}
+        </TableCell>
+
+        {/* Customer name */}
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">
+              {order.billingAddress?.fullName || "Unknown"}
+            </span>
+          </div>
+        </TableCell>
+
+        {/* Email column */}
+        <TableCell>
+          {email ? (
+            <div className="flex items-center gap-2 max-w-60">
+              <span className="truncate text-sm">{email}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => handleCopyToClipboard(email)}
+                title="Copy email"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {order.userId ? "Loading..." : "Unknown"}
+            </span>
+          )}
+        </TableCell>
+
+        {/* Items */}
+        <TableCell>
+          <div className="space-y-1">
+            <div className="text-sm font-medium flex flex-col">
+              {order.items.map((item) => (
+                <div key={item.itemId} className="flex">
+                  <p className="max-w-80 overflow-hidden text-ellipsis whitespace-nowrap">
+                    {item.name}
+                  </p>
+                  <Badge
+                    key={item.itemType}
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    {item.itemType}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TableCell>
+
+        {/* Amount */}
+        <TableCell>
+          <div className="font-medium">
+            {formatCurrency(order.amount, order.currency)}
+          </div>
+        </TableCell>
+
+        {/* Location */}
+        <TableCell>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            {order.billingAddress?.city || "Unknown"}
+          </div>
+        </TableCell>
+
+        {/* Status */}
+        <TableCell>
+          <Badge variant={getStatusBadgeVariant(order.status)}>
+            {order.status}
+          </Badge>
+        </TableCell>
+
+        {/* Created At */}
+        <TableCell>{formatDateTime(order.createdAt)}</TableCell>
+
+        {/* Actions */}
+        <TableCell className="text-right">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/invoices/${order.orderId}`)}
+              title="View Order Details"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  })}
+</TableBody>
               </Table>
 
               {/* Pagination Controls */}
