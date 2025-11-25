@@ -486,6 +486,40 @@ class UserService {
             return fail("Failed to map UIDs to emails");
         }
     }
+
+
+    async getUsersByIds(userIds: string[]): Promise<Record<string, User>> {
+    const uniqueIds = Array.from(new Set(userIds)).filter(Boolean);
+    if (uniqueIds.length === 0) return {};
+
+    const chunks: string[][] = [];
+    const CHUNK_SIZE = 10; // Firestore "in" query limit
+
+    for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
+      chunks.push(uniqueIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    const results: Record<string, User> = {};
+
+    for (const chunk of chunks) {
+      const docsPromises = chunk.map(async (userId) => {
+        const snap = await getDoc(doc(db, COLLECTION.USERS, userId));
+        if (snap.exists()) {
+          const data = snap.data() as any;
+          results[userId] = {
+            ...data,
+            createdAt: data.createdAt?.toDate?.(),
+            updatedAt: data.updatedAt?.toDate?.(),
+          } as User;
+        }
+      });
+
+      await Promise.all(docsPromises);
+    }
+
+    return results;
+  }
+  
 }
 
 export const userService = new UserService();
