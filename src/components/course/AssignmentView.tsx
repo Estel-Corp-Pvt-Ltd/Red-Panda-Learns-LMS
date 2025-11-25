@@ -26,6 +26,7 @@ import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MarkdownViewer from '../MarkdownViewer';
 import MDEditor from '@uiw/react-md-editor';
+import { linkSync } from 'fs';
 
 type AssignmentProps = {
   assignmentId: string;
@@ -72,8 +73,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
       if (submissionResult.success && submissionResult.data) {
         setExistingSubmission(submissionResult.data);
         // Populate existing submission data
-        setTextSubmissions(submissionResult.data.textSubmission || []);
-        setLinks(submissionResult.data.link || []);
+        setTextSubmissions(submissionResult.data.textSubmissions || []);
+        setLinks(submissionResult.data.links || []);
       }
     };
 
@@ -184,8 +185,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         studentId: user.id,
         studentName: user.firstName + " " + user.lastName,
         submissionFiles: uploadedUrls,
-        textSubmission: textSubmissions,
-        link: links
+        textSubmissions: textSubmissions,
+        links: links
       };
 
       await assignmentService.createSubmission(submission);
@@ -333,12 +334,12 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         {existingSubmission ? (
           <div className="space-y-6">
             {/* Display existing text submissions */}
-            {existingSubmission.textSubmission && existingSubmission.textSubmission.length > 0 && (
+            {existingSubmission.textSubmissions && existingSubmission.textSubmissions.length > 0 && (
               <div>
                 <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Text Submissions
                 </h3>
-                {existingSubmission.textSubmission.map((text, idx) => (
+                {existingSubmission.textSubmissions.map((text, idx) => (
                   <div key={idx} className="mb-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                     <MarkdownViewer value={text} />
                   </div>
@@ -347,13 +348,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
             )}
 
             {/* Display existing links */}
-            {existingSubmission.link && existingSubmission.link.length > 0 && (
+            {existingSubmission.links && existingSubmission.links.length > 0 && (
               <div>
                 <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Submitted Links
                 </h3>
                 <ul className="space-y-2">
-                  {existingSubmission.link.map((link, idx) => (
+                  {existingSubmission.links.map((link, idx) => (
                     <li
                       key={idx}
                       className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"

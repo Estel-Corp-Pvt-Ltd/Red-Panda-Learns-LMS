@@ -125,7 +125,7 @@ const ViewSubmissionModal: React.FC<ViewSubmissionModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                Text Submission {submission.textSubmission.length > 1 ? `(Response ${index + 1})` : ''}
+                Text Submission {submission.textSubmissions.length > 1 ? `(Response ${index + 1})` : ''}
               </h3>
               <div className="flex items-center gap-2">
                 {/* View Mode Toggle */}
@@ -183,7 +183,7 @@ const ViewSubmissionModal: React.FC<ViewSubmissionModalProps> = ({
     
     return (
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        {submission.textSubmission.length > 1 && (
+        {submission.textSubmissions.length > 1 && (
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground">Response {index + 1}</p>
             <button
@@ -199,7 +199,7 @@ const ViewSubmissionModal: React.FC<ViewSubmissionModalProps> = ({
             </button>
           </div>
         )}
-        {submission.textSubmission.length === 1 && (
+        {submission.textSubmissions.length === 1 && (
           <div className="flex justify-end mb-2">
             <button
               onClick={() => {
@@ -355,33 +355,33 @@ const ViewSubmissionModal: React.FC<ViewSubmissionModalProps> = ({
             <Separator />
 
             {/* Text Submissions */}
-            {submission.textSubmission && submission.textSubmission.length > 0 && (
+            {submission.textSubmissions && submission.textSubmissions.length > 0 && (
               <div>
                 <h3 className="font-medium mb-3 flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-primary" />
-                  Text Submission{submission.textSubmission.length > 1 ? 's' : ''}
+                  Text Submission{submission.textSubmissions.length > 1 ? 's' : ''}
                   <Badge variant="outline" className="ml-2">
-                    {submission.textSubmission.length} response{submission.textSubmission.length > 1 ? 's' : ''}
+                    {submission.textSubmissions.length} response{submission.textSubmissions.length > 1 ? 's' : ''}
                   </Badge>
                 </h3>
                 <div className="space-y-3">
-                  {submission.textSubmission.map((text, index) => renderTextSubmission(text, index))}
+                  {submission.textSubmissions.map((text, index) => renderTextSubmission(text, index))}
                 </div>
               </div>
             )}
 
             {/* Links */}
-            {submission.link && submission.link.length > 0 && (
+            {submission.links && submission.links.length > 0 && (
               <div>
                 <h3 className="font-medium mb-3 flex items-center gap-2">
                   <LinkIcon className="h-4 w-4 text-primary" />
                   Submitted Links
                   <Badge variant="outline" className="ml-2">
-                    {submission.link.length} link{submission.link.length > 1 ? 's' : ''}
+                    {submission.links.length} link{submission.links.length > 1 ? 's' : ''}
                   </Badge>
                 </h3>
                 <div className="space-y-2">
-                  {submission.link.map((link, index) => (
+                  {submission.links.map((link, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700 hover:border-primary/50 transition-colors"
@@ -469,8 +469,8 @@ const ViewSubmissionModal: React.FC<ViewSubmissionModalProps> = ({
             )}
 
             {/* Empty State */}
-            {!submission.textSubmission?.length && 
-             !submission.link?.length && 
+            {!submission.textSubmissions?.length && 
+             !submission.links?.length && 
              !submission.submissionFiles?.length && (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="h-16 w-16 mx-auto mb-4 opacity-30" />
@@ -483,8 +483,8 @@ const ViewSubmissionModal: React.FC<ViewSubmissionModalProps> = ({
       </Dialog>
 
       {/* Render fullscreen views outside the dialog */}
-      {isTextFullscreen && submission.textSubmission && submission.textSubmission[selectedTextIndex] && 
-        renderTextSubmission(submission.textSubmission[selectedTextIndex], selectedTextIndex)}
+      {isTextFullscreen && submission.textSubmissions && submission.textSubmissions[selectedTextIndex] && 
+        renderTextSubmission(submission.textSubmissions[selectedTextIndex], selectedTextIndex)}
       
       {isFeedbackFullscreen && submission.feedback && renderFeedback()}
     </>
