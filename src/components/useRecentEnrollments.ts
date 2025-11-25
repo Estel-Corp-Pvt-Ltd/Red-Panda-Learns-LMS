@@ -126,7 +126,7 @@ const toCourseHref = (slugOrUrl?: string | null): string | undefined => {
   if (!slugOrUrl) return undefined;
   const s = String(slugOrUrl).trim();
   if (!s) return undefined;
-  if (s.startsWith("http")) return s; // full URL returned
+  if (s.startsWith("https")) return s; // full URL returned
   if (s.startsWith("/")) return s; // already a path
   // treat as slug
   return `/courses/${s}`;

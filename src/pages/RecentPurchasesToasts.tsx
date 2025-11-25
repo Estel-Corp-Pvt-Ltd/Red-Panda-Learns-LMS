@@ -7,7 +7,7 @@ import {
   useMotionValue,
   animate,
 } from "framer-motion";
-import { X } from "lucide-react";
+import { X, MapPin } from "lucide-react"; // ADDED MapPin
 import MapAvatarGeo from "../components/MapAvatarGeo";
 
 export type Purchase = {
@@ -176,52 +176,25 @@ export default function RecentPurchasesToasts({
 
   const item = list[idx];
 
-  // Avatar prefers precomputed mapUrl; fallback to MapAvatarGeo (no fake place)
+  // Avatar with placeholder pin while loading
+  // Avatar: only gradient + centered MapPin (no map image/component)
   const Avatar = ({ it }: { it: Purchase }) => {
-    if (it.mapUrl) {
-      return (
-        <img
-          src={it.mapUrl}
-          alt={it.location ? `Map of ${it.location}` : "Map"}
-          className="rounded-xl object-cover shadow-md ring-2 ring-foreground/10"
-          style={{
-            width: avatarSize,
-            height: avatarSize,
-            filter: "contrast(1.1) saturate(1.05)",
-          }}
-          loading="eager"
-          // @ts-ignore
-          fetchpriority="high"
-          decoding="sync"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-            const parent = e.currentTarget.parentElement;
-            if (parent) {
-              const fallback = document.createElement("div");
-              fallback.className =
-                "rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 ring-2 ring-foreground/10";
-              fallback.style.width = `${avatarSize}px`;
-              fallback.style.height = `${avatarSize}px`;
-              parent.appendChild(fallback);
-            }
-          }}
-        />
-      );
-    }
-
-    // Only pass place if we actually have one; no hardcoded default
-    const place =
-      it.location && it.location.trim().length > 0 ? it.location : undefined;
+    const sizeStyle = { width: avatarSize, height: avatarSize };
 
     return (
-      <MapAvatarGeo
-        lat={it.lat}
-        lon={it.lon}
-        place={place}
-        size={avatarSize}
-        zoom={14}
-        // prefer="osm" // uncomment to force OSM even if Geoapify key exists
-      />
+      <div
+        className="relative rounded-xl ring-2 ring-foreground/10 shadow-md overflow-hidden"
+        style={sizeStyle}
+        aria-label={it.location ? `Location: ${it.location}` : "Location"}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/80 via-purple-500/80 to-violet-500/80" />
+        <div className="absolute inset-0 grid place-items-center">
+          <MapPin
+            className="w-5 h-5 text-white stroke-[2.2] drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
+            style={{ fill: "currentColor" }} /* fill the icon */
+          />
+        </div>
+      </div>
     );
   };
 
@@ -252,29 +225,10 @@ export default function RecentPurchasesToasts({
             key={item.id}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
-            initial={{
-              opacity: 0,
-              scale: 0.8,
-              rotate: -5,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              rotate: 0,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.8,
-              rotate: 5,
-              y: -20,
-            }}
-            transition={{
-              type: "spring",
-              duration: 0.6,
-              bounce: 0.3,
-            }}
+            initial={{ opacity: 0, scale: 0.8, rotate: -5, y: 20 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, rotate: 5, y: -20 }}
+            transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
             className="pointer-events-auto select-none"
           >
             {/* Card: smaller on phones, larger from md up */}
