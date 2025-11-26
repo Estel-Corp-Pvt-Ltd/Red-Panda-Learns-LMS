@@ -16,6 +16,7 @@ import { assignmentService } from '@/services/assignmentService';
 import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
 import { Timestamp } from 'firebase/firestore';
+import { string } from 'zod';
 
 export interface AssignmentFormData {
   title: string;
@@ -26,6 +27,8 @@ export interface AssignmentFormData {
   totalPoints: number;
   minimumPassPoint: number;
   attachments: File[];
+  textSubmission:string[];
+  link:string[];
 }
 
 interface FormErrors {
@@ -51,6 +54,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     totalPoints: 100,
     minimumPassPoint: 60,
     attachments: [],
+    textSubmission:[],
+    link:[],
   });
 
   
@@ -125,6 +130,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
         totalPoints: formData.totalPoints,
         minimumPassPoint: formData.minimumPassPoint,
         attachments: uploadedUrls,
+        textSubmission:formData.textSubmission,
+        link:formData.link
       };
 
       const result = await assignmentService.createAssignment(newAssignmentData);

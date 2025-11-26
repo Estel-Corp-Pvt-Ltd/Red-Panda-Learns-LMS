@@ -24,6 +24,8 @@ export interface AssignmentSubmission {
   feedback?: string;
   marks?: number;
   submissionFiles: string[];
+  textSubmissions:string[];
+  links:string[];
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
 }
