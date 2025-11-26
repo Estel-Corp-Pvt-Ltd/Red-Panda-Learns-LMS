@@ -25,7 +25,8 @@ import {
     SORT_KEY,
     QUIZ_QUESTION_TYPE,
     QUIZ_SUBMISSION_STATUS,
-    QUIZ_STATUS
+    QUIZ_STATUS,
+    NOTIFICATION_STATUS
 } from "@/constants";
 
 export type AttributeType = typeof ATTRIBUTE_TYPE[keyof typeof ATTRIBUTE_TYPE];
@@ -55,7 +56,7 @@ export type SortKey = typeof SORT_KEY[keyof typeof SORT_KEY];
 export type QuizQuestionType = typeof QUIZ_QUESTION_TYPE[keyof typeof QUIZ_QUESTION_TYPE];
 export type QuizSubmissionStatus = typeof QUIZ_SUBMISSION_STATUS[keyof typeof QUIZ_SUBMISSION_STATUS];
 export type QuizStatus = typeof QUIZ_STATUS[keyof typeof QUIZ_STATUS];
-
+export type NotificationStatus = typeof NOTIFICATION_STATUS[keyof typeof NOTIFICATION_STATUS];
 export type Duration = {
     hours: number;
     minutes: number;
