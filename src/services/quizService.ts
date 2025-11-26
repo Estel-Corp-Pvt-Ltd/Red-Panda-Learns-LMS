@@ -645,6 +645,23 @@ class QuizService {
                             correctArr.every(a => answerArr.includes(a));
 
                         if (allCorrect) obtainedMarks = fullMarks;
+                    } else if (question.type === QUIZ_QUESTION_TYPE.FILL_BLANK) {
+                        let correctAnswer = Array.isArray(question.correctAnswer) ? question.correctAnswer[0] : question.correctAnswer;
+                        let userAnswer = Array.isArray(ans.answer) ? ans.answer[0] : ans.answer;
+                        // Apply rules if any
+                        if (question.rules) {
+                            if (question.rules.spaceRemoval) {
+                                correctAnswer = correctAnswer.replace(/\s+/g, '').trim();
+                                userAnswer = userAnswer.replace(/\s+/g, '').trim();
+                            }
+                            if (question.rules.caseInSensitive) {
+                                correctAnswer = correctAnswer.toLowerCase();
+                                userAnswer = userAnswer.toLowerCase();
+                            }
+                        }
+                        if (userAnswer === correctAnswer) {
+                            obtainedMarks = fullMarks;
+                        }
                     }
                 }
 
