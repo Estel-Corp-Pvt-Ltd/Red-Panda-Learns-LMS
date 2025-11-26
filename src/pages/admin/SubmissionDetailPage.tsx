@@ -20,7 +20,7 @@ import {
   ArrowLeft,
   User,
   Search,
-  Link as LinkIcon,
+  Eye,
   Edit,
   Trash2,
   Filter,
@@ -36,6 +36,7 @@ import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import MDEditor from '@uiw/react-md-editor';
 import AdminLayout from '@/components/AdminLayout';
+import ViewSubmissionModal from '@/components/admin/ViewSubmissionModal'; // Import the new modal component
 
 interface FilterState {
   searchTerm: string;
@@ -53,15 +54,18 @@ const AllSubmissionsPage = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
+  const [viewingSubmission, setViewingSubmission] = useState<AssignmentSubmission | null>(null);
   const [maximumMarks, setMaximumMarks] = useState<number>(100);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [marks, setMarks] = useState('');
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [submissionToDelete, setSubmissionToDelete] = useState<AssignmentSubmission | null>(null);
 
-  // Pagination state
+  // ... (keep all your existing state and pagination code)
+
   const [currentPage, setCurrentPage] = useState<{
     data: AssignmentSubmission[];
     hasNextPage: boolean;
@@ -73,7 +77,6 @@ const AllSubmissionsPage = () => {
   const [currentCursor, setCurrentCursor] = useState<DocumentSnapshot | null>(null);
   const [pageSize, setPageSize] = useState(20);
 
-  // Filter state
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: '',
     gradingStatus: 'all',
@@ -82,8 +85,9 @@ const AllSubmissionsPage = () => {
     sortOrder: 'desc'
   });
 
-  // Collapsible filters
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // ... (keep all your existing useEffects and functions)
 
   useEffect(() => {
     loadInitialData();
@@ -191,7 +195,6 @@ const AllSubmissionsPage = () => {
   const applyFilters = () => {
     let filtered = [...submissions];
 
-    // Apply search filter
     if (filters.searchTerm.trim()) {
       filtered = filtered.filter(submission =>
         submission.studentName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
@@ -200,7 +203,6 @@ const AllSubmissionsPage = () => {
       );
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let aValue: any = a[filters.sortBy];
       let bValue: any = b[filters.sortBy];
@@ -238,6 +240,12 @@ const AllSubmissionsPage = () => {
       sortBy: 'createdAt',
       sortOrder: 'desc'
     });
+  };
+
+  // Add function to handle viewing submission
+  const handleViewSubmission = (submission: AssignmentSubmission) => {
+    setViewingSubmission(submission);
+    setIsViewModalOpen(true);
   };
 
   const openGradeModal = (submission: AssignmentSubmission) => {
@@ -313,6 +321,12 @@ const AllSubmissionsPage = () => {
       : 'Not Graded';
   };
 
+  const getGradeStatus = (submission: AssignmentSubmission) => {
+    if (submission.marks !== undefined && submission.marks !== null) {
+      return 'default';
+    }
+    return 'secondary';
+  };
 
   const hasActiveFilters = () => {
     return filters.searchTerm !== '' ||
@@ -469,18 +483,17 @@ const AllSubmissionsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">Student</TableHead>
-                  <TableHead className="w-[200px]">Assignment</TableHead>
-                  <TableHead className="w-[80px]">Files</TableHead>
-                  <TableHead className="w-[120px]">Submitted</TableHead>
-                  <TableHead className="w-[80px]">Marks</TableHead>
-                  <TableHead className="w-[80px]">Actions</TableHead>
+                  <TableHead className="w-[250px]">Student</TableHead>
+                  <TableHead className="w-[250px]">Assignment</TableHead>
+                  <TableHead className="w-[150px]">Submitted</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSubmissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       {submissions.length === 0 ? 'No submissions yet' : 'No submissions match your filters'}
                     </TableCell>
                   </TableRow>
@@ -497,28 +510,8 @@ const AllSubmissionsPage = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm truncate max-w-[180px]" title={getAssignmentTitle(submission.assignmentId)}>
+                        <div className="text-sm truncate max-w-[230px]" title={getAssignmentTitle(submission.assignmentId)}>
                           {getAssignmentTitle(submission.assignmentId)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {submission.submissionFiles.slice(0, 2).map((fileUrl, index) => (
-                            <Button
-                              key={index}
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => window.open(fileUrl, '_blank')}
-                            >
-                              <LinkIcon className="h-3 w-3" />
-                            </Button>
-                          ))}
-                          {submission.submissionFiles.length > 2 && (
-                            <Badge variant="secondary" className="h-7 px-2 text-xs">
-                              +{submission.submissionFiles.length - 2}
-                            </Badge>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -527,15 +520,27 @@ const AllSubmissionsPage = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getGradeText(submission)}
+                        <Badge variant={getGradeStatus(submission)}>
+                          {getGradeText(submission)}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleViewSubmission(submission)}
+                            className="h-8 w-8"
+                            title="View Submission"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => openGradeModal(submission)}
                             className="h-8 w-8"
+                            title="Grade Submission"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -544,6 +549,7 @@ const AllSubmissionsPage = () => {
                             size="icon"
                             onClick={() => setSubmissionToDelete(submission)}
                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete Submission"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -588,7 +594,17 @@ const AllSubmissionsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Grading Modal */}
+      {/* View Submission Modal */}
+      <ViewSubmissionModal 
+        submission={viewingSubmission}
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setViewingSubmission(null);
+        }}
+      />
+
+      {/* Grading Modal - Keep your existing grading modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -600,11 +616,12 @@ const AllSubmissionsPage = () => {
 
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="marks" className="text-sm">Marks ({maximumMarks})</Label>
+              <Label htmlFor="marks" className="text-sm">Marks (out of {maximumMarks})</Label>
               <Input
                 id="marks"
                 type="number"
                 min="0"
+                max={maximumMarks}
                 value={marks}
                 onChange={(e) => setMarks(e.target.value)}
                 placeholder="Enter marks"
@@ -637,7 +654,7 @@ const AllSubmissionsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - Keep your existing delete modal */}
       <Dialog open={!!submissionToDelete} onOpenChange={(open) => !open && setSubmissionToDelete(null)}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
