@@ -57,7 +57,6 @@ export const userDeleteCascade = onDocumentDeleted(
 
     } catch (error) {
       logger.error(`Error deleting lessons for user ${userId}:`, error);
-      throw new Error(`Failed to delete lessons for user: ${userId}`);
     }
   }
 );
