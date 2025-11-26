@@ -15,6 +15,7 @@ import { enrollStudentsInBulk, processEnrollmentTask } from './handlers/enrollme
 // Cascade delete workers
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
+import { userDeleteCascade } from './workers/userDeleteCascade';
 
 export {
   enrollStudent,
@@ -27,6 +28,7 @@ export {
   sendMailWorker,
   courseDeleteCascade,
   lessonDeleteCascade,
+  userDeleteCascade,
   getLessons,
   enrollFreeCourse,
   resetUserPassword,
