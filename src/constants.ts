@@ -391,6 +391,8 @@ export const COLLECTION = {
   COURSE_ARRANGEMENTS: "CourseArrangements",
   QUIZZES: "Quizzes",
   QUIZ_SUBMISSIONS: "QuizSubmissions",
+  COMPLAINTS: "Complaints",
+  COMPLAINT_ACTIONS: "ComplaintActions"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
