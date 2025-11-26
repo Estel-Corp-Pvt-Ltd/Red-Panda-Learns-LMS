@@ -161,7 +161,7 @@ const Footer = () => {
                   <Linkedin className="h-5 w-5" />
                 </a>
                 <a
-                  href="https://x.com/vizuara"
+                  href="https://x.com/vizuaraai"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
