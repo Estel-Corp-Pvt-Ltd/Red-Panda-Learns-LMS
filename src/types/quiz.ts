@@ -29,6 +29,11 @@ export interface Question {
     options: string[];
     correctAnswer: string | string[];
     marks: number;
+    attachments: string[];
+    rules?: {
+        caseInSensitive: boolean;
+        spaceRemoval: boolean;
+    }
 };
 
 export interface QuizSubmission {
