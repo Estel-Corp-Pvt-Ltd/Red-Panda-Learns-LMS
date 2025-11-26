@@ -155,6 +155,8 @@ const AttemptQuiz = () => {
 
             if (type === QUIZ_QUESTION_TYPE.MCQ) {
                 updated = [option]; // Single choice
+            } else if (type === QUIZ_QUESTION_TYPE.FILL_BLANK) {
+                updated = [option]; // Single text answer
             } else {
                 updated = existing.selectedOptions.includes(option)
                     ? existing.selectedOptions.filter(o => o !== option)
@@ -388,6 +390,18 @@ const AttemptQuiz = () => {
                                                             ))}
                                                         </div>
                                                     )}
+                                                {q.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+                                                    <div>
+                                                        <input
+                                                            type="text"
+                                                            value={ans.selectedOptions[0] || ""}
+                                                            onChange={(e) =>
+                                                                handleOptionChange(q.questionNo, e.target.value, q.type)
+                                                            }
+                                                            className="w-full border border-gray-300 rounded-md p-2"
+                                                        />
+                                                    </div>
+                                                )}
 
                                                 {/* Action Buttons */}
                                                 <div className="flex gap-3 mt-6">

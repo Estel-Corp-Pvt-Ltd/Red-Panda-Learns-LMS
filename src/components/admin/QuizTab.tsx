@@ -162,89 +162,135 @@ const SortableQuestionCard = ({
                                 <SelectContent>
                                     {Object.values(QUIZ_QUESTION_TYPE).map(t => (
                                         <SelectItem key={t} value={t}>
-                                            {t === QUIZ_QUESTION_TYPE.MCQ ? "MCQ" : "Multiple Answers"}
+                                            {t === QUIZ_QUESTION_TYPE.MCQ && "MCQ"}
+                                            {t === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && "Multiple Answer"}
+                                            {t === QUIZ_QUESTION_TYPE.FILL_BLANK && "Fill in the Blank"}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-
-                        <div className="flex justify-between items-center mb-2">
-                            <h4 className="font-medium">Options</h4>
-                            <button
-                                className="text-pink-600 flex items-center gap-1 hover:text-pink-700"
-                                onClick={() => addOption(id)}
-                            >
-                                <PlusCircle size={18} />
-                                Add Option
-                            </button>
-                        </div>
-
-                        {question.options.map((opt, idx) => (
-                            <div key={idx} className="flex gap-2 items-center mb-2">
-                                <Input
-                                    className="flex-1"
-                                    placeholder={`Option ${idx + 1}`}
-                                    value={opt}
-                                    onChange={(e) => updateOption(id, idx, e.target.value)}
-                                />
-                                <button
-                                    className="text-red-400 hover:text-red-600"
-                                    onClick={() => deleteOption(id, idx)}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-
-                        {question.options.length > 0 && (
-                            <div>
-                                <label className="text-sm font-medium">
-                                    Correct Answer
-                                </label>
-                                {question.type === QUIZ_QUESTION_TYPE.MCQ ? (
-                                    <Select
-                                        value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
-                                        onValueChange={(val) => updateCorrectAnswer(id, val)}
+                        {[QUIZ_QUESTION_TYPE.MCQ, QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER].includes(question.type as any) && (
+                            <div className="mb-3">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-medium">Options</h4>
+                                    <button
+                                        className="text-pink-600 flex items-center gap-1 hover:text-pink-700"
+                                        onClick={() => addOption(id)}
                                     >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select Correct Option" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {question.options.filter(q => q.trim() !== "").map((o, idx) => (
-                                                <SelectItem key={idx} value={o}>
-                                                    {o}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <div className="flex flex-col gap-1 mt-2">
-                                        {question.options.map((o, idx) => {
-                                            const arr = Array.isArray(question.correctAnswer)
-                                                ? question.correctAnswer
-                                                : [];
-                                            const checked = arr.includes(o);
+                                        <PlusCircle size={18} />
+                                        Add Option
+                                    </button>
+                                </div>
 
-                                            return (
-                                                <div key={idx} className="flex gap-2 items-center">
-                                                    <Checkbox
-                                                        checked={checked}
-                                                        onCheckedChange={() => {
-                                                            let next = checked
-                                                                ? arr.filter(x => x !== o)
-                                                                : [...arr, o];
-                                                            updateCorrectAnswer(id, next);
-                                                        }}
-                                                    />
-                                                    <span>{o}</span>
-                                                </div>
-                                            );
-                                        })}
+                                {question.options.map((opt, idx) => (
+                                    <div key={idx} className="flex gap-2 items-center mb-2">
+                                        <Input
+                                            className="flex-1"
+                                            placeholder={`Option ${idx + 1}`}
+                                            value={opt}
+                                            onChange={(e) => updateOption(id, idx, e.target.value)}
+                                        />
+                                        <button
+                                            className="text-red-400 hover:text-red-600"
+                                            onClick={() => deleteOption(id, idx)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
-                                )}
+                                ))}
                             </div>
                         )}
+                        {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+                            <div>
+                                <h3 className="mb-2">Rules</h3>
+                                <div className="mb-3 flex gap-4">
+                                    <label className="text-sm font-medium mr-4 flex items-center gap-2">
+                                        <Switch
+                                            checked={question.rules?.caseInSensitive ?? false}
+                                            onCheckedChange={(val) =>
+                                                updateQuestion(id, {
+                                                    rules: {
+                                                        ...question.rules,
+                                                        caseInSensitive: val
+                                                    }
+                                                })
+                                            }
+                                        /> Case InSensitive
+                                    </label>
+                                    <label className="text-sm font-medium mr-4 flex items-center gap-2">
+                                        <Switch
+                                            checked={question.rules?.spaceRemoval ?? false}
+                                            onCheckedChange={(val) =>
+                                                updateQuestion(id, {
+                                                    rules: {
+                                                        ...question.rules,
+                                                        spaceRemoval: val
+                                                    }
+                                                })
+                                            }
+                                        />
+                                        Ignore Spaces
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="text-sm font-medium">
+                                Correct Answer
+                            </label>
+                            {question.type === QUIZ_QUESTION_TYPE.MCQ && (
+                                <Select
+                                    value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
+                                    onValueChange={(val) => updateCorrectAnswer(id, val)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select Correct Option" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {question.options.filter(q => q.trim() !== "").map((o, idx) => (
+                                            <SelectItem key={idx} value={o}>
+                                                {o}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                            {question.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && (
+                                <div className="flex flex-col gap-1 mt-2">
+                                    {question.options.map((o, idx) => {
+                                        const arr = Array.isArray(question.correctAnswer)
+                                            ? question.correctAnswer
+                                            : [];
+                                        const checked = arr.includes(o);
+
+                                        return (
+                                            <div key={idx} className="flex gap-2 items-center">
+                                                <Checkbox
+                                                    checked={checked}
+                                                    onCheckedChange={() => {
+                                                        let next = checked
+                                                            ? arr.filter(x => x !== o)
+                                                            : [...arr, o];
+                                                        updateCorrectAnswer(id, next);
+                                                    }}
+                                                />
+                                                <span>{o}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+                                <input
+                                    type="text"
+                                    className="mt-2 w-full border px-3 py-2 rounded-md"
+                                    value={question.correctAnswer as string}
+                                    onChange={e => updateCorrectAnswer(id, e.target.value)}
+                                />
+                            )}
+                        </div>
 
                         <div className="mt-3">
                             <label className="text-sm font-medium">Marks: </label>
@@ -384,6 +430,10 @@ const Questions = ({
 
     const isSaveDisabled = questions.some(q => {
         if (q.type === QUIZ_QUESTION_TYPE.MCQ) {
+            return typeof q.correctAnswer !== "string" || q.correctAnswer.trim() === "";
+        } else if (q.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) {
+            return !Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0;
+        } else if (q.type === QUIZ_QUESTION_TYPE.FILL_BLANK) {
             return typeof q.correctAnswer !== "string" || q.correctAnswer.trim() === "";
         }
         return !Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0;
@@ -646,7 +696,6 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
 
     const handleSaveQuestions = async () => {
         if (!expandedQuizId) return;
-
         const response = await quizService.setQuestions(expandedQuizId, questions);
 
         if (!response.success) {
