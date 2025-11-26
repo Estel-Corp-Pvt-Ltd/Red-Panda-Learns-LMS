@@ -29,6 +29,7 @@ export interface Question {
     options: string[];
     correctAnswer: string | string[];
     marks: number;
+    attachments: string[];
 };
 
 export interface QuizSubmission {

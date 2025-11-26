@@ -352,7 +352,18 @@ const AttemptQuiz = () => {
                                                 <h3 className="font-semibold text-xl mb-4 text-gray-800">
                                                     Q{q.questionNo}. {q.description}
                                                 </h3>
-
+                                                {q.attachments && q.attachments.length > 0 && (
+                                                    <div className="mb-4 flex flex-wrap gap-4">
+                                                        {q.attachments.map((url, idx) => (
+                                                            <img
+                                                                key={idx}
+                                                                src={url}
+                                                                alt={`Attachment ${idx + 1}`}
+                                                                className="max-w-96 h-auto rounded-lg mb-2 border"
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 {/* Options */}
                                                 {(q.type === QUIZ_QUESTION_TYPE.MCQ ||
                                                     q.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) && (

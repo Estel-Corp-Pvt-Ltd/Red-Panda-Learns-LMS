@@ -14,7 +14,7 @@ import {
     SortableContext,
     verticalListSortingStrategy
 } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronRight, Folder, GripVertical, ListChecks, Pencil, Plus, PlusCircle, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, CloudUpload, Folder, GripVertical, ImagePlus, ListChecks, Pencil, Plus, PlusCircle, Trash2, UploadCloud, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import ConfirmDialog from "../ConfirmDialog";
 import CreateQuizModal from "./CreateQuizModal";
@@ -28,6 +28,7 @@ import { Checkbox } from "../ui/checkbox";
 import { Switch } from "../ui/switch";
 import { parseQuizQuestionsFromExcel } from "@/utils/parse-quiz-questions-from-excel";
 import QuizSubmissionModal from "../quiz/QuizSubmissionModel";
+import { fileService } from "@/services/fileService";
 
 type SortableQuestionCardProps = {
     id: number;
@@ -76,6 +77,38 @@ const SortableQuestionCard = ({
         transition
     };
 
+    const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const addAttachment = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploading(true);
+            const fileResponse = await fileService.uploadAttachment(`/courses/quizes/`, file);
+            if (!fileResponse.success || !fileResponse.data) {
+                toast({ title: "Failed to upload attachment", variant: "destructive" });
+                return;
+            }
+
+            const updatedAttachments = [...(question.attachments || []), fileResponse.data];
+            updateQuestion(id, { attachments: updatedAttachments });
+
+            toast({ title: "Attachment uploaded successfully" });
+        } catch (error: any) {
+            toast({ title: "Failed to upload attachment", description: error.message, variant: "destructive" });
+        } finally {
+            setIsUploading(false);
+            event.target.value = "";
+        }
+    }
+
+    const deleteAttachment = (index: number) => {
+        const updatedAttachments = question.attachments?.filter((_, i) => i !== index) || [];
+        updateQuestion(id, { attachments: updatedAttachments });
+    }
+
     return (
         <div
             ref={setNodeRef}
@@ -86,13 +119,14 @@ const SortableQuestionCard = ({
                 <div {...listeners} {...attributes}>
                     <GripVertical className="text-gray-500 cursor-grab" />
                 </div>
-
-                <Input
-                    className="flex-1"
-                    placeholder="Question description"
-                    value={question.description}
-                    onChange={(e) => updateQuestion(id, { description: e.target.value })}
-                />
+                <div className="flex-1 flex gap-3 items-center">
+                    <Input
+                        className="flex-1"
+                        placeholder="Question description"
+                        value={question.description}
+                        onChange={(e) => updateQuestion(id, { description: e.target.value })}
+                    />
+                </div>
 
                 <button
                     onClick={() => setCollapsed(!collapsed)}
@@ -102,7 +136,6 @@ const SortableQuestionCard = ({
                         className={`transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`}
                     />
                 </button>
-
                 <button
                     className="text-red-500 hover:text-red-700"
                     onClick={() => deleteQuestion(id)}
@@ -111,10 +144,10 @@ const SortableQuestionCard = ({
                 </button>
             </div>
 
-            {
-                !collapsed &&
-                (
-                    <>
+            {!collapsed && (
+                <div className="flex gap-3">
+                    {/* Question Content */}
+                    <div className="relative bg-white p-4 rounded-lg flex-1 max-h-full">
                         <div className="mb-3">
                             <label className="text-sm font-medium">Type</label>
                             <Select
@@ -126,7 +159,6 @@ const SortableQuestionCard = ({
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Select Question Type" />
                                 </SelectTrigger>
-
                                 <SelectContent>
                                     {Object.values(QUIZ_QUESTION_TYPE).map(t => (
                                         <SelectItem key={t} value={t}>
@@ -139,7 +171,6 @@ const SortableQuestionCard = ({
 
                         <div className="flex justify-between items-center mb-2">
                             <h4 className="font-medium">Options</h4>
-
                             <button
                                 className="text-pink-600 flex items-center gap-1 hover:text-pink-700"
                                 onClick={() => addOption(id)}
@@ -157,7 +188,6 @@ const SortableQuestionCard = ({
                                     value={opt}
                                     onChange={(e) => updateOption(id, idx, e.target.value)}
                                 />
-
                                 <button
                                     className="text-red-400 hover:text-red-600"
                                     onClick={() => deleteOption(id, idx)}
@@ -167,60 +197,54 @@ const SortableQuestionCard = ({
                             </div>
                         ))}
 
-                        {
-                            question.options.length > 0 &&
-                            (
-                                <div>
-                                    <label className="text-sm font-medium">
-                                        Correct Answer
-                                    </label>
-                                    {
-                                        question.type === QUIZ_QUESTION_TYPE.MCQ ? (
-                                            <Select
-                                                value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
-                                                onValueChange={(val) => updateCorrectAnswer(id, val)}
-                                            >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select Correct Option" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {question.options.filter(q => q.trim() !== "").map((o, idx) => (
-                                                        <SelectItem key={idx} value={o}>
-                                                            {o}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <div className="flex flex-col gap-1 mt-2">
-                                                {question.options.map((o, idx) => {
-                                                    const arr = Array.isArray(question.correctAnswer)
-                                                        ? question.correctAnswer
-                                                        : [];
+                        {question.options.length > 0 && (
+                            <div>
+                                <label className="text-sm font-medium">
+                                    Correct Answer
+                                </label>
+                                {question.type === QUIZ_QUESTION_TYPE.MCQ ? (
+                                    <Select
+                                        value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
+                                        onValueChange={(val) => updateCorrectAnswer(id, val)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select Correct Option" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {question.options.filter(q => q.trim() !== "").map((o, idx) => (
+                                                <SelectItem key={idx} value={o}>
+                                                    {o}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        {question.options.map((o, idx) => {
+                                            const arr = Array.isArray(question.correctAnswer)
+                                                ? question.correctAnswer
+                                                : [];
+                                            const checked = arr.includes(o);
 
-                                                    const checked = arr.includes(o);
-
-                                                    return (
-                                                        <div key={idx} className="flex gap-2 items-center">
-                                                            <Checkbox
-                                                                checked={checked}
-                                                                onCheckedChange={() => {
-                                                                    let next = checked
-                                                                        ? arr.filter(x => x !== o)
-                                                                        : [...arr, o];
-                                                                    updateCorrectAnswer(id, next);
-                                                                }}
-                                                            />
-                                                            <span>{o}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )
-                                    }
-                                </div>
-                            )
-                        }
+                                            return (
+                                                <div key={idx} className="flex gap-2 items-center">
+                                                    <Checkbox
+                                                        checked={checked}
+                                                        onCheckedChange={() => {
+                                                            let next = checked
+                                                                ? arr.filter(x => x !== o)
+                                                                : [...arr, o];
+                                                            updateCorrectAnswer(id, next);
+                                                        }}
+                                                    />
+                                                    <span>{o}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="mt-3">
                             <label className="text-sm font-medium">Marks: </label>
@@ -234,9 +258,87 @@ const SortableQuestionCard = ({
                                 }
                             />
                         </div>
-                    </>
-                )
-            }
+                    </div>
+
+                    {/* Attachments Sidebar */}
+                    <div className="w-48 bg-white p-3 rounded-lg border">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium text-sm">Attachments</h4>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                id={`attachment-upload-${id}`}
+                                onChange={addAttachment}
+                            />
+                            <label
+                                htmlFor={`attachment-upload-${id}`}
+                                className="flex items-center justify-center w-8 h-8 text-primary hover:bg-gray-100 rounded cursor-pointer"
+                                title="Add attachment"
+                            >
+                                <ImagePlus size={16} />
+                            </label>
+                        </div>
+                        {isUploading && (
+                            <div className="relative bg-blue-500/20 p-2 rounded mb-3 flex items-center justify-center">
+                                <UploadCloud className="w-4 h-4 text-blue-500 mr-2" />
+                                <span className="text-sm">Uploading...</span>
+                            </div>
+                        )}
+
+                        {!question.attachments?.length ? (
+                            <div className="text-center text-gray-500 text-sm py-4">
+                                No attachments
+                            </div>
+                        ) : (
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                                {question.attachments.map((att, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative group border rounded-md overflow-hidden"
+                                    >
+                                        <img
+                                            src={att}
+                                            alt={`Attachment ${idx + 1}`}
+                                            className="w-full h-20 object-cover cursor-pointer hover:opacity-90"
+                                            onClick={() => setSelectedImageSrc(att)}
+                                        />
+                                        <button
+                                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                                            onClick={() => deleteAttachment(idx)}
+                                            title="Delete attachment"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                        <div className="p-1 text-xs text-gray-600 truncate">
+                                            Attachment {idx + 1}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Image Preview Modal */}
+            {selectedImageSrc && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="relative bg-white p-4 rounded-lg max-w-4xl max-h-full">
+                        <img
+                            src={selectedImageSrc}
+                            alt="Attachment preview"
+                            className="max-w-full max-h-[80vh] object-contain"
+                        />
+                        <button
+                            className="absolute top-2 right-2 w-8 h-8 bg-pink-600 text-white rounded-full hover:bg-pink-700 flex items-center justify-center"
+                            onClick={() => setSelectedImageSrc(null)}
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -454,7 +556,8 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                     type: QUIZ_QUESTION_TYPE.MCQ,
                     options: [],
                     correctAnswer: "",
-                    marks: 1
+                    marks: 1,
+                    attachments: []
                 }
             ];
         });
