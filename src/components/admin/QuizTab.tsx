@@ -86,7 +86,7 @@ const SortableQuestionCard = ({
 
         try {
             setIsUploading(true);
-            const fileResponse = await fileService.uploadAttachment(`/courses/quizes/`, file);
+            const fileResponse = await fileService.uploadAttachment(`/courses/quizzes/`, file);
             if (!fileResponse.success || !fileResponse.data) {
                 toast({ title: "Failed to upload attachment", variant: "destructive" });
                 return;
