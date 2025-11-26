@@ -111,7 +111,7 @@ export const LEARNING_UNIT = {
   ASSIGNMENT: "ASSIGNMENT",
   LESSON: "LESSON",
   TOPIC: "TOPIC",
-  COHORT: "COHORT"
+  COHORT: "COHORT",
 } as const;
 
 export const ENVIRONMENT = {
@@ -136,7 +136,6 @@ export const ORDER_STATUS = {
   FAILED: "FAILED",
 } as const;
 
-
 export const PAYMENT_ATTEMPT_STATUS = {
   FAILED: "FAILED",
   CANCELLED: "CANCELLED",
@@ -147,7 +146,6 @@ export const TRANSACTION_TYPE = {
   PAYMENT: "PAYMENT",
   REFUND: "REFUND",
 } as const;
-
 
 export const REFUND_INITIATOR = {
   ADMIN: "ADMIN",
@@ -169,17 +167,16 @@ export const SORT_KEY = {
   TITLE_DESC: "TITLE_DESC",
 } as const;
 
-
 export const NOTIFICATION_STATUS = {
-  PENDING: "PENDING",
-  NOTIFIED: "NOTIFIED",
-  REMINDER_SCHEDULED: "REMINDER_SCHEDULED",
-  REMINDER_SENT: "REMINDER_SENT",
-  PAUSED: "PAUSED",
-  EVALUATED: "EVALUATED",
-  ARCHIVED: "ARCHIVED",
-  ERROR: "ERROR",
-} as const
+  PENDING: "PENDING", // record created but no email sent yet
+  NOTIFIED: "NOTIFIED", // initial email sent to admin
+  REMINDER_SCHEDULED: "REMINDER SCHEDULED", // reminder task created, waiting to run
+  REMINDER_SENT: "REMINDER SENT", // reminder email sent after 4 days
+  PAUSED: "PAUSED", // admin paused reminders for this submission
+  EVALUATED: "EVALUATED", // assignment evaluated; no more notifications
+  ARCHIVED: "ARCHIVED", // stored for history; no active actions
+  ERROR: "ERROR", // notification attempt failed; needs retry check
+} as const;
 
 // --- PAYPAL WEBHOOK EVENTS ---
 
@@ -379,19 +376,19 @@ export const COUPON_STATUS = {
 
 export const COLLECTION = {
   ASSIGNMENTS: "Assignments",
-  ASSIGNMENT_SUBMISSIONS: 'AssignmentSubmissions',
-  COURSES: 'Courses',
-  BUNDLES: 'Bundles',
-  COHORTS: 'Cohorts',
-  USERS: 'Users',
-  CARTS: 'Carts',
-  LESSONS: 'Lessons',
-  COUPONS: 'Coupons',
-  COUPON_USAGES: 'CouponUsages',
-  ORGANIZATIONS: 'Organizations',
-  CONFIG: 'Config',
-  ATTRIBUTES: 'Attributes',
-  FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
+  ASSIGNMENT_SUBMISSIONS: "AssignmentSubmissions",
+  COURSES: "Courses",
+  BUNDLES: "Bundles",
+  COHORTS: "Cohorts",
+  USERS: "Users",
+  CARTS: "Carts",
+  LESSONS: "Lessons",
+  COUPONS: "Coupons",
+  COUPON_USAGES: "CouponUsages",
+  ORGANIZATIONS: "Organizations",
+  CONFIG: "Config",
+  ATTRIBUTES: "Attributes",
+  FALLBACK_CURRENCY_RATES: "FallbackCurrencyRates",
   POPUPS: "PopUps",
   ORDERS: "Orders",
   TRANSACTIONS: "Transactions",
@@ -401,6 +398,8 @@ export const COLLECTION = {
   ENROLLMENTS: "Enrollments",
   QUIZZES: "Quizzes",
   QUIZ_SUBMISSIONS: "QuizSubmissions",
+  ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
+  SUBMISSION_NOTIFICATIONS: "SubmissionNotifications",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -452,10 +451,10 @@ export const QUIZ_QUESTION_TYPE = {
 export const QUIZ_SUBMISSION_STATUS = {
   IN_PROGRESS: "IN PROGRESS",
   SUBMITTED: "SUBMITTED",
-  AUTO_SUBMITTED: "AUTO_SUBMITTED"
+  AUTO_SUBMITTED: "AUTO_SUBMITTED",
 } as const;
 
 export const QUIZ_STATUS = {
   DRAFT: "DRAFT",
-  PUBLISHED: "PUBLISHED"
+  PUBLISHED: "PUBLISHED",
 };
