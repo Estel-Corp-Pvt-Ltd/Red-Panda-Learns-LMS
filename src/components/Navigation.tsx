@@ -53,10 +53,10 @@ export function Navigation() {
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
-        <Button variant="premium" className="px-6">
+        <Button variant="default" className="px-6">
           Get Started
         </Button>
       </div>
     </nav>
   );
-}
+};
