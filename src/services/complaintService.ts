@@ -104,6 +104,7 @@ class ComplaintService {
                 userId: data.userId,
                 category: data.category,
                 description: data.description,
+                imageUrls: data.imageUrls,  
                 severity: data.severity ?? COMPLAINT_SEVERITY.MEDIUM,
                 relatedEntityId: data.relatedEntityId,
                 status: COMPLAINT_STATUS.SUBMITTED,

@@ -6,6 +6,7 @@ export interface Complaint {
     userId: string;
     category: ComplaintCategory;
     description: string;
+    imageUrls?: string[]; // max length = 4
     status: ComplaintStatus;
     severity: ComplaintSeverity;
     relatedEntityId?: string;
