@@ -15,6 +15,7 @@ import { enrollStudentsInBulk, processEnrollmentTask } from './handlers/enrollme
 // Cascade delete workers
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
+import { assignStudentsToAdmin } from './handlers/assignStudentstoAdmin';
 
 export {
   enrollStudent,
@@ -33,5 +34,6 @@ export {
   enrollStudentsInBulk,
   processEnrollmentTask,
   canStartQuiz,
-  getQuizTimeLeft
+  getQuizTimeLeft,
+  assignStudentsToAdmin
 };

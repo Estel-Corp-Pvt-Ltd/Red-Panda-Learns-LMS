@@ -61,6 +61,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <AlarmClockPlus className="h-5 w-5" />
     },
     {
+      name: 'Assign Students',
+      path:'/admin/assign-students',
+      icon: <UserPlus className="h-5 w-5" />
+    },
+    {
       name: "Pop-Ups",
       path: "/admin/pop-ups",
       icon: <PictureInPicture className="h-5 w-5" />,
