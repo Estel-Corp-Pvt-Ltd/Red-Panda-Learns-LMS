@@ -4,6 +4,8 @@ import { corsMiddleware } from "../../middlewares/cors";
 import { authMiddleware } from "../../middlewares/auth";
 import { onRequest } from "firebase-functions/v2/https";
 import { notificationService } from "../../services/notificationService";
+import { COLLECTION } from "../../constants";
+import * as admin from "firebase-admin";
 
 // ------------------ Create Notification ------------------
 async function createNotificationHandler(req: Request, res: Response) {
@@ -14,14 +16,24 @@ async function createNotificationHandler(req: Request, res: Response) {
       return;
     }
 
-    const { submissionId, assignmentId, studentId, adminId, adminEmail } = req.body;
+    const { submissionId, assignmentId, studentId, adminId } = req.body;
 
-    if (!submissionId || !assignmentId || !studentId || !adminId || !adminEmail) {
+    if (!submissionId || !assignmentId || !studentId || !adminId) {
       res.status(400).json({
-        error: "Missing required fields: submissionId, assignmentId, studentId, adminId, adminEmail"
+        error: "Missing required fields: submissionId, assignmentId, studentId, adminId"
       });
       return;
     }
+
+    // Fetch admin email in backend
+    const adminDoc = await admin.firestore().collection(COLLECTION.USERS).doc(adminId).get();
+
+    if (!adminDoc.exists) {
+      res.status(404).json({ error: "Admin not found" });
+      return;
+    }
+
+    const adminEmail = adminDoc.data()?.email;
 
     const notif = await notificationService.createNotification({
       submissionId,
@@ -41,6 +53,7 @@ async function createNotificationHandler(req: Request, res: Response) {
     });
   }
 }
+
 
 export const createNotification = onRequest(
   { region: "us-central1" },

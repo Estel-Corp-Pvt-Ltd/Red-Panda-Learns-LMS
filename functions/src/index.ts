@@ -16,7 +16,7 @@ import { enrollStudentsInBulk, processEnrollmentTask } from './handlers/enrollme
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
 import { assignStudentsToAdmin } from './handlers/assignStudentstoAdmin';
-
+import { createNotification } from './handlers/notifications/notificationController';
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -35,5 +35,6 @@ export {
   processEnrollmentTask,
   canStartQuiz,
   getQuizTimeLeft,
-  assignStudentsToAdmin
+  assignStudentsToAdmin,
+  createNotification
 };
