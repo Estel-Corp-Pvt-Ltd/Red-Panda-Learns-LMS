@@ -1,13 +1,20 @@
 import {
     collection,
     doc,
+    endBefore,
+    getCountFromServer,
     getDocs,
     limit,
+    limitToLast,
     orderBy,
+    Query,
     query,
     runTransaction,
     serverTimestamp,
+    startAfter,
+    Timestamp,
     where,
+    WhereFilterOp,
     writeBatch
 } from "firebase/firestore";
 
@@ -27,38 +34,12 @@ import {
 } from "@/constants";
 
 import { db } from "@/firebaseConfig";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 class ComplaintService {
-
-    private async generateComplaintId(): Promise<Result<string>> {
-        try {
-            const counterRef = doc(db, COLLECTION.COUNTERS, "complaintCounter");
-
-            const nextNumber = await runTransaction(db, async (tx) => {
-                const snap = await tx.get(counterRef);
-
-                let lastNumber = 50000000;
-                if (snap.exists()) {
-                    lastNumber = snap.data().lastNumber;
-                }
-
-                const gap = Math.floor(Math.random() * (25 - 10 + 1)) + 10;
-                const newNumber = lastNumber + gap;
-
-                tx.set(counterRef, { lastNumber: newNumber }, { merge: true });
-                return newNumber;
-            });
-
-            return ok(`CMP_${nextNumber}`);
-        } catch (error: any) {
-            return fail(
-                "Failed to generate complaint ID",
-                error.code,
-                error.stack
-            );
-        }
-    }
 
     private addAction(
         batch: ReturnType<typeof writeBatch>,
@@ -94,13 +75,18 @@ class ComplaintService {
         >
     ): Promise<Result<string>> {
         try {
-            const idResult = await this.generateComplaintId();
-            if (!idResult.success) return idResult;
+            const res = await this.generateComplaintIdFn();
+            const idData = res.data as { success: boolean; message: string; };
 
-            const complaintId = idResult.data!;
+            if (!idData?.success) {
+                return fail("Failed to generate complaint ID");
+            }
+
+            const complaintId = idData.message;
+
             const batch = writeBatch(db);
 
-            const complaint: Complaint = {
+            const complaint = {
                 id: complaintId,
                 userId: data.userId,
                 userName: data.userName,
@@ -126,6 +112,7 @@ class ComplaintService {
             });
 
             await batch.commit();
+
             return ok(complaintId);
         } catch (error: any) {
             return fail("Failed to create complaint", error.code, error.stack);
@@ -233,6 +220,109 @@ class ComplaintService {
             );
         }
     }
+
+    async getComplaints(
+        filters?: {
+            field: keyof Complaint;
+            op: WhereFilterOp;
+            value: any;
+        }[],
+        options: PaginationOptions<Complaint> = {}
+    ): Promise<Result<PaginatedResult<Complaint>>> {
+        try {
+            const {
+                limit: itemsPerPage = 25,
+                orderBy: orderByOption = {
+                    field: "createdAt",
+                    direction: "desc",
+                },
+                pageDirection = "next",
+                cursor = null,
+            } = options;
+
+            let q: Query = collection(db, COLLECTION.COMPLAINTS);
+
+            // Apply filters
+            if (filters && filters.length > 0) {
+                const whereClauses = filters.map((f) =>
+                    where(f.field as string, f.op, f.value)
+                );
+                q = query(q, ...whereClauses);
+            }
+
+            // Count query (without pagination)
+            const countQuery = query(q);
+            const countSnapshot = await getCountFromServer(countQuery);
+            const totalCount = countSnapshot.data().count;
+
+            const { field, direction } = orderByOption;
+
+            // Pagination logic
+            if (pageDirection === "previous" && cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    endBefore(cursor),
+                    limitToLast(itemsPerPage)
+                );
+            } else if (cursor) {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    startAfter(cursor),
+                    limit(itemsPerPage)
+                );
+            } else {
+                q = query(
+                    q,
+                    orderBy(field as string, direction),
+                    limit(itemsPerPage)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+
+            const documents = querySnapshot.docs;
+
+            if (pageDirection === "previous") {
+                documents.reverse();
+            }
+
+            const complaints: Complaint[] = documents.map((doc) => {
+                const data = doc.data() as Complaint;
+                return {
+                    ...data,
+                    createdAt: (data.createdAt as Timestamp)?.toDate?.() || data.createdAt,
+                    updatedAt: (data.updatedAt as Timestamp)?.toDate?.() || data.updatedAt,
+                };
+            });
+
+            const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+            const hasPreviousPage = cursor !== null;
+
+            const nextCursor = hasNextPage
+                ? querySnapshot.docs[querySnapshot.docs.length - 1]
+                : null;
+
+            const previousCursor = hasPreviousPage
+                ? querySnapshot.docs[0]
+                : null;
+
+            return ok({
+                data: complaints,
+                hasNextPage,
+                hasPreviousPage,
+                nextCursor,
+                previousCursor,
+                totalCount,
+            });
+        } catch (error: any) {
+            return fail("Error fetching complaints", error.code, error.stack);
+        }
+    }
+
+    private functions = getFunctions();
+    private generateComplaintIdFn = httpsCallable(this.functions, "generateComplaintId");
 }
 
 export const complaintService = new ComplaintService();
