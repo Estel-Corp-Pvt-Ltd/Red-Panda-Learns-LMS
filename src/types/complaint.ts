@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import { ComplaintActionType, ComplaintCategory, ComplaintSeverity, ComplaintStatus } from "./general";
 
 export interface Complaint {
@@ -14,8 +14,8 @@ export interface Complaint {
     relatedEntityId?: string;
     assignedTo?: string;
     resolutionSummary?: string;
-    createdAt: Timestamp | FieldValue;
-    updatedAt: Timestamp | FieldValue;
+    createdAt: Timestamp | Date;
+    updatedAt: Timestamp | Date;
 };
 
 export interface ComplaintAction {
@@ -24,6 +24,6 @@ export interface ComplaintAction {
     actionBy: string;
     actionType: ComplaintActionType;
     comment?: string;
-    createdAt: Timestamp | FieldValue;
+    createdAt: Timestamp | Date;
     isInternal: boolean; // true -> visible to only admins, false -> visible to users as well
 };
