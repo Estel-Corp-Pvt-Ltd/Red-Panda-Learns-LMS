@@ -16,10 +16,11 @@ export interface Complaint {
 };
 
 export interface ComplaintAction {
+    id: string;
     complaintId: string;
     actionBy: string;
     actionType: ComplaintActionType;
     comment?: string;
-    createdAt: Timestamp;
+    createdAt: Timestamp | FieldValue;
     isInternal: boolean; // true -> visible to only admins, false -> visible to users as well
 };
