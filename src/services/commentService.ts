@@ -23,7 +23,7 @@ import {
 
 import { COLLECTION, COMMENT_STATUS } from "@/constants";
 import { db } from "@/firebaseConfig";
-import { Comment } from "@/types/comment";
+import { Comment, CommentVotes } from "@/types/comment";
 import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { logError } from "@/utils/logger";
@@ -409,36 +409,6 @@ class CommentService {
   }
 
   /**
-   * Upvotes a comment.
-   *
-   * @param commentId - The comment ID to upvote.
-   * @returns A promise that resolves when the upvote is recorded.
-   */
-  async upvoteComment(commentId: string): Promise<Result<void>> {
-    try {
-      const commentRef = doc(db, COLLECTION.COMMENTS, commentId);
-
-      await runTransaction(db, async (transaction) => {
-        const commentDoc = await transaction.get(commentRef);
-
-        if (!commentDoc.exists()) {
-          throw new Error("Comment not found");
-        }
-
-        transaction.update(commentRef, {
-          upvoteCount: increment(1),
-          updatedAt: serverTimestamp(),
-        });
-      });
-
-      return ok(null);
-    } catch (error: any) {
-      logError("CommentService.upvoteComment", error);
-      return fail("Failed to upvote comment", error.code || error.message);
-    }
-  }
-
-  /**
    * Approves a pending comment.
    *
    * @param commentId - The comment ID to approve.
@@ -605,6 +575,400 @@ class CommentService {
     } catch (error: any) {
       logError("CommentService.getLessonCommentStats", error);
       return fail("Failed to fetch lesson comment stats", error.code || error.message);
+    }
+  }
+
+  async upvoteComment(commentId: string, userId: string): Promise<Result<void>> {
+    try {
+      const voteId = `${userId}_${commentId}`;
+
+      await runTransaction(db, async (transaction) => {
+        const commentRef = doc(db, COLLECTION.COMMENTS, commentId);
+        const voteRef = doc(db, COLLECTION.COMMENT_VOTES, voteId);
+
+        // Check if comment exists
+        const commentDoc = await transaction.get(commentRef);
+        if (!commentDoc.exists()) {
+          throw new Error("Comment not found");
+        }
+
+        // Check if user already voted
+        const voteDoc = await transaction.get(voteRef);
+        if (voteDoc.exists()) {
+          throw new Error("User already voted on this comment");
+        }
+
+        // Create vote record
+        const vote: CommentVotes = {
+          id: voteId,
+          commentId,
+          userId,
+          createdAt: serverTimestamp(),
+        };
+
+        // Update comment upvote count
+        transaction.set(voteRef, vote);
+        transaction.update(commentRef, {
+          upvoteCount: increment(1),
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      return ok(null);
+    } catch (error: any) {
+      return fail(error.message || "Failed to upvote comment", error.code || error.message);
+    }
+  }
+
+  /**
+   * Removes an upvote from a comment.
+   *
+   * @param commentId - The comment ID to remove upvote from.
+   * @param userId - The user ID who is removing the upvote.
+   * @returns A promise that resolves when the upvote is removed.
+   */
+  async removeUpvote(commentId: string, userId: string): Promise<Result<void>> {
+    try {
+      const voteId = `${userId}_${commentId}`;
+
+      await runTransaction(db, async (transaction) => {
+        const commentRef = doc(db, COLLECTION.COMMENTS, commentId);
+        const voteRef = doc(db, COLLECTION.COMMENT_VOTES, voteId);
+
+        // Check if comment exists
+        const commentDoc = await transaction.get(commentRef);
+        if (!commentDoc.exists()) {
+          throw new Error("Comment not found");
+        }
+
+        // Check if vote exists
+        const voteDoc = await transaction.get(voteRef);
+        if (!voteDoc.exists()) {
+          throw new Error("Vote not found");
+        }
+
+        // Remove vote record and update comment
+        transaction.delete(voteRef);
+        transaction.update(commentRef, {
+          upvoteCount: increment(-1),
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      return ok(null);
+    } catch (error: any) {
+      logError("CommentService.removeUpvote", error);
+      return fail("Failed to remove upvote", error.code || error.message);
+    }
+  }
+
+  /**
+   * Toggles upvote state for a comment.
+   * If user hasn't voted, adds upvote. If already voted, removes upvote.
+   *
+   * @param commentId - The comment ID to toggle upvote.
+   * @param userId - The user ID who is toggling the upvote.
+   * @returns A promise that resolves with the new upvote state.
+   */
+  async toggleUpvote(commentId: string, userId: string): Promise<Result<{ upvoted: boolean; newUpvoteCount: number }>> {
+    try {
+      const voteId = `${userId}_${commentId}`;
+      let upvoted = false;
+      let newUpvoteCount = 0;
+
+      await runTransaction(db, async (transaction) => {
+        const commentRef = doc(db, COLLECTION.COMMENTS, commentId);
+        const voteRef = doc(db, COLLECTION.COMMENT_VOTES, voteId);
+
+        // Check if comment exists
+        const commentDoc = await transaction.get(commentRef);
+        if (!commentDoc.exists()) {
+          throw new Error("Comment not found");
+        }
+
+        const currentUpvoteCount = commentDoc.data().upvoteCount || 0;
+        const voteDoc = await transaction.get(voteRef);
+
+        if (voteDoc.exists()) {
+          // Remove upvote
+          transaction.delete(voteRef);
+          newUpvoteCount = currentUpvoteCount - 1;
+          upvoted = false;
+        } else {
+          // Add upvote
+          const vote: CommentVotes = {
+            id: voteId,
+            commentId,
+            userId,
+            createdAt: serverTimestamp(),
+          };
+          transaction.set(voteRef, vote);
+          newUpvoteCount = currentUpvoteCount + 1;
+          upvoted = true;
+        }
+
+        transaction.update(commentRef, {
+          upvoteCount: newUpvoteCount,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      return ok({ upvoted, newUpvoteCount });
+    } catch (error: any) {
+      logError("CommentService.toggleUpvote", error);
+      return fail("Failed to toggle upvote", error.code || error.message);
+    }
+  }
+
+  /**
+   * Checks if a user has upvoted a specific comment.
+   *
+   * @param commentId - The comment ID to check.
+   * @param userId - The user ID to check.
+   * @returns A promise that resolves with whether the user has upvoted.
+   */
+  async hasUserUpvoted(commentId: string, userId: string): Promise<Result<boolean>> {
+    try {
+      const voteId = `${userId}_${commentId}`;
+      const voteRef = doc(db, COLLECTION.COMMENT_VOTES, voteId);
+      const voteDoc = await getDoc(voteRef);
+
+      return ok(voteDoc.exists());
+    } catch (error: any) {
+      logError("CommentService.hasUserUpvoted", error);
+      return fail("Failed to check upvote status", error.code || error.message);
+    }
+  }
+
+  /**
+   * Gets all votes for a specific comment.
+   *
+   * @param commentId - The comment ID to get votes for.
+   * @returns A promise that resolves with the comment votes.
+   */
+  async getCommentVotes(commentId: string): Promise<Result<CommentVotes[]>> {
+    try {
+      const votesQuery = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("commentId", "==", commentId),
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(votesQuery);
+
+      const votes: CommentVotes[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          commentId: data.commentId,
+          userId: data.userId,
+          createdAt: data.createdAt,
+        };
+      });
+
+      return ok(votes);
+    } catch (error: any) {
+      logError("CommentService.getCommentVotes", error);
+      return fail("Failed to fetch comment votes", error.code || error.message);
+    }
+  }
+
+  /**
+   * Gets all votes by a specific user.
+   *
+   * @param userId - The user ID to get votes for.
+   * @returns A promise that resolves with the user's votes.
+   */
+  async getUserVotes(userId: string): Promise<Result<CommentVotes[]>> {
+    try {
+      const votesQuery = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(votesQuery);
+
+      const votes: CommentVotes[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          commentId: data.commentId,
+          userId: data.userId,
+          createdAt: data.createdAt,
+        };
+      });
+
+      return ok(votes);
+    } catch (error: any) {
+      logError("CommentService.getUserVotes", error);
+      return fail("Failed to fetch user votes", error.code || error.message);
+    }
+  }
+
+  /**
+   * Gets upvoted comment IDs for a user with pagination.
+   *
+   * @param userId - The user ID to get upvoted comments for.
+   * @param options - Pagination options.
+   * @returns A promise that resolves with paginated upvoted comment IDs.
+   */
+  async getUpvotedCommentIds(
+    userId: string,
+    options: PaginationOptions<CommentVotes> = {}
+  ): Promise<Result<PaginatedResult<string>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: "createdAt", direction: "desc" },
+        pageDirection = "next",
+        cursor = null,
+      } = options;
+
+      let q: Query = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("userId", "==", userId),
+        orderBy(orderByOption.field as string, orderByOption.direction)
+      );
+
+      // Handle pagination
+      if (pageDirection === "previous" && cursor) {
+        q = query(q, endBefore(cursor), limitToLast(itemsPerPage));
+      } else if (cursor) {
+        q = query(q, startAfter(cursor), limit(itemsPerPage));
+      } else {
+        q = query(q, limit(itemsPerPage));
+      }
+
+      const querySnapshot = await getDocs(q);
+      const documents = pageDirection === "previous" ?
+        querySnapshot.docs.reverse() : querySnapshot.docs;
+
+      const commentIds = documents.map(doc => doc.data().commentId);
+
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      // Get total count
+      const countQuery = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("userId", "==", userId)
+      );
+      const countSnapshot = await getCountFromServer(countQuery);
+      const totalCount = countSnapshot.data().count;
+
+      return ok({
+        data: commentIds,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor,
+        totalCount,
+      });
+    } catch (error: any) {
+      logError("CommentService.getUpvotedCommentIds", error);
+      return fail("Failed to fetch upvoted comments", error.code || error.message);
+    }
+  }
+
+  /**
+   * Gets comments with user's vote status.
+   *
+   * @param comments - Array of comments to check.
+   * @param userId - The user ID to check vote status for.
+   * @returns A promise that resolves with comments including vote status.
+   */
+  async getCommentsWithVoteStatus(
+    comments: Comment[],
+    userId: string
+  ): Promise<Result<Array<Comment & { userUpvoted: boolean }>>> {
+    try {
+      if (!userId || comments.length === 0) {
+        const commentsWithStatus = comments.map(comment => ({
+          ...comment,
+          userUpvoted: false
+        }));
+        return ok(commentsWithStatus);
+      }
+
+      // Get all vote IDs for these comments and user
+      const voteIds = comments.map(comment => `${userId}_${comment.id}`);
+
+      // Check which votes exist
+      const voteChecks = await Promise.all(
+        voteIds.map(voteId =>
+          getDoc(doc(db, COLLECTION.COMMENT_VOTES, voteId))
+        )
+      );
+
+      const commentsWithStatus = comments.map((comment, index) => ({
+        ...comment,
+        userUpvoted: voteChecks[index].exists()
+      }));
+
+      return ok(commentsWithStatus);
+    } catch (error: any) {
+      logError("CommentService.getCommentsWithVoteStatus", error);
+      return fail("Failed to fetch vote status", error.code || error.message);
+    }
+  }
+
+  /**
+   * Deletes all votes for a comment (admin function).
+   *
+   * @param commentId - The comment ID to delete votes for.
+   * @returns A promise that resolves when all votes are deleted.
+   */
+  async deleteAllCommentVotes(commentId: string): Promise<Result<void>> {
+    try {
+      const votesQuery = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("commentId", "==", commentId)
+      );
+
+      const snapshot = await getDocs(votesQuery);
+
+      const deletePromises = snapshot.docs.map(doc =>
+        deleteDoc(doc.ref)
+      );
+
+      await Promise.all(deletePromises);
+
+      return ok(null);
+    } catch (error: any) {
+      logError("CommentService.deleteAllCommentVotes", error);
+      return fail("Failed to delete comment votes", error.code || error.message);
+    }
+  }
+
+  /**
+   * Cleans up votes when a comment is hard deleted.
+   *
+   * @param commentId - The comment ID that was deleted.
+   * @returns A promise that resolves when votes are cleaned up.
+   */
+  async cleanupVotesForDeletedComment(commentId: string): Promise<Result<void>> {
+    try {
+      const votesQuery = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("commentId", "==", commentId)
+      );
+
+      const snapshot = await getDocs(votesQuery);
+
+      const deletePromises = snapshot.docs.map(doc =>
+        deleteDoc(doc.ref)
+      );
+
+      await Promise.all(deletePromises);
+
+      return ok(null);
+    } catch (error: any) {
+      logError("CommentService.cleanupVotesForDeletedComment", error);
+      return fail("Failed to cleanup votes", error.code || error.message);
     }
   }
 }

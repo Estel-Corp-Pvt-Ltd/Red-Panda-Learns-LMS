@@ -14,3 +14,11 @@ export type Comment = {
   createdAt: FieldValue;
   updatedAt: FieldValue;
 }
+
+
+export type CommentVotes = {
+  id: string;
+  commentId: string;
+  userId: string;
+  createdAt: FieldValue;
+}

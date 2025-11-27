@@ -413,7 +413,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
     }
 
     try {
-      const result = await commentService.upvoteComment(commentId);
+      const result = await commentService.upvoteComment(commentId, user.id);
       if (result.success) {
         setComments(prev =>
           updateCommentInTree(prev, commentId, (comment) => ({
