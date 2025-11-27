@@ -1,4 +1,5 @@
 import {
+    addDoc,
     collection,
     doc,
     endBefore,
@@ -9,8 +10,8 @@ import {
     orderBy,
     Query,
     query,
-    runTransaction,
     serverTimestamp,
+    setDoc,
     startAfter,
     Timestamp,
     where,
@@ -41,27 +42,6 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 
 class ComplaintService {
 
-    private addAction(
-        batch: ReturnType<typeof writeBatch>,
-        complaintId: string,
-        action: Omit<ComplaintAction, "id" | "createdAt">
-    ) {
-        const actionRef = doc(
-            collection(
-                db,
-                COLLECTION.COMPLAINTS,
-                complaintId,
-                "actions"
-            )
-        );
-
-        batch.set(actionRef, {
-            id: actionRef.id,
-            ...action,
-            createdAt: serverTimestamp(),
-        });
-    }
-
     async createComplaint(
         data: Omit<
             Complaint,
@@ -76,7 +56,7 @@ class ComplaintService {
     ): Promise<Result<string>> {
         try {
             const res = await this.generateComplaintIdFn();
-            const idData = res.data as { success: boolean; message: string; };
+            const idData = res.data as { success: boolean; message: string };
 
             if (!idData?.success) {
                 return fail("Failed to generate complaint ID");
@@ -84,7 +64,7 @@ class ComplaintService {
 
             const complaintId = idData.message;
 
-            const batch = writeBatch(db);
+            const complaintRef = doc(db, COLLECTION.COMPLAINTS, complaintId);
 
             const complaint = {
                 id: complaintId,
@@ -101,17 +81,22 @@ class ComplaintService {
                 updatedAt: serverTimestamp(),
             };
 
-            const complaintRef = doc(db, COLLECTION.COMPLAINTS, complaintId);
-            batch.set(complaintRef, complaint);
+            await setDoc(complaintRef, complaint);
 
-            this.addAction(batch, complaintId, {
+            const actionsCol = collection(
+                db,
+                COLLECTION.COMPLAINTS,
+                complaintId,
+                "actions"
+            );
+
+            await addDoc(actionsCol, {
                 complaintId,
                 actionBy: data.userId,
                 actionType: COMPLAINT_ACTION_TYPE.CREATED,
                 isInternal: false,
+                createdAt: serverTimestamp(),
             });
-
-            await batch.commit();
 
             return ok(complaintId);
         } catch (error: any) {
@@ -323,6 +308,27 @@ class ComplaintService {
 
     private functions = getFunctions();
     private generateComplaintIdFn = httpsCallable(this.functions, "generateComplaintId");
+
+    private addAction(
+        batch: ReturnType<typeof writeBatch>,
+        complaintId: string,
+        action: Omit<ComplaintAction, "id" | "createdAt">
+    ) {
+        const actionRef = doc(
+            collection(
+                db,
+                COLLECTION.COMPLAINTS,
+                complaintId,
+                "actions"
+            )
+        );
+
+        batch.set(actionRef, {
+            id: actionRef.id,
+            ...action,
+            createdAt: serverTimestamp(),
+        });
+    }
 }
 
 export const complaintService = new ComplaintService();

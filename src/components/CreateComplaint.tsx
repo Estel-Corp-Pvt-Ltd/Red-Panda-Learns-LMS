@@ -21,8 +21,8 @@ import { COMPLAINT_CATEGORY } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
 import { complaintService } from "@/services/complaintService";
 import { fileService } from "@/services/fileService";
-import { Loader2, Upload, X } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle, Loader2, Upload, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 export function CreateComplaint({
@@ -49,6 +49,9 @@ export function CreateComplaint({
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [open, setOpen] = useState(false);
+
     const uploadImages = async (): Promise<string[]> => {
         const results = await Promise.all(
             images.map((file) =>
@@ -65,6 +68,8 @@ export function CreateComplaint({
 
     const resetForm = () => {
         previews.forEach((url) => URL.revokeObjectURL(url));
+        setIsSuccess(false);
+        setSubmitting(false);
         setUserName("");
         setUserEmail("");
         setCategory(undefined);
@@ -131,7 +136,7 @@ export function CreateComplaint({
 
             const imageUrls = await uploadImages();
 
-            await complaintService.createComplaint({
+            const complaintId = await complaintService.createComplaint({
                 userName,
                 userEmail,
                 category,
@@ -141,9 +146,12 @@ export function CreateComplaint({
                 relatedEntityId
             });
 
-            toast({ title: "Complaint submitted successfully" });
+            if (complaintId) {
+                setIsSuccess(true);
+                return;
+            }
 
-            resetForm();
+            setIsSuccess(false);
         } catch (error) {
             toast({
                 title: "Failed to submit complaint",
@@ -156,10 +164,22 @@ export function CreateComplaint({
         }
     };
 
+    useEffect(() => {
+        if (!isSuccess) return;
+
+        const timer = setTimeout(() => {
+            setOpen(false);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [isSuccess]);
+
     return (
         <Dialog
-            onOpenChange={(open) => {
-                if (!open) {
+            open={open}
+            onOpenChange={(value) => {
+                setOpen(value);
+                if (!value) {
                     resetForm();
                 }
             }}
@@ -167,102 +187,127 @@ export function CreateComplaint({
             <DialogTrigger asChild>{trigger}</DialogTrigger>
 
             <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Customer Support</DialogTitle>
-                    <DialogDescription>
-                        Submit an issue and we’ll help you resolve it.
-                    </DialogDescription>
-                </DialogHeader>
+                {
+                    isSuccess ?
+                        (
+                            <div className="flex flex-col items-center justify-center py-10 space-y-4 text-center">
+                                <CheckCircle className="h-14 w-14 text-green-500" />
 
-                <div className="grid gap-4 py-4">
-                    <Input
-                        placeholder="Your Name *"
-                        value={userName}
-                        onChange={(e) => setUserName(e.target.value)}
-                    />
+                                <h3 className="text-lg font-semibold">
+                                    Issue Registered
+                                </h3>
 
-                    <Input
-                        type="email"
-                        placeholder="Email Address *"
-                        value={userEmail}
-                        onChange={(e) => setUserEmail(e.target.value)}
-                    />
+                                <p className="text-sm text-muted-foreground">
+                                    Our team will review it shortly.
+                                </p>
 
-                    <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select Category *" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.values(COMPLAINT_CATEGORY).map((c) => (
-                                <SelectItem key={c} value={c}>
-                                    {c}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    Closing this window automatically…
+                                </p>
+                            </div>
+                        )
+                        :
+                        (
+                            <>
+                                <DialogHeader>
+                                    <DialogTitle>Customer Support</DialogTitle>
+                                    <DialogDescription>
+                                        Submit an issue and we’ll help you resolve it.
+                                    </DialogDescription>
+                                </DialogHeader>
 
-                    <Textarea
-                        placeholder="Describe the issue in detail *"
-                        rows={4}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
+                                <div className="grid gap-4 py-4">
+                                    <Input
+                                        placeholder="Your Name *"
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                    />
 
-                    {/* Image Upload */}
-                    <div className="grid gap-2">
-                        <span className="text-sm text-muted-foreground">
-                            Screenshots (up to 4)
-                        </span>
+                                    <Input
+                                        type="email"
+                                        placeholder="Email Address *"
+                                        value={userEmail}
+                                        onChange={(e) => setUserEmail(e.target.value)}
+                                    />
 
-                        <label className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-6 cursor-pointer">
-                            <Upload className="h-5 w-5" />
-                            <span className="text-sm">
-                                {uploading ? "Uploading images..." : "Select images"}
-                            </span>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                disabled={uploading}
-                                className="hidden"
-                                onChange={(e) => handleImageUpload(e.target.files)}
-                            />
-                        </label>
+                                    <Select value={category} onValueChange={setCategory}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Category *" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.values(COMPLAINT_CATEGORY).map((c) => (
+                                                <SelectItem key={c} value={c}>
+                                                    {c}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
 
-                    </div>
-                </div>
+                                    <Textarea
+                                        placeholder="Describe the issue in detail *"
+                                        rows={4}
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                    />
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {previews.map((src, i) => (
-                        <div key={i} className="relative h-20 rounded-md overflow-hidden border">
-                            <img
-                                src={src}
-                                alt="preview"
-                                className="h-full w-full object-cover"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => removeImage(i)}
-                                className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"
-                            >
-                                <X className="h-3 w-3" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                                    {/* Image Upload */}
+                                    <div className="grid gap-2">
+                                        <span className="text-sm text-muted-foreground">
+                                            Screenshots (up to 4)
+                                        </span>
 
-                <DialogFooter>
-                    <Button
-                        className="w-full"
-                        onClick={handleSubmit}
-                        disabled={uploading || submitting}
-                    >
-                        {(uploading || submitting) && (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Submit
-                    </Button>
-                </DialogFooter>
+                                        <label className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-6 cursor-pointer">
+                                            <Upload className="h-5 w-5" />
+                                            <span className="text-sm">
+                                                {uploading ? "Uploading images..." : "Select images"}
+                                            </span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                disabled={uploading}
+                                                className="hidden"
+                                                onChange={(e) => handleImageUpload(e.target.files)}
+                                            />
+                                        </label>
+
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {previews.map((src, i) => (
+                                        <div key={i} className="relative h-20 rounded-md overflow-hidden border">
+                                            <img
+                                                src={src}
+                                                alt="preview"
+                                                className="h-full w-full object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(i)}
+                                                className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <DialogFooter>
+                                    <Button
+                                        className="w-full"
+                                        onClick={handleSubmit}
+                                        disabled={uploading || submitting}
+                                    >
+                                        {(uploading || submitting) && (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        )}
+                                        Submit
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        )
+                }
             </DialogContent>
         </Dialog>
     );
