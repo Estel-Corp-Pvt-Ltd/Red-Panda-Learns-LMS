@@ -1,8 +1,13 @@
 import {
     collection,
     doc,
+    getDocs,
+    limit,
+    orderBy,
+    query,
     runTransaction,
     serverTimestamp,
+    where,
     writeBatch
 } from "firebase/firestore";
 
@@ -152,6 +157,76 @@ class ComplaintService {
             return ok(undefined);
         } catch (error: any) {
             return fail("Failed to assign complaint", error.code, error.stack);
+        }
+    }
+
+    async getComplaintsByUser(
+        userId: string
+    ): Promise<Result<Complaint[]>> {
+        try {
+            const q = query(
+                collection(db, COLLECTION.COMPLAINTS),
+                where("userId", "==", userId),
+                orderBy("createdAt", "desc")
+            );
+
+            const snapshot = await getDocs(q);
+
+            const complaints: Complaint[] = snapshot.docs.map(doc => ({
+                ...(doc.data() as Complaint),
+            }));
+
+            return ok(complaints);
+        } catch (error: any) {
+            return fail(
+                "Failed to fetch complaints for user",
+                error.code,
+                error.stack
+            );
+        }
+    }
+
+    async getLatestActionsForComplaints(
+        complaintIds: string[]
+    ): Promise<Result<Record<string, ComplaintAction | null>>> {
+        try {
+            const results = await Promise.all(
+                complaintIds.map(async (complaintId) => {
+                    const q = query(
+                        collection(
+                            db,
+                            COLLECTION.COMPLAINTS,
+                            complaintId,
+                            "actions"
+                        ),
+                        orderBy("createdAt", "desc"),
+                        limit(1)
+                    );
+
+                    const snap = await getDocs(q);
+
+                    if (snap.empty) {
+                        return [complaintId, null] as const;
+                    }
+
+                    const docSnap = snap.docs[0];
+
+                    return [
+                        complaintId,
+                        {
+                            ...(docSnap.data() as ComplaintAction),
+                        },
+                    ] as const;
+                })
+            );
+
+            return ok(Object.fromEntries(results));
+        } catch (error: any) {
+            return fail(
+                "Failed to fetch latest complaint actions",
+                error.code,
+                error.stack
+            );
         }
     }
 }
