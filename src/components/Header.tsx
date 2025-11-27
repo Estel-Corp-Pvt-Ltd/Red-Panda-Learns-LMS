@@ -1,15 +1,8 @@
-import { Copy, LogOut, Mail, Menu, ShoppingCart, User } from "lucide-react";
+import { Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
@@ -23,7 +16,6 @@ import { useCart } from "@/contexts/CartContext";
 
 import { USER_ROLE } from "@/constants";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 
 type HeaderProps = {
   onMenuClick?: () => void;
