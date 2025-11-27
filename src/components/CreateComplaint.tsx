@@ -169,6 +169,7 @@ export function CreateComplaint({
 
         const timer = setTimeout(() => {
             setOpen(false);
+            resetForm();
         }, 3000);
 
         return () => clearTimeout(timer);

@@ -645,7 +645,7 @@ export function Header({
             </Popover>
 
             {
-              user &&
+              user && user.role !== USER_ROLE.ADMIN &&
               <CreateComplaint
                 userId={user.id}
                 trigger={

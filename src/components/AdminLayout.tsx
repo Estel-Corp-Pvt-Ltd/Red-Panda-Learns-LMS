@@ -1,9 +1,9 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
+import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, ClipboardList, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -13,10 +13,10 @@ interface MenuItem {
   name: string;
   path: string;
   icon: React.ReactNode;
-}
+};
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -94,10 +94,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Bulk Enroll Students",
       path: "/admin/bulk-student-enroll",
       icon: <UserPlus className="h-5 w-5" />,
-    }, {
+    },
+    {
       name: "Arrange Courses",
       path: "/admin/arrange-courses",
       icon: <ListOrdered className="h-5 w-5" />,
+    },
+    {
+      name: "View Complaints",
+      path: "/admin/view-complaints",
+      icon: <ClipboardList className="h-5 w-5" />,
     }
   ];
 

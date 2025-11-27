@@ -33,6 +33,7 @@ const DummyCurriculumBuilderPage = lazy(
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminComplaints = lazy(() => import("./pages/admin/AdminComplaints"));
 const AdminOrganizations = lazy(
   () => import("./pages/admin/AdminOrganizations")
 );
@@ -244,7 +245,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      
+
                       <Route
                         path="/admin/statistics"
                         element={
@@ -258,6 +259,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminCoupons />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/view-complaints"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminComplaints />
                           </AuthGuard>
                         }
                       />
@@ -439,17 +448,17 @@ const App = () => (
                         element={<InvoicePage />}
                       />
 
-   
-<Route
-  path="/instructor"
-  element={
-    <AuthGuard requireInstructor  >
-      <InstructorLayout>
-        <InstructorDashboard />
-      </InstructorLayout>
-    </AuthGuard>
-  }
-/>
+
+                      <Route
+                        path="/instructor"
+                        element={
+                          <AuthGuard requireInstructor  >
+                            <InstructorLayout>
+                              <InstructorDashboard />
+                            </InstructorLayout>
+                          </AuthGuard>
+                        }
+                      />
                       <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />
