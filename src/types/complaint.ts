@@ -4,6 +4,8 @@ import { ComplaintActionType, ComplaintCategory, ComplaintSeverity, ComplaintSta
 export interface Complaint {
     id: string;
     userId: string;
+    userName: string;
+    userEmail: string;
     category: ComplaintCategory;
     description: string;
     imageUrls?: string[]; // max length = 4

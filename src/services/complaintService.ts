@@ -90,6 +90,7 @@ class ComplaintService {
             | "updatedAt"
             | "assignedTo"
             | "resolutionSummary"
+            | "severity"
         >
     ): Promise<Result<string>> {
         try {
@@ -102,10 +103,12 @@ class ComplaintService {
             const complaint: Complaint = {
                 id: complaintId,
                 userId: data.userId,
+                userName: data.userName,
+                userEmail: data.userEmail,
                 category: data.category,
                 description: data.description,
-                imageUrls: data.imageUrls,  
-                severity: data.severity ?? COMPLAINT_SEVERITY.MEDIUM,
+                imageUrls: data.imageUrls,
+                severity: COMPLAINT_SEVERITY.MEDIUM,
                 relatedEntityId: data.relatedEntityId,
                 status: COMPLAINT_STATUS.SUBMITTED,
                 createdAt: serverTimestamp(),
