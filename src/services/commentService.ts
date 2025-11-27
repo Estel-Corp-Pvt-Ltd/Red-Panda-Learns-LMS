@@ -288,12 +288,10 @@ class CommentService {
     lessonId: string,
     options: PaginationOptions<Comment> = {}
   ): Promise<Result<PaginatedResult<Comment>>> {
-    const filters = [
+    return this.getComments([
       { field: "lessonId", op: "==", value: lessonId },
       { field: "status", op: "==", value: "APPROVED" },
-    ];
-
-    return this.getComments(filters, options);
+    ], options);
   }
 
   /**

@@ -4,6 +4,7 @@ import { Comment } from '@/types/comment';
 import { useAuth } from '@/contexts/AuthContext';
 import { PaginatedResult } from '@/utils/pagination';
 import { COMMENT_STATUS } from '@/constants';
+import { formatDateTime } from '@/utils/date-time';
 
 interface CommentsProps {
   lessonId: string;
@@ -153,7 +154,7 @@ const CommentThread: React.FC<{
               <div>
                 <h4 className="text-sm font-semibold text-foreground">{comment.userName}</h4>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(comment.createdAt as any).toLocaleDateString()}
+                  {formatDateTime(comment.createdAt)}
                 </p>
               </div>
             </div>
@@ -325,34 +326,30 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
       // Load user upvotes first
       await loadUserUpvotes();
 
-      const approvedFilters = [
-        { field: "lessonId", op: "==", value: lessonId },
-        { field: "parentCommentId", op: "==", value: null },
-        { field: "status", op: "==", value: COMMENT_STATUS.APPROVED },
-        { field: "userId", op: "!=", value: user?.id || "none" },
-      ];
-
-      const userFilters = user ? [
-        { field: "lessonId", op: "==", value: lessonId },
-        { field: "parentCommentId", op: "==", value: null },
-        { field: "userId", op: "==", value: user.id },
-      ] : null;
-
-      const [approvedResult, userResult] = await Promise.all([
-        commentService.getComments(approvedFilters, {
+      const [approvedResult, userCommentResult] = await Promise.all([
+        commentService.getComments([
+          { field: "lessonId", op: "==", value: lessonId },
+          { field: "parentCommentId", op: "==", value: null },
+          { field: "status", op: "==", value: COMMENT_STATUS.APPROVED },
+          { field: "userId", op: "!=", value: user?.id || "none" },
+        ], {
           limit: 15,
           orderBy: { field: 'createdAt', direction: 'desc' }
         }),
-        userFilters ? commentService.getComments(userFilters, {
+        commentService.getComments([
+          { field: "lessonId", op: "==", value: lessonId },
+          { field: "parentCommentId", op: "==", value: null },
+          { field: "userId", op: "==", value: user.id },
+        ], {
           limit: 10,
           orderBy: { field: 'createdAt', direction: 'desc' }
-        }) : Promise.resolve({ success: true, data: { data: [] } } as any)
+        })
       ]);
 
       let allComments: CommentWithReplies[] = [];
 
-      if (userResult.success && userResult.data.data) {
-        allComments = [...userResult.data.data];
+      if (userCommentResult.success && userCommentResult.data.data) {
+        allComments = [...userCommentResult.data.data];
       }
 
       if (approvedResult.success && approvedResult.data.data) {
