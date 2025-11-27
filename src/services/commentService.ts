@@ -304,15 +304,26 @@ class CommentService {
    * @returns A promise that resolves to paginated replies.
    */
   async getCommentReplies(
+    userId: string,
     parentCommentId: string,
     options: PaginationOptions<Comment> = {}
   ): Promise<Result<PaginatedResult<Comment>>> {
-    const filters = [
+
+    const userPendingReplies = await this.getComments([
+      { field: "parentCommentId", op: "==", value: parentCommentId },
+      { field: "userId", op: "==", value: userId },
+      { field: "status", op: "==", value: "PENDING" },
+    ]);
+
+    const approvedReplies = await this.getComments([
       { field: "parentCommentId", op: "==", value: parentCommentId },
       { field: "status", op: "==", value: "APPROVED" },
-    ];
+    ]);
+    const data = [...userPendingReplies.data.data, ...approvedReplies.data.data]
+    approvedReplies.data.data = data;
+    approvedReplies.data.totalCount = data.length;
 
-    return this.getComments(filters, options);
+    return approvedReplies;
   }
 
   /**
@@ -354,7 +365,6 @@ class CommentService {
 
       return ok(comments);
     } catch (error: any) {
-      logError("CommentService.getCommentsByUser", error);
       return fail("Failed to fetch user comments", error.code || error.message);
     }
   }
@@ -602,6 +612,7 @@ class CommentService {
         const vote: CommentVotes = {
           id: voteId,
           commentId,
+          lessonId: commentDoc.data().lessonId,
           userId,
           createdAt: serverTimestamp(),
         };
@@ -699,6 +710,7 @@ class CommentService {
           const vote: CommentVotes = {
             id: voteId,
             commentId,
+            lessonId: commentDoc.data().lessonId,
             userId,
             createdAt: serverTimestamp(),
           };
@@ -761,6 +773,7 @@ class CommentService {
         return {
           id: doc.id,
           commentId: data.commentId,
+          lessonId: data.lessonId,
           userId: data.userId,
           createdAt: data.createdAt,
         };
@@ -794,6 +807,7 @@ class CommentService {
         return {
           id: doc.id,
           commentId: data.commentId,
+          lessonId: data.lessonId,
           userId: data.userId,
           createdAt: data.createdAt,
         };
@@ -803,6 +817,34 @@ class CommentService {
     } catch (error: any) {
       logError("CommentService.getUserVotes", error);
       return fail("Failed to fetch user votes", error.code || error.message);
+    }
+  }
+
+  async getLessonUpvoteByUser(lessonId: string, userId: string): Promise<Result<CommentVotes[]>> {
+    try {
+      const votesQuery = query(
+        collection(db, COLLECTION.COMMENT_VOTES),
+        where("lessonId", "==", lessonId),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(votesQuery);
+
+      const votes: CommentVotes[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          commentId: data.commentId,
+          lessonId: data.lessonId,
+          userId: data.userId,
+          createdAt: data.createdAt,
+        };
+      });
+
+      return ok(votes);
+    } catch (error: any) {
+      return fail("Failed to fetch lesson upvotes by user", error.code || error.message);
     }
   }
 

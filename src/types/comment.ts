@@ -20,5 +20,6 @@ export type CommentVotes = {
   id: string;
   commentId: string;
   userId: string;
+  lessonId: string;
   createdAt: FieldValue;
 }

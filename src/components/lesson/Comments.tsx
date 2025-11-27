@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { commentService } from '@/services/commentService';
 import { Comment } from '@/types/comment';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,17 +11,18 @@ interface CommentsProps {
 
 interface CommentWithReplies extends Comment {
   replies?: CommentWithReplies[];
-  showReplies?: boolean; // Add this to persist showReplies state
+  showReplies?: boolean;
+  loadingReplies?: boolean;
+  isUpvoted?: boolean;
 }
 
-// Separate component for reply form to prevent re-renders
+// Simple reply form component
 const ReplyForm: React.FC<{
   onSubmit: (content: string) => Promise<void>;
   onCancel: () => void;
   submitting: boolean;
-  initialContent?: string;
-}> = React.memo(({ onSubmit, onCancel, submitting, initialContent = '' }) => {
-  const [content, setContent] = useState(initialContent);
+}> = ({ onSubmit, onCancel, submitting }) => {
+  const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -67,143 +68,193 @@ const ReplyForm: React.FC<{
       </div>
     </form>
   );
-});
+};
 
-// Memoized comment thread component
+// Comment thread component with toggle upvote
 const CommentThread: React.FC<{
   comment: CommentWithReplies;
   depth?: number;
-  onUpvote: (commentId: string) => void;
-  onLoadReplies: (commentId: string) => void;
+  onToggleUpvote: (commentId: string) => Promise<void>;
+  onLoadReplies: (commentId: string) => Promise<void>;
   onToggleReplies: (commentId: string, show: boolean) => void;
+  onSetLoadingReplies: (commentId: string, loading: boolean) => void;
   onReply: (parentCommentId: string, content: string) => Promise<void>;
   currentUser: any;
-}> = React.memo(({
+}> = ({
   comment,
   depth = 0,
-  onUpvote,
+  onToggleUpvote,
   onLoadReplies,
   onToggleReplies,
+  onSetLoadingReplies,
   onReply,
   currentUser
 }) => {
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [submittingReply, setSubmittingReply] = useState(false);
+    const [showReplyForm, setShowReplyForm] = useState(false);
+    const [submittingReply, setSubmittingReply] = useState(false);
+    const [upvoting, setUpvoting] = useState(false);
 
-  // Use the showReplies from comment prop to persist state
-  const showReplies = comment.showReplies || false;
+    const showReplies = comment.showReplies || false;
+    const loadingReplies = comment.loadingReplies || false;
+    const hasReplies = comment.countReplies > 0;
+    const isUpvoted = comment.isUpvoted || false;
 
-  const toggleReplies = () => {
-    if (!showReplies && (!comment.replies || comment.replies.length === 0)) {
-      onLoadReplies(comment.id);
-    }
-    onToggleReplies(comment.id, !showReplies);
-  };
-
-  const handleSubmitReply = async (content: string) => {
-    setSubmittingReply(true);
-    try {
-      await onReply(comment.id, content);
-      setShowReplyForm(false);
-      // Ensure replies stay visible after submitting
+    const toggleReplies = async () => {
       if (!showReplies) {
+        onSetLoadingReplies(comment.id, true);
+
+        if (!comment.replies || comment.replies.length === 0) {
+          await onLoadReplies(comment.id);
+        }
+
+        onSetLoadingReplies(comment.id, false);
         onToggleReplies(comment.id, true);
+      } else {
+        onToggleReplies(comment.id, false);
       }
-    } catch (error) {
-      // Error handling is done in parent
-    } finally {
-      setSubmittingReply(false);
-    }
-  };
+    };
 
-  const handleCancelReply = () => {
-    setShowReplyForm(false);
-  };
+    const handleToggleUpvote = async () => {
+      if (!currentUser || upvoting) return;
 
-  return (
-    <div className={`comment-thread ${depth > 0 ? 'ml-8 border-l-2 border-border pl-4' : ''}`}>
-      <div className="comment bg-card rounded-lg p-4 shadow-sm mb-4 border">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
-              {comment.userName.charAt(0).toUpperCase()}
+      setUpvoting(true);
+      try {
+        await onToggleUpvote(comment.id);
+      } catch (error) {
+        // Error handled in parent
+      } finally {
+        setUpvoting(false);
+      }
+    };
+
+    const handleSubmitReply = async (content: string) => {
+      setSubmittingReply(true);
+      try {
+        await onReply(comment.id, content);
+        setShowReplyForm(false);
+        if (!showReplies) {
+          onToggleReplies(comment.id, true);
+        }
+      } catch (error) {
+        // Error handled in parent
+      } finally {
+        setSubmittingReply(false);
+      }
+    };
+
+    return (
+      <div className={`comment-thread ${depth > 0 ? 'ml-8 border-l-2 border-border pl-4' : ''}`}>
+        <div className="comment bg-card rounded-lg p-4 shadow-sm mb-4 border">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                {comment.userName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">{comment.userName}</h4>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(comment.createdAt as any).toLocaleDateString()}
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">{comment.userName}</h4>
-              <p className="text-xs text-muted-foreground">
-                {/* {formatDate(new Date(comment.createdAt))} */}
-              </p>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleToggleUpvote}
+                disabled={upvoting || !currentUser}
+                className={`flex items-center space-x-1 transition-colors ${isUpvoted
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-primary'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                title={isUpvoted ? 'Remove upvote' : 'Upvote'}
+              >
+                {upvoting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill={isUpvoted ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+                <span className="text-sm">{comment.upvoteCount || 0}</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => onUpvote(comment.id)}
-              className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
-              title="Upvote"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-              <span className="text-sm">{comment.upvoteCount}</span>
-            </button>
+          <div className="mt-3">
+            <p className="text-foreground whitespace-pre-wrap">{comment.content}</p>
           </div>
-        </div>
 
-        <div className="mt-3">
-          <p className="text-foreground whitespace-pre-wrap">{comment.content}</p>
-        </div>
+          <div className="mt-3 flex items-center space-x-4 text-sm">
+            {currentUser && depth < 3 && (
+              <button
+                onClick={() => setShowReplyForm(true)}
+                className="text-primary hover:text-primary/80 font-medium"
+              >
+                Reply
+              </button>
+            )}
 
-        <div className="mt-3 flex items-center space-x-4 text-sm">
-          {currentUser && depth < 3 && (
-            <button
-              onClick={() => setShowReplyForm(true)}
-              className="text-primary hover:text-primary/80 font-medium"
-            >
-              Reply
-            </button>
+            {hasReplies && (
+              <button
+                onClick={toggleReplies}
+                disabled={loadingReplies}
+                className="text-muted-foreground hover:text-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingReplies ? (
+                  'Loading replies...'
+                ) : (
+                  `${showReplies ? 'Hide' : 'Show'} ${comment.countReplies} ${comment.countReplies === 1 ? 'reply' : 'replies'}`
+                )}
+              </button>
+            )}
+          </div>
+
+          {showReplyForm && currentUser && (
+            <ReplyForm
+              onSubmit={handleSubmitReply}
+              onCancel={() => setShowReplyForm(false)}
+              submitting={submittingReply}
+            />
           )}
 
-          {comment.countReplies > 0 && (
-            <button
-              onClick={toggleReplies}
-              className="text-muted-foreground hover:text-foreground font-medium"
-            >
-              {showReplies ? 'Hide' : 'Show'} {comment.countReplies} {comment.countReplies === 1 ? 'reply' : 'replies'}
-            </button>
+          {loadingReplies && (
+            <div className="mt-4 flex justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          )}
+
+          {showReplies && !loadingReplies && comment.replies && comment.replies.length > 0 && (
+            <div className="mt-4 space-y-4">
+              {comment.replies.map((reply) => (
+                <CommentThread
+                  key={reply.id}
+                  comment={reply}
+                  depth={depth + 1}
+                  onToggleUpvote={onToggleUpvote}
+                  onLoadReplies={onLoadReplies}
+                  onToggleReplies={onToggleReplies}
+                  onSetLoadingReplies={onSetLoadingReplies}
+                  onReply={onReply}
+                  currentUser={currentUser}
+                />
+              ))}
+            </div>
+          )}
+
+          {showReplies && !loadingReplies && comment.replies && comment.replies.length === 0 && (
+            <div className="mt-4 text-center text-muted-foreground text-sm">
+              No replies yet
+            </div>
           )}
         </div>
-
-        {/* Reply form */}
-        {showReplyForm && currentUser && (
-          <ReplyForm
-            onSubmit={handleSubmitReply}
-            onCancel={handleCancelReply}
-            submitting={submittingReply}
-          />
-        )}
-
-        {/* Nested replies */}
-        {showReplies && comment.replies && comment.replies.length > 0 && (
-          <div className="mt-4 space-y-4">
-            {comment.replies.map((reply) => (
-              <CommentThread
-                key={reply.id}
-                comment={reply}
-                depth={depth + 1}
-                onUpvote={onUpvote}
-                onLoadReplies={onLoadReplies}
-                onToggleReplies={onToggleReplies}
-                onReply={onReply}
-                currentUser={currentUser}
-              />
-            ))}
-          </div>
-        )}
       </div>
-    </div>
-  );
-});
+    );
+  };
 
 const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
   const { user } = useAuth();
@@ -214,72 +265,120 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
   const [submittingReply, setSubmittingReply] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<Omit<PaginatedResult<Comment>, 'data'> | null>(null);
+  const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load top-level comments
+  // Load user's upvotes for this lesson
+  const loadUserUpvotes = async () => {
+    if (!user || !lessonId) {
+      setUserUpvotes(new Set());
+      return;
+    }
 
-  const loadComments = useCallback(async () => {
-    if (!lessonId) return;
+    try {
+      const upvoteResult = await commentService.getLessonUpvoteByUser(lessonId, user.id);
+      if (upvoteResult.success) {
+        const upvotedCommentIds = new Set(upvoteResult.data.map(vote => vote.commentId));
+        setUserUpvotes(upvotedCommentIds);
+      }
+    } catch (error) {
+      console.error('Failed to load user upvotes:', error);
+    }
+  };
+
+  // Simple comment map for quick updates
+  const updateCommentState = (commentId: string, updates: Partial<CommentWithReplies>) => {
+    setComments(prev => prev.map(comment => {
+      if (comment.id === commentId) {
+        return { ...comment, ...updates };
+      }
+
+      // Check replies recursively
+      const updateReplies = (replies: CommentWithReplies[]): CommentWithReplies[] => {
+        return replies.map(reply => {
+          if (reply.id === commentId) {
+            return { ...reply, ...updates };
+          }
+          if (reply.replies) {
+            return { ...reply, replies: updateReplies(reply.replies) };
+          }
+          return reply;
+        });
+      };
+
+      if (comment.replies) {
+        return { ...comment, replies: updateReplies(comment.replies) };
+      }
+
+      return comment;
+    }));
+  };
+
+  // Load top-level comments with upvote status
+  const loadComments = async () => {
+    if (!lessonId || hasLoaded) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Query 1: All approved comments from OTHER users
+      // Load user upvotes first
+      await loadUserUpvotes();
+
       const approvedFilters = [
         { field: "lessonId", op: "==", value: lessonId },
         { field: "parentCommentId", op: "==", value: null },
         { field: "status", op: "==", value: COMMENT_STATUS.APPROVED },
-        { field: "userId", op: "!=", value: user?.id || "none" }, // Handle case when user is null
+        { field: "userId", op: "!=", value: user?.id || "none" },
       ];
 
-      // Query 2: Current user's comments (if logged in) - ALL statuses
       const userFilters = user ? [
         { field: "lessonId", op: "==", value: lessonId },
         { field: "parentCommentId", op: "==", value: null },
         { field: "userId", op: "==", value: user.id },
-        // Remove status filter to get ALL of user's comments (pending, approved, etc.)
       ] : null;
 
-      // Execute both queries in parallel
       const [approvedResult, userResult] = await Promise.all([
         commentService.getComments(approvedFilters, {
-          limit: 15, // Reserve some space for user's comments
+          limit: 15,
           orderBy: { field: 'createdAt', direction: 'desc' }
         }),
         userFilters ? commentService.getComments(userFilters, {
-          limit: 10, // Reserve some space for approved comments
+          limit: 10,
           orderBy: { field: 'createdAt', direction: 'desc' }
         }) : Promise.resolve({ success: true, data: { data: [] } } as any)
       ]);
 
-      let allComments = [];
+      let allComments: CommentWithReplies[] = [];
 
-      // Handle user's comments
       if (userResult.success && userResult.data.data) {
         allComments = [...userResult.data.data];
       }
 
-      // Handle approved comments from other users
       if (approvedResult.success && approvedResult.data.data) {
         allComments = [...allComments, ...approvedResult.data.data];
       }
 
-      // Remove duplicates (in case user has approved comments that also appear in the approved query)
       const uniqueComments = allComments.filter((comment, index, array) =>
         array.findIndex(c => c.id === comment.id) === index
       );
 
-      // Sort by creation date (newest first)
       uniqueComments.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime()
       );
 
-      // Limit to 20 comments total
-      const finalComments = uniqueComments.slice(0, 20);
+      // Add upvote status to comments
+      const finalComments = uniqueComments.slice(0, 20).map(comment => ({
+        ...comment,
+        replies: [],
+        showReplies: false,
+        loadingReplies: false,
+        isUpvoted: userUpvotes.has(comment.id)
+      }));
 
       setComments(finalComments);
+      setHasLoaded(true);
 
-      // Set pagination (use the approved result's pagination as base)
       if (approvedResult.success) {
         const { data, ...paginationData } = approvedResult.data;
         setPagination(paginationData);
@@ -291,62 +390,119 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
     } finally {
       setLoading(false);
     }
-  }, [lessonId, user]);
+  };
 
-  // Recursive function to find and update a comment in the tree
-  const updateCommentInTree = useCallback((
-    comments: CommentWithReplies[],
-    targetId: string,
-    updateFn: (comment: CommentWithReplies) => CommentWithReplies
-  ): CommentWithReplies[] => {
-    return comments.map(comment => {
-      if (comment.id === targetId) {
-        return updateFn(comment);
-      }
-
-      if (comment.replies && comment.replies.length > 0) {
-        return {
-          ...comment,
-          replies: updateCommentInTree(comment.replies, targetId, updateFn)
-        };
-      }
-
-      return comment;
-    });
-  }, []);
-
-  // Load replies for a specific comment
-  const loadReplies = useCallback(async (commentId: string) => {
+  // Load replies for a comment
+  const loadReplies = async (commentId: string) => {
     try {
-      const result = await commentService.getCommentReplies(commentId, {
+      const result = await commentService.getCommentReplies(user.id, commentId, {
         limit: 50,
         orderBy: { field: 'createdAt', direction: 'asc' }
       });
 
       if (result.success) {
-        setComments(prev =>
-          updateCommentInTree(prev, commentId, (comment) => ({
-            ...comment,
-            replies: result.data.data
-          }))
-        );
+        const repliesWithDefaults = result.data.data.map(reply => ({
+          ...reply,
+          replies: [],
+          showReplies: false,
+          loadingReplies: false,
+          isUpvoted: userUpvotes.has(reply.id)
+        }));
+
+        updateCommentState(commentId, { replies: repliesWithDefaults });
       }
     } catch (err) {
       console.error('Failed to load replies:', err);
+      updateCommentState(commentId, { loadingReplies: false });
     }
-  }, [updateCommentInTree]);
+  };
 
-  // Toggle replies visibility for a comment
-  const toggleReplies = useCallback((commentId: string, show: boolean) => {
-    setComments(prev =>
-      updateCommentInTree(prev, commentId, (comment) => ({
-        ...comment,
-        showReplies: show
-      }))
-    );
-  }, [updateCommentInTree]);
+  // Toggle replies visibility
+  const toggleReplies = (commentId: string, show: boolean) => {
+    updateCommentState(commentId, { showReplies: show });
+  };
 
-  // Submit a new top-level comment
+  // Set loading state for replies
+  const setLoadingReplies = (commentId: string, loading: boolean) => {
+    updateCommentState(commentId, { loadingReplies: loading });
+  };
+
+  // Toggle upvote for a comment
+  const handleToggleUpvote = async (commentId: string) => {
+    if (!user) {
+      setError('Please sign in to upvote comments');
+      return;
+    }
+
+    try {
+      const result = await commentService.toggleUpvote(commentId, user.id);
+
+      if (result.success) {
+        const { upvoted, newUpvoteCount } = result.data;
+
+        // Update user upvotes set
+        setUserUpvotes(prev => {
+          const newSet = new Set(prev);
+          if (upvoted) {
+            newSet.add(commentId);
+          } else {
+            newSet.delete(commentId);
+          }
+          return newSet;
+        });
+
+        // Update comment state
+        updateCommentState(commentId, {
+          upvoteCount: newUpvoteCount,
+          isUpvoted: upvoted
+        });
+      } else {
+        setError(result.error?.message || 'Failed to toggle upvote');
+      }
+    } catch (err) {
+      setError('Failed to toggle upvote');
+      console.error('Error toggling upvote:', err);
+    }
+  };
+
+  // Submit a reply
+  const handleSubmitReply = async (parentCommentId: string, content: string) => {
+    if (!user) return;
+
+    setSubmittingReply(true);
+    setError(null);
+
+    try {
+      const result = await commentService.createComment({
+        lessonId,
+        userId: user.id,
+        userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || 'Anonymous',
+        content: content.trim(),
+        parentCommentId
+      });
+
+      if (result.success) {
+        // Increment reply count immediately for better UX
+        const parentComment = comments.find(c => c.id === parentCommentId);
+        if (parentComment) {
+          updateCommentState(parentCommentId, {
+            countReplies: (parentComment.countReplies || 0) + 1
+          });
+        }
+
+        // Reload replies to include the new one
+        await loadReplies(parentCommentId);
+      } else {
+        setError(result.error?.message || 'Failed to submit reply');
+      }
+    } catch (err) {
+      setError('Failed to submit reply');
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  // Submit a new comment
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !user) return;
@@ -365,6 +521,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
 
       if (result.success) {
         setNewComment('');
+        setHasLoaded(false);
         await loadComments();
       } else {
         setError(result.error?.message || 'Failed to submit comment');
@@ -376,63 +533,19 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
     }
   };
 
-  // Submit a reply
-  const handleSubmitReply = useCallback(async (parentCommentId: string, content: string) => {
-    if (!user) return;
-
-    setSubmittingReply(true);
-    setError(null);
-
-    try {
-      const result = await commentService.createComment({
-        lessonId,
-        userId: user.id,
-        userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || 'Anonymous',
-        content: content.trim(),
-        parentCommentId
-      });
-
-      if (result.success) {
-        // Reload replies for the parent comment to show the new reply
-        await loadReplies(parentCommentId);
-      } else {
-        setError(result.error?.message || 'Failed to submit reply');
-      }
-    } catch (err) {
-      setError('Failed to submit reply');
-    } finally {
-      setSubmittingReply(false);
-    }
-  }, [user, lessonId, loadReplies]);
-
-  // Upvote a comment
-  const handleUpvote = useCallback(async (commentId: string) => {
-    if (!user) {
-      setError('Please sign in to upvote comments');
-      return;
-    }
-
-    try {
-      const result = await commentService.upvoteComment(commentId, user.id);
-      if (result.success) {
-        setComments(prev =>
-          updateCommentInTree(prev, commentId, (comment) => ({
-            ...comment,
-            upvoteCount: comment.upvoteCount + 1
-          }))
-        );
-      } else {
-        setError(result.error?.message || 'Failed to upvote comment');
-      }
-    } catch (err) {
-      setError('Failed to upvote comment');
-    }
-  }, [user, updateCommentInTree]);
-
-  // Load comments on component mount
+  // Load comments and upvotes on mount and when lessonId changes
   useEffect(() => {
-    loadComments();
-  }, [loadComments]);
+    if (lessonId && !hasLoaded) {
+      loadComments();
+    }
+  }, [lessonId, hasLoaded]);
+
+  // Reset when lessonId changes
+  useEffect(() => {
+    setHasLoaded(false);
+    setComments([]);
+    setUserUpvotes(new Set());
+  }, [lessonId]);
 
   if (loading) {
     return (
@@ -446,7 +559,6 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
 
   return (
     <div className="comments-section max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-foreground">Comments</h2>
         <div className="text-sm text-muted-foreground">
@@ -454,7 +566,6 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
         </div>
       </div>
 
-      {/* Error message */}
       {error && (
         <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
           <div className="flex items-center">
@@ -463,10 +574,15 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
             </svg>
             <span className="text-destructive-foreground">{error}</span>
           </div>
+          <button
+            onClick={() => setError(null)}
+            className="mt-2 text-sm text-destructive hover:text-destructive/80"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* Comment form */}
       {user ? (
         <form onSubmit={handleSubmitComment} className="mb-8">
           <div className="bg-card rounded-lg shadow-sm border border-border p-4">
@@ -494,15 +610,12 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
         </form>
       ) : (
         <div className="mb-8 p-4 bg-secondary/50 border border-border rounded-lg text-center">
-          <p className="text-foreground">
-            Please sign in to leave a comment.
-          </p>
+          <p className="text-foreground">Please sign in to leave a comment.</p>
         </div>
       )}
 
-      {/* Comments list */}
       <div className="space-y-6">
-        {comments.length === 0 ? (
+        {comments.length === 0 && !loading ? (
           <div className="text-center py-12">
             <svg className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -515,9 +628,10 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
             <CommentThread
               key={comment.id}
               comment={comment}
-              onUpvote={handleUpvote}
+              onToggleUpvote={handleToggleUpvote}
               onLoadReplies={loadReplies}
               onToggleReplies={toggleReplies}
+              onSetLoadingReplies={setLoadingReplies}
               onReply={handleSubmitReply}
               currentUser={user}
             />
@@ -525,12 +639,11 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
         )}
       </div>
 
-      {/* Load more button */}
       {pagination?.hasNextPage && (
         <div className="flex justify-center mt-8">
           <button
             onClick={() => {
-              // Implement load more functionality
+              // Implement load more
             }}
             className="px-6 py-2 border border-border text-foreground font-medium rounded-lg hover:bg-secondary focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
@@ -542,4 +655,4 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
   );
 };
 
-export default React.memo(Comments);
+export default Comments;
