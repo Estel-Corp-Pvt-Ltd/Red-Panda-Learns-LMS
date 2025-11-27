@@ -17,6 +17,9 @@ import { useCart } from "@/contexts/CartContext";
 import { USER_ROLE } from "@/constants";
 import { cn } from "@/lib/utils";
 
+import { LifeBuoy } from "lucide-react";
+import { CreateComplaint } from "./CreateComplaint";
+
 type HeaderProps = {
   onMenuClick?: () => void;
   showMenuButton?: boolean;
@@ -28,26 +31,11 @@ export function Header({
   showMenuButton = false,
   className,
 }: HeaderProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { cart } = useCart();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Hover-controlled open for account dropdown (desktop)
-  const [accountOpen, setAccountOpen] = useState(false);
 
   const email = "hello@vizuara.com";
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/");
-      localStorage.clear();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email);
@@ -656,6 +644,24 @@ export function Header({
               </PopoverContent>
             </Popover>
 
+            {
+              user &&
+              <CreateComplaint
+                userId={user.id}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    className="font-medium text-sm flex items-center gap-2"
+                  >
+                    <LifeBuoy className="h-4 w-4" />
+                    <span className="hidden sm:block">
+                      Customer Support
+                    </span>
+                  </Button>
+                }
+              />
+            }
+
             <ThemeToggle />
 
             {user ? (
@@ -737,4 +743,4 @@ export function Header({
 
     </>
   );
-}
+};
