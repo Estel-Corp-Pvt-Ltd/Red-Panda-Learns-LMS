@@ -451,3 +451,9 @@ export const QUIZ_STATUS = {
   DRAFT: "DRAFT",
   PUBLISHED: "PUBLISHED"
 };
+
+export const COMMENT_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  DELETED: "DELETED",
+} as const;

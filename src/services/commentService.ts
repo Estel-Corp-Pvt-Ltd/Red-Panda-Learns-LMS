@@ -21,7 +21,7 @@ import {
   WhereFilterOp,
 } from "firebase/firestore";
 
-import { COLLECTION } from "@/constants";
+import { COLLECTION, COMMENT_STATUS } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Comment } from "@/types/comment";
 import { ok, Result, fail } from "@/utils/response";
@@ -65,7 +65,7 @@ class CommentService {
         userId: data.userId,
         userName: data.userName,
         content: data.content,
-        status: "APPROVED", // Default status
+        status: COMMENT_STATUS.PENDING, // Default status
         upvoteCount: 0,
         countReplies: 0,
         createdAt: serverTimestamp(),
@@ -290,26 +290,6 @@ class CommentService {
   ): Promise<Result<PaginatedResult<Comment>>> {
     const filters = [
       { field: "lessonId", op: "==", value: lessonId },
-      { field: "status", op: "==", value: "APPROVED" },
-    ];
-
-    return this.getComments(filters, options);
-  }
-
-  /**
-   * Retrieves top-level comments for a specific lesson (not replies).
-   *
-   * @param lessonId - The lesson ID to filter comments by.
-   * @param options - Pagination options.
-   * @returns A promise that resolves to paginated top-level comments.
-   */
-  async getTopLevelCommentsByLesson(
-    lessonId: string,
-    options: PaginationOptions<Comment> = {}
-  ): Promise<Result<PaginatedResult<Comment>>> {
-    const filters = [
-      { field: "lessonId", op: "==", value: lessonId },
-      { field: "parentCommentId", op: "==", value: null },
       { field: "status", op: "==", value: "APPROVED" },
     ];
 

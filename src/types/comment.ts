@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase/firestore";
+import { CommentType } from "./general";
 
 export type Comment = {
   id: string;
@@ -7,7 +8,7 @@ export type Comment = {
   userId: string;
   userName: string;
   content: string;
-  status: "PENDING" | "APPROVED" | "DELETED";
+  status: CommentType;
   upvoteCount: number;
   countReplies: number;
   createdAt: FieldValue;

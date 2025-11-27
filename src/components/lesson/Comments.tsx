@@ -3,6 +3,7 @@ import { commentService } from '@/services/commentService';
 import { Comment } from '@/types/comment';
 import { useAuth } from '@/contexts/AuthContext';
 import { PaginatedResult } from '@/utils/pagination';
+import { COMMENT_STATUS } from '@/constants';
 
 interface CommentsProps {
   lessonId: string;
@@ -215,6 +216,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
   const [pagination, setPagination] = useState<Omit<PaginatedResult<Comment>, 'data'> | null>(null);
 
   // Load top-level comments
+
   const loadComments = useCallback(async () => {
     if (!lessonId) return;
 
@@ -222,24 +224,74 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
     setError(null);
 
     try {
-      const result = await commentService.getTopLevelCommentsByLesson(lessonId, {
-        limit: 20,
-        orderBy: { field: 'createdAt', direction: 'desc' }
-      });
+      // Query 1: All approved comments from OTHER users
+      const approvedFilters = [
+        { field: "lessonId", op: "==", value: lessonId },
+        { field: "parentCommentId", op: "==", value: null },
+        { field: "status", op: "==", value: COMMENT_STATUS.APPROVED },
+        { field: "userId", op: "!=", value: user?.id || "none" }, // Handle case when user is null
+      ];
 
-      if (result.success) {
-        setComments(result.data.data);
-        const { data, ...paginationData } = result.data;
-        setPagination(paginationData);
-      } else {
-        setError(result.error?.message || 'Failed to load comments');
+      // Query 2: Current user's comments (if logged in) - ALL statuses
+      const userFilters = user ? [
+        { field: "lessonId", op: "==", value: lessonId },
+        { field: "parentCommentId", op: "==", value: null },
+        { field: "userId", op: "==", value: user.id },
+        // Remove status filter to get ALL of user's comments (pending, approved, etc.)
+      ] : null;
+
+      // Execute both queries in parallel
+      const [approvedResult, userResult] = await Promise.all([
+        commentService.getComments(approvedFilters, {
+          limit: 15, // Reserve some space for user's comments
+          orderBy: { field: 'createdAt', direction: 'desc' }
+        }),
+        userFilters ? commentService.getComments(userFilters, {
+          limit: 10, // Reserve some space for approved comments
+          orderBy: { field: 'createdAt', direction: 'desc' }
+        }) : Promise.resolve({ success: true, data: { data: [] } } as any)
+      ]);
+
+      let allComments = [];
+
+      // Handle user's comments
+      if (userResult.success && userResult.data.data) {
+        allComments = [...userResult.data.data];
       }
+
+      // Handle approved comments from other users
+      if (approvedResult.success && approvedResult.data.data) {
+        allComments = [...allComments, ...approvedResult.data.data];
+      }
+
+      // Remove duplicates (in case user has approved comments that also appear in the approved query)
+      const uniqueComments = allComments.filter((comment, index, array) =>
+        array.findIndex(c => c.id === comment.id) === index
+      );
+
+      // Sort by creation date (newest first)
+      uniqueComments.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      // Limit to 20 comments total
+      const finalComments = uniqueComments.slice(0, 20);
+
+      setComments(finalComments);
+
+      // Set pagination (use the approved result's pagination as base)
+      if (approvedResult.success) {
+        const { data, ...paginationData } = approvedResult.data;
+        setPagination(paginationData);
+      }
+
     } catch (err) {
       setError('Failed to load comments');
+      console.error('Error loading comments:', err);
     } finally {
       setLoading(false);
     }
-  }, [lessonId]);
+  }, [lessonId, user]);
 
   // Recursive function to find and update a comment in the tree
   const updateCommentInTree = useCallback((
