@@ -115,7 +115,7 @@ class CourseService {
       };
 
       await setDoc(doc(db, COLLECTION.COURSES, courseId), course);
-    
+
 
       return courseId;
     } catch (error) {
@@ -194,7 +194,6 @@ class CourseService {
       }
 
       await updateDoc(courseRef, updateData);
-      console.log("CourseService - Course updated successfully:", updateData);
     } catch (error) {
       console.error("CourseService - Error updating course:", error);
       throw new Error("Failed to update course");
@@ -225,7 +224,6 @@ class CourseService {
         status: COURSE_STATUS.PUBLISHED,
         updatedAt: serverTimestamp(),
       });
-      console.log("CourseService - Course published successfully:", courseId);
     } catch (error) {
       console.error("CourseService - Error publishing course:", error);
       throw new Error("Failed to publish course");
@@ -248,7 +246,6 @@ class CourseService {
    *
    * @example
    * const courses = await courseService.getAllCourses();
-   * console.log(courses.length); // e.g., 5
    */
 
   async getAllCourses(): Promise<Course[]> {
@@ -261,8 +258,6 @@ class CourseService {
         createdAt: doc.data().createdAt.toDate(),
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Course[];
-      console.log(courses);
-      console.log("CourseService - Fetched courses:", courses.length);
       return courses;
     } catch (error) {
       console.error("CourseService - Error fetching courses:", error);
@@ -271,35 +266,35 @@ class CourseService {
   }
 
 
-  async  getCourseByInstructor(
-  userId: string
-): Promise<Result<Course[]>> {
-  try {
-    const courseQuery = query(
-      collection(db, COLLECTION.COURSES),
-      where('instructorId', '==', userId)
-    );
+  async getCourseByInstructor(
+    userId: string
+  ): Promise<Result<Course[]>> {
+    try {
+      const courseQuery = query(
+        collection(db, COLLECTION.COURSES),
+        where('instructorId', '==', userId)
+      );
 
-    const snapshot = await getDocs(courseQuery);
+      const snapshot = await getDocs(courseQuery);
 
-    if (snapshot.empty) {
-      return ok([]); // no courses found, return empty array
+      if (snapshot.empty) {
+        return ok([]); // no courses found, return empty array
+      }
+
+      const courseList: Course[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Course),
+      }));
+
+      return ok(courseList);
+    } catch (error: any) {
+      logError('CourseService.getCourseByInstructor', error);
+      return fail(
+        'Failed to fetch Instructor Courses.',
+        error.code || error.message
+      );
     }
-
-    const courseList: Course[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as Course),
-    }));
-
-    return ok(courseList);
-  } catch (error: any) {
-    logError('CourseService.getCourseByInstructor', error);
-    return fail(
-      'Failed to fetch Instructor Courses.',
-      error.code || error.message
-    );
   }
-}
 
   async getCourses(
     filters?: {
@@ -490,10 +485,6 @@ class CourseService {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as Course[];
 
-        console.log(
-          "CourseService - Fetched filtered courses:",
-          courses.length
-        );
         return courses;
       } else {
         // No filters: fetch all courses
@@ -504,7 +495,6 @@ class CourseService {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as Course[];
 
-        console.log("CourseService - Fetched all courses:", courses.length);
         return courses;
       }
     } catch (error) {
@@ -529,7 +519,6 @@ class CourseService {
    *
    * @example
    * const publishedCourses = await courseService.getPublishedCourses();
-   * console.log(publishedCourses.length); // e.g., 3
    */
 
   async getPublishedCourses(): Promise<Course[]> {
@@ -546,7 +535,6 @@ class CourseService {
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Course[];
 
-      console.log("CourseService - Fetched published courses:", courses.length);
       return courses;
     } catch (error) {
       console.error("CourseService - Error fetching published courses:", error);
@@ -579,7 +567,6 @@ class CourseService {
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        console.log("CourseService - Course not found for slug:", slug);
         return null;
       }
 
@@ -627,7 +614,6 @@ class CourseService {
       const courseDoc = await getDoc(doc(db, COLLECTION.COURSES, courseId));
 
       if (!courseDoc.exists()) {
-        console.log("CourseService - Course not found:", courseId);
         return null;
       }
 
@@ -677,21 +663,21 @@ class CourseService {
   }
 
   async getCourseSlugById(courseId: string): Promise<string | null> {
-  try {
-    const ref = doc(db, COLLECTION.COURSES, courseId);
-    const snap = await getDoc(ref);
+    try {
+      const ref = doc(db, COLLECTION.COURSES, courseId);
+      const snap = await getDoc(ref);
 
-    if (!snap.exists()) return null;
+      if (!snap.exists()) return null;
 
-    const data = snap.data() as Partial<Course>;
-    const slug = (data.slug ??  "").trim();
+      const data = snap.data() as Partial<Course>;
+      const slug = (data.slug ?? "").trim();
 
-    return slug.length ? slug : null;
-  } catch (error: any) {
-    logError("CourseService.getCourseSlugById", error);
-    return null;
+      return slug.length ? slug : null;
+    } catch (error: any) {
+      logError("CourseService.getCourseSlugById", error);
+      return null;
+    }
   }
-}
 
   /**
    * Deletes a course from the Firestore `courses` collection by its ID.
@@ -713,7 +699,7 @@ class CourseService {
   async deleteCourse(courseId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.COURSES, courseId));
-  
+
       return ok(null);
     } catch (error) {
       console.error("CourseService - Error deleting course:", error);
@@ -721,7 +707,7 @@ class CourseService {
     }
   }
 
-  
+
 }
 
 export const courseService = new CourseService();

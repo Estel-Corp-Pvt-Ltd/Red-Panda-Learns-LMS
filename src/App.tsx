@@ -33,6 +33,7 @@ const DummyCurriculumBuilderPage = lazy(
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminComplaints = lazy(() => import("./pages/admin/AdminComplaints"));
 const AdminOrganizations = lazy(
   () => import("./pages/admin/AdminOrganizations")
 );
@@ -259,6 +260,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminCoupons />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/view-complaints"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminComplaints />
                           </AuthGuard>
                         }
                       />

@@ -11,6 +11,7 @@ import { enrollFreeCourse } from './handlers/enrollments/enrollFreeCourse';
 import { resetUserPassword } from './handlers/resetUserPassword';
 import { canStartQuiz } from './handlers/canStartQuiz';
 import { getQuizTimeLeft } from './handlers/getQuizTimeLeft';
+import { generateComplaintId } from './handlers/generateComplaintId';
 import { enrollStudentsInBulk, processEnrollmentTask } from './handlers/enrollments/enrollStudentsInBulk';
 // Cascade delete workers
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
@@ -35,5 +36,6 @@ export {
   enrollStudentsInBulk,
   processEnrollmentTask,
   canStartQuiz,
-  getQuizTimeLeft
+  getQuizTimeLeft,
+  generateComplaintId
 };

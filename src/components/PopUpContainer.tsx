@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { useActivePopUpsQuery } from "@/hooks/use-pop-ups";
 import PopUpElement from "./PopUpElement";
@@ -109,18 +107,11 @@ const PopUpContainer = () => {
     toastItems.length > 0
       ? toastItems
       : import.meta.env.MODE === "development"
-      ? demoItems
-      : [];
+        ? demoItems
+        : [];
 
   const canShowToasts =
     phase === "toasts" && !enrollmentsLoading && itemsForToasts.length > 0;
-
-  if (enrollmentsError) {
-    // Optional log; this won't affect sequencing
-    console.error("[RecentEnrollments] Firestore error:", enrollmentsError);
-  }
-
-  console.log(enrollments);
 
   return (
     <>
