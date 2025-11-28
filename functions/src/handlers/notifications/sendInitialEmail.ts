@@ -1,25 +1,20 @@
-import { withMiddleware } from "../../middlewares";
-import { corsMiddleware } from "../../middlewares/cors";
-import { authMiddleware } from "../../middlewares/auth";
-import { onRequest } from "firebase-functions/v2/https";
 import { notificationService } from "../../services/notificationService";
-
-export const sendInitialNotification = onRequest(
-  { region: "us-central1" },
-  withMiddleware(corsMiddleware, authMiddleware, async (req, res) => {
+import { onDocumentCreated } from "firebase-functions/firestore";
+import { COLLECTION } from "../../constants";
+export const sendInitialNotification = onDocumentCreated(
+ `${COLLECTION.SUBMISSION_NOTIFICATIONS}/{id}`,
+  async (event) => {
     try {
-      const { id } = req.body;
-      if (!id) {
-        res.status(400).json({ error: "Missing notification id" });
-        return;
-      }
+      const id = event.params.id;
 
-      const result = await notificationService.sendInitialEmail(id);
-      res.status(200).json({ success: true, result });
+      console.log("🟢 New notification created:", id);
 
-    } catch (err: any) {
-      console.error("❌ Failed to send initial email:", err);
-      res.status(500).json({ error: "Internal error", details: err.message });
+      // Call your existing service to send the initial email
+      await notificationService.sendInitialEmail(id);
+
+      console.log("📧 Email sent successfully for:", id);
+    } catch (err) {
+      console.error("❌ Failed to send email:", err);
     }
-  })
+  }
 );
