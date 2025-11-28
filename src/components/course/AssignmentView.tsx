@@ -116,7 +116,6 @@ useEffect(() => {
   const checkAssignment = async () => {
     if (!user || !assignment) return;
     const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(
-      assignment.authorId,
       user.id
     );
     setIsAssigned(assigned);
@@ -222,7 +221,6 @@ useEffect(() => {
           submissionId: submissionId,  // The ID returned from createSubmission
           assignmentId: assignmentId,
           studentId: user.id,
-          adminId: assignment.authorId,  // The admin who created the assignment
         }, idToken);
         console.log('✅ Notification created successfully');
       } catch (notifError) {

@@ -11,7 +11,6 @@ export const notificationApiService = {
     submissionId: string;
     assignmentId: string;
     studentId: string;
-    adminId: string;
   }, idToken: string) {
     try {
       const response = await fetch(`${backendUrl}/createNotification`, {

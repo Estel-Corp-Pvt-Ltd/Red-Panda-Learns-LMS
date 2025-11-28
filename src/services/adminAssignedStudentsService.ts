@@ -1,18 +1,20 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { COLLECTION } from '@/constants';
 
 class AdminAssignedStudentsService {
-  async isStudentAssignedToAdmin(adminId: string, studentId: string) {
-    const docId = `${adminId}_${studentId}`;
-    const ref = doc(db, COLLECTION.ADMIN_ASSIGNED_STUDENTS, docId);
+  async isStudentAssignedToAdmin(studentId: string) {
+    const ref = collection(db, COLLECTION.ADMIN_ASSIGNED_STUDENTS);
 
-    const snap = await getDoc(ref);
+    const q = query(
+      ref,
+      where('studentId', '==', studentId),
+      where('active', '==', true)
+    );
 
-    if (!snap.exists()) return false;
+    const snap = await getDocs(q);
 
-    const data = snap.data();
-    return data.active === true;
+    return !snap.empty; // true if at least one matching document exists
   }
 }
 
