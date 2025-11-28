@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
+import ComplaintDetailModal from "@/components/ComplaintDetailModal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -8,6 +9,14 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Table,
     TableBody,
@@ -16,32 +25,23 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-    ChevronLeft,
-    ChevronRight,
-    Filter,
-    Loader2,
-    Search,
-    Eye,
-} from "lucide-react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { complaintService } from "@/services/complaintService";
-import { Complaint } from "@/types/complaint";
 import {
     COMPLAINT_CATEGORY,
     COMPLAINT_SEVERITY,
     COMPLAINT_STATUS,
 } from "@/constants";
 import { toast } from "@/hooks/use-toast";
+import { complaintService } from "@/services/complaintService";
+import { Complaint } from "@/types/complaint";
+import {
+    ChevronLeft,
+    ChevronRight,
+    Eye,
+    Loader2,
+    Search
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface PaginatedComplaints {
     data: Complaint[];
@@ -50,9 +50,7 @@ interface PaginatedComplaints {
     nextCursor?: any;
     previousCursor?: any;
     totalCount: number;
-}
-
-const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50];
+};
 
 const AdminComplaints = () => {
     const navigate = useNavigate();
@@ -67,6 +65,9 @@ const AdminComplaints = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedComplaint, setSelectedComplaint] =
+        useState<Complaint | null>(null);
+    const [open, setOpen] = useState(false);
 
     const [statusFilter, setStatusFilter] =
         useState<keyof typeof COMPLAINT_STATUS | "ALL">("ALL");
@@ -326,7 +327,12 @@ const AdminComplaints = () => {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => navigate(`/admin/complaints/${c.id}`)}
+                                            onClick={
+                                                () => {
+                                                    setSelectedComplaint(c);
+                                                    setOpen(true);
+                                                }
+                                            }
                                         >
                                             <Eye className="h-4 w-4" />
                                         </Button>
@@ -373,6 +379,11 @@ const AdminComplaints = () => {
                         </div>
                     </div>
                 </CardContent>
+                <ComplaintDetailModal
+                    open={open}
+                    onOpenChange={setOpen}
+                    complaint={selectedComplaint}
+                />
             </Card>
         </AdminLayout>
     );
