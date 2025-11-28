@@ -214,13 +214,17 @@ class AssignmentService {
    *
    * @param assignmentId - The ID of the assignment to delete.
    */
-  async deleteAssignment(assignmentId: string): Promise<void> {
+  async deleteAssignment(assignmentId: string):  Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.ASSIGNMENTS, assignmentId));
-      console.log('AssignmentService - Assignment deleted successfully:', assignmentId);
+      return ok(undefined); 
     } catch (error) {
       console.error('AssignmentService - Error deleting assignment:', error);
-      throw new Error('Failed to delete assignment');
+       return fail(
+        'Failed to delete assignment',
+        error?.code,
+        error?.stack
+      );
     }
   }
 

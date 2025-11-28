@@ -30,8 +30,22 @@ import {
   Filter,
   X,
   Calendar,
-  Edit
+  Edit,
+  Trash2,
 } from 'lucide-react';
+
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+
 import { USER_ROLE } from '@/constants';
 import { formatDateTime } from '@/utils/date-time';
 import EditAssignmentModal from '@/components/admin/EditAssignmentModal';
@@ -339,6 +353,31 @@ const ManageAssignmentAuthors: React.FC = () => {
       return newChanges;
     });
   };
+ // ----------------- Delete Assignment -----------------
+
+  const handleDeleteAssignment = async (id: string) => {
+  const result = await assignmentService.deleteAssignment(id);
+
+  if (result.success) {
+    // Remove from UI immediately
+    setAssignments(prev => ({
+      ...prev,
+      data: prev.data.filter(a => a.id !== id),
+      totalCount: prev.totalCount - 1,
+    }));
+
+    toast({
+      title: "Deleted",
+      description: "Assignment deleted successfully",
+    });
+  } else {
+    toast({
+      title: "Error",
+      description: "Failed to delete assignment",
+      variant: "destructive",
+    });
+  }
+};
 
   // ----------------- Save Single Assignment -----------------
   const saveAssignmentAuthor = async (assignmentId: string) => {
@@ -921,6 +960,38 @@ const ManageAssignmentAuthors: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
+                                {/* {Delete Assignment} */}
+                             <AlertDialog>
+  <AlertDialogTrigger asChild>
+    <Button
+      variant="ghost"
+      size="sm"
+      title="Delete Assignment"
+    >
+      <Trash2 className="h-4 w-4" />
+    </Button>
+  </AlertDialogTrigger>
+
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+      <AlertDialogDescription>
+        This action cannot be undone. This will permanently delete the assignment.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={() => handleDeleteAssignment(assignment.id)}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
                               {/* Edit Button */}
                               <Button
                                 variant="ghost"
