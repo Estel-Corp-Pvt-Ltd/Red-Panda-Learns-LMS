@@ -8,7 +8,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export const generateComplaintId = functions.https.onCall(
-    { cors: ["https://vizuara.ai", "http://localhost:8080"] },
+    { cors: ["https://vizuara.ai", "http://localhost:8080", "https://vizuara-ai-labs-dev.web.app"] },
     async (request) => {
         try {
             // ✅ Ensure user is authenticated
