@@ -17,6 +17,8 @@ import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
 import { assignStudentsToAdmin } from './handlers/assignStudentstoAdmin';
 import { createNotification } from './handlers/notifications/notificationController';
+import { sendInitialNotification } from './handlers/notifications/sendInitialEmail';
+import { SendMailWorkerForNotif } from './workers/sendMailWorkerForNotif';
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -36,5 +38,7 @@ export {
   canStartQuiz,
   getQuizTimeLeft,
   assignStudentsToAdmin,
-  createNotification
+  createNotification,
+  sendInitialNotification,
+  SendMailWorkerForNotif
 };
