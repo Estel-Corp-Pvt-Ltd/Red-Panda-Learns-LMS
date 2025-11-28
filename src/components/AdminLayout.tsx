@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, ClipboardList, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
+import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, ClipboardList, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -104,6 +104,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "View Complaints",
       path: "/admin/view-complaints",
       icon: <ClipboardList className="h-5 w-5" />,
+    },
+    {
+      name: "Comments",
+      path: "/admin/comments",
+      icon: <MessageSquareText className="h-5 w-5" />,
     }
   ];
 

@@ -1,25 +1,14 @@
-import { Bundle } from "@/types/bundle";
-import { TransactionLineItem } from "@/types/transaction";
 import {
   CURRENCY,
-  ENROLLED_PROGRAM_TYPE,
-  ENVIRONMENT,
-  ORDER_STATUS,
-  PAYMENT_PROVIDER,
-  TRANSACTION_STATUS,
-  TRANSACTION_TYPE,
+  PAYMENT_PROVIDER
 } from "@/constants";
-import { Course } from "@/types/course";
 import { Currency, PaymentProvider } from "@/types/general";
 import { Address } from "@/types/order";
+import { TransactionLineItem } from "@/types/transaction";
+import { Result } from "@/utils/response";
 import { currencyService } from "./currencyService";
-import { enrollmentService } from "./enrollmentService";
-import { orderService } from "./orderService";
-import { paypalProvider } from "./providers/paypalProvider";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { transactionService } from "./transactionService";
-import { authService } from "./authService";
-import { Result } from "@/utils/response";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -34,9 +23,7 @@ export type PaymentProviderOption = {
 };
 
 class PaymentService {
-  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ?
-    import.meta.env.VITE_DEV_BACKEND_URL :
-    import.meta.env.VITE_PROD_BACKEND_URL;
+  
   private providers: PaymentProviderOption[] = [
     {
       id: PAYMENT_PROVIDER.RAZORPAY,

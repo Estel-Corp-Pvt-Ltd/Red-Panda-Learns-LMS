@@ -151,7 +151,7 @@ class PayPalProvider {
               try {
             
                 
-                const url = `${import.meta.env.VITE_PROD_BACKEND_URL}/createPaypalOrder`;
+                const url = `${import.meta.env.VITE_BACKEND_URL}/createPaypalOrder`;
                 
                 const response = await fetch(url, {
                   method: "POST",
@@ -200,7 +200,7 @@ class PayPalProvider {
   try {
 
     
-    const url = `${import.meta.env.VITE_PROD_BACKEND_URL}/capturePaypalOrder`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/capturePaypalOrder`;
     
     const response = await fetch(url, {
       method: "POST",

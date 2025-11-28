@@ -1,9 +1,8 @@
-import { ENVIRONMENT } from '@/constants';
 import type { Currency } from '@/types/general';
+import { Address } from '@/types/order';
 import { TransactionLineItem } from '@/types/transaction';
+import { fail, ok, Result } from '@/utils/response';
 import { authService } from '../authService';
-import { Address, Order } from '@/types/order';
-import { ok, fail, Result } from '@/utils/response';
 
 export interface RazorpayOrder {
   id: string;
@@ -22,9 +21,8 @@ interface CreateOrderResponse {
 }
 
 class RazorpayProvider {
-  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-    ? import.meta.env.VITE_DEV_BACKEND_URL
-    : import.meta.env.VITE_PROD_BACKEND_URL;
+  
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   async createOrder(
     items: TransactionLineItem[],

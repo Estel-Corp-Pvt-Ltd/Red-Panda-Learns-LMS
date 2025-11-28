@@ -79,6 +79,7 @@ import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import ArrangeCourses from "./pages/admin/ArrangeCourses";
 import Quizzes from "./pages/Quizzes";
 import AttemptQuiz from "./pages/AttemptQuiz";
+import AdminCommentApproval from "./pages/admin/AdminCoomentApproval";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -275,6 +276,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminOrganizations />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/comments"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminCommentApproval />
                           </AuthGuard>
                         }
                       />

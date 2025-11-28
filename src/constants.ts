@@ -371,6 +371,8 @@ export const COLLECTION = {
   COURSES: 'Courses',
   BUNDLES: 'Bundles',
   COHORTS: 'Cohorts',
+  COMMENTS: 'Comments',
+  COMMENT_VOTES: 'CommentVotes',
   USERS: 'Users',
   CARTS: 'Carts',
   LESSONS: 'Lessons',
@@ -487,3 +489,9 @@ export const COMPLAINT_CATEGORY = {
   TECHNICAL: "TECHNICAL",
   INSTRUCTOR: "INSTRUCTOR"
 };
+
+export const COMMENT_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  DELETED: "DELETED",
+} as const;
