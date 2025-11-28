@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "vizuara-ai-labs"
-  }
+    "default": "vizuara-ai-labs-dev",
+    "dev": "vizuara-ai-labs-dev",
+    "prod": "vizuara-ai-labs"
+  },
+  "targets": {},
+  "etags": {}
 }
