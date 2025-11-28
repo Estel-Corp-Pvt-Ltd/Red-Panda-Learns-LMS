@@ -60,6 +60,6 @@ jobs:
 
       - name: Deploy to Firebase (dev)
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.GCP_SA_KEY_DEV }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
           PROJECT_ID: ${{ vars.VITE_PROJECT_ID }}
-        run: firebase deploy --project $PROJECT_ID --only hosting,functions
+        run: firebase deploy --project $PROJECT_ID --only hosting,functions --non-interactive
