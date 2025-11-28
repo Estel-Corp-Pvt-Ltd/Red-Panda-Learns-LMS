@@ -1,15 +1,8 @@
-import { Copy, LogOut, Mail, Menu, ShoppingCart, User } from "lucide-react";
+import { Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
@@ -23,7 +16,9 @@ import { useCart } from "@/contexts/CartContext";
 
 import { USER_ROLE } from "@/constants";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+
+import { LifeBuoy } from "lucide-react";
+import { CreateComplaint } from "./CreateComplaint";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -36,26 +31,11 @@ export function Header({
   showMenuButton = false,
   className,
 }: HeaderProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { cart } = useCart();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Hover-controlled open for account dropdown (desktop)
-  const [accountOpen, setAccountOpen] = useState(false);
 
   const email = "hello@vizuara.com";
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/");
-      localStorage.clear();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email);
@@ -664,6 +644,24 @@ export function Header({
               </PopoverContent>
             </Popover>
 
+            {
+              user && user.role !== USER_ROLE.ADMIN &&
+              <CreateComplaint
+                userId={user.id}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    className="font-medium text-sm flex items-center gap-2"
+                  >
+                    <LifeBuoy className="h-4 w-4" />
+                    <span className="hidden sm:block">
+                      Customer Support
+                    </span>
+                  </Button>
+                }
+              />
+            }
+
             <ThemeToggle />
 
             {user ? (
@@ -745,4 +743,4 @@ export function Header({
 
     </>
   );
-}
+};
