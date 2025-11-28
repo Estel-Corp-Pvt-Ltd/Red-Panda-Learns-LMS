@@ -1,14 +1,12 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { COLLECTION, CURRENCY, FALLBACK_CURRENCY_RATE } from '@/constants';
 import { db } from '@/firebaseConfig';
-import { CurrencyRate } from '@/types/transaction';
 import { Currency } from '@/types/general';
-import { COLLECTION, CURRENCY } from '@/constants';
+import { CurrencyRate } from '@/types/transaction';
 import { toDateSafe } from '@/utils/date-time';
-import { FALLBACK_CURRENCY_RATE } from "@/constants";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 
 class CurrencyService {
   // TODO: Use this, maybe
-  private readonly API_KEY = import.meta.env.VITE_CURRENCY_API_KEY;
   private readonly API_URL = `https://api.exchangerate-api.com/v4/latest`;
   private readonly CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 

@@ -22,12 +22,11 @@ import {
 import {
   COLLECTION,
   ENROLLED_PROGRAM_TYPE,
-  ENROLLMENT_STATUS,
-  ENVIRONMENT
+  ENROLLMENT_STATUS
 } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Enrollment } from "@/types/enrollment";
-import { EnrolledProgramType, EnrollmentStatus } from "@/types/general";
+import { EnrollmentStatus } from "@/types/general";
 import { TransactionLineItem } from "@/types/transaction";
 import { convertToDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
@@ -35,15 +34,9 @@ import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 import { authService } from "./authService";
 
-type EnrollmentItem = {
-  itemId: string;
-  itemType: EnrolledProgramType;
-};
-
 class EnrollmentService {
-  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-    ? import.meta.env.VITE_DEV_BACKEND_URL
-    : import.meta.env.VITE_PROD_BACKEND_URL;
+
+  private readonly backendUrl  = import.meta.env.VITE_BACKEND_URL;
   /**
    * Generates a unique enrollment ID in the format: <targetId>_<userId>
    */
