@@ -3,40 +3,39 @@
 // ───────────────────────────────────────────────
 
 import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
   collection,
-  getDocs,
   deleteDoc,
-  runTransaction,
-  query,
-  where,
-  serverTimestamp,
-  orderBy,
-  limit,
-  startAfter,
-  limitToLast,
+  doc,
   endBefore,
+  getDoc,
+  getDocs,
+  limit,
+  limitToLast,
+  orderBy,
+  query,
   Query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  startAfter,
+  updateDoc,
+  where,
   WhereFilterOp,
 } from "firebase/firestore";
 
+import { COLLECTION } from "@/constants";
 import { db } from "@/firebaseConfig";
-import { Lesson, LessonAttachment } from "@/types/lesson";
-import { ok, fail, Result } from "@/utils/response";
-import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
-import { COLLECTION, ENVIRONMENT } from "@/constants";
 import { Duration } from "@/types/general";
+import { Lesson, LessonAttachment } from "@/types/lesson";
 import { logError } from "@/utils/logger";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { fail, ok, Result } from "@/utils/response";
 import { authService } from "./authService";
 
-
 class LessonService {
-  private readonly backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ?
-    import.meta.env.VITE_DEV_BACKEND_URL :
-    import.meta.env.VITE_PROD_BACKEND_URL;
+
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+
   // ───────────────────────────────────────────────
   private async generateLessonId(): Promise<string> {
     const counterRef = doc(db, COLLECTION.COUNTERS, "lessonCounter");
