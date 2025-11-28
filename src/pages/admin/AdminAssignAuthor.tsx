@@ -355,29 +355,29 @@ const ManageAssignmentAuthors: React.FC = () => {
   };
  // ----------------- Delete Assignment -----------------
 
-  const handleDeleteAssignment = async (id: string) => {
-  const result = await assignmentService.deleteAssignment(id);
+//   const handleDeleteAssignment = async (id: string) => {
+//   const result = await assignmentService.deleteAssignment(id);
 
-  if (result.success) {
-    // Remove from UI immediately
-    setAssignments(prev => ({
-      ...prev,
-      data: prev.data.filter(a => a.id !== id),
-      totalCount: prev.totalCount - 1,
-    }));
+//   if (result.success) {
+//     // Remove from UI immediately
+//     setAssignments(prev => ({
+//       ...prev,
+//       data: prev.data.filter(a => a.id !== id),
+//       totalCount: prev.totalCount - 1,
+//     }));
 
-    toast({
-      title: "Deleted",
-      description: "Assignment deleted successfully",
-    });
-  } else {
-    toast({
-      title: "Error",
-      description: "Failed to delete assignment",
-      variant: "destructive",
-    });
-  }
-};
+//     toast({
+//       title: "Deleted",
+//       description: "Assignment deleted successfully",
+//     });
+//   } else {
+//     toast({
+//       title: "Error",
+//       description: "Failed to delete assignment",
+//       variant: "destructive",
+//     });
+//   }
+// };
 
   // ----------------- Save Single Assignment -----------------
   const saveAssignmentAuthor = async (assignmentId: string) => {
@@ -961,7 +961,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                                 {/* {Delete Assignment} */}
-                             <AlertDialog>
+                             {/* <AlertDialog>
   <AlertDialogTrigger asChild>
     <Button
       variant="ghost"
@@ -990,7 +990,7 @@ const ManageAssignmentAuthors: React.FC = () => {
       </AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
-</AlertDialog>
+</AlertDialog> */}
 
                               {/* Edit Button */}
                               <Button
