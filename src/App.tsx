@@ -33,6 +33,7 @@ const DummyCurriculumBuilderPage = lazy(
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminComplaints = lazy(() => import("./pages/admin/AdminComplaints"));
 const AdminOrganizations = lazy(
   () => import("./pages/admin/AdminOrganizations")
 );
@@ -78,6 +79,7 @@ import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import ArrangeCourses from "./pages/admin/ArrangeCourses";
 import Quizzes from "./pages/Quizzes";
 import AttemptQuiz from "./pages/AttemptQuiz";
+import AdminCommentApproval from "./pages/admin/AdminCoomentApproval";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -244,7 +246,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                      
+
                       <Route
                         path="/admin/statistics"
                         element={
@@ -262,10 +264,26 @@ const App = () => (
                         }
                       />
                       <Route
+                        path="/admin/view-complaints"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminComplaints />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
                         path="/admin/organizations"
                         element={
                           <AuthGuard requireAdmin>
                             <AdminOrganizations />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/comments"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminCommentApproval />
                           </AuthGuard>
                         }
                       />
@@ -447,17 +465,17 @@ const App = () => (
                         element={<InvoicePage />}
                       />
 
-   
-<Route
-  path="/instructor"
-  element={
-    <AuthGuard requireInstructor  >
-      <InstructorLayout>
-        <InstructorDashboard />
-      </InstructorLayout>
-    </AuthGuard>
-  }
-/>
+
+                      <Route
+                        path="/instructor"
+                        element={
+                          <AuthGuard requireInstructor  >
+                            <InstructorLayout>
+                              <InstructorDashboard />
+                            </InstructorLayout>
+                          </AuthGuard>
+                        }
+                      />
                       <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />

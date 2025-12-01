@@ -10,6 +10,7 @@ import { logError } from "@/utils/logger";
 import { CheckCircle, FileText, Loader2, Maximize2, Minimize2, Video, Download } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
+import Comments from "./Comments";
 
 interface LessonViewProps {
   lessonId: string;
@@ -244,7 +245,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   // Helper to determine if details should be hidden.
   // Currently hides details for ANY fullscreen mode to ensure best experience,
   // but satisfies your request specifically for Interactive Projects.
-  const shouldHideDetails = isFullscreen; 
+  const shouldHideDetails = isFullscreen;
 
   return (
     <div
@@ -396,6 +397,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
               </CardContent>
             </Card>
           </div>
+          <Comments lessonId={lesson.id} />
         </>
       )}
     </div>
