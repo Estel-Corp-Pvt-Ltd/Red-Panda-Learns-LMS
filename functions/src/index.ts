@@ -12,6 +12,7 @@ import { resetUserPassword } from './handlers/resetUserPassword';
 import { canStartQuiz } from './handlers/canStartQuiz';
 import { getQuizTimeLeft } from './handlers/getQuizTimeLeft';
 import { enrollStudentsInBulk, processEnrollmentTask } from './handlers/enrollments/enrollStudentsInBulk';
+import { reminderWorker } from './workers/scheduleReminderWorker';
 // Cascade delete workers
 import { courseDeleteCascade } from './workers/courseDeleteCascade';
 import { lessonDeleteCascade } from './workers/lessonDeleteCascade';
@@ -40,5 +41,6 @@ export {
   assignStudentsToAdmin,
   createNotification,
   sendInitialNotification,
-  SendMailWorkerForNotif
+  SendMailWorkerForNotif,
+  reminderWorker
 };

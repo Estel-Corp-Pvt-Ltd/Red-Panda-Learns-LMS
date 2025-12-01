@@ -10,7 +10,7 @@ export const sendInitialNotification = onDocumentCreated(
       console.log("🟢 New notification created:", id);
 
       // Call your existing service to send the initial email
-      await notificationService.sendInitialEmail(id);
+      await notificationService.sendInitialEmail(id,true);
 
       console.log("📧 Email sent successfully for:", id);
     } catch (err) {

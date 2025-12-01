@@ -2,7 +2,7 @@ import * as admin from "firebase-admin";
 import { SubmissionNotifications } from "../types/notifications";
 import { NotificationStatus } from "../types/general";
 import { COLLECTION, NOTIFICATION_STATUS } from "../constants";
-import { sendMail, buildEvaluationEmail } from "./emailService";
+import { sendMail, buildEvaluationEmail ,buildReminderEmail } from "./emailService";
 import crypto from "crypto";
 
 const db = admin.firestore();
@@ -20,6 +20,12 @@ function generateShortAdminId(adminId: string, length = 8) {
     shortId += base62Chars[hash[i] % 62];
   }
   return shortId;
+}
+
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
 export const notificationService = {
@@ -79,32 +85,72 @@ export const notificationService = {
     });
   },
 
-  async sendInitialEmail(id: string) {
+  async scheduleReminder(id: string) {
+    // Calculate the timestamp 4 days in the future
+    const scheduledAt = addDays(new Date(), 4); // original (commented out)
+
+ 
+
+    await notificationsRef.doc(id).update({
+      status: NOTIFICATION_STATUS.REMINDER_SCHEDULED,
+      reminderScheduledAt: scheduledAt,
+      emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  },
+
+ async sendInitialEmail(id: string, shouldScheduleReminder = true) {
+  try {
     const parts = id.split("_");
-    const submissionId = parts[1]; // parts[0] = 'N', parts[1] = submissionId, parts[2] = shortAdminId
+    const submissionId = parts[1];
 
     const evalLink = `https://vizuara.ai/admin/submissions?submissionId=${submissionId}`;
 
-    // Fetch the notification to get admin email
     const doc = await notificationsRef.doc(id).get();
-    if (!doc.exists) throw new Error("Notification not found");
+    if (!doc.exists) {
+      return { success: false, error: "Notification not found" };
+    }
 
     const notif = doc.data() as SubmissionNotifications;
 
-    const html = buildEvaluationEmail(evalLink);
+    // Choose template based on type
+    const html =
+      shouldScheduleReminder
+        ? buildEvaluationEmail(evalLink)           // INITIAL TEMPLATE
+        : buildReminderEmail(evalLink);            // REMINDER TEMPLATE
 
+    // Send email with type included
     await sendMail({
       to: notif.adminEmail,
-      subject: "New Submission Ready for Evaluation",
-      html,
+      subject: shouldScheduleReminder
+        ? "New Submission Ready for Evaluation"
+        : "Reminder: Submission Pending Evaluation",
+      html,   // use html instead
+      type: shouldScheduleReminder ? "INITIAL" : "REMINDER"
     });
 
-    await this.updateStatus(id, NOTIFICATION_STATUS.NOTIFIED, {
-      emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    /**
+       * We only want to schedule the next reminder when this email
+       * is being sent for the first time (triggered on document creation).
+       *
+       * When this function is called from the cron worker, we handle
+       * reminder scheduling and status updates in batch (for performance
+       * and efficiency), so running `scheduleReminder()` here again would
+       * duplicate updates and create unnecessary writes.
+       *
+       * To avoid double status updates and redundant Firestore writes,
+       * we use this flag to control whether scheduling should occur.
+       */
+    if (shouldScheduleReminder) {
+      await this.scheduleReminder(id);
+    }
 
     return { success: true };
-  },
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+},
+
 
   async pauseReminder(id: string) {
     await notificationsRef.doc(id).update({
@@ -128,3 +174,5 @@ export const notificationService = {
     return doc.data() as SubmissionNotifications;
   },
 };
+
+
