@@ -4,7 +4,6 @@ import { CommentType } from "./general";
 export type Comment = {
   id: string;
   lessonId: string;
-  courseId: string;
   parentCommentId: string | null;
   userId: string;
   userName: string;
