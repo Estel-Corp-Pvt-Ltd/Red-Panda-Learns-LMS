@@ -26,6 +26,7 @@ import { pauseStudentNotifications } from "./handlers/pauseStudentNotifications"
 import { createNotification } from "./handlers/notifications/notificationController";
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
 import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";import { userDeleteCascade } from './workers/userDeleteCascade';
+import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
 
 export {
   enrollStudent,
@@ -54,4 +55,5 @@ export {
   sendInitialNotification,
   SendMailWorkerForNotif,
   reminderWorker,
+  pauseReminderForAssignments
 };

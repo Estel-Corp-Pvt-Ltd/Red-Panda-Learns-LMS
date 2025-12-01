@@ -1,21 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import AdminLayout from '@/components/AdminLayout';
-import { assignmentService } from '@/services/assignmentService';
-import { userService } from '@/services/userService';
-import { Assignment } from '@/types/assignment';
-import { User } from '@/types/user';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import AdminLayout from "@/components/AdminLayout";
+import { assignmentService } from "@/services/assignmentService";
+import { userService } from "@/services/userService";
+import { Assignment } from "@/types/assignment";
+import { User } from "@/types/user";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   FileText,
   Loader2,
@@ -32,7 +45,8 @@ import {
   Calendar,
   Edit,
   Trash2,
-} from 'lucide-react';
+  Pause,
+} from "lucide-react";
 
 import {
   AlertDialog,
@@ -46,10 +60,11 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
-import { USER_ROLE } from '@/constants';
-import { formatDateTime } from '@/utils/date-time';
-import EditAssignmentModal from '@/components/admin/EditAssignmentModal';
-
+import { USER_ROLE } from "@/constants";
+import { formatDateTime } from "@/utils/date-time";
+import EditAssignmentModal from "@/components/admin/EditAssignmentModal";
+import { pauseReminderService } from "@/services/pauseReminderService";
+import { authService } from "@/services/authService";
 
 interface PaginatedAssignments {
   data: Assignment[];
@@ -60,24 +75,30 @@ interface PaginatedAssignments {
   totalCount: number;
 }
 
-type AuthorFilterType = 'all' | 'null' | 'assigned' | string;
-type DeadlineFilterType = 'all' | 'past' | 'upcoming' | 'today' | 'this-week' | 'no-deadline';
+type AuthorFilterType = "all" | "null" | "assigned" | string;
+type DeadlineFilterType =
+  | "all"
+  | "past"
+  | "upcoming"
+  | "today"
+  | "this-week"
+  | "no-deadline";
 
 const ManageAssignmentAuthors: React.FC = () => {
   const { toast } = useToast();
-  
+
   // Assignments state
   const [assignments, setAssignments] = useState<PaginatedAssignments>({
     data: [],
     hasNextPage: false,
     hasPreviousPage: false,
-    totalCount: 0
+    totalCount: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
-    pageDirection: 'next' as 'next' | 'previous',
-    currentPage: 1
+    pageDirection: "next" as "next" | "previous",
+    currentPage: 1,
   });
 
   // Staff users state
@@ -85,21 +106,85 @@ const ManageAssignmentAuthors: React.FC = () => {
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
   // Track changes
-  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(new Map());
-  const [savingAssignments, setSavingAssignments] = useState<Set<string>>(new Set());
+  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(
+    new Map()
+  );
+  const [savingAssignments, setSavingAssignments] = useState<Set<string>>(
+    new Set()
+  );
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
   // Search and Filter state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [authorFilter, setAuthorFilter] = useState<AuthorFilterType>('all');
-  const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilterType>('all');
+  const [authorFilter, setAuthorFilter] = useState<AuthorFilterType>("all");
+  const [deadlineFilter, setDeadlineFilter] =
+    useState<DeadlineFilterType>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   // Edit Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(
+    null
+  );
+
+  //  Selection state for assignments to pause reminders
+  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>(
+    []
+  );
+  const [isPausingReminders, setIsPausingReminders] = useState(false);
+
+  const toggleSelectAssignment = (id: string) => {
+    setSelectedAssignmentIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllDisplayed = (displayed: Assignment[]) => {
+    const displayedIds = displayed.map((a) => a.id);
+    const allSelected = displayedIds.every((id) =>
+      selectedAssignmentIds.includes(id)
+    );
+    if (allSelected) {
+      setSelectedAssignmentIds((prev) =>
+        prev.filter((id) => !displayedIds.includes(id))
+      );
+    } else {
+      setSelectedAssignmentIds((prev) =>
+        Array.from(new Set([...prev, ...displayedIds]))
+      );
+    }
+  };
+
+  // >>> pause reminders handler
+  const handlePauseReminders = async () => {
+    if (selectedAssignmentIds.length === 0) return;
+
+    setIsPausingReminders(true);
+    try {
+      const idToken = await authService.getToken();
+      await pauseReminderService.pauseReminder(
+        { assignmentIds: selectedAssignmentIds },
+        idToken
+      );
+
+      toast({
+        title: "Success",
+        description: `Reminders paused for ${selectedAssignmentIds.length} assignment(s)`,
+      });
+
+      setSelectedAssignmentIds([]);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to pause reminders",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPausingReminders(false);
+    }
+  };
 
   // ----------------- Edit Assignment Handler -----------------
   const handleEditAssignment = (assignmentId: string) => {
@@ -109,13 +194,13 @@ const ManageAssignmentAuthors: React.FC = () => {
 
   const handleAssignmentUpdated = (updatedAssignment: Assignment) => {
     // Update the assignment in local state
-    setAssignments(prev => ({
+    setAssignments((prev) => ({
       ...prev,
-      data: prev.data.map(assignment => 
-        assignment.id === updatedAssignment.id 
+      data: prev.data.map((assignment) =>
+        assignment.id === updatedAssignment.id
           ? { ...assignment, ...updatedAssignment }
           : assignment
-      )
+      ),
     }));
 
     toast({
@@ -128,12 +213,12 @@ const ManageAssignmentAuthors: React.FC = () => {
   const buildFilters = () => {
     const filters: { field: keyof Assignment; op: any; value: any }[] = [];
 
-    if (authorFilter === 'null') {
-      filters.push({ field: 'authorId', op: '==', value: '' });
-    } else if (authorFilter === 'assigned') {
-      filters.push({ field: 'authorId', op: '!=', value: '' });
-    } else if (authorFilter !== 'all') {
-      filters.push({ field: 'authorId', op: '==', value: authorFilter });
+    if (authorFilter === "null") {
+      filters.push({ field: "authorId", op: "==", value: "" });
+    } else if (authorFilter === "assigned") {
+      filters.push({ field: "authorId", op: "!=", value: "" });
+    } else if (authorFilter !== "all") {
+      filters.push({ field: "authorId", op: "==", value: authorFilter });
     }
 
     return filters;
@@ -141,32 +226,32 @@ const ManageAssignmentAuthors: React.FC = () => {
 
   // ----------------- Client-side Deadline Filter -----------------
   const applyDeadlineFilter = (assignmentsList: Assignment[]): Assignment[] => {
-    if (deadlineFilter === 'all') return assignmentsList;
+    if (deadlineFilter === "all") return assignmentsList;
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1);
     const endOfWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    return assignmentsList.filter(assignment => {
+    return assignmentsList.filter((assignment) => {
       const deadline = assignment.deadline?.toDate?.() || assignment.deadline;
-      
+
       if (!deadline) {
-        return deadlineFilter === 'no-deadline';
+        return deadlineFilter === "no-deadline";
       }
 
       const deadlineDate = new Date(formatDateTime(deadline));
 
       switch (deadlineFilter) {
-        case 'past':
+        case "past":
           return deadlineDate < now;
-        case 'upcoming':
+        case "upcoming":
           return deadlineDate >= now;
-        case 'today':
+        case "today":
           return deadlineDate >= today && deadlineDate <= endOfToday;
-        case 'this-week':
+        case "this-week":
           return deadlineDate >= today && deadlineDate <= endOfWeek;
-        case 'no-deadline':
+        case "no-deadline":
           return false;
         default:
           return true;
@@ -179,13 +264,13 @@ const ManageAssignmentAuthors: React.FC = () => {
     if (!searchQuery.trim()) return assignmentsList;
 
     const query = searchQuery.toLowerCase().trim();
-    
-    return assignmentsList.filter(assignment => {
+
+    return assignmentsList.filter((assignment) => {
       const titleMatch = assignment.title?.toLowerCase().includes(query);
       const idMatch = assignment.id?.toLowerCase().includes(query);
       const authorName = getAuthorName(assignment.authorId)?.toLowerCase();
       const authorMatch = authorName?.includes(query);
-      
+
       return titleMatch || idMatch || authorMatch;
     });
   };
@@ -195,17 +280,17 @@ const ManageAssignmentAuthors: React.FC = () => {
     setIsLoading(true);
     try {
       const filters = useFilters ? buildFilters() : [];
-      
+
       const result = await assignmentService.getAssignments(filters, {
         limit: 10,
-        orderBy: { field: 'createdAt', direction: 'desc' },
-        ...options
+        orderBy: { field: "createdAt", direction: "desc" },
+        ...options,
       });
 
       if (result.success) {
         setAssignments({
           ...result.data,
-          totalCount: result.data.totalCount
+          totalCount: result.data.totalCount,
         });
       } else {
         toast({
@@ -255,8 +340,8 @@ const ManageAssignmentAuthors: React.FC = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       toast({
-        title: 'Info',
-        description: 'Enter a search term to search',
+        title: "Info",
+        description: "Enter a search term to search",
       });
       return;
     }
@@ -264,8 +349,8 @@ const ManageAssignmentAuthors: React.FC = () => {
     setIsSearching(true);
     setPaginationState({
       cursor: null,
-      pageDirection: 'next',
-      currentPage: 1
+      pageDirection: "next",
+      currentPage: 1,
     });
 
     await loadAssignments({ limit: 100 });
@@ -276,32 +361,32 @@ const ManageAssignmentAuthors: React.FC = () => {
   const applyFilters = async () => {
     setPaginationState({
       cursor: null,
-      pageDirection: 'next',
-      currentPage: 1
+      pageDirection: "next",
+      currentPage: 1,
     });
-    
+
     await loadAssignments();
   };
 
   // ----------------- Reset All Filters -----------------
   const resetFilters = async () => {
-    setSearchQuery('');
-    setAuthorFilter('all');
-    setDeadlineFilter('all');
+    setSearchQuery("");
+    setAuthorFilter("all");
+    setDeadlineFilter("all");
     setPaginationState({
       cursor: null,
-      pageDirection: 'next',
-      currentPage: 1
+      pageDirection: "next",
+      currentPage: 1,
     });
-    
+
     await loadAssignments({}, false);
   };
 
   // ----------------- Update Active Filters Count -----------------
   useEffect(() => {
     let count = 0;
-    if (authorFilter !== 'all') count++;
-    if (deadlineFilter !== 'all') count++;
+    if (authorFilter !== "all") count++;
+    if (deadlineFilter !== "all") count++;
     if (searchQuery.trim()) count++;
     setActiveFiltersCount(count);
   }, [authorFilter, deadlineFilter, searchQuery]);
@@ -310,94 +395,97 @@ const ManageAssignmentAuthors: React.FC = () => {
   const handleNextPage = async () => {
     if (!assignments.hasNextPage) return;
 
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       cursor: assignments.nextCursor,
-      pageDirection: 'next',
-      currentPage: prev.currentPage + 1
+      pageDirection: "next",
+      currentPage: prev.currentPage + 1,
     }));
 
     await loadAssignments({
       cursor: assignments.nextCursor,
-      pageDirection: 'next'
+      pageDirection: "next",
     });
   };
 
   const handlePreviousPage = async () => {
     if (!assignments.hasPreviousPage) return;
 
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       cursor: assignments.previousCursor,
-      pageDirection: 'previous',
-      currentPage: prev.currentPage - 1
+      pageDirection: "previous",
+      currentPage: prev.currentPage - 1,
     }));
 
     await loadAssignments({
       cursor: assignments.previousCursor,
-      pageDirection: 'previous'
+      pageDirection: "previous",
     });
   };
 
   // ----------------- Handle Author Change -----------------
   const handleAuthorChange = (assignmentId: string, authorId: string) => {
-    setPendingChanges(prev => {
+    setPendingChanges((prev) => {
       const newChanges = new Map(prev);
-      
-      const assignment = assignments.data.find(a => a.id === assignmentId);
-      
+
+      const assignment = assignments.data.find((a) => a.id === assignmentId);
+
       if (assignment?.authorId === authorId) {
         newChanges.delete(assignmentId);
       } else {
         newChanges.set(assignmentId, authorId);
       }
-      
+
       return newChanges;
     });
   };
- // ----------------- Delete Assignment -----------------
+  // ----------------- Delete Assignment -----------------
 
-//   const handleDeleteAssignment = async (id: string) => {
-//   const result = await assignmentService.deleteAssignment(id);
+  //   const handleDeleteAssignment = async (id: string) => {
+  //   const result = await assignmentService.deleteAssignment(id);
 
-//   if (result.success) {
-//     // Remove from UI immediately
-//     setAssignments(prev => ({
-//       ...prev,
-//       data: prev.data.filter(a => a.id !== id),
-//       totalCount: prev.totalCount - 1,
-//     }));
+  //   if (result.success) {
+  //     // Remove from UI immediately
+  //     setAssignments(prev => ({
+  //       ...prev,
+  //       data: prev.data.filter(a => a.id !== id),
+  //       totalCount: prev.totalCount - 1,
+  //     }));
 
-//     toast({
-//       title: "Deleted",
-//       description: "Assignment deleted successfully",
-//     });
-//   } else {
-//     toast({
-//       title: "Error",
-//       description: "Failed to delete assignment",
-//       variant: "destructive",
-//     });
-//   }
-// };
+  //     toast({
+  //       title: "Deleted",
+  //       description: "Assignment deleted successfully",
+  //     });
+  //   } else {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to delete assignment",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   // ----------------- Save Single Assignment -----------------
   const saveAssignmentAuthor = async (assignmentId: string) => {
     const authorId = pendingChanges.get(assignmentId);
     if (!authorId) return;
 
-    setSavingAssignments(prev => new Set(prev).add(assignmentId));
+    setSavingAssignments((prev) => new Set(prev).add(assignmentId));
 
     try {
-      const result = await assignmentService.updateAssignmentAuthor(assignmentId, authorId);
+      const result = await assignmentService.updateAssignmentAuthor(
+        assignmentId,
+        authorId
+      );
 
       if (result.success) {
-        setAssignments(prev => ({
+        setAssignments((prev) => ({
           ...prev,
-          data: prev.data.map(a => 
+          data: prev.data.map((a) =>
             a.id === assignmentId ? { ...a, authorId } : a
-          )
+          ),
         }));
 
-        setPendingChanges(prev => {
+        setPendingChanges((prev) => {
           const newChanges = new Map(prev);
           newChanges.delete(assignmentId);
           return newChanges;
@@ -421,7 +509,7 @@ const ManageAssignmentAuthors: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setSavingAssignments(prev => {
+      setSavingAssignments((prev) => {
         const newSet = new Set(prev);
         newSet.delete(assignmentId);
         return newSet;
@@ -444,15 +532,18 @@ const ManageAssignmentAuthors: React.FC = () => {
         const authorId = pendingChanges.get(assignmentId);
         if (!authorId) continue;
 
-        const result = await assignmentService.updateAssignmentAuthor(assignmentId, authorId);
-        
+        const result = await assignmentService.updateAssignmentAuthor(
+          assignmentId,
+          authorId
+        );
+
         if (result.success) {
           successCount++;
-          setAssignments(prev => ({
+          setAssignments((prev) => ({
             ...prev,
-            data: prev.data.map(a => 
+            data: prev.data.map((a) =>
               a.id === assignmentId ? { ...a, authorId } : a
-            )
+            ),
           }));
         } else {
           failedCount++;
@@ -480,7 +571,7 @@ const ManageAssignmentAuthors: React.FC = () => {
   // ----------------- Helper Functions -----------------
   const getAuthorName = (authorId: string | null | undefined) => {
     if (!authorId) return null;
-    const user = staffUsers.find(u => u.id === authorId);
+    const user = staffUsers.find((u) => u.id === authorId);
     return user ? `${user.firstName} ${user.lastName}` : null;
   };
 
@@ -498,7 +589,7 @@ const ManageAssignmentAuthors: React.FC = () => {
   };
 
   const getCurrentAuthorId = (assignment: Assignment) => {
-    return pendingChanges.get(assignment.id) || assignment.authorId || '';
+    return pendingChanges.get(assignment.id) || assignment.authorId || "";
   };
 
   const hasChanges = (assignmentId: string) => {
@@ -506,22 +597,23 @@ const ManageAssignmentAuthors: React.FC = () => {
   };
 
   const getDeadlineStatus = (deadline: any) => {
-    if (!deadline) return { label: 'No deadline', variant: 'outline' as const };
-    
+    if (!deadline) return { label: "No deadline", variant: "outline" as const };
+
     const deadlineDate = deadline?.toDate?.() || new Date(deadline);
     const now = new Date();
-    
+
     if (deadlineDate < now) {
-      return { label: 'Past', variant: 'destructive' as const };
+      return { label: "Past", variant: "destructive" as const };
     }
-    
-    const diffHours = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
+
+    const diffHours =
+      (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
     if (diffHours <= 24) {
-      return { label: 'Due soon', variant: 'default' as const };
+      return { label: "Due soon", variant: "default" as const };
     }
-    
-    return { label: 'Upcoming', variant: 'secondary' as const };
+
+    return { label: "Upcoming", variant: "secondary" as const };
   };
 
   // ----------------- Get Filtered/Searched Data -----------------
@@ -567,8 +659,9 @@ const ManageAssignmentAuthors: React.FC = () => {
                 Manage Assignment Authors
               </CardTitle>
               <CardDescription>
-                Assign authors to assignments. 
-                {assignments.totalCount > 0 && ` Total: ${assignments.totalCount} assignments`}
+                Assign authors to assignments.
+                {assignments.totalCount > 0 &&
+                  ` Total: ${assignments.totalCount} assignments`}
                 {pendingChanges.size > 0 && (
                   <Badge variant="outline" className="ml-2">
                     {pendingChanges.size} unsaved changes
@@ -598,12 +691,42 @@ const ManageAssignmentAuthors: React.FC = () => {
                 onClick={() => {
                   resetFilters();
                   setPendingChanges(new Map());
+                  setSelectedAssignmentIds([]);
                 }}
                 disabled={isLoading}
                 className="flex items-center gap-2"
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                />
                 Reset
+              </Button>
+
+              {/* >>> Bulk Pause Reminders button */}
+              <Button
+                variant="outline"
+                onClick={handlePauseReminders}
+                disabled={
+                  selectedAssignmentIds.length === 0 || isPausingReminders
+                }
+                className="flex items-center gap-2"
+              >
+                {isPausingReminders ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Pausing...
+                  </>
+                ) : (
+                  <>
+                    <Pause className="h-4 w-4" />
+                    Pause Reminders
+                    {selectedAssignmentIds.length > 0 && (
+                      <Badge variant="secondary" className="ml-1">
+                        {selectedAssignmentIds.length}
+                      </Badge>
+                    )}
+                  </>
+                )}
               </Button>
 
               {pendingChanges.size > 0 && (
@@ -634,13 +757,15 @@ const ManageAssignmentAuthors: React.FC = () => {
               {/* Search Row */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1">
-                  <label className="text-sm font-medium mb-1 block">Search</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Search
+                  </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                       placeholder="Search by title, ID, or author name..."
                       className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
@@ -663,10 +788,14 @@ const ManageAssignmentAuthors: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Author Filter */}
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Author Status</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Author Status
+                  </label>
                   <Select
                     value={authorFilter}
-                    onValueChange={(value: AuthorFilterType) => setAuthorFilter(value)}
+                    onValueChange={(value: AuthorFilterType) =>
+                      setAuthorFilter(value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Filter by author..." />
@@ -689,8 +818,13 @@ const ManageAssignmentAuthors: React.FC = () => {
                       {staffUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           <div className="flex items-center gap-2">
-                            <span>{user.firstName} {user.lastName}</span>
-                            <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                            <span>
+                              {user.firstName} {user.lastName}
+                            </span>
+                            <Badge
+                              variant={getRoleBadgeVariant(user.role)}
+                              className="text-xs"
+                            >
                               {user.role}
                             </Badge>
                           </div>
@@ -702,10 +836,14 @@ const ManageAssignmentAuthors: React.FC = () => {
 
                 {/* Deadline Filter */}
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Deadline</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Deadline
+                  </label>
                   <Select
                     value={deadlineFilter}
-                    onValueChange={(value: DeadlineFilterType) => setDeadlineFilter(value)}
+                    onValueChange={(value: DeadlineFilterType) =>
+                      setDeadlineFilter(value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Filter by deadline..." />
@@ -771,40 +909,54 @@ const ManageAssignmentAuthors: React.FC = () => {
               {/* Active Filters Tags */}
               {activeFiltersCount > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">Active filters:</span>
-                  
+                  <span className="text-sm text-muted-foreground">
+                    Active filters:
+                  </span>
+
                   {searchQuery.trim() && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
                       Search: "{searchQuery}"
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setSearchQuery('')}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setSearchQuery("")}
                       />
                     </Badge>
                   )}
-                  
-                  {authorFilter !== 'all' && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      Author: {authorFilter === 'null' ? 'No Author' : 
-                               authorFilter === 'assigned' ? 'Has Author' : 
-                               getAuthorName(authorFilter) || authorFilter}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setAuthorFilter('all')}
+
+                  {authorFilter !== "all" && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      Author:{" "}
+                      {authorFilter === "null"
+                        ? "No Author"
+                        : authorFilter === "assigned"
+                        ? "Has Author"
+                        : getAuthorName(authorFilter) || authorFilter}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setAuthorFilter("all")}
                       />
                     </Badge>
                   )}
-                  
-                  {deadlineFilter !== 'all' && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      Deadline: {deadlineFilter.replace('-', ' ')}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setDeadlineFilter('all')}
+
+                  {deadlineFilter !== "all" && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      Deadline: {deadlineFilter.replace("-", " ")}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setDeadlineFilter("all")}
                       />
                     </Badge>
                   )}
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
@@ -825,22 +977,34 @@ const ManageAssignmentAuthors: React.FC = () => {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
               <span>
-                {staffUsers.length} staff members available: {' '}
-                {staffUsers.filter(u => u.role === USER_ROLE.ADMIN).length} Admins, {' '}
-                {staffUsers.filter(u => u.role === USER_ROLE.TEACHER).length} Teachers, {' '}
-                {staffUsers.filter(u => u.role === USER_ROLE.INSTRUCTOR).length} Instructors
+                {staffUsers.length} staff members available:{" "}
+                {staffUsers.filter((u) => u.role === USER_ROLE.ADMIN).length}{" "}
+                Admins,{" "}
+                {staffUsers.filter((u) => u.role === USER_ROLE.TEACHER).length}{" "}
+                Teachers,{" "}
+                {
+                  staffUsers.filter((u) => u.role === USER_ROLE.INSTRUCTOR)
+                    .length
+                }{" "}
+                Instructors
               </span>
             </div>
           </div>
 
           {/* Results Summary */}
-          {(searchQuery.trim() || authorFilter !== 'all' || deadlineFilter !== 'all') && (
+          {(searchQuery.trim() ||
+            authorFilter !== "all" ||
+            deadlineFilter !== "all") && (
             <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
                 <Filter className="h-4 w-4" />
                 <span>
-                  Showing {displayedAssignments.length} of {assignments.data.length} loaded assignments
-                  {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
+                  Showing {displayedAssignments.length} of{" "}
+                  {assignments.data.length} loaded assignments
+                  {activeFiltersCount > 0 &&
+                    ` (${activeFiltersCount} filter${
+                      activeFiltersCount > 1 ? "s" : ""
+                    } active)`}
                 </span>
               </div>
             </div>
@@ -849,11 +1013,13 @@ const ManageAssignmentAuthors: React.FC = () => {
           {displayedAssignments.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-semibold">No assignments found</h3>
+              <h3 className="mt-2 text-sm font-semibold">
+                No assignments found
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {activeFiltersCount > 0 
-                  ? 'Try adjusting your filters or search query.'
-                  : 'Create some assignments first.'}
+                {activeFiltersCount > 0
+                  ? "Try adjusting your filters or search query."
+                  : "Create some assignments first."}
               </p>
               {activeFiltersCount > 0 && (
                 <Button
@@ -872,30 +1038,65 @@ const ManageAssignmentAuthors: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[200px]">Assignment</TableHead>
+                      <TableHead className="w-10">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          onChange={() =>
+                            toggleSelectAllDisplayed(displayedAssignments)
+                          }
+                          checked={
+                            displayedAssignments.length > 0 &&
+                            displayedAssignments.every((a) =>
+                              selectedAssignmentIds.includes(a.id)
+                            )
+                          }
+                        />
+                      </TableHead>
+                      <TableHead className="min-w-[200px]">
+                        Assignment
+                      </TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Deadline</TableHead>
                       <TableHead>Current Author</TableHead>
-                      <TableHead className="min-w-[250px]">Select Author</TableHead>
+                      <TableHead className="min-w-[250px]">
+                        Select Author
+                      </TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {displayedAssignments.map((assignment) => {
-                      const deadlineStatus = getDeadlineStatus(assignment.deadline);
-                      
+                      const deadlineStatus = getDeadlineStatus(
+                        assignment.deadline
+                      );
+
                       return (
-                        <TableRow 
+                        <TableRow
                           key={assignment.id}
-                          className={hasChanges(assignment.id) ? "bg-yellow-50 dark:bg-yellow-900/10" : ""}
+                          className={
+                            hasChanges(assignment.id)
+                              ? "bg-yellow-50 dark:bg-yellow-900/10"
+                              : ""
+                          }
                         >
+                          <TableCell>
+  <input
+    type="checkbox"
+    className="h-4 w-4"
+    checked={selectedAssignmentIds.includes(assignment.id)}
+    onChange={() => toggleSelectAssignment(assignment.id)}
+  />
+</TableCell>
                           <TableCell>
                             <div className="flex items-start gap-3">
                               <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
                                 <FileText className="h-5 w-5 text-primary" />
                               </div>
                               <div>
-                                <div className="font-medium">{assignment.title}</div>
+                                <div className="font-medium">
+                                  {assignment.title}
+                                </div>
                                 <div className="text-xs text-muted-foreground">
                                   {assignment.id}
                                 </div>
@@ -912,7 +1113,10 @@ const ManageAssignmentAuthors: React.FC = () => {
                               <span className="text-sm">
                                 {formatDateTime(assignment.deadline)}
                               </span>
-                              <Badge variant={deadlineStatus.variant} className="text-xs w-fit">
+                              <Badge
+                                variant={deadlineStatus.variant}
+                                className="text-xs w-fit"
+                              >
                                 {deadlineStatus.label}
                               </Badge>
                             </div>
@@ -922,20 +1126,25 @@ const ManageAssignmentAuthors: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4 text-green-500" />
                                 <span className="text-sm">
-                                  {getAuthorName(assignment.authorId) || assignment.authorId}
+                                  {getAuthorName(assignment.authorId) ||
+                                    assignment.authorId}
                                 </span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2">
                                 <AlertCircle className="h-4 w-4 text-orange-500" />
-                                <span className="text-sm text-muted-foreground">Not assigned</span>
+                                <span className="text-sm text-muted-foreground">
+                                  Not assigned
+                                </span>
                               </div>
                             )}
                           </TableCell>
                           <TableCell>
                             <Select
                               value={getCurrentAuthorId(assignment)}
-                              onValueChange={(value) => handleAuthorChange(assignment.id, value)}
+                              onValueChange={(value) =>
+                                handleAuthorChange(assignment.id, value)
+                              }
                               disabled={savingAssignments.has(assignment.id)}
                             >
                               <SelectTrigger className="w-full">
@@ -945,9 +1154,11 @@ const ManageAssignmentAuthors: React.FC = () => {
                                 {staffUsers.map((user) => (
                                   <SelectItem key={user.id} value={user.id}>
                                     <div className="flex items-center gap-2">
-                                      <span>{user.firstName} {user.lastName}</span>
-                                      <Badge 
-                                        variant={getRoleBadgeVariant(user.role)} 
+                                      <span>
+                                        {user.firstName} {user.lastName}
+                                      </span>
+                                      <Badge
+                                        variant={getRoleBadgeVariant(user.role)}
                                         className="text-xs"
                                       >
                                         {user.role}
@@ -960,8 +1171,8 @@ const ManageAssignmentAuthors: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                                {/* {Delete Assignment} */}
-                             {/* <AlertDialog>
+                              {/* {Delete Assignment} */}
+                              {/* <AlertDialog>
   <AlertDialogTrigger asChild>
     <Button
       variant="ghost"
@@ -996,18 +1207,29 @@ const ManageAssignmentAuthors: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleEditAssignment(assignment.id)}
+                                onClick={() =>
+                                  handleEditAssignment(assignment.id)
+                                }
                                 title="Edit Assignment"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              
+
                               {/* Save Author Button */}
                               <Button
-                                variant={hasChanges(assignment.id) ? "default" : "ghost"}
+                                variant={
+                                  hasChanges(assignment.id)
+                                    ? "default"
+                                    : "ghost"
+                                }
                                 size="sm"
-                                onClick={() => saveAssignmentAuthor(assignment.id)}
-                                disabled={!hasChanges(assignment.id) || savingAssignments.has(assignment.id)}
+                                onClick={() =>
+                                  saveAssignmentAuthor(assignment.id)
+                                }
+                                disabled={
+                                  !hasChanges(assignment.id) ||
+                                  savingAssignments.has(assignment.id)
+                                }
                                 title="Save Author"
                               >
                                 {savingAssignments.has(assignment.id) ? (
@@ -1028,7 +1250,8 @@ const ManageAssignmentAuthors: React.FC = () => {
               {/* Pagination Controls */}
               <div className="flex flex-col sm:flex-row items-center justify-between space-x-0 sm:space-x-2 space-y-2 sm:space-y-0 py-4 border-t mt-4">
                 <div className="flex-1 text-sm text-muted-foreground text-center sm:text-left">
-                  Showing {displayedAssignments.length} of {assignments.totalCount} assignments
+                  Showing {displayedAssignments.length} of{" "}
+                  {assignments.totalCount} assignments
                   {` • Page ${paginationState.currentPage}`}
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1064,7 +1287,8 @@ const ManageAssignmentAuthors: React.FC = () => {
                     Unsaved Changes
                   </h4>
                   <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    You have {pendingChanges.size} assignment(s) with pending author changes.
+                    You have {pendingChanges.size} assignment(s) with pending
+                    author changes.
                   </p>
                 </div>
                 <div className="flex gap-2">

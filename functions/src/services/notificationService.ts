@@ -2,8 +2,13 @@ import * as admin from "firebase-admin";
 import { SubmissionNotification } from "../types/notifications";
 import { NotificationStatus } from "../types/general";
 import { COLLECTION, NOTIFICATION_STATUS } from "../constants";
-import { sendMail, buildEvaluationEmail ,buildReminderEmail } from "./emailService";
+import {
+  sendMail,
+  buildEvaluationEmail,
+  buildReminderEmail,
+} from "./emailService";
 import crypto from "crypto";
+import { ok, Result } from "../utils/response";
 
 const db = admin.firestore();
 const notificationsRef = db.collection(COLLECTION.SUBMISSION_NOTIFICATION);
@@ -21,8 +26,6 @@ function generateShortAdminId(adminId: string, length = 8) {
   }
   return shortId;
 }
-
-
 
 export const notificationService = {
   /**
@@ -119,10 +122,9 @@ export const notificationService = {
       const notif = doc.data() as SubmissionNotification;
 
       // Choose template based on type
-      const html =
-        shouldScheduleReminder
-          ? buildEvaluationEmail(evalLink)           // INITIAL TEMPLATE
-          : buildReminderEmail(evalLink);            // REMINDER TEMPLATE
+      const html = shouldScheduleReminder
+        ? buildEvaluationEmail(evalLink) // INITIAL TEMPLATE
+        : buildReminderEmail(evalLink); // REMINDER TEMPLATE
 
       // Send email with type included
       await sendMail({
@@ -130,8 +132,8 @@ export const notificationService = {
         subject: shouldScheduleReminder
           ? "New Submission Ready for Evaluation"
           : "Reminder: Submission Pending Evaluation",
-        html,   // use html instead
-        type: shouldScheduleReminder ? "INITIAL" : "REMINDER"
+        html, // use html instead
+        type: shouldScheduleReminder ? "INITIAL" : "REMINDER",
       });
 
       /**
@@ -152,11 +154,13 @@ export const notificationService = {
 
       return { success: true };
     } catch (error) {
-      console.error(`Error sending initial email for notification ${id}:`, error);
+      console.error(
+        `Error sending initial email for notification ${id}:`,
+        error
+      );
       return { success: false, error: (error as Error).message };
     }
   },
-
 
   async pauseReminder(id: string) {
     try {
@@ -177,6 +181,59 @@ export const notificationService = {
     } catch (error) {
       console.error(`Error marking notification ${id} as evaluated:`, error);
       throw error;
+    }
+  },
+
+  async pauseRemindersForAssignments(
+    assignmentIds: string[]
+  ): Promise<Result<SubmissionNotification[]>> {
+    try {
+      if (!assignmentIds.length) return ok([]);
+
+      const updatedNotifications: SubmissionNotification[] = [];
+
+      // Firestore 'in' query supports max 10 items
+      const chunkSize = 10;
+      for (let i = 0; i < assignmentIds.length; i += chunkSize) {
+        const chunk = assignmentIds.slice(i, i + chunkSize);
+
+        const snapshot = await db
+          .collection(COLLECTION.SUBMISSION_NOTIFICATION)
+          .where("assignmentId", "in", chunk)
+          .where("reminderPaused", "==", false)
+          .get();
+
+        if (snapshot.empty) continue;
+
+        const batch = db.batch();
+
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data() as SubmissionNotification;
+
+          batch.update(doc.ref, {
+            reminderPaused: true,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          updatedNotifications.push({
+            ...data,
+            reminderPaused: true,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
+          });
+        });
+
+        // Commit batch
+        await batch.commit();
+      }
+
+      return ok(updatedNotifications);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      const stack = error instanceof Error ? error.stack : undefined;
+      return {
+        success: false,
+        error: { message, stack },
+      };
     }
   },
 
