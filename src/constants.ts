@@ -392,7 +392,7 @@ export const COLLECTION = {
   QUIZZES: "Quizzes",
   QUIZ_SUBMISSIONS: "QuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
-  SUBMISSION_NOTIFICATIONS: "SubmissionNotifications",
+  SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions"
 } as const;
@@ -428,9 +428,7 @@ export const FALLBACK_CURRENCY_RATE: Record<string, number> = {
 
 export const NOTIFICATION_STATUS = {
   PENDING: "PENDING", // record created but no email sent yet
-  NOTIFIED: "NOTIFIED", // initial email sent to admin
   REMINDER_SCHEDULED: "REMINDER SCHEDULED", // reminder task created, waiting to run
-  REMINDER_SENT: "REMINDER SENT", // reminder email sent after 4 days
   PAUSED: "PAUSED", // admin paused reminders for this submission
   EVALUATED: "EVALUATED", // assignment evaluated; no more notifications
   ARCHIVED: "ARCHIVED", // stored for history; no active actions

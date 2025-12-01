@@ -1,12 +1,12 @@
 import * as admin from "firebase-admin";
-import { SubmissionNotifications } from "../types/notifications";
+import { SubmissionNotification } from "../types/notifications";
 import { NotificationStatus } from "../types/general";
 import { COLLECTION, NOTIFICATION_STATUS } from "../constants";
 import { sendMail, buildEvaluationEmail ,buildReminderEmail } from "./emailService";
 import crypto from "crypto";
 
 const db = admin.firestore();
-const notificationsRef = db.collection(COLLECTION.SUBMISSION_NOTIFICATIONS);
+const notificationsRef = db.collection(COLLECTION.SUBMISSION_NOTIFICATION);
 
 const base62Chars =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -22,11 +22,7 @@ function generateShortAdminId(adminId: string, length = 8) {
   return shortId;
 }
 
-function addDays(date: Date, days: number) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
+
 
 export const notificationService = {
   /**
@@ -42,7 +38,7 @@ export const notificationService = {
     adminEmails: string[];
   }) {
     const batch = db.batch();
-    const notifications: SubmissionNotifications[] = [];
+    const notifications: SubmissionNotification[] = [];
 
     data.adminIds.forEach((adminId, index) => {
       const adminEmail = data.adminEmails[index] ?? null;
@@ -54,7 +50,7 @@ export const notificationService = {
 
       const docRef = notificationsRef.doc(customId);
 
-      const payload: SubmissionNotifications = {
+      const payload: SubmissionNotification = {
         id: customId,
         submissionId: data.submissionId,
         assignmentId: data.assignmentId,
@@ -86,14 +82,9 @@ export const notificationService = {
   },
 
   async scheduleReminder(id: string) {
-    // Calculate the timestamp 4 days in the future
-    const scheduledAt = addDays(new Date(), 4); // original (commented out)
-
- 
-
+  
     await notificationsRef.doc(id).update({
       status: NOTIFICATION_STATUS.REMINDER_SCHEDULED,
-      reminderScheduledAt: scheduledAt,
       emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -111,7 +102,7 @@ export const notificationService = {
       return { success: false, error: "Notification not found" };
     }
 
-    const notif = doc.data() as SubmissionNotifications;
+    const notif = doc.data() as SubmissionNotification;
 
     // Choose template based on type
     const html =
@@ -154,7 +145,7 @@ export const notificationService = {
 
   async pauseReminder(id: string) {
     await notificationsRef.doc(id).update({
-      status: "paused",
+      status: NOTIFICATION_STATUS.PAUSED,
       reminderPaused: true,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -171,7 +162,7 @@ export const notificationService = {
   async getById(id: string) {
     const doc = await notificationsRef.doc(id).get();
     if (!doc.exists) return null;
-    return doc.data() as SubmissionNotifications;
+    return doc.data() as SubmissionNotification;
   },
 };
 

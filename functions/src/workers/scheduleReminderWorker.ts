@@ -12,7 +12,7 @@ export const reminderWorker = onSchedule("every 12 hours", async () => {
   const cutoff = Date.now() -  4 * 24 * 60 * 60 * 1000;  
 
   const snapshot = await db
-    .collection(COLLECTION.SUBMISSION_NOTIFICATIONS)
+    .collection(COLLECTION.SUBMISSION_NOTIFICATION)
     .where("status", "==", NOTIFICATION_STATUS.REMINDER_SCHEDULED)
     .where("reminderPaused", "==", false)
     .where("emailSentAt", "<", admin.firestore.Timestamp.fromMillis(cutoff))
@@ -36,9 +36,6 @@ export const reminderWorker = onSchedule("every 12 hours", async () => {
       // Only add to batch if mail was sent successfully
       if (result?.success) {
         batch.update(doc.ref, {
-          reminderScheduledAt: admin.firestore.Timestamp.fromDate(
-            new Date(Date.now() +  2 * 60 * 60 * 1000)
-          ),
           emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });

@@ -2,7 +2,7 @@ import { notificationService } from "../../services/notificationService";
 import { onDocumentCreated } from "firebase-functions/firestore";
 import { COLLECTION } from "../../constants";
 export const sendInitialNotification = onDocumentCreated(
- `${COLLECTION.SUBMISSION_NOTIFICATIONS}/{id}`,
+ `${COLLECTION.SUBMISSION_NOTIFICATION}/{id}`,
   async (event) => {
     try {
       const id = event.params.id;
