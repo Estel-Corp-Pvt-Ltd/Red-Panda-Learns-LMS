@@ -11,6 +11,7 @@ import { enrollFreeCourse } from "./handlers/enrollments/enrollFreeCourse";
 import { resetUserPassword } from "./handlers/resetUserPassword";
 import { canStartQuiz } from "./handlers/canStartQuiz";
 import { getQuizTimeLeft } from "./handlers/getQuizTimeLeft";
+import { generateComplaintId } from './handlers/generateComplaintId';
 import {
   enrollStudentsInBulk,
   processEnrollmentTask,
@@ -24,7 +25,8 @@ import { bulkUnassignStudentsFromAdmin } from "./handlers/unassignStudentstoAdmi
 import { pauseStudentNotifications } from "./handlers/pauseStudentNotifications";
 import { createNotification } from "./handlers/notifications/notificationController";
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
-import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";
+import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";import { userDeleteCascade } from './workers/userDeleteCascade';
+
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -36,6 +38,7 @@ export {
   sendMailWorker,
   courseDeleteCascade,
   lessonDeleteCascade,
+  userDeleteCascade,
   getLessons,
   enrollFreeCourse,
   resetUserPassword,
@@ -43,6 +46,7 @@ export {
   processEnrollmentTask,
   canStartQuiz,
   getQuizTimeLeft,
+  generateComplaintId,
   assignStudentsToAdmin,
   bulkUnassignStudentsFromAdmin,
   pauseStudentNotifications,

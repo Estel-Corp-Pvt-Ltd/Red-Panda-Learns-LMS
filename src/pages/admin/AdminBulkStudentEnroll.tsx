@@ -1,16 +1,13 @@
 import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ENVIRONMENT } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
 import { Loader2, Upload } from "lucide-react";
 import React, { useState } from "react";
 import * as XLSX from "xlsx/xlsx.mjs";
 
-const backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-    ? import.meta.env.VITE_DEV_BACKEND_URL
-    : import.meta.env.VITE_PROD_BACKEND_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const AdminBulkStudentEnroll: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);

@@ -18,7 +18,7 @@ import {
     where,
 } from "firebase/firestore";
 
-import { COLLECTION } from "@/constants";
+import { COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { UserRole, UserStatus } from "@/types/general";
 import { User } from "@/types/user";
@@ -548,6 +548,40 @@ async  getStudentsByIds(ids: string[], chunkSize = 10): Promise<User[]> {
 
     return results;
   }
+
+
+  
+/**
+ * Gets all staff users (Admin, Teacher, Instructor) without pagination
+ * Useful for dropdowns or selection lists
+ */
+async getNonStudentUsers(): Promise<Result<User[]>> {
+  try {
+    const q = query(
+      collection(db, COLLECTION.USERS),
+      where('role', 'in', [USER_ROLE.ADMIN, USER_ROLE.TEACHER, USER_ROLE.INSTRUCTOR]),
+      orderBy('createdAt', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    const users = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as User;
+    });
+
+    console.log('UserService - Fetched staff users:', users.length);
+    return ok(users);
+  } catch (error) {
+    logError('UserService - Error fetching staff users:', error);
+    return fail("Error fetching staff users");
+  }
+}
   
 }
 

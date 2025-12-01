@@ -446,6 +446,7 @@ export const POPUP_COURSE_TYPE = {
 export const QUIZ_QUESTION_TYPE = {
   MCQ: "MCQ",
   MULTIPLE_ANSWER: "MULTIPLE ANSWER",
+  FILL_BLANK: "FILL BLANK",
 } as const;
 
 export const QUIZ_SUBMISSION_STATUS = {

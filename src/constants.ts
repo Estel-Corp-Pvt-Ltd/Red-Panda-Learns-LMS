@@ -369,6 +369,8 @@ export const COLLECTION = {
   COURSES: "Courses",
   BUNDLES: "Bundles",
   COHORTS: "Cohorts",
+  COMMENTS: 'Comments',
+  COMMENT_VOTES: 'CommentVotes',
   USERS: "Users",
   CARTS: "Carts",
   LESSONS: "Lessons",
@@ -391,6 +393,8 @@ export const COLLECTION = {
   QUIZ_SUBMISSIONS: "QuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
   SUBMISSION_NOTIFICATIONS: "SubmissionNotifications",
+  COMPLAINTS: "Complaints",
+  COMPLAINT_ACTIONS: "ComplaintActions"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -448,6 +452,7 @@ export const POPUP_COURSE_TYPE = {
 export const QUIZ_QUESTION_TYPE = {
   MCQ: "MCQ",
   MULTIPLE_ANSWER: "MULTIPLE ANSWER",
+  FILL_BLANK: "FILL BLANK",
 } as const;
 
 export const QUIZ_SUBMISSION_STATUS = {
@@ -460,3 +465,44 @@ export const QUIZ_STATUS = {
   DRAFT: "DRAFT",
   PUBLISHED: "PUBLISHED",
 };
+
+// --- COMPLAINT ---
+
+export const COMPLAINT_STATUS = {
+  SUBMITTED: "SUBMITTED",
+  ACKNOWLEDGED: "ACKNOWLEDGED",
+  UNDER_REVIEW: "UNDER REVIEW",
+  RESOLVED: "RESOLVED",
+  REJECTED: "REJECTED",
+  ESCALATED: "ESCALATED",
+  CLOSED: "CLOSED"
+};
+
+export const COMPLAINT_SEVERITY = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+  CRITICAL: "CRITICAL"
+};
+
+export const COMPLAINT_ACTION_TYPE = {
+  CREATED: "CREATED",
+  COMMENTED: "COMMENTED",
+  ASSIGNED: "ASSIGNED",
+  STATUS_CHANGED: "STATUS CHANGED",
+  RESOLVED: "RESOLVED",
+  REJECTED: "REJECTED"
+};
+
+export const COMPLAINT_CATEGORY = {
+  CONTENT: "CONTENT",
+  PAYMENT: "PAYMENT",
+  TECHNICAL: "TECHNICAL",
+  INSTRUCTOR: "INSTRUCTOR"
+};
+
+export const COMMENT_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  DELETED: "DELETED",
+} as const;

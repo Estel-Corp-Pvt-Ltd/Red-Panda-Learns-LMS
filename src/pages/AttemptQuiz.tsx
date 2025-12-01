@@ -155,6 +155,8 @@ const AttemptQuiz = () => {
 
             if (type === QUIZ_QUESTION_TYPE.MCQ) {
                 updated = [option]; // Single choice
+            } else if (type === QUIZ_QUESTION_TYPE.FILL_BLANK) {
+                updated = [option]; // Single text answer
             } else {
                 updated = existing.selectedOptions.includes(option)
                     ? existing.selectedOptions.filter(o => o !== option)
@@ -352,7 +354,18 @@ const AttemptQuiz = () => {
                                                 <h3 className="font-semibold text-xl mb-4 text-gray-800">
                                                     Q{q.questionNo}. {q.description}
                                                 </h3>
-
+                                                {q.attachments && q.attachments.length > 0 && (
+                                                    <div className="mb-4 flex flex-wrap gap-4">
+                                                        {q.attachments.map((url, idx) => (
+                                                            <img
+                                                                key={idx}
+                                                                src={url}
+                                                                alt={`Attachment ${idx + 1}`}
+                                                                className="max-w-96 h-auto rounded-lg mb-2 border"
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 {/* Options */}
                                                 {(q.type === QUIZ_QUESTION_TYPE.MCQ ||
                                                     q.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) && (
@@ -377,6 +390,18 @@ const AttemptQuiz = () => {
                                                             ))}
                                                         </div>
                                                     )}
+                                                {q.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+                                                    <div>
+                                                        <input
+                                                            type="text"
+                                                            value={ans.selectedOptions[0] || ""}
+                                                            onChange={(e) =>
+                                                                handleOptionChange(q.questionNo, e.target.value, q.type)
+                                                            }
+                                                            className="w-full border border-gray-300 rounded-md p-2"
+                                                        />
+                                                    </div>
+                                                )}
 
                                                 {/* Action Buttons */}
                                                 <div className="flex gap-3 mt-6">
