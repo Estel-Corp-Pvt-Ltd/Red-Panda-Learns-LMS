@@ -2,19 +2,22 @@ import { notificationService } from "../../services/notificationService";
 import { onDocumentCreated } from "firebase-functions/firestore";
 import { COLLECTION } from "../../constants";
 export const sendInitialNotification = onDocumentCreated(
- `${COLLECTION.SUBMISSION_NOTIFICATION}/{id}`,
+  `${COLLECTION.SUBMISSION_NOTIFICATION}/{id}`,
   async (event) => {
+    const id = event.params.id;
+    console.log("🟢 New notification created:", id);
+
     try {
-      const id = event.params.id;
+      const result = await notificationService.sendInitialEmail(id, true);
 
-      console.log("🟢 New notification created:", id);
-
-      // Call your existing service to send the initial email
-      await notificationService.sendInitialEmail(id,true);
-
-      console.log("📧 Email sent successfully for:", id);
+      if (result.success) {
+        console.log("📧 Email sent successfully for:", id);
+      } else {
+        console.error(`❌ Failed to send email for ${id}:`, result.error);
+      }
     } catch (err) {
-      console.error("❌ Failed to send email:", err);
+      console.error("❌ Exception while sending email:", err);
     }
   }
 );
+

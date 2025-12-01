@@ -8,8 +8,8 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { COLLECTION } from '@/constants';
 import { Card, CardContent } from '@/components/ui/card';
-import AssignStudentsTab from '@/components/admin/AssignStudentsTab ';
-import ViewAssignedStudentsTab from '@/components/admin/ViewAssignedStudentsTab';
+import AssignStudentsTab from '@/components/admin/AssignStudentsToAdminTab';
+import ViewAssignedStudentsTab from '@/components/admin/AssignedStudentsListTab';
 
 const AssignStudent: React.FC = () => {
   const { user: adminUser } = useAuth();
@@ -61,13 +61,13 @@ const AssignStudent: React.FC = () => {
     });
   }, []);
 
-  const handleStudentUnassigned = useCallback((studentId: string) => {
-    setAssignedStudentIds(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(studentId);
-      return newSet;
-    });
-  }, []);
+const handleStudentUnassigned = useCallback((studentIds: string[]) => {
+  setAssignedStudentIds(prev => {
+    const newSet = new Set(prev);
+    studentIds.forEach(id => newSet.delete(id));
+    return newSet;
+  });
+}, []);
 
   useEffect(() => {
     if (adminId) {
@@ -123,7 +123,7 @@ const AssignStudent: React.FC = () => {
           <TabsContent value="view" className="mt-6">
             <ViewAssignedStudentsTab
               assignedStudentIds={assignedStudentIds}
-              onStudentUnassigned={handleStudentUnassigned}
+              onStudentsUnassigned={handleStudentUnassigned}
             />
           </TabsContent>
         </Tabs>

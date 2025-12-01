@@ -54,11 +54,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { userService } from "@/services/userService";
+import { BACKEND_URL } from "@/config";
 
-const backendUrl =
-  import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-    ? import.meta.env.VITE_DEV_BACKEND_URL
-    : import.meta.env.VITE_PROD_BACKEND_URL;
 
 interface ViewAssignedStudentsTabProps {
   assignedStudentIds: Set<string>;
@@ -237,7 +234,7 @@ const ViewAssignedStudentsTab: React.FC<ViewAssignedStudentsTabProps> = ({
     setBulkActionLoading(true);
     try {
       const idToken = await authService.getToken();
-      const res = await fetch(`${backendUrl}/bulkUnassignStudentsFromAdmin`, {
+      const res = await fetch(`${BACKEND_URL}/bulkUnassignStudentsFromAdmin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -287,7 +284,7 @@ const ViewAssignedStudentsTab: React.FC<ViewAssignedStudentsTabProps> = ({
     setBulkActionLoading(true);
     try {
       const idToken = await authService.getToken();
-      const res = await fetch(`${backendUrl}/pauseStudentNotifications`, {
+      const res = await fetch(`${BACKEND_URL}/pauseStudentNotifications`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

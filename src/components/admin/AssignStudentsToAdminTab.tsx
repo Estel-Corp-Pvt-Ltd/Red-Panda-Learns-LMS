@@ -1,9 +1,22 @@
 // src/components/admin/AssignStudentsTab.tsx
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
 import {
   Search,
   Loader2,
@@ -12,18 +25,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  RefreshCw
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { userService } from '@/services/userService';
-import React, { useState, useEffect, useCallback } from 'react';
-import { ENVIRONMENT, USER_ROLE, USER_STATUS } from '@/constants';
-import { authService } from '@/services/authService';
-import { User } from '@/types/user';
-
-const backendUrl = import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-  ? import.meta.env.VITE_DEV_BACKEND_URL
-  : import.meta.env.VITE_PROD_BACKEND_URL;
+  RefreshCw,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { userService } from "@/services/userService";
+import React, { useState, useEffect, useCallback } from "react";
+import { USER_ROLE, USER_STATUS } from "@/constants";
+import { authService } from "@/services/authService";
+import { User } from "@/types/user";
+import { BACKEND_URL } from "@/config";
 
 interface PaginatedUsers {
   data: User[];
@@ -41,7 +51,7 @@ interface AssignStudentsTabProps {
 
 const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
   assignedStudentIds,
-  onStudentsAssigned
+  onStudentsAssigned,
 }) => {
   const { user: adminUser } = useAuth();
   const adminId = adminUser?.id;
@@ -50,89 +60,92 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
     data: [],
     hasNextPage: false,
     hasPreviousPage: false,
-    totalCount: 0
+    totalCount: 0,
   });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
-    pageDirection: 'next' as 'next' | 'previous',
-    currentPage: 1
+    pageDirection: "next" as "next" | "previous",
+    currentPage: 1,
   });
 
   // ----------------- Load Student Users (excluding already assigned) -----------------
-  const loadUsers = useCallback(async (options = {}) => {
-    setIsLoading(true);
-    try {
-      const result = await userService.getUsers(
-        [{ field: "role", op: "==", value: USER_ROLE.STUDENT }],
-        {
-          limit: 15, // Fetch extra to account for filtering
-          orderBy: { field: 'createdAt', direction: 'desc' },
-          ...options
-        }
-      );
-
-      if (result.success) {
-        // Filter out already assigned students
-        const filteredData = result.data.data.filter(
-          (user: User) => !assignedStudentIds.has(user.id)
+  const loadUsers = useCallback(
+    async (options = {}) => {
+      setIsLoading(true);
+      try {
+        const result = await userService.getUsers(
+          [{ field: "role", op: "==", value: USER_ROLE.STUDENT }],
+          {
+            limit: 15, // Fetch extra to account for filtering
+            orderBy: { field: "createdAt", direction: "desc" },
+            ...options,
+          }
         );
 
-        setUsers({
-          ...result.data,
-          data: filteredData,
-          totalCount: filteredData.length
-        });
-      } else {
+        if (result.success) {
+          // Filter out already assigned students
+          const filteredData = result.data.data.filter(
+            (user: User) => !assignedStudentIds.has(user.id)
+          );
+
+          setUsers({
+            ...result.data,
+            data: filteredData,
+            totalCount: filteredData.length,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load students",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
         toast({
           title: "Error",
           description: "Failed to load students",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load students",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [assignedStudentIds]);
+    },
+    [assignedStudentIds]
+  );
 
   // ----------------- Pagination -----------------
   const handleNextPage = async () => {
     if (!users.hasNextPage) return;
 
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       cursor: users.nextCursor,
-      pageDirection: 'next',
-      currentPage: prev.currentPage + 1
+      pageDirection: "next",
+      currentPage: prev.currentPage + 1,
     }));
 
     await loadUsers({
       cursor: users.nextCursor,
-      pageDirection: 'next'
+      pageDirection: "next",
     });
   };
 
   const handlePreviousPage = async () => {
     if (!users.hasPreviousPage) return;
 
-    setPaginationState(prev => ({
+    setPaginationState((prev) => ({
       cursor: users.previousCursor,
-      pageDirection: 'previous',
-      currentPage: prev.currentPage - 1
+      pageDirection: "previous",
+      currentPage: prev.currentPage - 1,
     }));
 
     await loadUsers({
       cursor: users.previousCursor,
-      pageDirection: 'previous'
+      pageDirection: "previous",
     });
   };
 
@@ -140,9 +153,9 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
   const findUser = async () => {
     if (!searchQuery.trim()) {
       toast({
-        title: 'Error',
-        description: 'Enter a user email to search',
-        variant: 'destructive',
+        title: "Error",
+        description: "Enter a user email to search",
+        variant: "destructive",
       });
       return;
     }
@@ -153,9 +166,9 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
       if (result.success && result.data) {
         if (result.data.role !== USER_ROLE.STUDENT) {
           toast({
-            title: 'Error',
-            description: 'User found but is not a student',
-            variant: 'destructive',
+            title: "Error",
+            description: "User found but is not a student",
+            variant: "destructive",
           });
           return;
         }
@@ -163,9 +176,9 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
         // Check if already assigned
         if (assignedStudentIds.has(result.data.id)) {
           toast({
-            title: 'Already Assigned',
-            description: 'This student is already assigned to you',
-            variant: 'destructive',
+            title: "Already Assigned",
+            description: "This student is already assigned to you",
+            variant: "destructive",
           });
           return;
         }
@@ -178,25 +191,25 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
         });
         setPaginationState({
           cursor: null,
-          pageDirection: 'next',
-          currentPage: 1
+          pageDirection: "next",
+          currentPage: 1,
         });
         toast({
-          title: 'Success',
-          description: `Found ${result.data.firstName || 'student'}`,
+          title: "Success",
+          description: `Found ${result.data.firstName || "student"}`,
         });
       } else {
         toast({
-          title: 'Error',
-          description: 'Student not found',
-          variant: 'destructive',
+          title: "Error",
+          description: "Student not found",
+          variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Search failed. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Search failed. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsSearching(false);
@@ -208,8 +221,8 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
     setSearchQuery("");
     setPaginationState({
       cursor: null,
-      pageDirection: 'next',
-      currentPage: 1
+      pageDirection: "next",
+      currentPage: 1,
     });
     loadUsers();
   };
@@ -223,25 +236,35 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
 
   // ----------------- Select All on Current Page -----------------
   const toggleSelectAll = () => {
-    const currentPageIds = users.data.map(u => u.id);
-    const allSelected = currentPageIds.every(id => selectedIds.includes(id));
+    const currentPageIds = users.data.map((u) => u.id);
+    const allSelected = currentPageIds.every((id) => selectedIds.includes(id));
 
     if (allSelected) {
-      setSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)));
+      setSelectedIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id))
+      );
     } else {
-      setSelectedIds(prev => [...new Set([...prev, ...currentPageIds])]);
+      setSelectedIds((prev) => [...new Set([...prev, ...currentPageIds])]);
     }
   };
 
   // ----------------- Assign Students API -----------------
   const assignStudents = async () => {
     if (!adminId) {
-      toast({ title: "Error", description: "Admin not logged in", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Admin not logged in",
+        variant: "destructive",
+      });
       return;
     }
 
     if (selectedIds.length === 0) {
-      toast({ title: "Error", description: "No students selected", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "No students selected",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -249,7 +272,7 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
 
     try {
       const idToken = await authService.getToken();
-      const res = await fetch(`${backendUrl}/assignStudentsToAdmin`, {
+      const res = await fetch(`${BACKEND_URL}/assignStudentsToAdmin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -257,29 +280,40 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
         },
         body: JSON.stringify({
           adminId,
-          studentIds: selectedIds
-        })
+          studentIds: selectedIds,
+        }),
       }).then((r) => r.json());
 
       if (res.success) {
-        toast({ title: "Success", description: `${selectedIds.length} student(s) assigned successfully` });
+        toast({
+          title: "Success",
+          description: `${selectedIds.length} student(s) assigned successfully`,
+        });
 
         // Notify parent to update shared state
         onStudentsAssigned(selectedIds);
 
         // Remove assigned students from the current list
-        setUsers(prev => ({
+        setUsers((prev) => ({
           ...prev,
-          data: prev.data.filter(user => !selectedIds.includes(user.id)),
-          totalCount: prev.totalCount - selectedIds.length
+          data: prev.data.filter((user) => !selectedIds.includes(user.id)),
+          totalCount: prev.totalCount - selectedIds.length,
         }));
 
         setSelectedIds([]);
       } else {
-        toast({ title: "Error", description: res.message || "Assignment failed", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: res.message || "Assignment failed",
+          variant: "destructive",
+        });
       }
     } catch (err) {
-      toast({ title: "Error", description: "Assignment failed", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Assignment failed",
+        variant: "destructive",
+      });
     } finally {
       setLoadingAssign(false);
     }
@@ -290,7 +324,7 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
     const names = [user.firstName];
     if (user.middleName) names.push(user.middleName);
     if (user.lastName) names.push(user.lastName);
-    return names.filter(Boolean).join(' ') || 'Unknown';
+    return names.filter(Boolean).join(" ") || "Unknown";
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -350,7 +384,8 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
               {users.totalCount > 0 && ` • Page ${paginationState.currentPage}`}
               {assignedStudentIds.size > 0 && (
                 <span className="text-muted-foreground">
-                  {' '}• {assignedStudentIds.size} already assigned
+                  {" "}
+                  • {assignedStudentIds.size} already assigned
                 </span>
               )}
             </CardDescription>
@@ -363,7 +398,7 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
                 type="email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && findUser()}
+                onKeyDown={(e) => e.key === "Enter" && findUser()}
                 placeholder="Search student by email..."
                 className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -405,11 +440,13 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
         {users.data.length === 0 ? (
           <div className="text-center py-8">
             <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-2 text-sm font-semibold">No unassigned students found</h3>
+            <h3 className="mt-2 text-sm font-semibold">
+              No unassigned students found
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {assignedStudentIds.size > 0
-                ? 'All available students have been assigned. Try searching for a specific student.'
-                : 'Try adjusting your search or check back later.'}
+                ? "All available students have been assigned. Try searching for a specific student."
+                : "Try adjusting your search or check back later."}
             </p>
           </div>
         ) : (
@@ -421,7 +458,10 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
                     <TableHead className="w-12">
                       <input
                         type="checkbox"
-                        checked={users.data.length > 0 && users.data.every(u => selectedIds.includes(u.id))}
+                        checked={
+                          users.data.length > 0 &&
+                          users.data.every((u) => selectedIds.includes(u.id))
+                        }
                         onChange={toggleSelectAll}
                         className="h-4 w-4 rounded border-gray-300"
                       />
@@ -436,7 +476,9 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
                   {users.data.map((user) => (
                     <TableRow
                       key={user.id}
-                      className={`cursor-pointer transition ${selectedIds.includes(user.id) ? "bg-primary/5" : ""}`}
+                      className={`cursor-pointer transition ${
+                        selectedIds.includes(user.id) ? "bg-primary/5" : ""
+                      }`}
                       onClick={() => toggleSelect(user.id)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -545,7 +587,11 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Assign {selectedIds.length > 0 ? `(${selectedIds.length})` : ''} Students
+                    Assign{" "}
+                    {selectedIds.length > 0
+                      ? `(${selectedIds.length})`
+                      : ""}{" "}
+                    Students
                   </>
                 )}
               </Button>

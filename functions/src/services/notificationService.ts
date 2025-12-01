@@ -37,90 +37,104 @@ export const notificationService = {
     adminIds: string[];
     adminEmails: string[];
   }) {
-    const batch = db.batch();
-    const notifications: SubmissionNotification[] = [];
+    try {
+      const batch = db.batch();
+      const notifications: SubmissionNotification[] = [];
 
-    data.adminIds.forEach((adminId, index) => {
-      const adminEmail = data.adminEmails[index] ?? null;
+      data.adminIds.forEach((adminId, index) => {
+        const adminEmail = data.adminEmails[index] ?? null;
 
-      const shortAdminId = generateShortAdminId(adminId, 8);
+        const shortAdminId = generateShortAdminId(adminId, 8);
 
-      // Use new ID scheme: N_<submissionId>_<shortAdminId>
-      const customId = `N_${data.submissionId}_${shortAdminId}`;
+        // Use new ID scheme: N_<submissionId>_<shortAdminId>
+        const customId = `N_${data.submissionId}_${shortAdminId}`;
 
-      const docRef = notificationsRef.doc(customId);
+        const docRef = notificationsRef.doc(customId);
 
-      const payload: SubmissionNotification = {
-        id: customId,
-        submissionId: data.submissionId,
-        assignmentId: data.assignmentId,
-        studentId: data.studentId,
-        adminId,
-        adminEmail,
-        status: NOTIFICATION_STATUS.PENDING,
-        reminderPaused: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
-      };
+        const payload: SubmissionNotification = {
+          id: customId,
+          submissionId: data.submissionId,
+          assignmentId: data.assignmentId,
+          studentId: data.studentId,
+          adminId,
+          adminEmail,
+          status: NOTIFICATION_STATUS.PENDING,
+          reminderPaused: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
+        };
 
-      notifications.push(payload);
-      batch.set(docRef, payload);
-    });
+        notifications.push(payload);
+        batch.set(docRef, payload);
+      });
 
-    // Execute only once → minimizes Firestore cost
-    await batch.commit();
+      // Execute only once → minimizes Firestore cost
+      await batch.commit();
 
-    return notifications;
+      return notifications;
+    } catch (error) {
+      console.error("Error in createNotification:", error);
+      throw error;
+    }
   },
 
   async updateStatus(id: string, status: NotificationStatus, extra: any = {}) {
-    await notificationsRef.doc(id).update({
-      status,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      ...extra,
-    });
+    try {
+      await notificationsRef.doc(id).update({
+        status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...extra,
+      });
+    } catch (error) {
+      console.error(`Error updating status for notification ${id}:`, error);
+      throw error;
+    }
   },
 
   async scheduleReminder(id: string) {
-  
-    await notificationsRef.doc(id).update({
-      status: NOTIFICATION_STATUS.REMINDER_SCHEDULED,
-      emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    try {
+      await notificationsRef.doc(id).update({
+        status: NOTIFICATION_STATUS.REMINDER_SCHEDULED,
+        emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      console.error(`Error scheduling reminder for notification ${id}:`, error);
+      throw error;
+    }
   },
 
- async sendInitialEmail(id: string, shouldScheduleReminder = true) {
-  try {
-    const parts = id.split("_");
-    const submissionId = parts[1];
+  async sendInitialEmail(id: string, shouldScheduleReminder = true) {
+    try {
+      const parts = id.split("_");
+      const submissionId = parts[1];
 
-    const evalLink = `https://vizuara.ai/admin/submissions?submissionId=${submissionId}`;
+      const evalLink = `https://vizuara.ai/admin/submissions?submissionId=${submissionId}`;
 
-    const doc = await notificationsRef.doc(id).get();
-    if (!doc.exists) {
-      return { success: false, error: "Notification not found" };
-    }
+      const doc = await notificationsRef.doc(id).get();
+      if (!doc.exists) {
+        return { success: false, error: "Notification not found" };
+      }
 
-    const notif = doc.data() as SubmissionNotification;
+      const notif = doc.data() as SubmissionNotification;
 
-    // Choose template based on type
-    const html =
-      shouldScheduleReminder
-        ? buildEvaluationEmail(evalLink)           // INITIAL TEMPLATE
-        : buildReminderEmail(evalLink);            // REMINDER TEMPLATE
+      // Choose template based on type
+      const html =
+        shouldScheduleReminder
+          ? buildEvaluationEmail(evalLink)           // INITIAL TEMPLATE
+          : buildReminderEmail(evalLink);            // REMINDER TEMPLATE
 
-    // Send email with type included
-    await sendMail({
-      to: notif.adminEmail,
-      subject: shouldScheduleReminder
-        ? "New Submission Ready for Evaluation"
-        : "Reminder: Submission Pending Evaluation",
-      html,   // use html instead
-      type: shouldScheduleReminder ? "INITIAL" : "REMINDER"
-    });
+      // Send email with type included
+      await sendMail({
+        to: notif.adminEmail,
+        subject: shouldScheduleReminder
+          ? "New Submission Ready for Evaluation"
+          : "Reminder: Submission Pending Evaluation",
+        html,   // use html instead
+        type: shouldScheduleReminder ? "INITIAL" : "REMINDER"
+      });
 
-    /**
+      /**
        * We only want to schedule the next reminder when this email
        * is being sent for the first time (triggered on document creation).
        *
@@ -132,38 +146,57 @@ export const notificationService = {
        * To avoid double status updates and redundant Firestore writes,
        * we use this flag to control whether scheduling should occur.
        */
-    if (shouldScheduleReminder) {
-      await this.scheduleReminder(id);
-    }
+      if (shouldScheduleReminder) {
+        await this.scheduleReminder(id);
+      }
 
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-},
+      return { success: true };
+    } catch (error) {
+      console.error(`Error sending initial email for notification ${id}:`, error);
+      return { success: false, error: (error as Error).message };
+    }
+  },
 
 
   async pauseReminder(id: string) {
-    await notificationsRef.doc(id).update({
-      status: NOTIFICATION_STATUS.PAUSED,
-      reminderPaused: true,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    try {
+      await notificationsRef.doc(id).update({
+        status: NOTIFICATION_STATUS.PAUSED,
+        reminderPaused: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      console.error(`Error pausing reminder for notification ${id}:`, error);
+      throw error;
+    }
   },
 
   async markEvaluated(id: string) {
-    await this.updateStatus(id, NOTIFICATION_STATUS.EVALUATED);
+    try {
+      await this.updateStatus(id, NOTIFICATION_STATUS.EVALUATED);
+    } catch (error) {
+      console.error(`Error marking notification ${id} as evaluated:`, error);
+      throw error;
+    }
   },
 
   async archive(id: string) {
-    await this.updateStatus(id, NOTIFICATION_STATUS.ARCHIVED);
+    try {
+      await this.updateStatus(id, NOTIFICATION_STATUS.ARCHIVED);
+    } catch (error) {
+      console.error(`Error archiving notification ${id}:`, error);
+      throw error;
+    }
   },
 
   async getById(id: string) {
-    const doc = await notificationsRef.doc(id).get();
-    if (!doc.exists) return null;
-    return doc.data() as SubmissionNotification;
+    try {
+      const doc = await notificationsRef.doc(id).get();
+      if (!doc.exists) return null;
+      return doc.data() as SubmissionNotification;
+    } catch (error) {
+      console.error(`Error getting notification by id ${id}:`, error);
+      throw error;
+    }
   },
 };
-
-
