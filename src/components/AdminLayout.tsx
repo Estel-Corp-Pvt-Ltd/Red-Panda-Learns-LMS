@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, ClipboardList, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
+import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, ClipboardList, FilePenLine, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -45,6 +45,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Submissions",
       path: "/admin/submissions",
       icon: <NotepadText className="h-5 w-5" />,
+    },
+     {
+      name: "Manage Assignments",
+      path: "/admin/manage-assignment-authors",
+      icon: <FilePenLine className="h-5 w-5" />,
     },
     {
       name: "Coupons",

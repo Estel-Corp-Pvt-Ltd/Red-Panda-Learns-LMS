@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import {
   Plus,
   Trash2,
@@ -16,7 +16,7 @@ import { assignmentService } from '@/services/assignmentService';
 import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
 import { Timestamp } from 'firebase/firestore';
-import { string } from 'zod';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AssignmentFormData {
   title: string;
@@ -27,8 +27,7 @@ export interface AssignmentFormData {
   totalPoints: number;
   minimumPassPoint: number;
   attachments: File[];
-  textSubmission:string[];
-  link:string[];
+  authorId: string;
 }
 
 interface FormErrors {
@@ -54,14 +53,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     totalPoints: 100,
     minimumPassPoint: 60,
     attachments: [],
-    textSubmission:[],
-    link:[],
+    authorId: '',
+ 
   });
 
   
   const [errors, setErrors] = useState<FormErrors>({});
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  
+
+// Set authorId whenever user changes
+useEffect(() => {
+  if (user) {
+    setFormData(prev => ({ ...prev, authorId: user.id }));
+   
+  }
+}, [user]);
 
   const handleInputChange = (field: string, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,8 +139,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
         totalPoints: formData.totalPoints,
         minimumPassPoint: formData.minimumPassPoint,
         attachments: uploadedUrls,
-        textSubmission:formData.textSubmission,
-        link:formData.link
+        authorId: formData.authorId,
       };
 
       const result = await assignmentService.createAssignment(newAssignmentData);

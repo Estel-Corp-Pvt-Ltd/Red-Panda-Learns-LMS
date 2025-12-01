@@ -41,7 +41,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
-
+const AdminManageAssignments = lazy(()=> import("@/pages/admin/AdminAssignAuthor"))
 
 //Instructor
 
@@ -400,6 +400,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <CreateCouponPage />
+                          </AuthGuard>
+                        }
+                      />
+                         <Route
+                        path="/admin/manage-assignment-authors"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminManageAssignments />
                           </AuthGuard>
                         }
                       />
