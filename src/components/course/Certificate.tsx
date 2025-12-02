@@ -244,20 +244,36 @@ const Certificate: React.FC = () => {
               <div className="text-right space-y-4 text-xs text-gray-700">
                 <div>
                   <p className="h-4 text-[10px] text-gray-400 italic">
-                    {/* signature image could go here */}
+                    <img
+                      src="/images/signatures/raj-dandekar-signature.png"
+                      alt="Signature of Dr. Raj Dandekar"
+                      className="h-4 mx-auto"
+                    />
                   </p>
                   <p className="font-medium text-xs">
                     Dr. Raj Dandekar (MIT PhD)
                   </p>
                 </div>
                 <div>
-                  <p className="h-4 text-[10px] text-gray-400 italic" />
+                  <p className="h-4 text-[10px] text-gray-400 italic" >
+                    <img
+                      src="/images/signatures/rajat-dandekar-signature.png"
+                      alt="Signature of Dr. Rajat Dandekar"
+                      className="h-4 mx-auto"
+                    />
+                  </p>
                   <p className="font-medium text-xs">
                     Dr. Rajat Dandekar (Purdue PhD)
                   </p>
                 </div>
                 <div>
-                  <p className="h-4 text-[10px] text-gray-400 italic" />
+                  <p className="h-4 text-[10px] text-gray-400 italic">
+                    <img
+                      src="/images/signatures/shreedath-panat-signature.png"
+                      alt="Signature of Dr. Sreedath Panat"
+                      className="h-3 mx-auto"
+                    />
+                  </p>
                   <p className="font-medium text-xs">
                     Dr. Sreedath Panat (MIT PhD)
                   </p>
