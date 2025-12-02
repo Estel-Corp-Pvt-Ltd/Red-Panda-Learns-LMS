@@ -51,6 +51,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import MDEditor from "@uiw/react-md-editor";
 import AdminLayout from "@/components/AdminLayout";
 import ViewSubmissionModal from "@/components/admin/ViewSubmissionModal"; // Import the new modal component
+import { markSubmissionEvaluatedService } from "@/services/markSubmissionEvaluatedService";
+import { authService } from "@/services/authService";
 
 interface FilterState {
   searchTerm: string;
@@ -331,6 +333,13 @@ const AllSubmissionsPage = () => {
             : sub
         )
       );
+  
+    const idToken = await authService.getToken();
+    if (idToken) {
+      await markSubmissionEvaluatedService.mark(selectedSubmission.id!, idToken);
+    } else {
+      console.error("No ID token found — user not authenticated");
+    }
 
       closeGradeModal();
     } catch (error) {

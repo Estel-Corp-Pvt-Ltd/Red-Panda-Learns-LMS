@@ -13,6 +13,9 @@ import { reminderService } from "./reminderService";
 const db = admin.firestore();
 const notificationsRef = db.collection(COLLECTION.SUBMISSION_NOTIFICATION);
 
+
+const BATCH_LIMIT = 450; 
+
 const base62Chars =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -202,14 +205,48 @@ async createNotification(data: {
     }
   },
 
-  async markEvaluated(id: string) {
-    try {
-      await this.updateStatus(id, NOTIFICATION_STATUS.EVALUATED);
-    } catch (error) {
-      console.error(`Error marking notification ${id} as evaluated:`, error);
-      throw error;
+/**
+ * Marks all notifications for a given submission as evaluated.
+ */
+async  markSubmissionNotificationsEvaluated(submissionId: string) {
+  try {
+    // 1️⃣ Query all notification docs for the submission
+    const snapshot = await db
+      .collection(COLLECTION.SUBMISSION_NOTIFICATION)
+      .where("submissionId", "==", submissionId)
+      .get();
+
+    if (snapshot.empty) {
+      console.warn(`No notification docs found for submission ${submissionId}`);
+      return;
     }
-  },
+
+    const docs = snapshot.docs;
+
+    // 2️⃣ Process in chunks because Firestore batch limit = 500 writes
+    for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+      const chunk = docs.slice(i, i + BATCH_LIMIT);
+      const batch = db.batch();
+
+      chunk.forEach((doc) => {
+        batch.update(doc.ref, { status: NOTIFICATION_STATUS.EVALUATED });
+      });
+
+      // 3️⃣ Commit batch
+      await batch.commit();
+    }
+
+    console.log(
+      `Successfully marked ${docs.length} notifications as evaluated for submission ${submissionId}`
+    );
+  } catch (error) {
+    console.error(
+      `Error marking notifications for submission ${submissionId} as evaluated:`,
+      error
+    );
+    throw error; // Re-throw so callers can handle it
+  }
+},
 
 
   async archive(id: string) {

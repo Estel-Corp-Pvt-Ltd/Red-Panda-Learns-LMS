@@ -27,7 +27,7 @@ import { createNotification } from "./handlers/notifications/notificationControl
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
 import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";import { userDeleteCascade } from './workers/userDeleteCascade';
 import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
-
+import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -55,5 +55,6 @@ export {
   sendInitialNotification,
   SendMailWorkerForNotif,
   reminderWorker,
-  pauseReminderForAssignments
+  pauseReminderForAssignments,
+  markSubmissionNotificationsEvaluated,
 };
