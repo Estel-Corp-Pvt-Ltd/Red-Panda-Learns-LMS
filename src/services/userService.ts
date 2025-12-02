@@ -380,6 +380,35 @@ class UserService {
         }
     }
 
+async  getStudentsByIds(ids: string[], chunkSize = 10): Promise<User[]> {
+  if (ids.length === 0) return [];
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    chunks.push(ids.slice(i, i + chunkSize));
+  }
+
+  const results: User[] = [];
+
+  for (const group of chunks) {
+    for (const id of group) {
+      try {
+        const snap = await getDoc(doc(db, COLLECTION.USERS, id));
+        if (snap.exists()) {
+          results.push({ id: snap.id, ...snap.data() } as User);
+        }
+      } catch (err) {
+        console.error("Error fetching student", id, err);
+      }
+    }
+  }
+
+  return results.sort((a, b) =>
+    `${a.firstName} ${a.lastName}`.toLowerCase()
+      .localeCompare(`${b.firstName} ${b.lastName}`.toLowerCase())
+  );
+}
+
     async getUsersByRole(role: string, options: PaginationOptions<User> = {}): Promise<Result<PaginatedResult<User>>> {
         return this.getUsers(
             [

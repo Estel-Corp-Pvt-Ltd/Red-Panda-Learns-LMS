@@ -1,21 +1,35 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { assignmentService } from '@/services/assignmentService';
-import { AssignmentSubmission, Assignment } from '@/types/assignment';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { assignmentService } from "@/services/assignmentService";
+import { AssignmentSubmission, Assignment } from "@/types/assignment";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   User,
@@ -26,43 +40,50 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal
-} from 'lucide-react';
-import { Header } from '@/components/Header';
-import { Textarea } from '@/components/ui/textarea';
-import { formatDate } from '@/utils/date-time';
-import { DocumentSnapshot } from 'firebase/firestore';
-import Sidebar from '@/components/Sidebar';
-import { useAuth } from '@/contexts/AuthContext';
-import MDEditor from '@uiw/react-md-editor';
-import AdminLayout from '@/components/AdminLayout';
-import ViewSubmissionModal from '@/components/admin/ViewSubmissionModal'; // Import the new modal component
+  MoreHorizontal,
+} from "lucide-react";
+import { Header } from "@/components/Header";
+import { Textarea } from "@/components/ui/textarea";
+import { formatDate } from "@/utils/date-time";
+import { DocumentSnapshot } from "firebase/firestore";
+import Sidebar from "@/components/Sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import MDEditor from "@uiw/react-md-editor";
+import AdminLayout from "@/components/AdminLayout";
+import ViewSubmissionModal from "@/components/admin/ViewSubmissionModal"; // Import the new modal component
+import { markSubmissionEvaluatedService } from "@/services/markSubmissionEvaluatedService";
+import { authService } from "@/services/authService";
 
 interface FilterState {
   searchTerm: string;
-  gradingStatus: 'all' | 'graded' | 'ungraded';
+  gradingStatus: "all" | "graded" | "ungraded";
   assignmentFilter: string;
-  sortBy: 'studentName' | 'createdAt' | 'marks';
-  sortOrder: 'asc' | 'desc';
+  sortBy: "studentName" | "createdAt" | "marks";
+  sortOrder: "asc" | "desc";
 }
 
 const AllSubmissionsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
-  const [filteredSubmissions, setFilteredSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [filteredSubmissions, setFilteredSubmissions] = useState<
+    AssignmentSubmission[]
+  >([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
-  const [viewingSubmission, setViewingSubmission] = useState<AssignmentSubmission | null>(null);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<AssignmentSubmission | null>(null);
+  const [viewingSubmission, setViewingSubmission] =
+    useState<AssignmentSubmission | null>(null);
   const [maximumMarks, setMaximumMarks] = useState<number>(100);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [marks, setMarks] = useState('');
-  const [feedback, setFeedback] = useState('');
+  const [marks, setMarks] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [submissionToDelete, setSubmissionToDelete] = useState<AssignmentSubmission | null>(null);
+  const [submissionToDelete, setSubmissionToDelete] =
+    useState<AssignmentSubmission | null>(null);
 
   // ... (keep all your existing state and pagination code)
 
@@ -74,18 +95,33 @@ const AllSubmissionsPage = () => {
     previousCursor: DocumentSnapshot | null;
   } | null>(null);
   const [cursorStack, setCursorStack] = useState<DocumentSnapshot[]>([]);
-  const [currentCursor, setCurrentCursor] = useState<DocumentSnapshot | null>(null);
+  const [currentCursor, setCurrentCursor] = useState<DocumentSnapshot | null>(
+    null
+  );
   const [pageSize, setPageSize] = useState(20);
 
+  // Inside your Submissions page component
+  const location = useLocation();
   const [filters, setFilters] = useState<FilterState>({
-    searchTerm: '',
-    gradingStatus: 'all',
-    assignmentFilter: 'all',
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
+    searchTerm: "",
+    gradingStatus: "all",
+    assignmentFilter: "all",
+    sortBy: "createdAt",
+    sortOrder: "desc",
   });
 
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const submissionId = params.get("submissionId");
+    if (submissionId) {
+      const submission = submissions.find((s) => s.id === submissionId);
+      if (submission) {
+        handleViewSubmission(submission); // open modal automatically
+      }
+    }
+  }, [location, submissions]);
 
   // ... (keep all your existing useEffects and functions)
 
@@ -100,10 +136,12 @@ const AllSubmissionsPage = () => {
   useEffect(() => {
     if (selectedSubmission) {
       const fetchAssignmentDetails = async (assignmentId: string) => {
-        const assignment = await assignmentService.getAssignmentById(assignmentId);
+        const assignment = await assignmentService.getAssignmentById(
+          assignmentId
+        );
         setMaximumMarks(assignment.data.totalPoints || 100);
-        setMarks(selectedSubmission.marks?.toString() || '');
-        setFeedback(selectedSubmission.feedback || '');
+        setMarks(selectedSubmission.marks?.toString() || "");
+        setFeedback(selectedSubmission.feedback || "");
       };
 
       fetchAssignmentDetails(selectedSubmission.assignmentId);
@@ -113,7 +151,10 @@ const AllSubmissionsPage = () => {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const submissionsResult = await assignmentService.getFirstSubmissionsPage(buildFirestoreFilters(), pageSize);
+      const submissionsResult = await assignmentService.getFirstSubmissionsPage(
+        buildFirestoreFilters(),
+        pageSize
+      );
       if (submissionsResult.success && submissionsResult.data) {
         setCurrentPage(submissionsResult.data);
         setSubmissions(submissionsResult.data.data);
@@ -123,7 +164,7 @@ const AllSubmissionsPage = () => {
       const assignmentsData = await assignmentService.getAllAssignments();
       setAssignments(assignmentsData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
@@ -139,7 +180,7 @@ const AllSubmissionsPage = () => {
     );
 
     if (result.success && result.data) {
-      setCursorStack(prev => [...prev, currentCursor!]);
+      setCursorStack((prev) => [...prev, currentCursor!]);
       setCurrentPage(result.data);
       setSubmissions(result.data.data);
       setCurrentCursor(result.data.nextCursor);
@@ -157,7 +198,7 @@ const AllSubmissionsPage = () => {
     );
 
     if (result.success && result.data) {
-      setCursorStack(prev => prev.slice(0, -1));
+      setCursorStack((prev) => prev.slice(0, -1));
       setCurrentPage(result.data);
       setSubmissions(result.data.data);
       setCurrentCursor(result.data.nextCursor);
@@ -167,25 +208,25 @@ const AllSubmissionsPage = () => {
   const buildFirestoreFilters = () => {
     const firestoreFilters: any[] = [];
 
-    if (filters.assignmentFilter && filters.assignmentFilter !== 'all') {
+    if (filters.assignmentFilter && filters.assignmentFilter !== "all") {
       firestoreFilters.push({
-        field: 'assignmentId',
-        op: '==',
-        value: filters.assignmentFilter
+        field: "assignmentId",
+        op: "==",
+        value: filters.assignmentFilter,
       });
     }
 
-    if (filters.gradingStatus === 'graded') {
+    if (filters.gradingStatus === "graded") {
       firestoreFilters.push({
-        field: 'marks',
-        op: '>=',
-        value: 0
+        field: "marks",
+        op: ">=",
+        value: 0,
       });
-    } else if (filters.gradingStatus === 'ungraded') {
+    } else if (filters.gradingStatus === "ungraded") {
       firestoreFilters.push({
-        field: 'marks',
-        op: '==',
-        value: null
+        field: "marks",
+        op: "==",
+        value: null,
       });
     }
 
@@ -196,10 +237,17 @@ const AllSubmissionsPage = () => {
     let filtered = [...submissions];
 
     if (filters.searchTerm.trim()) {
-      filtered = filtered.filter(submission =>
-        submission.studentName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        submission.studentId.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        submission.assignmentId.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (submission) =>
+          submission.studentName
+            .toLowerCase()
+            .includes(filters.searchTerm.toLowerCase()) ||
+          submission.studentId
+            .toLowerCase()
+            .includes(filters.searchTerm.toLowerCase()) ||
+          submission.assignmentId
+            .toLowerCase()
+            .includes(filters.searchTerm.toLowerCase())
       );
     }
 
@@ -207,7 +255,7 @@ const AllSubmissionsPage = () => {
       let aValue: any = a[filters.sortBy];
       let bValue: any = b[filters.sortBy];
 
-      if (filters.sortBy === 'createdAt') {
+      if (filters.sortBy === "createdAt") {
         aValue = aValue?.toDate?.() || aValue;
         bValue = bValue?.toDate?.() || bValue;
       }
@@ -215,13 +263,13 @@ const AllSubmissionsPage = () => {
       if (aValue === undefined || aValue === null) return 1;
       if (bValue === undefined || bValue === null) return -1;
 
-      if (typeof aValue === 'string') {
+      if (typeof aValue === "string") {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }
 
-      if (aValue < bValue) return filters.sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return filters.sortOrder === 'asc' ? 1 : -1;
+      if (aValue < bValue) return filters.sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return filters.sortOrder === "asc" ? 1 : -1;
       return 0;
     });
 
@@ -229,16 +277,16 @@ const AllSubmissionsPage = () => {
   };
 
   const handleFilterChange = (key: keyof FilterState, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const clearAllFilters = () => {
     setFilters({
-      searchTerm: '',
-      gradingStatus: 'all',
-      assignmentFilter: 'all',
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
+      searchTerm: "",
+      gradingStatus: "all",
+      assignmentFilter: "all",
+      sortBy: "createdAt",
+      sortOrder: "desc",
     });
   };
 
@@ -250,16 +298,16 @@ const AllSubmissionsPage = () => {
 
   const openGradeModal = (submission: AssignmentSubmission) => {
     setSelectedSubmission(submission);
-    setMarks(submission.marks?.toString() || '');
-    setFeedback(submission.feedback || '');
+    setMarks(submission.marks?.toString() || "");
+    setFeedback(submission.feedback || "");
     setIsModalOpen(true);
   };
 
   const closeGradeModal = () => {
     setIsModalOpen(false);
     setSelectedSubmission(null);
-    setMarks('');
-    setFeedback('');
+    setMarks("");
+    setFeedback("");
   };
 
   const handleSaveGrade = async () => {
@@ -267,7 +315,7 @@ const AllSubmissionsPage = () => {
 
     const numericMarks = parseFloat(marks);
     if (isNaN(numericMarks)) {
-      alert('Please enter valid marks');
+      alert("Please enter valid marks");
       return;
     }
 
@@ -278,16 +326,25 @@ const AllSubmissionsPage = () => {
         feedback: feedback.trim(),
       });
 
-      setSubmissions(prev => prev.map(sub =>
-        sub.id === selectedSubmission.id
-          ? { ...sub, marks: numericMarks, feedback: feedback.trim() }
-          : sub
-      ));
+      setSubmissions((prev) =>
+        prev.map((sub) =>
+          sub.id === selectedSubmission.id
+            ? { ...sub, marks: numericMarks, feedback: feedback.trim() }
+            : sub
+        )
+      );
+  
+    const idToken = await authService.getToken();
+    if (idToken) {
+      await markSubmissionEvaluatedService.mark(selectedSubmission.id!, idToken);
+    } else {
+      console.error("No ID token found — user not authenticated");
+    }
 
       closeGradeModal();
     } catch (error) {
-      console.error('Error saving grade:', error);
-      alert('Failed to save grade');
+      console.error("Error saving grade:", error);
+      alert("Failed to save grade");
     } finally {
       setSaving(false);
     }
@@ -300,38 +357,42 @@ const AllSubmissionsPage = () => {
       setDeleting(submissionToDelete.id!);
       await assignmentService.deleteSubmission(submissionToDelete.id!);
 
-      setSubmissions(prev => prev.filter(sub => sub.id !== submissionToDelete.id));
+      setSubmissions((prev) =>
+        prev.filter((sub) => sub.id !== submissionToDelete.id)
+      );
       setSubmissionToDelete(null);
     } catch (error) {
-      console.error('Error deleting submission:', error);
-      alert('Failed to delete submission');
+      console.error("Error deleting submission:", error);
+      alert("Failed to delete submission");
     } finally {
       setDeleting(null);
     }
   };
 
   const getAssignmentTitle = (assignmentId: string) => {
-    const assignment = assignments.find(a => a.id === assignmentId);
+    const assignment = assignments.find((a) => a.id === assignmentId);
     return assignment?.title || assignmentId;
   };
 
   const getGradeText = (submission: AssignmentSubmission) => {
     return submission.marks !== undefined && submission.marks !== null
       ? `${submission.marks}`
-      : 'Not Graded';
+      : "Not Graded";
   };
 
   const getGradeStatus = (submission: AssignmentSubmission) => {
     if (submission.marks !== undefined && submission.marks !== null) {
-      return 'default';
+      return "default";
     }
-    return 'secondary';
+    return "secondary";
   };
 
   const hasActiveFilters = () => {
-    return filters.searchTerm !== '' ||
-      filters.gradingStatus !== 'all' ||
-      filters.assignmentFilter !== 'all';
+    return (
+      filters.searchTerm !== "" ||
+      filters.gradingStatus !== "all" ||
+      filters.assignmentFilter !== "all"
+    );
   };
 
   if (loading) {
@@ -342,7 +403,9 @@ const AllSubmissionsPage = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading submissions...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
+                Loading submissions...
+              </p>
             </div>
           </div>
         </div>
@@ -351,10 +414,10 @@ const AllSubmissionsPage = () => {
   }
 
   const colorMode =
-    typeof document !== 'undefined' &&
-      document.documentElement.classList.contains('dark')
-      ? 'dark'
-      : 'light';
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
 
   return (
     <AdminLayout>
@@ -370,7 +433,9 @@ const AllSubmissionsPage = () => {
                   placeholder="Search students or assignments..."
                   className="pl-9"
                   value={filters.searchTerm}
-                  onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("searchTerm", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -379,7 +444,9 @@ const AllSubmissionsPage = () => {
             <div className="flex gap-2">
               <Select
                 value={filters.assignmentFilter}
-                onValueChange={(value) => handleFilterChange('assignmentFilter', value)}
+                onValueChange={(value) =>
+                  handleFilterChange("assignmentFilter", value)
+                }
               >
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="All Assignments" />
@@ -396,7 +463,9 @@ const AllSubmissionsPage = () => {
 
               <Select
                 value={filters.gradingStatus}
-                onValueChange={(value: 'all' | 'graded' | 'ungraded') => handleFilterChange('gradingStatus', value)}
+                onValueChange={(value: "all" | "graded" | "ungraded") =>
+                  handleFilterChange("gradingStatus", value)
+                }
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="All Status" />
@@ -426,12 +495,15 @@ const AllSubmissionsPage = () => {
                 className="text-sm"
               >
                 <Filter className="h-4 w-4 mr-2" />
-                {filtersOpen ? 'Hide Filters' : 'More Filters'}
+                {filtersOpen ? "Hide Filters" : "More Filters"}
               </Button>
 
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <span>Show:</span>
-                <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => setPageSize(parseInt(value))}
+                >
                   <SelectTrigger className="w-16 h-8">
                     <SelectValue />
                   </SelectTrigger>
@@ -447,10 +519,14 @@ const AllSubmissionsPage = () => {
             {filtersOpen && (
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="sort" className="text-sm whitespace-nowrap">Sort by:</Label>
+                  <Label htmlFor="sort" className="text-sm whitespace-nowrap">
+                    Sort by:
+                  </Label>
                   <Select
                     value={filters.sortBy}
-                    onValueChange={(value: 'studentName' | 'createdAt' | 'marks') => handleFilterChange('sortBy', value)}
+                    onValueChange={(
+                      value: "studentName" | "createdAt" | "marks"
+                    ) => handleFilterChange("sortBy", value)}
                   >
                     <SelectTrigger className="flex-1">
                       <SelectValue />
@@ -464,10 +540,15 @@ const AllSubmissionsPage = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                    onClick={() =>
+                      handleFilterChange(
+                        "sortOrder",
+                        filters.sortOrder === "asc" ? "desc" : "asc"
+                      )
+                    }
                     className="h-9 w-9"
                   >
-                    {filters.sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
+                    {filters.sortOrder === "asc" ? "A-Z" : "Z-A"}
                   </Button>
                 </div>
               </div>
@@ -493,24 +574,39 @@ const AllSubmissionsPage = () => {
               <TableBody>
                 {filteredSubmissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {submissions.length === 0 ? 'No submissions yet' : 'No submissions match your filters'}
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      {submissions.length === 0
+                        ? "No submissions yet"
+                        : "No submissions match your filters"}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSubmissions.map((submission) => (
-                    <TableRow key={submission.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <TableRow
+                      key={submission.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <div className="font-medium text-sm">{submission.studentName}</div>
-                            <div className="text-xs text-muted-foreground">{submission.studentId}</div>
+                            <div className="font-medium text-sm">
+                              {submission.studentName}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {submission.studentId}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm truncate max-w-[230px]" title={getAssignmentTitle(submission.assignmentId)}>
+                        <div
+                          className="text-sm truncate max-w-[230px]"
+                          title={getAssignmentTitle(submission.assignmentId)}
+                        >
                           {getAssignmentTitle(submission.assignmentId)}
                         </div>
                       </TableCell>
@@ -567,7 +663,7 @@ const AllSubmissionsPage = () => {
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 Showing {filteredSubmissions.length} of {submissions.length}
-                {hasActiveFilters() && ' (filtered)'}
+                {hasActiveFilters() && " (filtered)"}
               </div>
               <div className="flex gap-1">
                 <Button
@@ -595,7 +691,7 @@ const AllSubmissionsPage = () => {
       </Card>
 
       {/* View Submission Modal */}
-      <ViewSubmissionModal 
+      <ViewSubmissionModal
         submission={viewingSubmission}
         isOpen={isViewModalOpen}
         onClose={() => {
@@ -610,13 +706,16 @@ const AllSubmissionsPage = () => {
           <DialogHeader>
             <DialogTitle className="text-lg">Grade Submission</DialogTitle>
             <DialogDescription>
-              {selectedSubmission?.studentName} - {getAssignmentTitle(selectedSubmission?.assignmentId || '')}
+              {selectedSubmission?.studentName} -{" "}
+              {getAssignmentTitle(selectedSubmission?.assignmentId || "")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="marks" className="text-sm">Marks (out of {maximumMarks})</Label>
+              <Label htmlFor="marks" className="text-sm">
+                Marks (out of {maximumMarks})
+              </Label>
               <Input
                 id="marks"
                 type="number"
@@ -630,42 +729,54 @@ const AllSubmissionsPage = () => {
             </div>
 
             <div>
-              <Label htmlFor="feedback" className="text-sm">Feedback</Label>
+              <Label htmlFor="feedback" className="text-sm">
+                Feedback
+              </Label>
               <div
                 data-color-mode={colorMode}
                 className="border rounded-lg dark:border-gray-700"
               >
                 <MDEditor
                   value={feedback}
-                  onChange={value => setFeedback(value || '')}
+                  onChange={(value) => setFeedback(value || "")}
                   height={350}
-                  preview='edit'
+                  preview="edit"
                 />
               </div>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeGradeModal} size="sm">Cancel</Button>
+            <Button variant="outline" onClick={closeGradeModal} size="sm">
+              Cancel
+            </Button>
             <Button onClick={handleSaveGrade} disabled={saving} size="sm">
-              {saving ? 'Saving...' : 'Save Grade'}
+              {saving ? "Saving..." : "Save Grade"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Modal - Keep your existing delete modal */}
-      <Dialog open={!!submissionToDelete} onOpenChange={(open) => !open && setSubmissionToDelete(null)}>
+      <Dialog
+        open={!!submissionToDelete}
+        onOpenChange={(open) => !open && setSubmissionToDelete(null)}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Delete Submission</DialogTitle>
             <DialogDescription>
-              This will permanently delete the submission from <strong>{submissionToDelete?.studentName}</strong>.
+              This will permanently delete the submission from{" "}
+              <strong>{submissionToDelete?.studentName}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSubmissionToDelete(null)} size="sm">
+            <Button
+              variant="outline"
+              onClick={() => setSubmissionToDelete(null)}
+              size="sm"
+            >
               Cancel
             </Button>
             <Button
@@ -674,7 +785,7 @@ const AllSubmissionsPage = () => {
               disabled={deleting === submissionToDelete?.id}
               size="sm"
             >
-              {deleting === submissionToDelete?.id ? 'Deleting...' : 'Delete'}
+              {deleting === submissionToDelete?.id ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -38,6 +38,7 @@ const AdminOrganizations = lazy(
   () => import("./pages/admin/AdminOrganizations")
 );
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminAssignStudents = lazy(() => import("./pages/admin/AdminAssignStudents"));
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
@@ -203,6 +204,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminBulkStudentEnroll />
+                          </AuthGuard>
+                        }
+                      />
+                          <Route
+                        path="/admin/assign-students"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminAssignStudents />
                           </AuthGuard>
                         }
                       />

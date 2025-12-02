@@ -26,7 +26,9 @@ import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MarkdownViewer from '../MarkdownViewer';
 import MDEditor from '@uiw/react-md-editor';
-import { linkSync } from 'fs';
+import { adminAssignedStudentsService } from '@/services/adminAssignedStudentsService';
+import { notificationApiService } from '@/services/notificationApiService';
+import { authService } from '@/services/authService';
 
 type AssignmentProps = {
   assignmentId: string;
@@ -54,6 +56,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const [isEditorMaximized, setIsEditorMaximized] = useState(false);
   const [isResponsesMaximized, setIsResponsesMaximized] = useState(false);
   const [editorView, setEditorView] = useState<'edit' | 'preview' | 'live'>('live');
+
+  const [isAssigned, setIsAssigned] = useState<boolean | null>(null);
+
+
 
   // ✅ Load assignment by ID
   useEffect(() => {
@@ -105,6 +111,19 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const removeFile = (index: number) => {
     setSubmissionFiles((prev) => prev.filter((_, i) => i !== index));
   };
+
+useEffect(() => {
+  const checkAssignment = async () => {
+    if (!user || !assignment) return;
+    const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(
+      user.id
+    );
+    setIsAssigned(assigned);
+    console.log("isStudentAssignedToAdmin:", assigned);
+  };
+
+  checkAssignment();
+}, [user, assignment]);
 
   // ✅ Add link to submission
   const addLink = () => {
@@ -189,8 +208,28 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         links: links
       };
 
-      await assignmentService.createSubmission(submission);
-      await onComplete();
+      // Create submission and get the submission ID
+    const submissionResult = await assignmentService.createSubmission(submission);
+    
+    // ✅ If student is assigned to admin, create notification
+    if (isAssigned && submissionResult.success && submissionResult.data) {
+      try {
+        const idToken = await authService.getToken();
+        
+        const submissionId = submissionResult.data;
+        await notificationApiService.createNotification({
+          submissionId: submissionId,  // The ID returned from createSubmission
+          assignmentId: assignmentId,
+          studentId: user.id,
+        }, idToken);
+        console.log('✅ Notification created successfully');
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+        // Don't fail the whole submission if notification fails
+      }
+    }
+
+    await onComplete();
       setMessage('Assignment submitted successfully!');
       setSubmissionFiles([]);
       setTextSubmissions([]);
