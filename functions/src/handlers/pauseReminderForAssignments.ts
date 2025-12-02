@@ -3,7 +3,7 @@ import { withMiddleware } from "../middlewares";
 import { corsMiddleware } from "../middlewares/cors";
 import { authMiddleware } from "../middlewares/auth";
 import { onRequest } from "firebase-functions/v2/https";
-import { notificationService } from "../services/notificationService";
+import { reminderService } from "../services/reminderService";
 
 async function pauseReminderForAssignmentsHandler(req: Request, res: Response) {
   try {
@@ -22,7 +22,7 @@ async function pauseReminderForAssignmentsHandler(req: Request, res: Response) {
       return;
     }
 
-    const paused = await notificationService.pauseRemindersForAssignments(
+    const paused = await reminderService.pauseRemindersForAssignments(
      assignmentIds
     );
 

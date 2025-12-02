@@ -8,7 +8,7 @@ import {
   buildReminderEmail,
 } from "./emailService";
 import crypto from "crypto";
-import { ok, Result } from "../utils/response";
+import { reminderService } from "./reminderService";
 
 const db = admin.firestore();
 const notificationsRef = db.collection(COLLECTION.SUBMISSION_NOTIFICATION);
@@ -32,54 +32,81 @@ export const notificationService = {
    * Create multiple notifications for all admins assigned to the student.
    * Uses deterministic hashed document IDs to avoid duplicates.
    * Uses Firestore batch writes for efficiency (1 network request).
+   * 
+   * 
+   *  * Behavior:
+ * - Checks if reminders are paused for the given assignment
+ * - If paused: Creates notifications with PAUSED status (won't trigger reminders)
+ * - If not paused: Creates notifications with PENDING status (will be scheduled for reminders)
+ *
+ * @param data - Object containing submission details and admin information
+ * @returns Array of created SubmissionNotification objects
    */
-  async createNotification(data: {
-    submissionId: string;
-    assignmentId: string;
-    studentId: string;
-    adminIds: string[];
-    adminEmails: string[];
-  }) {
-    try {
-      const batch = db.batch();
-      const notifications: SubmissionNotification[] = [];
 
-      data.adminIds.forEach((adminId, index) => {
-        const adminEmail = data.adminEmails[index] ?? null;
+async createNotification(data: {
+  submissionId: string;
+  assignmentId: string;
+  studentId: string;
+  adminIds: string[];
+  adminEmails: string[];
+}): Promise<SubmissionNotification[]> {
+  try {
+    // Check if reminders are paused for this assignment
+    // If any notification for this assignment has reminderPaused=true,
+    // new notifications should also be created in PAUSED state
+    const isPausedResult = await reminderService.checkIsReminderPausedForAssignment(
+      data.assignmentId
+    );
 
-        const shortAdminId = generateShortAdminId(adminId, 8);
+    // Determine the initial status and reminderPaused flag based on pause state
+    // - PAUSED: Notifications won't trigger reminder emails
+    // - PENDING: Notifications will be picked up by the reminder scheduler
+    const isReminderPaused = isPausedResult.success && isPausedResult.data === true;
+    const initialStatus = isReminderPaused
+      ? NOTIFICATION_STATUS.PAUSED
+      : NOTIFICATION_STATUS.PENDING;
 
-        // Use new ID scheme: N_<submissionId>_<shortAdminId>
-        const customId = `N_${data.submissionId}_${shortAdminId}`;
+    const batch = db.batch();
+    const notifications: SubmissionNotification[] = [];
 
-        const docRef = notificationsRef.doc(customId);
+    data.adminIds.forEach((adminId, index) => {
+      const adminEmail = data.adminEmails[index] ?? null;
 
-        const payload: SubmissionNotification = {
-          id: customId,
-          submissionId: data.submissionId,
-          assignmentId: data.assignmentId,
-          studentId: data.studentId,
-          adminId,
-          adminEmail,
-          status: NOTIFICATION_STATUS.PENDING,
-          reminderPaused: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
-        };
+      const shortAdminId = generateShortAdminId(adminId, 8);
 
-        notifications.push(payload);
-        batch.set(docRef, payload);
-      });
+      // Use new ID scheme: N_<submissionId>_<shortAdminId>
+      const customId = `N_${data.submissionId}_${shortAdminId}`;
 
-      // Execute only once → minimizes Firestore cost
-      await batch.commit();
+      const docRef = notificationsRef.doc(customId);
 
-      return notifications;
-    } catch (error) {
-      console.error("Error in createNotification:", error);
-      throw error;
-    }
-  },
+      const payload: SubmissionNotification = {
+        id: customId,
+        submissionId: data.submissionId,
+        assignmentId: data.assignmentId,
+        studentId: data.studentId,
+        adminId,
+        adminEmail,
+        // Status is determined by the assignment's current reminder pause state
+        status: initialStatus,
+        // Inherit the pause state from existing notifications for this assignment
+        reminderPaused: isReminderPaused,
+        createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
+      };
+
+      notifications.push(payload);
+      batch.set(docRef, payload);
+    });
+
+    // Execute batch write only once → minimizes Firestore cost
+    await batch.commit();
+
+    return notifications;
+  } catch (error) {
+    console.error("Error in createNotification:", error);
+    throw error;
+  }
+},
 
   async updateStatus(id: string, status: NotificationStatus, extra: any = {}) {
     try {
@@ -184,58 +211,6 @@ export const notificationService = {
     }
   },
 
-  async pauseRemindersForAssignments(
-    assignmentIds: string[]
-  ): Promise<Result<SubmissionNotification[]>> {
-    try {
-      if (!assignmentIds.length) return ok([]);
-
-      const updatedNotifications: SubmissionNotification[] = [];
-
-      // Firestore 'in' query supports max 10 items
-      const chunkSize = 10;
-      for (let i = 0; i < assignmentIds.length; i += chunkSize) {
-        const chunk = assignmentIds.slice(i, i + chunkSize);
-
-        const snapshot = await db
-          .collection(COLLECTION.SUBMISSION_NOTIFICATION)
-          .where("assignmentId", "in", chunk)
-          .where("reminderPaused", "==", false)
-          .get();
-
-        if (snapshot.empty) continue;
-
-        const batch = db.batch();
-
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data() as SubmissionNotification;
-
-          batch.update(doc.ref, {
-            reminderPaused: true,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-
-          updatedNotifications.push({
-            ...data,
-            reminderPaused: true,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
-          });
-        });
-
-        // Commit batch
-        await batch.commit();
-      }
-
-      return ok(updatedNotifications);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      const stack = error instanceof Error ? error.stack : undefined;
-      return {
-        success: false,
-        error: { message, stack },
-      };
-    }
-  },
 
   async archive(id: string) {
     try {
