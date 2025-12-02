@@ -8,15 +8,43 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useCourseQuery } from '@/hooks/useCaching';
 import { enrollmentService } from '@/services/enrollmentService';
+import { learningProgressService } from '@/services/learningProgressService';
 import { Enrollment } from '@/types/enrollment';
+import { LearningProgress } from '@/types/learning-progress';
 import { formatDate } from '@/utils/date-time';
-import { BookOpen, Clock, PlayCircle } from 'lucide-react';
+import { BookOpen, Clock, Download, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
+  const [learningProgress, setLearningProgress] = useState<LearningProgress | null>(null);
+  const [isProgressLoading, setIsProgressLoading] = useState(true);
+
+  const totalLessons = course?.topics?.reduce((sum, topic) => {
+    return sum + (topic.items ? topic.items.length : 0);
+  }, 0) || 0;
+
+  useEffect(() => {
+    const fetchLearningProgress = async () => {
+      try {
+        setIsProgressLoading(true);
+        const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
+        if (result.success) {
+          setLearningProgress(result.data[0] ?? null);
+        }
+      } catch (error) {
+        setLearningProgress(null);
+      } finally {
+        setIsProgressLoading(false);
+      }
+    };
+
+    fetchLearningProgress();
+  }, [course]);
+
   if (isLoading) {
     return <LoadingSkeleton className="h-48" />;
   }
@@ -70,10 +98,19 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                   {enrollment.status}
                 </Badge>
               </div>
-              <Button size="sm" onClick={handleContinueLearning}>
-                <PlayCircle className="h-4 w-4 mr-2" />
-                Continue
-              </Button>
+              <div className="flex gap-3">
+                <Button size="sm" onClick={handleContinueLearning}>
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Continue
+                </Button>
+                {!isProgressLoading && learningProgress?.lessonHistory.length > 0 && 0.6 * totalLessons <= learningProgress.lessonHistory.length && (
+                  <Link to={`/certificate/${user.id}_${course.id}/`}>
+                    <Button size="sm" onClick={handleContinueLearning}>
+                      <Download className="h-4 w-4 mr-2" /> Certificate
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </div>

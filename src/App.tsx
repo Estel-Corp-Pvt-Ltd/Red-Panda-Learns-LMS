@@ -42,7 +42,7 @@ const AdminAssignStudents = lazy(() => import("./pages/admin/AdminAssignStudents
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
-const AdminManageAssignments = lazy(()=> import("@/pages/admin/AdminAssignAuthor"))
+const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAuthor"))
 
 //Instructor
 
@@ -81,6 +81,7 @@ import ArrangeCourses from "./pages/admin/ArrangeCourses";
 import Quizzes from "./pages/Quizzes";
 import AttemptQuiz from "./pages/AttemptQuiz";
 import AdminCommentApproval from "./pages/admin/AdminComentApproval";
+import Certificate from "./components/course/Certificate";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -109,6 +110,10 @@ const App = () => (
                       <Route
                         path="/courses/:param"
                         element={<CourseDetailPage />}
+                      />
+                      <Route
+                        path="/certificate/:enrollmentId"
+                        element={<Certificate />}
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
@@ -207,7 +212,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                          <Route
+                      <Route
                         path="/admin/assign-students"
                         element={
                           <AuthGuard requireAdmin>
@@ -412,7 +417,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                         <Route
+                      <Route
                         path="/admin/manage-assignment-authors"
                         element={
                           <AuthGuard requireAdmin>
