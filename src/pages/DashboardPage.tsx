@@ -10,9 +10,8 @@ import { useCourseQuery } from '@/hooks/useCaching';
 import { enrollmentService } from '@/services/enrollmentService';
 import { learningProgressService } from '@/services/learningProgressService';
 import { Enrollment } from '@/types/enrollment';
-import { LearningProgress } from '@/types/learning-progress';
 import { formatDate } from '@/utils/date-time';
-import { BookOpen, Clock, Download, PlayCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Download, Eye, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -20,23 +19,70 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
-  const [learningProgress, setLearningProgress] = useState<LearningProgress | null>(null);
   const [isProgressLoading, setIsProgressLoading] = useState(true);
+
+  const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false); // completionDate exists
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const totalLessons = course?.topics?.reduce((sum, topic) => {
     return sum + (topic.items ? topic.items.length : 0);
   }, 0) || 0;
+
+  const handleCompleteCourse = async () => {
+    try {
+      setIsCompleting(true);
+
+      const result =
+        await learningProgressService.completeCourse(
+          enrollment.userId,
+          enrollment.courseId,
+          totalLessons
+        );
+
+      if (result.success && result.data) {
+        setIsCompleted(true);
+
+        toast({
+          title: "Course completed 🎉",
+          description: "Your certificate is now available.",
+        });
+      } else {
+        toast({
+          title: "Not eligible yet",
+          description: "Please complete more lessons.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCompleting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchLearningProgress = async () => {
       try {
         setIsProgressLoading(true);
         const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
-        if (result.success) {
-          setLearningProgress(result.data[0] ?? null);
+        if (result.success && result.data[0]) {
+          const progress = result.data[0];
+
+          const eligible =
+            totalLessons > 0 &&
+            progress.lessonHistory.length >= Math.ceil(0.9 * totalLessons);
+
+          setIsEligibleForCertificate(eligible);
+
+          setIsCompleted(!!progress.completionDate);
         }
       } catch (error) {
-        setLearningProgress(null);
+        setIsProgressLoading(false);
       } finally {
         setIsProgressLoading(false);
       }
@@ -103,10 +149,23 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Continue
                 </Button>
-                {!isProgressLoading && learningProgress?.lessonHistory.length > 0 && 0.9 * totalLessons <= learningProgress.lessonHistory.length && (
+
+                {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
+                  <Button
+                    size="sm"
+                    onClick={handleCompleteCourse}
+                    disabled={isCompleting}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {isCompleting ? "Completing..." : "Complete Course"}
+                  </Button>
+                )}
+
+                {!isProgressLoading && isCompleted && (
                   <Link to={`/certificate/${user.id}_${course.id}/`}>
                     <Button size="sm">
-                      <Download className="h-4 w-4 mr-2" /> Certificate
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Certificate
                     </Button>
                   </Link>
                 )}

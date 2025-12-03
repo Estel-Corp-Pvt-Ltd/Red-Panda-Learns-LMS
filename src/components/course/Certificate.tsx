@@ -1,35 +1,50 @@
-import { useEffect, useState } from "react";
-import { Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useParams } from "react-router-dom";
 import { enrollmentService } from "@/services/enrollmentService";
+import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
-import { formatDate } from "@/utils/date-time";
+import { Download, Printer } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
   const [isPrinting, setIsPrinting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
+  const [completionDate, setCompletionDate] = useState<string | null>(null);
 
   useEffect(() => {
-    // You can use the enrollmentId to fetch certificate data if needed
-    const fetchEnrollment = async () => {
+    const fetchEnrollmentAndCompletion = async () => {
       setIsLoading(true);
       try {
-        const enrollmentResult = await enrollmentService.getEnrollmentById(enrollmentId!);
+        const enrollmentResult =
+          await enrollmentService.getEnrollmentById(enrollmentId!);
+
         if (enrollmentResult.success) {
-          setEnrollmentData(enrollmentResult.data);
+          const enrollment = enrollmentResult.data;
+          setEnrollmentData(enrollment);
+
+          // ✅ Fetch completion date using userId + courseId
+          const completionResult =
+            await learningProgressService.getFormattedCompletionDate(
+              enrollment.userId,
+              enrollment.courseId
+            );
+
+          if (completionResult.success) {
+            setCompletionDate(completionResult.data);
+          }
         }
       } catch (error) {
-        console.error("Error fetching enrollment data:", error);
+        console.error("Error fetching certificate data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchEnrollment();
+    fetchEnrollmentAndCompletion();
   }, [enrollmentId]);
+
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -230,7 +245,7 @@ const Certificate: React.FC = () => {
                   {enrollmentData.userName}
                 </p>
                 <p className="text-xs font-medium text-gray-800 mt-1">
-                  Course completed on {formatDate(enrollmentData.updatedAt)}
+                  Course completed on {completionDate ?? "—"}
                 </p>
               </div>
 
