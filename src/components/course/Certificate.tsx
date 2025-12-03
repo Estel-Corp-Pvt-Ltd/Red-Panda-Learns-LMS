@@ -47,7 +47,7 @@ const Certificate: React.FC = () => {
           align-items: center !important;
           background: white !important;
         }
-        
+
         body * {
           visibility: hidden;
         }
@@ -165,7 +165,7 @@ const Certificate: React.FC = () => {
           onClick={handleDownloadAsImage}
           disabled={isPrinting}
           variant="outline"
-          className="border-flyred/40 text-flyred hover:bg-flyred/10"
+          className="bg-secondary text-black hover:text-secondary hover:bg-primary"
         >
           <Download className="h-4 w-4 mr-2" />
           {isPrinting ? "Processing..." : "Download PNG"}
@@ -173,36 +173,30 @@ const Certificate: React.FC = () => {
         <Button
           onClick={handlePrint}
           disabled={isPrinting}
-          className="bg-flyred hover:bg-flyred/90 text-white shadow-lg"
+          className="bg-secondary text-black hover:text-secondary hover:bg-primary"
         >
           <Printer className="h-4 w-4 mr-2" />
           {isPrinting ? "Preparing..." : "Print Certificate"}
         </Button>
       </div>
-      <div className="max-w-full overflow-scroll"> {/* Allow horizontal scroll for smaller screens */}
+      <div className="max-w-full overflow-scroll lg:overflow-visible"> {/* Allow horizontal scroll for smaller screens */}
         {/* Certificate Container - Exact Fixed Size */}
         <div className="relative w-[760px] h-[540px] bg-white shadow-xl border border-gray-300 overflow-hidden certificate-container print:shadow-none">
           {/* Decorative border */}
           <div className="absolute inset-4 border-2 border-gray-100 pointer-events-none" />
 
           {/* Left ribbon */}
-          <div className="absolute left-10 top-0 w-32 bg-gradient-to-b from-gray-100 to-gray-50 flex flex-col items-center pt-10 z-20">
-            <div className="text-[10px] tracking-[0.2em] text-gray-500 mb-4 text-center">
+          <div className="absolute left-10 top-0 w-40 bg-gray-100 flex flex-col items-center pt-10 z-20">
+            <div className="text-[14px] font-bold tracking-[0.2em] text-gray-500 mb-4 text-center">
               VERIFIED<br />CERTIFICATE
             </div>
 
-            <div className="w-24 h-24 flex items-center justify-center">
+            <div className="w-40 h-32 flex items-center justify-center">
               <div className="flex flex-col items-center text-center">
-                <img src="/logo.png" alt="Vizuara Logo" className="w-12 h-12 mb-2" />
-                <div className="text-[9px] font-semibold tracking-wide text-pink-600 mb-1">
-                  VIZUARA
-                </div>
-                <div className="flex justify-center items-center text-[8px] font-semibold text-white bg-purple-600 px-2 py-1 rounded-full">
-                  AI LABS
-                </div>
+                <img src="/certificate-logo.png" alt="Vizuara Logo" className="mb-2 w-[90%]" />
               </div>
             </div>
-            <div className="absolute -bottom-10 w-20 h-20 bg-gray-50 transform rotate-45 -z-10 scale-110" />
+            <div className="absolute -bottom-10 w-20 h-20 bg-gray-100 transform rotate-45 -z-10 scale-110" />
           </div>
 
           {/* Main body */}
@@ -214,15 +208,15 @@ const Certificate: React.FC = () => {
                   Vizuara AI Labs
                 </h1>
 
-                <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.22em] text-gray-500">
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.22em] text-gray-800">
                   Congratulations on completing
                 </p>
 
-                <h2 className="mt-3 text-4xl font-semibold text-gray-900 leading-tight w-96">
+                <h2 className="text-4xl font-semibold text-gray-900 leading-tight w-96">
                   {enrollmentData.courseName}
                 </h2>
 
-                <p className="mt-3 text-xs text-gray-500 max-w-72">
+                <p className="mt-3 text-xs font-bold text-gray-500 max-w-72">
                   Successfully completed the course, assignments and
                   received passing grade.
                 </p>
@@ -235,7 +229,7 @@ const Certificate: React.FC = () => {
                 <p className="text-lg font-medium text-gray-800">
                   {enrollmentData.userName}
                 </p>
-                <p className="text-[10px] text-gray-500 mt-1">
+                <p className="text-xs font-medium text-gray-800 mt-1">
                   Course completed on {formatDate(enrollmentData.updatedAt)}
                 </p>
               </div>
@@ -243,48 +237,43 @@ const Certificate: React.FC = () => {
               {/* Signatures */}
               <div className="text-right space-y-4 text-xs text-gray-700">
                 <div>
-                  <p className="h-4 text-[10px] text-gray-400 italic">
+                  <p className="h-4 text-xs font-bold text-gray-400 italic">
                     <img
                       src="/images/signatures/raj-dandekar-signature.png"
                       alt="Signature of Dr. Raj Dandekar"
                       className="h-4 mx-auto"
                     />
                   </p>
-                  <p className="font-medium text-xs">
+                  <p className="font-bold text-xs">
                     Dr. Raj Dandekar (MIT PhD)
                   </p>
                 </div>
                 <div>
-                  <p className="h-4 text-[10px] text-gray-400 italic" >
+                  <p className="h-4 text-xs font-bold text-gray-400 italic" >
                     <img
                       src="/images/signatures/rajat-dandekar-signature.png"
                       alt="Signature of Dr. Rajat Dandekar"
                       className="h-4 mx-auto"
                     />
                   </p>
-                  <p className="font-medium text-xs">
+                  <p className="font-bold text-xs">
                     Dr. Rajat Dandekar (Purdue PhD)
                   </p>
                 </div>
                 <div>
-                  <p className="h-4 text-[10px] text-gray-400 italic">
+                  <p className="h-4 text-xs font-bold text-gray-400 italic">
                     <img
                       src="/images/signatures/shreedath-panat-signature.png"
                       alt="Signature of Dr. Sreedath Panat"
                       className="h-3 mx-auto"
                     />
                   </p>
-                  <p className="font-medium text-xs">
+                  <p className="font-bold text-xs">
                     Dr. Sreedath Panat (MIT PhD)
                   </p>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Certificate ID (for verification) */}
-          <div className="absolute bottom-6 left-14 text-[9px] text-gray-400">
-            Certificate ID: {enrollmentData.id}
           </div>
         </div>
       </div>
