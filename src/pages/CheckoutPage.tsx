@@ -22,7 +22,7 @@ export default function CheckoutPage() {
 
     // Check if the user is already enrolled
     if (isEnrolled(course.id)) {
-      navigate(`/course/${course.url ? course.url : course.id}`);
+      navigate(`/course/${course.slug ? course.slug : course.id}`);
     }
   }, [user, course, isLoading, loading, navigate, isEnrolled]);
 

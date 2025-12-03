@@ -18,7 +18,7 @@ import {
     where,
 } from "firebase/firestore";
 
-import { COLLECTION } from "@/constants";
+import { COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { UserRole, UserStatus } from "@/types/general";
 import { User } from "@/types/user";
@@ -380,6 +380,35 @@ class UserService {
         }
     }
 
+async  getStudentsByIds(ids: string[], chunkSize = 10): Promise<User[]> {
+  if (ids.length === 0) return [];
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    chunks.push(ids.slice(i, i + chunkSize));
+  }
+
+  const results: User[] = [];
+
+  for (const group of chunks) {
+    for (const id of group) {
+      try {
+        const snap = await getDoc(doc(db, COLLECTION.USERS, id));
+        if (snap.exists()) {
+          results.push({ id: snap.id, ...snap.data() } as User);
+        }
+      } catch (err) {
+        console.error("Error fetching student", id, err);
+      }
+    }
+  }
+
+  return results.sort((a, b) =>
+    `${a.firstName} ${a.lastName}`.toLowerCase()
+      .localeCompare(`${b.firstName} ${b.lastName}`.toLowerCase())
+  );
+}
+
     async getUsersByRole(role: string, options: PaginationOptions<User> = {}): Promise<Result<PaginatedResult<User>>> {
         return this.getUsers(
             [
@@ -519,6 +548,40 @@ class UserService {
 
     return results;
   }
+
+
+  
+/**
+ * Gets all staff users (Admin, Teacher, Instructor) without pagination
+ * Useful for dropdowns or selection lists
+ */
+async getNonStudentUsers(): Promise<Result<User[]>> {
+  try {
+    const q = query(
+      collection(db, COLLECTION.USERS),
+      where('role', 'in', [USER_ROLE.ADMIN, USER_ROLE.TEACHER, USER_ROLE.INSTRUCTOR]),
+      orderBy('createdAt', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    const users = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as User;
+    });
+
+    console.log('UserService - Fetched staff users:', users.length);
+    return ok(users);
+  } catch (error) {
+    logError('UserService - Error fetching staff users:', error);
+    return fail("Error fetching staff users");
+  }
+}
   
 }
 

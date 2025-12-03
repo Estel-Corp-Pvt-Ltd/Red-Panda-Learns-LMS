@@ -111,7 +111,7 @@ export const CURRENCY = {
 export const LEARNING_UNIT = {
   ASSIGNMENT: "ASSIGNMENT",
   LESSON: "LESSON",
-  TOPIC: "TOPIC"
+  TOPIC: "TOPIC",
 } as const;
 
 export const ENVIRONMENT = {
@@ -135,7 +135,6 @@ export const ORDER_STATUS = {
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
 } as const;
-
 
 export const PAYMENT_ATTEMPT_STATUS = {
   FAILED: "FAILED",
@@ -167,7 +166,6 @@ export const SORT_KEY = {
   TITLE_ASC: "TITLE_ASC",
   TITLE_DESC: "TITLE_DESC",
 } as const;
-
 
 // --- PAYPAL WEBHOOK EVENTS ---
 
@@ -367,22 +365,22 @@ export const COUPON_STATUS = {
 
 export const COLLECTION = {
   ASSIGNMENTS: "Assignments",
-  ASSIGNMENT_SUBMISSIONS: 'AssignmentSubmissions',
-  COURSES: 'Courses',
-  BUNDLES: 'Bundles',
-  COHORTS: 'Cohorts',
+  ASSIGNMENT_SUBMISSIONS: "AssignmentSubmissions",
+  COURSES: "Courses",
+  BUNDLES: "Bundles",
+  COHORTS: "Cohorts",
   COMMENTS: 'Comments',
   COMMENT_VOTES: 'CommentVotes',
-  USERS: 'Users',
-  CARTS: 'Carts',
-  LESSONS: 'Lessons',
-  LESSON_ATTACHMENTS: 'LessonAttachments',
-  COUPONS: 'Coupons',
-  COUPON_USAGES: 'CouponUsages',
-  ORGANIZATIONS: 'Organizations',
-  CONFIG: 'Config',
-  ATTRIBUTES: 'Attributes',
-  FALLBACK_CURRENCY_RATES: 'FallbackCurrencyRates',
+  USERS: "Users",
+  CARTS: "Carts",
+  LESSONS: "Lessons",
+  LESSON_ATTACHMENTS: "LessonAttachments",
+  COUPONS: "Coupons",
+  COUPON_USAGES: "CouponUsages",
+  ORGANIZATIONS: "Organizations",
+  CONFIG: "Config",
+  ATTRIBUTES: "Attributes",
+  FALLBACK_CURRENCY_RATES: "FallbackCurrencyRates",
   POPUPS: "PopUps",
   ORDERS: "Orders",
   TRANSACTIONS: "Transactions",
@@ -393,6 +391,8 @@ export const COLLECTION = {
   COURSE_ARRANGEMENTS: "CourseArrangements",
   QUIZZES: "Quizzes",
   QUIZ_SUBMISSIONS: "QuizSubmissions",
+  ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
+  SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions"
 } as const;
@@ -426,6 +426,15 @@ export const FALLBACK_CURRENCY_RATE: Record<string, number> = {
   EUR_USD: 1.09,
 };
 
+export const NOTIFICATION_STATUS = {
+  PENDING: "PENDING", // record created but no email sent yet
+  REMINDER_SCHEDULED: "REMINDER SCHEDULED", // reminder task created, waiting to run
+  PAUSED: "PAUSED", // admin paused reminders for this submission
+  EVALUATED: "EVALUATED", // assignment evaluated; no more notifications
+  ARCHIVED: "ARCHIVED", // stored for history; no active actions
+  ERROR: "ERROR", // notification attempt failed; needs retry check
+} as const;
+
 export const CART_ACTION = {
   ADD: "ADD",
   REMOVE: "REMOVE",
@@ -447,12 +456,12 @@ export const QUIZ_QUESTION_TYPE = {
 export const QUIZ_SUBMISSION_STATUS = {
   IN_PROGRESS: "IN PROGRESS",
   SUBMITTED: "SUBMITTED",
-  NOT_SUBMITTED: "NOT SUBMITTED"
+  NOT_SUBMITTED: "NOT SUBMITTED",
 } as const;
 
 export const QUIZ_STATUS = {
   DRAFT: "DRAFT",
-  PUBLISHED: "PUBLISHED"
+  PUBLISHED: "PUBLISHED",
 };
 
 // --- COMPLAINT ---
