@@ -36,7 +36,7 @@ import { authService } from "./authService";
 
 class EnrollmentService {
 
-  private readonly backendUrl  = import.meta.env.VITE_BACKEND_URL;
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
   /**
    * Generates a unique enrollment ID in the format: <targetId>_<userId>
    */
@@ -114,6 +114,20 @@ class EnrollmentService {
     } catch (error) {
       logError("EnrollmentService.enrollUser", error);
       return fail("Enrollment failed", error.message);
+    }
+  }
+
+  async getEnrollmentById(enrollmentId: string): Promise<Result<Enrollment>> {
+    try {
+      const enrollmentDoc = await getDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId));
+      if (!enrollmentDoc.exists()) {
+        return fail("Enrollment not found");
+      }
+      const data = enrollmentDoc.data() as Enrollment;
+      return ok(data);
+    } catch (error: any) {
+      logError("EnrollmentService.getEnrollmentById", error);
+      return fail("Failed to fetch enrollment by ID.", error.code || error.message);
     }
   }
 
