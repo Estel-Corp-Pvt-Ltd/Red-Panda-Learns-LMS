@@ -3,6 +3,7 @@ export const USER_ROLE = {
   TEACHER: "TEACHER",
   INSTRUCTOR: "INSTRUCTOR",
   ADMIN: "ADMIN",
+  ACCOUNTANT:"ACCOUNTANT",
 } as const;
 
 export const LEARNING_CONTENT = {

@@ -71,7 +71,11 @@ export default function Login() {
         const { user, userCredential } = response.data;
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
-        } else if (userCredential.user.emailVerified == true) {
+        } 
+         else if(user?.role === USER_ROLE.ACCOUNTANT){
+        navigate("/accountant",{replace:true})
+      }
+      else if (userCredential.user.emailVerified == true) {
           navigate(from || "/dashboard", { replace: true });
         } else {
           setUserCredential(userCredential);
@@ -100,7 +104,11 @@ export default function Login() {
       toast({ title: "Welcome!", description: "You signed in with Google." });
       if (user?.role === USER_ROLE.ADMIN) {
         navigate("/admin", { replace: true });
-      } else {
+      }
+      else if(user?.role === USER_ROLE.ACCOUNTANT){
+        navigate("/accountant",{replace:true})
+      }
+      else {
         navigate("/dashboard", { replace: true });
       }
     } catch (err: any) {
