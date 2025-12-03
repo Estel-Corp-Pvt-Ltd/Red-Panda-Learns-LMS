@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { WhereFilterOp } from 'firebase/firestore';
 
 const AdminCommentApproval: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -25,9 +26,13 @@ const AdminCommentApproval: React.FC = () => {
     setSelectedComments(new Set());
 
     try {
-      const filters = [
-        { field: 'status', op: '==', value: selectedTab.toUpperCase() as Comment['status'] }
-      ];
+      const filters: {
+        field: keyof Comment;
+        op: WhereFilterOp;
+        value: any;
+      }[] = [
+          { field: 'status', op: '==', value: selectedTab.toUpperCase() as Comment['status'] }
+        ];
 
       const result = await commentService.getComments(filters, {
         limit: 50,
