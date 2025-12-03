@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
 import { Lesson, LessonAttachment } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import { CheckCircle, FileText, Loader2, Maximize2, Minimize2, Video, Download } from "lucide-react";
+import { CheckCircle, Download, FileText, Loader2, Maximize2, Minimize2, Video } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
@@ -16,7 +16,7 @@ interface LessonViewProps {
   lessonId: string;
   onComplete: () => void;
   completed: boolean;
-}
+};
 
 export function LessonView({ lessonId, onComplete, completed }: LessonViewProps) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -93,23 +93,6 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       console.error('Fullscreen error:', error);
     }
   }, []);
-
-  const handleMarkComplete = async () => {
-    try {
-      await onComplete();
-      toast({
-        title: "Success",
-        description: "Lesson marked as completed!",
-      });
-    } catch (error) {
-      console.error('Error marking lesson complete:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark lesson as complete",
-        variant: "destructive",
-      });
-    }
-  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -287,7 +270,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
               <CheckCircle className="h-4 w-4 mr-2" /> Completed
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={handleMarkComplete}>
+            <Button variant="outline" size="sm" onClick={onComplete}>
               <CheckCircle className="h-4 w-4 mr-2" /> Mark Complete
             </Button>
           )}

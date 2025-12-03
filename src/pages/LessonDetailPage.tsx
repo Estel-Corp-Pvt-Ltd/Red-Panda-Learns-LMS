@@ -34,7 +34,7 @@ export default function LessonDetailPage() {
     error: courseError,
   } = useCourseQuery(param!);
 
- const [userProgress, setUserProgress] = useState<LearningProgress | null>(null);
+  const [userProgress, setUserProgress] = useState<LearningProgress | null>(null);
   useEffect(() => {
     if (!param || courseLoading || !course) return;
     setCourseId(course.id);
@@ -120,50 +120,58 @@ export default function LessonDetailPage() {
     }
   };
 
-const fetchUserProgress = async (userId: string, courseId: string) => {
-  const result = await learningProgressService.getUserCourseProgress(userId, courseId);
-  if (result.success) {
-    // assuming 0 or 1 doc per (user, course)
-    setUserProgress(result.data[0] ?? null);
-  } else {
-    console.error("Failed to fetch progress:", result.error);
-  }
-};
+  const fetchUserProgress = async (userId: string, courseId: string) => {
+    const result = await learningProgressService.getUserCourseProgress(userId, courseId);
+    if (result.success) {
+      // assuming 0 or 1 doc per (user, course)
+      setUserProgress(result.data[0] ?? null);
+    } else {
+      console.error("Failed to fetch progress:", result.error);
+    }
+  };
 
-useEffect(() => {
-  if (user?.id && courseId) {
-    fetchUserProgress(user.id, courseId);
-  }
-}, [user?.id, courseId]);
+  useEffect(() => {
+    if (user?.id && courseId) {
+      fetchUserProgress(user.id, courseId);
+    }
+  }, [user?.id, courseId]);
 
-// Make sure selectedItem might be null:
-const lessonCompleted =
-  !!selectedItem &&
-  !!userProgress &&
-  userProgress.lessonHistory.includes(selectedItem.id);
+  // Make sure selectedItem might be null:
+  const [lessonCompleted, setLessonCompleted] = useState(false);
 
-const handleMarkComplete = async () => {
-  if (!user || !courseId || !selectedItem) return;
+  useEffect(() => {
+    if (!selectedItem || !userProgress) {
+      setLessonCompleted(false);
+      return;
+    }
 
-  const result = await learningProgressService.completeLesson(
-    user.id,
-    courseId,
-    selectedItem.id
-  );
+    setLessonCompleted(
+      userProgress.lessonHistory.includes(selectedItem.id)
+    );
+  }, [selectedItem?.id, userProgress?.lessonHistory]);
 
-  if (result.success) {
-    setUserProgress(prev =>
-      prev
-        ? { ...prev, lessonHistory: [...prev.lessonHistory, selectedItem.id] }
-        : prev
+  const handleMarkComplete = async () => {
+    if (!user || !courseId || !selectedItem) return;
+
+    const result = await learningProgressService.completeLesson(
+      user.id,
+      courseId,
+      selectedItem.id
     );
 
-    toast({
-      title: "Success",
-      description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} marked as completed!`,
-    });
-  }
-};
+    if (result.success) {
+      setUserProgress(prev =>
+        prev
+          ? { ...prev, lessonHistory: [...prev.lessonHistory, selectedItem.id] }
+          : prev
+      );
+
+      toast({
+        title: "Success",
+        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} marked as completed!`,
+      });
+    }
+  };
   // Loading State
   if (courseLoading) {
     return (
@@ -274,12 +282,12 @@ const handleMarkComplete = async () => {
         {/* Fixed Sidebar */}
         <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm">
           <div className="flex-1 overflow-y-auto p-4">
-       <CourseNavigator
-  course={course}
-  currentLesson={selectedItem}
-  lessonHistory={userProgress?.lessonHistory ?? []}  // <= important
-  onLessonClick={handleItemSelect}
-/>
+            <CourseNavigator
+              course={course}
+              currentLesson={selectedItem}
+              lessonHistory={userProgress?.lessonHistory ?? []}  // <= important
+              onLessonClick={handleItemSelect}
+            />
           </div>
         </aside>
 
