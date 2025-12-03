@@ -103,7 +103,7 @@ const AIForAllAnimation = () => {
       color: brandBlue,
       gradient: "from-[#29abe2] to-[#0088cc]",
       description: "Specialized AI training for graduates",
-      stats: "2K+ Learners",
+      stats: "160K+ Learners",
       cta: "Discover More",
     },
     {
