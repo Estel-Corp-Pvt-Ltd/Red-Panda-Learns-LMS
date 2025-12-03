@@ -103,9 +103,9 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Continue
                 </Button>
-                {!isProgressLoading && learningProgress?.lessonHistory.length > 0 && 0.6 * totalLessons <= learningProgress.lessonHistory.length && (
+                {!isProgressLoading && learningProgress?.lessonHistory.length > 0 && 0.9 * totalLessons <= learningProgress.lessonHistory.length && (
                   <Link to={`/certificate/${user.id}_${course.id}/`}>
-                    <Button size="sm" onClick={handleContinueLearning}>
+                    <Button size="sm">
                       <Download className="h-4 w-4 mr-2" /> Certificate
                     </Button>
                   </Link>
