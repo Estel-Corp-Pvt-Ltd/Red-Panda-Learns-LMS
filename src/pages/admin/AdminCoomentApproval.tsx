@@ -9,8 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { formatDate } from '@/utils/date-time';
-import { Link } from 'react-router-dom';
 
 const AdminCommentApproval: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -27,9 +25,11 @@ const AdminCommentApproval: React.FC = () => {
     setSelectedComments(new Set());
 
     try {
-      const result = await commentService.getComments([
+      const filters = [
         { field: 'status', op: '==', value: selectedTab.toUpperCase() as Comment['status'] }
-      ], {
+      ];
+
+      const result = await commentService.getComments(filters, {
         limit: 50,
         orderBy: { field: 'createdAt', direction: 'desc' }
       });
@@ -158,6 +158,15 @@ const AdminCommentApproval: React.FC = () => {
     };
     loadStats();
   }, [comments]);
+
+  // Format date
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  };
 
   if (loading && comments.length === 0) {
     return (
@@ -316,16 +325,11 @@ const AdminCommentApproval: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {formatDate(comment.createdAt)}
+                          {/* {formatDate(new Date(comment.createdAt))} */}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2 items-center">
-                          <Link to={`/courses/${comment.courseId}/lesson/${comment.lessonId}`}>
-                            <Button size="sm" variant="ghost" className="h-8 px-2">
-                              View Lesson
-                            </Button>
-                          </Link>
+                        <div className="flex gap-2">
                           {selectedTab === 'pending' && (
                             <Button
                               size="sm"
