@@ -59,7 +59,7 @@ const AIForAllAnimation = () => {
       color: brandOrange,
       gradient: "from-[#fbb03b] to-[#ff9500]",
       description: "Empowering K-12 education with AI tools",
-      stats: "500+ Schools",
+      stats: "70+ Schools",
       cta: "Explore Programs",
     },
     {
@@ -70,7 +70,7 @@ const AIForAllAnimation = () => {
       color: brandBlue,
       gradient: "from-[#29abe2] to-[#0088cc]",
       description: "Advanced AI curriculum for higher education",
-      stats: "200+ Universities",
+      stats: "5+ Universities",
       cta: "View Courses",
     },
     {
@@ -81,7 +81,7 @@ const AIForAllAnimation = () => {
       color: brandMagenta,
       gradient: "from-[#ff00ff] to-[#cc00cc]",
       description: "Upskilling professionals in AI technologies",
-      stats: "10K+ Professionals",
+      stats: "500+ Professionals",
       cta: "Join Network",
     },
     {
@@ -103,7 +103,7 @@ const AIForAllAnimation = () => {
       color: brandBlue,
       gradient: "from-[#29abe2] to-[#0088cc]",
       description: "Specialized AI training for graduates",
-      stats: "15K+ Learners",
+      stats: "160K+ Learners",
       cta: "Discover More",
     },
     {
@@ -114,7 +114,7 @@ const AIForAllAnimation = () => {
       color: brandMagenta,
       gradient: "from-[#ff00ff] to-[#cc00cc]",
       description: "Enterprise AI solutions and consulting",
-      stats: "300+ Companies",
+      stats: "10+ Companies",
       cta: "Partner With Us",
     },
   ];
