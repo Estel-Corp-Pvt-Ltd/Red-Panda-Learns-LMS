@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Course } from '@/types/course';
 import { getCourseStructureCounts } from '@/utils/course';
-import { parseDuration } from '@/utils/date-time';
 import { BookOpen, Clock, IndianRupee, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../ui/badge';
@@ -100,7 +99,7 @@ const CourseListView = ({
                       size="sm"
                       onClick={() =>
                         navigate(
-                          `/course/${course.url ? course.url : course.id}`
+                          `/course/${course.slug ? course.slug : course.id}`
                         )
                       }
                     >
@@ -111,7 +110,7 @@ const CourseListView = ({
                         size="sm"
                         onClick={() =>
                           navigate(
-                            `/checkout/${course.url ? course.url : course.id}`
+                            `/checkout/${course.slug ? course.slug : course.id}`
                           )
                         }
                       >
@@ -122,7 +121,7 @@ const CourseListView = ({
                         size="sm"
                         onClick={() =>
                           navigate(
-                            `/course/${course.url ? course.url : course.id}`
+                            `/course/${course.slug ? course.slug : course.id}`
                           )
                         }
                       >
