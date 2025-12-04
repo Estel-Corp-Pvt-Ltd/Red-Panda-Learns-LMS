@@ -23,7 +23,7 @@ class AnnouncementService {
                 enrolledCourseIds = enrollmentResult.data.map((enrollment) => enrollment.courseId);
             }
             
-            const announcementsRef = collection(db, COLLECTION.ANNOUNCEMENT);
+            const announcementsRef = collection(db, COLLECTION.ANNOUNCEMENTS);
 
             // Fetch both in parallel
             const [globalAnnouncements, courseAnnouncements] = await Promise.all([

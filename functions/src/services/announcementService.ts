@@ -53,7 +53,7 @@ const annoucementService = {
       // Generate deterministic ID
       const announcementId = `C_${courseId}_${assignmentId}`;
 
-      const docRef = db.collection(COLLECTION.ANNOUNCEMENT).doc(announcementId);
+      const docRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
 
       // Check if document already exists — idempotent
       const existing = await docRef.get();
@@ -89,7 +89,7 @@ const annoucementService = {
    */
   async getAnnouncementById(announcementId: string): Promise<Result<Announcement>> {
     try {
-      const docRef = db.collection(COLLECTION.ANNOUNCEMENT).doc(announcementId);
+      const docRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
       const doc = await docRef.get();
       if (!doc.exists) {
         return fail('Announcement not found');
@@ -109,7 +109,7 @@ const annoucementService = {
   async listAnnouncementsByCourse(courseId: string): Promise<Result<Announcement[]>> {
     try {
       const snapshot = await db
-        .collection(COLLECTION.ANNOUNCEMENT)
+        .collection(COLLECTION.ANNOUNCEMENTS)
         .where('courseId', '==', courseId)
         .get();
 
