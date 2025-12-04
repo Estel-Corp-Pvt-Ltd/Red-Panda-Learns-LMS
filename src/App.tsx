@@ -42,12 +42,19 @@ const AdminAssignStudents = lazy(() => import("./pages/admin/AdminAssignStudents
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
-const AdminManageAssignments = lazy(()=> import("@/pages/admin/AdminAssignAuthor"))
+const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAuthor"))
 
 //Instructor
 
 import InstructorLayout from "./components/InstructorLayout";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+
+
+//Accountant
+import AccountantLayout from "./components/accountantLayout";
+import AccountantOrders from "./pages/accountant/AccountantOrdersTab";
+import AccountantDashboard from "./pages/accountant/accountantDashboard";
+
 // user pages
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
 import BundleDashboardPage from "./pages/BundleDashboardPage";
@@ -80,7 +87,8 @@ import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import ArrangeCourses from "./pages/admin/ArrangeCourses";
 import Quizzes from "./pages/Quizzes";
 import AttemptQuiz from "./pages/AttemptQuiz";
-import AdminCommentApproval from "./pages/admin/AdminComentApproval";
+import AdminCommentApproval from "./pages/admin/AdminCommentApproval";
+import Certificate from "./components/course/Certificate";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -109,6 +117,10 @@ const App = () => (
                       <Route
                         path="/courses/:param"
                         element={<CourseDetailPage />}
+                      />
+                      <Route
+                        path="/certificate/:enrollmentId"
+                        element={<Certificate />}
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
@@ -207,7 +219,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                          <Route
+                      <Route
                         path="/admin/assign-students"
                         element={
                           <AuthGuard requireAdmin>
@@ -231,6 +243,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                    
                       <Route
                         path="/admin/orders"
                         element={
@@ -412,7 +425,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                         <Route
+                      <Route
                         path="/admin/manage-assignment-authors"
                         element={
                           <AuthGuard requireAdmin>
@@ -485,6 +498,25 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+
+                         {/* <Route
+                        path="/accountant/orders"
+                        element={
+                          <AuthGuard requireAccountant >
+                            <AccountantOrders />
+                          </AuthGuard>
+                        }
+                      /> */}
+
+                         <Route
+                        path="/accountant"
+                        element={
+                          <AuthGuard requireAccountant >
+                            <AccountantOrders />
+                          </AuthGuard>
+                        }
+                      />
+
                       <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />

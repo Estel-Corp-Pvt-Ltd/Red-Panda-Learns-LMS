@@ -9,14 +9,14 @@ import { formatDateTime } from '@/utils/date-time';
 interface CommentsProps {
   lessonId: string;
   courseId: string;
-}
+};
 
 interface CommentWithReplies extends Comment {
   replies?: CommentWithReplies[];
   showReplies?: boolean;
   loadingReplies?: boolean;
   isUpvoted?: boolean;
-}
+};
 
 // Simple reply form component
 const ReplyForm: React.FC<{
