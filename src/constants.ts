@@ -409,7 +409,7 @@ export const COLLECTION = {
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions",
-  ANNOUNCEMENTS: "Annoucements"
+  ANNOUNCEMENTS: "Announcements"
  
 } as const;
 
