@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Bell, Megaphone, BookOpen, Loader2 } from "lucide-react";
+import { X, Bell, Megaphone, BookOpen, Loader2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { announcementService } from "@/services/announcementService";
 import { Announcement } from "@/types/announcements";
@@ -188,47 +188,60 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-100 dark:divide-white/5">
-                            {announcements.map((announcement) => (
-                                <div
-                                    key={announcement.id}
-                                    className="px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                                >
-                                    <div className="flex gap-3">
-                                        {/* Icon */}
-                                        <div className="flex-shrink-0 mt-1">
-                                            <div className="p-2 bg-gray-100 dark:bg-white/10 rounded-full">
-                                                {getAnnouncementIcon(announcement)}
-                                            </div>
-                                        </div>
+                        {announcements.map((announcement) => (
+    <div
+        key={announcement.id}
+        className="px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+    >
+        <div className="flex gap-3">
+            {/* Icon */}
+            <div className="flex-shrink-0 mt-1">
+                <div className="p-2 bg-gray-100 dark:bg-white/10 rounded-full">
+                    {getAnnouncementIcon(announcement)}
+                </div>
+            </div>
 
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2">
-                                                    {announcement.title}
-                                                </h3>
-                                                <span className="flex-shrink-0 text-xs text-gray-400 dark:text-gray-500">
-                                                    {formatDate(announcement.updatedAt)}
-                                                </span>
-                                            </div>
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2">
+                        {announcement.title}
+                    </h3>
+                    <span className="flex-shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                        {formatDate(announcement.updatedAt)}
+                    </span>
+                </div>
 
-                                            {/* Scope badge */}
-                                            {announcement.scope === ANNOUNCEMENT_SCOPE.COURSE && (
-                                                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
-                                                    <BookOpen className="h-3 w-3" />
-                                                    Course Update
-                                                </span>
-                                            )}
+                {/* Scope badge */}
+                {announcement.scope === ANNOUNCEMENT_SCOPE.COURSE && (
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                        <BookOpen className="h-3 w-3" />
+                        Course Update
+                    </span>
+                )}
 
-                                            {/* Body */}
-                                            <div
-                                                className="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-3 prose prose-sm dark:prose-invert prose-a:text-blue-600 dark:prose-a:text-blue-400"
-                                                dangerouslySetInnerHTML={{ __html: announcement.body }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                {/* Body - Clickable Button Style */}
+              {/* Body - Clickable Button Style */}
+<button
+    className="mt-3 w-full text-left p-3 rounded-lg bg-gray-50 dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-gray-200 dark:border-white/10 hover:border-blue-400 dark:hover:border-blue-500/40 hover:shadow-md transition-all duration-200 group cursor-pointer"
+    onClick={() => {
+        console.log("Clicked:", announcement.id);
+    }}
+>
+    <div
+        className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 prose prose-sm dark:prose-invert"
+        dangerouslySetInnerHTML={{ __html: announcement.body }}
+    />
+    
+    <p className="mt-2 text-[11px] text-blue-500 dark:text-blue-400 flex items-center gap-1">
+        
+        <span className="group-hover:underline">Click here to view  </span>
+    </p>
+</button>
+            </div>
+        </div>
+    </div>
+))}
                         </div>
                     )}
                 </div>

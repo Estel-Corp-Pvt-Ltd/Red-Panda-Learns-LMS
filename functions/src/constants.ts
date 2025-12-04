@@ -409,7 +409,7 @@ export const COLLECTION = {
   QUIZ_SUBMISSIONS: "QuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
-  ANNOUNCEMENT: "Annoucement"
+  ANNOUNCEMENTS: "Annoucements"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
