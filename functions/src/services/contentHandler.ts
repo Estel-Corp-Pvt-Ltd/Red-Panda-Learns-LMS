@@ -42,8 +42,8 @@ export async function handleNewContentItem(params: {
       return fail("Course slug is missing");
     }
 
-    const link = `/course/${course.slug}/${item.id}`;
-    const body = `<a href="${link}" target="_blank">View ${item.type.toLowerCase()}</a>`;
+    const link = `/course/${course.slug}/lesson/${item.id}`;
+    const body = `<a href="${link}">View ${item.type.toLowerCase()}</a>`;
 
     const title =
       item.type === LEARNING_CONTENT.ASSIGNMENT
