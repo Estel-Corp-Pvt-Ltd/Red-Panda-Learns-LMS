@@ -34,6 +34,7 @@ import {
   COMMENT_STATUS,
   ANNOUNCEMENT_SCOPE,
   ANNOUNCEMENT_STATUS,
+  CERTIFICATE_REQUEST_STATUS,
 } from "@/constants";
 
 export type AttributeType =
@@ -93,6 +94,9 @@ export type ComplaintActionType =
   (typeof COMPLAINT_ACTION_TYPE)[keyof typeof COMPLAINT_ACTION_TYPE];
 export type ComplaintCategory =
   (typeof COMPLAINT_CATEGORY)[keyof typeof COMPLAINT_CATEGORY];
+
+// --- CERTIFICATE ---
+export type CertificateRequestStatus = typeof CERTIFICATE_REQUEST_STATUS[keyof typeof CERTIFICATE_REQUEST_STATUS];
 
 export type Duration = {
   hours: number;

@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Book, BookOpen, Building2, ChartBar, ClipboardList, FilePenLine, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
+import { AlarmClockPlus, Award, Book, BookOpen, Building2, ChartBar, ClipboardList, FilePenLine, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -46,7 +46,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: "/admin/submissions",
       icon: <NotepadText className="h-5 w-5" />,
     },
-     {
+    {
       name: "Manage Assignments",
       path: "/admin/manage-assignment-authors",
       icon: <FilePenLine className="h-5 w-5" />,
@@ -67,7 +67,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     {
       name: 'Assign Students',
-      path:'/admin/assign-students',
+      path: '/admin/assign-students',
       icon: <UserPlus className="h-5 w-5" />
     },
     {
@@ -119,6 +119,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Comments",
       path: "/admin/comments",
       icon: <MessageSquareText className="h-5 w-5" />,
+    },
+    {
+      name: "Certificate Requests",
+      path: "/admin/certificate-requests",
+      icon: <Award className="h-5 w-5" />,
     }
   ];
 
