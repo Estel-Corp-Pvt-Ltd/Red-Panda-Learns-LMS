@@ -176,6 +176,17 @@ export const NOTIFICATION_STATUS = {
   ERROR: "ERROR", // notification attempt failed; needs retry check
 } as const;
 
+export const ANNOUNCEMENT_SCOPE = {
+  GLOBAL: "GLOBAL",
+  COURSE: "COURSE",
+} as const;
+
+export const ANNOUNCEMENT_STATUS = {
+  DRAFT: "DRAFT",
+  PUBLISHED: "PUBLISHED",
+  ARCHIVED: "ARCHIVED",
+} as const;
+
 // --- PAYPAL WEBHOOK EVENTS ---
 
 export const PAYPAL_WEBHOOK_EVENT = {
@@ -398,6 +409,7 @@ export const COLLECTION = {
   QUIZ_SUBMISSIONS: "QuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
+  ANNOUNCEMENT: "ANNOUNCEMENT",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
