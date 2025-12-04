@@ -168,6 +168,21 @@ export function Header({
                         <NavigationMenuLink asChild>
                           <a
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                            href="https://rlresearcherbootcamp.vizuara.ai/"
+                          >
+                            <div className="text-sm font-medium leading-none">
+                              Reinforcement Learning Research Bootcamp
+                            </div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Master the fundamentals of Reinforcement Learning
+                            </p>
+                          </a>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <a
+                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
                             href="https://flyvidesh.online/ml-bootcamp"
                           >
                             <div className="text-sm font-medium leading-none">
@@ -447,8 +462,8 @@ export function Header({
                     user?.role === USER_ROLE.ADMIN
                       ? "/admin"
                       : user?.role === USER_ROLE.ACCOUNTANT
-                      ? "/accountant"
-                      : "/dashboard"
+                        ? "/accountant"
+                        : "/dashboard"
                   }
                   className="ml-2"
                 >

@@ -8,14 +8,15 @@ import { formatDateTime } from '@/utils/date-time';
 
 interface CommentsProps {
   lessonId: string;
-}
+  courseId: string;
+};
 
 interface CommentWithReplies extends Comment {
   replies?: CommentWithReplies[];
   showReplies?: boolean;
   loadingReplies?: boolean;
   isUpvoted?: boolean;
-}
+};
 
 // Simple reply form component
 const ReplyForm: React.FC<{
@@ -257,7 +258,7 @@ const CommentThread: React.FC<{
     );
   };
 
-const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
+const Comments: React.FC<CommentsProps> = ({ lessonId, courseId }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -472,6 +473,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
     try {
       const result = await commentService.createComment({
         lessonId,
+        courseId,
         userId: user.id,
         userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || 'Anonymous',
         content: content.trim(),
@@ -510,6 +512,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId }) => {
     try {
       const result = await commentService.createComment({
         lessonId,
+        courseId,
         userId: user.id,
         userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || 'Anonymous',
         content: newComment.trim(),
