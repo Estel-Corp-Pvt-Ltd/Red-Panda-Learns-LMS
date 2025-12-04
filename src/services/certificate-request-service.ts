@@ -6,6 +6,7 @@ import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
+import { CertificateRequestStatus } from "@/types/general";
 
 class CertificateRequestService {
 
@@ -188,6 +189,54 @@ class CertificateRequestService {
             );
             return fail(
                 "Failed to reject certificate request",
+                error.code || error.message
+            );
+        }
+    }
+
+    async getCertificateRequestStatusForCourses(
+        userId: string,
+        courseIds: string[]
+    ): Promise<Result<Record<string, CertificateRequestStatus | null>>> {
+        try {
+            if (courseIds.length === 0) {
+                return ok({});
+            }
+
+            const statusMap: Record<string, CertificateRequestStatus | null> = {};
+
+            courseIds.forEach(courseId => {
+                statusMap[courseId] = null;
+            });
+
+            const BATCH_SIZE = 10;
+
+            for (let i = 0; i < courseIds.length; i += BATCH_SIZE) {
+                const batch = courseIds.slice(i, i + BATCH_SIZE);
+
+                const requestQuery = query(
+                    collection(db, COLLECTION.CERTIFICATE_REQUESTS),
+                    where("userId", "==", userId),
+                    where("courseId", "in", batch)
+                );
+
+                const snapshot = await getDocs(requestQuery);
+
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data() as CertificateRequest;
+                    statusMap[data.courseId] = data.status;
+                });
+            }
+
+            return ok(statusMap);
+
+        } catch (error: any) {
+            logError(
+                "LearningProgressService.getCertificateRequestStatusForCourses",
+                error
+            );
+            return fail(
+                "Failed to fetch certificate request status",
                 error.code || error.message
             );
         }
