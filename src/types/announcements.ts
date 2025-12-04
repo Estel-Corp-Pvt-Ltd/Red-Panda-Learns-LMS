@@ -3,7 +3,7 @@ import { AnnouncementScope, AnnouncementStatus } from "@/types/general";
 
 
 export interface Announcement {
-  id: string;
+    id: string;
   scope: AnnouncementScope;
 
   // required if scope === COURSE
@@ -17,5 +17,6 @@ export interface Announcement {
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 
-  createdBy: string; // admin uid
+  createdBy: string | null;
+
 }

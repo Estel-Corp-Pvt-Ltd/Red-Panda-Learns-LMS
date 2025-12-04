@@ -16,5 +16,6 @@ export interface Announcement {
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 
-  createdBy: string; // admin uid
+  createdBy: string | null;
+
 }
