@@ -168,6 +168,19 @@ export const SORT_KEY = {
   TITLE_DESC: "TITLE_DESC",
 } as const;
 
+export const ANNOUNCEMENT_SCOPE = {
+  GLOBAL: "GLOBAL",
+  COURSE: "COURSE",
+} as const;
+
+export const ANNOUNCEMENT_STATUS = {
+  DRAFT: "DRAFT",
+  PUBLISHED: "PUBLISHED",
+  ARCHIVED: "ARCHIVED",
+} as const;
+
+
+
 // --- PAYPAL WEBHOOK EVENTS ---
 
 export const PAYPAL_WEBHOOK_EVENT = {
@@ -396,6 +409,7 @@ export const COLLECTION = {
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions",
+  ANNOUNCEMENTS: "Announcements",
   CERTIFICATE_REQUESTS: "CertificateRequests"
 } as const;
 

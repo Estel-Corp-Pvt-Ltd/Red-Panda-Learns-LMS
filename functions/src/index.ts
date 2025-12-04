@@ -29,6 +29,7 @@ import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";import
 import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 import { createCouponUsage } from "./handlers/createCouponUsage";
+import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -59,4 +60,5 @@ export {
   pauseReminderForAssignments,
   markSubmissionNotificationsEvaluated,
   createCouponUsage,
+  onCourseUpdated
 };
