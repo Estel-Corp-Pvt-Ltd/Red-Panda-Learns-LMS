@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import AdminLayout from '@/components/AdminLayout';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { commentService } from '@/services/commentService';
 import { Comment } from '@/types/comment';
-import { PaginatedResult } from '@/utils/pagination';
-import AdminLayout from '@/components/AdminLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
+import { formatDate } from '@/utils/date-time';
 import { WhereFilterOp } from 'firebase/firestore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const AdminCommentApproval: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -163,15 +164,6 @@ const AdminCommentApproval: React.FC = () => {
     };
     loadStats();
   }, [comments]);
-
-  // Format date
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(date);
-  };
 
   if (loading && comments.length === 0) {
     return (
@@ -330,11 +322,16 @@ const AdminCommentApproval: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {/* {formatDate(new Date(comment.createdAt))} */}
+                          {formatDate(comment.createdAt)}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
+                          <Link to={`/courses/${comment.courseId}/lesson/${comment.lessonId}`}>
+                            <Button size="sm" variant="ghost" className="h-8 px-2">
+                              View Lesson
+                            </Button>
+                          </Link>
                           {selectedTab === 'pending' && (
                             <Button
                               size="sm"

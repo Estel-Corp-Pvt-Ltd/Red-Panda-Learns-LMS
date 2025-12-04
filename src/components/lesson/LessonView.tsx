@@ -380,9 +380,9 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
               </CardContent>
             </Card>
           </div>
-          <Comments lessonId={lesson.id} />
+          <Comments lessonId={lesson.id} courseId={lesson.courseId} />
         </>
       )}
     </div>
   );
-}
+};
