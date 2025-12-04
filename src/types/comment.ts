@@ -1,9 +1,10 @@
 import { FieldValue } from "firebase/firestore";
 import { CommentType } from "./general";
 
-export type Comment = {
+export interface Comment {
   id: string;
   lessonId: string;
+  courseId: string;
   parentCommentId: string | null;
   userId: string;
   userName: string;
@@ -13,13 +14,12 @@ export type Comment = {
   countReplies: number;
   createdAt: FieldValue;
   updatedAt: FieldValue;
-}
+};
 
-
-export type CommentVotes = {
+export interface CommentVotes {
   id: string;
   commentId: string;
   userId: string;
   lessonId: string;
   createdAt: FieldValue;
-}
+};

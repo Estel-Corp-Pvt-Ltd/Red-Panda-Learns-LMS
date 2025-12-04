@@ -61,6 +61,7 @@ class CommentService {
       const comment: Partial<Comment> = {
         id: commentId,
         lessonId: data.lessonId,
+        courseId: data.courseId,
         parentCommentId: data.parentCommentId || null,
         userId: data.userId,
         userName: data.userName,
@@ -152,6 +153,7 @@ class CommentService {
       const comment: Comment = {
         id: commentDoc.id,
         lessonId: data.lessonId,
+        courseId: data.courseId,
         parentCommentId: data.parentCommentId,
         userId: data.userId,
         userName: data.userName,
@@ -241,6 +243,7 @@ class CommentService {
         return {
           id: doc.id,
           lessonId: data.lessonId,
+          courseId: data.courseId,
           parentCommentId: data.parentCommentId,
           userId: data.userId,
           userName: data.userName,
@@ -349,6 +352,7 @@ class CommentService {
         return {
           id: doc.id,
           lessonId: data.lessonId,
+          courseId: data.courseId,
           parentCommentId: data.parentCommentId,
           userId: data.userId,
           userName: data.userName,
@@ -397,6 +401,7 @@ class CommentService {
         return {
           id: doc.id,
           lessonId: data.lessonId,
+          courseId: data.courseId,
           parentCommentId: data.parentCommentId,
           userId: data.userId,
           userName: data.userName,
