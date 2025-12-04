@@ -1,12 +1,14 @@
 import { CERTIFICATE_REQUEST_STATUS, COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { CertificateRequest } from "@/types/certificate-request";
+import { CertificateRequestStatus } from "@/types/general";
 import { LearningProgress } from "@/types/learning-progress";
 import { logError } from "@/utils/logger";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
-import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, Query, query, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
-import { CertificateRequestStatus } from "@/types/general";
+import { getFullName } from "@/utils/name";
 
 class CertificateRequestService {
 
@@ -28,7 +30,6 @@ class CertificateRequestService {
             }
 
             const progressData = progressSnap.docs[0].data() as LearningProgress;
-
             if (!progressData.completionDate) {
                 return fail("Course not completed yet");
             }
@@ -41,10 +42,29 @@ class CertificateRequestService {
             );
 
             const existingSnap = await getDocs(existingQuery);
-
             if (!existingSnap.empty) {
                 return fail("Certificate request already pending");
             }
+
+            const userRef = doc(db, COLLECTION.USERS, userId);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                return fail("User not found");
+            }
+
+            const { firstName, middleName, lastName, email: userEmail } = userSnap.data();
+
+            const userName = getFullName(firstName, middleName, lastName);
+
+            const courseRef = doc(db, COLLECTION.COURSES, courseId);
+            const courseSnap = await getDoc(courseRef);
+
+            if (!courseSnap.exists()) {
+                return fail("Course not found");
+            }
+
+            const { title: courseName } = courseSnap.data();
 
             const requestRef = doc(collection(db, COLLECTION.CERTIFICATE_REQUESTS));
             const requestId = requestRef.id;
@@ -52,42 +72,90 @@ class CertificateRequestService {
             const request: CertificateRequest = {
                 id: requestId,
                 userId,
+                userName,
+                userEmail,
                 courseId,
+                courseName,
                 status: CERTIFICATE_REQUEST_STATUS.PENDING,
             };
 
             await setDoc(requestRef, request);
-
             return ok({ requestId });
 
         } catch (error: any) {
-            logError("LearningProgressService.requestCertificate", error);
-            return fail(
-                "Failed to request certificate",
-                error.code || error.message
-            );
+            logError("CertificateRequestService.requestCertificate", error);
+            return fail("Failed to request certificate", error.code || error.message);
         }
     }
 
-    async getPendingCertificateRequests(): Promise<Result<CertificateRequest[]>> {
+    async getPendingCertificateRequests(
+        options: PaginationOptions<CertificateRequest> = {}
+    ): Promise<Result<PaginatedResult<CertificateRequest>>> {
         try {
-            const certRequestQuery = query(
+            const {
+                limit: itemsPerPage = 25,
+                pageDirection = "next",
+                cursor = null,
+            } = options;
+
+            let q: Query = query(
                 collection(db, COLLECTION.CERTIFICATE_REQUESTS),
                 where("status", "==", CERTIFICATE_REQUEST_STATUS.PENDING)
             );
 
-            const snapshot = await getDocs(certRequestQuery);
+            const countSnapshot = await getCountFromServer(q);
+            const totalCount = countSnapshot.data().count;
 
-            if (snapshot.empty) {
-                return ok([]);
+            if (pageDirection === "previous" && cursor) {
+                q = query(
+                    q,
+                    endBefore(cursor),
+                    limitToLast(itemsPerPage)
+                );
+            } else if (cursor) {
+                q = query(
+                    q,
+                    startAfter(cursor),
+                    limit(itemsPerPage)
+                );
+            } else {
+                q = query(
+                    q,
+                    limit(itemsPerPage)
+                );
             }
 
-            const requests: CertificateRequest[] = snapshot.docs.map(doc => ({
+            const snapshot = await getDocs(q);
+            const documents = snapshot.docs;
+
+            if (pageDirection === "previous") {
+                documents.reverse();
+            }
+
+            const requests: CertificateRequest[] = documents.map((doc) => ({
                 id: doc.id,
-                ...(doc.data() as CertificateRequest),
+                ...(doc.data() as Omit<CertificateRequest, "id">),
             }));
 
-            return ok(requests);
+            const hasNextPage = snapshot.docs.length === itemsPerPage;
+            const hasPreviousPage = cursor !== null;
+
+            const nextCursor = hasNextPage
+                ? snapshot.docs[snapshot.docs.length - 1]
+                : null;
+
+            const previousCursor = hasPreviousPage
+                ? snapshot.docs[0]
+                : null;
+
+            return ok({
+                data: requests,
+                hasNextPage,
+                hasPreviousPage,
+                nextCursor,
+                previousCursor,
+                totalCount,
+            });
 
         } catch (error: any) {
             logError(
