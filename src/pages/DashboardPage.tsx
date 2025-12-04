@@ -4,19 +4,30 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { LEARNING_UNIT } from '@/constants';
+import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useCourseQuery } from '@/hooks/useCaching';
+import { certificateRequestService } from '@/services/certificate-request-service';
 import { enrollmentService } from '@/services/enrollmentService';
 import { learningProgressService } from '@/services/learningProgressService';
 import { Enrollment } from '@/types/enrollment';
+import { CertificateRequestStatus } from '@/types/general';
 import { formatDate } from '@/utils/date-time';
 import { BookOpen, CheckCircle, Clock, Eye, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
+function EnrolledCourseCard({
+  enrollment,
+  certificateStatus,
+  fetchEnrollmentsAndCertificateRequestStatuses
+}: {
+  enrollment: Enrollment;
+  certificateStatus: CertificateRequestStatus | null;
+  fetchEnrollmentsAndCertificateRequestStatuses: () => void;
+}) {
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
@@ -49,7 +60,6 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
 
         toast({
           title: "Course completed 🎉",
-          description: "Your certificate is now available.",
         });
       } else {
         toast({
@@ -71,25 +81,20 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
 
   useEffect(() => {
     const fetchLearningProgress = async () => {
-      try {
-        setIsProgressLoading(true);
-        const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
-        if (result.success && result.data[0]) {
-          const progress = result.data[0];
+      setIsProgressLoading(true);
+      const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
+      if (result.success && result.data[0]) {
+        const progress = result.data[0];
 
-          const eligible =
-            totalLessons > 0 &&
-            progress.lessonHistory.length >= Math.ceil(0.9 * totalLessons);
+        const eligible =
+          totalLessons > 0 &&
+          progress.lessonHistory.length >= Math.ceil(0.9 * totalLessons);
 
-          setIsEligibleForCertificate(eligible);
+        setIsEligibleForCertificate(eligible);
 
-          setIsCompleted(!!progress.completionDate);
-        }
-      } catch (error) {
-        setIsProgressLoading(false);
-      } finally {
-        setIsProgressLoading(false);
+        setIsCompleted(!!progress.completionDate);
       }
+      setIsProgressLoading(false);
     };
 
     fetchLearningProgress();
@@ -166,12 +171,57 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
                 )}
 
                 {!isProgressLoading && isCompleted && (
-                  <Link to={`/certificate/${user.id}_${course.id}/`}>
-                    <Button size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Certificate
-                    </Button>
-                  </Link>
+                  <>
+                    {certificateStatus === null && (
+                      <Badge variant="secondary" className="text-xs">
+                        Certificate available on request
+                      </Badge>
+                    )}
+
+                    {certificateStatus === null && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const res = await certificateRequestService.requestCertificate(
+                            enrollment.userId,
+                            enrollment.courseId
+                          );
+
+                          if (res.success) {
+                            toast({
+                              title: "Certificate requested",
+                              description: "Pending approval",
+                            });
+                            fetchEnrollmentsAndCertificateRequestStatuses();
+                          } else {
+                            toast({
+                              title: "Certificate request failed",
+                              description: "Try again later",
+                            });
+                          }
+                        }}
+                      >
+                        Request Certificate
+                      </Button>
+                    )}
+
+                    {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING && (
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Certificate request pending
+                      </Badge>
+                    )}
+
+                    {certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED && (
+                      <Link to={`/certificate/${user.id}_${course.id}/`}>
+                        <Button size="sm">
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Certificate
+                        </Button>
+                      </Link>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -183,25 +233,40 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
 };
 
 export default function DashboardPage() {
+
   const { user } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [certificateStatusMap, setCertificateStatusMap] = useState<Record<string, CertificateRequestStatus | null>>({});
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkAdminAndFetchEnrollments = async () => {
-      if (!user || !user.email) return;
-      const result = await enrollmentService.getUserEnrollments(user.id);
-      if (result.success) {
-        setEnrollments(result.data);
-      } else {
-        setEnrollments([]);
-      }
-      setIsLoading(false);
-    };
+  const fetchEnrollmentsAndCertificateRequestStatuses = async () => {
+    if (!user || !user.email) return;
+    setIsLoading(true);
 
-    checkAdminAndFetchEnrollments();
+    const result = await enrollmentService.getUserEnrollments(user.id);
+    if (result.success) {
+      setEnrollments(result.data);
+
+      const courseIds = result.data.map(e => e.courseId);
+
+      const certificateStatusResult = await certificateRequestService.getCertificateRequestStatusForCourses(
+        user.id,
+        courseIds
+      );
+
+      if (certificateStatusResult.success) {
+        setCertificateStatusMap(certificateStatusResult.data);
+      }
+    } else {
+      setEnrollments([]);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEnrollmentsAndCertificateRequestStatuses();
   }, [user, navigate]);
 
   const stats = {
@@ -285,7 +350,12 @@ export default function DashboardPage() {
             ) : enrollments.length > 0 ? (
               <div className="grid gap-6">
                 {enrollments.map((enrollment) => (
-                  <EnrolledCourseCard key={enrollment.id} enrollment={enrollment} />
+                  <EnrolledCourseCard
+                    key={enrollment.id}
+                    enrollment={enrollment}
+                    certificateStatus={certificateStatusMap[enrollment.courseId] ?? null}
+                    fetchEnrollmentsAndCertificateRequestStatuses={fetchEnrollmentsAndCertificateRequestStatuses}
+                  />
                 ))}
               </div>
             ) : (
