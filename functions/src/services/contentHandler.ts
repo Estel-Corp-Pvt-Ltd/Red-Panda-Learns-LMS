@@ -42,7 +42,7 @@ export async function handleNewContentItem(params: {
       return fail("Course slug is missing");
     }
 
-    const link = `/course/${course.slug}/lesson/${item.id}`;
+    const link = `/courses/${course.slug}/lesson/${item.id}`;
     const body = `<a href="${link}">View ${item.type.toLowerCase()}</a>`;
 
     const title =
