@@ -48,6 +48,13 @@ const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAutho
 
 import InstructorLayout from "./components/InstructorLayout";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+
+
+//Accountant
+import AccountantLayout from "./components/accountantLayout";
+import AccountantOrders from "./pages/accountant/AccountantOrdersTab";
+import AccountantDashboard from "./pages/accountant/accountantDashboard";
+
 // user pages
 import BundleCheckoutPage from "./pages/BundleCheckoutPage";
 import BundleDashboardPage from "./pages/BundleDashboardPage";
@@ -236,6 +243,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+                    
                       <Route
                         path="/admin/orders"
                         element={
@@ -490,6 +498,25 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+
+                         {/* <Route
+                        path="/accountant/orders"
+                        element={
+                          <AuthGuard requireAccountant >
+                            <AccountantOrders />
+                          </AuthGuard>
+                        }
+                      /> */}
+
+                         <Route
+                        path="/accountant"
+                        element={
+                          <AuthGuard requireAccountant >
+                            <AccountantOrders />
+                          </AuthGuard>
+                        }
+                      />
+
                       <Route path="/free-courses" element={<FreeCourses />} />
                       <Route path="/invoices" element={<MyInvoicesPage />} />
                       <Route path="/terms" element={<TermsPage />} />

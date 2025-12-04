@@ -14,6 +14,7 @@ interface AuthGuardProps {
   requireEnrollment?: boolean;
   requireAdmin?: boolean;
   requireInstructor?:boolean;
+  requireAccountant?:boolean;
   requireEnrollmentOrAdmin?: boolean;
   message?: string;
 };
@@ -25,6 +26,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireEnrollment = false,
   requireAdmin = false,
   requireInstructor = false,
+  requireAccountant =false,
   requireEnrollmentOrAdmin = false,
   message = 'Please login to access this page',
 }) => {
@@ -36,6 +38,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const [enrollmentChecked, setEnrollmentChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isInstructor,setIsInstructor] = useState<boolean | null>(null);
+  const [isAccountant, setIsAccountant] = useState<boolean | null>(null);
   const courseId = params.courseId;
 
   // Check admin role if required
@@ -77,6 +80,25 @@ useEffect(()=>{
 },[requireInstructor,user]);
 
 
+useEffect(() => {
+  const checkAccountantRole = async () => {
+    if (requireAccountant && user) {
+      try {
+        const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
+        const data = docSnap.data();
+        setIsAccountant(data.role === USER_ROLE.ACCOUNTANT);
+      } catch {
+        setIsAccountant(false);
+      }
+    } else {
+      setIsAccountant(false);
+    }
+  };
+
+  checkAccountantRole();
+}, [requireAccountant, user]);
+
+
   // Refresh enrollments if needed
   useEffect(() => {
     if (requireEnrollment && user && courseId && !enrollmentChecked) {
@@ -97,7 +119,8 @@ useEffect(()=>{
     (requireEnrollment && enrollmentLoading) ||
     (requireEnrollment && user && courseId && !enrollmentChecked) ||
     (requireAdmin && isAdmin === null) ||
-    (requireInstructor && isInstructor === null)
+    (requireInstructor && isInstructor === null) ||
+    (requireAccountant && isAccountant === null)
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -148,6 +171,20 @@ useEffect(()=>{
     );
   }
 
+
+  // Require Accountant
+if (requireAccountant && !isAccountant) {
+  return (
+    <Navigate
+      to="/dashboard"
+      state={{ from: location, message: 'You must be an Accountant to access this page.' }}
+      replace
+    />
+  );
+}
+
+
+
   // Require enrollment or admin
   if (requireEnrollmentOrAdmin && courseId && user && !userIsEnrolled && !isAdmin) {
     return (
@@ -158,6 +195,9 @@ useEffect(()=>{
       />
     );
   }
+
+
+
 
   // Require enrollment
   if (requireEnrollment && courseId && user && !userIsEnrolled) {

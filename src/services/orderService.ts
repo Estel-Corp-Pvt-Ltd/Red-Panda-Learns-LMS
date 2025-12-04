@@ -25,6 +25,16 @@ import { fail, ok, Result } from "@/utils/response.ts";
 import { WhereFilterOp } from "firebase-admin/firestore";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination.ts";
 
+
+
+export interface DateRange {
+  startDate?: Date;
+  endDate?: Date;
+}
+
+export interface OrderFilterOptions extends PaginationOptions<Order> {
+  dateRange?: DateRange;
+}
 class OrderService {
   async getOrderById(orderId: string): Promise<Order | null> {
     try {
@@ -212,15 +222,39 @@ class OrderService {
     }
   }
 
-  // Additional methods for specific order operations
-  async getOrdersByStatus(status: OrderStatus, options: PaginationOptions<Order> = {}): Promise<Result<PaginatedResult<Order>>> {
-    return this.getOrders(
-      [
-        { field: 'status', op: '==', value: status }
-      ],
-      options
-    );
+
+
+// Update the getOrdersByStatus method
+async getOrdersByStatus(
+  status: OrderStatus, 
+  options: OrderFilterOptions = {}
+): Promise<Result<PaginatedResult<Order>>> {
+  const filters: { field: keyof Order; op: WhereFilterOp; value: any }[] = [
+    { field: 'status', op: '==', value: status }
+  ];
+
+  // Add date range filters
+  if (options.dateRange?.startDate) {
+    filters.push({
+      field: 'createdAt',
+      op: '>=',
+      value: options.dateRange.startDate
+    });
   }
+
+  if (options.dateRange?.endDate) {
+    // Set end date to end of day
+    const endOfDay = new Date(options.dateRange.endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    filters.push({
+      field: 'createdAt',
+      op: '<=',
+      value: endOfDay
+    });
+  }
+
+  return this.getOrders(filters, options);
+}
 }
 
 export const orderService = new OrderService();

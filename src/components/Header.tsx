@@ -18,7 +18,14 @@ import { cn } from "@/lib/utils";
 
 import { LifeBuoy } from "lucide-react";
 import { CreateComplaint } from "./CreateComplaint";
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "./ui/navigation-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "./ui/navigation-menu";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -303,7 +310,8 @@ export function Header({
                             Corporate AI Training
                           </div>
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Upskill your team with enterprise AI training programs
+                            Upskill your team with enterprise AI training
+                            programs
                           </p>
                         </div>
                       </li>
@@ -364,8 +372,7 @@ export function Header({
           <div className="flex items-center gap-4">
             {/* Contact Us Popover - Desktop only (kept as click to open) */}
 
-            {
-              location.pathname === '/' &&
+            {location.pathname === "/" && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -402,25 +409,24 @@ export function Header({
                   </div>
                 </PopoverContent>
               </Popover>
-            }
+            )}
 
-            {
-              user && user.role !== USER_ROLE.ADMIN &&
-              <CreateComplaint
-                userId={user.id}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    className="font-medium text-sm flex items-center gap-2"
-                  >
-                    <LifeBuoy className="h-4 w-4" />
-                    <span className="hidden sm:block">
-                      Customer Support
-                    </span>
-                  </Button>
-                }
-              />
-            }
+            {user &&
+              user.role !== USER_ROLE.ADMIN &&
+              user.role !== USER_ROLE.ACCOUNTANT && (
+                <CreateComplaint
+                  userId={user.id}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      className="font-medium text-sm flex items-center gap-2"
+                    >
+                      <LifeBuoy className="h-4 w-4" />
+                      <span className="hidden sm:block">Customer Support</span>
+                    </Button>
+                  }
+                />
+              )}
 
             <ThemeToggle />
 
@@ -436,7 +442,16 @@ export function Header({
                     )}
                   </Link>
                 )}
-                <Link to={user?.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"} className="ml-2">
+                <Link
+                  to={
+                    user?.role === USER_ROLE.ADMIN
+                      ? "/admin"
+                      : user?.role === USER_ROLE.ACCOUNTANT
+                      ? "/accountant"
+                      : "/dashboard"
+                  }
+                  className="ml-2"
+                >
                   <Button variant="default" size="sm" className="relative flex">
                     <User className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
@@ -497,10 +512,8 @@ export function Header({
               </div>
             )}
           </div>
-
-        </div >
-      </header >
-
+        </div>
+      </header>
     </>
   );
-};
+}
