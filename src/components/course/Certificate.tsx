@@ -201,12 +201,12 @@ const Certificate: React.FC = () => {
           <div className="absolute inset-4 border-2 border-gray-100 pointer-events-none" />
 
           {/* Left ribbon */}
-          <div className="absolute left-10 top-0 w-40 bg-gray-100 flex flex-col items-center pt-10 z-20">
+          <div className="absolute left-10 top-0 w-32 bg-gray-100 flex flex-col items-center pt-10 z-20">
             <div className="text-[14px] font-bold tracking-[0.2em] text-gray-500 mb-4 text-center">
               VERIFIED<br />CERTIFICATE
             </div>
 
-            <div className="w-40 h-32 flex items-center justify-center">
+            <div className="w-32 h-32 flex items-center justify-center">
               <div className="flex flex-col items-center text-center">
                 <img src="/certificate-logo.png" alt="Vizuara Logo" className="mb-2 w-[90%]" />
               </div>
@@ -278,7 +278,7 @@ const Certificate: React.FC = () => {
                 <div>
                   <p className="h-4 text-xs font-bold text-gray-400 italic">
                     <img
-                      src="/images/signatures/shreedath-panat-signature.png"
+                      src="/images/signatures/sreedath-panat-signature.png"
                       alt="Signature of Dr. Sreedath Panat"
                       className="h-3 mx-auto"
                     />

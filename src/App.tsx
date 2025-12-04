@@ -89,6 +89,7 @@ import Quizzes from "./pages/Quizzes";
 import AttemptQuiz from "./pages/AttemptQuiz";
 import AdminCommentApproval from "./pages/admin/AdminCommentApproval";
 import Certificate from "./components/course/Certificate";
+import AdminCertificateRequests from "./pages/admin/AdminCertificateRequests";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -243,7 +244,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                    
+
                       <Route
                         path="/admin/orders"
                         element={
@@ -252,6 +253,16 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
+
+                      <Route
+                        path="/admin/certificate-requests"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminCertificateRequests />
+                          </AuthGuard>
+                        }
+                      />
+
                       <Route
                         path="/admin/pop-ups"
                         element={
@@ -499,7 +510,7 @@ const App = () => (
                         }
                       />
 
-                         {/* <Route
+                      {/* <Route
                         path="/accountant/orders"
                         element={
                           <AuthGuard requireAccountant >
@@ -508,7 +519,7 @@ const App = () => (
                         }
                       /> */}
 
-                         <Route
+                      <Route
                         path="/accountant"
                         element={
                           <AuthGuard requireAccountant >

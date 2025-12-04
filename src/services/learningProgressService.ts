@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -13,7 +14,7 @@ import { db } from "@/firebaseConfig";
 import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 
-import { COLLECTION } from "@/constants";
+import { COLLECTION, USER_ROLE } from "@/constants";
 import { LearningProgress } from "@/types/learning-progress";
 import { formatDate } from "@/utils/date-time";
 
@@ -217,7 +218,6 @@ class LearningProgressService {
       const completionPercentage =
         (completedLessons / totalLessons) * 100;
 
-      // ✅ Check 90% rule
       if (
         completionPercentage >= 90 &&
         !progressData.completionDate
@@ -225,11 +225,6 @@ class LearningProgressService {
         await updateDoc(
           doc(db, COLLECTION.LEARNING_PROGRESS, progressDoc.id),
           {
-            certification: {
-              issued: true,
-              issuedAt: serverTimestamp(),
-              certificateId: ""
-            },
             completionDate: serverTimestamp(),
             updatedAt: serverTimestamp(),
           }
@@ -241,12 +236,74 @@ class LearningProgressService {
       return ok(false);
 
     } catch (error: any) {
-      logError(
-        "LearningProgressService.setCompletionDateIfEligible",
-        error
-      );
+      logError("LearningProgressService.completeCourse", error);
       return fail(
-        "Failed to determine course completion.",
+        "Failed to complete course",
+        error.code || error.message
+      );
+    }
+  }
+
+  async issueCertificate(
+    userId: string,
+    courseId: string,
+    issuerUid: string
+  ): Promise<Result<boolean>> {
+    try {
+      const issuerRef = doc(db, COLLECTION.USERS, issuerUid);
+      const issuerSnap = await getDoc(issuerRef);
+
+      if (!issuerSnap.exists()) {
+        return fail("Issuer not found");
+      }
+
+      const issuerData = issuerSnap.data();
+
+      if (issuerData.role !== USER_ROLE.ADMIN) {
+        return fail("Only ADMIN can issue certificates");
+      }
+
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return fail("Learning progress not found");
+      }
+
+      const progressDoc = snapshot.docs[0];
+      const progressData = progressDoc.data() as LearningProgress;
+
+      if (!progressData.completionDate) {
+        return fail("Course not completed yet");
+      }
+
+      if (progressData.certification?.issued) {
+        return ok(false);
+      }
+
+      await updateDoc(
+        doc(db, COLLECTION.LEARNING_PROGRESS, progressDoc.id),
+        {
+          certification: {
+            issued: true,
+            issuedAt: serverTimestamp(),
+            certificateId: `${userId}_${courseId}`,
+          },
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      return ok(true);
+
+    } catch (error: any) {
+      logError("LearningProgressService.issueCertificate", error);
+      return fail(
+        "Failed to issue certificate",
         error.code || error.message
       );
     }
@@ -273,7 +330,6 @@ class LearningProgressService {
 
       const formattedDate = formatDate(progressData.completionDate);
 
-      // formatDate returns "—" if null/invalid → normalize to null
       return ok(formattedDate === "—" ? null : formattedDate);
 
     } catch (error: any) {

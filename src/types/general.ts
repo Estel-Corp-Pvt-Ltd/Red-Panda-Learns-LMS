@@ -94,6 +94,9 @@ export type ComplaintActionType =
 export type ComplaintCategory =
   (typeof COMPLAINT_CATEGORY)[keyof typeof COMPLAINT_CATEGORY];
 
+// --- CERTIFICATE ---
+export type CertificateRequestStatus = typeof CERTIFICATE_REQUEST_STATUS[keyof typeof CERTIFICATE_REQUEST_STATUS];
+
 export type Duration = {
   hours: number;
   minutes: number;

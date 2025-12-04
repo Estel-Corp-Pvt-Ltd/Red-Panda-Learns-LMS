@@ -3,7 +3,7 @@ export const USER_ROLE = {
   TEACHER: "TEACHER",
   INSTRUCTOR: "INSTRUCTOR",
   ADMIN: "ADMIN",
-  ACCOUNTANT:"ACCOUNTANT",
+  ACCOUNTANT: "ACCOUNTANT",
 } as const;
 
 export const LEARNING_CONTENT = {
@@ -409,8 +409,8 @@ export const COLLECTION = {
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions",
-  ANNOUNCEMENTS: "Announcements"
- 
+  ANNOUNCEMENTS: "Announcements",
+  CERTIFICATE_REQUESTS: "CertificateRequests"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -519,4 +519,10 @@ export const COMMENT_STATUS = {
   PENDING: "PENDING",
   APPROVED: "APPROVED",
   DELETED: "DELETED",
+} as const;
+
+export const CERTIFICATE_REQUEST_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
 } as const;
