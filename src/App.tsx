@@ -80,7 +80,7 @@ import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import ArrangeCourses from "./pages/admin/ArrangeCourses";
 import Quizzes from "./pages/Quizzes";
 import AttemptQuiz from "./pages/AttemptQuiz";
-import AdminCommentApproval from "./pages/admin/AdminComentApproval";
+import AdminCommentApproval from "./pages/admin/AdminCommentApproval";
 import Certificate from "./components/course/Certificate";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
