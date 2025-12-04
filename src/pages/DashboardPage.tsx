@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { LEARNING_UNIT } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useCourseQuery } from '@/hooks/useCaching';
@@ -11,7 +12,7 @@ import { enrollmentService } from '@/services/enrollmentService';
 import { learningProgressService } from '@/services/learningProgressService';
 import { Enrollment } from '@/types/enrollment';
 import { formatDate } from '@/utils/date-time';
-import { BookOpen, CheckCircle, Clock, Download, Eye, PlayCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,7 +27,10 @@ function EnrolledCourseCard({ enrollment }: { enrollment: Enrollment }) {
   const [isCompleting, setIsCompleting] = useState(false);
 
   const totalLessons = course?.topics?.reduce((sum, topic) => {
-    return sum + (topic.items ? topic.items.length : 0);
+    return sum + (topic.items ?
+      topic.items.filter(item => item.type === LEARNING_UNIT.LESSON).length
+      : 0
+    );
   }, 0) || 0;
 
   const handleCompleteCourse = async () => {
