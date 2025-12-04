@@ -257,7 +257,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     fetchCities();
   }, [billingAddress.state, billingAddress.country]);
 
- const verifyOrder = async (orderId: string) => {
+const verifyOrder = async (orderId: string) => {
   setIsOrderVerifying(true);
 
   const checkOrder = async () => {
@@ -266,14 +266,32 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
       console.log("Verifying order status:", order);
 
       if (order && order.status === ORDER_STATUS.COMPLETED) {
+        // Order is completed, refresh enrollments and send coupon usage request
         refreshEnrollments();
+        
+        // Only send coupon usage if a coupon was applied
+        if (appliedCoupon?.code) {
+          const idToken = await authService.getToken();
+          const couponResponse = await sendCouponUsageRequest({
+            userId: user!.id,
+            promoCode: appliedCoupon.code,
+            items,
+            idToken: idToken || ""
+          });
+
+          if (couponResponse.success) {
+            console.log("Coupon usage successfully processed");
+          } else {
+            console.error("Failed to process coupon usage:", couponResponse.error);
+          }
+        }
+
         setIsOrderVerifying(false);
         onPaymentSuccess?.(orderId);
-        // Coupon usage call removed as requested
-        return; // stop recursion
+        return; // Stop recursion
       }
 
-      // If not completed, check again after 5s
+      // If order is not completed, check again after 5 seconds
       setTimeout(checkOrder, 5000);
     } catch (err) {
       console.error("Error verifying order:", err);
@@ -282,60 +300,60 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     }
   };
 
-  checkOrder(); // start the first check
+  checkOrder(); // Start the first check
 };
 
 
-  const handlePayment = async () => {
-    if (!user || !canProceed) return;
+const handlePayment = async () => {
+  if (!user || !canProceed) return;
 
-    if (finalAmount === 0) {
-      toast({
-        title: "No Payment Required",
-        description: "Please directly enroll in the from course page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-
+  if (finalAmount === 0) {
     toast({
-      title: "Processing your payment...",
-      description: "Please do not refresh or close this window.",
+      title: "No Payment Required",
+      description: "Please directly enroll in the from course page.",
+      variant: "destructive",
     });
+    return;
+  }
 
-    try {
-      await paymentService.processPayment({
-        provider: selectedProvider,
-        items: items.map((item) => ({
-          ...item,
-          amount: item.amount || item.originalAmount || 0,
-        })),
-        userEmail: user.email!,
-        selectedCurrency,
-        billingAddress,
-        promoCode: appliedCoupon?.code,
-        onPaymentSuccess: verifyOrder,
-        onPaymentFail: (message: string) => {
-          setIsProcessing(false);
-          toast({
-            title: "Payment Failed",
-            description: message,
-            variant: "destructive",
-          });
-        },
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to process payment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  setIsProcessing(true);
+
+  toast({
+    title: "Processing your payment...",
+    description: "Please do not refresh or close this window.",
+  });
+
+  try {
+    await paymentService.processPayment({
+      provider: selectedProvider,
+      items: items.map((item) => ({
+        ...item,
+        amount: item.amount || item.originalAmount || 0,
+      })),
+      userEmail: user.email!,
+      selectedCurrency,
+      billingAddress,
+      promoCode: appliedCoupon?.code,
+     onPaymentSuccess: verifyOrder,
+      onPaymentFail: (message: string) => {
+        setIsProcessing(false);
+        toast({
+          title: "Payment Failed",
+          description: message,
+          variant: "destructive",
+        });
+      },
+    });
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to process payment. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const updateAddressField = (field: keyof Address, value: string) => {
     setBillingAddress((prev) => ({ ...prev, [field]: value }));
