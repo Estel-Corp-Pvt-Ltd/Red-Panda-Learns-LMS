@@ -34,6 +34,7 @@ import {
   COMMENT_STATUS,
   ANNOUNCEMENT_SCOPE,
   ANNOUNCEMENT_STATUS,
+  CERTIFICATE_REQUEST_STATUS,
 } from "@/constants";
 
 export type AttributeType =
