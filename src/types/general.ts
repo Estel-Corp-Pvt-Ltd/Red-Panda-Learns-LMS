@@ -31,7 +31,8 @@ import {
     COMPLAINT_SEVERITY,
     COMPLAINT_ACTION_TYPE,
     COMPLAINT_CATEGORY,
-    COMMENT_STATUS
+    COMMENT_STATUS,
+    CERTIFICATE_REQUEST_STATUS
 } from "@/constants";
 
 export type AttributeType = typeof ATTRIBUTE_TYPE[keyof typeof ATTRIBUTE_TYPE];
@@ -61,13 +62,16 @@ export type SortKey = typeof SORT_KEY[keyof typeof SORT_KEY];
 export type QuizQuestionType = typeof QUIZ_QUESTION_TYPE[keyof typeof QUIZ_QUESTION_TYPE];
 export type QuizSubmissionStatus = typeof QUIZ_SUBMISSION_STATUS[keyof typeof QUIZ_SUBMISSION_STATUS];
 export type QuizStatus = typeof QUIZ_STATUS[keyof typeof QUIZ_STATUS];
-export type NotificationStatus = typeof NOTIFICATION_STATUS[keyof typeof NOTIFICATION_STATUS];export type CommentType = typeof COMMENT_STATUS[keyof typeof COMMENT_STATUS];
+export type NotificationStatus = typeof NOTIFICATION_STATUS[keyof typeof NOTIFICATION_STATUS]; export type CommentType = typeof COMMENT_STATUS[keyof typeof COMMENT_STATUS];
 
 // --- COMPLAINT ---
 export type ComplaintStatus = typeof COMPLAINT_STATUS[keyof typeof COMPLAINT_STATUS];
 export type ComplaintSeverity = typeof COMPLAINT_SEVERITY[keyof typeof COMPLAINT_SEVERITY];
 export type ComplaintActionType = typeof COMPLAINT_ACTION_TYPE[keyof typeof COMPLAINT_ACTION_TYPE];
 export type ComplaintCategory = typeof COMPLAINT_CATEGORY[keyof typeof COMPLAINT_CATEGORY];
+
+// --- CERTIFICATE ---
+export type CertificateRequestStatus = typeof CERTIFICATE_REQUEST_STATUS[keyof typeof CERTIFICATE_REQUEST_STATUS];
 
 export type Duration = {
     hours: number;
