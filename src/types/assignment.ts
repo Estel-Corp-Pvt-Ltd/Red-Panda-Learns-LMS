@@ -21,11 +21,11 @@ export interface AssignmentSubmission {
   assignmentId: string;
   studentId: string;
   studentName: string;
-  feedback?: string;
-  marks?: number;
+  feedback: string | null;
+  marks: number | null;
   submissionFiles: string[];
-  textSubmissions:string[];
-  links:string[];
+  textSubmissions: string[];
+  links: string[];
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
 }
