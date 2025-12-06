@@ -78,7 +78,7 @@ interface FilterState {
 }
 
 interface ExportData {
-  "Student ID": string;
+  "Student Email": string;
   "Student Name": string;
   "Assignment Title": string;
   "Assignment ID": string;
@@ -502,8 +502,8 @@ const AllSubmissionsPage = () => {
           : "N/A";
 
         return {
-          "Student ID": submission.studentId,
           "Student Name": submission.studentName,
+          "Student Email": submission.studentEmail || "",
           "Assignment Title": assignmentTitle,
           "Assignment ID": submission.assignmentId,
           "Submitted Date": submittedDate,
@@ -921,9 +921,11 @@ const AllSubmissionsPage = () => {
                               <div className="font-medium text-sm">
                                 {submission.studentName}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {submission.studentId}
-                              </div>
+                              {submission.studentEmail && (
+                                <div className="text-xs text-muted-foreground">
+                                  ({submission.studentEmail})
+                                </div>
+                              )}
                             </div>
                           </div>
                         </TableCell>

@@ -23,6 +23,7 @@ export interface AssignmentSubmission {
   courseId: string;
   studentId: string;
   studentName: string;
+  studentEmail: string;
   feedback: string | null;
   marks: number | null;
   submissionFiles: string[];

@@ -203,6 +203,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         assignmentId,
         studentId: user.id,
         studentName: user.firstName + " " + user.lastName,
+        studentEmail: user.email,
+        courseId: assignment.courseId,
         submissionFiles: uploadedUrls,
         textSubmissions: textSubmissions,
         marks: null,
