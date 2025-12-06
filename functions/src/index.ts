@@ -17,6 +17,7 @@ import {
   processEnrollmentTask,
 } from "./handlers/enrollments/enrollStudentsInBulk";
 import { reminderWorker } from "./workers/scheduleReminderWorker";
+import { sendAnnouncementEmailWorker } from "./workers/sendAnnouncementsWorker";
 // Cascade delete workers
 import { courseDeleteCascade } from "./workers/courseDeleteCascade";
 import { lessonDeleteCascade } from "./workers/lessonDeleteCascade";
@@ -30,6 +31,7 @@ import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignme
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 import { createCouponUsage } from "./handlers/createCouponUsage";
 import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
+import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -60,5 +62,7 @@ export {
   pauseReminderForAssignments,
   markSubmissionNotificationsEvaluated,
   createCouponUsage,
-  onCourseUpdated
+  onCourseUpdated,
+  sendAnnouncementEmailWorker,
+  sendAnnouncementEmailNotification
 };
