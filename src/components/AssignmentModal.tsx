@@ -7,7 +7,6 @@ import {
   X,
   NotepadText,
 } from 'lucide-react';
-import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
 
@@ -17,6 +16,7 @@ import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import MarkdownEditor from './MarkdownEditor';
 
 export interface AssignmentFormData {
   title: string;
@@ -54,23 +54,23 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     minimumPassPoint: 60,
     attachments: [],
     authorId: '',
- 
+
   });
 
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  
 
-// Set authorId whenever user changes
-useEffect(() => {
-  if (user) {
-    setFormData(prev => ({ ...prev, authorId: user.id }));
-   
-  }
-}, [user]);
+
+  // Set authorId whenever user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({ ...prev, authorId: user.id }));
+
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -216,13 +216,13 @@ useEffect(() => {
                   : 'border-gray-300 dark:border-gray-700'
                   }`}
               >
-                <MDEditor
+                <MarkdownEditor
                   value={formData.content}
                   onChange={(value) =>
                     handleInputChange('content', value || '')
                   }
                   height={350}
-                  preview="edit"
+                  uploadPath='/courses/assignments/attachments'
                 />
               </div>
               {errors.content && (

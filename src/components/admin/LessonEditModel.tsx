@@ -21,10 +21,10 @@ import { fileService } from "@/services/fileService";
 import { lessonService } from "@/services/lessonService";
 import { Lesson, LessonAttachment } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import MDEditor from "@uiw/react-md-editor";
 import { serverTimestamp } from "firebase/firestore";
 import { FileText, Upload, Download, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import MarkdownEditor from "../MarkdownEditor";
 
 interface EditLessonModalProps {
   courseId: string;
@@ -333,13 +333,13 @@ export const EditLessonModal = ({
                         data-color-mode={colorMode}
                         className="border rounded-lg"
                       >
-                        <MDEditor
+                        <MarkdownEditor
                           value={lesson?.description || ""}
                           onChange={(value) =>
                             handleFieldChange("description", value || "")
                           }
                           height={300}
-                          preview="live"
+                          uploadPath="/courses/lessons/attachments"
                         />
                       </div>
                     </div>
