@@ -1,6 +1,5 @@
 import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { X, NotepadText, FileText, FileUp, Trash2, Save } from "lucide-react";
-import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import { assignmentService } from "@/services/assignmentService";
@@ -9,7 +8,6 @@ import { Assignment } from "@/types/assignment";
 import { logError } from "@/utils/logger";
 import { timestampToLocalInput } from "@/utils/date-time";
 import { Timestamp } from "firebase/firestore";
-import { Result } from "@/utils/response";
 import { useToast } from "@/hooks/use-toast";
 import MarkdownEditor from "../MarkdownEditor";
 /* ------------------------------------------------------------------ */
@@ -189,6 +187,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
                   value={assignment.content}
                   onChange={(val) => handleChange("content", val || "")}
                   height={400}
+                  uploadPath="/courses/assignments/attachments"
                 />
               </div>
             </div>
