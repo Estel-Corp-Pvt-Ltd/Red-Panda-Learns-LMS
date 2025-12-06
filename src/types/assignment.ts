@@ -5,6 +5,7 @@ export interface Assignment {
   id: string;
   title: string;
   content: string;
+  courseId: string;
   attachments: string[];
   deadline: Timestamp | null;
   fileUploadLimit: number;
@@ -19,6 +20,7 @@ export interface Assignment {
 export interface AssignmentSubmission {
   id: string;
   assignmentId: string;
+  courseId: string;
   studentId: string;
   studentName: string;
   feedback: string | null;

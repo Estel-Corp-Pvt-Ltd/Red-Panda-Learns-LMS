@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { assignmentService } from "@/services/assignmentService";
+import { courseService } from "@/services/courseService";
 import { AssignmentSubmission, Assignment } from "@/types/assignment";
+import { Course } from "@/types/course";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Table,
   TableBody,
@@ -39,9 +54,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Check,
+  ChevronsUpDown,
+  Search,
 } from "lucide-react";
 import { formatDate } from "@/utils/date-time";
 import { DocumentSnapshot } from "firebase/firestore";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import MDEditor from "@uiw/react-md-editor";
 import AdminLayout from "@/components/AdminLayout";
@@ -52,6 +71,7 @@ import { WhereFilterOp } from "firebase-admin/firestore";
 
 interface FilterState {
   gradingStatus: "all" | "graded" | "ungraded";
+  courseFilter: string;
   assignmentFilter: string;
   sortBy: "studentName" | "createdAt" | "marks";
   sortOrder: "asc" | "desc";
@@ -70,7 +90,9 @@ const AllSubmissionsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<AssignmentSubmission | null>(null);
@@ -101,6 +123,7 @@ const AllSubmissionsPage = () => {
   const location = useLocation();
   const [filters, setFilters] = useState<FilterState>({
     gradingStatus: "all",
+    courseFilter: "all",
     assignmentFilter: "all",
     sortBy: "createdAt",
     sortOrder: "desc",
@@ -108,6 +131,27 @@ const AllSubmissionsPage = () => {
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<any[]>([]);
+  const [courseOpen, setCourseOpen] = useState(false);
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
+  const [studentSearch, setStudentSearch] = useState("");
+
+  // Filter assignments based on selected course
+  useEffect(() => {
+    if (filters.courseFilter === "all") {
+      setAssignments(allAssignments);
+    } else {
+      const filteredAssignments = allAssignments.filter(
+        (assignment) => assignment.courseId === filters.courseFilter
+      );
+      setAssignments(filteredAssignments);
+
+      // Reset assignment filter if current selection is not in filtered list
+      if (filters.assignmentFilter !== "all" &&
+        !filteredAssignments.some(a => a.id === filters.assignmentFilter)) {
+        setFilters(prev => ({ ...prev, assignmentFilter: "all" }));
+      }
+    }
+  }, [filters.courseFilter, allAssignments]);
 
   // Handle URL parameters for direct submission viewing
   useEffect(() => {
@@ -175,6 +219,15 @@ const AllSubmissionsPage = () => {
   useEffect(() => {
     const firestoreFilters: any[] = [];
 
+    // Add course filter if selected
+    if (filters.courseFilter && filters.courseFilter !== "all") {
+      firestoreFilters.push({
+        field: "courseId",
+        op: "==",
+        value: filters.courseFilter,
+      });
+    }
+
     if (filters.assignmentFilter && filters.assignmentFilter !== "all") {
       firestoreFilters.push({
         field: "assignmentId",
@@ -198,7 +251,7 @@ const AllSubmissionsPage = () => {
     }
 
     setActiveFilters(firestoreFilters);
-  }, [filters.assignmentFilter, filters.gradingStatus]);
+  }, [filters.courseFilter, filters.assignmentFilter, filters.gradingStatus]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -218,16 +271,32 @@ const AllSubmissionsPage = () => {
         setSubmissions(submissionsResult.data.data);
         setCurrentCursor(submissionsResult.data.nextCursor);
       }
-
-      // Load assignments for dropdown
-      const assignmentsData = await assignmentService.getAllAssignments();
-      setAssignments(assignmentsData);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Load courses and assignments once on mount
+  useEffect(() => {
+    const loadDropdownData = async () => {
+      try {
+        // Load courses for dropdown
+        const coursesData = await courseService.getAllCourses();
+        setCourses(coursesData);
+
+        // Load assignments for dropdown
+        const assignmentsData = await assignmentService.getAllAssignments();
+        setAllAssignments(assignmentsData);
+        setAssignments(assignmentsData);
+      } catch (error) {
+        console.error("Error loading dropdown data:", error);
+      }
+    };
+
+    loadDropdownData();
+  }, []);
 
   const loadNextPage = async () => {
     if (!currentCursor) return;
@@ -271,10 +340,12 @@ const AllSubmissionsPage = () => {
   const clearAllFilters = () => {
     setFilters({
       gradingStatus: "all",
+      courseFilter: "all",
       assignmentFilter: "all",
       sortBy: "createdAt",
       sortOrder: "desc",
     });
+    setStudentSearch("");
     setActiveFilters([]);
   };
 
@@ -362,7 +433,7 @@ const AllSubmissionsPage = () => {
   };
 
   const getAssignmentTitle = (assignmentId: string) => {
-    const assignment = assignments.find((a) => a.id === assignmentId);
+    const assignment = allAssignments.find((a) => a.id === assignmentId);
     return assignment?.title || assignmentId;
   };
 
@@ -380,7 +451,7 @@ const AllSubmissionsPage = () => {
   };
 
   const hasActiveFilters = () => {
-    return filters.assignmentFilter !== "all" || filters.gradingStatus !== "all";
+    return filters.courseFilter !== "all" || filters.assignmentFilter !== "all" || filters.gradingStatus !== "all" || studentSearch.trim() !== "";
   };
 
   // Check if export button should be enabled
@@ -465,7 +536,7 @@ const AllSubmissionsPage = () => {
       const url = URL.createObjectURL(blob);
 
       // Create filename based on selected assignment
-      const selectedAssignment = assignments.find(a => a.id === filters.assignmentFilter);
+      const selectedAssignment = allAssignments.find(a => a.id === filters.assignmentFilter);
       let filename = "submissions";
       if (selectedAssignment) {
         filename = `${selectedAssignment.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_submissions`;
@@ -488,7 +559,13 @@ const AllSubmissionsPage = () => {
   };
 
   const totalItems = currentPage?.totalCount || 0;
-  const showingItems = submissions.length;
+  const filteredSubmissions = submissions.filter((submission) =>
+    studentSearch.trim() === ""
+      ? true
+      : submission.studentName.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
+  );
+  const showingItems = filteredSubmissions.length;
 
   if (loading) {
     return (
@@ -550,25 +627,144 @@ const AllSubmissionsPage = () => {
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Quick Filters - Server-side */}
-            <div className="flex-1 flex gap-2">
-              <Select
-                value={filters.assignmentFilter}
-                onValueChange={(value) =>
-                  handleFilterChange("assignmentFilter", value)
-                }
-              >
-                <SelectTrigger className="w-full sm:w-[250px]">
-                  <SelectValue placeholder="Select Assignment to Export" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Assignments</SelectItem>
-                  {assignments.map((assignment) => (
-                    <SelectItem key={assignment.id} value={assignment.id}>
-                      {assignment.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex-1 flex flex-wrap gap-2">
+              {/* Course Combobox */}
+              <Popover open={courseOpen} onOpenChange={setCourseOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={courseOpen}
+                    className="w-full sm:w-[250px] justify-between"
+                  >
+                    <span className="truncate">
+                      {filters.courseFilter === "all"
+                        ? "All Courses"
+                        : courses.find((course) => course.id === filters.courseFilter)?.title || "Select Course"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full sm:w-[250px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search courses..." />
+                    <CommandList>
+                      <CommandEmpty>No course found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all-courses"
+                          onSelect={() => {
+                            handleFilterChange("courseFilter", "all");
+                            setCourseOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              filters.courseFilter === "all" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          All Courses
+                        </CommandItem>
+                        {courses.map((course) => (
+                          <CommandItem
+                            key={course.id}
+                            value={`${course.id}-${course.title}`}
+                            onSelect={() => {
+                              handleFilterChange("courseFilter", course.id);
+                              setCourseOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                filters.courseFilter === course.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="truncate">{course.title}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Assignment Combobox */}
+              <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={assignmentOpen}
+                    className="w-full sm:w-[250px] justify-between"
+                    disabled={assignments.length === 0}
+                  >
+                    <span className="truncate">
+                      {assignments.length === 0
+                        ? "No assignments available"
+                        : filters.assignmentFilter === "all"
+                          ? "All Assignments"
+                          : assignments.find((assignment) => assignment.id === filters.assignmentFilter)?.title || "Select Assignment"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full sm:w-[250px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search assignments..." />
+                    <CommandList>
+                      <CommandEmpty>No assignment found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all-assignments"
+                          onSelect={() => {
+                            handleFilterChange("assignmentFilter", "all");
+                            setAssignmentOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              filters.assignmentFilter === "all" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          All Assignments
+                        </CommandItem>
+                        {assignments.map((assignment) => (
+                          <CommandItem
+                            key={assignment.id}
+                            value={`${assignment.id}-${assignment.title}`}
+                            onSelect={() => {
+                              handleFilterChange("assignmentFilter", assignment.id);
+                              setAssignmentOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                filters.assignmentFilter === assignment.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="truncate">{assignment.title}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              <div className="relative w-full sm:w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search student..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className="pl-9 w-full"
+                />
+              </div>
 
               <Select
                 value={filters.gradingStatus}
@@ -706,86 +902,93 @@ const AllSubmissionsPage = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  submissions.map((submission) => (
-                    <TableRow
-                      key={submission.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium text-sm">
-                              {submission.studentName}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {submission.studentId}
+                  submissions
+                    .filter((submission) =>
+                      studentSearch.trim() === ""
+                        ? true
+                        : submission.studentName.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                        submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
+                    )
+                    .map((submission) => (
+                      <TableRow
+                        key={submission.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium text-sm">
+                                {submission.studentName}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {submission.studentId}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className="text-sm truncate max-w-[230px]"
-                          title={getAssignmentTitle(submission.assignmentId)}
-                        >
-                          {getAssignmentTitle(submission.assignmentId)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(submission.createdAt)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">
-                          {submission.marks !== undefined && submission.marks !== null
-                            ? `${submission.marks}`
-                            : "-"
-                          }
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getGradeStatus(submission)}>
-                          {submission.marks !== undefined && submission.marks !== null
-                            ? "Graded"
-                            : "Not Graded"
-                          }
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewSubmission(submission)}
-                            className="h-8 w-8"
-                            title="View Submission"
+                        </TableCell>
+                        <TableCell>
+                          <div
+                            className="text-sm truncate max-w-[230px]"
+                            title={getAssignmentTitle(submission.assignmentId)}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openGradeModal(submission)}
-                            className="h-8 w-8"
-                            title="Grade Submission"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSubmissionToDelete(submission)}
-                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            title="Delete Submission"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                            {getAssignmentTitle(submission.assignmentId)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-muted-foreground">
+                            {formatDate(submission.createdAt)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">
+                            {submission.marks !== undefined && submission.marks !== null
+                              ? `${submission.marks}`
+                              : "-"
+                            }
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getGradeStatus(submission)}>
+                            {submission.marks !== undefined && submission.marks !== null
+                              ? "Graded"
+                              : "Not Graded"
+                            }
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewSubmission(submission)}
+                              className="h-8 w-8"
+                              title="View Submission"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openGradeModal(submission)}
+                              className="h-8 w-8"
+                              title="Grade Submission"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setSubmissionToDelete(submission)}
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Delete Submission"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
                 )}
               </TableBody>
             </Table>
@@ -795,7 +998,7 @@ const AllSubmissionsPage = () => {
           <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Showing {showingItems} of {totalItems} submissions
+                Showing {showingItems}{studentSearch ? ` of ${submissions.length}` : ` of ${totalItems}`} submissions
                 {hasActiveFilters() && " (filtered)"}
               </div>
               <div className="flex gap-1">

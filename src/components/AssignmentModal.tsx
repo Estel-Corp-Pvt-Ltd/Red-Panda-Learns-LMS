@@ -37,13 +37,14 @@ interface FormErrors {
 }
 
 interface AssignmentModalProps {
+  courseId: string;
   onSave: (assignment: Assignment) => void;
   onCancel: () => void;
 }
 
 type FormField = keyof Omit<Assignment, 'attachments'>;
 
-const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) => {
+const AssignmentModal: React.FC<AssignmentModalProps> = ({ courseId, onSave, onCancel }) => {
   const [formData, setFormData] = useState<AssignmentFormData>({
     title: '',
     content: '',
@@ -54,23 +55,23 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     minimumPassPoint: 60,
     attachments: [],
     authorId: '',
- 
+
   });
 
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  
 
-// Set authorId whenever user changes
-useEffect(() => {
-  if (user) {
-    setFormData(prev => ({ ...prev, authorId: user.id }));
-   
-  }
-}, [user]);
+
+  // Set authorId whenever user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({ ...prev, authorId: user.id }));
+
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,6 +131,7 @@ useEffect(() => {
 
       const newAssignmentData = {
         title: formData.title,
+        courseId: courseId,
         content: formData.content,
         deadline: formData.deadline
           ? Timestamp.fromDate(new Date(formData.deadline))

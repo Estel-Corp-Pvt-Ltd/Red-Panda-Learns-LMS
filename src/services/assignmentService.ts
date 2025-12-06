@@ -73,6 +73,7 @@ class AssignmentService {
         id: assignmentId,
         title: data.title,
         content: data.content,
+        courseId: data.courseId,
         attachments: data.attachments || [],
         deadline: data.deadline,
         fileUploadLimit: data.fileUploadLimit || 5,
@@ -366,6 +367,7 @@ class AssignmentService {
       return ok({
         id: doc.id,
         assignmentId: data.assignmentId,
+        courseId: data.courseId,
         studentId: data.studentId,
         studentName: data.studentName,
         submissionFiles: data.submissionFiles || [],
@@ -398,6 +400,7 @@ class AssignmentService {
       return ok({
         id: submissionDoc.id,
         assignmentId: data.assignmentId,
+        courseId: data.courseId,
         studentId: data.studentId,
         studentName: data.studentName,
         submissionFiles: data.submissionFiles || [],
@@ -431,6 +434,7 @@ class AssignmentService {
         return {
           id: doc.id,
           assignmentId: data.assignmentId,
+          courseId: data.courseId,
           studentId: data.studentId,
           studentName: data.studentName,
           submissionFiles: data.submissionFiles || [],
@@ -471,6 +475,7 @@ class AssignmentService {
         return {
           id: doc.id,
           assignmentId: data.assignmentId,
+          courseId: data.courseId,
           studentId: data.studentId,
           studentName: data.studentName,
           submissionFiles: data.submissionFiles || [],
