@@ -575,8 +575,10 @@ class AssignmentService {
         return {
           id: doc.id,
           assignmentId: data.assignmentId,
+          courseId: data.courseId,
           studentId: data.studentId,
           studentName: data.studentName,
+          studentEmail: data.studentEmail,
           submissionFiles: data.submissionFiles || [],
           textSubmissions: data.textSubmissions || [],
           links: data.links || [],
