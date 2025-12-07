@@ -62,4 +62,4 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.GCP_SA_KEY_DEV }}
           PROJECT_ID: ${{ vars.VITE_PROJECT_ID }}
-        run: firebase deploy --project $PROJECT_ID --only hosting,functions --non-interactive
+        run: npx firebase deploy --project $PROJECT_ID --only hosting,functions --non-interactive
