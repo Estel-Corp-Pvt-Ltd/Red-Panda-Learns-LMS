@@ -824,6 +824,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
 
       {isAssignmentModelOpen && (
         <AssignmentModal
+          courseId={course.id}
           onCancel={() => {
             setIsAssignmentModelOpen(false);
             setEditingItemId(null);
@@ -834,6 +835,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
       )}
 
       <EditAssignmentModal
+        courseId={course.id}
         assignmentId={editingItemId}
         isOpen={isAssignmentEditModalOpen}
         onClose={() => setIsAssignmentEditModalOpen(false)}

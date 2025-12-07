@@ -73,6 +73,7 @@ class AssignmentService {
         id: assignmentId,
         title: data.title,
         content: data.content,
+        courseId: data.courseId,
         attachments: data.attachments || [],
         deadline: data.deadline,
         fileUploadLimit: data.fileUploadLimit || 5,
@@ -214,13 +215,13 @@ class AssignmentService {
    *
    * @param assignmentId - The ID of the assignment to delete.
    */
-  async deleteAssignment(assignmentId: string):  Promise<Result<void>> {
+  async deleteAssignment(assignmentId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.ASSIGNMENTS, assignmentId));
-      return ok(undefined); 
+      return ok(undefined);
     } catch (error) {
       console.error('AssignmentService - Error deleting assignment:', error);
-       return fail(
+      return fail(
         'Failed to delete assignment',
         error?.code,
         error?.stack
@@ -366,11 +367,15 @@ class AssignmentService {
       return ok({
         id: doc.id,
         assignmentId: data.assignmentId,
+        courseId: data.courseId,
         studentId: data.studentId,
         studentName: data.studentName,
+        studentEmail: data.studentEmail,
         submissionFiles: data.submissionFiles || [],
-        textSubmissions:data.textSubmissions || [],
-        links : data.links || [],
+        textSubmissions: data.textSubmissions || [],
+        feedback: data.feedback || null,
+        marks: data.marks || null,
+        links: data.links || [],
         updatedAt: data.updatedAt,
         createdAt: data.createdAt?.toDate(),
       });
@@ -396,11 +401,13 @@ class AssignmentService {
       return ok({
         id: submissionDoc.id,
         assignmentId: data.assignmentId,
+        courseId: data.courseId,
         studentId: data.studentId,
         studentName: data.studentName,
+        studentEmail: data.studentEmail,
         submissionFiles: data.submissionFiles || [],
-        textSubmissions:data.textSubmissions || [],
-        links : data.links || [],
+        textSubmissions: data.textSubmissions || [],
+        links: data.links || [],
         updatedAt: data.updatedAt,
         marks: data.marks,
         feedback: data.feedback,
@@ -429,11 +436,13 @@ class AssignmentService {
         return {
           id: doc.id,
           assignmentId: data.assignmentId,
+          courseId: data.courseId,
           studentId: data.studentId,
           studentName: data.studentName,
+          studentEmail: data.studentEmail,
           submissionFiles: data.submissionFiles || [],
-          textSubmissions:data.textSubmissions || [],
-          links : data.links || [],
+          textSubmissions: data.textSubmissions || [],
+          links: data.links || [],
           marks: data.marks,
           feedback: data.feedback,
           gradedAt: data.gradedAt,
@@ -469,11 +478,13 @@ class AssignmentService {
         return {
           id: doc.id,
           assignmentId: data.assignmentId,
+          courseId: data.courseId,
           studentId: data.studentId,
           studentName: data.studentName,
+          studentEmail: data.studentEmail,
           submissionFiles: data.submissionFiles || [],
-          textSubmissions : data.textSubmissions|| [],
-          links : data.links || [],
+          textSubmissions: data.textSubmissions || [],
+          links: data.links || [],
           marks: data.marks,
           feedback: data.feedback,
           submittedAt: data.submittedAt,
@@ -516,6 +527,7 @@ class AssignmentService {
         );
         q = query(q, ...whereClauses);
       }
+
       // Get total count before pagination
       const totalSnapshot = await getDocs(q);
       const totalCount = totalSnapshot.size;
@@ -563,11 +575,13 @@ class AssignmentService {
         return {
           id: doc.id,
           assignmentId: data.assignmentId,
+          courseId: data.courseId,
           studentId: data.studentId,
           studentName: data.studentName,
+          studentEmail: data.studentEmail,
           submissionFiles: data.submissionFiles || [],
-          textSubmissions : data.textSubmissions || [],
-          links : data.links || [],
+          textSubmissions: data.textSubmissions || [],
+          links: data.links || [],
           marks: data.marks,
           feedback: data.feedback,
           createdAt: data.createdAt,
@@ -713,285 +727,283 @@ class AssignmentService {
   /**
  * Gets assignments with customizable filters and pagination
  */
-async getAssignments(
-  filters?: {
-    field: keyof Assignment;
-    op: WhereFilterOp;
-    value: any;
-  }[],
-  options: PaginationOptions<Assignment> = {}
-): Promise<Result<PaginatedResult<Assignment>>> {
-  try {
-    const {
-      limit: itemsPerPage = 25,
-      orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
-      pageDirection = 'next',
-      cursor = null
-    } = options;
+  async getAssignments(
+    filters?: {
+      field: keyof Assignment;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<Assignment> = {}
+  ): Promise<Result<PaginatedResult<Assignment>>> {
+    try {
+      const {
+        limit: itemsPerPage = 25,
+        orderBy: orderByOption = { field: 'createdAt', direction: 'desc' },
+        pageDirection = 'next',
+        cursor = null
+      } = options;
 
-    let q: Query = collection(db, COLLECTION.ASSIGNMENTS);
+      let q: Query = collection(db, COLLECTION.ASSIGNMENTS);
 
-    // Apply filters if provided
-    if (filters && filters.length > 0) {
-      const whereClauses = filters.map((f) =>
-        where(f.field as string, f.op, f.value)
-      );
-      q = query(q, ...whereClauses);
-    }
+      // Apply filters if provided
+      if (filters && filters.length > 0) {
+        const whereClauses = filters.map((f) =>
+          where(f.field as string, f.op, f.value)
+        );
+        q = query(q, ...whereClauses);
+      }
 
-    // Get total count before pagination
-    const totalSnapshot = await getDocs(q);
-    const totalCount = totalSnapshot.size;
+      // Get total count before pagination
+      const totalSnapshot = await getDocs(q);
+      const totalCount = totalSnapshot.size;
 
-    // Apply ordering
-    const { field, direction } = orderByOption;
+      // Apply ordering
+      const { field, direction } = orderByOption;
 
-    // For pagination, we need to handle different scenarios
-    if (pageDirection === 'previous' && cursor) {
-      // Previous page - use endBefore with limitToLast
-      q = query(
-        q,
-        orderBy(field as string, direction),
-        endBefore(cursor),
-        limitToLast(itemsPerPage)
-      );
-    } else if (cursor) {
-      // Next page - use startAfter
-      q = query(
-        q,
-        orderBy(field as string, direction),
-        startAfter(cursor),
-        limit(itemsPerPage)
-      );
-    } else {
-      // First page - simple limit
-      q = query(
-        q,
-        orderBy(field as string, direction),
-        limit(itemsPerPage)
-      );
-    }
-
-    const querySnapshot = await getDocs(q);
-
-    // Get the documents for pagination cursors
-    const documents = querySnapshot.docs;
-
-    if (pageDirection === 'previous') {
-      // For previous page, we need to reverse the order since we used limitToLast
-      documents.reverse();
-    }
-
-    const assignments = documents.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        title: data.title,
-        content: data.content,
-        attachments: data.attachments || [],
-        deadline: data.deadline,
-        fileUploadLimit: data.fileUploadLimit,
-        maximumUploadSize: data.maximumUploadSize,
-        totalPoints: data.totalPoints,
-        minimumPassPoint: data.minimumPassPoint,
-        authorId: data.authorId,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
-      } as Assignment;
-    });
-
-    // Determine pagination metadata
-    const hasNextPage = querySnapshot.docs.length === itemsPerPage;
-    const hasPreviousPage = cursor !== null;
-
-    // Get cursors for next and previous pages
-    const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
-    const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
-
-    console.log('AssignmentService - Fetched assignments with pagination:', {
-      count: assignments.length,
-      hasNextPage,
-      hasPreviousPage,
-      pageDirection
-    });
-
-    return ok({
-      data: assignments,
-      hasNextPage,
-      hasPreviousPage,
-      nextCursor,
-      previousCursor,
-      totalCount
-    });
-  } catch (error) {
-    logError('AssignmentService - Error fetching assignments with pagination:', error);
-    return fail("Error fetching assignments");
-  }
-}
-
-/**
- * Gets the first page of assignments with simplified interface
- */
-async getFirstAssignmentsPage(
-  filters?: {
-    field: keyof Assignment;
-    op: WhereFilterOp;
-    value: any;
-  }[],
-  pageSize: number = 25
-): Promise<Result<PaginatedResult<Assignment>>> {
-  return this.getAssignments(filters, {
-    limit: pageSize,
-    orderBy: { field: 'createdAt', direction: 'desc' },
-    pageDirection: 'next',
-    cursor: null
-  });
-}
-
-/**
- * Gets the next page of assignments
- */
-async getNextAssignmentsPage(
-  currentCursor: DocumentSnapshot,
-  filters?: {
-    field: keyof Assignment;
-    op: WhereFilterOp;
-    value: any;
-  }[],
-  pageSize: number = 25
-): Promise<Result<PaginatedResult<Assignment>>> {
-  return this.getAssignments(filters, {
-    limit: pageSize,
-    orderBy: { field: 'createdAt', direction: 'desc' },
-    pageDirection: 'next',
-    cursor: currentCursor
-  });
-}
-
-/**
- * Gets the previous page of assignments
- */
-async getPreviousAssignmentsPage(
-  currentCursor: DocumentSnapshot,
-  filters?: {
-    field: keyof Assignment;
-    op: WhereFilterOp;
-    value: any;
-  }[],
-  pageSize: number = 25
-): Promise<Result<PaginatedResult<Assignment>>> {
-  return this.getAssignments(filters, {
-    limit: pageSize,
-    orderBy: { field: 'createdAt', direction: 'desc' },
-    pageDirection: 'previous',
-    cursor: currentCursor
-  });
-}
-
-/**
- * Gets assignments by author with pagination
- */
-async getAssignmentsByAuthorWithPagination(
-  authorId: string,
-  options: PaginationOptions<Assignment> = {}
-): Promise<Result<PaginatedResult<Assignment>>> {
-  return this.getAssignments([
-    { field: 'authorId', op: '==', value: authorId }
-  ], options);
-}
-
-
-/**
- * Updates the authorId for a specific assignment
- * 
- * @param assignmentId - The ID of the assignment to update
- * @param authorId - The new author ID to set
- */
-async updateAssignmentAuthor(assignmentId: string, authorId: string): Promise<Result<null>> {
-  try {
-    const assignmentRef = doc(db, COLLECTION.ASSIGNMENTS, assignmentId);
-    const assignmentDoc = await getDoc(assignmentRef);
-
-    if (!assignmentDoc.exists()) {
-      return fail("Assignment not found");
-    }
-
-    await updateDoc(assignmentRef, {
-      authorId,
-      updatedAt: serverTimestamp(),
-    });
-
-    console.log('AssignmentService - Updated authorId for assignment:', assignmentId);
-    return ok(null);
-  } catch (error) {
-    logError('AssignmentService - Error updating assignment author:', error);
-    return fail("Error updating assignment author");
-  }
-}
-
-/**
- * Updates authorId for multiple assignments at once
- * 
- * @param assignmentIds - Array of assignment IDs to update
- * @param authorId - The new author ID to set
- */
-async bulkUpdateAssignmentAuthor(assignmentIds: string[], authorId: string): Promise<Result<{ success: number; failed: number }>> {
-  try {
-    let successCount = 0;
-    let failedCount = 0;
-
-    for (const assignmentId of assignmentIds) {
-      const result = await this.updateAssignmentAuthor(assignmentId, authorId);
-      if (result.success) {
-        successCount++;
+      // For pagination, we need to handle different scenarios
+      if (pageDirection === 'previous' && cursor) {
+        // Previous page - use endBefore with limitToLast
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          endBefore(cursor),
+          limitToLast(itemsPerPage)
+        );
+      } else if (cursor) {
+        // Next page - use startAfter
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          startAfter(cursor),
+          limit(itemsPerPage)
+        );
       } else {
-        failedCount++;
+        // First page - simple limit
+        q = query(
+          q,
+          orderBy(field as string, direction),
+          limit(itemsPerPage)
+        );
       }
-    }
 
-    console.log('AssignmentService - Bulk update completed:', { success: successCount, failed: failedCount });
-    return ok({ success: successCount, failed: failedCount });
-  } catch (error) {
-    logError('AssignmentService - Error in bulk update:', error);
-    return fail("Error in bulk update");
-  }
-}
+      const querySnapshot = await getDocs(q);
 
-/**
- * Updates authorId for all assignments that have null/empty authorId
- * 
- * @param authorId - The author ID to set for null assignments
- */
-async updateNullAuthorAssignments(authorId: string): Promise<Result<{ updated: number; total: number }>> {
-  try {
-    const querySnapshot = await getDocs(collection(db, COLLECTION.ASSIGNMENTS));
-    
-    let updatedCount = 0;
-    const totalCount = querySnapshot.size;
+      // Get the documents for pagination cursors
+      const documents = querySnapshot.docs;
 
-    for (const docSnapshot of querySnapshot.docs) {
-      const data = docSnapshot.data();
-      
-      // Check if authorId is null, undefined, or empty string
-      if (!data.authorId || data.authorId === '') {
-        await updateDoc(doc(db, COLLECTION.ASSIGNMENTS, docSnapshot.id), {
-          authorId,
-          updatedAt: serverTimestamp(),
-        });
-        updatedCount++;
-        console.log('AssignmentService - Updated assignment:', docSnapshot.id);
+      if (pageDirection === 'previous') {
+        // For previous page, we need to reverse the order since we used limitToLast
+        documents.reverse();
       }
+
+      const assignments = documents.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          content: data.content,
+          attachments: data.attachments || [],
+          deadline: data.deadline,
+          fileUploadLimit: data.fileUploadLimit,
+          maximumUploadSize: data.maximumUploadSize,
+          totalPoints: data.totalPoints,
+          minimumPassPoint: data.minimumPassPoint,
+          authorId: data.authorId,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as Assignment;
+      });
+
+      // Determine pagination metadata
+      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
+      const hasPreviousPage = cursor !== null;
+
+      // Get cursors for next and previous pages
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+
+      console.log('AssignmentService - Fetched assignments with pagination:', {
+        count: assignments.length,
+        hasNextPage,
+        hasPreviousPage,
+        pageDirection
+      });
+
+      return ok({
+        data: assignments,
+        hasNextPage,
+        hasPreviousPage,
+        nextCursor,
+        previousCursor,
+        totalCount
+      });
+    } catch (error) {
+      logError('AssignmentService - Error fetching assignments with pagination:', error);
+      return fail("Error fetching assignments");
     }
-
-    console.log('AssignmentService - Updated null author assignments:', { updated: updatedCount, total: totalCount });
-    return ok({ updated: updatedCount, total: totalCount });
-  } catch (error) {
-    logError('AssignmentService - Error updating null author assignments:', error);
-    return fail("Error updating null author assignments");
   }
-}
+
+  /**
+   * Gets the first page of assignments with simplified interface
+   */
+  async getFirstAssignmentsPage(
+    filters?: {
+      field: keyof Assignment;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    pageSize: number = 25
+  ): Promise<Result<PaginatedResult<Assignment>>> {
+    return this.getAssignments(filters, {
+      limit: pageSize,
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      pageDirection: 'next',
+      cursor: null
+    });
+  }
+
+  /**
+   * Gets the next page of assignments
+   */
+  async getNextAssignmentsPage(
+    currentCursor: DocumentSnapshot,
+    filters?: {
+      field: keyof Assignment;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    pageSize: number = 25
+  ): Promise<Result<PaginatedResult<Assignment>>> {
+    return this.getAssignments(filters, {
+      limit: pageSize,
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      pageDirection: 'next',
+      cursor: currentCursor
+    });
+  }
+
+  /**
+   * Gets the previous page of assignments
+   */
+  async getPreviousAssignmentsPage(
+    currentCursor: DocumentSnapshot,
+    filters?: {
+      field: keyof Assignment;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    pageSize: number = 25
+  ): Promise<Result<PaginatedResult<Assignment>>> {
+    return this.getAssignments(filters, {
+      limit: pageSize,
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      pageDirection: 'previous',
+      cursor: currentCursor
+    });
+  }
+
+  /**
+   * Gets assignments by author with pagination
+   */
+  async getAssignmentsByAuthorWithPagination(
+    authorId: string,
+    options: PaginationOptions<Assignment> = {}
+  ): Promise<Result<PaginatedResult<Assignment>>> {
+    return this.getAssignments([
+      { field: 'authorId', op: '==', value: authorId }
+    ], options);
+  }
 
 
+  /**
+   * Updates the authorId for a specific assignment
+   * 
+   * @param assignmentId - The ID of the assignment to update
+   * @param authorId - The new author ID to set
+   */
+  async updateAssignmentAuthor(assignmentId: string, authorId: string): Promise<Result<null>> {
+    try {
+      const assignmentRef = doc(db, COLLECTION.ASSIGNMENTS, assignmentId);
+      const assignmentDoc = await getDoc(assignmentRef);
+
+      if (!assignmentDoc.exists()) {
+        return fail("Assignment not found");
+      }
+
+      await updateDoc(assignmentRef, {
+        authorId,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log('AssignmentService - Updated authorId for assignment:', assignmentId);
+      return ok(null);
+    } catch (error) {
+      logError('AssignmentService - Error updating assignment author:', error);
+      return fail("Error updating assignment author");
+    }
+  }
+
+  /**
+   * Updates authorId for multiple assignments at once
+   * 
+   * @param assignmentIds - Array of assignment IDs to update
+   * @param authorId - The new author ID to set
+   */
+  async bulkUpdateAssignmentAuthor(assignmentIds: string[], authorId: string): Promise<Result<{ success: number; failed: number }>> {
+    try {
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (const assignmentId of assignmentIds) {
+        const result = await this.updateAssignmentAuthor(assignmentId, authorId);
+        if (result.success) {
+          successCount++;
+        } else {
+          failedCount++;
+        }
+      }
+
+      console.log('AssignmentService - Bulk update completed:', { success: successCount, failed: failedCount });
+      return ok({ success: successCount, failed: failedCount });
+    } catch (error) {
+      logError('AssignmentService - Error in bulk update:', error);
+      return fail("Error in bulk update");
+    }
+  }
+
+  /**
+   * Updates authorId for all assignments that have null/empty authorId
+   * 
+   * @param authorId - The author ID to set for null assignments
+   */
+  async updateNullAuthorAssignments(authorId: string): Promise<Result<{ updated: number; total: number }>> {
+    try {
+      const querySnapshot = await getDocs(collection(db, COLLECTION.ASSIGNMENTS));
+
+      let updatedCount = 0;
+      const totalCount = querySnapshot.size;
+
+      for (const docSnapshot of querySnapshot.docs) {
+        const data = docSnapshot.data();
+
+        // Check if authorId is null, undefined, or empty string
+        if (!data.authorId || data.authorId === '') {
+          await updateDoc(doc(db, COLLECTION.ASSIGNMENTS, docSnapshot.id), {
+            authorId,
+            updatedAt: serverTimestamp(),
+          });
+          updatedCount++;
+          console.log('AssignmentService - Updated assignment:', docSnapshot.id);
+        }
+      }
+
+      console.log('AssignmentService - Updated null author assignments:', { updated: updatedCount, total: totalCount });
+      return ok({ updated: updatedCount, total: totalCount });
+    } catch (error) {
+      logError('AssignmentService - Error updating null author assignments:', error);
+      return fail("Error updating null author assignments");
+    }
+  }
 
 }
 

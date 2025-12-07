@@ -37,13 +37,14 @@ interface FormErrors {
 }
 
 interface AssignmentModalProps {
+  courseId: string;
   onSave: (assignment: Assignment) => void;
   onCancel: () => void;
 }
 
 type FormField = keyof Omit<Assignment, 'attachments'>;
 
-const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) => {
+const AssignmentModal: React.FC<AssignmentModalProps> = ({ courseId, onSave, onCancel }) => {
   const [formData, setFormData] = useState<AssignmentFormData>({
     title: '',
     content: '',
@@ -130,6 +131,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
 
       const newAssignmentData = {
         title: formData.title,
+        courseId: courseId,
         content: formData.content,
         deadline: formData.deadline
           ? Timestamp.fromDate(new Date(formData.deadline))

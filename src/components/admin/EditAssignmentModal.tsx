@@ -13,6 +13,7 @@ import MarkdownEditor from "../MarkdownEditor";
 /* ------------------------------------------------------------------ */
 
 interface EditAssignmentModalProps {
+  courseId: string;
   assignmentId: string | null;
   isOpen: boolean;
   onClose: () => void;
@@ -22,6 +23,7 @@ interface EditAssignmentModalProps {
 /* ------------------------------------------------------------------ */
 
 const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
+  courseId,
   assignmentId,
   isOpen,
   onClose,
@@ -94,6 +96,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
       }
       const updated: Assignment = {
         ...assignment,
+        courseId: courseId,
         deadline: assignment.deadline
           ? Timestamp.fromDate(new Date(assignment.deadline as any))
           : null,
