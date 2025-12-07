@@ -1,9 +1,27 @@
-import { ok, fail, Result } from '../utils/response';
-import { FieldValue } from 'firebase-admin/firestore';
-import { AnnouncementStatus } from '../types/general';
-import { ANNOUNCEMENT_SCOPE, ANNOUNCEMENT_STATUS, COLLECTION } from '../constants';
-import * as admin from 'firebase-admin';
-import { Announcement } from '../types/announcements';
+
+import { ok, fail, Result } from "../utils/response";
+import { FieldValue } from "firebase-admin/firestore";
+import { AnnouncementStatus } from "../types/general";
+import {
+  ANNOUNCEMENT_SCOPE,
+  ANNOUNCEMENT_STATUS,
+  COLLECTION,
+  
+} from "../constants";
+import * as admin from "firebase-admin";
+import { Announcement } from "../types/announcements";
+
+// import { sendMail } from './email/sendMail'; // <-- Ensure this exists
+
+// Import or define your email template builders
+// import {
+//   buildCourseAnnouncementEmail,
+//   buildGeneralNotificationEmail,
+//   buildInstructorEmail,
+//   buildStudentEmail,
+//   buildAccountantEmail,
+//   buildTeacherEmail
+// } from '../utils/emailTemplates';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -12,7 +30,8 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-const annoucementService = {
+
+const announcementService = {
   /**
    * Create a course assignment announcement.
    * @param {Object} params - Parameters for creating the announcement.
@@ -43,17 +62,19 @@ const annoucementService = {
       } = params;
 
       if (!courseId) {
-        return fail('courseId is required');
+        return fail("courseId is required");
       }
 
       if (!assignmentId) {
-        return fail('assignmentId is required');
+        return fail("assignmentId is required");
       }
 
       // Generate deterministic ID
       const announcementId = `C_${courseId}_${assignmentId}`;
 
-      const docRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
+      const docRef = db
+        .collection(COLLECTION.ANNOUNCEMENTS)
+        .doc(announcementId);
 
       // Check if document already exists — idempotent
       const existing = await docRef.get();
@@ -77,8 +98,8 @@ const annoucementService = {
 
       return ok(announcementId);
     } catch (error: any) {
-      console.error('Error creating course assignment announcement', error);
-      return fail('Failed to create course assignment announcement');
+      console.error("Error creating course assignment announcement", error);
+      return fail("Failed to create course assignment announcement");
     }
   },
 
@@ -87,17 +108,21 @@ const annoucementService = {
    * @param {string} announcementId - The ID of the announcement to fetch.
    * @returns {Promise<Result<Announcement>>} - The result of the fetch operation.
    */
-  async getAnnouncementById(announcementId: string): Promise<Result<Announcement>> {
+  async getAnnouncementById(
+    announcementId: string
+  ): Promise<Result<Announcement>> {
     try {
-      const docRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
+      const docRef = db
+        .collection(COLLECTION.ANNOUNCEMENTS)
+        .doc(announcementId);
       const doc = await docRef.get();
       if (!doc.exists) {
-        return fail('Announcement not found');
+        return fail("Announcement not found");
       }
       return ok(doc.data() as Announcement);
     } catch (error: any) {
-      console.error('Error fetching announcement', error);
-      return fail('Failed to fetch announcement');
+      console.error("Error fetching announcement", error);
+      return fail("Failed to fetch announcement");
     }
   },
 
@@ -106,11 +131,13 @@ const annoucementService = {
    * @param {string} courseId - The ID of the course.
    * @returns {Promise<Result<Announcement[]>>} - The result of the fetch operation.
    */
-  async listAnnouncementsByCourse(courseId: string): Promise<Result<Announcement[]>> {
+  async listAnnouncementsByCourse(
+    courseId: string
+  ): Promise<Result<Announcement[]>> {
     try {
       const snapshot = await db
         .collection(COLLECTION.ANNOUNCEMENTS)
-        .where('courseId', '==', courseId)
+        .where("courseId", "==", courseId)
         .get();
 
       const announcements: Announcement[] = [];
@@ -120,10 +147,12 @@ const annoucementService = {
 
       return ok(announcements);
     } catch (error: any) {
-      console.error('Error listing announcements by course', error);
-      return fail('Failed to list announcements');
+      console.error("Error listing announcements by course", error);
+      return fail("Failed to list announcements");
     }
   },
+
+ 
 };
 
-export default annoucementService;
+export default announcementService;

@@ -448,6 +448,14 @@ export const CART_ACTION = {
   SET_CART: "SET_CART",
 } as const;
 
+export const EMAIL_TYPE = {
+COURSE_ANNOUNCEMENT : "Course Announcement",
+GENERAL_ALL : "General All",
+RB_INSTRUCTOR:"Rb Instructor",
+RB_TEACHER : "Rb Teacher",
+RB_ACCOUNTANT:"Rb Accountant",
+RB_STUDENT:"Rb Student"
+} as const;
 export const POPUP_COURSE_TYPE = {
   LIVE: "LIVE",
   SELF_PACED: "SELF-PACED",

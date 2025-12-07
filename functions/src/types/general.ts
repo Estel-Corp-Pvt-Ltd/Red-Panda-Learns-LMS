@@ -29,6 +29,7 @@ import {
   NOTIFICATION_STATUS,
   ANNOUNCEMENT_SCOPE,
   ANNOUNCEMENT_STATUS,
+  EMAIL_TYPE,
 } from "../constants";
 
 export type AttributeType =
@@ -78,6 +79,9 @@ export type AnnouncementScope =
   (typeof ANNOUNCEMENT_SCOPE)[keyof typeof ANNOUNCEMENT_SCOPE];
 export type AnnouncementStatus =
   (typeof ANNOUNCEMENT_STATUS)[keyof typeof ANNOUNCEMENT_STATUS];
+
+  export type EmailType =
+  (typeof EMAIL_TYPE)[keyof typeof EMAIL_TYPE]
 export type Duration = {
   hours: number;
   minutes: number;
