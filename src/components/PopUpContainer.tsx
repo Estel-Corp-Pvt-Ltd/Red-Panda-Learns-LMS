@@ -5,6 +5,7 @@ import RecentPurchasesToasts, {
   Purchase,
 } from "../pages/RecentPurchasesToasts";
 import { useRecentEnrollments } from "./useRecentEnrollments";
+import { useLocation } from "react-router-dom";
 
 // Optional: dev-only demo items so you can see the toasts UI even if Firestore blocks reads
 const demoItems: Purchase[] = [
@@ -34,6 +35,7 @@ const demoItems: Purchase[] = [
 type Phase = "idle" | "popups" | "toasts";
 
 const PopUpContainer = () => {
+  const location = useLocation();
   const { data: popUps, isLoading } = useActivePopUpsQuery();
   const {
     items: enrollments,
@@ -47,11 +49,35 @@ const PopUpContainer = () => {
 
   // One-way state machine to prevent overlap
   const [phase, setPhase] = useState<Phase>("idle");
+  // Track the current popup index for sequential display
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [shouldShowPopup, setShouldShowPopup] = useState(() => {
+    const saved = localStorage.getItem("popupHideTime");
+    if (saved) {
+      const savedTime = Number(saved);
+      const now = Date.now();
+
+      const twentyFourHours = 60 * 1000; // ms in 24h
+
+      if (now - savedTime > twentyFourHours) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  });
 
   // Track which popups are still on screen
   const [remainingIds, setRemainingIds] = useState<Set<string | number>>(
     new Set()
   );
+
+  useEffect(() => {
+    if (!["/", "/dashboard"].includes(location.pathname)) {
+      setShouldShowPopup(false);
+    }
+  }, [location]);
 
   // Decide initial phase when popup query resolves
   useEffect(() => {
@@ -82,6 +108,8 @@ const PopUpContainer = () => {
       next.delete(id);
       return next;
     });
+    // Move to next popup in list
+    setCurrentIndex((prev) => prev + 1);
   };
 
   // Map Firestore items to toast items
@@ -110,33 +138,34 @@ const PopUpContainer = () => {
         ? demoItems
         : [];
 
+  // Compute the current popup being shown
+  const currentPopUp = popupList[currentIndex] ?? null;
+
   const canShowToasts =
     phase === "toasts" && !enrollmentsLoading && itemsForToasts.length > 0;
 
   return (
     <>
       {/* Bottom-right: popups (only in "popups" phase) */}
-      {phase === "popups" && hasPopups && (
+      {phase === "popups" && shouldShowPopup && ["/", "/dashboard"].includes(location.pathname) && currentPopUp && (
         <div className="fixed bottom-4 right-4 flex flex-col gap-3 z-50">
-          {popupList.map((popUp: any) => (
-            <PopUpElement
-              key={popUp.id}
-              title={popUp.title}
-              description={popUp.description}
-              type={popUp.type}
-              ctaLink={popUp.ctaLink}
-              ctaText={popUp.ctaText}
-              autoClose={popUp.autoClose}
-              duration={popUp.duration}
-              // IMPORTANT: PopUpElement must call onDone after its exit animation
-              onDone={() => handlePopUpDone(popUp.id)}
-            />
-          ))}
+          <PopUpElement
+            key={currentPopUp.id}
+            title={currentPopUp.title}
+            description={currentPopUp.description}
+            type={currentPopUp.type}
+            ctaLink={currentPopUp.ctaLink}
+            ctaText={currentPopUp.ctaText}
+            autoClose={currentPopUp.autoClose}
+            duration={currentPopUp.duration}
+            // IMPORTANT: PopUpElement must call onDone after its exit animation
+            onDone={() => handlePopUpDone(currentPopUp.id)}
+          />
         </div>
       )}
 
       {/* Bottom-left: recent purchases queue (only in "toasts" phase) */}
-      {canShowToasts && (
+      {shouldShowPopup && canShowToasts && (
         <RecentPurchasesToasts
           items={itemsForToasts}
           start={true}
