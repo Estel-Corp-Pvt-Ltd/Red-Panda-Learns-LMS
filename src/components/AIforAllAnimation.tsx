@@ -20,9 +20,11 @@ const AIForAllAnimation = () => {
   const centerRef = useRef<HTMLDivElement | null>(null);
   const pulseIdRef = useRef(0);
 
-  // Responsive container size (square)
-  const [size, setSize] = useState(600); // px
+  // Responsive container size
+  const BASE = 800; // logical coordinate system
+  const [size, setSize] = useState(600); // actual px size of container
 
+  // Ratios relative to container size
   const CENTER_DIAM_RATIO = 0.2;
   const DOT_DIAM_RATIO = 0.08;
   const ORBIT_RAD_RATIO = 0.07;
@@ -38,7 +40,7 @@ const AIForAllAnimation = () => {
     return () => window.removeEventListener("resize", computeTargetSize);
   }, []);
 
-  // Derived sizes (all in px)
+  // Derived sizes
   const centerDiameterPx = size * CENTER_DIAM_RATIO;
   const nodeDotDiameterPx = size * DOT_DIAM_RATIO;
 
@@ -116,27 +118,22 @@ const AIForAllAnimation = () => {
     },
   ];
 
-  // Center in actual pixels
-  const centerPos = { x: size / 2, y: size / 2 };
+  const centerPos = { x: BASE / 2, y: BASE / 2 }; // Use BASE/2 for perfect centering
 
-  // Use index to place nodes at exact 60° steps around the circle
-  const getNodePositionByIndex = (index: number) => {
-    const radius = size * 0.35; // 35% of container
-    const angleStep = 360 / nodes.length; // 60°
-    const angleOffset = -90; // start at top
-    const angleRad = ((angleOffset + index * angleStep) * Math.PI) / 180;
+  const getNodePosition = (nodeId: number) => {
+    const centerX = BASE / 2;
+    const centerY = BASE / 2;
+    const radius = BASE * 0.35; // 35% of BASE for consistent proportions
+
+    const angleOffset = -90;
+    const angleStep = 360 / nodes.length; // Dynamic based on node count
+    const angle = ((nodeId - 1) * angleStep + angleOffset) * (Math.PI / 180);
 
     return {
-      x: centerPos.x + radius * Math.cos(angleRad),
-      y: centerPos.y + radius * Math.sin(angleRad),
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
     };
   };
-
-  const getNodeIndex = (nodeId: number) =>
-    nodes.findIndex((n) => n.id === nodeId);
-
-  const getNodePosition = (nodeId: number) =>
-    getNodePositionByIndex(getNodeIndex(nodeId));
 
   const getLinePoints = (nodeId: number) => {
     const nodePos = getNodePosition(nodeId);
@@ -151,7 +148,7 @@ const AIForAllAnimation = () => {
   const createPulse = (nodeId: number) => {
     const node = nodes.find((n) => n.id === nodeId);
     const nodePos = getNodePosition(nodeId);
-    const deltaX = nodePos.x - centerPos.x; // px from center
+    const deltaX = nodePos.x - centerPos.x;
     const deltaY = nodePos.y - centerPos.y;
 
     const newPulse = {
@@ -185,7 +182,7 @@ const AIForAllAnimation = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNodeHover = (nodeId: number, isEntering: boolean) => {
     if (isEntering) {
@@ -213,7 +210,8 @@ const AIForAllAnimation = () => {
 
   const getCardAlignment = (nodeId: number) => {
     const pos = getNodePosition(nodeId);
-    if (pos.y < centerPos.y) {
+    // Cards go below for top half nodes, above for bottom half nodes
+    if (pos.y < BASE / 2) {
       return { position: "below" as const };
     } else {
       return { position: "above" as const };
@@ -262,7 +260,7 @@ const AIForAllAnimation = () => {
           />
         ))}
 
-        {/* Connection Lines */}
+        {/* Connection Lines - SVG centered properly */}
         <svg
           style={{
             position: "absolute",
@@ -273,10 +271,11 @@ const AIForAllAnimation = () => {
             zIndex: 1,
             overflow: "visible",
           }}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${BASE} ${BASE}`}
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
+            {/* Gradient definitions for lines */}
             {nodes.map((node) => (
               <linearGradient
                 key={`gradient-${node.id}`}
@@ -362,9 +361,9 @@ const AIForAllAnimation = () => {
           </div>
         </div>
 
-        {/* Nodes */}
-        {nodes.map((node, index) => {
-          const pos = getNodePositionByIndex(index);
+        {/* Nodes - Fixed with transform on outer wrapper */}
+        {nodes.map((node) => {
+          const pos = getNodePosition(node.id);
           const isRevealed = revealedNodes.includes(node.id);
           const isHovered = hoveredNode === node.id;
           const Icon = node.icon;
@@ -381,8 +380,10 @@ const AIForAllAnimation = () => {
               }}
               style={{
                 position: "absolute",
-                left: `${pos.x}px`,
-                top: `${pos.y}px`,
+                // Use percentage positioning based on BASE coordinate system
+                left: `${(pos.x / BASE) * 100}%`,
+                top: `${(pos.y / BASE) * 100}%`,
+                // CRITICAL: Apply translate to center the entire node on the position
                 transform: "translate(-50%, -50%)",
                 opacity: isRevealed ? 1 : 0,
                 animation: isRevealed
@@ -393,7 +394,7 @@ const AIForAllAnimation = () => {
               }}
               className="ai-node"
             >
-              {/* Orbital particles */}
+              {/* Orbital particles - now correctly centered on the dot */}
               {isHovered && (
                 <>
                   <div
@@ -415,7 +416,7 @@ const AIForAllAnimation = () => {
                 </>
               )}
 
-              {/* Glow rings */}
+              {/* Glow rings - now correctly centered */}
               {isHovered && (
                 <>
                   <div
@@ -433,7 +434,7 @@ const AIForAllAnimation = () => {
                 </>
               )}
 
-              {/* Icon circle */}
+              {/* Icon background circle - centered in the node */}
               <div
                 className={`ai-node-dot bg-gradient-to-br ${node.gradient}`}
                 style={{
@@ -451,12 +452,15 @@ const AIForAllAnimation = () => {
                   justifyContent: "center",
                 }}
               >
+                {/* Inner glow */}
                 <div
                   className="ai-node-inner-glow"
                   style={{
                     background: `radial-gradient(circle, ${node.color}40 0%, transparent 70%)`,
                   }}
                 />
+
+                {/* Icon */}
                 <Icon
                   className="ai-node-icon"
                   style={{
@@ -465,9 +469,31 @@ const AIForAllAnimation = () => {
                     height: `calc(var(--dot-d) * 0.5)`,
                   }}
                 />
+
+                {/* Sparkles on hover */}
+                {isHovered && (
+                  <>
+                    <div
+                      className="sparkle sparkle-1"
+                      style={{ "--sparkle-color": node.color } as any}
+                    />
+                    <div
+                      className="sparkle sparkle-2"
+                      style={{ "--sparkle-color": node.color } as any}
+                    />
+                    <div
+                      className="sparkle sparkle-3"
+                      style={{ "--sparkle-color": node.color } as any}
+                    />
+                    <div
+                      className="sparkle sparkle-4"
+                      style={{ "--sparkle-color": node.color } as any}
+                    />
+                  </>
+                )}
               </div>
 
-              {/* Info card on hover (unchanged) */}
+              {/* Floating Info Card */}
               {isHovered && (
                 <div
                   className="info-card-wrapper"
@@ -504,6 +530,7 @@ const AIForAllAnimation = () => {
                         "card-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
                     }}
                   >
+                    {/* Card Header */}
                     <div
                       style={{
                         display: "flex",
@@ -546,6 +573,7 @@ const AIForAllAnimation = () => {
                       </div>
                     </div>
 
+                    {/* Divider */}
                     <div
                       style={{
                         height: "1px",
@@ -554,6 +582,7 @@ const AIForAllAnimation = () => {
                       }}
                     />
 
+                    {/* Description */}
                     <p
                       style={{
                         fontSize: "13px",
@@ -565,6 +594,7 @@ const AIForAllAnimation = () => {
                       {node.description}
                     </p>
 
+                    {/* Stats Badge */}
                     <div
                       style={{
                         display: "inline-flex",
@@ -598,11 +628,12 @@ const AIForAllAnimation = () => {
                 </div>
               )}
 
-              {/* Node label below dot */}
+              {/* Node Label - positioned below the dot */}
+              {/* Node Label - positioned below the dot */}
               <div
                 style={{
                   position: "absolute",
-                  top: `calc(var(--dot-d) / 2 + 20px)`,
+                  top: `calc(var(--dot-d) / 2 + 20px)`, // Changed from 8px to 20px
                   left: "50%",
                   transform: isHovered
                     ? "translateX(-50%) scale(1.05)"
@@ -630,8 +661,8 @@ const AIForAllAnimation = () => {
 
         {/* Connection Pulses */}
         {pulses.map((pulse) => {
-          const targetX = pulse.deltaX; // already px from center
-          const targetY = pulse.deltaY;
+          const targetX = (pulse.deltaX / BASE) * size;
+          const targetY = (pulse.deltaY / BASE) * size;
 
           return (
             <div
@@ -759,6 +790,7 @@ const AIForAllAnimation = () => {
             pointer-events: none;
           }
 
+          /* Glow rings centered on node */
           .ai-node-glow-ring {
             position: absolute;
             top: 50%;
@@ -776,6 +808,7 @@ const AIForAllAnimation = () => {
           .ai-node-glow-ring-2 { animation: glow-ring 1.5s ease-out infinite 0.3s; }
           .ai-node-glow-ring-3 { animation: glow-ring 1.5s ease-out infinite 0.6s; }
 
+          /* Orbital particles centered on node */
           .orbital-particle {
             position: absolute;
             top: 50%;
@@ -810,6 +843,7 @@ const AIForAllAnimation = () => {
           .sparkle-4 { top: 50%; right: -10px; animation: sparkle 1.5s ease-in-out infinite 1.125s; }
 
           .info-card { pointer-events: auto; }
+
           .info-card-wrapper { --card-scale: 1; }
           @media (max-width: 640px) {
             .info-card-wrapper { --card-scale: 0.9; }
