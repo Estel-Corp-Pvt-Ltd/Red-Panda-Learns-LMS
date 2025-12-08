@@ -45,13 +45,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [existingSubmission, setExistingSubmission] = useState<AssignmentSubmission | null>(null);
-  
+
   // New states for text submission and links
   const [textSubmissions, setTextSubmissions] = useState<string[]>([]);
   const [currentTextSubmission, setCurrentTextSubmission] = useState('');
   const [links, setLinks] = useState<string[]>([]);
   const [currentLink, setCurrentLink] = useState('');
-  
+
   // Editor states
   const [isEditorMaximized, setIsEditorMaximized] = useState(false);
   const [isResponsesMaximized, setIsResponsesMaximized] = useState(false);
@@ -95,7 +95,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         setIsEditorMaximized(false);
       }
     };
-    
+
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isEditorMaximized]);
@@ -112,18 +112,18 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     setSubmissionFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-useEffect(() => {
-  const checkAssignment = async () => {
-    if (!user || !assignment) return;
-    const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(
-      user.id
-    );
-    setIsAssigned(assigned);
-    console.log("isStudentAssignedToAdmin:", assigned);
-  };
+  useEffect(() => {
+    const checkAssignment = async () => {
+      if (!user || !assignment) return;
+      const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(
+        user.id
+      );
+      setIsAssigned(assigned);
+      console.log("isStudentAssignedToAdmin:", assigned);
+    };
 
-  checkAssignment();
-}, [user, assignment]);
+    checkAssignment();
+  }, [user, assignment]);
 
   // ✅ Add link to submission
   const addLink = () => {
@@ -203,33 +203,37 @@ useEffect(() => {
         assignmentId,
         studentId: user.id,
         studentName: user.firstName + " " + user.lastName,
+        studentEmail: user.email,
+        courseId: assignment.courseId,
         submissionFiles: uploadedUrls,
         textSubmissions: textSubmissions,
+        marks: null,
+        feedback: null,
         links: links
       };
 
       // Create submission and get the submission ID
-    const submissionResult = await assignmentService.createSubmission(submission);
-    
-    // ✅ If student is assigned to admin, create notification
-    if (isAssigned && submissionResult.success && submissionResult.data) {
-      try {
-        const idToken = await authService.getToken();
-        
-        const submissionId = submissionResult.data;
-        await notificationApiService.createNotification({
-          submissionId: submissionId,  // The ID returned from createSubmission
-          assignmentId: assignmentId,
-          studentId: user.id,
-        }, idToken);
-        console.log('✅ Notification created successfully');
-      } catch (notifError) {
-        console.error('Failed to create notification:', notifError);
-        // Don't fail the whole submission if notification fails
-      }
-    }
+      const submissionResult = await assignmentService.createSubmission(submission);
 
-    await onComplete();
+      // ✅ If student is assigned to admin, create notification
+      if (isAssigned && submissionResult.success && submissionResult.data) {
+        try {
+          const idToken = await authService.getToken();
+
+          const submissionId = submissionResult.data;
+          await notificationApiService.createNotification({
+            submissionId: submissionId,  // The ID returned from createSubmission
+            assignmentId: assignmentId,
+            studentId: user.id,
+          }, idToken);
+          console.log('✅ Notification created successfully');
+        } catch (notifError) {
+          console.error('Failed to create notification:', notifError);
+          // Don't fail the whole submission if notification fails
+        }
+      }
+
+      await onComplete();
       setMessage('Assignment submitted successfully!');
       setSubmissionFiles([]);
       setTextSubmissions([]);
@@ -247,16 +251,16 @@ useEffect(() => {
 
 
   useEffect(() => {
-  const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      if (isResponsesMaximized) setIsResponsesMaximized(false);
-      if (isEditorMaximized) setIsEditorMaximized(false);
-    }
-  };
-  
-  document.addEventListener('keydown', handleEscape);
-  return () => document.removeEventListener('keydown', handleEscape);
-}, [isEditorMaximized, isResponsesMaximized]);
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isResponsesMaximized) setIsResponsesMaximized(false);
+        if (isEditorMaximized) setIsEditorMaximized(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isEditorMaximized, isResponsesMaximized]);
 
   const handleDeleteSubmission = async () => {
     if (!existingSubmission) return;
@@ -446,8 +450,8 @@ useEffect(() => {
               </div>
             )}
 
-            <button 
-              className='bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors' 
+            <button
+              className='bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors'
               onClick={handleDeleteSubmission}
               disabled={isSubmitting}
             >
@@ -468,11 +472,10 @@ useEffect(() => {
                     <button
                       type="button"
                       onClick={() => setEditorView('edit')}
-                      className={`px-3 py-1.5 text-xs flex items-center gap-1 ${
-                        editorView === 'edit' 
-                          ? 'bg-primary text-white' 
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                      className={`px-3 py-1.5 text-xs flex items-center gap-1 ${editorView === 'edit'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
                     >
                       <Edit3 className="h-3 w-3" />
                       Write
@@ -480,11 +483,10 @@ useEffect(() => {
                     <button
                       type="button"
                       onClick={() => setEditorView('preview')}
-                      className={`px-3 py-1.5 text-xs flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 ${
-                        editorView === 'preview' 
-                          ? 'bg-primary text-white' 
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                      className={`px-3 py-1.5 text-xs flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 ${editorView === 'preview'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
                     >
                       <Eye className="h-3 w-3" />
                       Preview
@@ -492,17 +494,16 @@ useEffect(() => {
                     <button
                       type="button"
                       onClick={() => setEditorView('live')}
-                      className={`px-3 py-1.5 text-xs flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 ${
-                        editorView === 'live' 
-                          ? 'bg-primary text-white' 
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      } rounded-r-lg`}
+                      className={`px-3 py-1.5 text-xs flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 ${editorView === 'live'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        } rounded-r-lg`}
                     >
                       <Split className="h-3 w-3" />
                       Split
                     </button>
                   </div>
-                  
+
                   {/* Maximize Button */}
                   <button
                     type="button"
@@ -521,9 +522,8 @@ useEffect(() => {
 
               <div
                 data-color-mode={colorMode}
-                className={`border rounded-lg dark:border-gray-700 ${
-                  isEditorMaximized ? 'h-[calc(100vh-150px)]' : ''
-                }`}
+                className={`border rounded-lg dark:border-gray-700 ${isEditorMaximized ? 'h-[calc(100vh-150px)]' : ''
+                  }`}
               >
                 <MDEditor
                   value={currentTextSubmission}
@@ -559,55 +559,55 @@ useEffect(() => {
               </div>
 
               {/* Added Text Submissions */}
-            {textSubmissions.length > 0 && !isEditorMaximized && (
-  <div className={`mt-3 space-y-2 ${isResponsesMaximized ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6 overflow-y-auto' : ''}`}>
-    <div className="flex items-center justify-between mb-2">
-      <p className="text-xs text-gray-500 dark:text-gray-400">Added responses:</p>
-      <button
-        type="button"
-        onClick={() => setIsResponsesMaximized(!isResponsesMaximized)}
-        className="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-        title={isResponsesMaximized ? "Exit fullscreen" : "Expand all"}
-      >
-        {isResponsesMaximized ? (
-          <Minimize2 className="h-4 w-4" />
-        ) : (
-          <Maximize2 className="h-4 w-4" />
-        )}
-      </button>
-    </div>
-    
-    {textSubmissions.map((text, idx) => (
-      <div
-        key={idx}
-        className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
-      >
-        <div className="flex justify-between items-start">
-          <div className="flex-1 prose dark:prose-invert max-w-none text-sm">
-            <MarkdownViewer value={isResponsesMaximized ? text : (text.substring(0, 100) + (text.length > 100 ? '...' : ''))} />
-          </div>
-          <button
-            type="button"
-            onClick={() => removeTextSubmission(idx)}
-            className="text-red-500 hover:text-red-700 ml-2"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    ))}
-    
-    {isResponsesMaximized && (
-      <button
-        type="button"
-        onClick={() => setIsResponsesMaximized(false)}
-        className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-      >
-        Close Fullscreen
-      </button>
-    )}
-  </div>
-)}
+              {textSubmissions.length > 0 && !isEditorMaximized && (
+                <div className={`mt-3 space-y-2 ${isResponsesMaximized ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6 overflow-y-auto' : ''}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Added responses:</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsResponsesMaximized(!isResponsesMaximized)}
+                      className="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                      title={isResponsesMaximized ? "Exit fullscreen" : "Expand all"}
+                    >
+                      {isResponsesMaximized ? (
+                        <Minimize2 className="h-4 w-4" />
+                      ) : (
+                        <Maximize2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  {textSubmissions.map((text, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 prose dark:prose-invert max-w-none text-sm">
+                          <MarkdownViewer value={isResponsesMaximized ? text : (text.substring(0, 100) + (text.length > 100 ? '...' : ''))} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeTextSubmission(idx)}
+                          className="text-red-500 hover:text-red-700 ml-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {isResponsesMaximized && (
+                    <button
+                      type="button"
+                      onClick={() => setIsResponsesMaximized(false)}
+                      className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      Close Fullscreen
+                    </button>
+                  )}
+                </div>
+              )}
 
             </div>
 

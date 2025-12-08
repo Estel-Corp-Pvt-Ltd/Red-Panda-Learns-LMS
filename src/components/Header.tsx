@@ -1,4 +1,5 @@
-import { Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
+import { useState } from "react";
+import { Bell, Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "./ui/navigation-menu";
+import { NotificationPanel } from "./notificationPanel";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -41,6 +43,8 @@ export function Header({
   const { user } = useAuth();
   const { cart } = useCart();
   const { toast } = useToast();
+  const location = useLocation();
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const email = "hello@vizuara.com";
 
@@ -51,8 +55,6 @@ export function Header({
       description: "The email address has been copied to your clipboard.",
     });
   };
-
-  const location = useLocation();
 
   return (
     <>
@@ -385,8 +387,7 @@ export function Header({
 
           {/* ----- Right: Actions ----- */}
           <div className="flex items-center gap-4">
-            {/* Contact Us Popover - Desktop only (kept as click to open) */}
-
+            {/* Contact Us Popover - Desktop only */}
             {location.pathname === "/" && (
               <Popover>
                 <PopoverTrigger asChild>
@@ -446,33 +447,42 @@ export function Header({
             <ThemeToggle />
 
             {user ? (
-              <div className="flex items-center">
-                {user?.role !== USER_ROLE.ADMIN && (
-                  <Link to="/cart" className="relative mr-3">
-                    <ShoppingCart className="w-6 h-6" />
-                    {cart.length > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                        {cart.length}
-                      </span>
-                    )}
-                  </Link>
-                )}
-                <Link
-                  to={
-                    user?.role === USER_ROLE.ADMIN
-                      ? "/admin"
-                      : user?.role === USER_ROLE.ACCOUNTANT
-                        ? "/accountant"
-                        : "/dashboard"
-                  }
-                  className="ml-2"
+              <>
+                {/* Bell Icon Button */}
+                <button
+                  onClick={() => setIsNotificationOpen(true)}
+                  className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
-                  <Button variant="default" size="sm" className="relative flex">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Button>
-                </Link>
-                {/* Logged-in dropdown (hover to open on desktop) */}
+                  <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                </button>
+
+                <div className="flex items-center">
+                  {user?.role !== USER_ROLE.ADMIN && (
+                    <Link to="/cart" className="relative mr-3">
+                      <ShoppingCart className="w-6 h-6" />
+                      {cart.length > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {cart.length}
+                        </span>
+                      )}
+                    </Link>
+                  )}
+                  <Link
+                    to={
+                      user?.role === USER_ROLE.ADMIN
+                        ? "/admin"
+                        : user?.role === USER_ROLE.ACCOUNTANT
+                          ? "/accountant"
+                          : "/dashboard"
+                    }
+                    className="ml-2"
+                  >
+                    <Button variant="default" size="sm" className="relative flex">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Button>
+                  </Link>
+                    {/* Logged-in dropdown (hover to open on desktop) */}
                 {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -514,7 +524,9 @@ export function Header({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu> */}
-              </div>
+              {/* </div> */}
+                </div>
+              </>
             ) : (
               // Logged-out: Login + Signup buttons
               <div className="hidden lg:flex items-center gap-2">
@@ -529,6 +541,12 @@ export function Header({
           </div>
         </div>
       </header>
+
+      {/* Notification Panel - moved outside header */}
+      <NotificationPanel
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+      />
     </>
   );
 }

@@ -7,6 +7,7 @@ type MarkdownViewerProps = {
 };
 
 const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ value }) => {
+
   return (
     <ReactMarkdown
       rehypePlugins={[rehypeRaw]} // For HTML support
@@ -143,7 +144,7 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ value }) => {
         ),
       }}
     >
-      {value || '_No content provided._'}
+      {value.replace(/(?<!\]\()https?:\/\/[^\s)]+/g, url => `[${url}](${url})`) || "_No content provided._"}
     </ReactMarkdown>
   )
 }

@@ -22,9 +22,9 @@ import { fileService } from "@/services/fileService";
 import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import MDEditor from "@uiw/react-md-editor";
 import { Upload } from "lucide-react";
 import { useEffect, useState } from "react";
+import MarkdownEditor from "../MarkdownEditor";
 
 type CreateLessonModalProps = {
   courseId: string;
@@ -190,14 +190,13 @@ export const CreateLessonModal = ({
                     data-color-mode={colorMode}
                     className="border rounded-lg dark:border-neutral-700"
                   >
-                    <MDEditor
+                    <MarkdownEditor
                       value={lesson.description}
                       onChange={(value) =>
                         handleFieldChange("description", value || "")
                       }
                       height={250}
-                      preview="live"
-                      className="!bg-transparent dark:!bg-neutral-900"
+                      uploadPath="/courses/lessons/attachments"
                     />
                   </div>
                 </div>

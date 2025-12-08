@@ -176,6 +176,17 @@ export const NOTIFICATION_STATUS = {
   ERROR: "ERROR", // notification attempt failed; needs retry check
 } as const;
 
+export const ANNOUNCEMENT_SCOPE = {
+  GLOBAL: "GLOBAL",
+  COURSE: "COURSE",
+} as const;
+
+export const ANNOUNCEMENT_STATUS = {
+  DRAFT: "DRAFT",
+  PUBLISHED: "PUBLISHED",
+  ARCHIVED: "ARCHIVED",
+} as const;
+
 // --- PAYPAL WEBHOOK EVENTS ---
 
 export const PAYPAL_WEBHOOK_EVENT = {
@@ -398,6 +409,7 @@ export const COLLECTION = {
   QUIZ_SUBMISSIONS: "QuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
+  ANNOUNCEMENTS: "Announcements"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -436,6 +448,14 @@ export const CART_ACTION = {
   SET_CART: "SET_CART",
 } as const;
 
+export const EMAIL_TYPE = {
+COURSE_ANNOUNCEMENT : "Course Announcement",
+GENERAL_ALL : "General All",
+RB_INSTRUCTOR:"Rb Instructor",
+RB_TEACHER : "Rb Teacher",
+RB_ACCOUNTANT:"Rb Accountant",
+RB_STUDENT:"Rb Student"
+} as const;
 export const POPUP_COURSE_TYPE = {
   LIVE: "LIVE",
   SELF_PACED: "SELF-PACED",

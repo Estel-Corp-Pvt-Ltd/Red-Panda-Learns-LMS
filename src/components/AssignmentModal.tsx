@@ -7,7 +7,6 @@ import {
   X,
   NotepadText,
 } from 'lucide-react';
-import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
 
@@ -17,6 +16,7 @@ import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import MarkdownEditor from './MarkdownEditor';
 
 export interface AssignmentFormData {
   title: string;
@@ -37,13 +37,14 @@ interface FormErrors {
 }
 
 interface AssignmentModalProps {
+  courseId: string;
   onSave: (assignment: Assignment) => void;
   onCancel: () => void;
 }
 
 type FormField = keyof Omit<Assignment, 'attachments'>;
 
-const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) => {
+const AssignmentModal: React.FC<AssignmentModalProps> = ({ courseId, onSave, onCancel }) => {
   const [formData, setFormData] = useState<AssignmentFormData>({
     title: '',
     content: '',
@@ -54,23 +55,23 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ onSave, onCancel }) =
     minimumPassPoint: 60,
     attachments: [],
     authorId: '',
- 
+
   });
 
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  
 
-// Set authorId whenever user changes
-useEffect(() => {
-  if (user) {
-    setFormData(prev => ({ ...prev, authorId: user.id }));
-   
-  }
-}, [user]);
+
+  // Set authorId whenever user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({ ...prev, authorId: user.id }));
+
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,6 +131,7 @@ useEffect(() => {
 
       const newAssignmentData = {
         title: formData.title,
+        courseId: courseId,
         content: formData.content,
         deadline: formData.deadline
           ? Timestamp.fromDate(new Date(formData.deadline))
@@ -216,13 +218,13 @@ useEffect(() => {
                   : 'border-gray-300 dark:border-gray-700'
                   }`}
               >
-                <MDEditor
+                <MarkdownEditor
                   value={formData.content}
                   onChange={(value) =>
                     handleInputChange('content', value || '')
                   }
                   height={350}
-                  preview="edit"
+                  uploadPath='/courses/assignments/attachments'
                 />
               </div>
               {errors.content && (
