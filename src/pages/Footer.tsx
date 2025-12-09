@@ -76,6 +76,14 @@ const Footer = () => {
                   SciML Bootcamp
                 </a>
               </li>
+              <li>
+                <a
+                  href="https://cvresearchbootcamp.vizuara.ai/"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Computer Vision Research Bootcamp
+                </a>
+              </li>
             </ul>
           </div>
 

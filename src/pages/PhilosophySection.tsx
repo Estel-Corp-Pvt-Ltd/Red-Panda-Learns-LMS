@@ -1,14 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, CSSProperties } from "react";
 import { Layers, Code2, Brain, LucideIcon } from "lucide-react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { useInView } from "./useInView";
 
-// Decryption config (shared by code + math)
+// Decryption config - same speed for all sections
 const DECRYPTION_CONFIG = {
   SCRAMBLE_INTERVAL: 30,
-  TIME_PER_LINE: 800,
-  LINE_TRANSITION_DELAY: 150,
+  TIME_PER_LINE: 600,
+  LINE_TRANSITION_DELAY: 100,
+  CHAR_REVEAL_SPEED: 25, // unified char speed
 };
 
 const CHARS =
@@ -31,7 +32,7 @@ interface Pulse {
 interface DecryptedLineProps {
   text: string;
   delay?: number;
-  fixedDuration?: number;
+  fixedDuration?: number; // kept for API compatibility, but speed is uniform
   onComplete?: () => void;
   bold?: boolean;
 }
@@ -39,7 +40,6 @@ interface DecryptedLineProps {
 interface DecryptedCodeLineByLineProps {
   text: string;
   startTrigger: number;
-  speedFactor?: number; // 1 = normal, 2 = 2x faster, etc.
 }
 
 interface DecryptedMathLineProps {
@@ -52,7 +52,6 @@ interface DecryptedMathLineProps {
 interface DecryptedMathLineByLineProps {
   lines: string[];
   startTrigger: number;
-  speedFactor?: number; // 1 = normal, 3 = 3x faster, etc.
 }
 
 interface ResearchPaper {
@@ -74,10 +73,9 @@ const researchPapers: ResearchPaper[] = [
   },
 ];
 
-// Show at most 2 research papers (fits without scroll)
 const MAX_PAPERS = 2;
 
-// Keep the same mono font & sizing across all content areas
+// Shared mono font
 const CONTENT_FONT_CLASS = "font-mono text-[13px] leading-[1.6]";
 
 const philosophyItems: PhilosophyItem[] = [
@@ -107,7 +105,7 @@ const philosophyItems: PhilosophyItem[] = [
   },
 ];
 
-// Foundations (LaTeX) — will render in the same mono style
+// Foundations (LaTeX)
 const foundationLatexLines = [
   String.raw`\textbf{Neural Network}`,
   String.raw`\mathbf{z} = \mathbf{W}\mathbf{x} + \mathbf{b}`,
@@ -126,10 +124,12 @@ def attention(q, k, v):
     out = attn @ v
     return out`;
 
+/* --------------------------- Decryption components -------------------------- */
+
 const DecryptedLine: React.FC<DecryptedLineProps> = ({
   text,
   delay = 0,
-  fixedDuration,
+  fixedDuration, // unused for speed, but kept for signature compatibility
   onComplete,
   bold = false,
 }) => {
@@ -141,9 +141,8 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
   const onCompleteRef = useRef<() => void>(() => {});
   const didCompleteRef = useRef(false);
 
-  const charRevealSpeed = fixedDuration
-    ? Math.max(15, Math.floor(fixedDuration / Math.max(1, text.length)))
-    : 25;
+  // Uniform char speed for all text everywhere
+  const charRevealSpeed = DECRYPTION_CONFIG.CHAR_REVEAL_SPEED;
 
   useEffect(() => {
     onCompleteRef.current = onComplete ?? (() => {});
@@ -205,7 +204,7 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
 const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   latex,
   delay = 0,
-  fixedDuration,
+  fixedDuration, // unused for speed
   onComplete,
 }) => {
   const [displayedText, setDisplayedText] = useState("");
@@ -218,9 +217,7 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   const onCompleteRef = useRef<() => void>(() => {});
   const didCompleteRef = useRef(false);
 
-  const charRevealSpeed = fixedDuration
-    ? Math.max(15, Math.floor(fixedDuration / Math.max(1, latex.length)))
-    : 25;
+  const charRevealSpeed = DECRYPTION_CONFIG.CHAR_REVEAL_SPEED;
 
   useEffect(() => {
     onCompleteRef.current = onComplete ?? (() => {});
@@ -298,21 +295,10 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
 const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
   text,
   startTrigger,
-  speedFactor = 1,
 }) => {
   const [visibleLines, setVisibleLines] = useState(0);
   const lines = text.split("\n");
   const startedRef = useRef(false);
-
-  // speed-scaled durations
-  const perLineDuration = Math.max(
-    120,
-    Math.floor(DECRYPTION_CONFIG.TIME_PER_LINE / speedFactor)
-  );
-  const lineDelay = Math.max(
-    50,
-    Math.floor(DECRYPTION_CONFIG.LINE_TRANSITION_DELAY / speedFactor)
-  );
 
   useEffect(() => {
     if (startTrigger > 0 && !startedRef.current) {
@@ -323,7 +309,10 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
 
   const handleLineComplete = (index: number) => {
     if (index < lines.length - 1) {
-      window.setTimeout(() => setVisibleLines(index + 2), lineDelay);
+      window.setTimeout(
+        () => setVisibleLines(index + 2),
+        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
+      );
     }
   };
 
@@ -334,7 +323,7 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
           <DecryptedLine
             key={`${startTrigger}-${i}`}
             text={line || " "}
-            fixedDuration={perLineDuration}
+            fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
             onComplete={() => handleLineComplete(i)}
           />
         ) : (
@@ -348,19 +337,9 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
 const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
   lines,
   startTrigger,
-  speedFactor = 1,
 }) => {
   const [visibleLines, setVisibleLines] = useState(0);
   const startedRef = useRef(false);
-
-  const perLineDuration = Math.max(
-    120,
-    Math.floor(DECRYPTION_CONFIG.TIME_PER_LINE / speedFactor)
-  );
-  const lineDelay = Math.max(
-    50,
-    Math.floor(DECRYPTION_CONFIG.LINE_TRANSITION_DELAY / speedFactor)
-  );
 
   useEffect(() => {
     if (startTrigger > 0 && !startedRef.current) {
@@ -371,7 +350,10 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
 
   const handleLineComplete = (index: number) => {
     if (index < lines.length - 1) {
-      window.setTimeout(() => setVisibleLines(index + 2), lineDelay);
+      window.setTimeout(
+        () => setVisibleLines(index + 2),
+        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
+      );
     }
   };
 
@@ -382,7 +364,7 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
           <DecryptedMathLine
             key={`${startTrigger}-${i}`}
             latex={latex}
-            fixedDuration={perLineDuration}
+            fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
             onComplete={() => handleLineComplete(i)}
           />
         ) : (
@@ -393,8 +375,127 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
   );
 };
 
+// Research paper decryption
+const DecryptedResearchPaper: React.FC<{
+  paper: ResearchPaper;
+  index: number;
+  startTrigger: number;
+}> = ({ paper, index, startTrigger }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (startTrigger > 0) {
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, index * 150);
+      return () => clearTimeout(timer);
+    }
+  }, [startTrigger, index]);
+
+  return (
+    <a
+      href={paper.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
+    >
+      <DecryptedLine
+        text={paper.title}
+        delay={isVisible ? 0 : undefined}
+        fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
+        bold
+      />
+      <div
+        className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}
+      >
+        <DecryptedLine
+          text={`${paper.authors}${paper.venue ? ` — ${paper.venue}` : ""}${
+            paper.year ? ` ${paper.year}` : ""
+          }`}
+          delay={isVisible ? 100 : undefined}
+          fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
+        />
+      </div>
+    </a>
+  );
+};
+
+/* --------------------------- Tilted Card component -------------------------- */
+
+interface TiltedCardProps {
+  children: React.ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  highlightColor?: string;
+}
+
+const TiltedCard: React.FC<TiltedCardProps> = ({
+  children,
+  className,
+  style,
+  highlightColor = "rgba(59,130,246,0.65)",
+}) => {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const rect = card.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const midX = rect.width / 2;
+    const midY = rect.height / 2;
+
+    const rotateX = ((y - midY) / midY) * -10;
+    const rotateY = ((x - midX) / midX) * 10;
+
+    card.style.setProperty("--tilt-x", `${rotateX}deg`);
+    card.style.setProperty("--tilt-y", `${rotateY}deg`);
+    card.style.setProperty("--tilt-glow-x", `${(x / rect.width) * 100}%`);
+    card.style.setProperty("--tilt-glow-y", `${(y / rect.height) * 100}%`);
+  };
+
+  const handleMouseLeave = () => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={`tilted-card relative group h-full ${className ?? ""}`}
+      style={
+        {
+          "--tilt-highlight": highlightColor,
+          ...style,
+        } as CSSProperties
+      }
+    >
+      {/* Glow that follows the cursor */}
+      <div className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_var(--tilt-glow-x,50%)_var(--tilt-glow-y,0%),var(--tilt-highlight),transparent_55%)]" />
+      </div>
+
+      {/* Main card surface - full height & flex column */}
+      <div className="relative z-0 h-full flex flex-col rounded-3xl border border-white/10 bg-gradient-to-br from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.16)] overflow-hidden">
+        {/* Subtle background texture */}
+        <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_0_0,rgba(59,130,246,0.12),transparent_55%),radial-gradient(circle_at_100%_0,rgba(236,72,153,0.12),transparent_55%)] opacity-60" />
+        <div className="relative z-10 h-full flex flex-col p-6 sm:p-8 lg:p-10 tilted-card-inner">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------ Main section -------------------------------- */
+
 const PhilosophySection: React.FC = () => {
-  // Observe when this section is in view; retrigger every time
   const { ref: sectionRef, inView } = useInView<HTMLElement>({
     threshold: 0.25,
   });
@@ -402,6 +503,7 @@ const PhilosophySection: React.FC = () => {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [pulses, setPulses] = useState<Pulse[]>([]);
   const [decryptionTrigger, setDecryptionTrigger] = useState(0);
+  const [cardsAnimated, setCardsAnimated] = useState(false);
 
   const timeoutsRef = useRef<number[]>([]);
   const intervalsRef = useRef<number[]>([]);
@@ -413,24 +515,22 @@ const PhilosophySection: React.FC = () => {
     timeoutsRef.current = [];
   };
 
-  // Re-trigger decrypt + start pulses every time the section enters view
   useEffect(() => {
     if (!inView) {
       clearAllTimers();
       return;
     }
 
-    // Restart all decryption animations
+    if (!cardsAnimated) setCardsAnimated(true);
+
     const tick = Date.now();
     setDecryptionTrigger(tick);
 
-    // Initial staggered pulses
     philosophyItems.forEach((_, index) => {
       const t = window.setTimeout(() => createPulse(index), index * 250);
       timeoutsRef.current.push(t);
     });
 
-    // Repeating pulses while in view
     const intervalId = window.setInterval(() => {
       philosophyItems.forEach((_, index) => {
         const t = window.setTimeout(() => createPulse(index), index * 250);
@@ -463,7 +563,7 @@ const PhilosophySection: React.FC = () => {
   return (
     <>
       <style>{`
-        /* Force KaTeX to use the same mono font as code/research for consistent style */
+        /* KaTeX mono font */
         .katex, .katex .mord, .katex .mbin, .katex .mrel, .katex .mop,
         .katex .mopen, .katex .mclose, .katex .minner, .katex .text,
         .katex .mathrm, .katex .mathit, .katex .mathbf, .katex .textbf, .katex .bold {
@@ -473,9 +573,7 @@ const PhilosophySection: React.FC = () => {
           font-weight: 400 !important;
         }
         .katex-display { margin: 0 !important; }
-        .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-        /* Only the rotating ring behind the circle on hover */
         @keyframes ring-rotate {
           to { transform: translate(-50%, -50%) rotate(360deg); }
         }
@@ -496,15 +594,27 @@ const PhilosophySection: React.FC = () => {
           filter: drop-shadow(0 0 8px currentColor);
         }
 
-        /* Pulse ring */
         @keyframes pulse-ring {
           0%   { box-shadow: 0 0 0 0 rgba(0,0,0,0); opacity: 0.9; }
           50%  { box-shadow: 0 0 24px 6px rgba(0,0,0,0.08); opacity: 0.5; }
           100% { box-shadow: 0 0 64px 18px rgba(0,0,0,0); opacity: 0; }
         }
+
+        /* Tilted card core */
+        .tilted-card {
+          transform-style: preserve-3d;
+          transform: perspective(1100px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+          transition: transform 150ms ease-out;
+        }
+        .tilted-card-inner {
+          transform: translateZ(40px);
+        }
       `}</style>
 
-      <section ref={sectionRef} className="relative py-24 px-4 sm:px-6 overflow-hidden">
+      <section
+        ref={sectionRef}
+        className="relative py-24 px-4 sm:px-6 overflow-hidden"
+      >
         <div className="container relative mx-auto max-w-6xl px-0">
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-6xl font-semibold tracking-tight text-foreground mb-4">
@@ -520,158 +630,157 @@ const PhilosophySection: React.FC = () => {
               const isHovered = hoveredCard === index;
               const Icon = item.icon;
 
+              const entranceClass = cardsAnimated
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8";
+
               return (
                 <div
                   key={index}
-                  className="relative h-full flex"
+                  className="relative flex h-full"
                   onMouseEnter={() => handleCardHover(index, true)}
                   onMouseLeave={() => handleCardHover(index, false)}
                 >
-                 <div className="relative w-full p-6 sm:p-8 lg:p-10 bg-background/80 backdrop-blur-sm rounded-2xl border border-foreground/10 hover:border-foreground/20 transition-all duration-300 group hover:shadow-xl flex flex-col h-full">
-                    {/* Header */}
-                    <div className="flex flex-col items-center text-center">
-                      <div className="relative mb-6">
-                        <div
-                          className={`relative p-5 bg-gradient-to-br ${item.gradient} rounded-full transition-all duration-500`}
-                          style={{
-                            boxShadow: isHovered
-                              ? `0 0 30px ${item.color}, 0 8px 24px ${item.color}80`
-                              : `0 4px 12px ${item.color}60`,
-                            transform: isHovered ? "scale(1.2)" : "scale(1)",
-                          }}
-                        >
-                          {/* Rotating ring on hover */}
-                          {isHovered && (
-                            <span
-                              className="rotating-ring"
-                              style={{ color: item.color }}
-                            />
-                          )}
+                  <div
+                    className={`flex flex-col w-full h-full ${entranceClass} transition-all duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)]`}
+                    style={{ transitionDelay: `${index * 120}ms` }}
+                  >
+                    <TiltedCard
+                      highlightColor={`${item.color}99`}
+                      className="h-full"
+                    >
+                      {/* Header */}
+                      <div className="flex flex-col items-center text-center">
+                        <div className="relative mb-6">
+                          <div
+                            className={`relative p-5 bg-gradient-to-br ${item.gradient} rounded-full transition-all duration-500`}
+                            style={{
+                              boxShadow: isHovered
+                                ? `0 0 30px ${item.color}, 0 8px 24px ${item.color}80`
+                                : `0 4px 12px ${item.color}60`,
+                              transform: isHovered ? "scale(1.2)" : "scale(1)",
+                            }}
+                          >
+                            {isHovered && (
+                              <span
+                                className="rotating-ring"
+                                style={{ color: item.color }}
+                              />
+                            )}
 
-                          {/* Icon */}
-                          <Icon className="w-10 h-10 text-white relative z-10" />
-                        </div>
-                      </div>
-
-                      <h3
-                        className="text-2xl font-semibold mb-3"
-                        style={{
-                          color: isHovered ? item.color : "var(--foreground)",
-                          textShadow: isHovered
-                            ? `0 2px 8px ${item.color}40`
-                            : "none",
-                        }}
-                      >
-                        {item.title}
-                      </h3>
-
-                      <p className="text-foreground/70 leading-relaxed font-light min-h-[48px]">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    {/* Content area */}
-                    <div className="mt-6 w-full flex-1">
-                      <div
-                        className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden h-[220px]"
-                        style={{ boxShadow: `0 4px 18px ${item.color}22` }}
-                      >
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-foreground/10">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
+                            <Icon className="w-10 h-10 text-white relative z-10" />
                           </div>
                         </div>
 
-                        <div className="p-4 sm:p-5 h-[calc(220px-40px)] text-left">
-                          {index === 2 ? (
-                            // Research
-                            <div className="text-left h-full flex flex-col">
-                              <div
-                                className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}
-                              >
-                                {researchPapers
-                                  .slice(0, MAX_PAPERS)
-                                  .map((p, i) => (
-                                    <a
-                                      key={p.link + i}
-                                      href={p.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block rounded-md px-3 py-2 hover:bg-foreground/5 transition-colors"
-                                    >
-                                      <DecryptedLine
-                                        text={p.title}
-                                        delay={i * 80}
-                                        fixedDuration={500}
-                                        bold
-                                      />
-                                      <div
-                                        className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}
-                                      >
-                                        {p.authors}
-                                        {p.venue ? ` — ${p.venue}` : ""}
-                                        {p.year ? ` ${p.year}` : ""}
-                                      </div>
-                                    </a>
-                                  ))}
-                              </div>
+                        <h3
+                          className="text-2xl font-semibold mb-3"
+                          style={{
+                            color: isHovered ? item.color : "var(--foreground)",
+                            textShadow: isHovered
+                              ? `0 2px 8px ${item.color}40`
+                              : "none",
+                          }}
+                        >
+                          {item.title}
+                        </h3>
 
-                              <a
-                                href="https://research.vizuara.ai/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 mt-2 text-xs underline underline-offset-4 decoration-dotted self-start"
-                                style={{ color: item.color }}
-                              >
-                                Research Hub ↗
-                              </a>
+                        <p className="text-foreground/70 leading-relaxed font-light min-h-[48px] text-center">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      {/* Content area */}
+                      <div className="mt-6 w-full flex-1">
+                        <div
+                          className="relative rounded-xl border bg-foreground/[0.04] dark:bg-background/40 border-foreground/10 overflow-hidden h-[220px]"
+                          style={{ boxShadow: `0 12px 32px ${item.color}22` }}
+                        >
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-foreground/10 bg-foreground/[0.01]">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
                             </div>
-                          ) : index === 0 ? (
-                            // Foundations — 3x faster
-                            <div className={CONTENT_FONT_CLASS}>
-                              <DecryptedMathLineByLine
-                                key={`math-${decryptionTrigger}`}
-                                lines={foundationLatexLines}
-                                startTrigger={decryptionTrigger}
-                                speedFactor={3}
-                              />
-                            </div>
-                          ) : (
-                            // Practicals — 2x faster
-                            <pre
-                              className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}
-                            >
-                              <code>
-                                <DecryptedCodeLineByLine
-                                  key={`code-${decryptionTrigger}`}
-                                  text={attentionSnippet}
+                          </div>
+
+                          <div className="p-4 sm:p-5 h-[calc(220px-40px)] text-left">
+                            {index === 2 ? (
+                              // Research
+                              <div className="text-left h-full flex flex-col">
+                                <div
+                                  className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}
+                                >
+                                  {researchPapers
+                                    .slice(0, MAX_PAPERS)
+                                    .map((p, i) => (
+                                      <DecryptedResearchPaper
+                                        key={p.link + i}
+                                        paper={p}
+                                        index={i}
+                                        startTrigger={decryptionTrigger}
+                                      />
+                                    ))}
+                                </div>
+
+                                <a
+                                  href="https://research.vizuara.ai/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-2 text-xs underline underline-offset-4 decoration-dotted self-start"
+                                  style={{ color: item.color }}
+                                >
+                                  <DecryptedLine
+                                    text="Research Hub ↗"
+                                    delay={
+                                      decryptionTrigger > 0 ? 500 : undefined
+                                    }
+                                    fixedDuration={400}
+                                  />
+                                </a>
+                              </div>
+                            ) : index === 0 ? (
+                              // Foundations
+                              <div className={CONTENT_FONT_CLASS}>
+                                <DecryptedMathLineByLine
+                                  key={`math-${decryptionTrigger}`}
+                                  lines={foundationLatexLines}
                                   startTrigger={decryptionTrigger}
-                                  speedFactor={2}
                                 />
-                              </code>
-                            </pre>
-                          )}
+                              </div>
+                            ) : (
+                              // Practicals (code)
+                              <pre
+                                className={`${CONTENT_FONT_CLASS} text-foreground/80 whitespace-pre-wrap`}
+                              >
+                                <code>
+                                  <DecryptedCodeLineByLine
+                                    key={`code-${decryptionTrigger}`}
+                                    text={attentionSnippet}
+                                    startTrigger={decryptionTrigger}
+                                  />
+                                </code>
+                              </pre>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Periodic pulses */}
-                    <div className="pointer-events-none absolute inset-0">
-                      {pulses
-                        .filter((p) => p.cardIndex === index)
-                        .map((p) => (
-                          <span
-                            key={p.id}
-                            className="absolute inset-0 rounded-2xl"
-                            style={{
-                              boxShadow: `0 0 0 0 ${item.color}44`,
-                              animation: "pulse-ring 1.5s ease-out forwards",
-                            }}
-                          />
-                        ))}
-                    </div>
+                      {/* Pulses */}
+                      <div className="pointer-events-none absolute inset-0">
+                        {pulses
+                          .filter((p) => p.cardIndex === index)
+                          .map((p) => (
+                            <span
+                              key={p.id}
+                              className="absolute inset-0 rounded-3xl"
+                              style={{
+                                boxShadow: `0 0 0 0 ${item.color}44`,
+                                animation: "pulse-ring 1.5s ease-out forwards",
+                              }}
+                            />
+                          ))}
+                      </div>
+                    </TiltedCard>
                   </div>
                 </div>
               );
