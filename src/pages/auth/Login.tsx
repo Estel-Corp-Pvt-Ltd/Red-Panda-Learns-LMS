@@ -52,7 +52,7 @@ export default function Login() {
 
     const verifyData = await res.json();
 
-    const scoreThreshold = isLowEndDevice() ? 0.4 : 0.5;
+    const scoreThreshold = isLowEndDevice() ? 0.3 : 0.5;
     if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < scoreThreshold) {
       throw new Error("⚠️ Bot verification failed. Debug info in console.");
     }
