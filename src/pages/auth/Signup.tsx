@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Mail, Lock, User, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
-import { getRecaptchaToken } from "@/utils/recaptcha";
+import { getRecaptchaToken, isLowEndDevice } from "@/utils/recaptcha";
 import EmailSentAlert from "@/components/auth/EmailSentAlert";
 
 export default function Signup() {
@@ -71,7 +71,8 @@ export default function Signup() {
 
       const verifyData = await res.json();
 
-      if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.6) {
+      const scoreThreshold = isLowEndDevice() ? 0.5 : 0.6;
+      if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < scoreThreshold) {
         setError("reCAPTCHA verification failed. Please try again.");
         setLoading(false);
         return;
