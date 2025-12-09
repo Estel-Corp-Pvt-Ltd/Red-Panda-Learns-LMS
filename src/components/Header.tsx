@@ -215,6 +215,22 @@ export function Header({
                         <NavigationMenuLink asChild>
                           <a
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
+                            href="https://cvresearchbootcamp.vizuara.ai/"
+                          >
+                            <div className="text-sm font-medium leading-none">
+                              Computer Vision Research Bootcamp
+                            </div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Build strong foundations, work on impactful
+                              problems in CV
+                            </p>
+                          </a>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <a
+                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
                             href="https://flyvidesh.online/gen-ai-professional-bootcamp"
                           >
                             <div className="text-sm font-medium leading-none">
@@ -472,18 +488,22 @@ export function Header({
                       user?.role === USER_ROLE.ADMIN
                         ? "/admin"
                         : user?.role === USER_ROLE.ACCOUNTANT
-                          ? "/accountant"
-                          : "/dashboard"
+                        ? "/accountant"
+                        : "/dashboard"
                     }
                     className="ml-2"
                   >
-                    <Button variant="default" size="sm" className="relative flex">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="relative flex"
+                    >
                       <User className="mr-2 h-4 w-4" />
                       <span>Dashboard</span>
                     </Button>
                   </Link>
-                    {/* Logged-in dropdown (hover to open on desktop) */}
-                {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
+                  {/* Logged-in dropdown (hover to open on desktop) */}
+                  {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
@@ -524,7 +544,7 @@ export function Header({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu> */}
-              {/* </div> */}
+                  {/* </div> */}
                 </div>
               </>
             ) : (
