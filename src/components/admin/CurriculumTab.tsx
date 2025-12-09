@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { LearningContentType } from "@/types/lesson";
 import { arrayMove } from "@dnd-kit/sortable";
+import ConfirmDialog from "../ConfirmDialog";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItem = {
@@ -143,6 +144,8 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   const [activeParentId, setActiveParentId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTopicIds, setActiveTopicIds] = useState<Set<string>>(new Set());
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [editingItemType, setEditingItemType] = useState<LearningUnit | null>(null);
 
   useEffect(() => {
     setCurriculum(getFlatCurriculum(course));
@@ -472,7 +475,6 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   /** Create and insert a new top-level Topic */
   const addItem = () => {
     setCurriculum((prev) => [
-      ...prev,
       {
         id: `topic_${Date.now()}`,
         title: "New Topic",
@@ -480,6 +482,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
         depth: 0,
         parentId: null,
       },
+      ...prev,
     ]);
   };
 
@@ -491,7 +494,24 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   };
 
   /** Delete any curriculum item */
-  const deleteItem = (id: string) => {
+  const deleteItem = (id: string, type: LearningUnit) => {
+    if (type === LEARNING_UNIT.TOPIC) {
+      // also remove its children
+      setCurriculum((prev) => {
+        const topicIndex = prev.findIndex((i) => i.id === id);
+        if (topicIndex === -1) return prev;
+
+        const topicDepth = prev[topicIndex].depth;
+
+        let endIndex = topicIndex + 1;
+        for (let i = topicIndex + 1; i < prev.length; i++) {
+          if (prev[i].depth <= topicDepth) break;
+          endIndex = i + 1;
+        }
+
+        return [...prev.slice(0, topicIndex), ...prev.slice(endIndex)];
+      });
+    }
     setCurriculum((prev) => prev.filter((i) => i.id !== id));
   };
 
@@ -739,7 +759,11 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => deleteItem(item.id)}
+                              onClick={() => {
+                                setEditingItemId(item.id);
+                                setEditingItemType(LEARNING_UNIT.TOPIC);
+                                setIsConfirmDialogOpen(true)
+                              }}
                               title="Delete Topic"
                               className="opacity-0 group-hover:opacity-100 text-destructive"
                             >
@@ -773,7 +797,11 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => deleteItem(item.id)}
+                                onClick={() => {
+                                  setEditingItemId(item.id);
+                                  setEditingItemType(item.type);
+                                  setIsConfirmDialogOpen(true)
+                                }}
                                 className="opacity-0 group-hover:opacity-100 text-destructive"
                                 title="Delete"
                               >
@@ -798,13 +826,13 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
         onClose={() => setIsLessonSelectorModalOpen(false)}
         onConfirm={addLessonsToParent}
       />
-
       <EditLessonModal
         courseId={course.id}
         lessonId={editingItemId}
         isOpen={isLessonEditModelOpen}
         onClose={() => {
           setIsLessonEditModelOpen(false);
+          setEditingItemId(null);
         }}
         onLessonUpdated={(lesson: Lesson) => {
           setCurriculum((prev) => {
@@ -819,9 +847,26 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
               return item;
             });
           });
+          setEditingItemId(null);
+          setIsLessonEditModelOpen(false);
         }}
       />
-
+      <ConfirmDialog
+        title="Delete Item"
+        body={`Are you sure you want to delete this ${editingItemType === LEARNING_UNIT.TOPIC ? "topic" : editingItemType === LEARNING_UNIT.LESSON ? "lesson" : "assignment"}? This action cannot be undone.`}
+        open={isConfirmDialogOpen}
+        onCancel={() => {
+          setIsConfirmDialogOpen(false);
+          setEditingItemId(null);
+        }}
+        onConfirm={() => {
+          if (editingItemId && editingItemType) {
+            deleteItem(editingItemId, editingItemType);
+          }
+          setIsConfirmDialogOpen(false);
+          setEditingItemId(null);
+        }}
+      />
       {isAssignmentModelOpen && (
         <AssignmentModal
           courseId={course.id}
@@ -833,12 +878,14 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
           onSave={handleAssignment}
         />
       )}
-
       <EditAssignmentModal
         courseId={course.id}
         assignmentId={editingItemId}
         isOpen={isAssignmentEditModalOpen}
-        onClose={() => setIsAssignmentEditModalOpen(false)}
+        onClose={() => {
+          setIsAssignmentEditModalOpen(false);
+          setEditingItemId(null);
+        }}
         onUpdated={(updatedAssignment) => {
           // ✅ Update the curriculum list immediately
           setCurriculum((prev) =>
@@ -855,16 +902,21 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
               return item;
             })
           );
+          setIsAssignmentEditModalOpen(false);
+          setEditingItemId(null);
         }}
       />
-
       <CreateLessonModal
         courseId={course.id}
         isOpen={isCreateLessonOpen}
-        onClose={() => setIsCreateLessonOpen(false)}
+        onClose={() => {
+          setIsCreateLessonOpen(false);
+          setEditingItemId(null);
+        }}
         onLessonCreated={(lesson) => {
-          // ✅ Ensure refId is set
           addLessonsToParent([lesson]);
+          setIsCreateLessonOpen(false);
+          setEditingItemId(null);
         }}
       />
     </>
