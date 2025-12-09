@@ -36,11 +36,20 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const { toast } = useToast();
 
-  // ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
+
+  useEffect(() => {
     if (!isOpen || !assignmentId) return;
-
     const fetchData = async () => {
       try {
         setLoading(true);

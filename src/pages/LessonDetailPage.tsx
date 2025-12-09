@@ -254,17 +254,21 @@ export default function LessonDetailPage() {
       {/* Top info bar: Course (bigger) + Lesson (smaller) */}
       <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            {/* Course title bigger */}
-            <h1 className=" text-lg md:text-xl font-semibold leading-tight">
-              {course.title}
-            </h1>
-            {/* Lesson title smaller */}
-            {selectedItem && (
-              <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
-                {selectedItem.title}
-              </p>
-            )}
+          <div className="flex gap-3">
+            <Link to={`/${user.role === USER_ROLE.ADMIN ? "admin" : "dashboard"}`}><Button>Back to Dashboard</Button></Link>
+            <div className="min-w-0">
+              {/* Course title bigger */}
+              <h1 className=" text-lg md:text-xl font-semibold leading-tight">
+                {course.title}
+              </h1>
+              {/* Lesson title smaller */}
+              {selectedItem && (
+                <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
+                  {selectedItem.title}
+                </p>
+              )}
+
+            </div>
           </div>
           <Button
             variant="ghost"
