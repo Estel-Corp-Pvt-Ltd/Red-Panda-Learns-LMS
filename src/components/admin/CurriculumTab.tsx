@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { LearningContentType } from "@/types/lesson";
 import { arrayMove } from "@dnd-kit/sortable";
+import ConfirmDialog from "../ConfirmDialog";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItem = {
@@ -143,6 +144,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   const [activeParentId, setActiveParentId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTopicIds, setActiveTopicIds] = useState<Set<string>>(new Set());
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   useEffect(() => {
     setCurriculum(getFlatCurriculum(course));
@@ -472,7 +474,6 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   /** Create and insert a new top-level Topic */
   const addItem = () => {
     setCurriculum((prev) => [
-      ...prev,
       {
         id: `topic_${Date.now()}`,
         title: "New Topic",
@@ -480,6 +481,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
         depth: 0,
         parentId: null,
       },
+      ...prev,
     ]);
   };
 
@@ -773,7 +775,10 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => deleteItem(item.id)}
+                                onClick={() => {
+                                  setIsConfirmDialogOpen(true)
+                                  setActiveId(item.id);
+                                }}
                                 className="opacity-0 group-hover:opacity-100 text-destructive"
                                 title="Delete"
                               >
@@ -821,7 +826,19 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
           });
         }}
       />
-
+      <ConfirmDialog
+        title="Delete Item"
+        body="Are you sure you want to delete this item? This action cannot be undone."
+        open={isConfirmDialogOpen}
+        onCancel={() => { }}
+        onConfirm={() => {
+          if (activeId) {
+            deleteItem(activeId);
+          }
+          setIsConfirmDialogOpen(false);
+          setActiveId(null);
+        }}
+      />
       {isAssignmentModelOpen && (
         <AssignmentModal
           courseId={course.id}
