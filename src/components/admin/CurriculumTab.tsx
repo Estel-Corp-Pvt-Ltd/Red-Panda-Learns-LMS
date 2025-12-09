@@ -145,6 +145,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [activeTopicIds, setActiveTopicIds] = useState<Set<string>>(new Set());
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [editingItemType, setEditingItemType] = useState<LearningUnit | null>(null);
 
   useEffect(() => {
     setCurriculum(getFlatCurriculum(course));
@@ -493,7 +494,24 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   };
 
   /** Delete any curriculum item */
-  const deleteItem = (id: string) => {
+  const deleteItem = (id: string, type: LearningUnit) => {
+    if (type === LEARNING_UNIT.TOPIC) {
+      // also remove its children
+      setCurriculum((prev) => {
+        const topicIndex = prev.findIndex((i) => i.id === id);
+        if (topicIndex === -1) return prev;
+
+        const topicDepth = prev[topicIndex].depth;
+
+        let endIndex = topicIndex + 1;
+        for (let i = topicIndex + 1; i < prev.length; i++) {
+          if (prev[i].depth <= topicDepth) break;
+          endIndex = i + 1;
+        }
+
+        return [...prev.slice(0, topicIndex), ...prev.slice(endIndex)];
+      });
+    }
     setCurriculum((prev) => prev.filter((i) => i.id !== id));
   };
 
@@ -741,7 +759,11 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => deleteItem(item.id)}
+                              onClick={() => {
+                                setEditingItemId(item.id);
+                                setEditingItemType(LEARNING_UNIT.TOPIC);
+                                setIsConfirmDialogOpen(true)
+                              }}
                               title="Delete Topic"
                               className="opacity-0 group-hover:opacity-100 text-destructive"
                             >
@@ -777,6 +799,7 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                                 size="sm"
                                 onClick={() => {
                                   setEditingItemId(item.id);
+                                  setEditingItemType(item.type);
                                   setIsConfirmDialogOpen(true)
                                 }}
                                 className="opacity-0 group-hover:opacity-100 text-destructive"
@@ -830,15 +853,15 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
       />
       <ConfirmDialog
         title="Delete Item"
-        body="Are you sure you want to delete this item? This action cannot be undone."
+        body={`Are you sure you want to delete this ${editingItemType === LEARNING_UNIT.TOPIC ? "topic" : editingItemType === LEARNING_UNIT.LESSON ? "lesson" : "assignment"}? This action cannot be undone.`}
         open={isConfirmDialogOpen}
         onCancel={() => {
           setIsConfirmDialogOpen(false);
           setEditingItemId(null);
         }}
         onConfirm={() => {
-          if (editingItemId) {
-            deleteItem(editingItemId);
+          if (editingItemId && editingItemType) {
+            deleteItem(editingItemId, editingItemType);
           }
           setIsConfirmDialogOpen(false);
           setEditingItemId(null);
