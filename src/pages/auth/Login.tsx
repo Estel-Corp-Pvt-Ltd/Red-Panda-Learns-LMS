@@ -18,7 +18,7 @@ import { Eye, EyeOff, Mail, Lock, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { USER_ROLE } from "@/constants";
-import { getRecaptchaToken } from "@/utils/recaptcha";
+import { getRecaptchaToken, isLowEndDevice } from "@/utils/recaptcha";
 import EmailNotVerifiedPopup from "@/components/auth/EmailNotVerifiedPopup";
 import { UserCredential } from "firebase/auth";
 
@@ -52,7 +52,8 @@ export default function Login() {
 
     const verifyData = await res.json();
 
-    if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < 0.5) {
+    const scoreThreshold = isLowEndDevice() ? 0.3 : 0.5;
+    if (!res.ok || !verifyData.success || (verifyData.score ?? 0) < scoreThreshold) {
       throw new Error("⚠️ Bot verification failed. Debug info in console.");
     }
   };
@@ -71,11 +72,11 @@ export default function Login() {
         const { user, userCredential } = response.data;
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
-        } 
-         else if(user?.role === USER_ROLE.ACCOUNTANT){
-        navigate("/accountant",{replace:true})
-      }
-      else if (userCredential.user.emailVerified == true) {
+        }
+        else if (user?.role === USER_ROLE.ACCOUNTANT) {
+          navigate("/accountant", { replace: true })
+        }
+        else if (userCredential.user.emailVerified == true) {
           navigate(from || "/dashboard", { replace: true });
         } else {
           setUserCredential(userCredential);
@@ -105,8 +106,8 @@ export default function Login() {
       if (user?.role === USER_ROLE.ADMIN) {
         navigate("/admin", { replace: true });
       }
-      else if(user?.role === USER_ROLE.ACCOUNTANT){
-        navigate("/accountant",{replace:true})
+      else if (user?.role === USER_ROLE.ACCOUNTANT) {
+        navigate("/accountant", { replace: true })
       }
       else {
         navigate("/dashboard", { replace: true });

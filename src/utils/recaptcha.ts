@@ -13,3 +13,9 @@ export const getRecaptchaToken = async (action = "submit") => {
     });
   });
 };
+
+export const isLowEndDevice = () => {
+  const hardwareConcurrency = navigator.hardwareConcurrency || 1;
+  const memory = (navigator as any)?.deviceMemory || 4;
+  return hardwareConcurrency <= 2 || memory <= 2;
+}
