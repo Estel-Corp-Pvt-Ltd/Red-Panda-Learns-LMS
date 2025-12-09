@@ -776,8 +776,8 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
+                                  setEditingItemId(item.id);
                                   setIsConfirmDialogOpen(true)
-                                  setActiveId(item.id);
                                 }}
                                 className="opacity-0 group-hover:opacity-100 text-destructive"
                                 title="Delete"
@@ -803,13 +803,13 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
         onClose={() => setIsLessonSelectorModalOpen(false)}
         onConfirm={addLessonsToParent}
       />
-
       <EditLessonModal
         courseId={course.id}
         lessonId={editingItemId}
         isOpen={isLessonEditModelOpen}
         onClose={() => {
           setIsLessonEditModelOpen(false);
+          setEditingItemId(null);
         }}
         onLessonUpdated={(lesson: Lesson) => {
           setCurriculum((prev) => {
@@ -824,19 +824,24 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
               return item;
             });
           });
+          setEditingItemId(null);
+          setIsLessonEditModelOpen(false);
         }}
       />
       <ConfirmDialog
         title="Delete Item"
         body="Are you sure you want to delete this item? This action cannot be undone."
         open={isConfirmDialogOpen}
-        onCancel={() => { }}
+        onCancel={() => {
+          setIsConfirmDialogOpen(false);
+          setEditingItemId(null);
+        }}
         onConfirm={() => {
-          if (activeId) {
-            deleteItem(activeId);
+          if (editingItemId) {
+            deleteItem(editingItemId);
           }
           setIsConfirmDialogOpen(false);
-          setActiveId(null);
+          setEditingItemId(null);
         }}
       />
       {isAssignmentModelOpen && (
@@ -850,12 +855,14 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
           onSave={handleAssignment}
         />
       )}
-
       <EditAssignmentModal
         courseId={course.id}
         assignmentId={editingItemId}
         isOpen={isAssignmentEditModalOpen}
-        onClose={() => setIsAssignmentEditModalOpen(false)}
+        onClose={() => {
+          setIsAssignmentEditModalOpen(false);
+          setEditingItemId(null);
+        }}
         onUpdated={(updatedAssignment) => {
           // ✅ Update the curriculum list immediately
           setCurriculum((prev) =>
@@ -872,16 +879,21 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
               return item;
             })
           );
+          setIsAssignmentEditModalOpen(false);
+          setEditingItemId(null);
         }}
       />
-
       <CreateLessonModal
         courseId={course.id}
         isOpen={isCreateLessonOpen}
-        onClose={() => setIsCreateLessonOpen(false)}
+        onClose={() => {
+          setIsCreateLessonOpen(false);
+          setEditingItemId(null);
+        }}
         onLessonCreated={(lesson) => {
-          // ✅ Ensure refId is set
           addLessonsToParent([lesson]);
+          setIsCreateLessonOpen(false);
+          setEditingItemId(null);
         }}
       />
     </>

@@ -31,7 +31,7 @@ interface EditLessonModalProps {
   lessonId: string;
   isOpen: boolean;
   onClose: () => void;
-  onLessonUpdated?: (lesson: Lesson) => void;
+  onLessonUpdated: (lesson: Lesson) => void;
 }
 
 export const EditLessonModal = ({
@@ -55,6 +55,17 @@ export const EditLessonModal = ({
       document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchLessonData = async () => {
@@ -84,6 +95,7 @@ export const EditLessonModal = ({
           variant: "destructive",
         });
         onClose();
+        return;
       } finally {
         setLoading(false);
       }
@@ -220,14 +232,12 @@ export const EditLessonModal = ({
         title: "Lesson updated successfully!",
       });
 
-      onLessonUpdated?.({
+      onLessonUpdated({
         ...lesson!,
         id: lessonId,
         courseId,
         updatedAt: serverTimestamp(),
       });
-
-      onClose();
     } catch (error) {
       logError("Error updating lesson:", error);
       toast({
@@ -239,12 +249,12 @@ export const EditLessonModal = ({
     }
   };
 
-  const handleClose = () => {
+  const handleClose = (next) => {
     setLesson({
       ...lesson,
       courseId: courseId,
     });
-    onClose();
+    if (!next) onClose();
   };
 
 
@@ -296,7 +306,7 @@ export const EditLessonModal = ({
           <DialogTitle className="text-2xl">Edit Lesson</DialogTitle>
         </DialogHeader>
 
-        {loading ? (
+        {!lesson || loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
