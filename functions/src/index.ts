@@ -11,13 +11,13 @@ import { enrollFreeCourse } from "./handlers/enrollments/enrollFreeCourse";
 import { resetUserPassword } from "./handlers/resetUserPassword";
 import { canStartQuiz } from "./handlers/canStartQuiz";
 import { getQuizTimeLeft } from "./handlers/getQuizTimeLeft";
-import { generateComplaintId } from './handlers/generateComplaintId';
+import { generateComplaintId } from "./handlers/generateComplaintId";
 import {
   enrollStudentsInBulk,
   processEnrollmentTask,
 } from "./handlers/enrollments/enrollStudentsInBulk";
-import { reminderWorker } from "./workers/scheduleReminderWorker";
-// import { sendAnnouncementEmailWorker } from "./workers/sendAnnouncementsWorker";
+// import { reminderWorker } from "./workers/scheduleReminderWorker";
+import { sendAnnouncementEmailWorker } from "./workers/sendAnnouncementsWorker";
 // Cascade delete workers
 import { courseDeleteCascade } from "./workers/courseDeleteCascade";
 import { lessonDeleteCascade } from "./workers/lessonDeleteCascade";
@@ -26,12 +26,14 @@ import { bulkUnassignStudentsFromAdmin } from "./handlers/unassignStudentstoAdmi
 import { pauseStudentNotifications } from "./handlers/pauseStudentNotifications";
 import { createNotification } from "./handlers/notifications/notificationController";
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
-import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";import { userDeleteCascade } from './workers/userDeleteCascade';
+import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";
+import { userDeleteCascade } from "./workers/userDeleteCascade";
 import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 import { createCouponUsage } from "./handlers/createCouponUsage";
-// import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
-// import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
+import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
+import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
+import { createGlobalAnnouncement } from "./handlers/createAnnouncements";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -58,11 +60,12 @@ export {
   createNotification,
   sendInitialNotification,
   SendMailWorkerForNotif,
-  reminderWorker,
+  // reminderWorker,
   pauseReminderForAssignments,
   markSubmissionNotificationsEvaluated,
   createCouponUsage,
-  // onCourseUpdated,
-  // sendAnnouncementEmailWorker,
-  // sendAnnouncementEmailNotification
+  onCourseUpdated,
+  sendAnnouncementEmailWorker,
+  sendAnnouncementEmailNotification,
+  createGlobalAnnouncement,
 };
