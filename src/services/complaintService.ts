@@ -206,6 +206,37 @@ class ComplaintService {
         }
     }
 
+    async resolveComplaint(
+        complaintId: string,
+        actionBy: string
+    ): Promise<Result<void>> {
+        try {
+            const batch = writeBatch(db);
+            const complaintRef = doc(db, COLLECTION.COMPLAINTS, complaintId);
+
+            batch.update(complaintRef, {
+                status: COMPLAINT_STATUS.RESOLVED,
+                updatedAt: serverTimestamp(),
+            });
+
+            this.addAction(batch, complaintId, {
+                complaintId,
+                actionBy,
+                actionType: COMPLAINT_ACTION_TYPE.RESOLVED,
+                isInternal: false,
+            });
+
+            await batch.commit();
+            return ok(null);
+        } catch (error: any) {
+            return fail(
+                "Failed to resolve complaint",
+                error.code,
+                error.stack
+            );
+        }
+    }
+
     async getComplaints(
         filters?: {
             field: keyof Complaint;

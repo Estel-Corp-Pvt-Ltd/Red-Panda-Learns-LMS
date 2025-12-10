@@ -30,18 +30,19 @@ import {
     COMPLAINT_SEVERITY,
     COMPLAINT_STATUS,
 } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { complaintService } from "@/services/complaintService";
 import { Complaint } from "@/types/complaint";
 import {
     ChevronLeft,
     ChevronRight,
+    ClipboardCheck,
     Eye,
     Loader2,
     Search
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface PaginatedComplaints {
     data: Complaint[];
@@ -53,7 +54,8 @@ interface PaginatedComplaints {
 };
 
 const AdminComplaints = () => {
-    const navigate = useNavigate();
+
+    const { user } = useAuth();
 
     const [complaints, setComplaints] = useState<PaginatedComplaints>({
         data: [],
@@ -76,7 +78,7 @@ const AdminComplaints = () => {
     const [categoryFilter, setCategoryFilter] =
         useState<keyof typeof COMPLAINT_CATEGORY | "ALL">("ALL");
 
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage] = useState(10);
     const [paginationState, setPaginationState] = useState({
         cursor: null as any,
         pageDirection: "next" as "next" | "previous",
@@ -101,6 +103,7 @@ const AdminComplaints = () => {
         categoryFilter,
         paginationState,
         itemsPerPage,
+        open
     ]);
 
     const loadComplaints = async () => {
@@ -335,6 +338,27 @@ const AdminComplaints = () => {
                                             }
                                         >
                                             <Eye className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className={`${c.status !== COMPLAINT_STATUS.RESOLVED ? "" : "bg-slate-500 cursor-not-allowed"}`}
+                                            disabled={c.status === COMPLAINT_STATUS.RESOLVED}
+                                            onClick={async () => {
+                                                const response = await complaintService.resolveComplaint(c.id, user.id);
+                                                if (response.success) {
+                                                    toast({
+                                                        title: "Complaint Resolved"
+                                                    });
+                                                    await loadComplaints();
+                                                    return;
+                                                }
+                                                toast({
+                                                    title: "Failed to resolve complaint",
+                                                    variant: "destructive"
+                                                });
+                                            }}
+                                        >
+                                            <ClipboardCheck className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>

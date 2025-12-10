@@ -8,6 +8,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Complaint } from "@/types/complaint";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { COMPLAINT_STATUS } from "@/constants";
+import { Button } from "./ui/button";
+import { ClipboardCheck } from "lucide-react";
+import { complaintService } from "@/services/complaintService";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 interface ComplaintDetailModalProps {
     open: boolean;
@@ -27,6 +33,9 @@ export default function ComplaintDetailModal({
     onOpenChange,
     complaint,
 }: ComplaintDetailModalProps) {
+
+    const { user } = useAuth();
+
     if (!complaint) return null;
 
     const isValidUrl = (value: string) => {
@@ -42,12 +51,40 @@ export default function ComplaintDetailModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl w-[95vw] p-0">
                 <DialogHeader className="px-6 pt-6">
-                    <DialogTitle className="flex flex-wrap items-center gap-3">
-                        <span>Complaint #{complaint.id}</span>
-                        <Badge variant={statusColorMap[complaint.status] as any}>
-                            {complaint.status}
-                        </Badge>
+                    <DialogTitle className="flex flex-wrap items-center justify-between gap-3 pr-3">
+                        <div className="flex items-center gap-3">
+                            <span>Complaint #{complaint.id}</span>
+                            <Badge variant={statusColorMap[complaint.status] as any}>
+                                {complaint.status}
+                            </Badge>
+                        </div>
+
+                        {complaint.status !== COMPLAINT_STATUS.RESOLVED && (
+                            <Button
+                                size="sm"
+                                className="gap-2"
+                                onClick={async () => {
+                                    const response = await complaintService.resolveComplaint(complaint.id, user.id);
+                                    if (response.success) {
+                                        toast({
+                                            title: "Complaint Resolved"
+                                        });
+                                        onOpenChange(false);
+                                        return;
+                                    }
+                                    toast({
+                                        title: "Failed to resolve complaint",
+                                        variant: "destructive"
+                                    });
+                                    onOpenChange(false);
+                                }}
+                            >
+                                <ClipboardCheck className="h-4 w-4" />
+                                Mark as Resolved
+                            </Button>
+                        )}
                     </DialogTitle>
+
                     <DialogDescription>
                         Submitted by {complaint.userName} ({complaint.userEmail})
                     </DialogDescription>
