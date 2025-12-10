@@ -206,6 +206,37 @@ class ComplaintService {
         }
     }
 
+    async resolveComplaint(
+        complaintId: string,
+        actionBy: string
+    ): Promise<Result<void>> {
+        try {
+            const batch = writeBatch(db);
+            const complaintRef = doc(db, COLLECTION.COMPLAINTS, complaintId);
+
+            batch.update(complaintRef, {
+                status: COMPLAINT_STATUS.RESOLVED,
+                updatedAt: serverTimestamp(),
+            });
+
+            this.addAction(batch, complaintId, {
+                complaintId,
+                actionBy,
+                actionType: COMPLAINT_ACTION_TYPE.RESOLVED,
+                isInternal: false,
+            });
+
+            await batch.commit();
+            return ok(null);
+        } catch (error: any) {
+            return fail(
+                "Failed to resolve complaint",
+                error.code,
+                error.stack
+            );
+        }
+    }
+
     async getComplaints(
         filters?: {
             field: keyof Complaint;
@@ -240,27 +271,27 @@ class ComplaintService {
             const countSnapshot = await getCountFromServer(countQuery);
             const totalCount = countSnapshot.data().count;
 
-            // const { field, direction } = orderByOption;
+            const { field, direction } = orderByOption;
 
             // Pagination logic
             if (pageDirection === "previous" && cursor) {
                 q = query(
                     q,
-                    // orderBy(field as string, direction),
+                    orderBy(field as string, direction),
                     endBefore(cursor),
                     limitToLast(itemsPerPage)
                 );
             } else if (cursor) {
                 q = query(
                     q,
-                    // orderBy(field as string, direction),
+                    orderBy(field as string, direction),
                     startAfter(cursor),
                     limit(itemsPerPage)
                 );
             } else {
                 q = query(
                     q,
-                    // orderBy(field as string, direction),
+                    orderBy(field as string, direction),
                     limit(itemsPerPage)
                 );
             }
