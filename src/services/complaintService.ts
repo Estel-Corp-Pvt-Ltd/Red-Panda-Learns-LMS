@@ -240,27 +240,27 @@ class ComplaintService {
             const countSnapshot = await getCountFromServer(countQuery);
             const totalCount = countSnapshot.data().count;
 
-            // const { field, direction } = orderByOption;
+            const { field, direction } = orderByOption;
 
             // Pagination logic
             if (pageDirection === "previous" && cursor) {
                 q = query(
                     q,
-                    // orderBy(field as string, direction),
+                    orderBy(field as string, direction),
                     endBefore(cursor),
                     limitToLast(itemsPerPage)
                 );
             } else if (cursor) {
                 q = query(
                     q,
-                    // orderBy(field as string, direction),
+                    orderBy(field as string, direction),
                     startAfter(cursor),
                     limit(itemsPerPage)
                 );
             } else {
                 q = query(
                     q,
-                    // orderBy(field as string, direction),
+                    orderBy(field as string, direction),
                     limit(itemsPerPage)
                 );
             }
