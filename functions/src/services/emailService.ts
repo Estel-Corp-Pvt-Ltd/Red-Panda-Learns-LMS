@@ -284,7 +284,7 @@ export function buildReminderEmail(evalLink: string) {
 
 </html>
 `
-}
+};
 
 export const buildComplaintRedressalEmail = (
   params: {
