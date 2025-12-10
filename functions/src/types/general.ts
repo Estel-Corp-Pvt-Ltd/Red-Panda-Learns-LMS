@@ -30,6 +30,10 @@ import {
   ANNOUNCEMENT_SCOPE,
   ANNOUNCEMENT_STATUS,
   EMAIL_TYPE,
+  COMPLAINT_STATUS,
+  COMPLAINT_SEVERITY,
+  COMPLAINT_ACTION_TYPE,
+  COMPLAINT_CATEGORY,
 } from "../constants";
 
 export type AttributeType =
@@ -80,7 +84,17 @@ export type AnnouncementScope =
 export type AnnouncementStatus =
   (typeof ANNOUNCEMENT_STATUS)[keyof typeof ANNOUNCEMENT_STATUS];
 
-  export type EmailType =
+// --- COMPLAINT ---
+export type ComplaintStatus =
+  (typeof COMPLAINT_STATUS)[keyof typeof COMPLAINT_STATUS];
+export type ComplaintSeverity =
+  (typeof COMPLAINT_SEVERITY)[keyof typeof COMPLAINT_SEVERITY];
+export type ComplaintActionType =
+  (typeof COMPLAINT_ACTION_TYPE)[keyof typeof COMPLAINT_ACTION_TYPE];
+export type ComplaintCategory =
+  (typeof COMPLAINT_CATEGORY)[keyof typeof COMPLAINT_CATEGORY];
+
+export type EmailType =
   (typeof EMAIL_TYPE)[keyof typeof EMAIL_TYPE]
 export type Duration = {
   hours: number;
