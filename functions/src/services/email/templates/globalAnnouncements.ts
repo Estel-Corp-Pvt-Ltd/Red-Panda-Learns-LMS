@@ -1,27 +1,19 @@
-export const buildCourseAnnouncementEmail = (
+export const buildGlobalNotificationEmail = (
   title: string,
-  body: string,
-  urlSlug: string,
-  itemId: string
+  body: string
 ): string => {
-  const isLesson = itemId.toLowerCase().startsWith("lesson");
-  const itemType = isLesson ? "Lesson" : "Assignment";
-
-  const link = `https://vizuara.ai/courses/${urlSlug}/lesson/${itemId}`;
-
- return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>${itemType} Added</title>
+    <title>Announcement</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-      /* Reset */
       * {
         margin: 0;
         padding: 0;
@@ -35,7 +27,6 @@ export const buildCourseAnnouncementEmail = (
         -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Gradient Background */
       .wrapper {
         width: 100%;
         min-height: 100vh;
@@ -49,7 +40,6 @@ export const buildCourseAnnouncementEmail = (
         background-attachment: fixed;
       }
 
-      /* Glassy Container */
       .container {
         max-width: 540px;
         margin: 0 auto;
@@ -65,7 +55,6 @@ export const buildCourseAnnouncementEmail = (
           inset 0 1px 1px rgba(255, 255, 255, 0.9);
       }
 
-      /* Logo Section */
       .logo-section {
         display: flex;
         align-items: center;
@@ -93,7 +82,6 @@ export const buildCourseAnnouncementEmail = (
         letter-spacing: -0.03em;
       }
 
-      /* Badge */
       .badge-wrapper {
         text-align: center;
         margin-bottom: 20px;
@@ -130,25 +118,20 @@ export const buildCourseAnnouncementEmail = (
         50% { opacity: 0.6; transform: scale(1.1); }
       }
 
-      /* Heading */
       h2 {
         font-size: 28px;
         font-weight: 800;
         text-align: center;
         color: #1a1a2e;
         letter-spacing: -0.03em;
-        margin-bottom: 24px;
+        margin-bottom: 28px;
         line-height: 1.2;
       }
 
-      /* Item Title Card */
-      .item-title {
+      .announcement-card {
         position: relative;
-        font-size: 17px;
-        font-weight: 600;
-        color: #1a1a2e;
         margin: 24px 0;
-        padding: 20px 24px;
+        padding: 24px 28px;
         background: linear-gradient(135deg, 
           rgba(255, 0, 255, 0.06) 0%, 
           rgba(34, 174, 209, 0.06) 50%,
@@ -159,7 +142,7 @@ export const buildCourseAnnouncementEmail = (
         overflow: hidden;
       }
 
-      .item-title::before {
+      .announcement-card::before {
         content: '';
         position: absolute;
         left: 0;
@@ -174,94 +157,21 @@ export const buildCourseAnnouncementEmail = (
         border-radius: 4px 0 0 4px;
       }
 
-      /* Paragraph */
-      p {
+      .announcement-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 12px;
+        line-height: 1.4;
+      }
+
+      .announcement-body {
         font-size: 15px;
         color: #4a4a5a;
         line-height: 1.75;
-        text-align: center;
+        white-space: pre-wrap;
       }
 
-      /* Button */
-.btn-wrapper {
-  text-align: center;
-  margin: 32px 0;
-}
-
-a.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 18px 40px;
-  background: hsl(300, 100%, 50%);
-  color: #ffffff !important;
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 15px;
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(255, 0, 255, 0.25);
-  transition: all 0.3s ease;
-  letter-spacing: 0.02em;
-}
-
-a.btn:hover {
-  background: hsl(300, 100%, 45%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 0, 255, 0.3);
-}
-
-.btn-arrow {
-  font-size: 18px;
-  transition: transform 0.3s ease;
-}
-
-a.btn:hover .btn-arrow {
-  transform: translateX(4px);
-}
-
-      .btn-arrow {
-        font-size: 18px;
-        transition: transform 0.3s ease;
-      }
-
-      a.btn:hover .btn-arrow {
-        transform: translateX(4px);
-      }
-
-      /* Link Fallback */
-      .link-section {
-        background: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border-radius: 14px;
-        padding: 18px 22px;
-        margin-top: 28px;
-        border: 1px solid rgba(255, 0, 255, 0.08);
-      }
-
-      .link-label {
-        font-size: 12px;
-        color: #8a8a9a;
-        margin-bottom: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .link-copy {
-        font-size: 13px;
-        background: linear-gradient(135deg, hsl(300, 100%, 45%) 0%, hsl(198, 75%, 45%) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        word-break: break-all;
-        text-decoration: none;
-        font-weight: 600;
-        display: block;
-      }
-
-      /* Divider */
       .divider {
         height: 1px;
         background: linear-gradient(90deg, 
@@ -275,7 +185,6 @@ a.btn:hover .btn-arrow {
         border: none;
       }
 
-      /* Footer */
       .footer {
         text-align: center;
       }
@@ -340,16 +249,6 @@ a.btn:hover .btn-arrow {
         width: 100%;
       }
 
-      /* Decorative Elements */
-      .glow-orb {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(60px);
-        opacity: 0.4;
-        pointer-events: none;
-      }
-
-      /* Responsive */
       @media only screen and (max-width: 600px) {
         .wrapper {
           padding: 32px 14px;
@@ -379,30 +278,17 @@ a.btn:hover .btn-arrow {
           font-size: 24px;
         }
 
-        .item-title {
-          font-size: 15px;
-          padding: 16px 20px;
+        .announcement-card {
+          padding: 20px 22px;
           border-radius: 12px;
         }
 
-        p {
+        .announcement-title {
+          font-size: 16px;
+        }
+
+        .announcement-body {
           font-size: 14px;
-        }
-
-        a.btn {
-          padding: 16px 32px;
-          font-size: 14px;
-          border-radius: 12px;
-          width: 100%;
-        }
-
-        .link-section {
-          padding: 16px 18px;
-          border-radius: 12px;
-        }
-
-        .link-copy {
-          font-size: 12px;
         }
 
         .footer-links {
@@ -410,14 +296,9 @@ a.btn:hover .btn-arrow {
         }
       }
 
-      /* Email client fallbacks */
       @media screen and (max-width: 480px) {
         .container {
           padding: 28px 20px !important;
-        }
-        
-        a.btn {
-          padding: 14px 24px !important;
         }
       }
     </style>
@@ -432,42 +313,21 @@ a.btn:hover .btn-arrow {
           <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" />
           <span class="logo-text">Vizuara AI Labs</span>
         </div>
+<!-- Badge -->
+<div class="badge-wrapper">
+  <span class="badge">
+    <span class="badge-dot"></span>
+    Announcement
+  </span>
+</div>
 
-        <!-- Badge -->
-        <div class="badge-wrapper">
-          <span class="badge">
-            <span class="badge-dot"></span>
-            New ${itemType}
-          </span>
-        </div>
+<!-- Title as Header -->
+<h2>${title}</h2>
 
-        <!-- Heading -->
-        <h2>New ${itemType} Added!</h2>
-
-        <!-- Item Title Card -->
-        <div class="item-title">
-          ${title}
-        </div>
-
-        <!-- Description -->
-        <p>
-          A new ${itemType.toLowerCase()} has been added to your course. 
-          Click below to explore and continue your learning journey!
-        </p>
-
-        <!-- CTA Button -->
-        <div class="btn-wrapper">
-          <a href="${link}" class="btn">
-            View ${itemType}
-            <span class="btn-arrow">→</span>
-          </a>
-        </div>
-
-        <!-- Link Fallback -->
-        <div class="link-section">
-          <p class="link-label">Or copy this link</p>
-          <a href="${link}" class="link-copy">${link}</a>
-        </div>
+<!-- Announcement Body -->
+<div class="announcement-card">
+  <div class="announcement-body">${body}</div>
+</div>
 
         <!-- Divider -->
         <div class="divider"></div>
@@ -487,5 +347,5 @@ a.btn:hover .btn-arrow {
     </div>
   </body>
 </html>
-`;
+  `;
 };

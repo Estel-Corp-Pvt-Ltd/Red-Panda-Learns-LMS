@@ -10,6 +10,7 @@ import {
 } from "../constants";
 import * as admin from "firebase-admin";
 import { Announcement } from "../types/announcements";
+import { v4 as uuidv4 } from 'uuid';
 
 // import { sendMail } from './email/sendMail'; // <-- Ensure this exists
 
@@ -103,6 +104,46 @@ const announcementService = {
     }
   },
 
+async createGlobalAssignmentAnnouncement(params: {
+  title: string;
+  body: string;
+  createdBy: string | null;
+  status?: AnnouncementStatus;
+}): Promise<Result<string>> {
+  try {
+    const {
+      title,
+      body,
+      createdBy,
+      status = ANNOUNCEMENT_STATUS.PUBLISHED
+    } = params;
+
+    const uid = uuidv4();
+    const announcementId = `G_ALL_${uid}`;
+
+    const docRef = db
+      .collection(COLLECTION.ANNOUNCEMENTS)
+      .doc(announcementId);
+
+    const announcement: Announcement = {
+      id: announcementId,
+      scope: ANNOUNCEMENT_SCOPE.GLOBAL,
+      title,
+      body,
+      status,
+      createdBy,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    await docRef.set(announcement);
+
+    return ok(announcementId);
+  } catch (error: any) {
+    console.error("Error creating global assignment announcement", error); // ✅ Fixed message
+    return fail("Failed to create global assignment announcement"); // ✅ Fixed message
+  }
+},
   /**
    * Example of another function you could add related to announcements.
    * @param {string} announcementId - The ID of the announcement to fetch.
