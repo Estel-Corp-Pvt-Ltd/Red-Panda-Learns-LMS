@@ -9,482 +9,325 @@ export const buildCourseAnnouncementEmail = (
 
   const link = `https://vizuara.ai/courses/${urlSlug}/lesson/${itemId}`;
 
- return `
+return `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
     <title>${itemType} Added</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <noscript>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+    </noscript>
+    <![endif]-->
     <style>
-      /* Reset */
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
 
-      body, html {
-        font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        min-height: 100vh;
+      body, table, td, p, a, li {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+
+      table, td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+        border-collapse: collapse;
+      }
+
+      img {
+        -ms-interpolation-mode: bicubic;
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
         -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Gradient Background */
-      .wrapper {
-        width: 100%;
-        min-height: 100vh;
-        padding: 48px 16px;
-        background: linear-gradient(135deg, 
-          hsl(300, 100%, 95%) 0%, 
-          hsl(280, 80%, 92%) 25%,
-          hsl(198, 75%, 92%) 50%,
-          hsl(36, 95%, 92%) 100%
-        );
-        background-attachment: fixed;
-      }
-
-      /* Glassy Container */
-      .container {
-        max-width: 540px;
-        margin: 0 auto;
-        background: rgba(255, 255, 255, 0.75);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 24px;
-        padding: 48px 44px;
-        border: 1px solid rgba(255, 255, 255, 0.9);
-        box-shadow: 
-          0 8px 32px rgba(255, 0, 255, 0.08),
-          0 2px 8px rgba(0, 0, 0, 0.04),
-          inset 0 1px 1px rgba(255, 255, 255, 0.9);
-      }
-
-      /* Logo Section */
-      .logo-section {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
-        margin-bottom: 36px;
-        padding-bottom: 28px;
-        border-bottom: 1px solid rgba(255, 0, 255, 0.12);
-      }
-
-      .logo-section img {
-        width: 48px;
-        height: 48px;
-        object-fit: contain;
-        filter: drop-shadow(0 2px 8px rgba(255, 0, 255, 0.2));
-      }
-
-      .logo-text {
-        font-size: 24px;
-        font-weight: 800;
-        background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        letter-spacing: -0.03em;
-      }
-
-      /* Badge */
-      .badge-wrapper {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: linear-gradient(135deg, 
-          rgba(255, 0, 255, 0.12) 0%, 
-          rgba(34, 174, 209, 0.12) 100%
-        );
-        color: hsl(300, 100%, 40%);
-        font-size: 11px;
-        font-weight: 700;
-        padding: 8px 16px;
-        border-radius: 50px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        border: 1px solid rgba(255, 0, 255, 0.15);
-      }
-
-      .badge-dot {
-        width: 6px;
-        height: 6px;
-        background: hsl(300, 100%, 50%);
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.6; transform: scale(1.1); }
-      }
-
-      /* Heading */
-      h2 {
-        font-size: 28px;
-        font-weight: 800;
-        text-align: center;
-        color: #1a1a2e;
-        letter-spacing: -0.03em;
-        margin-bottom: 24px;
-        line-height: 1.2;
-      }
-
-      /* Item Title Card */
-      .item-title {
-        position: relative;
-        font-size: 17px;
-        font-weight: 600;
-        color: #1a1a2e;
-        margin: 24px 0;
-        padding: 20px 24px;
-        background: linear-gradient(135deg, 
-          rgba(255, 0, 255, 0.06) 0%, 
-          rgba(34, 174, 209, 0.06) 50%,
-          rgba(242, 178, 73, 0.06) 100%
-        );
-        border-radius: 16px;
-        border: 1px solid rgba(255, 0, 255, 0.12);
-        overflow: hidden;
-      }
-
-      .item-title::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: linear-gradient(180deg, 
-          hsl(300, 100%, 50%) 0%, 
-          hsl(198, 75%, 52%) 50%,
-          hsl(36, 95%, 61%) 100%
-        );
-        border-radius: 4px 0 0 4px;
-      }
-
-      /* Paragraph */
-      p {
-        font-size: 15px;
-        color: #4a4a5a;
-        line-height: 1.75;
-        text-align: center;
-      }
-
-      /* Button */
-.btn-wrapper {
-  text-align: center;
-  margin: 32px 0;
-}
-
-a.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 18px 40px;
-  background: hsl(300, 100%, 50%);
-  color: #ffffff !important;
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 15px;
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(255, 0, 255, 0.25);
-  transition: all 0.3s ease;
-  letter-spacing: 0.02em;
-}
-
-a.btn:hover {
-  background: hsl(300, 100%, 45%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 0, 255, 0.3);
-}
-
-.btn-arrow {
-  font-size: 18px;
-  transition: transform 0.3s ease;
-}
-
-a.btn:hover .btn-arrow {
-  transform: translateX(4px);
-}
-
-      .btn-arrow {
-        font-size: 18px;
-        transition: transform 0.3s ease;
-      }
-
-      a.btn:hover .btn-arrow {
-        transform: translateX(4px);
-      }
-
-      /* Link Fallback */
-      .link-section {
-        background: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border-radius: 14px;
-        padding: 18px 22px;
-        margin-top: 28px;
-        border: 1px solid rgba(255, 0, 255, 0.08);
-      }
-
-      .link-label {
-        font-size: 12px;
-        color: #8a8a9a;
-        margin-bottom: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .link-copy {
-        font-size: 13px;
-        background: linear-gradient(135deg, hsl(300, 100%, 45%) 0%, hsl(198, 75%, 45%) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        word-break: break-all;
-        text-decoration: none;
-        font-weight: 600;
-        display: block;
-      }
-
-      /* Divider */
-      .divider {
-        height: 1px;
-        background: linear-gradient(90deg, 
-          transparent 0%, 
-          rgba(255, 0, 255, 0.2) 20%,
-          rgba(34, 174, 209, 0.2) 50%,
-          rgba(242, 178, 73, 0.2) 80%,
-          transparent 100%
-        );
-        margin: 36px 0;
-        border: none;
-      }
-
-      /* Footer */
-      .footer {
-        text-align: center;
-      }
-
-      .footer-text {
-        font-size: 14px;
-        color: #6a6a7a;
-        font-weight: 500;
-      }
-
-      .footer-heart {
-        display: inline-block;
-        color: hsl(300, 100%, 50%);
-        animation: heartbeat 1.5s infinite;
-      }
-
-      @keyframes heartbeat {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.15); }
-      }
-
-      .footer-brand {
-        font-weight: 700;
-        background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .footer-links {
-        margin-top: 18px;
-        display: flex;
-        justify-content: center;
-        gap: 24px;
-      }
-
-      .footer-links a {
-        font-size: 13px;
-        color: #8a8a9a;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        position: relative;
-      }
-
-      .footer-links a::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        width: 0;
-        height: 2px;
-        background: linear-gradient(90deg, hsl(300, 100%, 50%), hsl(198, 75%, 52%));
-        transition: width 0.2s ease;
-      }
-
-      .footer-links a:hover {
-        color: hsl(300, 100%, 45%);
-      }
-
-      .footer-links a:hover::after {
-        width: 100%;
-      }
-
-      /* Decorative Elements */
-      .glow-orb {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(60px);
-        opacity: 0.4;
-        pointer-events: none;
-      }
-
-      /* Responsive */
       @media only screen and (max-width: 600px) {
-        .wrapper {
-          padding: 32px 14px;
+        .wrapper-padding {
+          padding: 24px 12px !important;
         }
-
-        .container {
-          padding: 36px 28px;
-          border-radius: 20px;
+        .container-padding {
+          padding: 32px 24px !important;
         }
-
-        .logo-section {
-          gap: 12px;
-          margin-bottom: 28px;
-          padding-bottom: 24px;
+        .logo-img {
+          width: 40px !important;
+          height: 40px !important;
         }
-
-        .logo-section img {
-          width: 42px;
-          height: 42px;
-        }
-
         .logo-text {
-          font-size: 20px;
+          font-size: 20px !important;
         }
-
-        h2 {
-          font-size: 24px;
+        .main-heading {
+          font-size: 22px !important;
         }
-
+        .item-card {
+          padding: 18px 20px !important;
+        }
         .item-title {
-          font-size: 15px;
-          padding: 16px 20px;
-          border-radius: 12px;
+          font-size: 15px !important;
         }
-
-        p {
-          font-size: 14px;
+        .description {
+          font-size: 14px !important;
         }
-
-        a.btn {
-          padding: 16px 32px;
-          font-size: 14px;
-          border-radius: 12px;
-          width: 100%;
+        .btn {
+          padding: 16px 28px !important;
+          font-size: 14px !important;
         }
-
-        .link-section {
-          padding: 16px 18px;
-          border-radius: 12px;
+        .link-box {
+          padding: 16px 18px !important;
         }
-
-        .link-copy {
-          font-size: 12px;
-        }
-
-        .footer-links {
-          gap: 20px;
-        }
-      }
-
-      /* Email client fallbacks */
-      @media screen and (max-width: 480px) {
-        .container {
-          padding: 28px 20px !important;
-        }
-        
-        a.btn {
-          padding: 14px 24px !important;
+        .link-url {
+          font-size: 11px !important;
         }
       }
     </style>
   </head>
 
-  <body>
-    <div class="wrapper">
-      <div class="container">
+  <body style="margin: 0; padding: 0; background-color: #f5f0ff;">
+    <!-- Wrapper -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, hsl(300, 100%, 95%) 0%, hsl(280, 80%, 92%) 25%, hsl(198, 75%, 92%) 50%, hsl(36, 95%, 92%) 100%); min-height: 100vh;">
+      <tr>
+        <td align="center" class="wrapper-padding" style="padding: 48px 16px;">
+          
+          <!-- Container -->
+          <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; width: 100%; background-color: rgba(255, 255, 255, 0.95); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 8px 32px rgba(255, 0, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);">
+            <tr>
+              <td class="container-padding" style="padding: 48px 44px;">
+                
+                <!-- Logo Section -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" style="padding-bottom: 28px; border-bottom: 1px solid rgba(255, 0, 255, 0.12);">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td valign="middle" style="padding-right: 14px;">
+                            <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" width="48" height="48" class="logo-img" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
+                          </td>
+                          <td valign="middle">
+                            <!--[if mso]>
+                            <span style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
+                            <![endif]-->
+                            <!--[if !mso]><!-->
+                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">Vizuara AI Labs</span>
+                            <!--<![endif]-->
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
 
-        <!-- Logo -->
-        <div class="logo-section">
-          <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" />
-          <span class="logo-text">Vizuara AI Labs</span>
-        </div>
+                <!-- Spacer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td height="28" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                </table>
 
-        <!-- Badge -->
-        <div class="badge-wrapper">
-          <span class="badge">
-            <span class="badge-dot"></span>
-            New ${itemType}
-          </span>
-        </div>
+                <!-- Badge -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" style="padding-bottom: 20px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.12) 0%, rgba(34, 174, 209, 0.12) 100%); border-radius: 50px; border: 1px solid rgba(255, 0, 255, 0.15);">
+                        <tr>
+                          <td style="padding: 8px 16px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td valign="middle" style="padding-right: 6px;">
+                                  <div style="width: 6px; height: 6px; background-color: #d946ef; border-radius: 50%;"></div>
+                                </td>
+                                <td valign="middle">
+                                  <span style="color: #a21caf; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">New ${itemType}</span>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
 
-        <!-- Heading -->
-        <h2>New ${itemType} Added!</h2>
+                <!-- Heading -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" style="padding-bottom: 24px;">
+                      <h2 class="main-heading" style="font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; line-height: 1.2; margin: 0;">New ${itemType} Added!</h2>
+                    </td>
+                  </tr>
+                </table>
 
-        <!-- Item Title Card -->
-        <div class="item-title">
-          ${title}
-        </div>
+                <!-- Item Title Card -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="item-card" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.06) 0%, rgba(34, 174, 209, 0.06) 50%, rgba(242, 178, 73, 0.06) 100%); border-radius: 16px; border: 1px solid rgba(255, 0, 255, 0.12); border-left: 4px solid #d946ef;">
+                        <tr>
+                          <td class="item-title" style="padding: 20px 24px; font-size: 17px; font-weight: 600; color: #1a1a2e;">
+                            ${title}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
 
-        <!-- Description -->
-        <p>
-          A new ${itemType.toLowerCase()} has been added to your course. 
-          Click below to explore and continue your learning journey!
-        </p>
+                <!-- Spacer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td height="24" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                </table>
 
-        <!-- CTA Button -->
-        <div class="btn-wrapper">
-          <a href="${link}" class="btn">
-            View ${itemType}
-            <span class="btn-arrow">→</span>
-          </a>
-        </div>
+                <!-- Description -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <p class="description" style="font-size: 15px; color: #4a4a5a; line-height: 1.75; margin: 0;">
+                        A new ${itemType.toLowerCase()} has been added to your course. Click below to explore and continue your learning journey!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
 
-        <!-- Link Fallback -->
-        <div class="link-section">
-          <p class="link-label">Or copy this link</p>
-          <a href="${link}" class="link-copy">${link}</a>
-        </div>
+                <!-- Spacer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td height="32" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                </table>
 
-        <!-- Divider -->
-        <div class="divider"></div>
+                <!-- CTA Button -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="background-color: #d946ef; border-radius: 14px; box-shadow: 0 4px 12px rgba(255, 0, 255, 0.25);">
+                            <a href="${link}" class="btn" target="_blank" style="display: inline-block; padding: 18px 40px; font-size: 15px; font-weight: 700; color: #ffffff; text-decoration: none; letter-spacing: 0.02em;">
+                              View ${itemType} →
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
 
-        <!-- Footer -->
-        <div class="footer">
-          <p class="footer-text">
-            Made with <span class="footer-heart">♥</span> by the <span class="footer-brand">Vizuara</span> Team
-          </p>
-          <div class="footer-links">
-            <a href="https://vizuara.ai">Website</a>
-            <a href="https://vizuara.ai/privacy">Privacy</a>
-          </div>
-        </div>
+                <!-- Spacer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td height="28" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                </table>
 
-      </div>
-    </div>
+                <!-- Link Fallback -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="link-box" style="background-color: rgba(255, 255, 255, 0.8); border-radius: 14px; border: 1px solid rgba(255, 0, 255, 0.08);">
+                        <tr>
+                          <td style="padding: 18px 22px;">
+                            <p style="font-size: 12px; color: #8a8a9a; margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Or copy this link</p>
+                            <!--[if mso]>
+                            <a href="${link}" style="font-size: 13px; color: #d946ef; text-decoration: none; font-weight: 600; word-break: break-all;">${link}</a>
+                            <![endif]-->
+                            <!--[if !mso]><!-->
+                            <a href="${link}" class="link-url" style="font-size: 13px; background: linear-gradient(135deg, hsl(300, 100%, 45%) 0%, hsl(198, 75%, 45%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; font-weight: 600; word-break: break-all; display: block;">${link}</a>
+                            <!--<![endif]-->
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Spacer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td height="36" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                </table>
+
+                <!-- Divider -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(255, 0, 255, 0.2) 20%, rgba(34, 174, 209, 0.2) 50%, rgba(242, 178, 73, 0.2) 80%, transparent 100%);"></td>
+                  </tr>
+                </table>
+
+                <!-- Spacer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td height="36" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                </table>
+
+                <!-- Footer -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <p style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
+                        Made with <span style="color: #d946ef;">♥</span> by the 
+                        <!--[if mso]>
+                        <span style="font-weight: 700; color: #d946ef;">Vizuara</span>
+                        <![endif]-->
+                        <!--[if !mso]><!-->
+                        <span style="font-weight: 700; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara</span>
+                        <!--<![endif]-->
+                        Team
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td height="18" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td align="center">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td valign="middle">
+                            <a href="https://vizuara.ai" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
+                          </td>
+                          <td valign="middle" style="padding: 0 12px;">
+                            <span style="color: #8a8a9a; font-size: 10px;">•</span>
+                          </td>
+                          <td valign="middle">
+                            <a href="https://vizuara.ai/privacy" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+              </td>
+            </tr>
+          </table>
+          
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
 `;
