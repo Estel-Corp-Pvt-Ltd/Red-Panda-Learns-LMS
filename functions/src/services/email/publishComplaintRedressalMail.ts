@@ -1,30 +1,26 @@
 import { PubSub } from "@google-cloud/pubsub";
 import { logger } from "firebase-functions";
-import { ComplaintActionType, ComplaintStatus } from "../../types/general";
+import { ComplaintStatus } from "../../types/general";
 
 export interface ComplaintMailPayload {
     to: string;
     subject: string;
-    html: string;
+    message: string;
     complaintId: string;
-    actionType: ComplaintActionType;
     status: ComplaintStatus;
     isInternal: boolean;
-    senderName: string;
-    senderEmail: string;
 };
 
 const pubsub = new PubSub();
 
-export async function sendComplaintRedressalEmail(
+export async function publishComplaintRedressalMail(
     payload: ComplaintMailPayload
 ) {
     try {
 
         if (payload.isInternal) {
-            logger.info("🔒 Skipping email for internal complaint action", {
+            logger.info("🔒 Skipping mail for internal complaint action", {
                 complaintId: payload.complaintId,
-                actionType: payload.actionType,
             });
             return { success: true, skipped: true };
         }
@@ -32,30 +28,29 @@ export async function sendComplaintRedressalEmail(
         const {
             to,
             subject,
-            html,
+            message,
             complaintId,
-            actionType,
             status,
         } = payload;
 
-        if (!to || !subject || !html || !complaintId) {
-            logger.error("❌ Invalid complaint email payload", {
+        if (!to || !subject || !message || !complaintId || !status) {
+            logger.error("❌ Invalid complaint mail payload", {
                 toPresent: !!to,
                 subjectPresent: !!subject,
-                htmlPresent: !!html,
+                messagePresent: !!message,
                 complaintId,
             });
             return { success: false, error: "Invalid payload" };
         }
 
-        const topicName = "send-complaint-redressal-emails";
+        const topicName = "send-complaint-redressal-mails";
 
-        const dataBuffer = Buffer.from(JSON.stringify(payload));
-        await pubsub.topic(topicName).publish(dataBuffer);
+        logger.info("Payload: ", payload);
 
-        logger.info("📨 Complaint email queued", {
+        await pubsub.topic(topicName).publishMessage({ json: payload });
+
+        logger.info("📨 Complaint mail queued", {
             complaintId,
-            actionType,
             status,
             to,
         });
@@ -63,7 +58,7 @@ export async function sendComplaintRedressalEmail(
         return { success: true };
 
     } catch (err: any) {
-        logger.error("❌ Failed to queue complaint email", {
+        logger.error("❌ Failed to queue complaint mail", {
             message: err.message,
             stack: err.stack,
             complaintId: payload?.complaintId,

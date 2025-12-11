@@ -1,13 +1,22 @@
+import * as admin from 'firebase-admin';
 import { onMessagePublished } from "firebase-functions/v2/pubsub";
 import { logger } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import fetch from "node-fetch";
+import { buildComplaintRedressalEmail } from "../services/emailService";
+import { Complaint } from '../types/complaint';
 
 const BREVO_API_KEY = defineSecret("BREVO_API_KEY");
 
-export const sendComplaintRedressalEmailWorker = onMessagePublished(
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
+
+const db = admin.firestore();
+
+export const sendComplaintRedressalMailWorker = onMessagePublished(
     {
-        topic: "send-complaint-redressal-emails",
+        topic: "send-complaint-redressal-mails",
         secrets: [BREVO_API_KEY],
     },
     async (event) => {
@@ -23,63 +32,82 @@ export const sendComplaintRedressalEmailWorker = onMessagePublished(
             const {
                 to,
                 subject,
-                html,
+                message,
                 complaintId,
-                actionType,
                 status,
-                senderName,
-                senderEmail,
-                isInternal,
+                isInternal
             } = payload;
 
             if (isInternal) {
-                logger.info("🔒 Skipping internal complaint action email", {
+                logger.info("🔒 Skipping internal complaint action mail", {
                     complaintId,
-                    actionType,
                 });
                 return;
             }
 
-            const safeTo = Array.isArray(to) ? to.filter(Boolean) : [];
-
-            if (safeTo.length === 0) {
-                logger.warn("⚠️ No recipients for complaint email", {
+            if (!to) {
+                logger.warn("⚠️ No recipients for complaint mail", {
                     complaintId,
-                    actionType,
                     status,
                 });
                 return;
             }
 
-            if (!complaintId || !subject || !html) {
-                logger.error("❌ Missing required complaint email fields", {
+            if (!complaintId || !subject || !message) {
+                logger.error("❌ Missing required complaint mail fields", {
                     complaintId,
                     subjectPresent: !!subject,
-                    htmlPresent: !!html,
+                    messagePresent: !!message,
                 });
                 return;
             }
 
+            const complaintSnap = await db
+                .collection("Complaints")
+                .doc(complaintId)
+                .get();
+
+            if (!complaintSnap.exists) {
+                logger.error("❌ Complaint not found", { complaintId });
+                return;
+            }
+
+            const complaint = complaintSnap.data() as Complaint;
+
             const sender = {
-                name: senderName || "Vizuara Support",
-                email: senderEmail || "support@vizuara.ai",
+                name: "Vizuara Support",
+                email: "no_reply@vizuara.com",
             };
 
-            const textContent = html.replace(/<[^>]+>/g, "");
+            const html = buildComplaintRedressalEmail(
+                {
+                    complaintId,
+                    userName: complaint.userName,
+                    category: complaint.category,
+                    status: complaint.status,
+                    severity: complaint.severity,
+                    actionTitle: subject,
+                    messageBody: message,
+                    resolutionSummary: complaint.resolutionSummary,
+                    actionDate: (new Date()).toLocaleDateString()
+                }
+            );
+
+            const textContent =
+                message || (html ? html.replace(/<[^>]+>/g, "") : "");
 
             const body = {
                 sender,
-                to: safeTo.map((email: string) => ({ email })),
+                to: [{ email: to }],
                 subject,
                 htmlContent: html,
                 textContent,
             };
 
-            logger.info("📨 Sending complaint email", {
+            logger.info("📨 Sending complaint mail", {
                 complaintId,
-                actionType,
                 status,
-                recipients: safeTo.length,
+                to,
             });
 
             const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -98,14 +126,13 @@ export const sendComplaintRedressalEmailWorker = onMessagePublished(
                 );
             }
 
-            logger.info("✅ Complaint email sent successfully", {
+            logger.info("✅ Complaint mail sent successfully", {
                 complaintId,
-                actionType,
-                toCount: safeTo.length,
+                res
             });
 
         } catch (err: any) {
-            logger.error("❌ Complaint email worker failed", {
+            logger.error("❌ Complaint mail worker failed", {
                 message: err.message,
                 stack: err.stack,
                 complaintId: payload?.complaintId,
