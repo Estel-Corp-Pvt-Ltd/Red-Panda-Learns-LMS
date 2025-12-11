@@ -1,13 +1,10 @@
-export const buildCourseAnnouncementEmail = (
+export const buildCourseManualAnnouncementEmail = (
   title: string,
   body: string,
   urlSlug: string,
-  itemId: string
-): string => {
-  const isLesson = itemId.toLowerCase().startsWith("lesson");
-  const itemType = isLesson ? "Lesson" : "Assignment";
 
-  const link = `https://vizuara.ai/courses/${urlSlug}/lesson/${itemId}`;
+): string => {
+
 
 return `
 <!DOCTYPE html>
@@ -18,7 +15,7 @@ return `
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="x-apple-disable-message-reformatting" />
     <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
-    <title>${itemType} Added</title>
+    <title>Course Announcement</title>
     <!--[if mso]>
     <noscript>
       <xml>
@@ -157,7 +154,7 @@ return `
                                   <div style="width: 6px; height: 6px; background-color: #d946ef; border-radius: 50%;"></div>
                                 </td>
                                 <td valign="middle">
-                                  <span style="color: #a21caf; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">New ${itemType}</span>
+                                  <span style="color: #a21caf; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Course Announcement</span>
                                 </td>
                               </tr>
                             </table>
@@ -172,7 +169,7 @@ return `
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="center" style="padding-bottom: 24px;">
-                      <h2 class="main-heading" style="font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; line-height: 1.2; margin: 0;">New ${itemType} Added!</h2>
+                      <h2 class="main-heading" style="font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; line-height: 1.2; margin: 0;">New Added!</h2>
                     </td>
                   </tr>
                 </table>
@@ -199,16 +196,7 @@ return `
                   </tr>
                 </table>
 
-                <!-- Description -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td align="center">
-                      <p class="description" style="font-size: 15px; color: #4a4a5a; line-height: 1.75; margin: 0;">
-                        A new ${itemType.toLowerCase()} has been added to your course. Click below to explore and continue your learning journey!
-                      </p>
-                    </td>
-                  </tr>
-                </table>
+            
 
                 <!-- Spacer -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -217,19 +205,6 @@ return `
                   </tr>
                 </table>
 
-                <!-- CTA Button -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td align="center">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td align="center" style="background-color: #d946ef; border-radius: 14px; box-shadow: 0 4px 12px rgba(255, 0, 255, 0.25);">
-                            <a href="${link}" class="btn" target="_blank" style="display: inline-block; padding: 18px 40px; font-size: 15px; font-weight: 700; color: #ffffff; text-decoration: none; letter-spacing: 0.02em;">
-                              View ${itemType} →
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
                     </td>
                   </tr>
                 </table>
@@ -241,26 +216,7 @@ return `
                   </tr>
                 </table>
 
-                <!-- Link Fallback -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td>
-                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="link-box" style="background-color: rgba(255, 255, 255, 0.8); border-radius: 14px; border: 1px solid rgba(255, 0, 255, 0.08);">
-                        <tr>
-                          <td style="padding: 18px 22px;">
-                            <p style="font-size: 12px; color: #8a8a9a; margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Or copy this link</p>
-                            <!--[if mso]>
-                            <a href="${link}" style="font-size: 13px; color: #d946ef; text-decoration: none; font-weight: 600; word-break: break-all;">${link}</a>
-                            <![endif]-->
-                            <!--[if !mso]><!-->
-                            <a href="${link}" class="link-url" style="font-size: 13px; background: linear-gradient(135deg, hsl(300, 100%, 45%) 0%, hsl(198, 75%, 45%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; font-weight: 600; word-break: break-all; display: block;">${link}</a>
-                            <!--<![endif]-->
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
+                
 
                 <!-- Spacer -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">

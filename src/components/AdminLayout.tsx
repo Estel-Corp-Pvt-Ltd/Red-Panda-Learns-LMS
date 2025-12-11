@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Award, Book, BookOpen, Building2, ChartBar, ClipboardList, FilePenLine, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
+import { AlarmClockPlus, Award, Book, BookOpen, Building2, ChartBar, ClipboardList, FilePenLine, KeyRound, LayoutDashboard, ListOrdered, LogOut, Megaphone, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -100,6 +100,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: "/admin/enroll-student",
       icon: <UserPlus className="h-5 w-5" />,
     },
+     {
+      name: "Announcements",
+      path: "/admin/announcements",
+      icon: <Megaphone className="h-5 w-5" />,
+    },
+    
     {
       name: "Bulk Enroll Students",
       path: "/admin/bulk-student-enroll",
