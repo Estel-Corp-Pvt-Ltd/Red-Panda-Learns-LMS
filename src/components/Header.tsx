@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -45,7 +45,7 @@ export function Header({
   const { toast } = useToast();
   const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-
+  const [unreadCount, setUnreadCount] = useState(0);
   const email = "hello@vizuara.com";
 
   const copyEmail = () => {
@@ -55,6 +55,8 @@ export function Header({
       description: "The email address has been copied to your clipboard.",
     });
   };
+
+
 
   return (
     <>
@@ -464,12 +466,30 @@ export function Header({
 
             {user ? (
               <>
-                {/* Bell Icon Button */}
+              
                 <button
                   onClick={() => setIsNotificationOpen(true)}
                   className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  aria-label="Notifications"
                 >
                   <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+
+                 
+                  {unreadCount > 0 && (
+                    <span
+                      className={cn(
+                        "absolute -top-1 -right-1",
+                        "bg-red-500 text-white text-[10px] font-bold",
+                        "min-w-[18px] h-[18px] px-1",
+                        "flex items-center justify-center",
+                        "rounded-full shadow-lg",
+                        "border-2 border-white dark:border-neutral-900",
+                        "animate-pulse"
+                      )}
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </button>
 
                 <div className="flex items-center">
@@ -502,7 +522,7 @@ export function Header({
                       <span>Dashboard</span>
                     </Button>
                   </Link>
-                  {/* Logged-in dropdown (hover to open on desktop) */}
+                        {/* Logged-in dropdown (hover to open on desktop) */}
                   {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -562,10 +582,10 @@ export function Header({
         </div>
       </header>
 
-      {/* Notification Panel - moved outside header */}
       <NotificationPanel
         isOpen={isNotificationOpen}
         onClose={() => setIsNotificationOpen(false)}
+        onUnreadChange={setUnreadCount}  
       />
     </>
   );
