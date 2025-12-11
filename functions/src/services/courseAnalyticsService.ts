@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin';
-import { lessonAnalyticsService } from "./lessonAnalyticsService";
 import { FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already done
@@ -14,7 +13,7 @@ export interface CourseAnalytics {
   courseId: string;
   courseTitle: string;
   totalTimeSpentSec: number;
-  totalLessonsCompleted: number;
+  coursesCompleted: number;
   totalLearners: number;
   updatedAt: Date | null;
   createdAt: Date | null;
@@ -24,7 +23,7 @@ export interface CourseAnalyticsUpdate {
   courseId: string;
   courseTitle?: string;
   timeSpentSec?: number;
-  lessonsCompletedIncrement?: number;
+  coursesCompletedIncrement?: number;
   learnerIncrement?: number;
 }
 
@@ -36,7 +35,7 @@ class CourseAnalyticsService {
    */
   async updateCourseAnalytics(update: CourseAnalyticsUpdate): Promise<void> {
     try {
-      const { courseId, timeSpentSec = 0, lessonsCompletedIncrement = 0, learnerIncrement = 0 } = update;
+      const { courseId, timeSpentSec = 0, coursesCompletedIncrement = 0, learnerIncrement = 0 } = update;
       const docRef = db.collection(this.collectionName).doc(courseId);
       const docSnap = await docRef.get();
 
@@ -49,8 +48,8 @@ class CourseAnalyticsService {
       if (timeSpentSec > 0) {
         updateData.totalTimeSpentSec = FieldValue.increment(timeSpentSec);
       }
-      if (lessonsCompletedIncrement > 0) {
-        updateData.totalLessonsCompleted = FieldValue.increment(lessonsCompletedIncrement);
+      if (coursesCompletedIncrement >= 0) {
+        updateData.coursesCompleted = FieldValue.increment(coursesCompletedIncrement);
       }
       if (learnerIncrement > 0) {
         updateData.totalLearners = FieldValue.increment(learnerIncrement);
@@ -64,14 +63,14 @@ class CourseAnalyticsService {
         await docRef.update(updateData);
 
         // Recalculate average completion rate
-        await this.recalculateCompletionRate(courseId);
+        // await this.recalculateCompletionRate(courseId);
       } else {
         // Create new document
         const initialData = {
           courseId,
           courseTitle: update.courseTitle || "",
           totalTimeSpentSec: timeSpentSec || 0,
-          totalLessonsCompleted: lessonsCompletedIncrement || 0,
+          coursesCompleted: coursesCompletedIncrement || 0,
           totalLearners: learnerIncrement || 1,
           avgCompletionRate: 0,
           createdAt: FieldValue.serverTimestamp(),

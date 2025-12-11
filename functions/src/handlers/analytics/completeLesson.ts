@@ -8,34 +8,53 @@ import { onRequest } from "firebase-functions/https";
 import { lessonAnalyticsService } from "../../services/lessonAnalyticsService";
 import { courseAnalyticsService } from "../../services/courseAnalyticsService";
 import { learningProgressService } from "../../services/lessonProgressService";
+import { lessonService } from "../../services/lessonService";
+import { courseService } from "../../services/courseService";
 
 if (!admin.apps.length) admin.initializeApp();
 
 // ------------------ Create Order ------------------
-async function lessonTimeSpentHandler(req: Request, res: Response) {
+async function completeLessonHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
     if (!user) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const { lessonId, courseId, timeSpentSec } = req.body;
+    const { lessonId, courseId } = req.body;
 
-    if (!lessonId || !courseId || !timeSpentSec) {
+    if (!lessonId || !courseId) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
-    await learningProgressService.timeSpentOnLesson(user.uid, courseId, lessonId, timeSpentSec);
 
+    const lessonResult = await lessonService.getLessonById(lessonId);
+    if (!lessonResult.success || !lessonResult.data) {
+      res.status(404).json({ error: "Lesson not found" });
+      return;
+    }
+
+    await learningProgressService.completeLesson(user.uid, courseId, lessonId, lessonResult.data.title);
+
+    // Analytics updates
     await lessonAnalyticsService.updateLessonAnalytics({
       courseId,
       lessonId,
-      timeSpentSec,
+      completionIncrement: 1,
     });
+
+    const courseResult = await courseService.getCourseById(courseId);
+    if (courseResult.success && courseResult.data) {
+      await courseAnalyticsService.updateCourseAnalytics({
+        courseId,
+        coursesCompletedIncrement: 1,
+      });
+    }
+
 
     await courseAnalyticsService.updateCourseAnalytics({
       courseId,
-      timeSpentSec
+      coursesCompletedIncrement: 1,
     });
 
     functions.logger.info(`Updated time spent for lesson ${lessonId} in course ${courseId} by user ${user.uid}`);
@@ -51,10 +70,10 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
 
 
 
-export const lessonTimeSpent = onRequest({
+export const completeLesson = onRequest({
   region: "us-central1",
 }, withMiddleware(
   corsMiddleware,
   authMiddleware,
-  lessonTimeSpentHandler
+  completeLessonHandler
 ));
