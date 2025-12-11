@@ -144,9 +144,9 @@ export default function LessonDetailPage() {
       setLessonCompleted(false);
       return;
     }
-
+    const lessonHistory = userProgress.lessonHistory;
     setLessonCompleted(
-      userProgress.lessonHistory.includes(selectedItem.id)
+      Array.isArray(lessonHistory) ? lessonHistory.includes(selectedItem.id) : !!lessonHistory[selectedItem.id]
     );
   }, [selectedItem?.id, userProgress?.lessonHistory]);
 
@@ -156,13 +156,14 @@ export default function LessonDetailPage() {
     const result = await learningProgressService.completeLesson(
       user.id,
       courseId,
-      selectedItem.id
+      selectedItem.id,
+      selectedItem.title
     );
 
     if (result.success) {
       setUserProgress(prev =>
         prev
-          ? { ...prev, lessonHistory: [...prev.lessonHistory, selectedItem.id] }
+          ? { ...prev, lessonHistory: { ...prev.lessonHistory, [selectedItem.id]: { timeSpent: 0, completed: true } } }
           : prev
       );
 

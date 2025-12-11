@@ -11,6 +11,8 @@ import { CheckCircle, Download, FileText, Loader2, Maximize2, Minimize2, Video }
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
+import { learningProgressService } from "@/services/learningProgressService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LessonViewProps {
   lessonId: string;
@@ -19,12 +21,16 @@ interface LessonViewProps {
 };
 
 export function LessonView({ lessonId, onComplete, completed }: LessonViewProps) {
+  const { user } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
+  // Time tracking refs
+  const startTimeRef = useRef<number | null>(null);
+  const hasReportedTimeRef = useRef<boolean>(false);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -71,6 +77,42 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       fetchLessonAttachments();
     }
   }, [lessonId]);
+
+  const reportTimeSpent = useCallback(async (endTime: number) => {
+    if (!startTimeRef.current || !lessonId || !lesson || hasReportedTimeRef.current) {
+      return;
+    }
+
+    console.log("Time: ", lesson.title, startTimeRef.current, endTime, endTime - startTimeRef.current);
+    const timeSpentInMs = endTime - startTimeRef.current;
+    const timeSpentInSeconds = Math.floor(timeSpentInMs / 1000);
+
+    // Only report if at least 1 second was spent
+    if (timeSpentInSeconds < 1) {
+      return;
+    }
+
+    try {
+      const courseId = lesson.courseId;
+      await learningProgressService.timeSpentOnLesson(user?.id || "", courseId, lessonId, timeSpentInSeconds);
+      console.log(`⏱️ Reported time spent: ${timeSpentInSeconds} seconds`);
+      hasReportedTimeRef.current = true;
+    } catch (error) {
+      logError("reportTimeSpent", error);
+    }
+  }, [lessonId, lesson, user]);
+
+
+  // Set start time when component mounts
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    hasReportedTimeRef.current = false;
+
+    // Report time when component unmounts
+    return () => {
+      reportTimeSpent(Date.now());
+    };
+  }, [reportTimeSpent]);
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;

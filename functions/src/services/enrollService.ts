@@ -28,6 +28,19 @@ class EnrollmentService {
     return `${userId}_${courseId}`;
   }
 
+  async getEnrollmentById(enrollmentId: string): Promise<Result<Enrollment>> {
+    try {
+      const doc = await db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId).get();
+      if (!doc.exists) {
+        return fail("Enrollment not found");
+      }
+      return ok(doc.data() as Enrollment);
+    } catch (error: any) {
+      functions.logger.error("Error fetching enrollment by ID:", error);
+      return fail("Failed to fetch enrollment", error.message);
+    }
+  }
+
   /**
    * Creates enrollment intent with PENDING status (before payment)
    */

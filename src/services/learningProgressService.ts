@@ -17,6 +17,7 @@ import { fail, ok, Result } from "@/utils/response";
 import { COLLECTION, USER_ROLE } from "@/constants";
 import { LearningProgress } from "@/types/learning-progress";
 import { formatDate } from "@/utils/date-time";
+import { lessonAnalyticsService } from "./analytics/lessonAnalyticsService";
 
 class LearningProgressService {
   /**
@@ -63,7 +64,8 @@ class LearningProgressService {
   async completeLesson(
     userId: string,
     courseId: string,
-    completedLessonId: string
+    completedLessonId: string,
+    completedLessonTitle: string
   ): Promise<Result<null>> {
     try {
       // 1️⃣ Query progress document for this user + course
@@ -109,10 +111,14 @@ class LearningProgressService {
       }
 
       // 2️⃣ Update lesson history safely (avoid duplicates)
-      const updatedLessonHistory = [
-        ...(progress.lessonHistory || []),
-        completedLessonId,
-      ].filter((v, i, a) => a.indexOf(v) === i);
+      const updatedLessonHistory = {
+        ...(progress.lessonHistory || {}),
+        completedLessonId: {
+          timeSpendt: progress.lessonHistory?.[completedLessonId]?.timeSpendt || 0,
+          markedAsComplete: true,
+          completedAt: serverTimestamp(),
+        },
+      };
 
       // 3️⃣ Write update to Firestore
       await updateDoc(progressRef, {
@@ -126,6 +132,56 @@ class LearningProgressService {
     } catch (error: any) {
       logError("LearningProgressService.completeLesson", error);
       return fail("Failed to update progress.", error.code || error.message);
+    }
+  }
+
+  async timeSpentOnLesson(
+    userId: string,
+    courseId: string,
+    lessonId: string,
+    timeSpent: number
+  ): Promise<Result<null>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return fail("Learning progress not found");
+      }
+
+      const progressDoc = snapshot.docs[0];
+      const progressRef = progressDoc.ref;
+      const progressData = progressDoc.data() as LearningProgress;
+
+      const existingTimeSpent =
+        progressData.lessonHistory?.[lessonId]?.timeSpendt || 0;
+
+      const updatedLessonHistory = {
+        ...(progressData.lessonHistory || {}),
+        [lessonId]: {
+          timeSpendt: existingTimeSpent + timeSpent,
+          markedAsComplete: progressData.lessonHistory?.[lessonId]?.markedAsComplete || false,
+          completedAt: progressData.lessonHistory?.[lessonId]?.completedAt || null,
+        },
+      };
+
+      await updateDoc(progressRef, {
+        lessonHistory: updatedLessonHistory,
+        lastAccessed: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // analytics update can be handled separately
+      await lessonAnalyticsService.spendTimeOnLesson(courseId, lessonId, timeSpent);
+      return ok(null);
+    } catch (error: any) {
+      logError("LearningProgressService.timeSpentOnLesson", error);
+      return fail("Failed to update time spent.", error.code || error.message);
     }
   }
 
@@ -157,8 +213,6 @@ class LearningProgressService {
       logError("LearningProgressService.getUserProgress", error);
       return fail("Failed to fetch user progress.", error.code || error.message);
     }
-
-
   }
 
   async getUserProgress(

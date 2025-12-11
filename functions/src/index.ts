@@ -26,12 +26,17 @@ import { bulkUnassignStudentsFromAdmin } from "./handlers/unassignStudentstoAdmi
 import { pauseStudentNotifications } from "./handlers/pauseStudentNotifications";
 import { createNotification } from "./handlers/notifications/notificationController";
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
-import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";import { userDeleteCascade } from './workers/userDeleteCascade';
+import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";
+import { userDeleteCascade } from './workers/userDeleteCascade';
 import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 import { createCouponUsage } from "./handlers/createCouponUsage";
 // import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
 // import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
+import { lessonTimeSpent } from "./handlers/analytics/lessonTimeSpent";
+// Event handlers
+import { onEnrollmententCreated } from "./events/onEnrollmententCreated";
+
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -65,4 +70,6 @@ export {
   // onCourseUpdated,
   // sendAnnouncementEmailWorker,
   // sendAnnouncementEmailNotification
+  onEnrollmententCreated,
+  lessonTimeSpent,
 };
