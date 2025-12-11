@@ -34,7 +34,7 @@ import { createCouponUsage } from "./handlers/createCouponUsage";
 import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
 import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
 import { createGlobalAnnouncement } from "./handlers/createGlobalAnnouncements";
-import { createCourseManualAnnouncement } from "./handlers/createCourseManulAnnouncements";
+import { createCourseManualAnnouncement } from "./handlers/createCourseManualAnnouncements";
 export {
   enrollStudent,
   createRazorpayOrder,

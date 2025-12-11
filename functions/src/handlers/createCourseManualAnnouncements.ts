@@ -24,7 +24,7 @@ async function createCourseManualAnnouncementHandler(req: Request, res: Response
     }
 
     // Call service with params
-    const result = await announcementService.createCourseManualAnnouncmenet({
+    const result = await announcementService.createCourseManualAnnouncemenet({
       title,
       body,
       courseId,

@@ -148,7 +148,7 @@ async createGlobalAnnouncement(params: {
 
 
 
-async createCourseManualAnnouncmenet(params: {
+async createCourseManualAnnouncemenet(params: {
   title: string;
   body: string;
   courseId:string;

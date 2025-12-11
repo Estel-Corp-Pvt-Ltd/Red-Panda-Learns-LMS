@@ -17,12 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
 import { courseService } from "@/services/courseService";
-import { Loader2, Megaphone, Send, Globe, BookOpen } from "lucide-react";
+import { Loader2, Megaphone, Send, Globe, BookOpen, Mail } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { AnnouncementStatus } from "@/types/general";
 import { ANNOUNCEMENT_STATUS, COURSE_STATUS } from "@/constants";
 import { createAnnouncementApi } from "@/services/createAnnouncementApi";
 import { Course } from "@/types/course";
@@ -31,26 +40,25 @@ import { WhereFilterOp } from "firebase/firestore";
 interface AnnouncementForm {
   title: string;
   body: string;
-  status: AnnouncementStatus;
 }
 
-type AnnouncementType = "global" | "course";
+type AnnouncementType = "GLOBAL" | "COURSE";
 
 const AdminCreateAnnouncement: React.FC = () => {
   const [form, setForm] = useState<AnnouncementForm>({
     title: "",
     body: "",
-    status: ANNOUNCEMENT_STATUS.PUBLISHED,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [announcementType, setAnnouncementType] = useState<AnnouncementType>("global");
+  const [announcementType, setAnnouncementType] = useState<AnnouncementType>("GLOBAL");
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Load courses when component mounts or when announcement type changes to "course"
+  // Load courses when component mounts or when announcement type changes to "COURSE"
   useEffect(() => {
-    if (announcementType === "course" && courses.length === 0) {
+    if (announcementType === "COURSE" && courses.length === 0) {
       loadCourses();
     }
   }, [announcementType]);
@@ -63,7 +71,7 @@ const AdminCreateAnnouncement: React.FC = () => {
       ];
 
       const result = await courseService.getCourses(filters, {
-        limit: 100, // Load more courses for selection
+        limit: 100,
         orderBy: { field: "title", direction: "asc" },
         cursor: null,
         pageDirection: "next",
@@ -91,14 +99,10 @@ const AdminCreateAnnouncement: React.FC = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleStatusChange = (value: AnnouncementStatus) => {
-    setForm((prev) => ({ ...prev, status: value }));
-  };
-
   const handleAnnouncementTypeChange = (value: AnnouncementType) => {
     setAnnouncementType(value);
     // Reset selected course when switching types
-    if (value === "global") {
+    if (value === "GLOBAL") {
       setSelectedCourseId("");
     }
   };
@@ -111,13 +115,12 @@ const AdminCreateAnnouncement: React.FC = () => {
     setForm({
       title: "",
       body: "",
-      status: ANNOUNCEMENT_STATUS.PUBLISHED,
     });
-    setAnnouncementType("global");
+    setAnnouncementType("GLOBAL");
     setSelectedCourseId("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -140,7 +143,7 @@ const AdminCreateAnnouncement: React.FC = () => {
     }
 
     // Validate course selection for course-specific announcements
-    if (announcementType === "course" && !selectedCourseId) {
+    if (announcementType === "COURSE" && !selectedCourseId) {
       toast({
         title: "Course required",
         description: "Please select a course for this announcement.",
@@ -149,12 +152,18 @@ const AdminCreateAnnouncement: React.FC = () => {
       return;
     }
 
+    // Show confirmation dialog
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirmDialog(false);
     setIsSubmitting(true);
 
     try {
       const idToken = await authService.getToken();
 
-      if (announcementType === "global") {
+      if (announcementType === "GLOBAL") {
         // Create global announcement
         await createAnnouncementApi.createGlobalAnnouncement(
           {
@@ -166,7 +175,7 @@ const AdminCreateAnnouncement: React.FC = () => {
         console.log("✅ Global announcement created successfully");
         toast({
           title: "Success",
-          description: "Global announcement created successfully!",
+          description: "Global announcement created and emails sent successfully!",
         });
       } else {
         // Create course-specific announcement
@@ -182,7 +191,7 @@ const AdminCreateAnnouncement: React.FC = () => {
         console.log("✅ Course announcement created successfully");
         toast({
           title: "Success",
-          description: `Announcement created for "${selectedCourse?.title || "course"}" successfully!`,
+          description: `Announcement created for "${selectedCourse?.title || "course"}" and emails sent successfully!`,
         });
       }
 
@@ -219,7 +228,7 @@ const AdminCreateAnnouncement: React.FC = () => {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmitClick} className="space-y-6">
             {/* Announcement Type */}
             <div className="space-y-2">
               <Label htmlFor="announcementType">Announcement Type</Label>
@@ -232,13 +241,13 @@ const AdminCreateAnnouncement: React.FC = () => {
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="global">
+                  <SelectItem value="GLOBAL">
                     <div className="flex items-center gap-2">
                       <Globe className="h-4 w-4" />
                       Global Announcement
                     </div>
                   </SelectItem>
-                  <SelectItem value="course">
+                  <SelectItem value="COURSE">
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
                       Course Announcement
@@ -247,14 +256,14 @@ const AdminCreateAnnouncement: React.FC = () => {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {announcementType === "global"
+                {announcementType === "GLOBAL"
                   ? "This announcement will be visible to all students across all courses."
                   : "This announcement will only be visible to students enrolled in the selected course."}
               </p>
             </div>
 
             {/* Course Selection (only show when course type is selected) */}
-            {announcementType === "course" && (
+            {announcementType === "COURSE" && (
               <div className="space-y-2">
                 <Label htmlFor="course">
                   Select Course <span className="text-red-500">*</span>
@@ -333,37 +342,21 @@ const AdminCreateAnnouncement: React.FC = () => {
               </p>
             </div>
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={handleStatusChange}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="status" className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ANNOUNCEMENT_STATUS.PUBLISHED}>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      Published
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={ANNOUNCEMENT_STATUS.DRAFT}>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-yellow-500" />
-                      Draft
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {form.status === ANNOUNCEMENT_STATUS.PUBLISHED
-                  ? "This announcement will be visible immediately."
-                  : "This announcement will be saved but not visible to students."}
-              </p>
+            {/* Email Notice */}
+            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <Mail className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
+                  Email Notification
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
+                  Publishing this announcement will automatically send an email to{" "}
+                  {announcementType === "GLOBAL"
+                    ? "all registered students"
+                    : "all students enrolled in the selected course"}
+                  . Please review your content carefully before publishing.
+                </p>
+              </div>
             </div>
 
             {/* Preview */}
@@ -373,12 +366,12 @@ const AdminCreateAnnouncement: React.FC = () => {
                   <p className="text-xs font-medium text-muted-foreground">
                     Preview
                   </p>
-                  {announcementType === "course" && selectedCourseId && (
+                  {announcementType === "COURSE" && selectedCourseId && (
                     <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
                       {getSelectedCourseName()}
                     </span>
                   )}
-                  {announcementType === "global" && (
+                  {announcementType === "GLOBAL" && (
                     <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded">
                       Global
                     </span>
@@ -410,21 +403,19 @@ const AdminCreateAnnouncement: React.FC = () => {
                   isSubmitting ||
                   !form.title.trim() ||
                   !form.body.trim() ||
-                  (announcementType === "course" && !selectedCourseId)
+                  (announcementType === "COURSE" && !selectedCourseId)
                 }
                 className="flex-1 flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating...
+                    Publishing...
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    {form.status === ANNOUNCEMENT_STATUS.PUBLISHED
-                      ? "Publish"
-                      : "Save Draft"}
+                    Publish Announcement
                   </>
                 )}
               </Button>
@@ -432,6 +423,66 @@ const AdminCreateAnnouncement: React.FC = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-amber-600" />
+              Confirm Announcement
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You are about to publish a{" "}
+                <span className="font-medium">
+                  {announcementType === "GLOBAL" ? "global" : "course-specific"}
+                </span>{" "}
+                announcement.
+              </p>
+              {announcementType === "COURSE" && selectedCourseId && (
+                <p>
+                  Course:{" "}
+                  <span className="font-medium">{getSelectedCourseName()}</span>
+                </p>
+              )}
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-2">
+                <p className="text-amber-800 dark:text-amber-400 text-sm font-medium">
+                  ⚠️ This action will send emails
+                </p>
+                <p className="text-amber-700 dark:text-amber-500 text-sm mt-1">
+                  An email notification will be sent to{" "}
+                  {announcementType === "GLOBAL"
+                    ? "all registered students"
+                    : "all students enrolled in this course"}
+                  . This action cannot be undone.
+                </p>
+              </div>
+              <p className="text-sm mt-2">
+                Please make sure you have reviewed the announcement content before
+                proceeding.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSubmit}
+              disabled={isSubmitting}
+              className="bg-primary"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Publishing...
+                </>
+              ) : (
+                "Yes, Publish & Send Emails"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };
