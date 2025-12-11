@@ -1,5 +1,6 @@
 import AdminLayout from "@/components/AdminLayout";
 import ComplaintDetailModal from "@/components/ComplaintDetailModal";
+import { ComplaintRedressalMailSenderModal } from "@/components/ComplaintRedressalMailSenderModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,7 @@ import {
     ClipboardCheck,
     Eye,
     Loader2,
+    Mail,
     Search
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -69,7 +71,8 @@ const AdminComplaints = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedComplaint, setSelectedComplaint] =
         useState<Complaint | null>(null);
-    const [open, setOpen] = useState(false);
+    const [isComplaintOpen, setIsComplaintOpen] = useState(false);
+    const [isComplaintRedressalMailSenderOpen, setIsComplaintRedressalMailSenderOpen] = useState(false);
 
     const [statusFilter, setStatusFilter] =
         useState<keyof typeof COMPLAINT_STATUS | "ALL">("ALL");
@@ -103,7 +106,7 @@ const AdminComplaints = () => {
         categoryFilter,
         paginationState,
         itemsPerPage,
-        open
+        isComplaintOpen
     ]);
 
     const loadComplaints = async () => {
@@ -333,11 +336,23 @@ const AdminComplaints = () => {
                                             onClick={
                                                 () => {
                                                     setSelectedComplaint(c);
-                                                    setOpen(true);
+                                                    setIsComplaintOpen(true);
                                                 }
                                             }
                                         >
                                             <Eye className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={
+                                                () => {
+                                                    setSelectedComplaint(c);
+                                                    setIsComplaintRedressalMailSenderOpen(true);
+                                                }
+                                            }
+                                        >
+                                            <Mail className="h-4 w-4" />
                                         </Button>
                                         <Button
                                             size="sm"
@@ -403,11 +418,23 @@ const AdminComplaints = () => {
                         </div>
                     </div>
                 </CardContent>
-                <ComplaintDetailModal
-                    open={open}
-                    onOpenChange={setOpen}
-                    complaint={selectedComplaint}
-                />
+
+                {
+                    selectedComplaint &&
+                    <ComplaintDetailModal
+                        open={isComplaintOpen}
+                        onOpenChange={setIsComplaintOpen}
+                        complaint={selectedComplaint}
+                    />
+                }
+                {
+                    selectedComplaint &&
+                    <ComplaintRedressalMailSenderModal
+                        open={isComplaintRedressalMailSenderOpen}
+                        onOpenChange={setIsComplaintRedressalMailSenderOpen}
+                        complaint={selectedComplaint}
+                    />
+                }
             </Card>
         </AdminLayout>
     );
