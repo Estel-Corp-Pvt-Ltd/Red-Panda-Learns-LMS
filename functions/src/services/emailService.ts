@@ -1,6 +1,6 @@
-// sendMail.ts
 import { PubSub } from "@google-cloud/pubsub";
 import { logger } from "firebase-functions";
+import { ComplaintCategory, ComplaintStatus } from "../types/general";
 
 export interface MailPayload {
   to: string;
@@ -24,8 +24,8 @@ export async function sendMail(payload: MailPayload) {
     return { success: false, error: err.message };
   }
 }
-export function buildEvaluationEmail( evalLink: string) {
-return `
+export function buildEvaluationEmail(evalLink: string) {
+  return `
 <html>
   <head>
     <meta charset="UTF-8">
@@ -155,8 +155,8 @@ return `
 }
 
 
-export function buildReminderEmail( evalLink: string){
-return `
+export function buildReminderEmail(evalLink: string) {
+  return `
 <html>
   <head>
     <meta charset="UTF-8">
@@ -284,4 +284,208 @@ return `
 
 </html>
 `
-}
+};
+
+export const buildComplaintRedressalEmail = (
+  params: {
+    complaintId: string;
+    userName: string;
+    category: ComplaintCategory;
+    status: ComplaintStatus;
+    severity: string;
+    actionTitle: string;
+    messageBody: string;
+    resolutionSummary?: string;
+    actionDate: string;
+  }
+): string => {
+
+  const {
+    complaintId,
+    userName,
+    category,
+    status,
+    severity,
+    actionTitle,
+    messageBody,
+    resolutionSummary,
+    actionDate,
+  } = params;
+
+  return `
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>${actionTitle}</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body, html {
+        font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 32px 40px;
+        border: 1px solid #e5e5e5;
+      }
+
+      .logo-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logo-section img {
+        width: 50px;
+      }
+
+      .logo-text {
+        font-size: 20px;
+        font-weight: bold;
+        margin-left: 8px;
+        display: inline-block;
+        color: #222;
+      }
+
+      h2 {
+        font-size: 22px;
+        margin-bottom: 12px;
+        color: #222;
+      }
+
+      p {
+        font-size: 15px;
+        color: #555;
+        line-height: 1.6;
+      }
+
+      .meta-box {
+        background-color: #f5f7fb;
+        padding: 16px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+
+      .meta-row {
+        margin-bottom: 6px;
+      }
+
+      .meta-label {
+        font-weight: 600;
+        color: #444;
+      }
+
+      a.btn {
+        display: inline-block;
+        padding: 14px 24px;
+        background-color: #3a7afe;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        border-radius: 6px;
+        margin-top: 20px;
+        font-size: 15px;
+      }
+
+      a.btn:hover {
+        background-color: #2664e8;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 32px 0;
+      }
+
+      .footer {
+        text-align: center;
+      }
+
+      .footer-text {
+        font-size: 14px;
+        color: #6a6a7a;
+        font-weight: 500;
+      }
+
+      .footer-heart {
+        display: inline-block;
+        color: hsl(300, 100%, 50%);
+        animation: heartbeat 1.5s infinite;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+
+      <div class="logo-section">
+        <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" />
+        <span class="logo-text">Vizuara AI Labs</span>
+      </div>
+
+      <p>Hello ${userName},</p>
+
+      <p>${messageBody}</p>
+
+      <div class="meta-box">
+        <div class="meta-row">
+          <span class="meta-label">Complaint ID:</span> ${complaintId}
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Category:</span> ${category}
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Severity:</span> ${severity}
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Current Status:</span> ${status}
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Updated On:</span> ${actionDate}
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Handled By:</span> Vizuara Support Team
+        </div>
+      </div>
+
+      ${resolutionSummary
+      ? `
+        <h4 style="margin-bottom: 8px;">Resolution Summary</h4>
+        <p>${resolutionSummary}</p>
+      `
+      : ""
+    }
+
+      <hr />
+
+      <div class="footer">
+          <p class="footer-text">
+            Made with <span class="footer-heart">♥</span> by the <span class="footer-brand">Vizuara</span> Team
+          </p>
+          <div class="footer-links">
+            <a href="https://vizuara.ai">Website</a>•
+            <a href="https://vizuara.ai/privacy">Privacy</a>
+          </div>
+        </div>
+    </div>
+  </body>
+</html>
+`;
+};

@@ -1,5 +1,6 @@
 import AdminLayout from "@/components/AdminLayout";
 import ComplaintDetailModal from "@/components/ComplaintDetailModal";
+import { ComplaintRedressalMailSenderModal } from "@/components/ComplaintRedressalMailSenderModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,18 +31,20 @@ import {
     COMPLAINT_SEVERITY,
     COMPLAINT_STATUS,
 } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { complaintService } from "@/services/complaintService";
 import { Complaint } from "@/types/complaint";
 import {
     ChevronLeft,
     ChevronRight,
+    ClipboardCheck,
     Eye,
     Loader2,
+    Mail,
     Search
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface PaginatedComplaints {
     data: Complaint[];
@@ -53,7 +56,8 @@ interface PaginatedComplaints {
 };
 
 const AdminComplaints = () => {
-    const navigate = useNavigate();
+
+    const { user } = useAuth();
 
     const [complaints, setComplaints] = useState<PaginatedComplaints>({
         data: [],
@@ -67,7 +71,8 @@ const AdminComplaints = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedComplaint, setSelectedComplaint] =
         useState<Complaint | null>(null);
-    const [open, setOpen] = useState(false);
+    const [isComplaintOpen, setIsComplaintOpen] = useState(false);
+    const [isComplaintRedressalMailSenderOpen, setIsComplaintRedressalMailSenderOpen] = useState(false);
 
     const [statusFilter, setStatusFilter] =
         useState<keyof typeof COMPLAINT_STATUS | "ALL">("ALL");
@@ -76,7 +81,7 @@ const AdminComplaints = () => {
     const [categoryFilter, setCategoryFilter] =
         useState<keyof typeof COMPLAINT_CATEGORY | "ALL">("ALL");
 
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage] = useState(10);
     const [paginationState, setPaginationState] = useState({
         cursor: null as any,
         pageDirection: "next" as "next" | "previous",
@@ -101,6 +106,7 @@ const AdminComplaints = () => {
         categoryFilter,
         paginationState,
         itemsPerPage,
+        isComplaintOpen
     ]);
 
     const loadComplaints = async () => {
@@ -330,11 +336,44 @@ const AdminComplaints = () => {
                                             onClick={
                                                 () => {
                                                     setSelectedComplaint(c);
-                                                    setOpen(true);
+                                                    setIsComplaintOpen(true);
                                                 }
                                             }
                                         >
                                             <Eye className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={
+                                                () => {
+                                                    setSelectedComplaint(c);
+                                                    setIsComplaintRedressalMailSenderOpen(true);
+                                                }
+                                            }
+                                        >
+                                            <Mail className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className={`${c.status !== COMPLAINT_STATUS.RESOLVED ? "" : "bg-slate-500 cursor-not-allowed"}`}
+                                            disabled={c.status === COMPLAINT_STATUS.RESOLVED}
+                                            onClick={async () => {
+                                                const response = await complaintService.resolveComplaint(c.id, user.id);
+                                                if (response.success) {
+                                                    toast({
+                                                        title: "Complaint Resolved"
+                                                    });
+                                                    await loadComplaints();
+                                                    return;
+                                                }
+                                                toast({
+                                                    title: "Failed to resolve complaint",
+                                                    variant: "destructive"
+                                                });
+                                            }}
+                                        >
+                                            <ClipboardCheck className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -379,11 +418,23 @@ const AdminComplaints = () => {
                         </div>
                     </div>
                 </CardContent>
-                <ComplaintDetailModal
-                    open={open}
-                    onOpenChange={setOpen}
-                    complaint={selectedComplaint}
-                />
+
+                {
+                    selectedComplaint &&
+                    <ComplaintDetailModal
+                        open={isComplaintOpen}
+                        onOpenChange={setIsComplaintOpen}
+                        complaint={selectedComplaint}
+                    />
+                }
+                {
+                    selectedComplaint &&
+                    <ComplaintRedressalMailSenderModal
+                        open={isComplaintRedressalMailSenderOpen}
+                        onOpenChange={setIsComplaintRedressalMailSenderOpen}
+                        complaint={selectedComplaint}
+                    />
+                }
             </Card>
         </AdminLayout>
     );

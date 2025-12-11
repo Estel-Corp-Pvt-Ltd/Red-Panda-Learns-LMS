@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
+import { Bell, Copy, HeartHandshake, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,8 @@ import { useCart } from "@/contexts/CartContext";
 import { USER_ROLE } from "@/constants";
 import { cn } from "@/lib/utils";
 
-import { LifeBuoy } from "lucide-react";
 import { CreateComplaint } from "./CreateComplaint";
+import { NotificationPanel } from "./notificationPanel";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -27,7 +27,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "./ui/navigation-menu";
-import { NotificationPanel } from "./notificationPanel";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -455,7 +454,7 @@ export function Header({
                       variant="ghost"
                       className="font-medium text-sm flex items-center gap-2"
                     >
-                      <LifeBuoy className="h-4 w-4" />
+                      <HeartHandshake className="h-4 w-4" />
                       <span className="hidden sm:block">Customer Support</span>
                     </Button>
                   }
@@ -508,8 +507,8 @@ export function Header({
                       user?.role === USER_ROLE.ADMIN
                         ? "/admin"
                         : user?.role === USER_ROLE.ACCOUNTANT
-                        ? "/accountant"
-                        : "/dashboard"
+                          ? "/accountant"
+                          : "/dashboard"
                     }
                     className="ml-2"
                   >

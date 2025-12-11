@@ -1,14 +1,14 @@
-import React from "react";
-import { LayoutDashboard, FileText, Upload, LogOut, Clipboard } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import { Clipboard, LayoutDashboard, LogOut, Upload } from "lucide-react";
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface MenuItem {
   name: string;
   path: string;
   icon: React.ReactNode;
-}
+};
 
 const Sidebar: React.FC = () => {
   const { logout } = useAuth();
@@ -21,11 +21,6 @@ const Sidebar: React.FC = () => {
       path: "/dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />
     },
-    // {
-    //   name: "Invoices",
-    //   path: "/invoices",
-    //   icon: <FileText className="h-5 w-5" />
-    // },
     {
       name: "Quizzes",
       path: "/quizzes",

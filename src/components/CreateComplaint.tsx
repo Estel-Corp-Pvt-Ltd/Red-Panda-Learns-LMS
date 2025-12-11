@@ -23,7 +23,7 @@ import { complaintService } from "@/services/complaintService";
 import { fileService } from "@/services/fileService";
 import { CheckCircle, Loader2, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export function CreateComplaint({
     userId,
@@ -213,7 +213,7 @@ export function CreateComplaint({
                                 <DialogHeader>
                                     <DialogTitle>Customer Support</DialogTitle>
                                     <DialogDescription>
-                                        Submit an issue and we’ll help you resolve it.
+                                        Submit an issue and we’ll help you resolve it. <Link className="underline text-primary" to="/complaints">View Complaints</Link>
                                     </DialogDescription>
                                 </DialogHeader>
 

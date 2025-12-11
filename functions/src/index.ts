@@ -35,6 +35,8 @@ import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
 import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
 import { createGlobalAnnouncement } from "./handlers/createGlobalAnnouncements";
 import { createCourseManualAnnouncement } from "./handlers/createCourseManualAnnouncements";
+import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMail";
+import { sendComplaintRedressalMailWorker } from "./workers/sendComplaintRedressalMailWorker";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -69,5 +71,7 @@ export {
   sendAnnouncementEmailWorker,
   sendAnnouncementEmailNotification,
   createGlobalAnnouncement,
-  createCourseManualAnnouncement
+  createCourseManualAnnouncement,
+  sendComplaintRedressalMail,
+  sendComplaintRedressalMailWorker,
 };
