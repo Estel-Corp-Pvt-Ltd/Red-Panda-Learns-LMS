@@ -215,277 +215,261 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+return (
+  <>
+    {/* Backdrop */}
+    <div
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
+      onClick={onClose}
+    />
 
-      {/* Panel */}
-      <div
-        className={cn(
-          "fixed right-0 top-0 z-50 h-full w-full sm:w-[420px]",
-          "bg-white dark:bg-neutral-900",
-          "shadow-2xl transition-transform duration-300 ease-out",
-          "flex flex-col",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        {/* Header */}
-        <div className="shrink-0 border-b border-gray-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between px-5 py-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                <Bell className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Notifications
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {unreadCount > 0 ? (
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">
-                      {unreadCount} unread
-                    </span>
-                  ) : (
-                    <span>{announcements.length} total</span>
-                  )}
-                </p>
-              </div>
+    {/* Panel */}
+    <div
+      className={cn(
+        "fixed right-0 top-0 z-50 h-full w-full sm:w-[420px]",
+        "bg-white dark:bg-neutral-900",
+        "shadow-2xl transition-transform duration-300 ease-out",
+        "flex flex-col",
+        isOpen ? "translate-x-0" : "translate-x-full"
+      )}
+    >
+      {/* Header */}
+      <div className="shrink-0 border-b border-gray-200 dark:border-neutral-700">
+        <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+              <Bell className="h-5 w-5 text-primary-foreground" />
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
-
-          {/* Unread indicator banner */}
-          {unreadCount > 0 && (
-            <div className="px-5 pb-4">
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
-                <div className="relative">
-                  <div className="h-2.5 w-2.5 bg-blue-500 rounded-full" />
-                  <div className="absolute inset-0 h-2.5 w-2.5 bg-blue-500 rounded-full animate-ping" />
-                </div>
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                  {unreadCount} new notification{unreadCount !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-              <p className="text-gray-500">Loading notifications...</p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3">
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-full">
-                <X className="h-8 w-8 text-red-500" />
-              </div>
-              <p className="text-red-500 font-medium">{error}</p>
-              <button
-                onClick={() => user && fetchAnnouncements(user.id)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Try again
-              </button>
-            </div>
-          ) : announcements.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3">
-              <div className="p-4 bg-gray-100 dark:bg-neutral-800 rounded-full">
-                <Bell className="h-8 w-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">No notifications yet</p>
-              <p className="text-sm text-gray-400">
-                We'll notify you when something arrives
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Notifications
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {unreadCount > 0 ? (
+                  <span className="text-primary font-medium">
+                    {unreadCount} unread
+                  </span>
+                ) : (
+                  <span>{announcements.length} total</span>
+                )}
               </p>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-neutral-800">
-              {announcements.map((announcement) => {
-                const updatedAt = convertToDate(announcement.updatedAt);
-                const unread = isUnread(announcement);
-                const link = extractLinkFromHtml(announcement.body);
-                const hasLink = link !== null;
-                const plainText = stripHtmlTags(announcement.body);
-                const isExternal = hasLink && isExternalLink(link);
-
-                return (
-                  <div
-                    key={announcement.id}
-                    className={cn(
-                      "relative px-5 py-4 transition-all duration-200",
-                      "hover:bg-gray-50 dark:hover:bg-neutral-800/50",
-                      unread && "bg-blue-50/60 dark:bg-blue-900/10"
-                    )}
-                  >
-                    {/* Unread indicator line */}
-                    {unread && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
-                    )}
-
-                    <div className="flex gap-4">
-                      {/* Icon */}
-                      <div
-                        className={cn(
-                          "shrink-0 p-2.5 rounded-xl h-fit",
-                          announcement.scope === ANNOUNCEMENT_SCOPE.COURSE
-                            ? unread
-                              ? "bg-blue-100 dark:bg-blue-900/40"
-                              : "bg-gray-100 dark:bg-neutral-800"
-                            : unread
-                            ? "bg-purple-100 dark:bg-purple-900/40"
-                            : "bg-gray-100 dark:bg-neutral-800"
-                        )}
-                      >
-                        {announcement.scope === ANNOUNCEMENT_SCOPE.COURSE ? (
-                          <BookOpen
-                            className={cn(
-                              "h-5 w-5",
-                              unread
-                                ? "text-blue-600 dark:text-blue-400"
-                                : "text-gray-400"
-                            )}
-                          />
-                        ) : (
-                          <Megaphone
-                            className={cn(
-                              "h-5 w-5",
-                              unread
-                                ? "text-purple-600 dark:text-purple-400"
-                                : "text-gray-400"
-                            )}
-                          />
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3
-                            className={cn(
-                              "text-sm line-clamp-1",
-                              unread
-                                ? "font-bold text-gray-900 dark:text-white"
-                                : "font-medium text-gray-600 dark:text-gray-400"
-                            )}
-                          >
-                            {announcement.title}
-                          </h3>
-                        </div>
-
-                        {/* Body Content */}
-                        <div className="mb-2">
-                          {/* Show plain text if available */}
-                          {plainText && (
-                            <p
-                              className={cn(
-                                "text-sm line-clamp-2",
-                                unread
-                                  ? "text-gray-700 dark:text-gray-200"
-                                  : "text-gray-500 dark:text-gray-500"
-                              )}
-                            >
-                              {plainText}
-                            </p>
-                          )}
-
-                          {/*  Show View button if there's a link */}
-                          {hasLink && (
-                            <button
-                              onClick={(e) => handleLinkClick(e, link)}
-                              className={cn(
-                                "mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
-                                unread
-                                  ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg"
-                                  : "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50",
-                                "group"
-                              )}
-                            >
-                              {isExternal ? "Open Link" : "View"}
-                              {isExternal ? (
-                                <ExternalLink className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                              ) : (
-                                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                              )}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Footer with time and status */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {/* Category badge */}
-                            <span
-                              className={cn(
-                                "inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide",
-                                announcement.scope === ANNOUNCEMENT_SCOPE.COURSE
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                  : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                              )}
-                            >
-                              {announcement.scope === ANNOUNCEMENT_SCOPE.COURSE
-                                ? "Course"
-                                : "General"}
-                            </span>
-
-                            {/* Read/Unread status */}
-                            {unread ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                                </span>
-                                New
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide">
-                                <CheckCheck className="h-3 w-3" />
-                                Read
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Time */}
-                          <span
-                            className={cn(
-                              "text-[11px]",
-                              unread
-                                ? "text-blue-600 dark:text-blue-400 font-medium"
-                                : "text-gray-400"
-                            )}
-                          >
-                            {getTimeAgo(updatedAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
         </div>
 
-        {/* Footer */}
-        {announcements.length > 0 && unreadCount === 0 && (
-          <div className="shrink-0 p-4 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <CheckCheck className="h-4 w-4 text-green-500" />
-              <span>You're all caught up!</span>
+        {/* Unread indicator banner */}
+        {unreadCount > 0 && (
+          <div className="px-5 pb-4">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 dark:bg-primary/20 rounded-xl border border-primary/20">
+              <div className="relative">
+                <div className="h-2.5 w-2.5 bg-primary rounded-full" />
+                <div className="absolute inset-0 h-2.5 w-2.5 bg-primary rounded-full animate-ping" />
+              </div>
+              <span className="text-sm font-medium text-primary">
+                {unreadCount} new notification{unreadCount !== 1 ? "s" : ""}
+              </span>
             </div>
           </div>
         )}
       </div>
-    </>
-  );
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-gray-500">Loading notifications...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-full">
+              <X className="h-8 w-8 text-red-500" />
+            </div>
+            <p className="text-red-500 font-medium">{error}</p>
+            <button
+              onClick={() => user && fetchAnnouncements(user.id)}
+              className="text-sm text-primary hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : announcements.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
+            <div className="p-4 bg-gray-100 dark:bg-neutral-800 rounded-full">
+              <Bell className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500 font-medium">No notifications yet</p>
+            <p className="text-sm text-gray-400">
+              We'll notify you when something arrives
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-neutral-800">
+            {announcements.map((announcement) => {
+              const updatedAt = convertToDate(announcement.updatedAt);
+              const unread = isUnread(announcement);
+              const link = extractLinkFromHtml(announcement.body);
+              const hasLink = link !== null;
+              const plainText = stripHtmlTags(announcement.body);
+              const isExternal = hasLink && isExternalLink(link);
+
+              return (
+                <div
+                  key={announcement.id}
+                  className={cn(
+                    "relative px-5 py-4 transition-all duration-200",
+                    "hover:bg-gray-50 dark:hover:bg-neutral-800/50",
+                    unread && "bg-primary/10 dark:bg-primary/20"
+                  )}
+                >
+                  {/* Unread indicator line */}
+                  {unread && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/80 rounded-r-full" />
+                  )}
+
+                  <div className="flex gap-4">
+                    {/* Icon */}
+                    <div
+                      className={cn(
+                        "shrink-0 p-2.5 rounded-xl h-fit",
+                        unread
+                          ? "bg-primary/20 dark:bg-primary/30"
+                          : "bg-gray-100 dark:bg-neutral-800"
+                      )}
+                    >
+                      {announcement.scope === ANNOUNCEMENT_SCOPE.COURSE ? (
+                        <BookOpen
+                          className={cn(
+                            "h-5 w-5",
+                            unread ? "text-primary" : "text-gray-400"
+                          )}
+                        />
+                      ) : (
+                        <Megaphone
+                          className={cn(
+                            "h-5 w-5",
+                            unread ? "text-primary" : "text-gray-400"
+                          )}
+                        />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3
+                          className={cn(
+                            "text-sm line-clamp-1",
+                            unread
+                              ? "font-bold text-gray-900 dark:text-white"
+                              : "font-medium text-gray-600 dark:text-gray-400"
+                          )}
+                        >
+                          {announcement.title}
+                        </h3>
+                      </div>
+
+                      {/* Body Content */}
+                      <div className="mb-2">
+                        {plainText && (
+                          <p
+                            className={cn(
+                              "text-sm line-clamp-2",
+                              unread
+                                ? "text-gray-700 dark:text-gray-200"
+                                : "text-gray-500 dark:text-gray-500"
+                            )}
+                          >
+                            {plainText}
+                          </p>
+                        )}
+
+                        {/* View Button */}
+                        {hasLink && (
+                          <button
+                            onClick={(e) => handleLinkClick(e, link)}
+                            className={cn(
+                              "mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 group",
+                              unread
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary/20 text-secondary hover:bg-secondary/30"
+                            )}
+                          >
+                            {isExternal ? "Open Link" : "View"}
+                            {isExternal ? (
+                              <ExternalLink className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                            ) : (
+                              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {/* Category badge */}
+                          <span
+                            className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide bg-primary/20 text-primary"
+                          >
+                            {announcement.scope === ANNOUNCEMENT_SCOPE.COURSE
+                              ? "Course"
+                              : "General"}
+                          </span>
+
+                          {/* Read/Unread status */}
+                          {unread ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-wide">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                              </span>
+                              New
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide">
+                              <CheckCheck className="h-3 w-3" />
+                              Read
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Time */}
+                        <span
+                          className={cn(
+                            "text-[11px]",
+                            unread ? "text-primary font-medium" : "text-gray-400"
+                          )}
+                        >
+                          {getTimeAgo(updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      {announcements.length > 0 && unreadCount === 0 && (
+        <div className="shrink-0 p-4 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50">
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <CheckCheck className="h-4 w-4 text-green-500" />
+            <span>You're all caught up!</span>
+          </div>
+        </div>
+      )}
+    </div>
+  </>
+);
+
 };
