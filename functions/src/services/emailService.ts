@@ -293,10 +293,10 @@ export const buildComplaintRedressalEmail = (
     category: ComplaintCategory;
     status: ComplaintStatus;
     severity: string;
-    actionTitle: string;              
-    messageBody: string;              
+    actionTitle: string;
+    messageBody: string;
     resolutionSummary?: string;
-    actionDate: string;                
+    actionDate: string;
   }
 ): string => {
 
@@ -316,14 +316,24 @@ export const buildComplaintRedressalEmail = (
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>${actionTitle}</title>
     <style>
-      body, html {
+      * {
         margin: 0;
         padding: 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f7f7f9;
-        color: #333;
+        box-sizing: border-box;
+      }
+
+      body, html {
+        font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .container {
@@ -336,8 +346,9 @@ export const buildComplaintRedressalEmail = (
       }
 
       .logo-section {
-        text-align: center;
-        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .logo-section img {
@@ -405,8 +416,18 @@ export const buildComplaintRedressalEmail = (
 
       .footer {
         text-align: center;
+      }
+
+      .footer-text {
         font-size: 14px;
-        color: #777;
+        color: #6a6a7a;
+        font-weight: 500;
+      }
+
+      .footer-heart {
+        display: inline-block;
+        color: hsl(300, 100%, 50%);
+        animation: heartbeat 1.5s infinite;
       }
     </style>
   </head>
@@ -418,8 +439,6 @@ export const buildComplaintRedressalEmail = (
         <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" />
         <span class="logo-text">Vizuara AI Labs</span>
       </div>
-
-      <h2>${actionTitle}</h2>
 
       <p>Hello ${userName},</p>
 
@@ -457,10 +476,14 @@ export const buildComplaintRedressalEmail = (
       <hr />
 
       <div class="footer">
-        If you have any further questions, feel free to reply to this email and mention your Complaint ID.<br />
-        — The Vizuara Support Team
-      </div>
-
+          <p class="footer-text">
+            Made with <span class="footer-heart">♥</span> by the <span class="footer-brand">Vizuara</span> Team
+          </p>
+          <div class="footer-links">
+            <a href="https://vizuara.ai">Website</a>•
+            <a href="https://vizuara.ai/privacy">Privacy</a>
+          </div>
+        </div>
     </div>
   </body>
 </html>
