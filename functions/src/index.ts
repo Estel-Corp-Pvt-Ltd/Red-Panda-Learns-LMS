@@ -33,7 +33,8 @@ import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionN
 import { createCouponUsage } from "./handlers/createCouponUsage";
 import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
 import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
-import { createGlobalAnnouncement } from "./handlers/createAnnouncements";
+import { createGlobalAnnouncement } from "./handlers/createGlobalAnnouncements";
+import { createCourseManualAnnouncement } from "./handlers/createCourseManulAnnouncements";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -68,4 +69,5 @@ export {
   sendAnnouncementEmailWorker,
   sendAnnouncementEmailNotification,
   createGlobalAnnouncement,
+  createCourseManualAnnouncement
 };

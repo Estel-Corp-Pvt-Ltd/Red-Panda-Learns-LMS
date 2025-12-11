@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 import { COLLECTION, EMAIL_TYPE } from "../../constants";
 import { sendAnnouncementEmails } from "../../services/email/sendAnnouncementsMails";
 import { sendInBatches } from "../../services/email/sendMailInBatches";
@@ -9,6 +8,7 @@ import { EmailType } from "../../types/general";
 import * as admin from "firebase-admin";
 import { buildGlobalNotificationEmail } from '../../services/email/templates/globalAnnouncements';
 import { userService } from '../../services/userService';
+import { buildCourseManualAnnouncementEmail } from "../../services/email/templates/courseManual";
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -85,6 +85,38 @@ export async function sendAnnouncementEmailonDocCreation(
         emailType = EMAIL_TYPE.GENERAL_ALL;
         break;
       }
+
+
+      case "CM": {
+        const courseId = `${parts[1]}_${parts[2]}`; // "course_123"
+        const courseSnap = await db
+          .collection(COLLECTION.COURSES)
+          .doc(courseId)
+          .get();
+
+        if (!courseSnap.exists) {
+          return { success: false, error: "Course not found" };
+        }
+
+        const course = courseSnap.data() as { slug?: string; title?: string };
+
+        // Fallback: use course.slug if present, else courseId
+        const urlSlug =
+          course.slug && course.slug.trim() !== "" ? course.slug : courseId;
+
+        html = buildCourseManualAnnouncementEmail(
+          announcement.title,
+          announcement.body,
+          urlSlug,
+          
+        );
+
+        subject = `${announcement.title}`;
+        recipients = await enrollmentService.getCourseEnrolledEmails(courseId);
+        emailType = EMAIL_TYPE.COURSE_ANNOUNCEMENT;
+        break;
+      }
+
 
       /**
        * Role-Based: RB_INS_*, RB_STU_*, RB_Acc_*, RB_Tch_*
