@@ -47,13 +47,7 @@ function EnrolledCourseCard({
   const handleCompleteCourse = async () => {
     try {
       setIsCompleting(true);
-
-      const result =
-        await learningProgressService.completeCourse(
-          enrollment.userId,
-          enrollment.courseId,
-          totalLessons
-        );
+      const result = await learningProgressService.completeCourse(enrollment.userId, enrollment.courseId);
 
       if (result.success && result.data) {
         setIsCompleted(true);

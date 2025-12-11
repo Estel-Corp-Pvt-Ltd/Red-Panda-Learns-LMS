@@ -18,8 +18,10 @@ import { COLLECTION, USER_ROLE } from "@/constants";
 import { LearningProgress } from "@/types/learning-progress";
 import { formatDate } from "@/utils/date-time";
 import { lessonAnalyticsService } from "./analytics/lessonAnalyticsService";
+import { authService } from "./authService";
 
 class LearningProgressService {
+  private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
   /**
    * Creates a new LearningProgress document for a course.
    *
@@ -246,48 +248,26 @@ class LearningProgressService {
   async completeCourse(
     userId: string,
     courseId: string,
-    totalLessons: number
   ): Promise<Result<boolean>> {
     try {
-      if (totalLessons <= 0) {
+      const authToken = await authService.getToken();
+      const response = await fetch(`${this.backendUrl}/completeCourse`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          userId,
+          courseId,
+        }),
+      });
+
+      if (!response.ok) {
         return ok(false);
       }
 
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
-
-      const snapshot = await getDocs(progressQuery);
-
-      if (snapshot.empty) {
-        return ok(false);
-      }
-
-      const progressDoc = snapshot.docs[0];
-      const progressData = progressDoc.data() as LearningProgress;
-
-      const completedLessons = progressData.lessonHistory?.length || 0;
-      const completionPercentage =
-        (completedLessons / totalLessons) * 100;
-
-      if (
-        completionPercentage >= 90 &&
-        !progressData.completionDate
-      ) {
-        await updateDoc(
-          doc(db, COLLECTION.LEARNING_PROGRESS, progressDoc.id),
-          {
-            completionDate: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }
-        );
-
-        return ok(true);
-      }
-
-      return ok(false);
+      return ok(true);
 
     } catch (error: any) {
       logError("LearningProgressService.completeCourse", error);
