@@ -90,6 +90,7 @@ import AttemptQuiz from "./pages/AttemptQuiz";
 import AdminCommentApproval from "./pages/admin/AdminCommentApproval";
 import Certificate from "./components/course/Certificate";
 import AdminCertificateRequests from "./pages/admin/AdminCertificateRequests";
+import UserComplaints from "./pages/UserComplaints";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -163,6 +164,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAuth requireStudent>
                             <DashboardPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/complaints"
+                        element={
+                          <AuthGuard requireAuth requireStudent>
+                            <UserComplaints />
                           </AuthGuard>
                         }
                       />
