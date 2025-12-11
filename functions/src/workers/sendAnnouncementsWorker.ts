@@ -1,4 +1,3 @@
-// sendMailWorkerForNotif.ts
 import { onMessagePublished } from "firebase-functions/v2/pubsub";
 import { logger } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
