@@ -24,7 +24,7 @@ async function createGlobalAnnouncementHandler(req: Request, res: Response) {
     }
 
     // Call service with params
-    const result = await announcementService.createGlobalAssignmentAnnouncement({
+    const result = await announcementService.createGlobalAnnouncement({
       title,
       body,
       createdBy: user.uid, // ✅ Pass the admin's UID

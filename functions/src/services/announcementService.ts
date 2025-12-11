@@ -104,7 +104,7 @@ const announcementService = {
     }
   },
 
-async createGlobalAssignmentAnnouncement(params: {
+async createGlobalAnnouncement(params: {
   title: string;
   body: string;
   createdBy: string | null;
