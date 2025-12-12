@@ -1,6 +1,6 @@
 
 import { BACKEND_URL } from "@/config";
-import { Course } from "@/types/course";
+
 
 
 export const createAnnouncementApi = {
@@ -74,7 +74,7 @@ export const createAnnouncementApi = {
   idToken: string
 ) {
   try {
-    const response = await fetch(`${BACKEND_URL}/updateAnnouncement/${announcementId}`, {
+    const response = await fetch(`${BACKEND_URL}/updateAnnouncement?announcementId=${announcementId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -97,7 +97,7 @@ export const createAnnouncementApi = {
 
 async deleteAnnouncement(announcementId: string, idToken: string) {
   try {
-    const response = await fetch(`${BACKEND_URL}/deleteAnnouncement/${announcementId}`, {
+    const response = await fetch(`${BACKEND_URL}/deleteAnnouncement?announcementId=${announcementId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${idToken}`,
