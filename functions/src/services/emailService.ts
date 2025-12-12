@@ -292,7 +292,8 @@ export const buildComplaintRedressalEmail = (
     userName: string;
     category: ComplaintCategory;
     status: ComplaintStatus;
-    severity: string;
+    description: string;
+    imageUrls?: string[];
     actionTitle: string;
     messageBody: string;
     resolutionSummary?: string;
@@ -305,12 +306,46 @@ export const buildComplaintRedressalEmail = (
     userName,
     category,
     status,
-    severity,
+    description,
+    imageUrls,
     actionTitle,
     messageBody,
     resolutionSummary,
     actionDate,
   } = params;
+
+  const linkify = (text: string): string => {
+    if (!text) return text;
+
+    const urlRegex =
+      /((https?:\/\/)([\w.-]+)(:[0-9]+)?(\/[\w./?%&=+#-]*)?)/gi;
+
+    return text.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+  };
+
+  const renderImages = (imageURLs?: string[]): string => {
+    if (!imageURLs || imageURLs.length === 0) return "";
+
+    return `
+    <div style="margin: 24px 0;">
+      ${imageURLs
+        .map(
+          (url) => `
+        <div style="margin-bottom: 16px;">
+          <img 
+            src="${url}" 
+            alt="Attached Image" 
+            style="max-width: 100%; border-radius: 8px; border: 1px solid #e5e5e5;" 
+          />
+        </div>
+      `
+        )
+        .join("")}
+    </div>
+  `;
+  };
 
   return `
 <html>
@@ -346,21 +381,22 @@ export const buildComplaintRedressalEmail = (
       }
 
       .logo-section {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        text-align: center;
+        margin-bottom: 24px;
       }
 
       .logo-section img {
         width: 50px;
+        vertical-align: middle;
       }
 
       .logo-text {
-        font-size: 20px;
+        font-size: 22px;
         font-weight: bold;
-        margin-left: 8px;
+        margin-left: 10px;
+        vertical-align: middle;
         display: inline-block;
-        color: #222;
+        color: black;
       }
 
       h2 {
@@ -442,7 +478,7 @@ export const buildComplaintRedressalEmail = (
 
       <p>Hello ${userName},</p>
 
-      <p>${messageBody}</p>
+      <p>${linkify(messageBody)}</p>
 
       <div class="meta-box">
         <div class="meta-row">
@@ -452,11 +488,19 @@ export const buildComplaintRedressalEmail = (
           <span class="meta-label">Category:</span> ${category}
         </div>
         <div class="meta-row">
-          <span class="meta-label">Severity:</span> ${severity}
-        </div>
-        <div class="meta-row">
           <span class="meta-label">Current Status:</span> ${status}
         </div>
+        <div class="meta-row">
+          <span class="meta-label">Complaint Description:</span> ${description}
+        </div>
+         ${imageUrls && imageUrls?.length > 0
+      ? `
+        <div class="meta-row">
+          <span class="meta-label">Complaint Attachments:</span> ${renderImages(imageUrls)}
+        </div>
+      `
+      : ""
+    }
         <div class="meta-row">
           <span class="meta-label">Updated On:</span> ${actionDate}
         </div>
