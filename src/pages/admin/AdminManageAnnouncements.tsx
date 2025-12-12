@@ -71,6 +71,7 @@ const AdminAnnouncements: React.FC = () => {
     setLoading(true);
     try {
       const result = await announcementService.getAllAnnouncements(100);
+     
       if (result.success && result.data) {
         setAnnouncements(result.data);
       } else {
