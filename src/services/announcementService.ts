@@ -8,6 +8,38 @@ import { enrollmentService } from "./enrollmentService";
 import { db } from "@/firebaseConfig";
 
 class AnnouncementService {
+
+
+    /**
+ * Fetches all announcements for admin (no user filtering)
+ */
+async getAllAnnouncements(maxLimit: number = 50): Promise<Result<Announcement[]>> {
+    try {
+        const announcementsRef = collection(db, COLLECTION.ANNOUNCEMENTS);
+        
+        const q = query(
+            announcementsRef,
+            where("status", "==", ANNOUNCEMENT_STATUS.PUBLISHED),
+            orderBy("updatedAt", "desc"),
+            limit(maxLimit)
+        );
+
+        const querySnapshot = await getDocs(q);
+        
+        const announcements = querySnapshot.docs.map((doc) => ({
+            ...doc.data(),
+            id: doc.id,
+        })) as Announcement[];
+
+        return ok(announcements);
+    } catch (error) {
+        console.error("❌ Error fetching all announcements:", error);
+        logError("AnnouncementService.getAllAnnouncements", error);
+        return fail("Failed to fetch announcements");
+    }
+}
+
+
     /**
      * Fetches the last 10 published announcements for a user:
      * 1. Global announcements (scope = "global")

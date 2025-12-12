@@ -7,16 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,464 +17,419 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
-import { courseService } from "@/services/courseService";
-import { Loader2, Megaphone, Send, Globe, BookOpen, Mail } from "lucide-react";
-import React, { useState, useEffect } from "react";
-import { ANNOUNCEMENT_STATUS, COURSE_STATUS } from "@/constants";
+import { announcementService } from "@/services/announcementService";
 import { createAnnouncementApi } from "@/services/createAnnouncementApi";
-import { Course } from "@/types/course";
-import { WhereFilterOp } from "firebase/firestore";
+import {
+  Megaphone,
+  Plus,
+  Loader2,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Globe,
+  BookOpen,
+  RefreshCw,
+  Calendar,
+  ExternalLink,
+  ArrowRight,
+} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import AddAnnouncementModal from "@/components/admin/AdminAddAnnouncementsModal";
+import EditAnnouncementModal from "@/components/admin/EditAnnouncementModal";
+import { Announcement } from "@/types/announcements";
+import { Timestamp } from "firebase/firestore";
+import { ANNOUNCEMENT_SCOPE } from "@/constants";
+import { formatDate } from "@/utils/date-time";
+import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
-interface AnnouncementForm {
-  title: string;
-  body: string;
-}
+const AdminAnnouncements: React.FC = () => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] =
+    useState<Announcement | null>(null);
 
-type AnnouncementType = "GLOBAL" | "COURSE";
-
-const AdminCreateAnnouncement: React.FC = () => {
-  const [form, setForm] = useState<AnnouncementForm>({
-    title: "",
-    body: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [announcementType, setAnnouncementType] = useState<AnnouncementType>("GLOBAL");
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const [loadingCourses, setLoadingCourses] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-  // Load courses when component mounts or when announcement type changes to "COURSE"
   useEffect(() => {
-    if (announcementType === "COURSE" && courses.length === 0) {
-      loadCourses();
-    }
-  }, [announcementType]);
+    fetchAnnouncements();
+  }, []);
 
-  const loadCourses = async () => {
-    setLoadingCourses(true);
+  const fetchAnnouncements = async () => {
+    setLoading(true);
     try {
-      const filters: { field: keyof Course; op: WhereFilterOp; value: any }[] = [
-        { field: "status", op: "==", value: COURSE_STATUS.PUBLISHED },
-      ];
-
-      const result = await courseService.getCourses(filters, {
-        limit: 100,
-        orderBy: { field: "title", direction: "asc" },
-        cursor: null,
-        pageDirection: "next",
-      });
-
+      const result = await announcementService.getAllAnnouncements(100);
       if (result.success && result.data) {
-        setCourses(result.data.data);
+        setAnnouncements(result.data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch announcements",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error("Failed to load courses:", error);
+      console.error("Failed to fetch announcements:", error);
       toast({
         title: "Error",
-        description: "Failed to load courses",
+        description: "Failed to fetch announcements",
         variant: "destructive",
       });
     } finally {
-      setLoadingCourses(false);
+      setLoading(false);
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  const handleAnnouncementCreated = () => {
+    fetchAnnouncements();
   };
 
-  const handleAnnouncementTypeChange = (value: AnnouncementType) => {
-    setAnnouncementType(value);
-    // Reset selected course when switching types
-    if (value === "GLOBAL") {
-      setSelectedCourseId("");
+  const handleEditClick = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleLinkClick = (e: React.MouseEvent, link: string) => {
+    e.stopPropagation();
+
+    if (!link) return;
+
+    if (isExternalLink(link)) {
+      // External link - open in new tab
+      window.open(link, "_blank", "noopener,noreferrer");
+    } else {
+      // Internal link - use navigate
+      navigate(link);
     }
   };
 
-  const handleCourseChange = (courseId: string) => {
-    setSelectedCourseId(courseId);
+  const stripHtmlTags = (html: string): string => {
+    if (!html) return "";
+    return html.replace(/<[^>]+>/g, "").trim();
   };
 
-  const resetForm = () => {
-    setForm({
-      title: "",
-      body: "",
-    });
-    setAnnouncementType("GLOBAL");
-    setSelectedCourseId("");
+  const isExternalLink = (url: string): boolean => {
+    if (!url) return false;
+
+    // Check if it starts with http://, https://, or //
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("//")
+    ) {
+      // Check if it's pointing to the same domain
+      try {
+        const linkUrl = new URL(url, window.location.origin);
+        return linkUrl.origin !== window.location.origin;
+      } catch {
+        return true;
+      }
+    }
+
+    // If it starts with /, it's internal
+    return false;
+  };
+  const extractLinkFromHtml = (html: string): string | null => {
+    if (!html) return null;
+
+    // Match anchor tag and extract href
+    const anchorRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>/i;
+    const match = html.match(anchorRegex);
+
+    return match ? match[1] : null;
   };
 
-  const handleSubmitClick = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDeleteConfirm = async () => {
+    if (!selectedAnnouncement?.id) return;
 
-    // Validation
-    if (!form.title.trim()) {
-      toast({
-        title: "Title required",
-        description: "Please enter an announcement title.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!form.body.trim()) {
-      toast({
-        title: "Body required",
-        description: "Please enter the announcement content.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate course selection for course-specific announcements
-    if (announcementType === "COURSE" && !selectedCourseId) {
-      toast({
-        title: "Course required",
-        description: "Please select a course for this announcement.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Show confirmation dialog
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSubmit = async () => {
-    setShowConfirmDialog(false);
-    setIsSubmitting(true);
-
+    setDeleting(true);
     try {
       const idToken = await authService.getToken();
+      await createAnnouncementApi.deleteAnnouncement(
+        selectedAnnouncement.id,
+        idToken
+      );
 
-      if (announcementType === "GLOBAL") {
-        // Create global announcement
-        await createAnnouncementApi.createGlobalAnnouncement(
-          {
-            title: form.title,
-            body: form.body,
-          },
-          idToken
-        );
-        console.log("✅ Global announcement created successfully");
-        toast({
-          title: "Success",
-          description: "Global announcement created and emails sent successfully!",
-        });
-      } else {
-        // Create course-specific announcement
-        await createAnnouncementApi.createCourseManualAnnouncement(
-          {
-            title: form.title,
-            body: form.body,
-            courseId: selectedCourseId,
-          },
-          idToken
-        );
-        const selectedCourse = courses.find((c) => c.id === selectedCourseId);
-        console.log("✅ Course announcement created successfully");
-        toast({
-          title: "Success",
-          description: `Announcement created for "${selectedCourse?.title || "course"}" and emails sent successfully!`,
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Announcement deleted successfully!",
+      });
 
-      // Reset form after successful submission
-      resetForm();
-    } catch (announcementError) {
-      console.error("Failed to create announcement:", announcementError);
+      setIsDeleteDialogOpen(false);
+      setSelectedAnnouncement(null);
+      fetchAnnouncements();
+    } catch (error) {
+      console.error("Failed to delete announcement:", error);
       toast({
         title: "Error",
-        description: "Failed to create announcement. Please try again.",
+        description: "Failed to delete announcement. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setDeleting(false);
     }
   };
 
-  const getSelectedCourseName = () => {
-    const course = courses.find((c) => c.id === selectedCourseId);
-    return course?.title || "";
+  const getScopeLabel = (scope: string | undefined) => {
+    if (scope === ANNOUNCEMENT_SCOPE.GLOBAL) {
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Globe className="h-3 w-3" />
+          Global
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="flex items-center gap-1">
+        <BookOpen className="h-3 w-3" />
+        Course
+      </Badge>
+    );
   };
 
   return (
     <AdminLayout>
-      <Card className="max-w-2xl mx-auto mt-6">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Megaphone className="h-6 w-6 text-primary" />
-            <CardTitle>Create Announcement</CardTitle>
-          </div>
-          <CardDescription>
-            Create an announcement for all students or for a specific course.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleSubmitClick} className="space-y-6">
-            {/* Announcement Type */}
-            <div className="space-y-2">
-              <Label htmlFor="announcementType">Announcement Type</Label>
-              <Select
-                value={announcementType}
-                onValueChange={handleAnnouncementTypeChange}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="announcementType" className="w-full">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GLOBAL">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Global Announcement
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="COURSE">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      Course Announcement
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {announcementType === "GLOBAL"
-                  ? "This announcement will be visible to all students across all courses."
-                  : "This announcement will only be visible to students enrolled in the selected course."}
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Megaphone className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold">Announcements</h1>
+              <p className="text-muted-foreground">
+                Manage and create announcements for students
               </p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={fetchAnnouncements}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Announcement
+            </Button>
+          </div>
+        </div>
 
-            {/* Course Selection (only show when course type is selected) */}
-            {announcementType === "COURSE" && (
-              <div className="space-y-2">
-                <Label htmlFor="course">
-                  Select Course <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={selectedCourseId}
-                  onValueChange={handleCourseChange}
-                  disabled={isSubmitting || loadingCourses}
-                >
-                  <SelectTrigger id="course" className="w-full">
-                    <SelectValue
-                      placeholder={
-                        loadingCourses ? "Loading courses..." : "Select a course"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {loadingCourses ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Loading...
+        {/* Announcements List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>All Announcements</CardTitle>
+            <CardDescription>
+              View and manage all announcements ({announcements.length} total)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">
+                  Loading announcements...
+                </span>
+              </div>
+            ) : announcements.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No announcements found</p>
+                <p className="text-sm mt-1">
+                  Click "Create Announcement" to add a new one
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {announcements.map((announcement) => {
+                  const link = extractLinkFromHtml(announcement.body);
+                  const hasLink = link !== null;
+                  const plainText = stripHtmlTags(announcement.body);
+                  const isExternal = hasLink && isExternalLink(link);
+
+                  return (
+                    // <-- Add the return statement here
+                    <div
+                      key={announcement.id}
+                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            {getScopeLabel(announcement.scope)}
+                            {announcement.courseId && (
+                              <Badge variant="outline" className="text-xs">
+                                {announcement.courseId}
+                              </Badge>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-lg truncate">
+                            {announcement.title}
+                          </h3>
+                          {/* Body Content */}
+                          <div className="mb-2">
+                            {plainText && (
+                              <p className={cn("text-sm line-clamp-2")}>
+                                {plainText}
+                              </p>
+                            )}
+
+                            {/* View Button */}
+                            {/* View Button */}
+                            {hasLink && link && (
+                              <button
+                                onClick={(e) => handleLinkClick(e, link)}
+                                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 group bg-primary text-primary-foreground hover:bg-primary/90"
+                              >
+                                {isExternal ? "Open Link" : "View"}
+                                {isExternal ? (
+                                  <ExternalLink className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                                ) : (
+                                  <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Created: {formatDate(announcement.createdAt)}
+                            </span>
+                            {announcement.updatedAt && (
+                              <span className="flex items-center gap-1">
+                                Updated: {formatDate(announcement.updatedAt)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="flex-shrink-0"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditClick(announcement)}
+                              className="flex items-center gap-2"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteClick(announcement)}
+                              className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    ) : courses.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No published courses available
-                      </div>
-                    ) : (
-                      courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id}>
-                          {course.title}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                    </div>
+                  );
+                })}
               </div>
             )}
+          </CardContent>
+        </Card>
 
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">
-                Title <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="title"
-                name="title"
-                placeholder="Enter announcement title..."
-                value={form.title}
-                onChange={handleInputChange}
-                disabled={isSubmitting}
-                maxLength={200}
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {form.title.length}/200
-              </p>
-            </div>
+        {/* Add Announcement Modal */}
+        <AddAnnouncementModal
+          open={isAddModalOpen}
+          onOpenChange={setIsAddModalOpen}
+          onSuccess={handleAnnouncementCreated}
+        />
 
-            {/* Body */}
-            <div className="space-y-2">
-              <Label htmlFor="body">
-                Content <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="body"
-                name="body"
-                placeholder="Write your announcement here..."
-                value={form.body}
-                onChange={handleInputChange}
-                disabled={isSubmitting}
-                rows={6}
-                maxLength={2000}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {form.body.length}/2000
-              </p>
-            </div>
+        {/* Edit Announcement Modal */}
+        <EditAnnouncementModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          announcement={selectedAnnouncement}
+          onSuccess={fetchAnnouncements}
+        />
 
-            {/* Email Notice */}
-            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <Mail className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
-                  Email Notification
-                </p>
-                <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
-                  Publishing this announcement will automatically send an email to{" "}
-                  {announcementType === "GLOBAL"
-                    ? "all registered students"
-                    : "all students enrolled in the selected course"}
-                  . Please review your content carefully before publishing.
-                </p>
-              </div>
-            </div>
-
-            {/* Preview */}
-            {(form.title || form.body) && (
-              <div className="border rounded-lg p-4 bg-muted/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Preview
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-red-600" />
+                Delete Announcement
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>
+                    Are you sure you want to delete this announcement? This
+                    action cannot be undone.
                   </p>
-                  {announcementType === "COURSE" && selectedCourseId && (
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                      {getSelectedCourseName()}
-                    </span>
-                  )}
-                  {announcementType === "GLOBAL" && (
-                    <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded">
-                      Global
-                    </span>
+                  {selectedAnnouncement && (
+                    <div className="bg-muted rounded-md p-3">
+                      <p className="font-medium">
+                        {selectedAnnouncement.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {selectedAnnouncement.body}
+                      </p>
+                    </div>
                   )}
                 </div>
-                <h3 className="font-semibold text-lg">
-                  {form.title || "Untitled"}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                  {form.body || "No content"}
-                </p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={resetForm}
-                disabled={isSubmitting}
-                className="flex-1"
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700"
               >
-                Clear
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  isSubmitting ||
-                  !form.title.trim() ||
-                  !form.body.trim() ||
-                  (announcementType === "COURSE" && !selectedCourseId)
-                }
-                className="flex-1 flex items-center gap-2"
-              >
-                {isSubmitting ? (
+                {deleting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Publishing...
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Deleting...
                   </>
                 ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    Publish Announcement
-                  </>
+                  "Delete"
                 )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-amber-600" />
-              Confirm Announcement
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                You are about to publish a{" "}
-                <span className="font-medium">
-                  {announcementType === "GLOBAL" ? "global" : "course-specific"}
-                </span>{" "}
-                announcement.
-              </p>
-              {announcementType === "COURSE" && selectedCourseId && (
-                <p>
-                  Course:{" "}
-                  <span className="font-medium">{getSelectedCourseName()}</span>
-                </p>
-              )}
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-2">
-                <p className="text-amber-800 dark:text-amber-400 text-sm font-medium">
-                  ⚠️ This action will send emails
-                </p>
-                <p className="text-amber-700 dark:text-amber-500 text-sm mt-1">
-                  An email notification will be sent to{" "}
-                  {announcementType === "GLOBAL"
-                    ? "all registered students"
-                    : "all students enrolled in this course"}
-                  . This action cannot be undone.
-                </p>
-              </div>
-              <p className="text-sm mt-2">
-                Please make sure you have reviewed the announcement content before
-                proceeding.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmSubmit}
-              disabled={isSubmitting}
-              className="bg-primary"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Publishing...
-                </>
-              ) : (
-                "Yes, Publish & Send Emails"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </AdminLayout>
   );
 };
 
-export default AdminCreateAnnouncement;
+export default AdminAnnouncements;

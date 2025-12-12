@@ -37,6 +37,8 @@ import { createGlobalAnnouncement } from "./handlers/createGlobalAnnouncements";
 import { createCourseManualAnnouncement } from "./handlers/createCourseManualAnnouncements";
 import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMail";
 import { sendComplaintRedressalMailWorker } from "./workers/sendComplaintRedressalMailWorker";
+import { deleteAnnouncement } from "./handlers/announcements/deleteAnnouncements";
+import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -73,5 +75,7 @@ export {
   createGlobalAnnouncement,
   createCourseManualAnnouncement,
   sendComplaintRedressalMail,
-  sendComplaintRedressalMailWorker,
+  sendComplaintRedressalMailWorker,,
+  updateAnnouncement,
+  deleteAnnouncement,
 };
