@@ -1,6 +1,6 @@
 import { firestore } from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-
+import * as functions from "firebase-functions";
 import { fail, ok, Result } from "../utils/response";
 
 import { COLLECTION, USER_ROLE } from "../constants";
@@ -58,6 +58,7 @@ class LearningProgressService {
     courseId: string,
     completedLessonId: string,
   ): Promise<Result<null>> {
+    functions.logger.info(`User ${userId} completed lesson ${completedLessonId} in course ${courseId}`);
     try {
       // 1️⃣ Query progress document for this user + course
       const snapshot = await this.db
@@ -223,6 +224,7 @@ class LearningProgressService {
     courseId: string,
     totalLessons: number
   ): Promise<Result<boolean>> {
+    functions.logger.info(`Checking course completion for user ${userId} in course ${courseId}`);
     try {
       if (totalLessons <= 0) {
         return ok(false);
@@ -243,25 +245,24 @@ class LearningProgressService {
 
       // Calculate completed lessons from lessonHistory object
       const lessonHistory = progressData.lessonHistory || {};
-      const completedLessons = Object.values(lessonHistory).filter(
-        lesson => lesson.markedAsComplete
-      ).length;
+      const completedLessons = Array.isArray(lessonHistory)
+        ? lessonHistory.length : Object.keys(lessonHistory).length;
 
       const completionPercentage = (completedLessons / totalLessons) * 100;
 
-      if (
-        completionPercentage >= 90 &&
-        !progressData.completionDate
-      ) {
+      if (!!progressData.completionDate) {
+        return fail("Course already completed");
+      }
+      if (completionPercentage >= 90 && !progressData.completionDate) {
         await progressDoc.ref.update({
           completionDate: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         });
-
+        functions.logger.info(`User ${userId} completed course ${courseId}`);
         return ok(true);
       }
-
-      return ok(false);
+      functions.logger.info(`User ${userId} has not yet completed course ${courseId}`);
+      return fail("Course not yet completed");
 
     } catch (error: any) {
       return fail(

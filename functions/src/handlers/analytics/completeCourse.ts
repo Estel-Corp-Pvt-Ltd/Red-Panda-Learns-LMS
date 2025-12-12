@@ -32,8 +32,13 @@ async function completeCourseHandler(req: Request, res: Response) {
       return;
     }
     const totalItems = courseResult.data.topics.flatMap(topic => topic.items).length;
-    await learningProgressService.completeCourse(user.uid, courseId, totalItems);
+    const completeCourseResult = await learningProgressService.completeCourse(user.uid, courseId, totalItems);
+    if (!completeCourseResult.success) {
+      res.status(400).json({ error: completeCourseResult.error.message || "Failed to complete course" });
+      return;
+    }
 
+    // Analytics updates
     await courseAnalyticsService.updateCourseAnalytics({
       courseId,
       courseTitle: courseResult.data.title,

@@ -111,10 +111,7 @@ class LearningProgressService {
     }
   }
 
-  async getUserCourseProgress(
-    userId: string,
-    courseId: string,
-  ): Promise<Result<LearningProgress[]>> {
+  async getUserCourseProgress(userId: string, courseId: string): Promise<Result<LearningProgress[]>> {
     try {
       const progressQuery = query(
         collection(db, COLLECTION.LEARNING_PROGRESS),

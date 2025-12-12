@@ -54,6 +54,7 @@ function EnrolledCourseCard({
 
         toast({
           title: "Course completed 🎉",
+          description: "You have successfully completed the course.",
         });
       } else {
         toast({
@@ -79,6 +80,7 @@ function EnrolledCourseCard({
       const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
       if (result.success && result.data[0]) {
         const progress = result.data[0];
+        console.log("Learning progress:", progress);
         const completedLessonsCount = Array.isArray(progress.lessonHistory)
           ? progress.lessonHistory.length
           : Object.keys(progress.lessonHistory).length;
@@ -230,7 +232,6 @@ function EnrolledCourseCard({
 };
 
 export default function DashboardPage() {
-
   const { user } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);

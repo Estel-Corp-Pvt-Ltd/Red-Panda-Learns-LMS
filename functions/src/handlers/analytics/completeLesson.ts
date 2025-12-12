@@ -6,10 +6,8 @@ import { corsMiddleware } from "../../middlewares/cors";
 import { authMiddleware } from "../../middlewares/auth";
 import { onRequest } from "firebase-functions/https";
 import { lessonAnalyticsService } from "../../services/lessonAnalyticsService";
-import { courseAnalyticsService } from "../../services/courseAnalyticsService";
 import { learningProgressService } from "../../services/lessonProgressService";
 import { lessonService } from "../../services/lessonService";
-import { courseService } from "../../services/courseService";
 import { LEARNING_CONTENT } from "../../constants";
 
 if (!admin.apps.length) admin.initializeApp();
@@ -49,14 +47,6 @@ async function completeLessonHandler(req: Request, res: Response) {
       lessonId: itemId,
       completionIncrement: 1,
     });
-
-    const courseResult = await courseService.getCourseById(courseId);
-    if (courseResult.success && courseResult.data) {
-      await courseAnalyticsService.updateCourseAnalytics({
-        courseId,
-        coursesCompletedIncrement: 1,
-      });
-    }
 
     functions.logger.info(`Updated time spent for lesson ${itemId} in course ${courseId} by user ${user.uid}`);
     res.json({
