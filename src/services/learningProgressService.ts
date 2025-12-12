@@ -343,6 +343,53 @@ class LearningProgressService {
       );
     }
   }
+
+  /**
+ * Sets or updates the certification remark for a user's course progress.
+ *
+ * @param userId - ID of the student
+ * @param courseId - ID of the course
+ * @param remark - Optional remark text
+ */
+  async setCertificationRemark(
+    userId: string,
+    courseId: string,
+    remark: string | null
+  ): Promise<Result<boolean>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return fail("Learning progress not found");
+      }
+
+      const progressDoc = snapshot.docs[0];
+      const progressRef = progressDoc.ref;
+
+      await updateDoc(progressRef, {
+        certification: {
+          ...(progressDoc.data().certification || {}),
+          remark: remark || null,
+        },
+        updatedAt: serverTimestamp(),
+      });
+
+      return ok(true);
+
+    } catch (error: any) {
+      logError("LearningProgressService.setCertificationRemark", error);
+      return fail(
+        "Failed to update certification remark",
+        error.code || error.message
+      );
+    }
+  }
 }
 
 export const learningProgressService = new LearningProgressService();
