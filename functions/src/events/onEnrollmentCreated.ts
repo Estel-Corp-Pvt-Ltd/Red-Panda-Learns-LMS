@@ -6,7 +6,7 @@ import { enrollmentService } from "../services/enrollService";
 import { courseService } from "../services/courseService";
 import { lessonAnalyticsService } from "../services/lessonAnalyticsService";
 
-export const onEnrollmententCreated = onDocumentCreated(
+export const onEnrollmentCreated = onDocumentCreated(
   `${COLLECTION.ENROLLMENTS}/{id}`,
   async (event) => {
     const enrollmentId = event.params.id;

@@ -79,10 +79,13 @@ function EnrolledCourseCard({
       const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
       if (result.success && result.data[0]) {
         const progress = result.data[0];
+        const completedLessonsCount = Array.isArray(progress.lessonHistory)
+          ? progress.lessonHistory.length
+          : Object.keys(progress.lessonHistory).length;
 
         const eligible =
           totalLessons > 0 &&
-          progress.lessonHistory.length >= Math.ceil(0.9 * totalLessons);
+          completedLessonsCount >= Math.ceil(0.9 * totalLessons);
 
         setIsEligibleForCertificate(eligible);
 

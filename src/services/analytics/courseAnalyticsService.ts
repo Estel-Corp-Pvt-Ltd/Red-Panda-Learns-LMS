@@ -20,10 +20,12 @@ export interface CourseAnalytics {
   courseId: string;
   courseTitle: string;
   totalTimeSpentSec: number;
-  totalLessonsCompleted: number;
+  totalLessonsCompleted?: number; // For compatibility with admin stats
+  coursesCompleted: number;
   totalLearners: number;
   avgCompletionRate?: number; // Calculated completion rate percentage
   formattedTime?: string; // Human-readable time format (e.g., "15h 30m")
+  completionRate?: number; // Alias for avgCompletionRate for compatibility
   updatedAt: Date | null;
   createdAt: Date | null;
 }
@@ -73,7 +75,8 @@ class CourseAnalyticsService {
         courseId: data.courseId,
         courseTitle: data.courseTitle,
         totalTimeSpentSec: data.totalTimeSpentSec || 0,
-        totalLessonsCompleted: data.totalLessonsCompleted || 0,
+        coursesCompleted: data.coursesCompleted || 0,
+        totalLessonsCompleted: data.coursesCompleted || 0, // Alias for compatibility
         totalLearners: data.totalLearners || 0,
         updatedAt: data.updatedAt?.toDate() || null,
         createdAt: data.createdAt?.toDate() || null,
@@ -136,7 +139,8 @@ class CourseAnalyticsService {
           courseId: data.courseId,
           courseTitle: data.courseTitle,
           totalTimeSpentSec: data.totalTimeSpentSec || 0,
-          totalLessonsCompleted: data.totalLessonsCompleted || 0,
+          coursesCompleted: data.coursesCompleted || 0,
+          totalLessonsCompleted: data.coursesCompleted || 0, // Alias for compatibility
           totalLearners: data.totalLearners || 0,
           updatedAt: data.updatedAt?.toDate() || null,
           createdAt: data.createdAt?.toDate() || null,
@@ -163,6 +167,7 @@ class CourseAnalyticsService {
         .slice(0, limit)
         .map(course => ({
           ...course,
+          totalLessonsCompleted: course.coursesCompleted, // Ensure compatibility
           formattedTime: formatSeconds(course.totalTimeSpentSec),
         }));
     } catch (error) {
@@ -181,7 +186,7 @@ class CourseAnalyticsService {
       // Sort by avgCompletionRate descending
       return allAnalytics.map(course => {
         const avgCompletionRate = course.totalLearners > 0
-          ? (course.totalLessonsCompleted / course.totalLearners) * 100
+          ? (course.coursesCompleted / course.totalLearners) * 100
           : 0;
         return {
           ...course,
@@ -209,11 +214,12 @@ class CourseAnalyticsService {
 
       const course = topCourses[0];
       const avgCompletionRate = course.totalLearners > 0
-        ? (course.totalLessonsCompleted / course.totalLearners) * 100
+        ? (course.coursesCompleted / course.totalLearners) * 100
         : 0;
 
       return {
         ...course,
+        totalLessonsCompleted: course.coursesCompleted, // Ensure compatibility
         avgCompletionRate,
         formattedTime: formatSeconds(course.totalTimeSpentSec),
       };

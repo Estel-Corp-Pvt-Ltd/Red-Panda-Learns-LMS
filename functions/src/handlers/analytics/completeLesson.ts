@@ -10,6 +10,7 @@ import { courseAnalyticsService } from "../../services/courseAnalyticsService";
 import { learningProgressService } from "../../services/lessonProgressService";
 import { lessonService } from "../../services/lessonService";
 import { courseService } from "../../services/courseService";
+import { LEARNING_CONTENT } from "../../constants";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -21,25 +22,31 @@ async function completeLessonHandler(req: Request, res: Response) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const { lessonId, courseId } = req.body;
+    const { itemId, courseId, type } = req.body;
 
-    if (!lessonId || !courseId) {
+    if (!itemId || !courseId) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
 
-    const lessonResult = await lessonService.getLessonById(lessonId);
+    const lessonResult = await lessonService.getLessonById(itemId);
     if (!lessonResult.success || !lessonResult.data) {
       res.status(404).json({ error: "Lesson not found" });
       return;
     }
-
-    await learningProgressService.completeLesson(user.uid, courseId, lessonId, lessonResult.data.title);
+    if (type == LEARNING_CONTENT.ASSIGNMENT) {
+      await learningProgressService.completeLesson(user.uid, courseId, itemId);
+      res.json({
+        success: true,
+      });
+      return;
+    }
+    await learningProgressService.completeLesson(user.uid, courseId, itemId);
 
     // Analytics updates
     await lessonAnalyticsService.updateLessonAnalytics({
       courseId,
-      lessonId,
+      lessonId: itemId,
       completionIncrement: 1,
     });
 
@@ -51,13 +58,7 @@ async function completeLessonHandler(req: Request, res: Response) {
       });
     }
 
-
-    await courseAnalyticsService.updateCourseAnalytics({
-      courseId,
-      coursesCompletedIncrement: 1,
-    });
-
-    functions.logger.info(`Updated time spent for lesson ${lessonId} in course ${courseId} by user ${user.uid}`);
+    functions.logger.info(`Updated time spent for lesson ${itemId} in course ${courseId} by user ${user.uid}`);
     res.json({
       success: true,
     });

@@ -64,126 +64,50 @@ class LearningProgressService {
   * @param completedLessonId - The ID of the lesson that was just completed.
   */
   async completeLesson(
-    userId: string,
     courseId: string,
-    completedLessonId: string,
-    completedLessonTitle: string
+    itemId: string,
+    type: string
   ): Promise<Result<null>> {
     try {
-      // 1️⃣ Query progress document for this user + course
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
-
-      const snapshot = await getDocs(progressQuery);
-
-      let progressRef;
-      let progress: LearningProgress | null = null;
-
-      if (snapshot.empty) {
-        console.log("No existing progress found — creating new one...");
-        // Create a brand new progress document
-        const createResult = await this.createLessonProgress(userId, courseId);
-        if (!createResult.success) {
-          return fail(
-            "Failed to create new progress document.",
-
-          );
-        }
-
-        // Retrieve the new doc reference
-        progressRef = doc(db, COLLECTION.LEARNING_PROGRESS, createResult.data.progressId);
-        progress = {
-          id: createResult.data.progressId,
-          userId,
-          courseId,
-          currentLessonId: null,
-          lessonHistory: [],
-          completionDate: null,
-          lastAccessed: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-      } else {
-        // There should be exactly one document
-        const progressDoc = snapshot.docs[0];
-        progressRef = progressDoc.ref;
-        progress = progressDoc.data() as LearningProgress;
-      }
-
-      // 2️⃣ Update lesson history safely (avoid duplicates)
-      const updatedLessonHistory = {
-        ...(progress.lessonHistory || {}),
-        completedLessonId: {
-          timeSpendt: progress.lessonHistory?.[completedLessonId]?.timeSpendt || 0,
-          markedAsComplete: true,
-          completedAt: serverTimestamp(),
+      const idToken = await authService.getToken();
+      await fetch(`${this.backendUrl}/completeLesson`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
         },
-      };
-
-      // 3️⃣ Write update to Firestore
-      await updateDoc(progressRef, {
-        currentLessonId: completedLessonId,
-        lessonHistory: updatedLessonHistory,
-        lastAccessed: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        body: JSON.stringify({
+          courseId,
+          itemId,
+          type,
+        }),
       });
-
       return ok(null);
-    } catch (error: any) {
-      logError("LearningProgressService.completeLesson", error);
-      return fail("Failed to update progress.", error.code || error.message);
+    } catch {
+      console.error("spendTimeOnLesson error");
+      return fail("Failed to update time spent.");
     }
   }
 
-  async timeSpentOnLesson(
-    userId: string,
-    courseId: string,
-    lessonId: string,
-    timeSpent: number
-  ): Promise<Result<null>> {
+  async timeSpentOnLesson(courseId: string, lessonId: string, timeSpentSec: number): Promise<Result<null>> {
     try {
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
-
-      const snapshot = await getDocs(progressQuery);
-
-      if (snapshot.empty) {
-        return fail("Learning progress not found");
-      }
-
-      const progressDoc = snapshot.docs[0];
-      const progressRef = progressDoc.ref;
-      const progressData = progressDoc.data() as LearningProgress;
-
-      const existingTimeSpent =
-        progressData.lessonHistory?.[lessonId]?.timeSpendt || 0;
-
-      const updatedLessonHistory = {
-        ...(progressData.lessonHistory || {}),
-        [lessonId]: {
-          timeSpendt: existingTimeSpent + timeSpent,
-          markedAsComplete: progressData.lessonHistory?.[lessonId]?.markedAsComplete || false,
-          completedAt: progressData.lessonHistory?.[lessonId]?.completedAt || null,
+      const idToken = await authService.getToken();
+      await fetch(`${this.backendUrl}/lessonTimeSpent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
         },
-      };
-
-      await updateDoc(progressRef, {
-        lessonHistory: updatedLessonHistory,
-        lastAccessed: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        body: JSON.stringify({
+          courseId,
+          lessonId,
+          timeSpentSec,
+        }),
       });
-
-      // analytics update can be handled separately
-      await lessonAnalyticsService.spendTimeOnLesson(courseId, lessonId, timeSpent);
       return ok(null);
-    } catch (error: any) {
-      logError("LearningProgressService.timeSpentOnLesson", error);
-      return fail("Failed to update time spent.", error.code || error.message);
+    } catch {
+      console.error("spendTimeOnLesson error");
+      return fail("Failed to update time spent.");
     }
   }
 

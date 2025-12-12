@@ -35,7 +35,9 @@ import { createCouponUsage } from "./handlers/createCouponUsage";
 // import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
 import { lessonTimeSpent } from "./handlers/analytics/lessonTimeSpent";
 // Event handlers
-import { onEnrollmententCreated } from "./events/onEnrollmententCreated";
+import { onEnrollmentCreated } from "./events/onEnrollmentCreated";
+import { completeLesson } from "./handlers/analytics/completeLesson";
+import { completeCourse } from "./handlers/analytics/completeCourse";
 
 export {
   enrollStudent,
@@ -70,6 +72,8 @@ export {
   // onCourseUpdated,
   // sendAnnouncementEmailWorker,
   // sendAnnouncementEmailNotification
-  onEnrollmententCreated,
+  onEnrollmentCreated,
   lessonTimeSpent,
+  completeLesson,
+  completeCourse,
 };

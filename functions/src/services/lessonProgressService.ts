@@ -57,7 +57,6 @@ class LearningProgressService {
     userId: string,
     courseId: string,
     completedLessonId: string,
-    completedLessonTitle: string
   ): Promise<Result<null>> {
     try {
       // 1️⃣ Query progress document for this user + course

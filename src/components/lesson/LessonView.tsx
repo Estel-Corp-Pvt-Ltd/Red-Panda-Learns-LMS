@@ -94,7 +94,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
 
     try {
       const courseId = lesson.courseId;
-      await learningProgressService.timeSpentOnLesson(user?.id || "", courseId, lessonId, timeSpentInSeconds);
+      await learningProgressService.timeSpentOnLesson(courseId, lessonId, timeSpentInSeconds);
       console.log(`⏱️ Reported time spent: ${timeSpentInSeconds} seconds`);
       hasReportedTimeRef.current = true;
     } catch (error) {

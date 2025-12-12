@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { courseService } from './courseService';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -65,6 +66,12 @@ class CourseAnalyticsService {
         // Recalculate average completion rate
         // await this.recalculateCompletionRate(courseId);
       } else {
+        if (!update.courseTitle) {
+          const courseResult = await courseService.getCourseById(courseId);
+          if (courseResult.success && courseResult.data) {
+            update.courseTitle = courseResult.data.title;
+          }
+        }
         // Create new document
         const initialData = {
           courseId,

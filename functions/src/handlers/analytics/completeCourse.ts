@@ -36,6 +36,7 @@ async function completeCourseHandler(req: Request, res: Response) {
 
     await courseAnalyticsService.updateCourseAnalytics({
       courseId,
+      courseTitle: courseResult.data.title,
       coursesCompletedIncrement: 1,
     });
     res.json({

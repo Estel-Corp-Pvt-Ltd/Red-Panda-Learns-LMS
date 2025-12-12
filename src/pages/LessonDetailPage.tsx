@@ -153,13 +153,7 @@ export default function LessonDetailPage() {
   const handleMarkComplete = async () => {
     if (!user || !courseId || !selectedItem) return;
 
-    const result = await learningProgressService.completeLesson(
-      user.id,
-      courseId,
-      selectedItem.id,
-      selectedItem.title
-    );
-
+    const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type);
     if (result.success) {
       setUserProgress(prev =>
         prev
