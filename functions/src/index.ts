@@ -75,7 +75,7 @@ export {
   createGlobalAnnouncement,
   createCourseManualAnnouncement,
   sendComplaintRedressalMail,
-  sendComplaintRedressalMailWorker,,
+  sendComplaintRedressalMailWorker,
   updateAnnouncement,
   deleteAnnouncement,
 };
