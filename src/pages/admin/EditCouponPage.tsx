@@ -45,6 +45,9 @@ export default function EditCouponPage() {
   const navigate = useNavigate();
   const { couponId } = useParams<{ couponId: string }>();
   const { toast } = useToast();
+
+  const [courseSearch, setCourseSearch] = useState("");
+
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
   const [bundles, setBundles] = useState<{ id: string; title: string }[]>([]);
   const [currentCoupon, setCurrentCoupon] = useState<CreateCouponFormData | null>(null);
@@ -77,7 +80,20 @@ export default function EditCouponPage() {
     loadData();
   }, []);
 
-  // Load current coupon data
+  const filteredCourses = (() => {
+    if (!courseSearch.trim()) return courses;
+
+    try {
+      const regex = new RegExp(courseSearch.trim(), "i");
+      return courses.filter(c => regex.test(c.title));
+    } catch (error) {
+      return courses;
+    }
+  })();
+
+  const selectedCourseObjects = selectedCourses
+    .map(id => courses.find(c => c.id === id))
+    .filter(Boolean) as { id: string; title: string }[];
 
   useEffect(() => {
     if (!couponId) return;
@@ -244,9 +260,7 @@ export default function EditCouponPage() {
 
   if (loading) {
     return (
-
       <div className="max-w-2xl mx-auto p-6">
-
         <Card>
           <CardContent>
             <p className="text-center text-muted-foreground">Loading coupon data...</p>
@@ -283,7 +297,7 @@ export default function EditCouponPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-              {/* Coupon Code */}
+
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Tag className="w-4 h-4" />
@@ -304,7 +318,6 @@ export default function EditCouponPage() {
                 )}
               </div>
 
-              {/* Discount % */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Percent className="w-4 h-4" />
@@ -323,7 +336,6 @@ export default function EditCouponPage() {
                 )}
               </div>
 
-              {/* Expiry */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -342,7 +354,6 @@ export default function EditCouponPage() {
                 )}
               </div>
 
-              {/* Usage Limit */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Hash className="w-4 h-4" />
@@ -361,19 +372,48 @@ export default function EditCouponPage() {
                 )}
               </div>
 
-              {/* Select Courses */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   Select Courses to Link
                 </Label>
+
+                <div className="mb-2">
+                  <Input
+                    placeholder="Search Courses"
+                    value={courseSearch}
+                    onChange={(e) => setCourseSearch(e.target.value)}
+                  />
+                </div>
+
+                {selectedCourseObjects.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedCourseObjects.map(course => (
+                      <div
+                        key={course.id}
+                        className="flex items-center gap-2 bg-primary/10 px-2 py-1 rounded-md text-sm"
+                      >
+                        <span>{course.title}</span>
+
+                        <button
+                          type="button"
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => toggleCourseSelection(course.id)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {loading ? (
-                  <p className="text-sm text-muted">Loading courses...</p>
-                ) : courses.length === 0 ? (
-                  <p className="text-sm text-muted">No courses available.</p>
+                  <p className="text-sm">Loading courses...</p>
+                ) : filteredCourses.length === 0 ? (
+                  <p className="text-sm">No courses available.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-auto border p-3 rounded-md">
-                    {courses.map(course => (
+                    {filteredCourses.map(course => (
                       <label key={course.id} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
                         <Checkbox
                           checked={selectedCourses.includes(course.id)}
@@ -386,16 +426,15 @@ export default function EditCouponPage() {
                 )}
               </div>
 
-              {/* Select Bundle */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   Select Bundles to Link
                 </Label>
                 {loading ? (
-                  <p className="text-sm text-muted">Loading bundles...</p>
+                  <p className="text-sm">Loading bundles...</p>
                 ) : bundles.length === 0 ? (
-                  <p className="text-sm text-muted">No bundles available.</p>
+                  <p className="text-sm">No bundles available.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-auto border p-3 rounded-md">
                     {bundles.map(bundle => (
@@ -411,7 +450,6 @@ export default function EditCouponPage() {
                 )}
               </div>
 
-              {/* Status */}
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select

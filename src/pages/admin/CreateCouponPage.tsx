@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Timestamp } from "firebase/firestore";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, Hash, Package, Percent, Tag } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ export default function CreateCouponPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [courseSearch, setCourseSearch] = useState("");
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
   const [bundles, setBundles] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +105,21 @@ export default function CreateCouponPage() {
     loadCourses();
     loadBundles();
   }, []);
+
+  const filteredCourses = (() => {
+    if (!courseSearch.trim()) return courses;
+
+    try {
+      const regex = new RegExp(courseSearch.trim(), "i");
+      return courses.filter(c => regex.test(c.title));
+    } catch (error) {
+      return courses;
+    }
+  })();
+
+  const selectedCourseObjects = selectedCourses
+    .map(id => courses.find(c => c.id === id))
+    .filter(Boolean) as { id: string; title: string }[];
 
   const { user } = useAuth();
 
@@ -220,9 +236,11 @@ export default function CreateCouponPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Coupon Code */}
-                <div>
-                  <Label>Coupon Code</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Tag className="w-4 h-4" />
+                    Coupon Code
+                  </Label>
                   <Input {...register("code")} placeholder="e.g. SAVE50" />
                   {existingCoupon && (
                     <p className="text-sm text-red-500">
@@ -236,9 +254,11 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Discount % */}
-                <div>
-                  <Label>Discount Percentage</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Percent className="w-4 h-4" />
+                    Discount Percentage
+                  </Label>
                   <Input
                     type="number"
                     {...register("discountPercentage", { valueAsNumber: true })}
@@ -250,9 +270,11 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Expiry */}
-                <div>
-                  <Label>Expiry Date</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Expiry Date
+                  </Label>
                   <Input type="date" {...register("expiryDate")} />
                   {errors.expiryDate && (
                     <p className="text-sm text-red-500">
@@ -261,9 +283,11 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Usage Limit */}
-                <div>
-                  <Label>Usage Limit</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Hash className="w-4 h-4" />
+                    Usage Limit
+                  </Label>
                   <Input
                     type="number"
                     {...register("usageLimit", { valueAsNumber: true })}
@@ -275,16 +299,48 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Select Courses */}
-                <div>
-                  <Label>Select Courses to Link</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Select Courses to Link
+                  </Label>
+
+                  <div className="mb-2">
+                    <Input
+                      placeholder="Search Courses"
+                      value={courseSearch}
+                      onChange={(e) => setCourseSearch(e.target.value)}
+                    />
+                  </div>
+
+                  {selectedCourseObjects.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {selectedCourseObjects.map(course => (
+                        <div
+                          key={course.id}
+                          className="flex items-center gap-2 bg-primary/10 px-2 py-1 rounded-md text-sm"
+                        >
+                          <span>{course.title}</span>
+
+                          <button
+                            type="button"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => toggleCourseSelection(course.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {loading ? (
-                    <p className="text-sm text-muted">Loading courses...</p>
-                  ) : courses.length === 0 ? (
-                    <p className="text-sm text-muted">No courses available.</p>
+                    <p className="text-sm">Loading courses...</p>
+                  ) : filteredCourses.length === 0 ? (
+                    <p className="text-sm">No courses available.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
-                      {courses.map((course) => (
+                      {filteredCourses.map((course) => (
                         <label
                           key={course.id}
                           className="flex items-center space-x-2"
@@ -302,13 +358,15 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Select Bundle */}
-                <div>
-                  <Label>Select bundle to Link</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Select Bundles to Link
+                  </Label>
                   {loading ? (
-                    <p className="text-sm text-muted">Loading bundle...</p>
+                    <p className="text-sm">Loading bundle...</p>
                   ) : bundles.length === 0 ? (
-                    <p className="text-sm text-muted">No bundle available.</p>
+                    <p className="text-sm">No bundle available.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
                       {bundles.map((bundle) => (
@@ -330,7 +388,7 @@ export default function CreateCouponPage() {
                 </div>
 
                 {/* Status */}
-                <div>
+                <div className="space-y-2">
                   <Label>Status</Label>
                   <Select
                     defaultValue={COUPON_STATUS.ACTIVE}
@@ -375,4 +433,4 @@ export default function CreateCouponPage() {
       </main>
     </div>
   );
-}
+};
