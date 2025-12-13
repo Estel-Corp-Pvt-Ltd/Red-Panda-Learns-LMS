@@ -374,7 +374,7 @@ const CoursesPage = () => {
                 {viewMode === "grid" ? (
                   <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {searchResults.courses
-                      .filter(course => user?.role === USER_ROLE.ADMIN || course.salePrice > 0)
+                      .filter(course => user?.role === USER_ROLE.ADMIN)
                       .map((course, index) => (
                         <div
                           key={course.id}
