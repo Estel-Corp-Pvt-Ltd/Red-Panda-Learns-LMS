@@ -45,4 +45,4 @@ const resetUserPasswordHandler = async (req: functions.https.CallableRequest) =>
     }
 };
 
-export const resetUserPassword = functions.https.onCall({ cors: ["https://vizuara.ai", "http://localhost:8080"] }, resetUserPasswordHandler);
+export const resetUserPassword = functions.https.onCall({ cors: ["https://vizuara.ai", "http://localhost:8080", "https://vizuara-ai-labs-dev.web.app"] }, resetUserPasswordHandler);

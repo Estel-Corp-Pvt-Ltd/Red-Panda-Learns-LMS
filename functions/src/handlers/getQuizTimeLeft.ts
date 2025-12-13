@@ -90,6 +90,6 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
 };
 
 export const getQuizTimeLeft = functions.https.onCall(
-    { cors: ["https://vizuara.ai", "http://localhost:8080"] },
+    { cors: ["https://vizuara.ai", "http://localhost:8080", "https://vizuara-ai-labs-dev.web.app"] },
     getQuizTimeLeftHandler
 );
