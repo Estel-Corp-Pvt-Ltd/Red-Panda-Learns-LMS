@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
-import { Download, Printer, Share2 } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import ShareCertificate from "./ShareCertificate";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -186,15 +187,7 @@ const Certificate: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200 p-4 print:p-0">
       {/* Action Buttons */}
       <div className="fixed top-6 right-6 z-50 flex gap-3 print-button">
-        <Link to={`/certificate/public/view/${certificateId}`}>
-          <Button
-            variant="outline"
-            className="bg-secondary text-black hover:text-secondary hover:bg-primary"
-          >
-            <Share2 fill="black" className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-        </Link>
+        <ShareCertificate certificateId={certificateId} />
         <Button
           onClick={handleDownloadAsImage}
           disabled={isPrinting}
