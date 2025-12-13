@@ -292,7 +292,8 @@ class LearningProgressService {
           certification: {
             issued: true,
             issuedAt: serverTimestamp(),
-            certificateId: `${userId}_${courseId}`,
+            // later do on server
+            certificateId: crypto.randomUUID(),
           },
           updatedAt: serverTimestamp(),
         }
