@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
+import { USER_ROLE } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -13,7 +15,14 @@ const Certificate: React.FC = () => {
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
 
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   useEffect(() => {
+    if (user.id !== enrollmentId.split("_")[0] && user.role !== USER_ROLE.ADMIN) {
+      navigate("/dashboard");
+    }
+
     const fetchEnrollmentAndCompletion = async () => {
       setIsLoading(true);
       try {

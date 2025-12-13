@@ -43,7 +43,7 @@ const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAuthor"))
-const AdminCreateAnnouncement = lazy(()=> import("@/pages/admin/AdminAddAnnouncements"))
+const AdminCreateAnnouncement = lazy(() => import("@/pages/admin/AdminAddAnnouncements"))
 //Instructor
 
 import InstructorLayout from "./components/InstructorLayout";
@@ -122,7 +122,14 @@ const App = () => (
                       />
                       <Route
                         path="/certificate/:enrollmentId"
-                        element={<Certificate />}
+                        element={
+                          <AuthGuard
+                            requireAuth
+                            requireEnrollmentOrAdmin
+                          >
+                            <Certificate />
+                          </AuthGuard>
+                        }
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
@@ -453,7 +460,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                       <Route
+                      <Route
                         path="/admin/announcements"
                         element={
                           <AuthGuard requireAdmin>
