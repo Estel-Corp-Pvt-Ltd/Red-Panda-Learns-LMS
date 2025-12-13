@@ -41,20 +41,18 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
             };
         }
 
-        // const startMillis = quiz.scheduledAt.toMillis();
-        const endAt = quiz.endAt as admin.firestore.Timestamp | undefined;
+        const now = admin.firestore.Timestamp.now().toMillis();
+
+        const startMillis = quiz.scheduledAt.toMillis();
         const durationMs = quiz.durationMinutes * 60 * 1000;
 
-        const now = admin.firestore.Timestamp.now().toMillis();
-        let endMillis = endAt ? endAt.toMillis() : now + durationMs;
+        const absoluteEndMillis = quiz.endAt
+            ? quiz.endAt.toMillis()
+            : startMillis + durationMs;
 
-        // Ensure endMillis does not exceed scheduled start + duration
-        if (endMillis > now + durationMs) {
-            endMillis = now + durationMs;
-        }
+        let effectiveEndMillis = absoluteEndMillis;
 
-        // Find Quiz attempt time
-        const quizSubmissionSnap = await admin
+        const submissionSnap = await admin
             .firestore()
             .collection(COLLECTION.QUIZ_SUBMISSIONS)
             .where("quizId", "==", quizId)
@@ -62,18 +60,27 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
             .limit(1)
             .get();
 
-        if (!quizSubmissionSnap.empty) {
-            const submissionData = quizSubmissionSnap.docs[0].data() as any;
-            if (submissionData.startedAt) {
-                const startedAtMillis = submissionData.startedAt?.toMillis() ?? new Date(submissionData.startedAt).getTime();   // it is Firebase FieldValue
-                const adjustedEndMillis = startedAtMillis + durationMs;
-                if (adjustedEndMillis < endMillis) {
-                    endMillis = adjustedEndMillis;
-                }
+        if (!submissionSnap.empty) {
+            const submission = submissionSnap.docs[0].data();
+
+            if (submission.startedAt) {
+                const startedAtMillis =
+                    submission.startedAt.toMillis?.() ??
+                    new Date(submission.startedAt).getTime();
+
+                const attemptEndMillis = startedAtMillis + durationMs;
+
+                effectiveEndMillis = Math.min(
+                    effectiveEndMillis,
+                    attemptEndMillis
+                );
             }
         }
 
-        const timeLeftSeconds = Math.max(0, Math.floor((endMillis - now) / 1000));
+        const timeLeftSeconds = Math.max(
+            0,
+            Math.floor((effectiveEndMillis - now) / 1000)
+        );
 
         return {
             success: true,
@@ -90,6 +97,6 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
 };
 
 export const getQuizTimeLeft = functions.https.onCall(
-    { cors: ["https://vizuara.ai", "http://localhost:8080"] },
+    { cors: ["https://vizuara.ai", "http://localhost:8080", "https://vizuara-ai-labs-dev.web.app"] },
     getQuizTimeLeftHandler
 );
