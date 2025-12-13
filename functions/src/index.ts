@@ -32,7 +32,7 @@ import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignme
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 import { createCouponUsage } from "./handlers/createCouponUsage";
 import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
-import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
+import { sendAnnouncementEmailonRequest } from "./handlers/announcements/sendAnnouncementsMail";
 import { createGlobalAnnouncement } from "./handlers/createGlobalAnnouncements";
 import { createCourseManualAnnouncement } from "./handlers/createCourseManualAnnouncements";
 import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMail";
@@ -71,7 +71,7 @@ export {
   createCouponUsage,
   onCourseUpdated,
   sendAnnouncementEmailWorker,
-  sendAnnouncementEmailNotification,
+  sendAnnouncementEmailonRequest,
   createGlobalAnnouncement,
   createCourseManualAnnouncement,
   sendComplaintRedressalMail,

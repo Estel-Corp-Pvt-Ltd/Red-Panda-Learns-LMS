@@ -1,5 +1,5 @@
 
-import { ok, fail, Result, logError } from "../utils/response";
+import { ok, fail, Result } from "../utils/response";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { AnnouncementStatus } from "../types/general";
 import {
@@ -11,6 +11,7 @@ import {
 import * as admin from "firebase-admin";
 import { Announcement } from "../types/announcements";
 import { v4 as uuidv4 } from 'uuid';
+import { logError } from "../utils/logger";
 
 // import { sendMail } from './email/sendMail'; // <-- Ensure this exists
 

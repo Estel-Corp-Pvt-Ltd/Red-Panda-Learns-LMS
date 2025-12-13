@@ -1,14 +1,9 @@
-
 import { BACKEND_URL } from "@/config";
 
-
-
 export const createAnnouncementApi = {
+
   async createGlobalAnnouncement(
-    data: {
-      title: string;
-      body: string;
-    },
+    data: { title: string; body: string },
     idToken: string
   ) {
     try {
@@ -28,29 +23,26 @@ export const createAnnouncementApi = {
 
       return await response.json();
     } catch (error) {
-      console.error("Error creating announcement:", error);
       throw error;
     }
   },
 
-
-    async createCourseManualAnnouncement(
-        data: {
-        title: string;
-        body: string;
-        courseId:string;
-        },
-        idToken: string
-    ) {
+  async createCourseManualAnnouncement(
+    data: { title: string; body: string; courseId: string },
+    idToken: string
+  ) {
     try {
-      const response = await fetch(`${BACKEND_URL}/createCourseManualAnnouncement`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        `${BACKEND_URL}/createCourseManualAnnouncement`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -59,60 +51,87 @@ export const createAnnouncementApi = {
 
       return await response.json();
     } catch (error) {
-      console.error("Error creating announcement:", error);
       throw error;
     }
   },
 
-
   async updateAnnouncement(
-  announcementId: string,
-  data: {
-    title?: string;
-    body?: string;
+    announcementId: string,
+    data: { title?: string; body?: string },
+    idToken: string
+  ) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/updateAnnouncement?announcementId=${announcementId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update announcement");
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
   },
-  idToken: string
-) {
-  try {
-    const response = await fetch(`${BACKEND_URL}/updateAnnouncement?announcementId=${announcementId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify(data),
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to update announcement");
+  async deleteAnnouncement(announcementId: string, idToken: string) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/deleteAnnouncement?announcementId=${announcementId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete announcement");
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
     }
+  },
 
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating announcement:", error);
-    throw error;
-  }
-},
+  async sendAnnouncementMail(
+    data: { announcementId: string },
+    idToken: string
+  ) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/sendAnnouncementEmailonRequest`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
-async deleteAnnouncement(announcementId: string, idToken: string) {
-  try {
-    const response = await fetch(`${BACKEND_URL}/deleteAnnouncement?announcementId=${announcementId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-    });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send mail");
+      }
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to delete announcement");
+      return await response.json();
+    } catch (error) {
+      throw error;
     }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting announcement:", error);
-    throw error;
-  }
-},
+  },
 };

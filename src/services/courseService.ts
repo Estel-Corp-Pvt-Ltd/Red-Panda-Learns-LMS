@@ -88,6 +88,7 @@ class CourseService {
       | "targetAudienceIds"
       | "duration"
       | "url"
+      | "isMailSendingEnabled"
     >
   ): Promise<string> {
     try {
@@ -115,7 +116,6 @@ class CourseService {
       };
 
       await setDoc(doc(db, COLLECTION.COURSES, courseId), course);
-
 
       return courseId;
     } catch (error) {
@@ -186,6 +186,8 @@ class CourseService {
       if (updates.topics) updateData.topics = updates.topics;
       if (updates.isEnrollmentPaused !== undefined)
         updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
+      if (updates.isMailSendingEnabled !== undefined)
+        updateData.isMailSendingEnabled = updates.isMailSendingEnabled;
       if (updates.certificateTemplateId)
         updateData.certificateTemplateId = updates.certificateTemplateId;
       if (updates.duration !== undefined) {
@@ -265,14 +267,11 @@ class CourseService {
     }
   }
 
-
-  async getCourseByInstructor(
-    userId: string
-  ): Promise<Result<Course[]>> {
+  async getCourseByInstructor(userId: string): Promise<Result<Course[]>> {
     try {
       const courseQuery = query(
         collection(db, COLLECTION.COURSES),
-        where('instructorId', '==', userId)
+        where("instructorId", "==", userId)
       );
 
       const snapshot = await getDocs(courseQuery);
@@ -288,9 +287,9 @@ class CourseService {
 
       return ok(courseList);
     } catch (error: any) {
-      logError('CourseService.getCourseByInstructor', error);
+      logError("CourseService.getCourseByInstructor", error);
       return fail(
-        'Failed to fetch Instructor Courses.',
+        "Failed to fetch Instructor Courses.",
         error.code || error.message
       );
     }
@@ -383,6 +382,7 @@ class CourseService {
           cohorts: data.cohorts || [],
           topics: data.topics || [],
           isEnrollmentPaused: data.isEnrollmentPaused || false,
+          isMailSendingEnabled: data.isMailSendingEnabled || false,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
           updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
         } as Course;
@@ -706,8 +706,6 @@ class CourseService {
       return fail("Failed to delete course");
     }
   }
-
-
 }
 
 export const courseService = new CourseService();

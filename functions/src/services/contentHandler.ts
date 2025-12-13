@@ -5,6 +5,7 @@ import { logger } from "firebase-functions";
 import { Result } from "../utils/response";
 import { COLLECTION, LEARNING_CONTENT } from "../constants";
 import { LearningContentType } from "../types/course";
+import { sendAnnouncementEmailonDocCreation } from "../handlers/announcements/sendAnnouncementMailonDocumentCreation";
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -37,7 +38,12 @@ export async function handleNewContentItem(params: {
       return fail("Course not found");
     }
 
-    const course = courseSnap.data() as { slug: string; title: string };
+    const course = courseSnap.data() as { 
+      slug: string; 
+      title: string;
+      isMailSendingEnabled?: boolean; // Add this field
+    };
+    
     if (!course.slug) {
       return fail("Course slug is missing");
     }
@@ -58,6 +64,23 @@ export async function handleNewContentItem(params: {
       createdBy,
       status: "PUBLISHED",
     });
+
+    // Check if announcement was created successfully and mail sending is enabled
+// Check if announcement was created successfully and mail sending is enabled
+if (result.success && result.data && course.isMailSendingEnabled === true) {
+  try {
+    const announcementId = result.data; // Now TypeScript knows this is a string
+    
+    await sendAnnouncementEmailonDocCreation(announcementId);
+    
+    logger.info(`Announcement email sent for announcement: ${announcementId}`);
+  } catch (emailError) {
+    // Log the error but don't fail the entire operation
+    logger.error("Failed to send announcement email", emailError);
+  }
+} else if (!course.isMailSendingEnabled) {
+  logger.info(`Mail sending is disabled for course: ${courseId}`);
+}
 
     return result;
   } catch (err) {

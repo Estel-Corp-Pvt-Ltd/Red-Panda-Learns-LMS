@@ -54,6 +54,7 @@ export interface Course {
   cohorts: Cohort[];
   topics: Topic[];
   isEnrollmentPaused: boolean;
+  isMailSendingEnabled:boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };
