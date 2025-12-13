@@ -1,6 +1,6 @@
-import { collection, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, Timestamp, limit } from "firebase/firestore";
 
-import { COLLECTION, ANNOUNCEMENT_STATUS } from "@/constants";
+import { COLLECTION, ANNOUNCEMENT_STATUS, ANNOUNCEMENT_SCOPE } from "@/constants";
 import { Announcement } from "@/types/announcements";
 import { Result, ok, fail } from "@/utils/response";
 import { logError } from "@/utils/logger";
@@ -9,12 +9,14 @@ import { db } from "@/firebaseConfig";
 
 class AnnouncementService {
     /**
-     * Fetches all published announcements for a user:
-     * 1. Global announcements (courseId is null)
+     * Fetches the last 10 published announcements for a user:
+     * 1. Global announcements (scope = "global")
      * 2. Course-specific announcements for enrolled courses
      */
-    async getAnnouncementsForUser(userId: string): Promise<Result<Announcement[]>> {
+    async getAnnouncementsForUser(userId: string, maxLimit: number = 10): Promise<Result<Announcement[]>> {
         try {
+  
+
             // Get user's enrolled course IDs
             const enrollmentResult = await enrollmentService.getUserEnrollments(userId);
            
@@ -22,14 +24,16 @@ class AnnouncementService {
             if (enrollmentResult.success && enrollmentResult.data) {
                 enrolledCourseIds = enrollmentResult.data.map((enrollment) => enrollment.courseId);
             }
-            
+
             const announcementsRef = collection(db, COLLECTION.ANNOUNCEMENTS);
 
             // Fetch both in parallel
             const [globalAnnouncements, courseAnnouncements] = await Promise.all([
-                this.fetchGlobalAnnouncements(announcementsRef),
-                this.fetchCourseAnnouncements(announcementsRef, enrolledCourseIds),
+                this.fetchGlobalAnnouncements(announcementsRef, maxLimit),
+                this.fetchCourseAnnouncements(announcementsRef, enrolledCourseIds, maxLimit),
             ]);
+
+   
 
             // Merge and sort by updatedAt descending (newest first)
             const allAnnouncements = [...globalAnnouncements, ...courseAnnouncements];
@@ -40,34 +44,46 @@ class AnnouncementService {
                 return dateB - dateA;
             });
 
-            return ok(allAnnouncements);
+            // Limit to maxLimit
+            const limitedAnnouncements = allAnnouncements.slice(0, maxLimit);
+
+        
+
+            return ok(limitedAnnouncements);
         } catch (error) {
+            console.error("❌ Error fetching announcements:", error);
             logError("AnnouncementService.getAnnouncementsForUser", error);
             return fail("Failed to fetch announcements");
         }
     }
 
     /**
-     * Fetches global announcements (courseId is null)
+     * Fetches global announcements using scope field instead of courseId == null
      */
     private async fetchGlobalAnnouncements(
-        announcementsRef: ReturnType<typeof collection>
+        announcementsRef: ReturnType<typeof collection>,
+        maxLimit: number = 10
     ): Promise<Announcement[]> {
         try {
+            // ⭐ Use scope field instead of courseId == null
             const q = query(
                 announcementsRef,
-                where("courseId", "==", null),
+                where("scope", "==", ANNOUNCEMENT_SCOPE.GLOBAL),
                 where("status", "==", ANNOUNCEMENT_STATUS.PUBLISHED),
-                orderBy("updatedAt", "desc")
+                orderBy("updatedAt", "desc"),
+                limit(maxLimit)
             );
 
+
             const querySnapshot = await getDocs(q);
+     
 
             return querySnapshot.docs.map((doc) => ({
                 ...doc.data(),
                 id: doc.id,
             })) as Announcement[];
         } catch (error) {
+            console.error("❌ Error in fetchGlobalAnnouncements:", error);
             logError("AnnouncementService.fetchGlobalAnnouncements", error);
             return [];
         }
@@ -75,13 +91,14 @@ class AnnouncementService {
 
     /**
      * Fetches course-specific announcements for enrolled courses
-     * Batches in groups of 30 due to Firestore 'in' query limit
      */
     private async fetchCourseAnnouncements(
         announcementsRef: ReturnType<typeof collection>,
-        courseIds: string[]
+        courseIds: string[],
+        maxLimit: number = 10
     ): Promise<Announcement[]> {
         if (courseIds.length === 0) {
+         
             return [];
         }
 
@@ -97,12 +114,15 @@ class AnnouncementService {
                 batches.map(async (batchCourseIds) => {
                     const q = query(
                         announcementsRef,
+                        where("scope", "==", ANNOUNCEMENT_SCOPE.COURSE),
                         where("courseId", "in", batchCourseIds),
                         where("status", "==", ANNOUNCEMENT_STATUS.PUBLISHED),
-                        orderBy("updatedAt", "desc")
+                        orderBy("updatedAt", "desc"),
+                        limit(maxLimit)
                     );
 
                     const querySnapshot = await getDocs(q);
+             
 
                     return querySnapshot.docs.map((doc) => ({
                         ...doc.data(),
@@ -113,6 +133,7 @@ class AnnouncementService {
 
             return results.flat();
         } catch (error) {
+            console.error("❌ Error in fetchCourseAnnouncements:", error);
             logError("AnnouncementService.fetchCourseAnnouncements", error);
             return [];
         }

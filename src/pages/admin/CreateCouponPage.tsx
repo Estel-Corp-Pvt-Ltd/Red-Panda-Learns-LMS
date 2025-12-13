@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Timestamp } from "firebase/firestore";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, Hash, Package, Percent, Tag } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,6 @@ import { toDateSafe } from "@/utils/date-time";
 import { couponService } from "@/services/couponService";
 import { CouponStatus } from "@/types/general";
 import { courseService } from "@/services/courseService";
-import { cohortService } from "@/services/cohortService";
 import { bundleService } from "@/services/bundleService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
@@ -61,15 +60,13 @@ export default function CreateCouponPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [courseSearch, setCourseSearch] = useState("");
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
-  const [cohorts, setCohorts] = useState<{ id: string; title: string }[]>([]);
   const [bundles, setBundles] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const [selectedCohorts, setSelectedCohorts] = useState<string[]>([]);
   const [selectedBundles, setSelectedBundles] = useState<string[]>([]);
 
-  // Load courses to link
   const loadCourses = async () => {
     try {
       const coursesList = await courseService.getAllCourses();
@@ -87,24 +84,7 @@ export default function CreateCouponPage() {
     }
   };
 
-  const loadCohorts = async () => {
-    try {
-      const cohortList = await cohortService.getAllCohorts();
-      setCohorts(
-        cohortList.map((cohort) => ({ id: cohort.id, title: cohort.title }))
-      );
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed To Load Cohort",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadBundels = async () => {
+  const loadBundles = async () => {
     try {
       const bundleList = await bundleService.getAllBundles();
       setBundles(
@@ -123,9 +103,23 @@ export default function CreateCouponPage() {
 
   useEffect(() => {
     loadCourses();
-    loadBundels();
-    loadCohorts();
+    loadBundles();
   }, []);
+
+  const filteredCourses = (() => {
+    if (!courseSearch.trim()) return courses;
+
+    try {
+      const regex = new RegExp(courseSearch.trim(), "i");
+      return courses.filter(c => regex.test(c.title));
+    } catch (error) {
+      return courses;
+    }
+  })();
+
+  const selectedCourseObjects = selectedCourses
+    .map(id => courses.find(c => c.id === id))
+    .filter(Boolean) as { id: string; title: string }[];
 
   const { user } = useAuth();
 
@@ -166,7 +160,6 @@ export default function CreateCouponPage() {
         totalUsed: 0,
         linkedCourseIds: selectedCourses,
         linkedBundleIds: selectedBundles,
-        linkedCohortIds: selectedCohorts,
         status: data.status,
         createdById: user?.id,
         createdbyMail: user?.email,
@@ -197,14 +190,6 @@ export default function CreateCouponPage() {
     );
   };
 
-  const toggleCohortSelection = (cohortId: string) => {
-    setSelectedCohorts((prev) =>
-      prev.includes(cohortId)
-        ? prev.filter((id) => id !== cohortId)
-        : [...prev, cohortId]
-    );
-  };
-
   const toggleBundleSelection = (bundleId: string) => {
     setSelectedBundles((prev) =>
       prev.includes(bundleId)
@@ -215,10 +200,8 @@ export default function CreateCouponPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Website header */}
       <Header />
 
-      {/* Top bar like Create Bundle: Back and Title */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -253,9 +236,11 @@ export default function CreateCouponPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Coupon Code */}
-                <div>
-                  <Label>Coupon Code</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Tag className="w-4 h-4" />
+                    Coupon Code
+                  </Label>
                   <Input {...register("code")} placeholder="e.g. SAVE50" />
                   {existingCoupon && (
                     <p className="text-sm text-red-500">
@@ -269,9 +254,11 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Discount % */}
-                <div>
-                  <Label>Discount Percentage</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Percent className="w-4 h-4" />
+                    Discount Percentage
+                  </Label>
                   <Input
                     type="number"
                     {...register("discountPercentage", { valueAsNumber: true })}
@@ -283,9 +270,11 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Expiry */}
-                <div>
-                  <Label>Expiry Date</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Expiry Date
+                  </Label>
                   <Input type="date" {...register("expiryDate")} />
                   {errors.expiryDate && (
                     <p className="text-sm text-red-500">
@@ -294,9 +283,11 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Usage Limit */}
-                <div>
-                  <Label>Usage Limit</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Hash className="w-4 h-4" />
+                    Usage Limit
+                  </Label>
                   <Input
                     type="number"
                     {...register("usageLimit", { valueAsNumber: true })}
@@ -308,16 +299,48 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Select Courses */}
-                <div>
-                  <Label>Select Courses to Link</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Select Courses to Link
+                  </Label>
+
+                  <div className="mb-2">
+                    <Input
+                      placeholder="Search Courses"
+                      value={courseSearch}
+                      onChange={(e) => setCourseSearch(e.target.value)}
+                    />
+                  </div>
+
+                  {selectedCourseObjects.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {selectedCourseObjects.map(course => (
+                        <div
+                          key={course.id}
+                          className="flex items-center gap-2 bg-primary/10 px-2 py-1 rounded-md text-sm"
+                        >
+                          <span>{course.title}</span>
+
+                          <button
+                            type="button"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => toggleCourseSelection(course.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {loading ? (
-                    <p className="text-sm text-muted">Loading courses...</p>
-                  ) : courses.length === 0 ? (
-                    <p className="text-sm text-muted">No courses available.</p>
+                    <p className="text-sm">Loading courses...</p>
+                  ) : filteredCourses.length === 0 ? (
+                    <p className="text-sm">No courses available.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
-                      {courses.map((course) => (
+                      {filteredCourses.map((course) => (
                         <label
                           key={course.id}
                           className="flex items-center space-x-2"
@@ -335,40 +358,15 @@ export default function CreateCouponPage() {
                   )}
                 </div>
 
-                {/* Select Cohorts */}
-                <div>
-                  <Label>Select cohort to Link</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Select Bundles to Link
+                  </Label>
                   {loading ? (
-                    <p className="text-sm text-muted">Loading cohort...</p>
-                  ) : cohorts.length === 0 ? (
-                    <p className="text-sm text-muted">No cohort available.</p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
-                      {cohorts.map((course) => (
-                        <label
-                          key={course.id}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            checked={selectedCohorts.includes(course.id)}
-                            onCheckedChange={() =>
-                              toggleCohortSelection(course.id)
-                            }
-                          />
-                          <span className="text-sm">{course.title}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Select Bundle */}
-                <div>
-                  <Label>Select bundle to Link</Label>
-                  {loading ? (
-                    <p className="text-sm text-muted">Loading bundle...</p>
+                    <p className="text-sm">Loading bundle...</p>
                   ) : bundles.length === 0 ? (
-                    <p className="text-sm text-muted">No bundle available.</p>
+                    <p className="text-sm">No bundle available.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border p-2 rounded-md">
                       {bundles.map((bundle) => (
@@ -390,7 +388,7 @@ export default function CreateCouponPage() {
                 </div>
 
                 {/* Status */}
-                <div>
+                <div className="space-y-2">
                   <Label>Status</Label>
                   <Select
                     defaultValue={COUPON_STATUS.ACTIVE}
@@ -435,4 +433,4 @@ export default function CreateCouponPage() {
       </main>
     </div>
   );
-}
+};

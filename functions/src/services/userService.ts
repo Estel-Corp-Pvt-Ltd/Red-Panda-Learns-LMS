@@ -103,6 +103,54 @@ class UserService {
     }
   }
 
+
+/**
+ * Retrieves all user emails in chunks from the Firestore database
+ * @param chunkSize - The number of emails to fetch per request
+ */
+async  getAllUserEmails(chunkSize: number = 100): Promise<string[]> {
+  let emails: string[] = [];
+  let lastVisible = null;
+
+  try {
+    // Start with the first query, limiting to chunkSize
+    let query = db.collection(COLLECTION.USERS).orderBy("email").limit(chunkSize);
+
+    // Fetch in chunks until no more data is left
+    while (true) {
+      // Execute the query to get a batch of users
+      const snapshot = await query.get();
+
+      // If the snapshot is empty, we've reached the end of the collection
+      if (snapshot.empty) {
+        break;
+      }
+
+      // Collect emails from the current batch
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.email) {
+          emails.push(data.email);
+        }
+      });
+
+      // Update the last visible document for the next batch
+      lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+      // If there are more documents, fetch the next chunk
+      query = db.collection(COLLECTION.USERS)
+        .orderBy("email")
+        .startAfter(lastVisible) // Start from the last document of the previous batch
+        .limit(chunkSize);
+    }
+
+    // Return the list of emails
+    return emails;
+  } catch (error) {
+    console.error("Failed to fetch all user emails:", error);
+    return [];
+  }}
+
   /**
    * Retrieves a single user by ID.
    */

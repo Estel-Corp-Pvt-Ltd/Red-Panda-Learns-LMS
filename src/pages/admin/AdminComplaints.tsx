@@ -106,7 +106,8 @@ const AdminComplaints = () => {
         categoryFilter,
         paginationState,
         itemsPerPage,
-        isComplaintOpen
+        isComplaintOpen,
+        isComplaintRedressalMailSenderOpen
     ]);
 
     const loadComplaints = async () => {
@@ -433,6 +434,7 @@ const AdminComplaints = () => {
                         open={isComplaintRedressalMailSenderOpen}
                         onOpenChange={setIsComplaintRedressalMailSenderOpen}
                         complaint={selectedComplaint}
+                        userId={user.id}
                     />
                 }
             </Card>

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BACKEND_URL } from "@/config";
 import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
+import { complaintService } from "@/services/complaintService";
 import { Complaint } from "@/types/complaint";
 import { useState } from "react";
 
@@ -18,12 +19,14 @@ interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     complaint: Complaint;
+    userId: string;
 };
 
 export function ComplaintRedressalMailSenderModal({
     open,
     onOpenChange,
     complaint,
+    userId,
 }: Props) {
 
     const [subject, setSubject] = useState(`Update regarding complaint #${complaint.id}`);
@@ -63,10 +66,20 @@ export function ComplaintRedressalMailSenderModal({
             const jsonResponse = await response.json();
 
             if (jsonResponse.success) {
-                toast({ title: "Complaint redressal email sent ✅" });
                 setSubject("");
                 setMessage("");
                 onOpenChange(false);
+                const response = await complaintService.resolveComplaint(complaint.id, userId);
+                if (response.success) {
+                    toast({
+                        title: "Complaint redressal email sent ✅ & complaint Resolved"
+                    });
+                } else {
+                    toast({
+                        title: "Failed to resolve complaint",
+                        variant: "destructive"
+                    });
+                }
             } else {
                 throw new Error(jsonResponse.error);
             }

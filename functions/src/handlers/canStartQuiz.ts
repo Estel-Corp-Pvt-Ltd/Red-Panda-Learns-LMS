@@ -89,4 +89,4 @@ export const canStartQuizHandler = async (req: functions.https.CallableRequest) 
     }
 };
 
-export const canStartQuiz = functions.https.onCall({ cors: ["https://vizuara.ai", "http://localhost:8080"] }, canStartQuizHandler);
+export const canStartQuiz = functions.https.onCall({ cors: ["https://vizuara.ai", "http://localhost:8080", "https://vizuara-ai-labs-dev.web.app"] }, canStartQuizHandler);
