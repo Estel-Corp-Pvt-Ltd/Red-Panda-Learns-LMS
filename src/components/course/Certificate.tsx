@@ -4,9 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -14,6 +14,7 @@ const Certificate: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -33,15 +34,15 @@ const Certificate: React.FC = () => {
           const enrollment = enrollmentResult.data;
           setEnrollmentData(enrollment);
 
-          // ✅ Fetch completion date using userId + courseId
           const completionResult =
-            await learningProgressService.getFormattedCompletionDate(
+            await learningProgressService.getFormattedCompletionDateAndCertificateId(
               enrollment.userId,
               enrollment.courseId
             );
 
           if (completionResult.success) {
-            setCompletionDate(completionResult.data);
+            setCompletionDate(completionResult.data.completionDate);
+            setCertificateId(completionResult.data.certificateId);
           }
         }
       } catch (error) {
@@ -185,6 +186,15 @@ const Certificate: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200 p-4 print:p-0">
       {/* Action Buttons */}
       <div className="fixed top-6 right-6 z-50 flex gap-3 print-button">
+        <Link to={`/certificate/public/view/${certificateId}`}>
+          <Button
+            variant="outline"
+            className="bg-secondary text-black hover:text-secondary hover:bg-primary"
+          >
+            <Share2 fill="black" className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        </Link>
         <Button
           onClick={handleDownloadAsImage}
           disabled={isPrinting}

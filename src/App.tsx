@@ -91,6 +91,7 @@ import AdminCommentApproval from "./pages/admin/AdminCommentApproval";
 import Certificate from "./components/course/Certificate";
 import AdminCertificateRequests from "./pages/admin/AdminCertificateRequests";
 import UserComplaints from "./pages/UserComplaints";
+import PublicCertificate from "./components/course/PublicCertificate";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -129,6 +130,12 @@ const App = () => (
                           >
                             <Certificate />
                           </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/certificate/public/view/:certificateId"
+                        element={
+                          <PublicCertificate />
                         }
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
