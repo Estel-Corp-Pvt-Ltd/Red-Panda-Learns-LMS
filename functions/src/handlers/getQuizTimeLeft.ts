@@ -48,6 +48,11 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
         const now = admin.firestore.Timestamp.now().toMillis();
         let endMillis = endAt ? endAt.toMillis() : now + durationMs;
 
+        // Ensure endMillis does not exceed scheduled start + duration
+        if (endMillis > now + durationMs) {
+            endMillis = now + durationMs;
+        }
+
         // Find Quiz attempt time
         const quizSubmissionSnap = await admin
             .firestore()
@@ -60,7 +65,7 @@ export const getQuizTimeLeftHandler = async (req: functions.https.CallableReques
         if (!quizSubmissionSnap.empty) {
             const submissionData = quizSubmissionSnap.docs[0].data() as any;
             if (submissionData.startedAt) {
-                const startedAtMillis = new Date(submissionData.startedAt).getTime();   // it is Firebase FieldValue
+                const startedAtMillis = submissionData.startedAt?.toMillis() ?? new Date(submissionData.startedAt).getTime();   // it is Firebase FieldValue
                 const adjustedEndMillis = startedAtMillis + durationMs;
                 if (adjustedEndMillis < endMillis) {
                     endMillis = adjustedEndMillis;
