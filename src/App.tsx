@@ -43,7 +43,7 @@ const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAuthor"))
-const AdminCreateAnnouncement = lazy(()=> import("@/pages/admin/AdminAddAnnouncements"))
+const AdminCreateAnnouncement = lazy(() => import("@/pages/admin/AdminAddAnnouncements"))
 //Instructor
 
 import InstructorLayout from "./components/InstructorLayout";
@@ -91,6 +91,7 @@ import AdminCommentApproval from "./pages/admin/AdminCommentApproval";
 import Certificate from "./components/course/Certificate";
 import AdminCertificateRequests from "./pages/admin/AdminCertificateRequests";
 import UserComplaints from "./pages/UserComplaints";
+import PublicCertificate from "./components/course/PublicCertificate";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -122,7 +123,20 @@ const App = () => (
                       />
                       <Route
                         path="/certificate/:enrollmentId"
-                        element={<Certificate />}
+                        element={
+                          <AuthGuard
+                            requireAuth
+                            requireEnrollmentOrAdmin
+                          >
+                            <Certificate />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/certificate/public/view/:certificateId"
+                        element={
+                          <PublicCertificate />
+                        }
                       />
                       <Route path="/courses/" element={<CoursesPage />} />
                       <Route
@@ -453,7 +467,7 @@ const App = () => (
                           </AuthGuard>
                         }
                       />
-                       <Route
+                      <Route
                         path="/admin/announcements"
                         element={
                           <AuthGuard requireAdmin>
