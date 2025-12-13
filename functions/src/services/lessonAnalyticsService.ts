@@ -1,6 +1,8 @@
 
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { courseService } from './courseService';
+import { lessonService } from './lessonService';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -78,6 +80,18 @@ class LessonAnalyticsService {
         // Update existing document
         await docRef.update(updateData);
       } else {
+        if (!update.lessonTitle) {
+          const lessonResult = await lessonService.getLessonById(lessonId);
+          if (lessonResult.success && lessonResult.data) {
+            update.lessonTitle = lessonResult.data.title;
+          }
+        }
+        if (!update.courseTitle) {
+          const courseResult = await courseService.getCourseById(courseId);
+          if (courseResult.success && courseResult.data) {
+            update.courseTitle = courseResult.data.title;
+          }
+        }
         // Create new document
         await docRef.set({
           courseId,

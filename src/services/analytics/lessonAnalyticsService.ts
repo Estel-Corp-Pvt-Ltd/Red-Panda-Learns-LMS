@@ -9,7 +9,9 @@ import {
   serverTimestamp,
   query,
   where,
-  getDocs
+  getDocs,
+  orderBy,
+  limit as firestoreLimit
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { logError } from "@/utils/logger";
@@ -135,17 +137,19 @@ class LessonAnalyticsService {
   }
 
   /**
-   * Get top lessons by time spent
+   * Get top lessons by time spent (server-side sorting and limiting)
    */
-  async getTopLessonsByTimeSpent(limit: number = 10): Promise<LessonAnalytics[]> {
+  async getTopLessonsByTimeSpent(limitCount: number = 10): Promise<LessonAnalytics[]> {
     try {
-      // Note: Firestore doesn't support ordering by multiple fields in queries
-      // You might want to use a Cloud Function for complex aggregations
-      // This is a simplified implementation
-      const q = collection(db, this.collectionName);
-      const querySnapshot = await getDocs(q);
+      // Use Firestore's orderBy and limit for server-side sorting
+      const q = query(
+        collection(db, this.collectionName),
+        orderBy("totalTimeSpentSec", "desc"),
+        firestoreLimit(limitCount)
+      );
 
-      const allAnalytics: LessonAnalytics[] = [];
+      const querySnapshot = await getDocs(q);
+      const analytics: LessonAnalytics[] = [];
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -154,7 +158,7 @@ class LessonAnalyticsService {
           ? (data.totalCompletions / data.totalLearners) * 100
           : 0;
 
-        allAnalytics.push({
+        analytics.push({
           id: doc.id,
           courseId: data.courseId,
           courseTitle: data.courseTitle,
@@ -170,10 +174,7 @@ class LessonAnalyticsService {
         });
       });
 
-      // Sort by totalTimeSpentSec descending
-      return allAnalytics
-        .sort((a, b) => b.totalTimeSpentSec - a.totalTimeSpentSec)
-        .slice(0, limit);
+      return analytics;
     } catch (error) {
       logError("getTopLessonsByTimeSpent", error);
       return [];

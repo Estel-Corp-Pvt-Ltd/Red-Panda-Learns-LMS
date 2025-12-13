@@ -9,7 +9,9 @@ import {
   query,
   where,
   getDocs,
-  Firestore
+  Firestore,
+  orderBy,
+  limit as firestoreLimit
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { logError } from "@/utils/logger";
@@ -155,21 +157,37 @@ class CourseAnalyticsService {
   }
 
   /**
-   * Get top courses by time spent
+   * Get top courses by time spent (server-side sorting and limiting)
    */
-  async getTopCoursesByTimeSpent(limit: number = 10): Promise<CourseAnalytics[]> {
+  async getTopCoursesByTimeSpent(limitCount: number = 10): Promise<CourseAnalytics[]> {
     try {
-      const allAnalytics = await this.getAllCourseAnalytics();
+      // Use Firestore's orderBy and limit for server-side sorting
+      const q = query(
+        collection(db, this.collectionName),
+        orderBy("totalTimeSpentSec", "desc"),
+        firestoreLimit(limitCount)
+      );
 
-      // Sort by totalTimeSpentSec descending and add formatted time
-      return allAnalytics
-        .sort((a, b) => b.totalTimeSpentSec - a.totalTimeSpentSec)
-        .slice(0, limit)
-        .map(course => ({
-          ...course,
-          totalLessonsCompleted: course.coursesCompleted, // Ensure compatibility
-          formattedTime: formatSeconds(course.totalTimeSpentSec),
-        }));
+      const querySnapshot = await getDocs(q);
+      const analytics: CourseAnalytics[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        analytics.push({
+          id: doc.id,
+          courseId: data.courseId,
+          courseTitle: data.courseTitle,
+          totalTimeSpentSec: data.totalTimeSpentSec || 0,
+          coursesCompleted: data.coursesCompleted || 0,
+          totalLessonsCompleted: data.coursesCompleted || 0,
+          totalLearners: data.totalLearners || 0,
+          formattedTime: formatSeconds(data.totalTimeSpentSec || 0),
+          updatedAt: data.updatedAt?.toDate() || null,
+          createdAt: data.createdAt?.toDate() || null,
+        });
+      });
+
+      return analytics;
     } catch (error) {
       logError("getTopCoursesByTimeSpent", error);
       return [];
@@ -178,26 +196,44 @@ class CourseAnalyticsService {
 
   /**
    * Get courses with highest completion rate
+   * Note: Completion rate is computed, so we need to fetch all and sort client-side
    */
-  async getTopCoursesByCompletionRate(limit: number = 10): Promise<CourseAnalytics[]> {
+  async getTopCoursesByCompletionRate(limitCount: number = 10): Promise<CourseAnalytics[]> {
     try {
-      const allAnalytics = await this.getAllCourseAnalytics();
+      // Fetch all courses (or implement a stored avgCompletionRate field for server-side sorting)
+      const q = collection(db, this.collectionName);
+      const querySnapshot = await getDocs(q);
+      const analytics: CourseAnalytics[] = [];
 
-      // Sort by avgCompletionRate descending
-      return allAnalytics.map(course => {
-        const avgCompletionRate = course.totalLearners > 0
-          ? (course.coursesCompleted / course.totalLearners) * 100
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const avgCompletionRate = data.totalLearners > 0
+          ? (data.coursesCompleted / data.totalLearners) * 100
           : 0;
-        return {
-          ...course,
-          avgCompletionRate,
-          formattedTime: formatSeconds(course.totalTimeSpentSec),
-          completionRate: avgCompletionRate, // Alias for compatibility
-        };
-      })
-        .filter(course => course.avgCompletionRate && course.avgCompletionRate > 0)
+
+        // Only include courses with learners
+        if (avgCompletionRate > 0) {
+          analytics.push({
+            id: doc.id,
+            courseId: data.courseId,
+            courseTitle: data.courseTitle,
+            totalTimeSpentSec: data.totalTimeSpentSec || 0,
+            coursesCompleted: data.coursesCompleted || 0,
+            totalLessonsCompleted: data.coursesCompleted || 0,
+            totalLearners: data.totalLearners || 0,
+            avgCompletionRate,
+            formattedTime: formatSeconds(data.totalTimeSpentSec || 0),
+            completionRate: avgCompletionRate,
+            updatedAt: data.updatedAt?.toDate() || null,
+            createdAt: data.createdAt?.toDate() || null,
+          });
+        }
+      });
+
+      // Sort by avgCompletionRate descending and limit
+      return analytics
         .sort((a, b) => (b.avgCompletionRate || 0) - (a.avgCompletionRate || 0))
-        .slice(0, limit);
+        .slice(0, limitCount);
     } catch (error) {
       logError("getTopCoursesByCompletionRate", error);
       return [];
