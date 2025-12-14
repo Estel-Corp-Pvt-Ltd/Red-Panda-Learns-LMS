@@ -9,7 +9,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-
+const SKIP_DOMAIN = "@vizuara.ai";
 class UserService {
   /**
    * Creates a new user in Firestore.
@@ -129,9 +129,11 @@ async  getAllUserEmails(chunkSize: number = 100): Promise<string[]> {
       // Collect emails from the current batch
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        if (data.email) {
-          emails.push(data.email);
+        const email : string | undefined = data.userEmail
+         if (email && !email.toLowerCase().endsWith(SKIP_DOMAIN)) {
+          emails.push(email);
         }
+        
       });
 
       // Update the last visible document for the next batch
