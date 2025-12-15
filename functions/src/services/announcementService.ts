@@ -1,6 +1,6 @@
 
 import { ok, fail, Result } from "../utils/response";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { AnnouncementStatus } from "../types/general";
 import {
   ANNOUNCEMENT_SCOPE,
@@ -11,6 +11,7 @@ import {
 import * as admin from "firebase-admin";
 import { Announcement } from "../types/announcements";
 import { v4 as uuidv4 } from 'uuid';
+import { logError } from "../utils/logger";
 
 // import { sendMail } from './email/sendMail'; // <-- Ensure this exists
 
@@ -216,6 +217,60 @@ async createCourseManualAnnouncemenet(params: {
       return fail("Failed to fetch announcement");
     }
   },
+
+
+
+/**
+ * Updates an existing announcement
+ */
+async updateAnnouncement(
+    announcementId: string,
+    updates: Partial<Pick<Announcement, "title" | "body">>
+): Promise<Result<void>> {
+    try {
+        const db = getFirestore();
+        const announcementRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
+
+        const doc = await announcementRef.get();
+        if (!doc.exists) {
+            return fail("Announcement not found");
+        }
+
+        await announcementRef.update({
+            ...updates,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        return ok(undefined);
+    } catch (error) {
+        console.error("❌ Error updating announcement:", error);
+        logError("AnnouncementService.updateAnnouncement", error);
+        return fail("Failed to update announcement");
+    }
+},
+
+/**
+ * Deletes an announcement
+ */
+async deleteAnnouncement(announcementId: string): Promise<Result<void>> {
+    try {
+        const db = getFirestore();
+        const announcementRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
+
+        const doc = await announcementRef.get();
+        if (!doc.exists) {
+            return fail("Announcement not found");
+        }
+
+        await announcementRef.delete();
+
+        return ok(undefined);
+    } catch (error) {
+        console.error("❌ Error deleting announcement:", error);
+        logError("AnnouncementService.deleteAnnouncement", error);
+        return fail("Failed to delete announcement");
+    }
+},
 
   /**
    * Example of another function to list announcements by course.
