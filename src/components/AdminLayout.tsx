@@ -194,7 +194,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col border-r z-40 transition-transform duration-300 ease-in-out bg-white border border-white/40 shadow-lg dark:bg-neutral-900 dark:border-white/10 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]",
+            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out bg-white dark:bg-neutral-900",
+            "border-r border-primary/10 dark:border-primary/20",
             sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
           )}
         >
