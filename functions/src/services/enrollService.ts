@@ -19,8 +19,9 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-const SKIP_DOMAIN = "@vizuara.ai";
+const SKIP_DOMAIN = "vizuara.ai";
 const SKIP_TEST = "test"
+const SKIP_EMAIL = "email"
 class EnrollmentService {
   /**
    * Generates a unique enrollment ID in the format: <userId>_<courseId>
@@ -225,8 +226,9 @@ async getCourseEnrolledEmails(courseId: string): Promise<string[]> {
 
         // ❌ Skip vizuara.ai emails
       if (email && 
-    !email.toLowerCase().endsWith(SKIP_DOMAIN) && 
-    !email.toLowerCase().includes(SKIP_TEST)) {
+    !email.toLowerCase().includes(SKIP_DOMAIN) && 
+    !email.toLowerCase().includes(SKIP_TEST) &&
+    !email.toLocaleLowerCase().includes(SKIP_EMAIL) ) {
     emails.push(email);
 }
       }
