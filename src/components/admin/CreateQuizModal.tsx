@@ -54,42 +54,42 @@ const CreateQuizModal = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    /** Combine date + time → Timestamp */
-    const getCombinedTimestamp = (date: string, time: string) => {
+    const IST_OFFSET_MINUTES = 5 * 60 + 30;
+
+    const buildTimestamp = (date: string, time: string) => {
         if (!date || !time) return null;
 
-        const [hours, minutes] = time.split(":").map(Number);
-        const combined = new Date(date);
-        combined.setHours(hours);
-        combined.setMinutes(minutes);
-        combined.setSeconds(0);
+        const [year, month, day] = date.split("-").map(Number);
+        const [hour, minute] = time.split(":").map(Number);
 
-        return Timestamp.fromDate(combined);
+        // Treat input as IST, convert to UTC
+        const istMillis = Date.UTC(year, month - 1, day, hour, minute);
+        const utcMillis = istMillis - IST_OFFSET_MINUTES * 60 * 1000;
+
+        return Timestamp.fromMillis(utcMillis);
     };
 
-    /** Calculate end date/time based on start date/time and duration */
-    const calculateEndDateTime = () => {
-        if (!scheduledDate || !scheduledTime || !durationMinutes) return { date: "", time: "" };
+    const resetForm = () => {
+        setTitle("");
+        setDescription("");
 
-        const startDateTime = getCombinedTimestamp(scheduledDate, scheduledTime);
-        if (!startDateTime) return { date: "", time: "" };
+        setAllowAllStudents(true);
+        setAllowedStudentEmails([]);
 
-        const startDate = startDateTime.toDate();
-        const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+        setPassingPercentage(40);
 
-        const dateStr = endDate.toISOString().split('T')[0];
-        const timeStr = endDate.toTimeString().slice(0, 5); // HH:MM format
+        setScheduledDate("");
+        setScheduledTime("");
+        setEndDate("");
+        setEndTime("");
 
-        return { date: dateStr, time: timeStr };
-    };
+        setDurationMinutes(30);
+        setEnableFreeNavigation(true);
 
-    /** Auto-fill end date/time when start date/time or duration changes */
-    const autoFillEndDateTime = () => {
-        const { date, time } = calculateEndDateTime();
-        if (date && time) {
-            setEndDate((prev) => prev > date ? prev : date);
-            setEndTime((prev) => prev > time ? prev : time);
-        }
+        setStatus(QUIZ_STATUS.DRAFT);
+
+        setError("");
+        setLoading(false);
     };
 
     const handleCreate = async () => {
@@ -98,29 +98,38 @@ const CreateQuizModal = ({
         if (!title.trim()) return setError("Title is required.");
         if (!courseId.trim()) return setError("Course ID is required.");
         if (!status) return setError("Status is required.");
+
         if (!scheduledDate || !scheduledTime)
             return setError("Both start date and time are required.");
-        if (!endDate || !endTime)
-            return setError("Both end date and time are required.");
+
         if (passingPercentage < 1 || passingPercentage > 100)
             return setError("Passing percentage must be 1–100.");
         if (durationMinutes <= 0)
             return setError("Duration must be greater than 0 minutes.");
 
-        const scheduledAt = getCombinedTimestamp(scheduledDate, scheduledTime);
-        const endAt = getCombinedTimestamp(endDate, endTime);
-
-        if (!scheduledAt || !endAt) return setError("Invalid date/time format.");
-
-        // Validate that end time is after start time
-        if (endAt.toDate() <= scheduledAt.toDate()) {
-            return setError("End time must be after start time.");
+        const scheduledAt = buildTimestamp(scheduledDate, scheduledTime);
+        if (!scheduledAt) {
+            return setError("Start date and time are required.");
         }
 
-        // Validate that duration matches the time range
-        const calculatedDuration = Math.round((endAt.toDate().getTime() - scheduledAt.toDate().getTime()) / (1000 * 60));
-        if (calculatedDuration < durationMinutes) {
-            return setError(`Duration (${durationMinutes} minutes) doesn't match the time range between start and end (${calculatedDuration} minutes).`);
+        let endAt: Timestamp | null = null;
+
+        if (endDate && endTime) {
+            endAt = buildTimestamp(endDate, endTime);
+            if (!endAt) {
+                return setError("Invalid end date/time.");
+            }
+
+            if (endAt.toMillis() <= scheduledAt.toMillis()) {
+                return setError("End time must be after start time.");
+            }
+        }
+
+        if (endAt) {
+            const maximumAllowedDuration = Math.round((endAt.toMillis() - scheduledAt.toMillis()) / (1000 * 60));
+            if (maximumAllowedDuration < durationMinutes) {
+                return setError(`Duration (${durationMinutes} minutes) doesn't match the time range between start and end (${maximumAllowedDuration} minutes).`);
+            }
         }
 
         setLoading(true);
@@ -158,11 +167,17 @@ const CreateQuizModal = ({
             return;
         }
 
+        resetForm();
         onClose();
     };
 
     return (
-        <Dialog open={open} onOpenChange={onClose}>
+        <Dialog open={open} onOpenChange={() => {
+            if (!open) {
+                resetForm();
+                onClose();
+            }
+        }}>
             <DialogContent className="max-w-2xl w-[95%] rounded-xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -253,7 +268,6 @@ const CreateQuizModal = ({
                                         value={scheduledDate}
                                         onChange={(e) => {
                                             setScheduledDate(e.target.value);
-                                            autoFillEndDateTime();
                                         }}
                                     />
                                 </div>
@@ -265,7 +279,6 @@ const CreateQuizModal = ({
                                         value={scheduledTime}
                                         onChange={(e) => {
                                             setScheduledTime(e.target.value);
-                                            autoFillEndDateTime();
                                         }}
                                     />
                                 </div>
@@ -276,7 +289,7 @@ const CreateQuizModal = ({
                         <div className="space-y-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                             <Label className="text-orange-700 font-semibold flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                End Time *
+                                End Time
                             </Label>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
@@ -312,7 +325,6 @@ const CreateQuizModal = ({
                                 onChange={(e) => {
                                     const newDuration = Number(e.target.value);
                                     setDurationMinutes(newDuration);
-                                    autoFillEndDateTime();
                                 }}
                             />
                         </div>

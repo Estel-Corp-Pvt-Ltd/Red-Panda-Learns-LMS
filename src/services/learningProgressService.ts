@@ -15,6 +15,7 @@ import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 
 import { COLLECTION, USER_ROLE } from "@/constants";
+import { Enrollment } from "@/types/enrollment";
 import { LearningProgress } from "@/types/learning-progress";
 import { formatDate } from "@/utils/date-time";
 
@@ -292,7 +293,8 @@ class LearningProgressService {
           certification: {
             issued: true,
             issuedAt: serverTimestamp(),
-            certificateId: `${userId}_${courseId}`,
+            // later do on server
+            certificateId: crypto.randomUUID(),
           },
           updatedAt: serverTimestamp(),
         }
@@ -309,10 +311,10 @@ class LearningProgressService {
     }
   }
 
-  async getFormattedCompletionDate(
+  async getFormattedCompletionDateAndCertificateId(
     userId: string,
     courseId: string
-  ): Promise<Result<string | null>> {
+  ): Promise<Result<{ completionDate: string | null; certificateId: string | null; }>> {
     try {
       const progressQuery = query(
         collection(db, COLLECTION.LEARNING_PROGRESS),
@@ -330,7 +332,10 @@ class LearningProgressService {
 
       const formattedDate = formatDate(progressData.completionDate);
 
-      return ok(formattedDate === "—" ? null : formattedDate);
+      return ok({
+        completionDate: formattedDate === "—" ? null : formattedDate,
+        certificateId: progressData.certification.certificateId
+      });
 
     } catch (error: any) {
       logError(
@@ -339,6 +344,109 @@ class LearningProgressService {
       );
       return fail(
         "Failed to fetch completion date.",
+        error.code || error.message
+      );
+    }
+  }
+
+  /**
+ * Sets or updates the certification remark for a user's course progress.
+ *
+ * @param userId - ID of the student
+ * @param courseId - ID of the course
+ * @param remark - Optional remark text
+ */
+  async setCertificationRemark(
+    userId: string,
+    courseId: string,
+    remark: string | null
+  ): Promise<Result<boolean>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return fail("Learning progress not found");
+      }
+
+      const progressDoc = snapshot.docs[0];
+      const progressRef = progressDoc.ref;
+
+      await updateDoc(progressRef, {
+        certification: {
+          ...(progressDoc.data().certification || {}),
+          remark: remark || null,
+        },
+        updatedAt: serverTimestamp(),
+      });
+
+      return ok(true);
+
+    } catch (error: any) {
+      logError("LearningProgressService.setCertificationRemark", error);
+      return fail(
+        "Failed to update certification remark",
+        error.code || error.message
+      );
+    }
+  }
+
+  async getCertificateByCertificateId(certificateId: string) {
+    try {
+      const q = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("certification.certificateId", "==", certificateId),
+        where("certification.issued", "==", true)
+      );
+
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        return fail("Certificate not found");
+      }
+
+      const progressDoc = snapshot.docs[0];
+      const progressData = progressDoc.data() as LearningProgress;
+
+      const { userId, courseId, completionDate } = progressData;
+
+      const enrollmentId = `${userId}_${courseId}`;
+
+      const enrollmentRef = doc(
+        db,
+        COLLECTION.ENROLLMENTS,
+        enrollmentId
+      );
+      const enrollmentSnap = await getDoc(enrollmentRef);
+
+      if (!enrollmentSnap.exists()) {
+        return fail("Enrollment not found");
+      }
+
+      const enrollment: Enrollment = {
+        id: enrollmentSnap.id,
+        ...(enrollmentSnap.data() as Enrollment),
+      };
+
+      const formattedCompletionDate = formatDate(completionDate);
+
+      return ok({
+        userName: enrollment.userName,
+        courseName: enrollment.courseName,
+        completionDate: formattedCompletionDate === "—" ? null : formattedCompletionDate,
+      });
+    } catch (error: any) {
+      logError(
+        "LearningProgressService.getCertificateByCertificateId",
+        error
+      );
+      return fail(
+        "Failed to fetch certificate",
         error.code || error.message
       );
     }

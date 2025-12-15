@@ -60,6 +60,24 @@ const EditQuizModal = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const IST_OFFSET_MINUTES = 5 * 60 + 30;
+
+    const timestampToIST = (ts: Timestamp) => {
+        const date = new Date(ts.toMillis() + IST_OFFSET_MINUTES * 60 * 1000);
+
+        const yyyy = date.getUTCFullYear();
+        const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(date.getUTCDate()).padStart(2, "0");
+
+        const hh = String(date.getUTCHours()).padStart(2, "0");
+        const min = String(date.getUTCMinutes()).padStart(2, "0");
+
+        return {
+            date: `${yyyy}-${mm}-${dd}`,
+            time: `${hh}:${min}`
+        };
+    };
+
     useEffect(() => {
         if (!quiz || !open) return;
 
@@ -71,24 +89,16 @@ const EditQuizModal = ({
         setEnableFreeNavigation(quiz.enableFreeNavigation ?? true);
         setStatus(quiz.status || QUIZ_STATUS.DRAFT);
 
-        // Set scheduled date/time
         if (quiz.scheduledAt) {
-            const d = quiz.scheduledAt.toDate();
-            setScheduledDate(d.toISOString().split("T")[0]);
-            setScheduledTime(d.toTimeString().slice(0, 5));
+            const d = timestampToIST(quiz.scheduledAt);
+            setScheduledDate(d.date);
+            setScheduledTime(d.time);
         }
 
-        // Set end date/time
         if (quiz.endAt) {
-            const d = quiz.endAt.toDate();
-            setEndDate(d.toISOString().split("T")[0]);
-            setEndTime(d.toTimeString().slice(0, 5));
-        } else if (quiz.scheduledAt && quiz.durationMinutes) {
-            // Calculate end time if not explicitly set
-            const startDate = quiz.scheduledAt.toDate();
-            const endDate = new Date(startDate.getTime() + quiz.durationMinutes * 60000);
-            setEndDate(endDate.toISOString().split("T")[0]);
-            setEndTime(endDate.toTimeString().slice(0, 5));
+            const d = timestampToIST(quiz.endAt);
+            setEndDate(d.date);
+            setEndTime(d.time);
         }
 
         if (quiz.allowedStudentUids?.length > 0) {
@@ -103,39 +113,17 @@ const EditQuizModal = ({
 
     }, [quiz, open]);
 
-    const getCombinedTimestamp = (date: string, time: string) => {
+    const buildTimestamp = (date: string, time: string) => {
         if (!date || !time) return null;
 
-        const [hours, minutes] = time.split(":").map(Number);
-        const combined = new Date(date);
-        combined.setHours(hours);
-        combined.setMinutes(minutes);
-        combined.setSeconds(0);
+        const [year, month, day] = date.split("-").map(Number);
+        const [hour, minute] = time.split(":").map(Number);
 
-        return Timestamp.fromDate(combined);
-    };
+        // Treat input as IST, convert to UTC
+        const istMillis = Date.UTC(year, month - 1, day, hour, minute);
+        const utcMillis = istMillis - IST_OFFSET_MINUTES * 60 * 1000;
 
-    const calculateEndDateTime = () => {
-        if (!scheduledDate || !scheduledTime || !durationMinutes) return { date: "", time: "" };
-
-        const startDateTime = getCombinedTimestamp(scheduledDate, scheduledTime);
-        if (!startDateTime) return { date: "", time: "" };
-
-        const startDate = startDateTime.toDate();
-        const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
-
-        const dateStr = endDate.toISOString().split('T')[0];
-        const timeStr = endDate.toTimeString().slice(0, 5);
-
-        return { date: dateStr, time: timeStr };
-    };
-
-    const autoFillEndDateTime = () => {
-        const { date, time } = calculateEndDateTime();
-        if (date && time) {
-            setEndDate(date);
-            setEndTime(time);
-        }
+        return Timestamp.fromMillis(utcMillis);
     };
 
     const addEmailsFromInput = () => {
@@ -162,22 +150,42 @@ const EditQuizModal = ({
     };
 
     const validateForm = () => {
+        setError("");
+
         if (!title.trim()) return "Title is required.";
-        if (!scheduledDate || !scheduledTime) return "Both start date and time are required.";
-        if (!endDate || !endTime) return "Both end date and time are required.";
-        if (passingPercentage < 1 || passingPercentage > 100) return "Passing percentage must be 1–100.";
-        if (durationMinutes <= 0) return "Duration must be greater than 0 minutes.";
+        if (!status) return "Status is required.";
 
-        const scheduledAt = getCombinedTimestamp(scheduledDate, scheduledTime);
-        const endAt = getCombinedTimestamp(endDate, endTime);
+        if (!scheduledDate || !scheduledTime)
+            return "Both start date and time are required.";
 
-        if (!scheduledAt || !endAt) return "Invalid date/time format.";
-        if (endAt.toDate() <= scheduledAt.toDate()) return "End time must be after start time.";
+        if (passingPercentage < 1 || passingPercentage > 100)
+            return "Passing percentage must be 1–100.";
+        if (durationMinutes <= 0)
+            return "Duration must be greater than 0 minutes.";
 
-        // Validate duration matches the time range
-        const calculatedDuration = Math.round((endAt.toDate().getTime() - scheduledAt.toDate().getTime()) / (1000 * 60));
-        if (calculatedDuration < durationMinutes) {
-            return `Duration (${durationMinutes} minutes) doesn't match the time range between start and end (${calculatedDuration} minutes).`;
+        const scheduledAt = buildTimestamp(scheduledDate, scheduledTime);
+        if (!scheduledAt) {
+            return "Start date and time are required.";
+        }
+
+        let endAt: Timestamp | null = null;
+
+        if (endDate && endTime) {
+            endAt = buildTimestamp(endDate, endTime);
+            if (!endAt) {
+                return "Invalid end date/time.";
+            }
+
+            if (endAt.toMillis() <= scheduledAt.toMillis()) {
+                return "End time must be after start time.";
+            }
+        }
+
+        if (endAt) {
+            const maximumAllowedDuration = Math.round((endAt.toMillis() - scheduledAt.toMillis()) / (1000 * 60));
+            if (maximumAllowedDuration < durationMinutes) {
+                return `Duration (${durationMinutes} minutes) doesn't match the time range between start and end (${maximumAllowedDuration} minutes).`;
+            }
         }
 
         return null;
@@ -208,10 +216,10 @@ const EditQuizModal = ({
             allowedStudentUids = response.data;
         }
 
-        const scheduledAt = getCombinedTimestamp(scheduledDate, scheduledTime);
-        const endAt = getCombinedTimestamp(endDate, endTime);
+        const scheduledAt = buildTimestamp(scheduledDate, scheduledTime);
+        const endAt = buildTimestamp(endDate, endTime);
 
-        if (!scheduledAt || !endAt) {
+        if (!scheduledAt) {
             setLoading(false);
             setError("Invalid date/time configuration.");
             return;
@@ -224,13 +232,11 @@ const EditQuizModal = ({
             allowedStudentUids,
             passingPercentage,
             scheduledAt,
-            endAt,
+            endAt: endAt,
             durationMinutes,
             enableFreeNavigation,
             status
         };
-
-
 
         const result = await quizService.updateQuiz(quiz.id, updated);
         setLoading(false);
@@ -248,7 +254,6 @@ const EditQuizModal = ({
             case 'start':
                 if (value.date) setScheduledDate(value.date);
                 if (value.time) setScheduledTime(value.time);
-                autoFillEndDateTime();
                 break;
             case 'end':
                 if (value.date) setEndDate(value.date);
@@ -256,7 +261,6 @@ const EditQuizModal = ({
                 break;
             case 'duration':
                 setDurationMinutes(value);
-                autoFillEndDateTime();
                 break;
         }
     };
@@ -367,7 +371,7 @@ const EditQuizModal = ({
                         <div className="space-y-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                             <Label className="text-orange-700 font-semibold flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                End Time *
+                                End Time
                             </Label>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">

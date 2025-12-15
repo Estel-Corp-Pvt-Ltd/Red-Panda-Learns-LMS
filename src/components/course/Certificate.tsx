@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { USER_ROLE } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import ShareCertificate from "./ShareCertificate";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -12,8 +15,16 @@ const Certificate: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (user.id !== enrollmentId.split("_")[0] && user.role !== USER_ROLE.ADMIN) {
+      navigate("/dashboard");
+    }
+
     const fetchEnrollmentAndCompletion = async () => {
       setIsLoading(true);
       try {
@@ -24,15 +35,15 @@ const Certificate: React.FC = () => {
           const enrollment = enrollmentResult.data;
           setEnrollmentData(enrollment);
 
-          // ✅ Fetch completion date using userId + courseId
           const completionResult =
-            await learningProgressService.getFormattedCompletionDate(
+            await learningProgressService.getFormattedCompletionDateAndCertificateId(
               enrollment.userId,
               enrollment.courseId
             );
 
           if (completionResult.success) {
-            setCompletionDate(completionResult.data);
+            setCompletionDate(completionResult.data.completionDate);
+            setCertificateId(completionResult.data.certificateId);
           }
         }
       } catch (error) {
@@ -176,6 +187,7 @@ const Certificate: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200 p-4 print:p-0">
       {/* Action Buttons */}
       <div className="fixed top-6 right-6 z-50 flex gap-3 print-button">
+        <ShareCertificate certificateId={certificateId} />
         <Button
           onClick={handleDownloadAsImage}
           disabled={isPrinting}

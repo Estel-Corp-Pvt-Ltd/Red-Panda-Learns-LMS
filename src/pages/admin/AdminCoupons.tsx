@@ -21,6 +21,7 @@ import {
 import { COUPON_STATUS } from '@/constants';
 import { toast } from '@/components/ui/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import CouponDetailModal from '@/components/CouponDetailModal';
 
 interface PaginatedCoupons {
   data: Coupon[];
@@ -39,8 +40,11 @@ const AdminCoupons: React.FC = () => {
     hasPreviousPage: false,
     totalCount: 0
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const [isCouponDetailOpen, setIsCouponDetailOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [paginationState, setPaginationState] = useState({
     cursor: null as any,
@@ -276,7 +280,12 @@ const AdminCoupons: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/coupon/${coupon.id}`)}
+                            onClick={
+                              () => {
+                                setSelectedCoupon(coupon);
+                                setIsCouponDetailOpen(true);
+                              }
+                            }
                             title="View Coupon"
                           >
                             <Eye className="h-4 w-4" />
@@ -354,6 +363,15 @@ const AdminCoupons: React.FC = () => {
         variant="danger"
         dismissible
       />
+
+      {
+        selectedCoupon &&
+        <CouponDetailModal
+          open={isCouponDetailOpen}
+          onOpenChange={setIsCouponDetailOpen}
+          coupon={selectedCoupon}
+        />
+      }
     </AdminLayout>
   );
 };

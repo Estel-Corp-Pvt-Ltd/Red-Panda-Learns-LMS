@@ -4,11 +4,11 @@ import { CertificateRequest } from "@/types/certificate-request";
 import { CertificateRequestStatus } from "@/types/general";
 import { LearningProgress } from "@/types/learning-progress";
 import { logError } from "@/utils/logger";
+import { getFullName } from "@/utils/name";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
-import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, Query, query, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
+import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, query, QueryConstraint, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
-import { getFullName } from "@/utils/name";
 
 class CertificateRequestService {
 
@@ -88,8 +88,9 @@ class CertificateRequestService {
         }
     }
 
-    async getPendingCertificateRequests(
-        options: PaginationOptions<CertificateRequest> = {}
+    async getCertificateRequests(
+        options: PaginationOptions<CertificateRequest> = {},
+        status: CertificateRequestStatus | "ALL"
     ): Promise<Result<PaginatedResult<CertificateRequest>>> {
         try {
             const {
@@ -98,10 +99,23 @@ class CertificateRequestService {
                 cursor = null,
             } = options;
 
-            let q: Query = query(
-                collection(db, COLLECTION.CERTIFICATE_REQUESTS),
-                where("status", "==", CERTIFICATE_REQUEST_STATUS.PENDING)
-            );
+            const constraints: QueryConstraint[] = [];
+
+            if (status && status !== "ALL") {
+                constraints.push(where("status", "==", status));
+            }
+
+            if (cursor) {
+                constraints.push(
+                    pageDirection === "next"
+                        ? startAfter(cursor)
+                        : endBefore(cursor)
+                );
+            }
+
+            constraints.push(limit(itemsPerPage));
+
+            let q = query(collection(db, COLLECTION.CERTIFICATE_REQUESTS), ...constraints);
 
             const countSnapshot = await getCountFromServer(q);
             const totalCount = countSnapshot.data().count;
@@ -193,10 +207,6 @@ class CertificateRequestService {
             }
 
             const request = requestSnap.data() as CertificateRequest;
-
-            if (request.status !== CERTIFICATE_REQUEST_STATUS.PENDING) {
-                return fail("Request already processed");
-            }
 
             const issueResult = await learningProgressService.issueCertificate(
                 request.userId,
