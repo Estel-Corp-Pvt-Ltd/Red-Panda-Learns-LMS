@@ -30,6 +30,10 @@
       {
         "source": "**",
         "destination": "/index.html"
+      },
+      {
+        "source": "/certificate/preview/**",
+        "function": "certificatePreview"
       }
     ]
   },
