@@ -13,10 +13,8 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
 
     if (!certificateId) return null;
 
-    const previewUrl = `${window.location.origin}/certificate/preview/${certificateId}`;
-    const encodedPreviewUrl = encodeURIComponent(previewUrl);
-
     const publicUrl = `${window.location.origin}/certificate/public/view/${certificateId}`;
+    const encodedPublicUrl = encodeURIComponent(publicUrl);
 
     const handleShare = (
         platform: "whatsapp" | "x" | "email" | "facebook" | "linkedin"
@@ -45,11 +43,11 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
                 break;
 
             case "facebook":
-                url = `https://www.facebook.com/sharer/sharer.php?u=${encodedPreviewUrl}`;
+                url = `https://www.facebook.com/sharer/sharer.php?u=${encodedPublicUrl}`;
                 break;
 
             case "linkedin":
-                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedPreviewUrl}`;
+                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedPublicUrl}`;
                 break;
         }
 
