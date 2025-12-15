@@ -177,7 +177,7 @@ async createCourseManualAnnouncemenet(params: {
 
     const announcement: Announcement = {
       id: announcementId,
-      scope: ANNOUNCEMENT_SCOPE.GLOBAL,
+      scope: ANNOUNCEMENT_SCOPE.COURSE,
       courseId,
       title,
       body,
