@@ -9,6 +9,7 @@ import * as admin from "firebase-admin";
 import { buildGlobalNotificationEmail } from '../../services/email/templates/globalAnnouncements';
 import { userService } from '../../services/userService';
 import { buildCourseManualAnnouncementEmail } from "../../services/email/templates/courseManual";
+import { logger } from "firebase-functions";
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -82,6 +83,7 @@ export async function sendAnnouncementEmailonDocCreation(
         );
         subject = `Announcement: ${announcement.title}`;
         recipients = await userService.getAllUserEmails();
+        logger.info("The recipents are",recipients)
         emailType = EMAIL_TYPE.GENERAL_ALL;
         break;
       }

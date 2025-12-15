@@ -12,6 +12,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { TransactionLineItem } from "../types/transaction";
 import { courseService } from "./courseService";
 import { User } from "../types/user";
+import { logger } from "firebase-functions";
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -205,44 +206,81 @@ async getCourseEnrolledEmails(courseId: string): Promise<string[]> {
   const emails: string[] = [];
   let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
-  try {
-    while (true) {
-      let q = db
-        .collection(COLLECTION.ENROLLMENTS)
-        .where("courseId", "==", courseId)
-        .orderBy(admin.firestore.FieldPath.documentId())
-        .limit(CHUNK_SIZE);
+try {
+  while (true) {
+    let q = db
+      .collection(COLLECTION.ENROLLMENTS)
+      .where("courseId", "==", courseId)
+      .orderBy(admin.firestore.FieldPath.documentId())
+      .limit(CHUNK_SIZE);
 
-      if (lastDoc) {
-        q = q.startAfter(lastDoc);
-      }
-
-      const snapshot = await q.get();
-      if (snapshot.empty) break;
-
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const email: string | undefined = data.userEmail;
-
-        // ❌ Skip vizuara.ai emails
-      if (email && 
-    !email.toLowerCase().includes(SKIP_DOMAIN) && 
-    !email.toLowerCase().includes(SKIP_TEST) &&
-    !email.toLocaleLowerCase().includes(SKIP_EMAIL) ) {
-    emails.push(email);
-}
-      }
-
-      lastDoc = snapshot.docs[snapshot.docs.length - 1];
-
-      if (snapshot.size < CHUNK_SIZE) break;
+    if (lastDoc) {
+      q = q.startAfter(lastDoc);
     }
 
-    return emails;
-  } catch (error) {
-    console.error("Error fetching course enrolled emails:", error);
-    return [];
+    const snapshot = await q.get();
+
+    logger.info("Enrollment batch fetched", {
+      courseId,
+      size: snapshot.size,
+    });
+
+    if (snapshot.empty) break;
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+
+      logger.debug("Enrollment doc fields", {
+        docId: doc.id,
+        keys: Object.keys(data),
+        email: data.email,
+        userEmail: data.userEmail,
+        userId: data.userId,
+      });
+
+      const email: string | undefined = data.email ?? data.userEmail;
+
+      if (!email) {
+        logger.debug("Skipping enrollment: no email", { docId: doc.id });
+        continue;
+      }
+
+      const lowerEmail = email.toLowerCase();
+
+      if (lowerEmail.includes(SKIP_DOMAIN)) {
+        logger.debug("Skipping enrollment email (domain)", email);
+        continue;
+      }
+
+      if (lowerEmail.includes(SKIP_TEST)) {
+        logger.debug("Skipping enrollment email (test)", email);
+        continue;
+      }
+
+      if (lowerEmail.includes(SKIP_EMAIL)) {
+        logger.debug("Skipping enrollment email (explicit)", email);
+        continue;
+      }
+
+      emails.push(email);
+    }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+    if (snapshot.size < CHUNK_SIZE) break;
   }
+
+  functions.logger.info("Final enrolled email count", {
+    courseId,
+    count: emails.length,
+  });
+
+  return emails;
+} catch (error) {
+  logger.error("Error fetching course enrolled emails", error);
+  return [];
+}
+
 }
 
 }
