@@ -39,6 +39,8 @@ import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMai
 import { sendComplaintRedressalMailWorker } from "./workers/sendComplaintRedressalMailWorker";
 import { deleteAnnouncement } from "./handlers/announcements/deleteAnnouncements";
 import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement";
+import { showCertificatePreview } from "./handlers/showCertificatePreview";
+
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -78,4 +80,5 @@ export {
   sendComplaintRedressalMailWorker,
   updateAnnouncement,
   deleteAnnouncement,
+  showCertificatePreview,
 };
