@@ -33,6 +33,9 @@ const DummyCurriculumBuilderPage = lazy(
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminBannersPage = lazy(() => import("./pages/admin/AdminBannersPage"));
+const CreateBannerPage = lazy(() => import("./pages/admin/CreateBannerPage"));
+const EditBannerPage = lazy(() => import("./pages/admin/EditBannerPage"));
 const AdminComplaints = lazy(() => import("./pages/admin/AdminComplaints"));
 const AdminOrganizations = lazy(
   () => import("./pages/admin/AdminOrganizations")
@@ -43,7 +46,7 @@ const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAuthor"))
-const AdminCreateAnnouncement = lazy(()=> import("@/pages/admin/AdminManageAnnouncements"))
+const AdminCreateAnnouncement = lazy(() => import("@/pages/admin/AdminManageAnnouncements"))
 //Instructor
 
 import InstructorLayout from "./components/InstructorLayout";
@@ -316,6 +319,30 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminCoupons />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/banners"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminBannersPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/create-banner"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <CreateBannerPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/edit-banner/:bannerId"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <EditBannerPage />
                           </AuthGuard>
                         }
                       />

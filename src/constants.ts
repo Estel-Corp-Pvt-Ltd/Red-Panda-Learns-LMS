@@ -179,6 +179,11 @@ export const ANNOUNCEMENT_STATUS = {
   ARCHIVED: "ARCHIVED",
 } as const;
 
+export const BANNER_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+} as const;
+
 
 
 // --- PAYPAL WEBHOOK EVENTS ---
@@ -410,7 +415,8 @@ export const COLLECTION = {
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions",
   ANNOUNCEMENTS: "Announcements",
-  CERTIFICATE_REQUESTS: "CertificateRequests"
+  CERTIFICATE_REQUESTS: "CertificateRequests",
+  BANNERS: "Banners"
 } as const;
 
 export const ATTRIBUTE_TYPE = {
