@@ -3,8 +3,10 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
 import { assignmentService } from "@/services/assignmentService";
 import { userService } from "@/services/userService";
+import { courseService } from "@/services/courseService";
 import { Assignment } from "@/types/assignment";
 import { User } from "@/types/user";
+import { Course } from "@/types/course";
 import {
   Card,
   CardContent,
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -44,21 +47,9 @@ import {
   X,
   Calendar,
   Edit,
-  Trash2,
   Pause,
+  BookOpen,
 } from "lucide-react";
-
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 
 import { USER_ROLE } from "@/constants";
 import { formatDateTime } from "@/utils/date-time";
@@ -86,6 +77,12 @@ type DeadlineFilterType =
 
 const ManageAssignmentAuthors: React.FC = () => {
   const { toast } = useToast();
+
+  // Course state
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [courseSearchQuery, setCourseSearchQuery] = useState("");
 
   // Assignments state
   const [assignments, setAssignments] = useState<PaginatedAssignments>({
@@ -116,7 +113,6 @@ const ManageAssignmentAuthors: React.FC = () => {
 
   // Search and Filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [authorFilter, setAuthorFilter] = useState<AuthorFilterType>("all");
   const [deadlineFilter, setDeadlineFilter] =
     useState<DeadlineFilterType>("all");
@@ -129,89 +125,64 @@ const ManageAssignmentAuthors: React.FC = () => {
     null
   );
 
-  //  Selection state for assignments to pause reminders
+  // Selection state for assignments to pause reminders
   const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>(
     []
   );
   const [isPausingReminders, setIsPausingReminders] = useState(false);
 
-  const toggleSelectAssignment = (id: string) => {
-    setSelectedAssignmentIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAllDisplayed = (displayed: Assignment[]) => {
-    const displayedIds = displayed.map((a) => a.id);
-    const allSelected = displayedIds.every((id) =>
-      selectedAssignmentIds.includes(id)
-    );
-    if (allSelected) {
-      setSelectedAssignmentIds((prev) =>
-        prev.filter((id) => !displayedIds.includes(id))
-      );
-    } else {
-      setSelectedAssignmentIds((prev) =>
-        Array.from(new Set([...prev, ...displayedIds]))
-      );
-    }
-  };
-
-  // >>> pause reminders handler
-  const handlePauseReminders = async () => {
-    if (selectedAssignmentIds.length === 0) return;
-
-    setIsPausingReminders(true);
+  // ----------------- Load Courses -----------------
+  const loadCourses = async () => {
+    setIsLoadingCourses(true);
     try {
-      const idToken = await authService.getToken();
-      await pauseReminderService.pauseReminder(
-        { assignmentIds: selectedAssignmentIds },
-        idToken
-      );
-
-      toast({
-        title: "Success",
-        description: `Reminders paused for ${selectedAssignmentIds.length} assignment(s)`,
-      });
-
-      setSelectedAssignmentIds([]);
-    } catch (error: any) {
+      const result = await courseService.getAllCourses();
+      setCourses(result);
+    } catch (error) {
+      console.error("Error loading courses:", error);
       toast({
         title: "Error",
-        description: error?.message || "Failed to pause reminders",
+        description: "Failed to load courses",
         variant: "destructive",
       });
     } finally {
-      setIsPausingReminders(false);
+      setIsLoadingCourses(false);
     }
   };
 
-  // ----------------- Edit Assignment Handler -----------------
-  const handleEditAssignment = (assignmentId: string) => {
-    setEditingAssignmentId(assignmentId);
-    setIsEditModalOpen(true);
-  };
+  // ----------------- Load Staff Users -----------------
+  const loadStaffUsers = async () => {
+    setIsLoadingStaff(true);
+    try {
+      const result = await userService.getNonStudentUsers();
 
-  const handleAssignmentUpdated = (updatedAssignment: Assignment) => {
-    // Update the assignment in local state
-    setAssignments((prev) => ({
-      ...prev,
-      data: prev.data.map((assignment) =>
-        assignment.id === updatedAssignment.id
-          ? { ...assignment, ...updatedAssignment }
-          : assignment
-      ),
-    }));
-
-    toast({
-      title: "Success",
-      description: "Assignment updated successfully",
-    });
+      if (result.success) {
+        setStaffUsers(result.data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load staff users",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load staff users",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingStaff(false);
+    }
   };
 
   // ----------------- Build Filters -----------------
   const buildFilters = () => {
     const filters: { field: keyof Assignment; op: any; value: any }[] = [];
+
+    // Always filter by selected course
+    if (selectedCourseId) {
+      filters.push({ field: "courseId", op: "==", value: selectedCourseId });
+    }
 
     if (authorFilter === "null") {
       filters.push({ field: "authorId", op: "==", value: "" });
@@ -223,6 +194,72 @@ const ManageAssignmentAuthors: React.FC = () => {
 
     return filters;
   };
+
+  // ----------------- Load Assignments for Selected Course -----------------
+  const loadAssignments = async (options = {}, useFilters = true) => {
+    if (!selectedCourseId) {
+      setAssignments({
+        data: [],
+        hasNextPage: false,
+        hasPreviousPage: false,
+        totalCount: 0,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const filters = useFilters ? buildFilters() : [{ field: "courseId" as keyof Assignment, op: "==", value: selectedCourseId }];
+
+      const result = await assignmentService.getAssignments(filters, {
+        limit: 10,
+        orderBy: { field: "createdAt", direction: "desc" },
+        ...options,
+      });
+
+      if (result.success) {
+        setAssignments({
+          ...result.data,
+          totalCount: result.data.totalCount,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load assignments",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load assignments",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ----------------- Handle Course Selection -----------------
+  const handleCourseSelect = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    // Reset pagination and filters when course changes
+    setPaginationState({
+      cursor: null,
+      pageDirection: "next",
+      currentPage: 1,
+    });
+    setPendingChanges(new Map());
+    setSelectedAssignmentIds([]);
+    setSearchQuery("");
+    setAuthorFilter("all");
+    setDeadlineFilter("all");
+  };
+
+  // ----------------- Filter Courses by Search -----------------
+  const filteredCourses = courses.filter((course) =>
+    course.title?.toLowerCase().includes(courseSearchQuery.toLowerCase())
+  );
 
   // ----------------- Client-side Deadline Filter -----------------
   const applyDeadlineFilter = (assignmentsList: Assignment[]): Assignment[] => {
@@ -275,86 +312,86 @@ const ManageAssignmentAuthors: React.FC = () => {
     });
   };
 
-  // ----------------- Load Assignments -----------------
-  const loadAssignments = async (options = {}, useFilters = true) => {
-    setIsLoading(true);
-    try {
-      const filters = useFilters ? buildFilters() : [];
+  // ----------------- Get Filtered/Searched Data -----------------
+  const getDisplayedAssignments = () => {
+    let result = assignments.data;
+    result = applyDeadlineFilter(result);
+    result = applySearchFilter(result);
+    return result;
+  };
 
-      const result = await assignmentService.getAssignments(filters, {
-        limit: 10,
-        orderBy: { field: "createdAt", direction: "desc" },
-        ...options,
-      });
+  // ----------------- Toggle Selection -----------------
+  const toggleSelectAssignment = (id: string) => {
+    setSelectedAssignmentIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
-      if (result.success) {
-        setAssignments({
-          ...result.data,
-          totalCount: result.data.totalCount,
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load assignments",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load assignments",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+  const toggleSelectAllDisplayed = (displayed: Assignment[]) => {
+    const displayedIds = displayed.map((a) => a.id);
+    const allSelected = displayedIds.every((id) =>
+      selectedAssignmentIds.includes(id)
+    );
+    if (allSelected) {
+      setSelectedAssignmentIds((prev) =>
+        prev.filter((id) => !displayedIds.includes(id))
+      );
+    } else {
+      setSelectedAssignmentIds((prev) =>
+        Array.from(new Set([...prev, ...displayedIds]))
+      );
     }
   };
 
-  // ----------------- Load Staff Users -----------------
-  const loadStaffUsers = async () => {
-    setIsLoadingStaff(true);
-    try {
-      const result = await userService.getNonStudentUsers();
+  // ----------------- Pause Reminders Handler -----------------
+  const handlePauseReminders = async () => {
+    if (selectedAssignmentIds.length === 0) return;
 
-      if (result.success) {
-        setStaffUsers(result.data);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load staff users",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+    setIsPausingReminders(true);
+    try {
+      const idToken = await authService.getToken();
+      await pauseReminderService.pauseReminder(
+        { assignmentIds: selectedAssignmentIds },
+        idToken
+      );
+
+      toast({
+        title: "Success",
+        description: `Reminders paused for ${selectedAssignmentIds.length} assignment(s)`,
+      });
+
+      setSelectedAssignmentIds([]);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to load staff users",
+        description: error?.message || "Failed to pause reminders",
         variant: "destructive",
       });
     } finally {
-      setIsLoadingStaff(false);
+      setIsPausingReminders(false);
     }
   };
 
-  // ----------------- Search by Title -----------------
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      toast({
-        title: "Info",
-        description: "Enter a search term to search",
-      });
-      return;
-    }
+  // ----------------- Edit Assignment Handler -----------------
+  const handleEditAssignment = (assignmentId: string) => {
+    setEditingAssignmentId(assignmentId);
+    setIsEditModalOpen(true);
+  };
 
-    setIsSearching(true);
-    setPaginationState({
-      cursor: null,
-      pageDirection: "next",
-      currentPage: 1,
+  const handleAssignmentUpdated = (updatedAssignment: Assignment) => {
+    setAssignments((prev) => ({
+      ...prev,
+      data: prev.data.map((assignment) =>
+        assignment.id === updatedAssignment.id
+          ? { ...assignment, ...updatedAssignment }
+          : assignment
+      ),
+    }));
+
+    toast({
+      title: "Success",
+      description: "Assignment updated successfully",
     });
-
-    await loadAssignments({ limit: 100 });
-    setIsSearching(false);
   };
 
   // ----------------- Apply Filters -----------------
@@ -379,7 +416,9 @@ const ManageAssignmentAuthors: React.FC = () => {
       currentPage: 1,
     });
 
-    await loadAssignments({}, false);
+    if (selectedCourseId) {
+      await loadAssignments({}, false);
+    }
   };
 
   // ----------------- Update Active Filters Count -----------------
@@ -438,31 +477,6 @@ const ManageAssignmentAuthors: React.FC = () => {
       return newChanges;
     });
   };
-  // ----------------- Delete Assignment -----------------
-
-  //   const handleDeleteAssignment = async (id: string) => {
-  //   const result = await assignmentService.deleteAssignment(id);
-
-  //   if (result.success) {
-  //     // Remove from UI immediately
-  //     setAssignments(prev => ({
-  //       ...prev,
-  //       data: prev.data.filter(a => a.id !== id),
-  //       totalCount: prev.totalCount - 1,
-  //     }));
-
-  //     toast({
-  //       title: "Deleted",
-  //       description: "Assignment deleted successfully",
-  //     });
-  //   } else {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to delete assignment",
-  //       variant: "destructive",
-  //     });
-  //   }
-  // };
 
   // ----------------- Save Single Assignment -----------------
   const saveAssignmentAuthor = async (assignmentId: string) => {
@@ -616,29 +630,33 @@ const ManageAssignmentAuthors: React.FC = () => {
     return { label: "Upcoming", variant: "secondary" as const };
   };
 
-  // ----------------- Get Filtered/Searched Data -----------------
-  const getDisplayedAssignments = () => {
-    let result = assignments.data;
-    result = applyDeadlineFilter(result);
-    result = applySearchFilter(result);
-    return result;
+  const getSelectedCourseName = () => {
+    const course = courses.find((c) => c.id === selectedCourseId);
+    return course?.title || "";
   };
 
   // ----------------- Initial Load -----------------
   useEffect(() => {
-    loadAssignments();
+    loadCourses();
     loadStaffUsers();
   }, []);
 
+  // ----------------- Load Assignments when Course Changes -----------------
+  useEffect(() => {
+    if (selectedCourseId) {
+      loadAssignments();
+    }
+  }, [selectedCourseId]);
+
   // ----------------- Loading State -----------------
-  if ((isLoading || isLoadingStaff) && assignments.data.length === 0) {
+  if (isLoadingCourses || isLoadingStaff) {
     return (
       <AdminLayout>
         <Card>
           <CardContent className="flex justify-center items-center py-8">
             <div className="text-center">
               <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-              <p className="mt-2">Loading assignments and staff...</p>
+              <p className="mt-2">Loading courses and staff...</p>
             </div>
           </CardContent>
         </Card>
@@ -659,9 +677,9 @@ const ManageAssignmentAuthors: React.FC = () => {
                 Manage Assignment Authors
               </CardTitle>
               <CardDescription>
-                Assign authors to assignments.
-                {assignments.totalCount > 0 &&
-                  ` Total: ${assignments.totalCount} assignments`}
+                Select a course to manage assignment authors.
+                {selectedCourseId && assignments.totalCount > 0 &&
+                  ` Total: ${assignments.totalCount} assignments in this course`}
                 {pendingChanges.size > 0 && (
                   <Badge variant="outline" className="ml-2">
                     {pendingChanges.size} unsaved changes
@@ -671,115 +689,195 @@ const ManageAssignmentAuthors: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2"
-              >
-                <Filter className="h-4 w-4" />
-                Filters
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetFilters();
-                  setPendingChanges(new Map());
-                  setSelectedAssignmentIds([]);
-                }}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                />
-                Reset
-              </Button>
-
-              {/* >>> Bulk Pause Reminders button */}
-              <Button
-                variant="outline"
-                onClick={handlePauseReminders}
-                disabled={
-                  selectedAssignmentIds.length === 0 || isPausingReminders
-                }
-                className="flex items-center gap-2"
-              >
-                {isPausingReminders ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Pausing...
-                  </>
-                ) : (
-                  <>
-                    <Pause className="h-4 w-4" />
-                    Pause Reminders
-                    {selectedAssignmentIds.length > 0 && (
-                      <Badge variant="secondary" className="ml-1">
-                        {selectedAssignmentIds.length}
-                      </Badge>
-                    )}
-                  </>
-                )}
-              </Button>
-
-              {pendingChanges.size > 0 && (
+            {selectedCourseId && (
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
-                  onClick={saveAllChanges}
-                  disabled={isBulkSaving}
+                  variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center gap-2"
                 >
-                  {isBulkSaving ? (
+                  <Filter className="h-4 w-4" />
+                  Filters
+                  {activeFiltersCount > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {activeFiltersCount}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    resetFilters();
+                    setPendingChanges(new Map());
+                    setSelectedAssignmentIds([]);
+                  }}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                  />
+                  Reset
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={handlePauseReminders}
+                  disabled={
+                    selectedAssignmentIds.length === 0 || isPausingReminders
+                  }
+                  className="flex items-center gap-2"
+                >
+                  {isPausingReminders ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
+                      Pausing...
                     </>
                   ) : (
                     <>
-                      <Save className="h-4 w-4" />
-                      Save All ({pendingChanges.size})
+                      <Pause className="h-4 w-4" />
+                      Pause Reminders
+                      {selectedAssignmentIds.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {selectedAssignmentIds.length}
+                        </Badge>
+                      )}
                     </>
                   )}
                 </Button>
+
+                {pendingChanges.size > 0 && (
+                  <Button
+                    onClick={saveAllChanges}
+                    disabled={isBulkSaving}
+                    className="flex items-center gap-2"
+                  >
+                    {isBulkSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        Save All ({pendingChanges.size})
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Course Selection */}
+          <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">
+                    <BookOpen className="h-4 w-4 inline mr-2" />
+                    Select Course
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search courses..."
+                        value={courseSearchQuery}
+                        onChange={(e) => setCourseSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <Select
+                  value={selectedCourseId}
+                  onValueChange={handleCourseSelect}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a course to view its assignments..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {filteredCourses.length === 0 ? (
+                      <div className="py-4 text-center text-sm text-muted-foreground">
+                        No courses found
+                      </div>
+                    ) : (
+                      filteredCourses.map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            <span>{course.title}</span>
+                            <Badge variant="outline" className="text-xs ml-2">
+                              {course.status}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedCourseId && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="default">
+                    Selected: {getSelectedCourseName()}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCourseId("");
+                      setAssignments({
+                        data: [],
+                        hasNextPage: false,
+                        hasPreviousPage: false,
+                        totalCount: 0,
+                      });
+                      setPendingChanges(new Map());
+                      setSelectedAssignmentIds([]);
+                    }}
+                    className="h-6 px-2"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Clear
+                  </Button>
+                </div>
               )}
             </div>
           </div>
 
           {/* Search and Filters Panel */}
-          {showFilters && (
+          {showFilters && selectedCourseId && (
             <div className="mt-4 p-4 border rounded-lg bg-muted/50 space-y-4">
               {/* Search Row */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-1 block">
-                    Search
+                    Search Assignments
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                       placeholder="Search by title, ID, or author name..."
                       className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <Button
-                      onClick={handleSearch}
-                      disabled={isSearching}
-                      size="sm"
-                    >
-                      {isSearching ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Search className="h-4 w-4" />
-                      )}
-                    </Button>
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -972,359 +1070,353 @@ const ManageAssignmentAuthors: React.FC = () => {
         </CardHeader>
 
         <CardContent>
-          {/* Staff Users Summary */}
-          <div className="mb-4 p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              <span>
-                {staffUsers.length} staff members available:{" "}
-                {staffUsers.filter((u) => u.role === USER_ROLE.ADMIN).length}{" "}
-                Admins,{" "}
-                {staffUsers.filter((u) => u.role === USER_ROLE.TEACHER).length}{" "}
-                Teachers,{" "}
-                {
-                  staffUsers.filter((u) => u.role === USER_ROLE.INSTRUCTOR)
-                    .length
-                }{" "}
-                Instructors
-              </span>
-            </div>
-          </div>
-
-          {/* Results Summary */}
-          {(searchQuery.trim() ||
-            authorFilter !== "all" ||
-            deadlineFilter !== "all") && (
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-                <Filter className="h-4 w-4" />
-                <span>
-                  Showing {displayedAssignments.length} of{" "}
-                  {assignments.data.length} loaded assignments
-                  {activeFiltersCount > 0 &&
-                    ` (${activeFiltersCount} filter${
-                      activeFiltersCount > 1 ? "s" : ""
-                    } active)`}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {displayedAssignments.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-semibold">
-                No assignments found
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {activeFiltersCount > 0
-                  ? "Try adjusting your filters or search query."
-                  : "Create some assignments first."}
+          {/* No Course Selected State */}
+          {!selectedCourseId && (
+            <div className="text-center py-12">
+              <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">Select a Course</h3>
+              <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+                Choose a course from the dropdown above to view and manage its assignments.
+                You can search for courses by name.
               </p>
-              {activeFiltersCount > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="mt-4"
-                >
-                  Clear Filters
-                </Button>
-              )}
             </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4"
-                          onChange={() =>
-                            toggleSelectAllDisplayed(displayedAssignments)
-                          }
-                          checked={
-                            displayedAssignments.length > 0 &&
-                            displayedAssignments.every((a) =>
-                              selectedAssignmentIds.includes(a.id)
-                            )
-                          }
-                        />
-                      </TableHead>
-                      <TableHead className="min-w-[200px]">
-                        Assignment
-                      </TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Deadline</TableHead>
-                      <TableHead>Current Author</TableHead>
-                      <TableHead className="min-w-[250px]">
-                        Select Author
-                      </TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {displayedAssignments.map((assignment) => {
-                      const deadlineStatus = getDeadlineStatus(
-                        assignment.deadline
-                      );
-
-                      return (
-                        <TableRow
-                          key={assignment.id}
-                          className={
-                            hasChanges(assignment.id)
-                              ? "bg-yellow-50 dark:bg-yellow-900/10"
-                              : ""
-                          }
-                        >
-                          <TableCell>
-  <input
-    type="checkbox"
-    className="h-4 w-4"
-    checked={selectedAssignmentIds.includes(assignment.id)}
-    onChange={() => toggleSelectAssignment(assignment.id)}
-  />
-</TableCell>
-                          <TableCell>
-                            <div className="flex items-start gap-3">
-                              <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
-                                <FileText className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <div className="font-medium">
-                                  {assignment.title}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {assignment.id}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm">
-                              {formatDateTime(assignment.createdAt)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-sm">
-                                {formatDateTime(assignment.deadline)}
-                              </span>
-                              <Badge
-                                variant={deadlineStatus.variant}
-                                className="text-xs w-fit"
-                              >
-                                {deadlineStatus.label}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {assignment.authorId ? (
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                <span className="text-sm">
-                                  {getAuthorName(assignment.authorId) ||
-                                    assignment.authorId}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-orange-500" />
-                                <span className="text-sm text-muted-foreground">
-                                  Not assigned
-                                </span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={getCurrentAuthorId(assignment)}
-                              onValueChange={(value) =>
-                                handleAuthorChange(assignment.id, value)
-                              }
-                              disabled={savingAssignments.has(assignment.id)}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select author..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {staffUsers.map((user) => (
-                                  <SelectItem key={user.id} value={user.id}>
-                                    <div className="flex items-center gap-2">
-                                      <span>
-                                        {user.firstName} {user.lastName}
-                                      </span>
-                                      <Badge
-                                        variant={getRoleBadgeVariant(user.role)}
-                                        className="text-xs"
-                                      >
-                                        {user.role}
-                                      </Badge>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              {/* {Delete Assignment} */}
-                              {/* <AlertDialog>
-  <AlertDialogTrigger asChild>
-    <Button
-      variant="ghost"
-      size="sm"
-      title="Delete Assignment"
-    >
-      <Trash2 className="h-4 w-4" />
-    </Button>
-  </AlertDialogTrigger>
-
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-      <AlertDialogDescription>
-        This action cannot be undone. This will permanently delete the assignment.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-
-    <AlertDialogFooter>
-      <AlertDialogCancel>Cancel</AlertDialogCancel>
-      <AlertDialogAction
-        onClick={() => handleDeleteAssignment(assignment.id)}
-        className="bg-red-600 hover:bg-red-700"
-      >
-        Delete
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog> */}
-
-                              {/* Edit Button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleEditAssignment(assignment.id)
-                                }
-                                title="Edit Assignment"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-
-                              {/* Save Author Button */}
-                              <Button
-                                variant={
-                                  hasChanges(assignment.id)
-                                    ? "default"
-                                    : "ghost"
-                                }
-                                size="sm"
-                                onClick={() =>
-                                  saveAssignmentAuthor(assignment.id)
-                                }
-                                disabled={
-                                  !hasChanges(assignment.id) ||
-                                  savingAssignments.has(assignment.id)
-                                }
-                                title="Save Author"
-                              >
-                                {savingAssignments.has(assignment.id) ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Save className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination Controls */}
-              <div className="flex flex-col sm:flex-row items-center justify-between space-x-0 sm:space-x-2 space-y-2 sm:space-y-0 py-4 border-t mt-4">
-                <div className="flex-1 text-sm text-muted-foreground text-center sm:text-left">
-                  Showing {displayedAssignments.length} of{" "}
-                  {assignments.totalCount} assignments
-                  {` • Page ${paginationState.currentPage}`}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviousPage}
-                    disabled={!assignments.hasPreviousPage || isLoading}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPage}
-                    disabled={!assignments.hasNextPage || isLoading}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
           )}
 
-          {/* Pending Changes Summary */}
-          {pendingChanges.size > 0 && (
-            <div className="mt-4 p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 rounded-lg">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-                    Unsaved Changes
-                  </h4>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    You have {pendingChanges.size} assignment(s) with pending
-                    author changes.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPendingChanges(new Map())}
-                  >
-                    Discard All
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={saveAllChanges}
-                    disabled={isBulkSaving}
-                  >
-                    {isBulkSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save All Changes
-                      </>
-                    )}
-                  </Button>
+          {/* Loading Assignments */}
+          {selectedCourseId && isLoading && assignments.data.length === 0 && (
+            <div className="text-center py-8">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+              <p className="mt-2">Loading assignments...</p>
+            </div>
+          )}
+
+          {/* Course Selected - Show Content */}
+          {selectedCourseId && !isLoading && (
+            <>
+              {/* Staff Users Summary */}
+              <div className="mb-4 p-3 bg-muted rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>
+                    {staffUsers.length} staff members available:{" "}
+                    {staffUsers.filter((u) => u.role === USER_ROLE.ADMIN).length}{" "}
+                    Admins,{" "}
+                    {staffUsers.filter((u) => u.role === USER_ROLE.TEACHER).length}{" "}
+                    Teachers,{" "}
+                    {
+                      staffUsers.filter((u) => u.role === USER_ROLE.INSTRUCTOR)
+                        .length
+                    }{" "}
+                    Instructors
+                  </span>
                 </div>
               </div>
-            </div>
+
+              {/* Results Summary */}
+              {(searchQuery.trim() ||
+                authorFilter !== "all" ||
+                deadlineFilter !== "all") && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                    <Filter className="h-4 w-4" />
+                    <span>
+                      Showing {displayedAssignments.length} of{" "}
+                      {assignments.data.length} loaded assignments
+                      {activeFiltersCount > 0 &&
+                        ` (${activeFiltersCount} filter${
+                          activeFiltersCount > 1 ? "s" : ""
+                        } active)`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {displayedAssignments.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-sm font-semibold">
+                    No assignments found
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {activeFiltersCount > 0
+                      ? "Try adjusting your filters or search query."
+                      : "This course has no assignments yet."}
+                  </p>
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetFilters}
+                      className="mt-4"
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-10">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              onChange={() =>
+                                toggleSelectAllDisplayed(displayedAssignments)
+                              }
+                              checked={
+                                displayedAssignments.length > 0 &&
+                                displayedAssignments.every((a) =>
+                                  selectedAssignmentIds.includes(a.id)
+                                )
+                              }
+                            />
+                          </TableHead>
+                          <TableHead className="min-w-[200px]">
+                            Assignment
+                          </TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Deadline</TableHead>
+                          <TableHead>Current Author</TableHead>
+                          <TableHead className="min-w-[250px]">
+                            Select Author
+                          </TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {displayedAssignments.map((assignment) => {
+                          const deadlineStatus = getDeadlineStatus(
+                            assignment.deadline
+                          );
+
+                          return (
+                            <TableRow
+                              key={assignment.id}
+                              className={
+                                hasChanges(assignment.id)
+                                  ? "bg-yellow-50 dark:bg-yellow-900/10"
+                                  : ""
+                              }
+                            >
+                              <TableCell>
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={selectedAssignmentIds.includes(assignment.id)}
+                                  onChange={() => toggleSelectAssignment(assignment.id)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-start gap-3">
+                                  <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                                    <FileText className="h-5 w-5 text-primary" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">
+                                      {assignment.title}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {assignment.id}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">
+                                  {formatDateTime(assignment.createdAt)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-sm">
+                                    {formatDateTime(assignment.deadline)}
+                                  </span>
+                                  <Badge
+                                    variant={deadlineStatus.variant}
+                                    className="text-xs w-fit"
+                                  >
+                                    {deadlineStatus.label}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {assignment.authorId ? (
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm">
+                                      {getAuthorName(assignment.authorId) ||
+                                        assignment.authorId}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                                    <span className="text-sm text-muted-foreground">
+                                      Not assigned
+                                    </span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={getCurrentAuthorId(assignment)}
+                                  onValueChange={(value) =>
+                                    handleAuthorChange(assignment.id, value)
+                                  }
+                                  disabled={savingAssignments.has(assignment.id)}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select author..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {staffUsers.map((user) => (
+                                      <SelectItem key={user.id} value={user.id}>
+                                        <div className="flex items-center gap-2">
+                                          <span>
+                                            {user.firstName} {user.lastName}
+                                          </span>
+                                          <Badge
+                                            variant={getRoleBadgeVariant(user.role)}
+                                            className="text-xs"
+                                          >
+                                            {user.role}
+                                          </Badge>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  {/* Edit Button */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleEditAssignment(assignment.id)
+                                    }
+                                    title="Edit Assignment"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+
+                                  {/* Save Author Button */}
+                                  <Button
+                                    variant={
+                                      hasChanges(assignment.id)
+                                        ? "default"
+                                        : "ghost"
+                                    }
+                                    size="sm"
+                                    onClick={() =>
+                                      saveAssignmentAuthor(assignment.id)
+                                    }
+                                    disabled={
+                                      !hasChanges(assignment.id) ||
+                                      savingAssignments.has(assignment.id)
+                                    }
+                                    title="Save Author"
+                                  >
+                                    {savingAssignments.has(assignment.id) ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Save className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between space-x-0 sm:space-x-2 space-y-2 sm:space-y-0 py-4 border-t mt-4">
+                    <div className="flex-1 text-sm text-muted-foreground text-center sm:text-left">
+                      Showing {displayedAssignments.length} of{" "}
+                      {assignments.totalCount} assignments
+                      {` • Page ${paginationState.currentPage}`}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousPage}
+                        disabled={!assignments.hasPreviousPage || isLoading}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={!assignments.hasNextPage || isLoading}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Pending Changes Summary */}
+              {pendingChanges.size > 0 && (
+                <div className="mt-4 p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 rounded-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                        Unsaved Changes
+                      </h4>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        You have {pendingChanges.size} assignment(s) with pending
+                        author changes.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPendingChanges(new Map())}
+                      >
+                        Discard All
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={saveAllChanges}
+                        disabled={isBulkSaving}
+                      >
+                        {isBulkSaving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Save All Changes
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Edit Assignment Modal */}
       <EditAssignmentModal
+        courseId={selectedCourseId}
         assignmentId={editingAssignmentId}
         isOpen={isEditModalOpen}
         onClose={() => {
