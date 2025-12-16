@@ -82,8 +82,6 @@ const StudentEnrollments: React.FC = () => {
         });
       }
 
-      console.log('Fetching enrollments with filters:', filters, { cursor, direction, pageLimit });
-
       const response = await enrollmentService.getEnrollments(filters, {
         limit: pageLimit,
         orderBy: { field: 'enrollmentDate', direction: 'desc' },
@@ -196,7 +194,6 @@ const StudentEnrollments: React.FC = () => {
       await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
       setSelectedEnrollments(new Set())
 
-      console.log(`Successfully ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activated' : 'deactivated'} ${selectedEnrollments.size} enrollments`)
     } catch (error) {
       console.error(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollments:`, error)
     } finally {
@@ -208,9 +205,7 @@ const StudentEnrollments: React.FC = () => {
   const handleUpdateEnrollmentStatus = async (enrollmentId: string, newStatus: EnrollmentStatus) => {
     try {
       await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
-      // Refresh the data
       await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
-      console.log(`Successfully ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activated' : 'deactivated'} enrollment ${enrollmentId}`)
     } catch (error) {
       console.error(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollment:`, error)
     }
