@@ -48,14 +48,27 @@ import {
   Calendar,
   Edit,
   Pause,
+  Play,
   BookOpen,
+  Bell,
+  BellOff,
+  Clock,
+  AlertTriangle,
+  Archive,
+  ArrowUpRight,
+  MoreHorizontal,
 } from "lucide-react";
 
-import { USER_ROLE } from "@/constants";
+import { USER_ROLE, NOTIFICATION_STATUS, COLLECTION } from "@/constants";
 import { formatDateTime } from "@/utils/date-time";
 import EditAssignmentModal from "@/components/admin/EditAssignmentModal";
 import { pauseReminderService } from "@/services/pauseReminderService";
 import { authService } from "@/services/authService";
+import { db } from "@/firebaseConfig";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { NotificationStatus } from "@/types/general";
+import { Separator } from "@/components/ui/separator";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface PaginatedAssignments {
   data: Assignment[];
@@ -74,6 +87,12 @@ type DeadlineFilterType =
   | "today"
   | "this-week"
   | "no-deadline";
+
+
+
+interface AssignmentNotificationStatus {
+  [assignmentId: string]: NotificationStatus | null;
+}
 
 const ManageAssignmentAuthors: React.FC = () => {
   const { toast } = useToast();
@@ -125,11 +144,144 @@ const ManageAssignmentAuthors: React.FC = () => {
     null
   );
 
-  // Selection state for assignments to pause reminders
+  // Selection state for assignments to pause/unpause reminders
   const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>(
     []
   );
   const [isPausingReminders, setIsPausingReminders] = useState(false);
+  const [isUnpausingReminders, setIsUnpausingReminders] = useState(false);
+
+  // Notification status state
+  const [notificationStatuses, setNotificationStatuses] = useState<AssignmentNotificationStatus>({});
+  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] = useState(false);
+
+  // ----------------- Load Notification Statuses -----------------
+  const loadNotificationStatuses = async (assignmentIds: string[]) => {
+    if (assignmentIds.length === 0) return;
+
+    setIsLoadingNotificationStatuses(true);
+    try {
+      const statusMap: AssignmentNotificationStatus = {};
+
+      // Query in batches of 10 (Firestore 'in' query limit)
+      const batchSize = 10;
+      for (let i = 0; i < assignmentIds.length; i += batchSize) {
+        const batch = assignmentIds.slice(i, i + batchSize);
+        
+        const q = query(
+          collection(db, COLLECTION.SUBMISSION_NOTIFICATION),
+          where("assignmentId", "in", batch)
+        );
+
+        const querySnapshot = await getDocs(q);
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const assignmentId = data.assignmentId;
+          const status = data.status as NotificationStatus;
+          
+          // If multiple records exist for same assignment, prioritize certain statuses
+          if (!statusMap[assignmentId] || 
+              status === NOTIFICATION_STATUS.PAUSED ||
+              (status === NOTIFICATION_STATUS.REMINDER_SCHEDULED && statusMap[assignmentId] !== NOTIFICATION_STATUS.PAUSED)) {
+            statusMap[assignmentId] = status;
+          }
+        });
+      }
+
+      // Set null for assignments without notification records
+      assignmentIds.forEach((id) => {
+        if (!(id in statusMap)) {
+          statusMap[id] = null;
+        }
+      });
+
+      setNotificationStatuses((prev) => ({ ...prev, ...statusMap }));
+    } catch (error) {
+      console.error("Error loading notification statuses:", error);
+      toast({
+        title: "Warning",
+        description: "Failed to load notification statuses",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingNotificationStatuses(false);
+    }
+  };
+  
+  // ----------------- Get Notification Status Badge -----------------
+  const getNotificationStatusBadge = (assignmentId: string) => {
+    const status = notificationStatuses[assignmentId];
+
+    if (status === undefined) {
+      return (
+        <Badge variant="outline" className="text-xs flex items-center gap-1">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Loading...
+        </Badge>
+      );
+    }
+
+    if (status === null) {
+      return (
+        <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
+          <Bell className="h-3 w-3" />
+          No Status
+        </Badge>
+      );
+    }
+
+    switch (status) {
+      case NOTIFICATION_STATUS.PAUSED:
+        return (
+          <Badge variant="destructive" className="text-xs flex items-center gap-1">
+            <BellOff className="h-3 w-3" />
+            Paused
+          </Badge>
+        );
+      case NOTIFICATION_STATUS.PENDING:
+        return (
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Pending
+          </Badge>
+        );
+      case NOTIFICATION_STATUS.REMINDER_SCHEDULED:
+        return (
+          <Badge variant="default" className="text-xs flex items-center gap-1 bg-blue-500">
+            <Bell className="h-3 w-3" />
+            Scheduled
+          </Badge>
+        );
+      case NOTIFICATION_STATUS.EVALUATED:
+        return (
+          <Badge variant="outline" className="text-xs flex items-center gap-1 text-green-600 border-green-600">
+            <CheckCircle className="h-3 w-3" />
+            Evaluated
+          </Badge>
+        );
+      case NOTIFICATION_STATUS.ARCHIVED:
+        return (
+          <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
+            <Archive className="h-3 w-3" />
+            Archived
+          </Badge>
+        );
+      case NOTIFICATION_STATUS.ERROR:
+        return (
+          <Badge variant="destructive" className="text-xs flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Error
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="text-xs">
+            {status}
+          </Badge>
+        );
+    }
+  };
 
   // ----------------- Load Courses -----------------
   const loadCourses = async () => {
@@ -179,7 +331,6 @@ const ManageAssignmentAuthors: React.FC = () => {
   const buildFilters = () => {
     const filters: { field: keyof Assignment; op: any; value: any }[] = [];
 
-    // Always filter by selected course
     if (selectedCourseId) {
       filters.push({ field: "courseId", op: "==", value: selectedCourseId });
     }
@@ -209,7 +360,9 @@ const ManageAssignmentAuthors: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const filters = useFilters ? buildFilters() : [{ field: "courseId" as keyof Assignment, op: "==", value: selectedCourseId }];
+      const filters = useFilters 
+        ? buildFilters() 
+        : [{ field: "courseId" as keyof Assignment, op: "==", value: selectedCourseId }];
 
       const result = await assignmentService.getAssignments(filters, {
         limit: 10,
@@ -222,6 +375,10 @@ const ManageAssignmentAuthors: React.FC = () => {
           ...result.data,
           totalCount: result.data.totalCount,
         });
+
+        // Load notification statuses for the fetched assignments
+        const assignmentIds = result.data.data.map((a: Assignment) => a.id);
+        loadNotificationStatuses(assignmentIds);
       } else {
         toast({
           title: "Error",
@@ -243,7 +400,6 @@ const ManageAssignmentAuthors: React.FC = () => {
   // ----------------- Handle Course Selection -----------------
   const handleCourseSelect = (courseId: string) => {
     setSelectedCourseId(courseId);
-    // Reset pagination and filters when course changes
     setPaginationState({
       cursor: null,
       pageDirection: "next",
@@ -254,6 +410,7 @@ const ManageAssignmentAuthors: React.FC = () => {
     setSearchQuery("");
     setAuthorFilter("all");
     setDeadlineFilter("all");
+    setNotificationStatuses({});
   };
 
   // ----------------- Filter Courses by Search -----------------
@@ -343,6 +500,23 @@ const ManageAssignmentAuthors: React.FC = () => {
     }
   };
 
+  // ----------------- Check if selected assignments have paused status -----------------
+  const getSelectedPausedCount = () => {
+    return selectedAssignmentIds.filter(
+      (id) => notificationStatuses[id] === NOTIFICATION_STATUS.PAUSED
+    ).length;
+  };
+
+  const getSelectedUnpausedCount = () => {
+    return selectedAssignmentIds.filter(
+      (id) => 
+        notificationStatuses[id] && 
+        notificationStatuses[id] !== NOTIFICATION_STATUS.PAUSED &&
+        notificationStatuses[id] !== NOTIFICATION_STATUS.EVALUATED &&
+        notificationStatuses[id] !== NOTIFICATION_STATUS.ARCHIVED
+    ).length;
+  };
+
   // ----------------- Pause Reminders Handler -----------------
   const handlePauseReminders = async () => {
     if (selectedAssignmentIds.length === 0) return;
@@ -360,6 +534,13 @@ const ManageAssignmentAuthors: React.FC = () => {
         description: `Reminders paused for ${selectedAssignmentIds.length} assignment(s)`,
       });
 
+      // Update local notification statuses
+      const updatedStatuses: AssignmentNotificationStatus = {};
+      selectedAssignmentIds.forEach((id) => {
+        updatedStatuses[id] = NOTIFICATION_STATUS.PAUSED;
+      });
+      setNotificationStatuses((prev) => ({ ...prev, ...updatedStatuses }));
+
       setSelectedAssignmentIds([]);
     } catch (error: any) {
       toast({
@@ -370,6 +551,65 @@ const ManageAssignmentAuthors: React.FC = () => {
     } finally {
       setIsPausingReminders(false);
     }
+  };
+
+  // ----------------- Unpause Reminders Handler -----------------
+  const handleUnpauseReminders = async () => {
+    if (selectedAssignmentIds.length === 0) return;
+
+    // Filter only paused assignments
+    const pausedAssignmentIds = selectedAssignmentIds.filter(
+      (id) => notificationStatuses[id] === NOTIFICATION_STATUS.PAUSED
+    );
+
+    if (pausedAssignmentIds.length === 0) {
+      toast({
+        title: "Info",
+        description: "No paused assignments selected to unpause",
+      });
+      return;
+    }
+
+    setIsUnpausingReminders(true);
+    try {
+      const idToken = await authService.getToken();
+      await pauseReminderService.unpauseReminder(
+        { assignmentIds: pausedAssignmentIds },
+        idToken
+      );
+
+      toast({
+        title: "Success",
+        description: `Reminders resumed for ${pausedAssignmentIds.length} assignment(s)`,
+      });
+
+      // Update local notification statuses to REMINDER_SCHEDULED
+      const updatedStatuses: AssignmentNotificationStatus = {};
+      pausedAssignmentIds.forEach((id) => {
+        updatedStatuses[id] = NOTIFICATION_STATUS.REMINDER_SCHEDULED;
+      });
+      setNotificationStatuses((prev) => ({ ...prev, ...updatedStatuses }));
+
+      setSelectedAssignmentIds([]);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to unpause reminders",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUnpausingReminders(false);
+    }
+  };
+
+  // ----------------- Refresh Notification Statuses -----------------
+  const refreshNotificationStatuses = async () => {
+    const assignmentIds = assignments.data.map((a) => a.id);
+    await loadNotificationStatuses(assignmentIds);
+    toast({
+      title: "Refreshed",
+      description: "Notification statuses updated",
+    });
   };
 
   // ----------------- Edit Assignment Handler -----------------
@@ -635,6 +875,23 @@ const ManageAssignmentAuthors: React.FC = () => {
     return course?.title || "";
   };
 
+
+  // Helper for status colors using theme variables
+const getStatusColor = (variant) => {
+  switch (variant) {
+    case "success":
+      return "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
+    case "warning":
+      return "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+    case "destructive":
+      return "text-destructive bg-destructive/10 border-destructive/20";
+    case "neutral":
+      return "text-muted-foreground bg-muted border-border";
+    default:
+      return "bg-primary/10 text-primary border-primary/20";
+  }
+};
+
   // ----------------- Initial Load -----------------
   useEffect(() => {
     loadCourses();
@@ -665,141 +922,62 @@ const ManageAssignmentAuthors: React.FC = () => {
   }
 
   const displayedAssignments = getDisplayedAssignments();
+  const selectedPausedCount = getSelectedPausedCount();
+  const selectedUnpausedCount = getSelectedUnpausedCount();
 
-  return (
+return (
     <AdminLayout>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Manage Assignment Authors
-              </CardTitle>
-              <CardDescription>
-                Select a course to manage assignment authors.
-                {selectedCourseId && assignments.totalCount > 0 &&
-                  ` Total: ${assignments.totalCount} assignments in this course`}
-                {pendingChanges.size > 0 && (
-                  <Badge variant="outline" className="ml-2">
-                    {pendingChanges.size} unsaved changes
-                  </Badge>
-                )}
-              </CardDescription>
-            </div>
-
-            {/* Action Buttons */}
-            {selectedCourseId && (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filters
-                  {activeFiltersCount > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {activeFiltersCount}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    resetFilters();
-                    setPendingChanges(new Map());
-                    setSelectedAssignmentIds([]);
-                  }}
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                  />
-                  Reset
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={handlePauseReminders}
-                  disabled={
-                    selectedAssignmentIds.length === 0 || isPausingReminders
-                  }
-                  className="flex items-center gap-2"
-                >
-                  {isPausingReminders ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Pausing...
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="h-4 w-4" />
-                      Pause Reminders
-                      {selectedAssignmentIds.length > 0 && (
-                        <Badge variant="secondary" className="ml-1">
-                          {selectedAssignmentIds.length}
-                        </Badge>
-                      )}
-                    </>
-                  )}
-                </Button>
-
-                {pendingChanges.size > 0 && (
-                  <Button
-                    onClick={saveAllChanges}
-                    disabled={isBulkSaving}
-                    className="flex items-center gap-2"
-                  >
-                    {isBulkSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Save All ({pendingChanges.size})
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            )}
+      <div className="space-y-6 p-1">
+        {/* --- Header & Course Context Section --- */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <FileText className="h-6 w-6 text-primary" />
+              Assignment Authors
+            </h1>
+            <p className="text-muted-foreground">
+              Manage assignment ownership and notification settings.
+            </p>
           </div>
 
-          {/* Course Selection */}
-          <div className="mt-4 p-4 border rounded-lg bg-muted/50">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">
-                    <BookOpen className="h-4 w-4 inline mr-2" />
-                    Select Course
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        placeholder="Search courses..."
-                        value={courseSearchQuery}
-                        onChange={(e) => setCourseSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
+          {/* Course Selector */}
+          <div className="w-full md:w-[350px] space-y-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Active Course
+            </label>
+            <div className="relative">
+              {!selectedCourseId ? (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search for a course..."
+                    value={courseSearchQuery}
+                    onChange={(e) => setCourseSearchQuery(e.target.value)}
+                    className="pl-9 bg-background"
+                  />
                 </div>
-              </div>
+              ) : null}
 
-              <div className="flex-1">
+              <div className="mt-2">
                 <Select
                   value={selectedCourseId}
                   onValueChange={handleCourseSelect}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose a course to view its assignments..." />
+                  <SelectTrigger className="w-full bg-background shadow-sm h-11">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                      <span className="truncate">
+                        {selectedCourseId ? (
+                          <span className="font-medium text-foreground">
+                            {getSelectedCourseName()}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Select a course...
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {filteredCourses.length === 0 ? (
@@ -809,10 +987,9 @@ const ManageAssignmentAuthors: React.FC = () => {
                     ) : (
                       filteredCourses.map((course) => (
                         <SelectItem key={course.id} value={course.id}>
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
+                          <div className="flex items-center gap-2 justify-between w-full">
                             <span>{course.title}</span>
-                            <Badge variant="outline" className="text-xs ml-2">
+                            <Badge variant="secondary" className="text-[10px]">
                               {course.status}
                             </Badge>
                           </div>
@@ -824,597 +1001,438 @@ const ManageAssignmentAuthors: React.FC = () => {
               </div>
 
               {selectedCourseId && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="default">
-                    Selected: {getSelectedCourseName()}
-                  </Badge>
+                <div className="flex justify-end mt-1">
                   <Button
-                    variant="ghost"
+                    variant="link"
                     size="sm"
                     onClick={() => {
                       setSelectedCourseId("");
-                      setAssignments({
-                        data: [],
-                        hasNextPage: false,
-                        hasPreviousPage: false,
-                        totalCount: 0,
-                      });
-                      setPendingChanges(new Map());
-                      setSelectedAssignmentIds([]);
+                      // reset logic
                     }}
-                    className="h-6 px-2"
+                    className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
                   >
-                    <X className="h-3 w-3 mr-1" />
-                    Clear
+                    Clear selection
                   </Button>
                 </div>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Search and Filters Panel */}
-          {showFilters && selectedCourseId && (
-            <div className="mt-4 p-4 border rounded-lg bg-muted/50 space-y-4">
-              {/* Search Row */}
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-1 block">
-                    Search Assignments
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
+        <Separator />
+
+        {/* --- Main Content Area --- */}
+        {!selectedCourseId ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/30 rounded-lg border border-dashed border-muted-foreground/25">
+            <div className="bg-background p-4 rounded-full shadow-sm mb-4">
+              <BookOpen className="h-10 w-10 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-lg font-medium">No Course Selected</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mt-2">
+              Please select a course from the dropdown above to view assignments.
+            </p>
+          </div>
+        ) : (
+          <Card className="border shadow-sm bg-card/50">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col md:flex-row gap-4 justify-between items-end">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg font-medium">
+                    Assignments
+                    <Badge variant="secondary" className="ml-3 rounded-sm font-normal">
+                      {assignments.totalCount} Total
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-2">
+                     <Users className="h-3 w-3" />
+                     {staffUsers.length} staff members available for assignment
+                  </CardDescription>
+                </div>
+
+                {/* Toolbar */}
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                  {/* Search */}
+                  <div className="relative flex-1 md:w-64 md:flex-none">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search assignments..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by title, ID, or author name..."
-                      className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="pl-9 h-9 bg-background"
                     />
-                    {searchQuery && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSearchQuery("")}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
+
+                  {/* Filter Toggle */}
+                  <Button
+                    variant={showFilters ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="h-9 gap-2"
+                  >
+                    <Filter className="h-4 w-4" />
+                    Filters
+                    {activeFiltersCount > 0 && (
+                      <Badge variant="default" className="h-5 px-1.5 min-w-[1.25rem]">
+                        {activeFiltersCount}
+                      </Badge>
+                    )}
+                  </Button>
+
+                  {/* Reset Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      resetFilters();
+                      setPendingChanges(new Map());
+                      setSelectedAssignmentIds([]);
+                    }}
+                    disabled={isLoading}
+                    className="h-9 w-9 p-0"
+                    title="Refresh & Reset"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                  </Button>
                 </div>
               </div>
 
-              {/* Filter Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Author Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    Author Status
-                  </label>
-                  <Select
-                    value={authorFilter}
-                    onValueChange={(value: AuthorFilterType) =>
-                      setAuthorFilter(value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by author..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Assignments</SelectItem>
-                      <SelectItem value="null">
-                        <div className="flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4 text-orange-500" />
-                          No Author (Null)
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="assigned">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          Has Author
-                        </div>
-                      </SelectItem>
-                      <div className="border-t my-1" />
-                      {staffUsers.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          <div className="flex items-center gap-2">
-                            <span>
-                              {user.firstName} {user.lastName}
-                            </span>
-                            <Badge
-                              variant={getRoleBadgeVariant(user.role)}
-                              className="text-xs"
-                            >
-                              {user.role}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Deadline Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    Deadline
-                  </label>
-                  <Select
+              {/* Expandable Filter Panel */}
+              {showFilters && (
+                <div className="mt-4 p-4 rounded-md border bg-muted/40 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Author Status</label>
+                    <Select value={authorFilter} onValueChange={setAuthorFilter}>
+                      <SelectTrigger className="bg-background h-9">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Assignments</SelectItem>
+                        <SelectItem value="null">Unassigned</SelectItem>
+                        <SelectItem value="assigned">Assigned</SelectItem>
+                        <DropdownMenuSeparator />
+                        {staffUsers.map((user) => (
+                           <SelectItem key={user.id} value={user.id}>{user.firstName} {user.lastName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Deadline</label>
+                       <Select
                     value={deadlineFilter}
                     onValueChange={(value: DeadlineFilterType) =>
                       setDeadlineFilter(value)
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by deadline..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Deadlines</SelectItem>
-                      <SelectItem value="no-deadline">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          No Deadline
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="past">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-red-500" />
-                          Past Due
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="today">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-orange-500" />
-                          Due Today
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="this-week">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-blue-500" />
-                          This Week
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="upcoming">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-green-500" />
-                          Upcoming
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Apply Filters Button */}
-                <div className="flex items-end">
-                  <Button
-                    onClick={applyFilters}
-                    disabled={isLoading}
-                    className="w-full"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Applying...
-                      </>
-                    ) : (
-                      <>
-                        <Filter className="h-4 w-4 mr-2" />
+                      <SelectTrigger className="bg-background h-9">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Anytime</SelectItem>
+                        <SelectItem value="upcoming">Upcoming</SelectItem>
+                        <SelectItem value="this-week">This Week</SelectItem>
+                        <SelectItem value="today">Today</SelectItem>
+                        <SelectItem value="past">Past Due</SelectItem>
+                        <SelectItem value="no-deadline">No Deadline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                     <Button size="sm" onClick={applyFilters} disabled={isLoading} className="w-full h-9">
                         Apply Filters
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Active Filters Tags */}
-              {activeFiltersCount > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">
-                    Active filters:
-                  </span>
-
-                  {searchQuery.trim() && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Search: "{searchQuery}"
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => setSearchQuery("")}
-                      />
-                    </Badge>
-                  )}
-
-                  {authorFilter !== "all" && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Author:{" "}
-                      {authorFilter === "null"
-                        ? "No Author"
-                        : authorFilter === "assigned"
-                        ? "Has Author"
-                        : getAuthorName(authorFilter) || authorFilter}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => setAuthorFilter("all")}
-                      />
-                    </Badge>
-                  )}
-
-                  {deadlineFilter !== "all" && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Deadline: {deadlineFilter.replace("-", " ")}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => setDeadlineFilter("all")}
-                      />
-                    </Badge>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={resetFilters}
-                    className="h-6 px-2 text-xs"
-                  >
-                    Clear all
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </CardHeader>
-
-        <CardContent>
-          {/* No Course Selected State */}
-          {!selectedCourseId && (
-            <div className="text-center py-12">
-              <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Select a Course</h3>
-              <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-                Choose a course from the dropdown above to view and manage its assignments.
-                You can search for courses by name.
-              </p>
-            </div>
-          )}
-
-          {/* Loading Assignments */}
-          {selectedCourseId && isLoading && assignments.data.length === 0 && (
-            <div className="text-center py-8">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-              <p className="mt-2">Loading assignments...</p>
-            </div>
-          )}
-
-          {/* Course Selected - Show Content */}
-          {selectedCourseId && !isLoading && (
-            <>
-              {/* Staff Users Summary */}
-              <div className="mb-4 p-3 bg-muted rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>
-                    {staffUsers.length} staff members available:{" "}
-                    {staffUsers.filter((u) => u.role === USER_ROLE.ADMIN).length}{" "}
-                    Admins,{" "}
-                    {staffUsers.filter((u) => u.role === USER_ROLE.TEACHER).length}{" "}
-                    Teachers,{" "}
-                    {
-                      staffUsers.filter((u) => u.role === USER_ROLE.INSTRUCTOR)
-                        .length
-                    }{" "}
-                    Instructors
-                  </span>
-                </div>
-              </div>
-
-              {/* Results Summary */}
-              {(searchQuery.trim() ||
-                authorFilter !== "all" ||
-                deadlineFilter !== "all") && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-                    <Filter className="h-4 w-4" />
-                    <span>
-                      Showing {displayedAssignments.length} of{" "}
-                      {assignments.data.length} loaded assignments
-                      {activeFiltersCount > 0 &&
-                        ` (${activeFiltersCount} filter${
-                          activeFiltersCount > 1 ? "s" : ""
-                        } active)`}
-                    </span>
+                     </Button>
                   </div>
                 </div>
               )}
+            </CardHeader>
 
-              {displayedAssignments.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-semibold">
-                    No assignments found
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {activeFiltersCount > 0
-                      ? "Try adjusting your filters or search query."
-                      : "This course has no assignments yet."}
-                  </p>
-                  {activeFiltersCount > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={resetFilters}
-                      className="mt-4"
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-10">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4"
-                              onChange={() =>
-                                toggleSelectAllDisplayed(displayedAssignments)
-                              }
-                              checked={
-                                displayedAssignments.length > 0 &&
-                                displayedAssignments.every((a) =>
-                                  selectedAssignmentIds.includes(a.id)
-                                )
-                              }
-                            />
-                          </TableHead>
-                          <TableHead className="min-w-[200px]">
-                            Assignment
-                          </TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Deadline</TableHead>
-                          <TableHead>Current Author</TableHead>
-                          <TableHead className="min-w-[250px]">
-                            Select Author
-                          </TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {displayedAssignments.map((assignment) => {
-                          const deadlineStatus = getDeadlineStatus(
-                            assignment.deadline
-                          );
+            <CardContent className="p-0">
+               {/* --- Data Table --- */}
+              <div className="border-t">
+                {displayedAssignments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <div className="p-3 bg-muted rounded-full mb-3">
+                       <FileText className="h-6 w-6" />
+                    </div>
+                    <p>No assignments found matching your criteria.</p>
+                    {activeFiltersCount > 0 && (
+                       <Button variant="link" onClick={resetFilters} className="mt-2">Clear filters</Button>
+                    )}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead className="w-12 text-center">
+                          <input
+                            type="checkbox"
+                            className="translate-y-0.5 rounded border-primary text-primary focus:ring-primary h-4 w-4"
+                            onChange={() => toggleSelectAllDisplayed(displayedAssignments)}
+                            checked={
+                              displayedAssignments.length > 0 &&
+                              displayedAssignments.every((a) => selectedAssignmentIds.includes(a.id))
+                            }
+                          />
+                        </TableHead>
+                        <TableHead>Assignment Details</TableHead>
+                        <TableHead>Timeline</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-[250px]">Author</TableHead>
+                        <TableHead className="w-[100px] text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {displayedAssignments.map((assignment) => {
+                        const deadlineStatus = getDeadlineStatus(assignment.deadline);
+                        const isChanged = hasChanges(assignment.id);
+                        const isSaving = savingAssignments.has(assignment.id);
 
-                          return (
-                            <TableRow
-                              key={assignment.id}
-                              className={
-                                hasChanges(assignment.id)
-                                  ? "bg-yellow-50 dark:bg-yellow-900/10"
-                                  : ""
-                              }
-                            >
-                              <TableCell>
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4"
-                                  checked={selectedAssignmentIds.includes(assignment.id)}
-                                  onChange={() => toggleSelectAssignment(assignment.id)}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-start gap-3">
-                                  <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
-                                    <FileText className="h-5 w-5 text-primary" />
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">
-                                      {assignment.title}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {assignment.id}
-                                    </div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm">
-                                  {formatDateTime(assignment.createdAt)}
+                        return (
+                          <TableRow
+                            key={assignment.id}
+                            className={`
+                              group transition-colors
+                              ${isChanged ? "bg-accent/30 hover:bg-accent/40" : "hover:bg-muted/50"}
+                            `}
+                          >
+                            <TableCell className="text-center align-top pt-4">
+                              <input
+                                type="checkbox"
+                                className="rounded border-muted-foreground/30 text-primary focus:ring-primary h-4 w-4"
+                                checked={selectedAssignmentIds.includes(assignment.id)}
+                                onChange={() => toggleSelectAssignment(assignment.id)}
+                              />
+                            </TableCell>
+
+                            <TableCell className="align-top py-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+                                  {assignment.title}
                                 </span>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-sm">
-                                    {formatDateTime(assignment.deadline)}
-                                  </span>
-                                  <Badge
-                                    variant={deadlineStatus.variant}
-                                    className="text-xs w-fit"
-                                  >
-                                    {deadlineStatus.label}
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {assignment.authorId ? (
-                                  <div className="flex items-center gap-2">
-                                    <CheckCircle className="h-4 w-4 text-green-500" />
-                                    <span className="text-sm">
-                                      {getAuthorName(assignment.authorId) ||
-                                        assignment.authorId}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4 text-orange-500" />
-                                    <span className="text-sm text-muted-foreground">
-                                      Not assigned
-                                    </span>
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                  ID: {assignment.id}
+                                </span>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-3">
+                               <div className="flex flex-col gap-1.5">
+                                 {assignment.deadline ? (
+                                    <div className={`flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full w-fit border ${getStatusColor(deadlineStatus.variant)}`}>
+                                       <Calendar className="h-3 w-3" />
+                                       <span>{deadlineStatus.label}</span>
+                                    </div>
+                                 ) : (
+                                    <span className="text-xs text-muted-foreground pl-1">No Deadline</span>
+                                 )}
+                                 <span className="text-xs text-muted-foreground pl-1">
+                                    Created {formatDateTime(assignment.createdAt)}
+                                 </span>
+                               </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-3">
+                              <div className="scale-90 origin-left">
+                                {getNotificationStatusBadge(assignment.id)}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-3">
+                              <div className="space-y-2">
                                 <Select
                                   value={getCurrentAuthorId(assignment)}
-                                  onValueChange={(value) =>
-                                    handleAuthorChange(assignment.id, value)
-                                  }
-                                  disabled={savingAssignments.has(assignment.id)}
+                                  onValueChange={(value) => handleAuthorChange(assignment.id, value)}
+                                  disabled={isSaving}
                                 >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select author..." />
+                                  <SelectTrigger className={`
+                                    h-9 w-full bg-background/50 border-input
+                                    ${isChanged ? "border-amber-400 dark:border-amber-600 ring-1 ring-amber-400/20" : ""}
+                                  `}>
+                                    <SelectValue placeholder="Unassigned" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {staffUsers.map((user) => (
                                       <SelectItem key={user.id} value={user.id}>
                                         <div className="flex items-center gap-2">
-                                          <span>
-                                            {user.firstName} {user.lastName}
-                                          </span>
-                                          <Badge
-                                            variant={getRoleBadgeVariant(user.role)}
-                                            className="text-xs"
-                                          >
-                                            {user.role}
-                                          </Badge>
+                                          <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                             {user.firstName[0]}{user.lastName[0]}
+                                          </div>
+                                          <span>{user.firstName} {user.lastName}</span>
                                         </div>
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-1">
-                                  {/* Edit Button */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleEditAssignment(assignment.id)
-                                    }
-                                    title="Edit Assignment"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
+                                {isChanged && (
+                                   <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-500 font-medium animate-pulse">
+                                      <AlertCircle className="h-3 w-3" />
+                                      Pending Change
+                                   </div>
+                                )}
+                              </div>
+                            </TableCell>
 
-                                  {/* Save Author Button */}
-                                  <Button
-                                    variant={
-                                      hasChanges(assignment.id)
-                                        ? "default"
-                                        : "ghost"
-                                    }
-                                    size="sm"
-                                    onClick={() =>
-                                      saveAssignmentAuthor(assignment.id)
-                                    }
-                                    disabled={
-                                      !hasChanges(assignment.id) ||
-                                      savingAssignments.has(assignment.id)
-                                    }
-                                    title="Save Author"
-                                  >
-                                    {savingAssignments.has(assignment.id) ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Save className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                            <TableCell className="align-top py-3 text-right">
+                              <div className="flex justify-end items-center gap-1">
+                                {isChanged && (
+                                   <Button
+                                      size="icon"
+                                      variant="default"
+                                      className="h-8 w-8 bg-amber-600 hover:bg-amber-700 text-white"
+                                      onClick={() => saveAssignmentAuthor(assignment.id)}
+                                      disabled={isSaving}
+                                      title="Save Change"
+                                   >
+                                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                   </Button>
+                                )}
+                                <DropdownMenu>
+                                   <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                         <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                   </DropdownMenuTrigger>
+                                   <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEditAssignment(assignment.id)}>
+                                         <Edit className="h-4 w-4 mr-2" />
+                                         Edit Details
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                          window.open(`/courses/${selectedCourseId}/lesson/${assignment.id}`, '_blank');
+                                      }}>
+                                         <ArrowUpRight className="h-4 w-4 mr-2" />
+                                         View on Site
+                                      </DropdownMenuItem>
+                                   </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
 
-                  {/* Pagination Controls */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between space-x-0 sm:space-x-2 space-y-2 sm:space-y-0 py-4 border-t mt-4">
-                    <div className="flex-1 text-sm text-muted-foreground text-center sm:text-left">
-                      Showing {displayedAssignments.length} of{" "}
-                      {assignments.totalCount} assignments
-                      {` • Page ${paginationState.currentPage}`}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePreviousPage}
-                        disabled={!assignments.hasPreviousPage || isLoading}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-4 border-t bg-muted/20">
+                <div className="text-sm text-muted-foreground">
+                   Page {paginationState.currentPage}
+                </div>
+                <div className="flex items-center gap-2">
+                   <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={!assignments.hasPreviousPage || isLoading}>
+                      <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                   </Button>
+                   <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!assignments.hasNextPage || isLoading}>
+                      Next <ChevronRight className="h-4 w-4 ml-1" />
+                   </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* --- Floating Sticky Action Bar --- */}
+      {(selectedAssignmentIds.length > 0 || pendingChanges.size > 0) && (
+        <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 animate-in slide-in-from-bottom-10 fade-in">
+          <div className="bg-popover text-popover-foreground shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 border border-border max-w-3xl w-full justify-between sm:w-auto">
+
+            {/* Left: Status Counts */}
+            <div className="flex items-center gap-4 text-sm font-medium">
+              {selectedAssignmentIds.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[1.25rem] flex items-center justify-center px-1">
+                    {selectedAssignmentIds.length}
+                  </span>
+                  <span className="hidden sm:inline">Selected</span>
+                </div>
+              )}
+
+              {pendingChanges.size > 0 && (
+                <div className="flex items-center gap-2 text-amber-500 dark:text-amber-500">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{pendingChanges.size} Unsaved</span>
+                </div>
+              )}
+            </div>
+
+            <Separator orientation="vertical" className="h-6 bg-border" />
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2">
+              {selectedAssignmentIds.length > 0 && (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="sm" className="h-8 border bg-secondary/50">
+                        Notification Actions
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleNextPage}
-                        disabled={!assignments.hasNextPage || isLoading}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-56">
+                      <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                      <DropdownMenuItem
+                        onClick={handlePauseReminders}
+                        disabled={isPausingReminders || selectedUnpausedCount === 0}
                       >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                         {isPausingReminders ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Pause className="h-4 w-4 mr-2" />}
+                         Pause Reminders
+                         {selectedUnpausedCount > 0 && <Badge variant="secondary" className="ml-auto">{selectedUnpausedCount}</Badge>}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleUnpauseReminders}
+                        disabled={isUnpausingReminders || selectedPausedCount === 0}
+                        className="text-emerald-600 focus:text-emerald-700"
+                      >
+                         {isUnpausingReminders ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Play className="h-4 w-4 mr-2" />}
+                         Resume Reminders
+                         {selectedPausedCount > 0 && <Badge variant="secondary" className="ml-auto">{selectedPausedCount}</Badge>}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedAssignmentIds([])}
+                    className="h-8"
+                  >
+                    Clear
+                  </Button>
                 </>
               )}
 
-              {/* Pending Changes Summary */}
               {pendingChanges.size > 0 && (
-                <div className="mt-4 p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 rounded-lg">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-                        Unsaved Changes
-                      </h4>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        You have {pendingChanges.size} assignment(s) with pending
-                        author changes.
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPendingChanges(new Map())}
-                      >
-                        Discard All
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={saveAllChanges}
-                        disabled={isBulkSaving}
-                      >
-                        {isBulkSaving ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Save All Changes
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPendingChanges(new Map())}
+                    className="h-8"
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={saveAllChanges}
+                    disabled={isBulkSaving}
+                    className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 border-0"
+                  >
+                    {isBulkSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Save All
+                  </Button>
                 </div>
               )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Edit Assignment Modal */}
       <EditAssignmentModal
         courseId={selectedCourseId}
         assignmentId={editingAssignmentId}
