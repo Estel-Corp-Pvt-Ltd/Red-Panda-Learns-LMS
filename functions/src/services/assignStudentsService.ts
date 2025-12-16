@@ -6,7 +6,7 @@ const db = admin.firestore();
 const assignStudentsRef = db.collection(COLLECTION.ADMIN_ASSIGNED_STUDENTS);
 
 export const assignStudentsService = {
-  async assignStudentsToAdmin(adminId: string, studentIds: string[]) {
+  async assignStudentsToAdmin(adminId: string, studentIds: string[], notificationEmail:string) {
     const batch = db.batch();
     const results: AdminAssignedStudents[] = [];
 
@@ -18,6 +18,7 @@ export const assignStudentsService = {
         id: customId,
         adminId,
         studentId,
+        notificationEmailAddress:notificationEmail,
         active: true,
         createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
         createdBy: adminId,
@@ -41,7 +42,7 @@ async unassignStudentsFromAdmin(adminId: string, studentIds: string[]) {
 
   try {
     await batch.commit();  // Commit the batch delete operation
-    console.log(`Successfully unassigned ${studentIds.length} students from admin ${adminId}`);
+
   } catch (error) {
     console.error("Error unassigning students:", error);
   }
@@ -60,7 +61,7 @@ async pauseNotificationForSpecificStudents(adminId: string, studentIds: string[]
 
   try {
     await batch.commit();
-    console.log(`Paused notifications for ${studentIds.length} students for admin ${adminId}`);
+   
   } catch (error) {
     console.error("Error pausing notifications for students:", error);
     throw error; // optional depending on how you handle errors
