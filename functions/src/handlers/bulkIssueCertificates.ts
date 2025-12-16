@@ -26,13 +26,22 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
             return;
         }
 
-        const { enrollmentIds, remark } = req.body;
+        const { enrollments, remark } = req.body;
 
-        if (!Array.isArray(enrollmentIds) || enrollmentIds.length === 0) {
+        if (!Array.isArray(enrollments) || enrollments.length === 0) {
             res.status(400).json({
-                error: "enrollmentIds must be a non-empty array",
+                error: "enrollments must be a non-empty array",
             });
             return;
+        }
+
+        for (const e of enrollments) {
+            if (!e.userId || !e.courseId) {
+                res.status(400).json({
+                    error: "Each enrollment must have userId and courseId",
+                });
+                return;
+            }
         }
 
         if (!remark || typeof remark !== "string") {
@@ -48,7 +57,7 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
         let issuedCount = 0;
         let skippedCount = 0;
 
-        const enrollmentChunks = chunk(enrollmentIds, 450);
+        const enrollmentChunks = chunk(enrollments, 450);
         const READ_CONCURRENCY = 15;
 
         for (const enrollmentChunk of enrollmentChunks) {
@@ -58,10 +67,7 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
 
             for (const readChunk of readChunks) {
                 const progressSnaps = await Promise.all(
-                    readChunk.map((enrollmentId) => {
-                        const [userId, courseId] = enrollmentId.split("_");
-                        if (!userId || !courseId) return null;
-
+                    readChunk.map(({ userId, courseId }) => {
                         return db
                             .collection(COLLECTION.LEARNING_PROGRESS)
                             .where("userId", "==", userId)
