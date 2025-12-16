@@ -73,6 +73,7 @@ const CurriculumBuilderPage = () => {
   const [courseId, setCourseId] = useState("");
   const [copied, setCopied] = useState(false);
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
+  const [isCertificateDisabled, SetISCertificateDisabled] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -161,6 +162,8 @@ useEffect(() => {
       setThumbnailUrl(data.thumbnail ?? "");
       // ADD THIS LINE:
       setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
+      SetISCertificateDisabled(data.isCertificateDisabled ?? false);
+      
     } catch (err) {
       toast({
         title: "Error loading course",
@@ -275,6 +278,7 @@ const saveAdditionalSettings = async () => {
     showOverlay("Saving additional settings...");
     await courseService.updateCourse(courseId, {
       isMailSendingEnabled,
+      isCertificateDisabled,
     });
     toast({ title: "Saved", description: "Additional settings updated." });
   } catch (err) {
@@ -424,6 +428,8 @@ const saveAdditionalSettings = async () => {
   <AdditionalTab
     isMailSendingEnabled={isMailSendingEnabled}
     setIsMailSendingEnabled={setIsMailSendingEnabled}
+     isCertificateDisabled={isCertificateDisabled}
+  SetISCertificateDisabled={SetISCertificateDisabled} 
     onSave={saveAdditionalSettings}
   />
 </TabsContent>

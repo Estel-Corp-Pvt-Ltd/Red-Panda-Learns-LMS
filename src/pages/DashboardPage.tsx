@@ -20,7 +20,6 @@ import { BookOpen, CheckCircle, Clock, Eye, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BannerSlider } from '@/components/BannerSlider';
-
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
@@ -128,6 +127,9 @@ function EnrolledCourseCard({
     }
   };
 
+  // Check if certificate features should be shown
+  const showCertificateFeatures = !course.isCertificateDisabled;
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -136,14 +138,6 @@ function EnrolledCourseCard({
             <h3 className="font-semibold text-lg mb-2">{enrollment.courseName || course.title}</h3>
             <p className="text-muted-foreground text-sm mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
             </p>
-
-            {/* <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between text-sm">
-                <span>Progress</span>
-                <span>{enrollment.progressSummary?.percent ?? 0}%</span>
-              </div>
-              <Progress value={enrollment.progressSummary?.percent ?? 0} />
-            </div> */}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -162,70 +156,75 @@ function EnrolledCourseCard({
                   Continue
                 </Button>
 
-                {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
-                  <Button
-                    size="sm"
-                    onClick={handleCompleteCourse}
-                    disabled={isCompleting}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {isCompleting ? "Completing..." : "Complete Course"}
-                  </Button>
-                )}
-
-                {!isProgressLoading && isCompleted && (
+                {/* Only show certificate-related features if enabled */}
+                {showCertificateFeatures && (
                   <>
-                    {/* PRIORITY 1: Show certificate if it exists (bypasses all request logic) */}
-                    {isCertificateIdAvailable ? (
-                      <Link to={`/certificate/${user.id}_${course.id}/`}>
-                        <Button size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Certificate
-                        </Button>
-                      </Link>
-                    ) : (
-                      /* PRIORITY 2: Handle request flow only if certificate doesn't exist */
-                      <>
-                        {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING ? (
-                          <Badge variant="outline" className="text-xs flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            Certificate request pending
-                          </Badge>
-                        ) : certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED ? (
-                          <Badge variant="secondary" className="text-xs">
-                            Certificate approved - generating...
-                          </Badge>
-                        ) : (
-                          /* No request made yet - show request option */
-                          <>
-                            <Badge variant="secondary" className="text-xs">
-                              Certificate available on request
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={async () => {
-                                const res = await certificateRequestService.requestCertificate(
-                                  enrollment.userId,
-                                  enrollment.courseId
-                                );
+                    {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
+                      <Button
+                        size="sm"
+                        onClick={handleCompleteCourse}
+                        disabled={isCompleting}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {isCompleting ? "Completing..." : "Complete Course"}
+                      </Button>
+                    )}
 
-                                if (res.success) {
-                                  toast({
-                                    title: "Certificate requested",
-                                    description: "Pending approval",
-                                  });
-                                  fetchEnrollmentsAndCertificateRequestStatuses();
-                                } else {
-                                  toast({
-                                    title: "Certificate request failed",
-                                    description: "Try again later",
-                                  });
-                                }
-                              }}
-                            >
-                              Request Certificate
+                    {!isProgressLoading && isCompleted && (
+                      <>
+                        {/* PRIORITY 1: Show certificate if it exists (bypasses all request logic) */}
+                        {isCertificateIdAvailable ? (
+                          <Link to={`/certificate/${user.id}_${course.id}/`}>
+                            <Button size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Certificate
                             </Button>
+                          </Link>
+                        ) : (
+                          /* PRIORITY 2: Handle request flow only if certificate doesn't exist */
+                          <>
+                            {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING ? (
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Certificate request pending
+                              </Badge>
+                            ) : certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED ? (
+                              <Badge variant="secondary" className="text-xs">
+                                Certificate approved - generating...
+                              </Badge>
+                            ) : (
+                              /* No request made yet - show request option */
+                              <>
+                                <Badge variant="secondary" className="text-xs">
+                                  Certificate available on request
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    const res = await certificateRequestService.requestCertificate(
+                                      enrollment.userId,
+                                      enrollment.courseId
+                                    );
+
+                                    if (res.success) {
+                                      toast({
+                                        title: "Certificate requested",
+                                        description: "Pending approval",
+                                      });
+                                      fetchEnrollmentsAndCertificateRequestStatuses();
+                                    } else {
+                                      toast({
+                                        title: "Certificate request failed",
+                                        description: "Try again later",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Request Certificate
+                                </Button>
+                              </>
+                            )}
                           </>
                         )}
                       </>
@@ -240,7 +239,7 @@ function EnrolledCourseCard({
       </CardContent>
     </Card>
   );
-};
+}
 
 export default function DashboardPage() {
 
