@@ -16,6 +16,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import {
   Search,
@@ -26,6 +28,7 @@ import {
   ChevronRight,
   Users,
   RefreshCw,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/services/userService";
@@ -73,6 +76,27 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
     currentPage: 1,
   });
 
+  // Notification email state
+  const [notificationEmail, setNotificationEmail] = useState(
+    adminUser?.email || ""
+  );
+  const [emailError, setEmailError] = useState("");
+
+  // Validate email format
+  const validateEmail = (email: string): boolean => {
+    if (!email.trim()) {
+      setEmailError("Notification email is required");
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
   // ----------------- Load Student Users (excluding already assigned) -----------------
   const loadUsers = useCallback(
     async (options = {}) => {
@@ -81,14 +105,13 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
         const result = await userService.getUsers(
           [{ field: "role", op: "==", value: USER_ROLE.STUDENT }],
           {
-            limit: 15, // Fetch extra to account for filtering
+            limit: 15,
             orderBy: { field: "createdAt", direction: "desc" },
             ...options,
           }
         );
 
         if (result.success) {
-          // Filter out already assigned students
           const filteredData = result.data.data.filter(
             (user: User) => !assignedStudentIds.has(user.id)
           );
@@ -173,7 +196,6 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
           return;
         }
 
-        // Check if already assigned
         if (assignedStudentIds.has(result.data.id)) {
           toast({
             title: "Already Assigned",
@@ -268,6 +290,16 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
       return;
     }
 
+    // Validate notification email
+    if (!validateEmail(notificationEmail)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid notification email",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoadingAssign(true);
 
     try {
@@ -281,19 +313,18 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
         body: JSON.stringify({
           adminId,
           studentIds: selectedIds,
+          notificationEmail: notificationEmail.trim(),
         }),
       }).then((r) => r.json());
 
       if (res.success) {
         toast({
           title: "Success",
-          description: `${selectedIds.length} student(s) assigned successfully`,
+          description: `${selectedIds.length} student(s) assigned successfully. Notification will be sent to ${notificationEmail}`,
         });
 
-        // Notify parent to update shared state
         onStudentsAssigned(selectedIds);
 
-        // Remove assigned students from the current list
         setUsers((prev) => ({
           ...prev,
           data: prev.data.filter((user) => !selectedIds.includes(user.id)),
@@ -357,6 +388,13 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  // Update notification email when admin user changes
+  useEffect(() => {
+    if (adminUser?.email && !notificationEmail) {
+      setNotificationEmail(adminUser.email);
+    }
+  }, [adminUser?.email]);
 
   // ----------------- Loading State -----------------
   if (isLoading && users.data.length === 0) {
@@ -432,6 +470,54 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
                 )}
               </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Notification Email Field */}
+        <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Bell className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="notificationEmail" className="text-sm font-medium">
+              Notification Email
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            You will receive assignment notifications at this email address.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="notificationEmail"
+                  type="email"
+                  value={notificationEmail}
+                  onChange={(e) => {
+                    setNotificationEmail(e.target.value);
+                    if (emailError) validateEmail(e.target.value);
+                  }}
+                  onBlur={() => validateEmail(notificationEmail)}
+                  placeholder="Enter your notification email..."
+                  className={`pl-10 ${emailError ? "border-red-500 focus:ring-red-500" : ""}`}
+                />
+              </div>
+              {emailError && (
+                <p className="text-xs text-red-500 mt-1">{emailError}</p>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (adminUser?.email) {
+                  setNotificationEmail(adminUser.email);
+                  setEmailError("");
+                }
+              }}
+              className="whitespace-nowrap"
+            >
+              Use My Email
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -572,11 +658,22 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
           <div className="border-t pt-4 mt-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-muted-foreground">
-                {selectedIds.length} student(s) selected
+                <span>{selectedIds.length} student(s) selected</span>
+                {notificationEmail && (
+                  <span className="hidden sm:inline">
+                    {" "}
+                    • Notifications to:{" "}
+                    <span className="font-medium">{notificationEmail}</span>
+                  </span>
+                )}
               </div>
               <Button
                 onClick={assignStudents}
-                disabled={loadingAssign || selectedIds.length === 0}
+                disabled={
+                  loadingAssign ||
+                  selectedIds.length === 0 ||
+                  !notificationEmail.trim()
+                }
                 className="w-full sm:w-auto"
               >
                 {loadingAssign ? (

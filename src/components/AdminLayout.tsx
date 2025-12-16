@@ -66,14 +66,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <Book className="h-5 w-5" />,
     },
     {
-      name: "Submissions",
+      name: "Assignment Submissions",
       path: "/admin/submissions",
       icon: <NotepadText className="h-5 w-5" />,
     },
     {
-      name: "Manage Assignments",
+      name: "Assignment Manager",
       path: "/admin/manage-assignment-authors",
       icon: <FilePenLine className="h-5 w-5" />,
+    },
+    {
+      name: "Admin Assign Students",
+      path: "/admin/assign-students",
+      icon: <UserPlus className="h-5 w-5" />,
     },
     {
       name: "Coupons",
@@ -89,11 +94,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Enrollments",
       path: "/admin/enrollments",
       icon: <AlarmClockPlus className="h-5 w-5" />,
-    },
-    {
-      name: "Assign Students",
-      path: "/admin/assign-students",
-      icon: <UserPlus className="h-5 w-5" />,
     },
     {
       name: "Pop-Ups",
@@ -130,7 +130,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: "/admin/announcements",
       icon: <Megaphone className="h-5 w-5" />,
     },
-
+    {
+      name: "Banners",
+      path: "/admin/banners",
+      icon: <PictureInPicture className="h-5 w-5" />,
+    },
     {
       name: "Bulk Enroll Students",
       path: "/admin/bulk-student-enroll",
@@ -194,7 +198,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col border-r z-40 transition-transform duration-300 ease-in-out bg-white border border-white/40 shadow-lg dark:bg-neutral-900 dark:border-white/10 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]",
+            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out bg-white dark:bg-neutral-900",
+            "border-r border-primary/10 dark:border-primary/20",
             sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
           )}
         >

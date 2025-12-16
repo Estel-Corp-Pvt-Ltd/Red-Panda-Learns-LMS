@@ -51,7 +51,7 @@ async createNotification(data: {
   assignmentId: string;
   studentId: string;
   adminIds: string[];
-  adminEmails: string[];
+  notificationEmailAddresses: string[];
 }): Promise<SubmissionNotification[]> {
   try {
     // Check if reminders are paused for this assignment
@@ -73,7 +73,7 @@ async createNotification(data: {
     const notifications: SubmissionNotification[] = [];
 
     data.adminIds.forEach((adminId, index) => {
-      const adminEmail = data.adminEmails[index] ?? null;
+      const adminEmail = data.notificationEmailAddresses[index] ?? null;
 
       const shortAdminId = generateShortAdminId(adminId, 8);
 
@@ -124,18 +124,53 @@ async createNotification(data: {
     }
   },
 
-  async scheduleReminder(id: string) {
-    try {
-      await notificationsRef.doc(id).update({
-        status: NOTIFICATION_STATUS.REMINDER_SCHEDULED,
-        emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    } catch (error) {
-      console.error(`Error scheduling reminder for notification ${id}:`, error);
-      throw error;
+async scheduleReminder(id: string) {
+  try {
+    // Fetch the notification to get its assignmentId
+    const docRef = notificationsRef.doc(id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      console.warn(`Notification ${id} does not exist`);
+      return;
     }
-  },
+
+    const data = docSnap.data() as SubmissionNotification;
+    const assignmentId = data.assignmentId;
+
+    // Check if reminder is paused for this assignment
+    const isPausedResult = await reminderService.checkIsReminderPausedForAssignment(assignmentId);
+
+    if (!isPausedResult.success) {
+      console.error(
+        `Failed to check pause status for assignment ${assignmentId}:`,
+        isPausedResult.error
+      );
+      throw new Error("Failed to check pause status");
+    }
+
+    const isReminderPaused = isPausedResult.data === true;
+
+    const newStatus = isReminderPaused
+      ? NOTIFICATION_STATUS.PAUSED
+      : NOTIFICATION_STATUS.REMINDER_SCHEDULED;
+
+    await docRef.update({
+      status: newStatus,
+      reminderPaused: isReminderPaused, // update the boolean field
+      emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(
+      `Notification ${id} updated. Status: ${newStatus}, reminderPaused: ${isReminderPaused}`
+    );
+  } catch (error) {
+    console.error(`Error scheduling reminder for notification ${id}:`, error);
+    throw error;
+  }
+},
+
 
   async sendInitialEmail(id: string, shouldScheduleReminder = true) {
     try {

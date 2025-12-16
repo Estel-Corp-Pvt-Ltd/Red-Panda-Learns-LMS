@@ -451,7 +451,76 @@ class LearningProgressService {
       );
     }
   }
+
+  async getCertificateStatusForPairs(
+    pairs: { userId: string; courseId: string }[]
+  ): Promise<Result<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; }[]>> {
+    try {
+      if (!Array.isArray(pairs) || pairs.length === 0) {
+        return ok([]);
+      }
+
+      const results: {
+        userId: string;
+        courseId: string;
+        isCertificateIssued: boolean;
+        remark: string;
+      }[] = [];
+
+      // Keep concurrency reasonable
+      const READ_CONCURRENCY = 10;
+
+      for (let i = 0; i < pairs.length; i += READ_CONCURRENCY) {
+        const chunk = pairs.slice(i, i + READ_CONCURRENCY);
+
+        const snaps = await Promise.all(
+          chunk.map(({ userId, courseId }) =>
+            getDocs(
+              query(
+                collection(db, COLLECTION.LEARNING_PROGRESS),
+                where("userId", "==", userId),
+                where("courseId", "==", courseId)
+              )
+            )
+          )
+        );
+
+        snaps.forEach((snap, index) => {
+          const { userId, courseId } = chunk[index];
+
+          if (snap.empty) {
+            results.push({
+              userId,
+              courseId,
+              isCertificateIssued: false,
+              remark: "N/A"
+            });
+            return;
+          }
+
+          const progress = snap.docs[0].data() as LearningProgress;
+          results.push({
+            userId,
+            courseId,
+            isCertificateIssued: progress.certification?.issued === true,
+            remark: progress.certification?.remark || "N/A"
+          });
+        });
+      }
+
+      return ok(results);
+
+    } catch (error: any) {
+      logError(
+        "LearningProgressService.getCertificateStatusForPairs",
+        error
+      );
+      return fail(
+        "Failed to fetch certificate status",
+        error.code || error.message
+      );
+    }
+  }
 }
 
 export const learningProgressService = new LearningProgressService();
-

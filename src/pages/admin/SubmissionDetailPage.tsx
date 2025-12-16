@@ -596,7 +596,7 @@ const AllSubmissionsPage = () => {
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            All Submissions
+            Assignment Submissions
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             View and manage student submissions

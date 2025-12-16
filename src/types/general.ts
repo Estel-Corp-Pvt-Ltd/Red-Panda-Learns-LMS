@@ -35,6 +35,7 @@ import {
   ANNOUNCEMENT_SCOPE,
   ANNOUNCEMENT_STATUS,
   CERTIFICATE_REQUEST_STATUS,
+  BANNER_STATUS,
 } from "@/constants";
 
 export type AttributeType =
@@ -97,6 +98,9 @@ export type ComplaintCategory =
 
 // --- CERTIFICATE ---
 export type CertificateRequestStatus = typeof CERTIFICATE_REQUEST_STATUS[keyof typeof CERTIFICATE_REQUEST_STATUS];
+
+// --- BANNER ---
+export type BannerStatus = typeof BANNER_STATUS[keyof typeof BANNER_STATUS];
 
 export type Duration = {
   hours: number;
