@@ -40,7 +40,7 @@ async function createCourseManualAnnouncementHandler(req: Request, res: Response
 
     res.status(201).json({ 
       success: true, 
-      data: { announcementId: result.success } 
+      data: { announcementId: result.data } 
     });
   } catch (error: any) {
     console.error("❌ Create global announcement failed:", error);

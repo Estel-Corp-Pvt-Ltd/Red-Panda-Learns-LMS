@@ -12,6 +12,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { TransactionLineItem } from "../types/transaction";
 import { courseService } from "./courseService";
 import { User } from "../types/user";
+import { logger } from "firebase-functions";
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -19,7 +20,9 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-
+const SKIP_DOMAIN = "vizuara.ai";
+const SKIP_TEST = "test"
+const SKIP_EMAIL = "email"
 class EnrollmentService {
   /**
    * Generates a unique enrollment ID in the format: <userId>_<courseId>
@@ -198,49 +201,87 @@ class EnrollmentService {
 
   // Helper to get enrolled students for a course
   // Efficiently fetch enrolled emails in chunks (batch reads)
-  async getCourseEnrolledEmails(courseId: string): Promise<string[]> {
-    const CHUNK_SIZE = 500; // Firestore max is 1000, but keep some margin
-    const emails: string[] = [];
-    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+async getCourseEnrolledEmails(courseId: string): Promise<string[]> {
+  const CHUNK_SIZE = 500;
+  const emails: string[] = [];
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
-    try {
-      while (true) {
-        let q = db
-          .collection(COLLECTION.ENROLLMENTS)
-          .where("courseId", "==", courseId)
-          .orderBy(admin.firestore.FieldPath.documentId())
+try {
+  while (true) {
+    let q = db
+      .collection(COLLECTION.ENROLLMENTS)
+      .where("courseId", "==", courseId)
+      .orderBy(admin.firestore.FieldPath.documentId())
+      .limit(CHUNK_SIZE);
 
-          .limit(CHUNK_SIZE);
+    if (lastDoc) {
+      q = q.startAfter(lastDoc);
+    }
 
-        if (lastDoc) {
-          q = q.startAfter(lastDoc);
-        }
+    const snapshot = await q.get();
 
-        const snapshot = await q.get();
+    logger.info("Enrollment batch fetched", {
+      courseId,
+      size: snapshot.size,
+    });
 
-        if (snapshot.empty) break;
+    if (snapshot.empty) break;
 
-        for (const doc of snapshot.docs) {
-          const data = doc.data();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
 
-          // You said email already exists here
-          if (data.userEmail) {
-            emails.push(data.userEmail);
-          }
-        }
+      logger.debug("Enrollment doc fields", {
+        docId: doc.id,
+        keys: Object.keys(data),
+        email: data.email,
+        userEmail: data.userEmail,
+        userId: data.userId,
+      });
 
-        // Move cursor forward
-        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      const email: string | undefined = data.email ?? data.userEmail;
 
-        // Optional safety break (avoid infinite loop if something weird happens)
-        if (snapshot.size < CHUNK_SIZE) break;
+      if (!email) {
+        logger.debug("Skipping enrollment: no email", { docId: doc.id });
+        continue;
       }
 
-      return emails;
-    } catch (error) {
-      console.error("Error fetching course enrolled emails:", error);
-      return [];
+      const lowerEmail = email.toLowerCase();
+
+      if (lowerEmail.includes(SKIP_DOMAIN)) {
+        logger.debug("Skipping enrollment email (domain)", email);
+        continue;
+      }
+
+      if (lowerEmail.includes(SKIP_TEST)) {
+        logger.debug("Skipping enrollment email (test)", email);
+        continue;
+      }
+
+      if (lowerEmail.includes(SKIP_EMAIL)) {
+        logger.debug("Skipping enrollment email (explicit)", email);
+        continue;
+      }
+
+      emails.push(email);
     }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+    if (snapshot.size < CHUNK_SIZE) break;
   }
+
+  functions.logger.info("Final enrolled email count", {
+    courseId,
+    count: emails.length,
+  });
+
+  return emails;
+} catch (error) {
+  logger.error("Error fetching course enrolled emails", error);
+  return [];
+}
+
+}
+
 }
 export const enrollmentService = new EnrollmentService();

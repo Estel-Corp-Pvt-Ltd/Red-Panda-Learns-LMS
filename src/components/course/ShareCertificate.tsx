@@ -1,12 +1,9 @@
 import { Button } from "@/components/ui/button";
 import {
-    Share2,
     Copy,
     Facebook,
-    Linkedin,
     Mail,
-    MessageCircle,
-    Twitter
+    Share2
 } from "lucide-react";
 import { useState } from "react";
 
@@ -16,14 +13,8 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
 
     if (!certificateId) return null;
 
-    const certificateUrl =
-        `${window.location.origin}/certificate/public/view/${certificateId}`;
-
-    const encodedUrl = encodeURIComponent(certificateUrl);
-
-    const shareText = encodeURIComponent(
-        `Check out my certificate from Vizuara AI Labs!\n${certificateUrl}`
-    );
+    const publicUrl = `${window.location.origin}/certificate/public/view/${certificateId}`;
+    const encodedPublicUrl = encodeURIComponent(publicUrl);
 
     const handleShare = (
         platform: "whatsapp" | "x" | "email" | "facebook" | "linkedin"
@@ -32,25 +23,31 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
 
         switch (platform) {
             case "whatsapp":
-                url = `https://wa.me/?text=${shareText}`;
+                url = `https://wa.me/?text=${encodeURIComponent(
+                    `Check out my certificate from Vizuara AI Labs!\n${publicUrl}`
+                )}`;
                 break;
 
             case "x":
-                url = `https://x.com/intent/tweet?text=${shareText}`;
+                url = `https://x.com/intent/tweet?text=${encodeURIComponent(
+                    `I just earned a certificate from Vizuara AI Labs 🎓\n${publicUrl}`
+                )}`;
                 break;
 
             case "email":
                 url = `mailto:?subject=${encodeURIComponent(
                     "My Vizuara AI Labs Certificate"
-                )}&body=${shareText}`;
+                )}&body=${encodeURIComponent(
+                    `Here’s my certificate:\n${publicUrl}`
+                )}`;
                 break;
 
             case "facebook":
-                url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+                url = `https://www.facebook.com/sharer/sharer.php?u=${encodedPublicUrl}`;
                 break;
 
             case "linkedin":
-                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedPublicUrl}`;
                 break;
         }
 
@@ -59,7 +56,7 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
 
     const handleCopyLink = async () => {
         try {
-            await navigator.clipboard.writeText(certificateUrl);
+            await navigator.clipboard.writeText(publicUrl);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
@@ -97,7 +94,7 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
                                 onClick={() => handleShare("whatsapp")}
                                 className="bg-green-500 hover:bg-green-600 text-white flex gap-2"
                             >
-                                <MessageCircle className="h-4 w-4" />
+                                <img src="/whatsapp-icon.png" className="w-6" alt="" />
                                 WhatsApp
                             </Button>
 
@@ -105,15 +102,15 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
                                 onClick={() => handleShare("x")}
                                 className="bg-black hover:bg-gray-900 text-white flex gap-2"
                             >
-                                <Twitter className="h-4 w-4" />
-                                X (Twitter)
+                                <img src="/twitter-icon.png" className="w-6" alt="" />
+                                Twitter
                             </Button>
 
                             <Button
                                 onClick={() => handleShare("facebook")}
                                 className="bg-blue-600 hover:bg-blue-700 text-white flex gap-2"
                             >
-                                <Facebook className="h-4 w-4" />
+                                <Facebook className="h-5 w-5" />
                                 Facebook
                             </Button>
 
@@ -121,7 +118,7 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
                                 onClick={() => handleShare("linkedin")}
                                 className="bg-[#0A66C2] hover:bg-[#004182] text-white flex gap-2"
                             >
-                                <Linkedin className="h-4 w-4" />
+                                <img src="/linkedin-icon.png" className="w-6" alt="" />
                                 LinkedIn
                             </Button>
 
@@ -129,7 +126,7 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
                                 onClick={() => handleShare("email")}
                                 className="bg-gray-800 hover:bg-gray-900 text-white flex gap-2"
                             >
-                                <Mail className="h-4 w-4" />
+                                <Mail className="h-5 w-5" />
                                 Email
                             </Button>
 
