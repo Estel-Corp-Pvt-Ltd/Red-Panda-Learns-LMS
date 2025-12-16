@@ -58,7 +58,21 @@ import {
   ArrowUpRight,
   MoreHorizontal,
 } from "lucide-react";
-
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { USER_ROLE, NOTIFICATION_STATUS, COLLECTION } from "@/constants";
 import { formatDateTime } from "@/utils/date-time";
 import EditAssignmentModal from "@/components/admin/EditAssignmentModal";
@@ -68,7 +82,15 @@ import { db } from "@/firebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { NotificationStatus } from "@/types/general";
 import { Separator } from "@/components/ui/separator";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface PaginatedAssignments {
   data: Assignment[];
@@ -88,8 +110,6 @@ type DeadlineFilterType =
   | "this-week"
   | "no-deadline";
 
-
-
 interface AssignmentNotificationStatus {
   [assignmentId: string]: NotificationStatus | null;
 }
@@ -102,7 +122,8 @@ const ManageAssignmentAuthors: React.FC = () => {
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [courseSearchQuery, setCourseSearchQuery] = useState("");
-
+  const [openCombobox, setOpenCombobox] = useState(false);
+  const [isCourseSearchOpen, setIsCourseSearchOpen] = useState(false);
   // Assignments state
   const [assignments, setAssignments] = useState<PaginatedAssignments>({
     data: [],
@@ -152,8 +173,10 @@ const ManageAssignmentAuthors: React.FC = () => {
   const [isUnpausingReminders, setIsUnpausingReminders] = useState(false);
 
   // Notification status state
-  const [notificationStatuses, setNotificationStatuses] = useState<AssignmentNotificationStatus>({});
-  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] = useState(false);
+  const [notificationStatuses, setNotificationStatuses] =
+    useState<AssignmentNotificationStatus>({});
+  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] =
+    useState(false);
 
   // ----------------- Load Notification Statuses -----------------
   const loadNotificationStatuses = async (assignmentIds: string[]) => {
@@ -167,23 +190,26 @@ const ManageAssignmentAuthors: React.FC = () => {
       const batchSize = 10;
       for (let i = 0; i < assignmentIds.length; i += batchSize) {
         const batch = assignmentIds.slice(i, i + batchSize);
-        
+
         const q = query(
           collection(db, COLLECTION.SUBMISSION_NOTIFICATION),
           where("assignmentId", "in", batch)
         );
 
         const querySnapshot = await getDocs(q);
-        
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           const assignmentId = data.assignmentId;
           const status = data.status as NotificationStatus;
-          
+
           // If multiple records exist for same assignment, prioritize certain statuses
-          if (!statusMap[assignmentId] || 
-              status === NOTIFICATION_STATUS.PAUSED ||
-              (status === NOTIFICATION_STATUS.REMINDER_SCHEDULED && statusMap[assignmentId] !== NOTIFICATION_STATUS.PAUSED)) {
+          if (
+            !statusMap[assignmentId] ||
+            status === NOTIFICATION_STATUS.PAUSED ||
+            (status === NOTIFICATION_STATUS.REMINDER_SCHEDULED &&
+              statusMap[assignmentId] !== NOTIFICATION_STATUS.PAUSED)
+          ) {
             statusMap[assignmentId] = status;
           }
         });
@@ -208,7 +234,7 @@ const ManageAssignmentAuthors: React.FC = () => {
       setIsLoadingNotificationStatuses(false);
     }
   };
-  
+
   // ----------------- Get Notification Status Badge -----------------
   const getNotificationStatusBadge = (assignmentId: string) => {
     const status = notificationStatuses[assignmentId];
@@ -224,7 +250,10 @@ const ManageAssignmentAuthors: React.FC = () => {
 
     if (status === null) {
       return (
-        <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
+        <Badge
+          variant="outline"
+          className="text-xs flex items-center gap-1 text-gray-500"
+        >
           <Bell className="h-3 w-3" />
           No Status
         </Badge>
@@ -234,42 +263,60 @@ const ManageAssignmentAuthors: React.FC = () => {
     switch (status) {
       case NOTIFICATION_STATUS.PAUSED:
         return (
-          <Badge variant="destructive" className="text-xs flex items-center gap-1">
+          <Badge
+            variant="destructive"
+            className="text-xs flex items-center gap-1"
+          >
             <BellOff className="h-3 w-3" />
             Paused
           </Badge>
         );
       case NOTIFICATION_STATUS.PENDING:
         return (
-          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+          <Badge
+            variant="secondary"
+            className="text-xs flex items-center gap-1"
+          >
             <Clock className="h-3 w-3" />
             Pending
           </Badge>
         );
       case NOTIFICATION_STATUS.REMINDER_SCHEDULED:
         return (
-          <Badge variant="default" className="text-xs flex items-center gap-1 bg-blue-500">
+          <Badge
+            variant="default"
+            className="text-xs flex items-center gap-1 bg-blue-500"
+          >
             <Bell className="h-3 w-3" />
             Scheduled
           </Badge>
         );
       case NOTIFICATION_STATUS.EVALUATED:
         return (
-          <Badge variant="outline" className="text-xs flex items-center gap-1 text-green-600 border-green-600">
+          <Badge
+            variant="outline"
+            className="text-xs flex items-center gap-1 text-green-600 border-green-600"
+          >
             <CheckCircle className="h-3 w-3" />
             Evaluated
           </Badge>
         );
       case NOTIFICATION_STATUS.ARCHIVED:
         return (
-          <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
+          <Badge
+            variant="outline"
+            className="text-xs flex items-center gap-1 text-gray-500"
+          >
             <Archive className="h-3 w-3" />
             Archived
           </Badge>
         );
       case NOTIFICATION_STATUS.ERROR:
         return (
-          <Badge variant="destructive" className="text-xs flex items-center gap-1">
+          <Badge
+            variant="destructive"
+            className="text-xs flex items-center gap-1"
+          >
             <AlertTriangle className="h-3 w-3" />
             Error
           </Badge>
@@ -360,9 +407,15 @@ const ManageAssignmentAuthors: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const filters = useFilters 
-        ? buildFilters() 
-        : [{ field: "courseId" as keyof Assignment, op: "==", value: selectedCourseId }];
+      const filters = useFilters
+        ? buildFilters()
+        : [
+            {
+              field: "courseId" as keyof Assignment,
+              op: "==",
+              value: selectedCourseId,
+            },
+          ];
 
       const result = await assignmentService.getAssignments(filters, {
         limit: 10,
@@ -509,8 +562,8 @@ const ManageAssignmentAuthors: React.FC = () => {
 
   const getSelectedUnpausedCount = () => {
     return selectedAssignmentIds.filter(
-      (id) => 
-        notificationStatuses[id] && 
+      (id) =>
+        notificationStatuses[id] &&
         notificationStatuses[id] !== NOTIFICATION_STATUS.PAUSED &&
         notificationStatuses[id] !== NOTIFICATION_STATUS.EVALUATED &&
         notificationStatuses[id] !== NOTIFICATION_STATUS.ARCHIVED
@@ -875,22 +928,21 @@ const ManageAssignmentAuthors: React.FC = () => {
     return course?.title || "";
   };
 
-
   // Helper for status colors using theme variables
-const getStatusColor = (variant) => {
-  switch (variant) {
-    case "success":
-      return "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
-    case "warning":
-      return "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800";
-    case "destructive":
-      return "text-destructive bg-destructive/10 border-destructive/20";
-    case "neutral":
-      return "text-muted-foreground bg-muted border-border";
-    default:
-      return "bg-primary/10 text-primary border-primary/20";
-  }
-};
+  const getStatusColor = (variant) => {
+    switch (variant) {
+      case "success":
+        return "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
+      case "warning":
+        return "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+      case "destructive":
+        return "text-destructive bg-destructive/10 border-destructive/20";
+      case "neutral":
+        return "text-muted-foreground bg-muted border-border";
+      default:
+        return "bg-primary/10 text-primary border-primary/20";
+    }
+  };
 
   // ----------------- Initial Load -----------------
   useEffect(() => {
@@ -925,7 +977,7 @@ const getStatusColor = (variant) => {
   const selectedPausedCount = getSelectedPausedCount();
   const selectedUnpausedCount = getSelectedUnpausedCount();
 
-return (
+  return (
     <AdminLayout>
       <div className="space-y-6 p-1">
         {/* --- Header & Course Context Section --- */}
@@ -933,90 +985,141 @@ return (
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <FileText className="h-6 w-6 text-primary" />
-              Assignment Authors
+              Assignment Manager
             </h1>
             <p className="text-muted-foreground">
               Manage assignment ownership and notification settings.
             </p>
           </div>
 
-          {/* Course Selector */}
-          <div className="w-full md:w-[350px] space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Active Course
-            </label>
-            <div className="relative">
-              {!selectedCourseId ? (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search for a course..."
-                    value={courseSearchQuery}
-                    onChange={(e) => setCourseSearchQuery(e.target.value)}
-                    className="pl-9 bg-background"
-                  />
-                </div>
-              ) : null}
+          {/* Course Selector - Combobox */}
+        {/* Course Selector - Spotlight Style */}
+<div className="w-full md:w-[350px] space-y-2">
+  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    Active Course
+  </label>
 
-              <div className="mt-2">
-                <Select
-                  value={selectedCourseId}
-                  onValueChange={handleCourseSelect}
-                >
-                  <SelectTrigger className="w-full bg-background shadow-sm h-11">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <span className="truncate">
-                        {selectedCourseId ? (
-                          <span className="font-medium text-foreground">
-                            {getSelectedCourseName()}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            Select a course...
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {filteredCourses.length === 0 ? (
-                      <div className="py-4 text-center text-sm text-muted-foreground">
-                        No courses found
-                      </div>
-                    ) : (
-                      filteredCourses.map((course) => (
-                        <SelectItem key={course.id} value={course.id}>
-                          <div className="flex items-center gap-2 justify-between w-full">
-                            <span>{course.title}</span>
-                            <Badge variant="secondary" className="text-[10px]">
-                              {course.status}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+  {/* Trigger Button */}
+  <Button
+    variant="outline"
+    role="combobox"
+    onClick={() => setIsCourseSearchOpen(true)}
+    className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent hover:text-accent-foreground text-left"
+  >
+    <div className="flex items-center gap-2 overflow-hidden w-full">
+      <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+      <span className="truncate flex-1">
+        {selectedCourseId
+          ? courses.find((c) => c.id === selectedCourseId)?.title
+          : <span className="text-muted-foreground">Select a course...</span>}
+      </span>
+    </div>
+    <div className="flex items-center gap-1">
+      <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">
+        Search
+      </kbd>
+      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+    </div>
+  </Button>
 
-              {selectedCourseId && (
-                <div className="flex justify-end mt-1">
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCourseId("");
-                      // reset logic
-                    }}
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    Clear selection
-                  </Button>
-                </div>
-              )}
+  {/* Centered Spotlight Dialog */}
+  <Dialog open={isCourseSearchOpen} onOpenChange={setIsCourseSearchOpen}>
+    <DialogContent className="p-0 gap-0 max-w-2xl outline-none overflow-hidden shadow-2xl bg-transparent border-none">
+      <div className="bg-background border rounded-lg overflow-hidden shadow-xl">
+        <Command className="w-full h-full max-h-[80vh] flex flex-col">
+          {/* Header Area */}
+          <div className="border-b px-4 py-3 flex items-center gap-2 bg-muted/20">
+            <Search className="h-5 w-5 text-muted-foreground" />
+            <CommandInput 
+              placeholder="Type to search courses..." 
+              className="border-none focus:ring-0 text-base h-9 bg-transparent"
+            />
+            <div className="ml-auto text-xs text-muted-foreground border px-2 py-0.5 rounded bg-background">
+              ESC to close
             </div>
           </div>
+          
+          <CommandList className="max-h-[500px] overflow-y-auto custom-scrollbar">
+            <CommandEmpty className="py-12 text-center text-sm text-muted-foreground">
+              No courses found.
+            </CommandEmpty>
+            
+            <CommandGroup heading="Available Courses" className="px-2 pb-2">
+              {courses.map((course) => (
+                <CommandItem
+                  key={course.id}
+                  value={course.title}
+                  onSelect={() => {
+                    handleCourseSelect(course.id);
+                    setIsCourseSearchOpen(false);
+                  }}
+                  className="aria-selected:bg-accent aria-selected:text-accent-foreground my-1 rounded-md px-4 py-3 cursor-pointer"
+                >
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
+                        selectedCourseId === course.id 
+                          ? "bg-primary text-primary-foreground border-primary" 
+                          : "bg-background text-muted-foreground"
+                      )}>
+                        {selectedCourseId === course.id ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <BookOpen className="h-4 w-4" />
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="font-medium truncate text-sm sm:text-base">
+                          {course.title}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate font-mono">
+                          ID: {course.id}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Badge 
+                      variant={course.status === "PUBLISHED" ? 'default' : 'secondary'}
+                      className="shrink-0"
+                    >
+                      {course.status}
+                    </Badge>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  {selectedCourseId && (
+    <div className="flex justify-end mt-1">
+      <Button
+        variant="link"
+        size="sm"
+        onClick={() => {
+          setSelectedCourseId("");
+          setAssignments({
+            data: [],
+            hasNextPage: false,
+            hasPreviousPage: false,
+            totalCount: 0,
+          });
+          setPendingChanges(new Map());
+          setSelectedAssignmentIds([]);
+          setNotificationStatuses({});
+        }}
+        className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
+      >
+        Clear selection
+      </Button>
+    </div>
+  )}
+</div>
         </div>
 
         <Separator />
@@ -1029,7 +1132,8 @@ return (
             </div>
             <h3 className="text-lg font-medium">No Course Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm mt-2">
-              Please select a course from the dropdown above to view assignments.
+              Please select a course from the dropdown above to view
+              assignments.
             </p>
           </div>
         ) : (
@@ -1039,13 +1143,16 @@ return (
                 <div className="space-y-1">
                   <CardTitle className="text-lg font-medium">
                     Assignments
-                    <Badge variant="secondary" className="ml-3 rounded-sm font-normal">
+                    <Badge
+                      variant="secondary"
+                      className="ml-3 rounded-sm font-normal"
+                    >
                       {assignments.totalCount} Total
                     </Badge>
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2">
-                     <Users className="h-3 w-3" />
-                     {staffUsers.length} staff members available for assignment
+                    <Users className="h-3 w-3" />
+                    {staffUsers.length} staff members available for assignment
                   </CardDescription>
                 </div>
 
@@ -1072,7 +1179,10 @@ return (
                     <Filter className="h-4 w-4" />
                     Filters
                     {activeFiltersCount > 0 && (
-                      <Badge variant="default" className="h-5 px-1.5 min-w-[1.25rem]">
+                      <Badge
+                        variant="default"
+                        className="h-5 px-1.5 min-w-[1.25rem]"
+                      >
                         {activeFiltersCount}
                       </Badge>
                     )}
@@ -1091,7 +1201,9 @@ return (
                     className="h-9 w-9 p-0"
                     title="Refresh & Reset"
                   >
-                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                    <RefreshCw
+                      className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                    />
                   </Button>
                 </div>
               </div>
@@ -1100,8 +1212,13 @@ return (
               {showFilters && (
                 <div className="mt-4 p-4 rounded-md border bg-muted/40 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-2">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Author Status</label>
-                    <Select value={authorFilter} onValueChange={setAuthorFilter}>
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Author Status
+                    </label>
+                    <Select
+                      value={authorFilter}
+                      onValueChange={setAuthorFilter}
+                    >
                       <SelectTrigger className="bg-background h-9">
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
@@ -1111,19 +1228,23 @@ return (
                         <SelectItem value="assigned">Assigned</SelectItem>
                         <DropdownMenuSeparator />
                         {staffUsers.map((user) => (
-                           <SelectItem key={user.id} value={user.id}>{user.firstName} {user.lastName}</SelectItem>
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.firstName} {user.lastName}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Deadline</label>
-                       <Select
-                    value={deadlineFilter}
-                    onValueChange={(value: DeadlineFilterType) =>
-                      setDeadlineFilter(value)
-                    }
-                  >
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Deadline
+                    </label>
+                    <Select
+                      value={deadlineFilter}
+                      onValueChange={(value: DeadlineFilterType) =>
+                        setDeadlineFilter(value)
+                      }
+                    >
                       <SelectTrigger className="bg-background h-9">
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
@@ -1138,25 +1259,36 @@ return (
                     </Select>
                   </div>
                   <div className="flex items-end">
-                     <Button size="sm" onClick={applyFilters} disabled={isLoading} className="w-full h-9">
-                        Apply Filters
-                     </Button>
+                    <Button
+                      size="sm"
+                      onClick={applyFilters}
+                      disabled={isLoading}
+                      className="w-full h-9"
+                    >
+                      Apply Filters
+                    </Button>
                   </div>
                 </div>
               )}
             </CardHeader>
 
             <CardContent className="p-0">
-               {/* --- Data Table --- */}
+              {/* --- Data Table --- */}
               <div className="border-t">
                 {displayedAssignments.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <div className="p-3 bg-muted rounded-full mb-3">
-                       <FileText className="h-6 w-6" />
+                      <FileText className="h-6 w-6" />
                     </div>
                     <p>No assignments found matching your criteria.</p>
                     {activeFiltersCount > 0 && (
-                       <Button variant="link" onClick={resetFilters} className="mt-2">Clear filters</Button>
+                      <Button
+                        variant="link"
+                        onClick={resetFilters}
+                        className="mt-2"
+                      >
+                        Clear filters
+                      </Button>
                     )}
                   </div>
                 ) : (
@@ -1167,10 +1299,14 @@ return (
                           <input
                             type="checkbox"
                             className="translate-y-0.5 rounded border-primary text-primary focus:ring-primary h-4 w-4"
-                            onChange={() => toggleSelectAllDisplayed(displayedAssignments)}
+                            onChange={() =>
+                              toggleSelectAllDisplayed(displayedAssignments)
+                            }
                             checked={
                               displayedAssignments.length > 0 &&
-                              displayedAssignments.every((a) => selectedAssignmentIds.includes(a.id))
+                              displayedAssignments.every((a) =>
+                                selectedAssignmentIds.includes(a.id)
+                              )
                             }
                           />
                         </TableHead>
@@ -1178,12 +1314,16 @@ return (
                         <TableHead>Timeline</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="w-[250px]">Author</TableHead>
-                        <TableHead className="w-[100px] text-right">Actions</TableHead>
+                        <TableHead className="w-[100px] text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {displayedAssignments.map((assignment) => {
-                        const deadlineStatus = getDeadlineStatus(assignment.deadline);
+                        const deadlineStatus = getDeadlineStatus(
+                          assignment.deadline
+                        );
                         const isChanged = hasChanges(assignment.id);
                         const isSaving = savingAssignments.has(assignment.id);
 
@@ -1192,15 +1332,23 @@ return (
                             key={assignment.id}
                             className={`
                               group transition-colors
-                              ${isChanged ? "bg-accent/30 hover:bg-accent/40" : "hover:bg-muted/50"}
+                              ${
+                                isChanged
+                                  ? "bg-accent/30 hover:bg-accent/40"
+                                  : "hover:bg-muted/50"
+                              }
                             `}
                           >
                             <TableCell className="text-center align-top pt-4">
                               <input
                                 type="checkbox"
                                 className="rounded border-muted-foreground/30 text-primary focus:ring-primary h-4 w-4"
-                                checked={selectedAssignmentIds.includes(assignment.id)}
-                                onChange={() => toggleSelectAssignment(assignment.id)}
+                                checked={selectedAssignmentIds.includes(
+                                  assignment.id
+                                )}
+                                onChange={() =>
+                                  toggleSelectAssignment(assignment.id)
+                                }
                               />
                             </TableCell>
 
@@ -1216,19 +1364,25 @@ return (
                             </TableCell>
 
                             <TableCell className="align-top py-3">
-                               <div className="flex flex-col gap-1.5">
-                                 {assignment.deadline ? (
-                                    <div className={`flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full w-fit border ${getStatusColor(deadlineStatus.variant)}`}>
-                                       <Calendar className="h-3 w-3" />
-                                       <span>{deadlineStatus.label}</span>
-                                    </div>
-                                 ) : (
-                                    <span className="text-xs text-muted-foreground pl-1">No Deadline</span>
-                                 )}
-                                 <span className="text-xs text-muted-foreground pl-1">
-                                    Created {formatDateTime(assignment.createdAt)}
-                                 </span>
-                               </div>
+                              <div className="flex flex-col gap-1.5">
+                                {assignment.deadline ? (
+                                  <div
+                                    className={`flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full w-fit border ${getStatusColor(
+                                      deadlineStatus.variant
+                                    )}`}
+                                  >
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{deadlineStatus.label}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground pl-1">
+                                    No Deadline
+                                  </span>
+                                )}
+                                <span className="text-xs text-muted-foreground pl-1">
+                                  Created {formatDateTime(assignment.createdAt)}
+                                </span>
+                              </div>
                             </TableCell>
 
                             <TableCell className="align-top py-3">
@@ -1241,13 +1395,21 @@ return (
                               <div className="space-y-2">
                                 <Select
                                   value={getCurrentAuthorId(assignment)}
-                                  onValueChange={(value) => handleAuthorChange(assignment.id, value)}
+                                  onValueChange={(value) =>
+                                    handleAuthorChange(assignment.id, value)
+                                  }
                                   disabled={isSaving}
                                 >
-                                  <SelectTrigger className={`
+                                  <SelectTrigger
+                                    className={`
                                     h-9 w-full bg-background/50 border-input
-                                    ${isChanged ? "border-amber-400 dark:border-amber-600 ring-1 ring-amber-400/20" : ""}
-                                  `}>
+                                    ${
+                                      isChanged
+                                        ? "border-amber-400 dark:border-amber-600 ring-1 ring-amber-400/20"
+                                        : ""
+                                    }
+                                  `}
+                                  >
                                     <SelectValue placeholder="Unassigned" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1255,19 +1417,22 @@ return (
                                       <SelectItem key={user.id} value={user.id}>
                                         <div className="flex items-center gap-2">
                                           <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                                             {user.firstName[0]}{user.lastName[0]}
+                                            {user.firstName[0]}
+                                            {user.lastName[0]}
                                           </div>
-                                          <span>{user.firstName} {user.lastName}</span>
+                                          <span>
+                                            {user.firstName} {user.lastName}
+                                          </span>
                                         </div>
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                                 {isChanged && (
-                                   <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-500 font-medium animate-pulse">
-                                      <AlertCircle className="h-3 w-3" />
-                                      Pending Change
-                                   </div>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-500 font-medium animate-pulse">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Pending Change
+                                  </div>
                                 )}
                               </div>
                             </TableCell>
@@ -1275,35 +1440,54 @@ return (
                             <TableCell className="align-top py-3 text-right">
                               <div className="flex justify-end items-center gap-1">
                                 {isChanged && (
-                                   <Button
-                                      size="icon"
-                                      variant="default"
-                                      className="h-8 w-8 bg-amber-600 hover:bg-amber-700 text-white"
-                                      onClick={() => saveAssignmentAuthor(assignment.id)}
-                                      disabled={isSaving}
-                                      title="Save Change"
-                                   >
-                                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                   </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="default"
+                                    className="h-8 w-8 bg-amber-600 hover:bg-amber-700 text-white"
+                                    onClick={() =>
+                                      saveAssignmentAuthor(assignment.id)
+                                    }
+                                    disabled={isSaving}
+                                    title="Save Change"
+                                  >
+                                    {isSaving ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Save className="h-4 w-4" />
+                                    )}
+                                  </Button>
                                 )}
                                 <DropdownMenu>
-                                   <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                         <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                   </DropdownMenuTrigger>
-                                   <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleEditAssignment(assignment.id)}>
-                                         <Edit className="h-4 w-4 mr-2" />
-                                         Edit Details
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => {
-                                          window.open(`/courses/${selectedCourseId}/lesson/${assignment.id}`, '_blank');
-                                      }}>
-                                         <ArrowUpRight className="h-4 w-4 mr-2" />
-                                         View on Site
-                                      </DropdownMenuItem>
-                                   </DropdownMenuContent>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleEditAssignment(assignment.id)
+                                      }
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        window.open(
+                                          `/courses/${selectedCourseId}/lesson/${assignment.id}`,
+                                          "_blank"
+                                        );
+                                      }}
+                                    >
+                                      <ArrowUpRight className="h-4 w-4 mr-2" />
+                                      View on Site
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
                             </TableCell>
@@ -1318,15 +1502,25 @@ return (
               {/* Pagination */}
               <div className="flex items-center justify-between px-4 py-4 border-t bg-muted/20">
                 <div className="text-sm text-muted-foreground">
-                   Page {paginationState.currentPage}
+                  Page {paginationState.currentPage}
                 </div>
                 <div className="flex items-center gap-2">
-                   <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={!assignments.hasPreviousPage || isLoading}>
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-                   </Button>
-                   <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!assignments.hasNextPage || isLoading}>
-                      Next <ChevronRight className="h-4 w-4 ml-1" />
-                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousPage}
+                    disabled={!assignments.hasPreviousPage || isLoading}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={!assignments.hasNextPage || isLoading}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -1338,7 +1532,6 @@ return (
       {(selectedAssignmentIds.length > 0 || pendingChanges.size > 0) && (
         <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 animate-in slide-in-from-bottom-10 fade-in">
           <div className="bg-popover text-popover-foreground shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 border border-border max-w-3xl w-full justify-between sm:w-auto">
-
             {/* Left: Status Counts */}
             <div className="flex items-center gap-4 text-sm font-medium">
               {selectedAssignmentIds.length > 0 && (
@@ -1366,7 +1559,11 @@ return (
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" size="sm" className="h-8 border bg-secondary/50">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-8 border bg-secondary/50"
+                      >
                         Notification Actions
                       </Button>
                     </DropdownMenuTrigger>
@@ -1374,20 +1571,40 @@ return (
                       <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                       <DropdownMenuItem
                         onClick={handlePauseReminders}
-                        disabled={isPausingReminders || selectedUnpausedCount === 0}
+                        disabled={
+                          isPausingReminders || selectedUnpausedCount === 0
+                        }
                       >
-                         {isPausingReminders ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Pause className="h-4 w-4 mr-2" />}
-                         Pause Reminders
-                         {selectedUnpausedCount > 0 && <Badge variant="secondary" className="ml-auto">{selectedUnpausedCount}</Badge>}
+                        {isPausingReminders ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Pause className="h-4 w-4 mr-2" />
+                        )}
+                        Pause Reminders
+                        {selectedUnpausedCount > 0 && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {selectedUnpausedCount}
+                          </Badge>
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={handleUnpauseReminders}
-                        disabled={isUnpausingReminders || selectedPausedCount === 0}
+                        disabled={
+                          isUnpausingReminders || selectedPausedCount === 0
+                        }
                         className="text-emerald-600 focus:text-emerald-700"
                       >
-                         {isUnpausingReminders ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Play className="h-4 w-4 mr-2" />}
-                         Resume Reminders
-                         {selectedPausedCount > 0 && <Badge variant="secondary" className="ml-auto">{selectedPausedCount}</Badge>}
+                        {isUnpausingReminders ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Play className="h-4 w-4 mr-2" />
+                        )}
+                        Resume Reminders
+                        {selectedPausedCount > 0 && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {selectedPausedCount}
+                          </Badge>
+                        )}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

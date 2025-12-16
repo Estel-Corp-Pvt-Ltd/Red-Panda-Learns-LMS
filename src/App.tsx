@@ -42,7 +42,7 @@ const AdminAssignStudents = lazy(() => import("./pages/admin/AdminAssignStudents
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
-const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminAssignAuthor"))
+const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminManageAssignments"))
 const AdminCreateAnnouncement = lazy(()=> import("@/pages/admin/AdminManageAnnouncements"))
 //Instructor
 

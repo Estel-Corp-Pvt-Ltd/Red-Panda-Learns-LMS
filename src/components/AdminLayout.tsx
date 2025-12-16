@@ -66,14 +66,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <Book className="h-5 w-5" />,
     },
     {
-      name: "Submissions",
+      name: "Assignment Submissions",
       path: "/admin/submissions",
       icon: <NotepadText className="h-5 w-5" />,
     },
     {
-      name: "Manage Assignments",
+      name: "Assignment Manager",
       path: "/admin/manage-assignment-authors",
       icon: <FilePenLine className="h-5 w-5" />,
+    },
+    {
+      name: "Admin Assign Students",
+      path: "/admin/assign-students",
+      icon: <UserPlus className="h-5 w-5" />,
     },
     {
       name: "Coupons",
@@ -89,11 +94,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Enrollments",
       path: "/admin/enrollments",
       icon: <AlarmClockPlus className="h-5 w-5" />,
-    },
-    {
-      name: "Assign Students",
-      path: "/admin/assign-students",
-      icon: <UserPlus className="h-5 w-5" />,
     },
     {
       name: "Pop-Ups",
