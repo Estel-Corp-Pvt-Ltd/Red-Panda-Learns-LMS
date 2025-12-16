@@ -130,7 +130,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: "/admin/announcements",
       icon: <Megaphone className="h-5 w-5" />,
     },
-
+    {
+      name: "Banners",
+      path: "/admin/banners",
+      icon: <PictureInPicture className="h-5 w-5" />,
+    },
     {
       name: "Bulk Enroll Students",
       path: "/admin/bulk-student-enroll",
