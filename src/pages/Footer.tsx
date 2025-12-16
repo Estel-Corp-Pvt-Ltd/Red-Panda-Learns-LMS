@@ -37,14 +37,14 @@ const Footer = () => {
                   DynaRoute
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a
                   href="https://vizz.vizuara.ai/"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Vizz AI
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
 

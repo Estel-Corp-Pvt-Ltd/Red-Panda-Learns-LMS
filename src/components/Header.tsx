@@ -111,7 +111,7 @@ export function Header({
                           </a>
                         </NavigationMenuLink>
                       </li>
-                      <li>
+                      {/* <li>
                         <NavigationMenuLink asChild>
                           <a
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
@@ -125,7 +125,7 @@ export function Header({
                             </p>
                           </a>
                         </NavigationMenuLink>
-                      </li>
+                      </li> */}
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>

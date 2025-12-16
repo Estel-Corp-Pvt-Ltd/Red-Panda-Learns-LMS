@@ -39,7 +39,9 @@ import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMai
 import { sendComplaintRedressalMailWorker } from "./workers/sendComplaintRedressalMailWorker";
 import { deleteAnnouncement } from "./handlers/announcements/deleteAnnouncements";
 import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement";
+import { unpauseReminderForAssignments } from "./handlers/unpauseReminderForAssignments";
 import { showCertificatePreview } from "./handlers/showCertificatePreview";
+import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
 
 export {
   enrollStudent,
@@ -80,5 +82,7 @@ export {
   sendComplaintRedressalMailWorker,
   updateAnnouncement,
   deleteAnnouncement,
+  unpauseReminderForAssignments,
   showCertificatePreview,
+  bulkIssueCertificates
 };
