@@ -6,16 +6,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { notificationService } from "../../services/notificationService";
 import { COLLECTION } from "../../constants";
 import * as admin from "firebase-admin";
-import { FieldPath } from "firebase-admin/firestore";
 
-// Helper: chunk array for Firestore "in" queries (>10 items limit)
-function chunk<T>(arr: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-}
 
 // TODO: Make sure to add check for Admin operations
 
@@ -57,25 +48,29 @@ async function createNotificationHandler(req: Request, res: Response) {
       (d) => d.data().adminId
     );
 
+    const notificationEmailAddresses: string[] = assignedAdminsSnap.docs.map(
+      (d) => d.data().notificationEmailAddress
+    );
+
     // ----------------------------------------------------
     // 2. FETCH ADMIN EMAILS — Optimized (1 read if <= 10)
     // ----------------------------------------------------
-    const adminEmails: string[] = [];
+    // const adminEmails: string[] = [];
 
-    const idChunks = chunk(adminIds, 10); // Firestore "in" query limit is 10
-    console.log("Admin ID Chunks:", idChunks);
-    for (const idChunk of idChunks) {
-      const snap = await admin
-        .firestore()
-        .collection(COLLECTION.USERS)
-        .where(FieldPath.documentId(), "in", idChunk)
-        .get();
+    // const idChunks = chunk(adminIds, 10); // Firestore "in" query limit is 10
+    // console.log("Admin ID Chunks:", idChunks);
+    // for (const idChunk of idChunks) {
+    //   const snap = await admin
+    //     .firestore()
+    //     .collection(COLLECTION.USERS)
+    //     .where(FieldPath.documentId(), "in", idChunk)
+    //     .get();
 
-      snap.docs.forEach((doc) => {
-        const email = doc.data()?.email;
-        if (email) adminEmails.push(email);
-      });
-    }
+    //   snap.docs.forEach((doc) => {
+    //     const email = doc.data()?.email;
+    //     if (email) adminEmails.push(email);
+    //   });
+    // }
 
     // ----------------------------------------------------
     // 3. CREATE NOTIFICATION
@@ -85,7 +80,7 @@ async function createNotificationHandler(req: Request, res: Response) {
       assignmentId,
       studentId,
       adminIds,
-      adminEmails,
+      notificationEmailAddresses,
     });
 
     res.status(200).json({ success: true, data: notif });
