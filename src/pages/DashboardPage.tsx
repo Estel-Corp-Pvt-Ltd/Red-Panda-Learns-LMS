@@ -35,6 +35,7 @@ function EnrolledCourseCard({
 
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false); // completionDate exists
+  const [isCertificateIdAvailable, setIsCertificateIdAvailable] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
   const totalLessons = course?.topics?.reduce((sum, topic) => {
@@ -85,13 +86,12 @@ function EnrolledCourseCard({
       const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
       if (result.success && result.data[0]) {
         const progress = result.data[0];
-
         const eligible =
           totalLessons > 0 &&
           progress.lessonHistory.length >= Math.ceil(0.9 * totalLessons);
 
         setIsEligibleForCertificate(eligible);
-
+        setIsCertificateIdAvailable(!!progress.certification?.certificateId);
         setIsCompleted(!!progress.completionDate);
       }
       setIsProgressLoading(false);
@@ -172,57 +172,64 @@ function EnrolledCourseCard({
 
                 {!isProgressLoading && isCompleted && (
                   <>
-                    {certificateStatus === null && (
-                      <Badge variant="secondary" className="text-xs">
-                        Certificate available on request
-                      </Badge>
-                    )}
-
-                    {certificateStatus === null && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          const res = await certificateRequestService.requestCertificate(
-                            enrollment.userId,
-                            enrollment.courseId
-                          );
-
-                          if (res.success) {
-                            toast({
-                              title: "Certificate requested",
-                              description: "Pending approval",
-                            });
-                            fetchEnrollmentsAndCertificateRequestStatuses();
-                          } else {
-                            toast({
-                              title: "Certificate request failed",
-                              description: "Try again later",
-                            });
-                          }
-                        }}
-                      >
-                        Request Certificate
-                      </Button>
-                    )}
-
-                    {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING && (
-                      <Badge variant="outline" className="text-xs flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Certificate request pending
-                      </Badge>
-                    )}
-
-                    {certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED && (
+                    {/* PRIORITY 1: Show certificate if it exists (bypasses all request logic) */}
+                    {isCertificateIdAvailable ? (
                       <Link to={`/certificate/${user.id}_${course.id}/`}>
                         <Button size="sm">
                           <Eye className="h-4 w-4 mr-2" />
                           View Certificate
                         </Button>
                       </Link>
+                    ) : (
+                      /* PRIORITY 2: Handle request flow only if certificate doesn't exist */
+                      <>
+                        {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING ? (
+                          <Badge variant="outline" className="text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Certificate request pending
+                          </Badge>
+                        ) : certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Certificate approved - generating...
+                          </Badge>
+                        ) : (
+                          /* No request made yet - show request option */
+                          <>
+                            <Badge variant="secondary" className="text-xs">
+                              Certificate available on request
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                const res = await certificateRequestService.requestCertificate(
+                                  enrollment.userId,
+                                  enrollment.courseId
+                                );
+
+                                if (res.success) {
+                                  toast({
+                                    title: "Certificate requested",
+                                    description: "Pending approval",
+                                  });
+                                  fetchEnrollmentsAndCertificateRequestStatuses();
+                                } else {
+                                  toast({
+                                    title: "Certificate request failed",
+                                    description: "Try again later",
+                                  });
+                                }
+                              }}
+                            >
+                              Request Certificate
+                            </Button>
+                          </>
+                        )}
+                      </>
                     )}
                   </>
                 )}
+                
               </div>
             </div>
           </div>

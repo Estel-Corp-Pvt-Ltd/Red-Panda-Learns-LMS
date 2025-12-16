@@ -1,13 +1,17 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import AdminLayout from '../AdminLayout'
-import { PaginatedResult } from '@/utils/pagination'
-import { Enrollment } from '@/types/enrollment'
-import { enrollmentService } from '@/services/enrollmentService'
-import { DocumentSnapshot } from 'firebase/firestore'
 import { ENROLLMENT_STATUS } from '@/constants'
+import { enrollmentService } from '@/services/enrollmentService'
+import { Enrollment } from '@/types/enrollment'
 import { EnrollmentStatus } from '@/types/general'
+import { PaginatedResult } from '@/utils/pagination'
+import { DocumentSnapshot } from 'firebase/firestore'
+import React, { useCallback, useEffect, useState } from 'react'
+import AdminLayout from '../AdminLayout'
+import { BACKEND_URL } from '@/config'
+import { authService } from '@/services/authService'
+import { toast } from '@/hooks/use-toast'
 
 const StudentEnrollments: React.FC = () => {
+
   const [enrollments, setEnrollments] = useState<PaginatedResult<Enrollment>>({
     data: [],
     hasNextPage: false,
@@ -16,15 +20,18 @@ const StudentEnrollments: React.FC = () => {
     previousCursor: null,
     totalCount: 0
   });
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [searchField, setSearchField] = useState<'courseName' | 'userName' | 'userEmail'>('courseName')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [pageLimit, setPageLimit] = useState(20)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedEnrollments, setSelectedEnrollments] = useState<Set<string>>(new Set())
-  const [bulkActionLoading, setBulkActionLoading] = useState(false)
+
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchField, setSearchField] = useState<'courseName' | 'userName' | 'userEmail'>('courseName');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [pageLimit, setPageLimit] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedEnrollments, setSelectedEnrollments] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [isIssuingCertificates, setIsIssuingCertificates] = useState(false);
+  const [certificateRemark, setCertificateRemark] = useState('');
 
   const fetchEnrollments = useCallback(async (
     cursor?: DocumentSnapshot | null,
@@ -150,7 +157,7 @@ const StudentEnrollments: React.FC = () => {
       }
       return newSelection
     })
-  }
+  };
 
   const handleSelectAll = () => {
     if (selectedEnrollments.size === enrollments.data.length) {
@@ -158,12 +165,20 @@ const StudentEnrollments: React.FC = () => {
     } else {
       setSelectedEnrollments(new Set(enrollments.data.map(e => e.id)))
     }
-  }
+  };
 
   // Get selected enrollments with their current status
   const getSelectedEnrollments = () => {
     return enrollments.data.filter(enrollment => selectedEnrollments.has(enrollment.id));
-  }
+  };
+
+  const canIssueCertificates = () => {
+    const selected = getSelectedEnrollments();
+    return (
+      selected.length > 0 &&
+      selected.every(e => e.status !== ENROLLMENT_STATUS.DROPPED)
+    );
+  };
 
   // Bulk status update
   const handleBulkStatusUpdate = async (newStatus: EnrollmentStatus) => {
@@ -253,6 +268,68 @@ const StudentEnrollments: React.FC = () => {
   const isIndeterminate = selectedEnrollments.size > 0 && selectedEnrollments.size < enrollments.data.length
 
   const hasActiveFilters = searchTerm || startDate || endDate
+
+  const handleIssueCertificates = async () => {
+    if (selectedEnrollments.size === 0) return;
+    if (!certificateRemark) {
+      toast({
+        title: "Remark is required"
+      });
+      return;
+    }
+
+    setBulkActionLoading(true);
+    setIsIssuingCertificates(true);
+
+    const progressIdentifiers = enrollments
+      .data
+      .filter(e => selectedEnrollments.has(e.id))
+      .map(e => ({
+        userId: e.userId,
+        courseId: e.courseId
+      }));
+
+    try {
+      const idToken = await authService.getToken();
+
+      const response = await fetch(
+        `${BACKEND_URL}/bulkIssueCertificates`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            enrollments: progressIdentifiers,
+            remark: certificateRemark
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success) {
+        toast({
+          title: "Failed Bulk Certificate Issue",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Certificates Issued",
+        });
+      }
+
+      await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate);
+      setSelectedEnrollments(new Set());
+      setCertificateRemark('');
+    } catch (err) {
+      console.error('Error issuing certificates:', err);
+    } finally {
+      setBulkActionLoading(false);
+      setIsIssuingCertificates(false);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -361,7 +438,7 @@ const StudentEnrollments: React.FC = () => {
                       disabled={bulkActionLoading}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
                     >
-                      {bulkActionLoading ? 'Activating...' : 'Activate Selected'}
+                      {bulkActionLoading && !isIssuingCertificates ? 'Activating...' : 'Activate Selected'}
                     </button>
                   )}
 
@@ -372,7 +449,7 @@ const StudentEnrollments: React.FC = () => {
                       disabled={bulkActionLoading}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
                     >
-                      {bulkActionLoading ? 'Deactivating...' : 'Deactivate Selected'}
+                      {bulkActionLoading && !isIssuingCertificates ? 'Deactivating...' : 'Deactivate Selected'}
                     </button>
                   )}
 
@@ -381,6 +458,34 @@ const StudentEnrollments: React.FC = () => {
                     <span className="text-sm text-orange-600 dark:text-orange-400">
                       Select enrollments with same status to perform bulk actions
                     </span>
+                  )}
+
+                  {/* Certificate Remark */}
+                  {canIssueCertificates() && (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Certificate Remark"
+                        value={certificateRemark}
+                        onChange={(e) => setCertificateRemark(e.target.value)}
+                        className="px-3 py-2 text-sm border rounded-md
+                     border-gray-300 dark:border-gray-600
+                     bg-white dark:bg-gray-700
+                     text-gray-900 dark:text-white
+                     focus:ring-blue-500 focus:border-blue-500"
+                      />
+
+                      <button
+                        onClick={handleIssueCertificates}
+                        disabled={bulkActionLoading}
+                        className="inline-flex items-center px-4 py-2
+                     text-sm font-medium rounded-md
+                     text-white bg-blue-600 hover:bg-blue-700
+                     disabled:opacity-50"
+                      >
+                        {bulkActionLoading ? 'Issuing...' : 'Issue Certificates'}
+                      </button>
+                    </>
                   )}
                 </div>
               )}

@@ -17,6 +17,8 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return chunks;
 }
 
+// TODO: Make sure to add check for Admin operations
+
 async function createNotificationHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
