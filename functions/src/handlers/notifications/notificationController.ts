@@ -8,6 +8,8 @@ import { COLLECTION } from "../../constants";
 import * as admin from "firebase-admin";
 
 
+// TODO: Make sure to add check for Admin operations
+
 async function createNotificationHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
