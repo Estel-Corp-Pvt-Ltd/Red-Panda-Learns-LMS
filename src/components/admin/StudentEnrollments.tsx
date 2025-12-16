@@ -9,6 +9,7 @@ import AdminLayout from '../AdminLayout'
 import { BACKEND_URL } from '@/config'
 import { authService } from '@/services/authService'
 import { toast } from '@/hooks/use-toast'
+import { learningProgressService } from '@/services/learningProgressService'
 
 const StudentEnrollments: React.FC = () => {
 
@@ -20,6 +21,7 @@ const StudentEnrollments: React.FC = () => {
     previousCursor: null,
     totalCount: 0
   });
+  const [enrollmentCertificateInfo, setEnrollmentCertificateInfo] = useState<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; }[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,9 +92,27 @@ const StudentEnrollments: React.FC = () => {
       })
 
       if (response.success && response.data) {
-        setEnrollments(response.data)
+        setEnrollments(response.data);
+
+        const progressIdentifiers = response
+          .data
+          .data
+          .map(e => ({
+            userId: e.userId,
+            courseId: e.courseId
+          }));
+
+        const certificateInfoResponse = await learningProgressService.getCertificateStatusForPairs(progressIdentifiers);
+        if (!certificateInfoResponse.success) {
+          setEnrollmentCertificateInfo([]);
+          toast({
+            title: "Certificate status info fetching failed"
+          });
+        } else {
+          setEnrollmentCertificateInfo(certificateInfoResponse.data);
+        }
         // Clear selection when data changes
-        setSelectedEnrollments(new Set())
+        setSelectedEnrollments(new Set());
       }
     } catch (error) {
       console.error('Error fetching enrollments:', error)
@@ -180,13 +200,13 @@ const StudentEnrollments: React.FC = () => {
 
   // Bulk status update
   const handleBulkStatusUpdate = async (newStatus: EnrollmentStatus) => {
-    if (selectedEnrollments.size === 0) return
+    if (selectedEnrollments.size === 0) return;
 
     setBulkActionLoading(true)
     try {
       const updatePromises = Array.from(selectedEnrollments).map(enrollmentId =>
         enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
-      )
+      );
 
       await Promise.all(updatePromises)
 
@@ -547,6 +567,12 @@ const StudentEnrollments: React.FC = () => {
                         Order ID
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Certificate Issued
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Remark
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -591,6 +617,14 @@ const StudentEnrollments: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
                             {enrollment.orderId || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
+                            {
+                              (enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.isCertificateIssued ? "Yes" : "No")
+                            }
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
+                            {enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.remark || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex gap-2">
