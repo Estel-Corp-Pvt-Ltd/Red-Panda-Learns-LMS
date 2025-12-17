@@ -186,10 +186,10 @@ const CourseBasicsTab = ({
         </Card>
 
         {/* Description */}
-        <Card className="rounded-xl border p-4">
+        <Card className="rounded-xl border p-4 ">
           <CardHeader className="pb-2">
             <CardTitle>Description</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground ">
               A short marketing paragraph – supports markdown.
             </p>
           </CardHeader>
@@ -197,7 +197,7 @@ const CourseBasicsTab = ({
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="min-h-32"
+              className="min-h-32 no-scrollbar::-webkit-scrollbar  no-scrollbar"
               placeholder="What will students learn?"
             />
           </CardContent>

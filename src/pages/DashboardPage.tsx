@@ -314,7 +314,7 @@ export default function DashboardPage() {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-scroll">
+        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
           {/* Header */}
           {/* <div className="mb-8">
             <div className="flex items-center justify-between gap-2 mb-2">
