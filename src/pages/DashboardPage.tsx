@@ -128,7 +128,7 @@ function EnrolledCourseCard({
   };
 
   // Check if certificate features should be shown
-  const showCertificateFeatures = !course.isCertificateDisabled;
+  const showCertificateFeatures = course.isCertificateEnabled;
 
   return (
     <Card className="hover:shadow-md transition-shadow">

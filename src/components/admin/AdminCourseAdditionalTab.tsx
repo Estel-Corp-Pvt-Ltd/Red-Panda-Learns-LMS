@@ -5,16 +5,16 @@ import { Label } from "@/components/ui/label";
 interface AdditionalTabProps {
   isMailSendingEnabled: boolean;
   setIsMailSendingEnabled: (value: boolean) => void;
-  isCertificateDisabled?: boolean;
-  SetISCertificateDisabled?: (value: boolean) => void;  // Updated to function type
+  isCertificateEnabled?: boolean;
+  SetISCertificateEnabled?: (value: boolean) => void; 
   onSave: () => Promise<void> | void;
 }
 
 const AdditionalTab = ({
   isMailSendingEnabled,
   setIsMailSendingEnabled,
-  isCertificateDisabled,
-  SetISCertificateDisabled,
+  isCertificateEnabled,
+  SetISCertificateEnabled,
   onSave,
 }: AdditionalTabProps) => {
   return (
@@ -28,9 +28,12 @@ const AdditionalTab = ({
             Enable Mail Sending
           </Label>
           <p className="text-sm text-muted-foreground">
-            When enabled, email notifications will be automatically sent to students enrolled in the course whenever a new assignment or lesson is added.
+            When enabled, email notifications will be automatically sent to
+            students enrolled in the course whenever a new assignment or lesson
+            is added.
             <br />
-            If not enabled, an announcement will still be created for the added assignment or lesson, but no email notifications will be sent.
+            If not enabled, an announcement will still be created for the added
+            assignment or lesson, but no email notifications will be sent.
           </p>
         </div>
 
@@ -42,25 +45,26 @@ const AdditionalTab = ({
       </div>
 
       {/* Certificate Toggle */}
-    <div className="flex items-center justify-between p-4 border rounded-lg">
-<div className="space-y-1">
-  <Label htmlFor="enable-certificate" className="text-base font-medium">
-    Disable Certificate 
-  </Label>
-  <p className="text-sm text-muted-foreground">
-    By default, students will receive a certificate upon completing the course.
-    <br />
-    If you enable this option, students will not receive a certificate after course completion.
-  </p>
-</div>
+      <div className="flex items-center justify-between p-4 border rounded-lg">
+        <div className="space-y-1">
+          <Label htmlFor="enable-certificate" className="text-base font-medium">
+            Enable Certificate
+          </Label>
+          <p className="text-sm text-muted-foreground">
+            When enabled, students will receive a certificate upon completing
+            the course.
+            <br />
+            Disabling this option will prevent students from receiving a
+            certificate.
+          </p>
+        </div>
 
-
-  <Switch
-    id="enable-certificate"
-    checked={isCertificateDisabled}  // Use isCertificateDisabled instead
-    onCheckedChange={(checked) => SetISCertificateDisabled?.(checked)}  // Updated to handle isCertificateDisabled state
-  />
-</div>
+        <Switch
+          id="enable-certificate"
+          checked={isCertificateEnabled} 
+          onCheckedChange={(checked) => SetISCertificateEnabled?.(checked)}
+        />
+      </div>
 
       {/* Save Button */}
       <div className="flex justify-end">
