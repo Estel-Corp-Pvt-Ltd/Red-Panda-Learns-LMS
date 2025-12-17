@@ -1,156 +1,142 @@
 import { Button } from "@/components/ui/button";
-import {
-    Copy,
-    Facebook,
-    Mail,
-    Share2
-} from "lucide-react";
+import { Copy, Facebook, Mail, Share2 } from "lucide-react";
 import { useState } from "react";
 
 const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certificateId }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [copied, setCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-    if (!certificateId) return null;
+  if (!certificateId) return null;
 
-    const publicUrl = `${window.location.origin}/certificate/public/view/${certificateId}`;
-    const encodedPublicUrl = encodeURIComponent(publicUrl);
+  const publicUrl = `${window.location.origin}/certificate/public/view/${certificateId}`;
+  const encodedPublicUrl = encodeURIComponent(publicUrl);
 
-    const handleShare = (
-        platform: "whatsapp" | "x" | "email" | "facebook" | "linkedin"
-    ) => {
-        let url = "";
+  const handleShare = (platform: "whatsapp" | "x" | "email" | "facebook" | "linkedin") => {
+    let url = "";
+    switch (platform) {
+      case "whatsapp":
+        url = `https://wa.me/?text=${encodeURIComponent(
+          `Check out my certificate from Vizuara AI Labs!\n${publicUrl}`
+        )}`;
+        break;
+      case "x":
+        url = `https://x.com/intent/tweet?text=${encodeURIComponent(
+          `I just earned a certificate from Vizuara AI Labs 🎓\n${publicUrl}`
+        )}`;
+        break;
+      case "email":
+        url = `mailto:?subject=${encodeURIComponent("My Vizuara AI Labs Certificate")}&body=${encodeURIComponent(
+          `Here’s my certificate:\n${publicUrl}`
+        )}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodedPublicUrl}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedPublicUrl}`;
+        break;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
-        switch (platform) {
-            case "whatsapp":
-                url = `https://wa.me/?text=${encodeURIComponent(
-                    `Check out my certificate from Vizuara AI Labs!\n${publicUrl}`
-                )}`;
-                break;
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
-            case "x":
-                url = `https://x.com/intent/tweet?text=${encodeURIComponent(
-                    `I just earned a certificate from Vizuara AI Labs 🎓\n${publicUrl}`
-                )}`;
-                break;
+  return (
+    <>
+      {/* Always light theme button */}
+      <Button
+        variant="outline"
+        className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !border-gray-300 !shadow-none"
+        onClick={() => setIsOpen(true)}
+      >
+        <Share2 className="h-4 w-4 mr-2" />
+        Share
+      </Button>
 
-            case "email":
-                url = `mailto:?subject=${encodeURIComponent(
-                    "My Vizuara AI Labs Certificate"
-                )}&body=${encodeURIComponent(
-                    `Here’s my certificate:\n${publicUrl}`
-                )}`;
-                break;
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg p-6 max-w-sm w-full mx-2 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900">Share Your Certificate</h3>
+            <p className="text-sm text-gray-700">
+              Choose a platform to share or copy the public link.
+            </p>
 
-            case "facebook":
-                url = `https://www.facebook.com/sharer/sharer.php?u=${encodedPublicUrl}`;
-                break;
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => handleShare("whatsapp")}
+                className="bg-green-500 hover:bg-green-600 text-white flex gap-2"
+              >
+                <img src="/whatsapp-icon.png" className="w-6" alt="" />
+                WhatsApp
+              </Button>
 
-            case "linkedin":
-                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedPublicUrl}`;
-                break;
-        }
+              <Button
+                onClick={() => handleShare("x")}
+                className="bg-black hover:bg-gray-900 text-white flex gap-2"
+              >
+                <img src="/twitter-icon.png" className="w-6" alt="" />
+                Twitter
+              </Button>
 
-        window.open(url, "_blank", "noopener,noreferrer");
-    };
+              <Button
+                onClick={() => handleShare("facebook")}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex gap-2"
+              >
+                <Facebook className="h-5 w-5" />
+                Facebook
+              </Button>
 
-    const handleCopyLink = async () => {
-        try {
-            await navigator.clipboard.writeText(publicUrl);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error("Failed to copy:", err);
-        }
-    };
+              <Button
+                onClick={() => handleShare("linkedin")}
+                className="bg-[#0A66C2] hover:bg-[#004182] text-white flex gap-2"
+              >
+                <img src="/linkedin-icon.png" className="w-6" alt="" />
+                LinkedIn
+              </Button>
 
-    return (
-        <>
+              <Button
+                onClick={() => handleShare("email")}
+                className="bg-gray-800 hover:bg-gray-900 text-white flex gap-2"
+              >
+                <Mail className="h-5 w-5" />
+                Email
+              </Button>
+
+              <Button
+                onClick={handleCopyLink}
+                className="bg-gray-300 hover:bg-gray-400 text-black flex gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                {copied ? "Copied!" : "Copy Public Link"}
+              </Button>
+            </div>
+
             <Button
-                variant="outline"
-                className="bg-secondary text-black hover:text-secondary hover:bg-primary"
-                onClick={() => setIsOpen(true)}
+              variant="outline"
+              className="w-full bg-gray-200 text-black hover:bg-gray-300 hover:text-black !border-gray-300 !shadow-none"
+              onClick={() => setIsOpen(false)}
             >
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
+              Cancel
             </Button>
-
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-                    onClick={() => setIsOpen(false)}
-                >
-                    <div
-                        className="bg-white rounded-lg p-6 max-w-sm w-full mx-2 space-y-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h3 className="text-lg font-semibold">Share Your Certificate</h3>
-                        <p className="text-sm text-gray-600">
-                            Choose a platform to share or copy the public link.
-                        </p>
-
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                onClick={() => handleShare("whatsapp")}
-                                className="bg-green-500 hover:bg-green-600 text-white flex gap-2"
-                            >
-                                <img src="/whatsapp-icon.png" className="w-6" alt="" />
-                                WhatsApp
-                            </Button>
-
-                            <Button
-                                onClick={() => handleShare("x")}
-                                className="bg-black hover:bg-gray-900 text-white flex gap-2"
-                            >
-                                <img src="/twitter-icon.png" className="w-6" alt="" />
-                                Twitter
-                            </Button>
-
-                            <Button
-                                onClick={() => handleShare("facebook")}
-                                className="bg-blue-600 hover:bg-blue-700 text-white flex gap-2"
-                            >
-                                <Facebook className="h-5 w-5" />
-                                Facebook
-                            </Button>
-
-                            <Button
-                                onClick={() => handleShare("linkedin")}
-                                className="bg-[#0A66C2] hover:bg-[#004182] text-white flex gap-2"
-                            >
-                                <img src="/linkedin-icon.png" className="w-6" alt="" />
-                                LinkedIn
-                            </Button>
-
-                            <Button
-                                onClick={() => handleShare("email")}
-                                className="bg-gray-800 hover:bg-gray-900 text-white flex gap-2"
-                            >
-                                <Mail className="h-5 w-5" />
-                                Email
-                            </Button>
-
-                            <Button
-                                onClick={handleCopyLink}
-                                className="bg-gray-300 hover:bg-gray-400 text-black flex gap-2"
-                            >
-                                <Copy className="h-4 w-4" />
-                                {copied ? "Copied!" : "Copy Public Link"}
-                            </Button>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default ShareCertificate;

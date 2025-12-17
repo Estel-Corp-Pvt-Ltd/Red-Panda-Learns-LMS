@@ -187,25 +187,28 @@ const Certificate: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200 p-4 print:p-0">
       {/* Action Buttons */}
       <div className="fixed top-6 right-6 z-50 flex gap-3 print-button">
-        <ShareCertificate certificateId={certificateId} />
-        <Button
-          onClick={handleDownloadAsImage}
-          disabled={isPrinting}
-          variant="outline"
-          className="bg-secondary text-black hover:text-secondary hover:bg-primary"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {isPrinting ? "Processing..." : "Download PNG"}
-        </Button>
-        <Button
-          onClick={handlePrint}
-          disabled={isPrinting}
-          className="bg-secondary text-black hover:text-secondary hover:bg-primary"
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          {isPrinting ? "Preparing..." : "Print Certificate"}
-        </Button>
-      </div>
+  <ShareCertificate certificateId={certificateId} />
+
+  <Button
+    onClick={handleDownloadAsImage}
+    disabled={isPrinting}
+    variant="outline"
+    className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !dark:bg-gray-200 !dark:text-black"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    {isPrinting ? "Processing..." : "Download PNG"}
+  </Button>
+
+  <Button
+    onClick={handlePrint}
+    disabled={isPrinting}
+    className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !dark:bg-gray-200 !dark:text-black"
+  >
+    <Printer className="h-4 w-4 mr-2" />
+    {isPrinting ? "Preparing..." : "Print Certificate"}
+  </Button>
+</div>
+
       <div className="max-w-full overflow-scroll lg:overflow-visible"> {/* Allow horizontal scroll for smaller screens */}
         {/* Certificate Container - Exact Fixed Size */}
         <div className="relative w-[760px] h-[540px] bg-white shadow-xl border border-gray-300 overflow-hidden certificate-container print:shadow-none">

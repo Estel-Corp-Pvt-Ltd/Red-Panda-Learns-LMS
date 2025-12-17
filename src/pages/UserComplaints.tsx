@@ -1,12 +1,17 @@
 import { Header } from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { complaintService } from "@/services/complaintService";
 import { motion } from "framer-motion";
-import { Loader2, RefreshCcw } from "lucide-react";
+import { Loader2, RefreshCcw ,   AlertCircle, 
+    CheckCircle2, 
+    Clock, 
+    Calendar, 
+    ImageIcon, 
+    MoreHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function UserComplaints() {
@@ -32,82 +37,131 @@ export default function UserComplaints() {
         loadComplaints();
     }, [user.id]);
 
+
+    const getStatusStyles = (status) => {
+    switch (status) {
+        case "RESOLVED":
+            return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800";
+        case "IN_PROGRESS":
+            return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+        default: // PENDING etc
+            return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800";
+    }
+};
+
+const getSeverityColor = (severity) => {
+    switch (severity?.toLowerCase()) {
+        case "high": return "text-red-500";
+        case "medium": return "text-orange-500";
+        default: return "text-gray-500 dark:text-gray-400";
+    }
+};
+
+    
     return (
-        <div className="h-screen flex flex-col bg-gray-50">
+        <div className="h-screen flex flex-col bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
             <Header />
 
             <div className="flex flex-1 overflow-hidden">
                 <Sidebar />
 
-                <div className="w-full max-w-4xl mx-auto p-6 overflow-y-auto">
-
-                    <div className="flex items-center justify-between mb-6">
-                        <h1 className="text-2xl font-bold text-gray-800">Your Complaints</h1>
-                        <Button onClick={loadComplaints} variant="outline" className="rounded-2xl p-2">
-                            <RefreshCcw className="w-5 h-5" />
-                        </Button>
-                    </div>
-
-                    {loading && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Loading complaints...
-                        </div>
-                    )}
-
-                    {!loading && complaints.length === 0 && (
-                        <div className="text-gray-500">No complaints found.</div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                        {complaints.map((c, index) => (
-                            <motion.div
-                                key={c.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
+                <main className="w-full flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide">
+                    <div className="max-w-6xl mx-auto">
+                        
+                        {/* Page Header */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                            <div>
+                                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                    Your Complaints
+                                </h1>
+                                <p className="text-gray-500 dark:text-gray-400 mt-1">
+                                    Track and manage your submitted reports.
+                                </p>
+                            </div>
+                            <Button 
+                                onClick={loadComplaints} 
+                                variant="outline" 
+                                className="bg-white dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800 shadow-sm transition-all active:scale-95"
                             >
-                                <Card className="rounded-2xl shadow-md p-4 hover:shadow-lg transition">
-                                    <CardContent className="grid gap-3">
-                                        <div className="text-lg font-semibold">{c.category}</div>
-                                        <div className="text-sm text-gray-600 line-clamp-3">{c.description}</div>
-                                        <div className="mt-2">
-                                            <span
-                                                className={
-                                                    c.status === "RESOLVED"
-                                                        ? "px-3 py-1 text-xs rounded-full bg-primary text-white"
-                                                        : "px-3 py-1 text-xs rounded-full bg-white border border-gray-300"
-                                                }
-                                            >
-                                                {c.status}
-                                            </span>
-                                        </div>
+                                <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </Button>
+                        </div>
 
-                                        <div className="text-sm text-gray-700 grid gap-1 mt-1">
-                                            <div>
-                                                <span className="font-medium">Severity:</span> {c.severity}
+                        {/* Loading State */}
+                        {loading && (
+                            <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-500 dark:text-gray-400">
+                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                <span className="text-sm font-medium">Fetching latest data...</span>
+                            </div>
+                        )}
+
+                        {/* Empty State */}
+                        {!loading && complaints.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50">
+                                <div className="p-4 rounded-full bg-gray-100 dark:bg-slate-800 mb-3">
+                                    <CheckCircle2 className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold">No complaints found</h3>
+                                <p className="text-sm text-gray-500">Everything seems to be in order!</p>
+                            </div>
+                        )}
+
+                        {/* Grid Layout */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {complaints.map((c, index) => (
+                                <motion.div
+                                    key={c.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05, duration: 0.3 }}
+                                >
+                                    <Card className="h-full flex flex-col bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-primary/20 dark:hover:border-primary/30 transition-all duration-300 group hover:-translate-y-1 rounded-2xl overflow-hidden">
+                                        
+                                        <CardHeader className="pb-3 space-y-0">
+                                            <div className="flex justify-between items-start">
+                                                <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyles(c.status)} flex items-center gap-1.5`}>
+                                                    {c.status === 'RESOLVED' ? <CheckCircle2 className="w-3 h-3"/> : <Clock className="w-3 h-3"/>}
+                                                    {c.status}
+                                                </div>
+                                               
                                             </div>
-                                        </div>
+                                            <CardTitle className="text-lg font-bold pt-3 line-clamp-1 group-hover:text-primary transition-colors">
+                                                {c.category}
+                                            </CardTitle>
+                                        </CardHeader>
 
-                                        {c.imageUrls?.length > 0 && (
-                                            <div className="text-xs text-gray-500">
-                                                {c.imageUrls.length} image{c.imageUrls.length > 1 ? "s" : ""}
+                                        <CardContent className="flex-1 pb-4">
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 leading-relaxed">
+                                                {c.description}
+                                            </p>
+
+                                            {/* Meta Data Grid */}
+                                            <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
+                                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800/50 p-2 rounded-lg">
+                                                    <AlertCircle className={`w-3.5 h-3.5 ${getSeverityColor(c.severity)}`} />
+                                                    <span className="font-medium">Severity:</span>
+                                                    <span className="capitalize">{c.severity?.toLowerCase()}</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800/50 p-2 rounded-lg">
+                                                    <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
+                                                    <span className="font-medium">Attachments:</span>
+                                                    <span>{c.imageUrls?.length || 0}</span>
+                                                </div>
                                             </div>
-                                        )}
+                                        </CardContent>
 
-                                        <div className="text-xs text-gray-500 mt-2">
-                                            Last updated:{" "}
-                                            {c.updatedAt?.toDate
-                                                ? c.updatedAt.toDate().toLocaleString()
-                                                : ""}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        ))}
+                                        <CardFooter className="pt-0 pb-4 px-6 text-xs text-gray-400 border-t border-gray-100 dark:border-slate-800/50 mt-auto pt-4 flex items-center gap-2">
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            Updated: {c.updatedAt?.toDate ? c.updatedAt.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : "N/A"}
+                                        </CardFooter>
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
-
-                </div>
+                </main>
             </div>
         </div>
     );
