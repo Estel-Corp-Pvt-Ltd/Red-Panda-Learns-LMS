@@ -238,6 +238,7 @@ return (
         isOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
+        <div className="flex-1 overflow-y-auto overscroll-contain no-scrollbar">
       {/* Header */}
       <div className="shrink-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-700/50">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
@@ -261,29 +262,24 @@ return (
                 </span>
               )}
             </div>
-            <div>
-              <h2
-                className="text-lg font-bold bg-clip-text text-transparent"
-                style={{
-                  backgroundColor:
-                 " #1f2937",
-                }}
-              >
-                Notifications
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-white-400">
-                {unreadCount > 0 ? (
-                  <span
-                    className="font-semibold"
-                    style={{ color: "#ff19ff" }}
-                  >
-                    {unreadCount} unread message{unreadCount !== 1 ? "s" : ""}
-                  </span>
-                ) : (
-                  <span>{announcements.length} total</span>
-                )}
-              </p>
-            </div>
+        <div>
+  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+    Notifications
+  </h2>
+
+  <p className="text-xs text-gray-500 dark:text-gray-400">
+    {unreadCount > 0 ? (
+      <span className="font-semibold text-fuchsia-500">
+        {unreadCount} unread message{unreadCount !== 1 ? "s" : ""}
+      </span>
+    ) : (
+      <span>
+        {announcements.length} total
+      </span>
+    )}
+  </p>
+</div>
+
           </div>
 
           {/* Close button - Always visible, more prominent on mobile */}
@@ -654,6 +650,7 @@ return (
           to close
         </p>
       </div>
+    </div>
     </div>
   </>
 );
