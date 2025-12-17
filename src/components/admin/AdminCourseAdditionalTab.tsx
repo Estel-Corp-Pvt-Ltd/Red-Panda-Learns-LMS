@@ -6,7 +6,7 @@ interface AdditionalTabProps {
   isMailSendingEnabled: boolean;
   setIsMailSendingEnabled: (value: boolean) => void;
   isCertificateEnabled?: boolean;
-  SetIsCertificateEnabled?: (value: boolean) => void; 
+  setIsCertificateEnabled?: (value: boolean) => void; 
   onSave: () => Promise<void> | void;
 }
 
@@ -14,7 +14,7 @@ const AdditionalTab = ({
   isMailSendingEnabled,
   setIsMailSendingEnabled,
   isCertificateEnabled,
-  SetIsCertificateEnabled,
+  setIsCertificateEnabled,
   onSave,
 }: AdditionalTabProps) => {
   return (
@@ -62,7 +62,7 @@ const AdditionalTab = ({
         <Switch
           id="enable-certificate"
           checked={isCertificateEnabled} 
-          onCheckedChange={(checked) => SetIsCertificateEnabled?.(checked)}
+          onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
         />
       </div>
 
