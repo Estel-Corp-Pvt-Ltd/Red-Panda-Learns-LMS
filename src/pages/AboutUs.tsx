@@ -19,7 +19,7 @@ export default function AboutUsPage() {
             <section>
               <h2 className="font-semibold mb-2">Overview</h2>
               <p className="mb-3">
-                We are Vizuara - a fast-growing Indian startup backed by the MIT ecosystem —
+                We are Vizuara - a fast-growing Indian startup backed by the MIT ecosystem 
                 revolutionizing AI education for students and professionals. Our mission is to
                 make world-class, hands-on AI learning accessible to everyone.
               </p>

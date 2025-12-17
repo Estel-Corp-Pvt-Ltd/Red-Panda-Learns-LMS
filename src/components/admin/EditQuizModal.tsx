@@ -265,226 +265,226 @@ const EditQuizModal = ({
         }
     };
 
-    return (
-        <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl w-[95%] rounded-xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5" />
-                        Edit Quiz
-                    </DialogTitle>
-                </DialogHeader>
+return (
+  <Dialog open={open} onOpenChange={onClose}>
+    <DialogContent
+      className="max-w-2xl w-[95%] rounded-xl max-h-[90vh] overflow-y-auto
+      bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+    >
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-pink-500" />
+          Edit Quiz
+        </DialogTitle>
+      </DialogHeader>
 
-                {error && (
-                    <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                        <AlertCircle className="w-4 h-4" />
-                        {error}
-                    </div>
-                )}
+      {error && (
+        <div
+          className="flex items-center gap-2 text-sm p-3 rounded-lg
+          text-red-600 bg-red-50
+          dark:text-red-400 dark:bg-red-900/30"
+        >
+          <AlertCircle className="w-4 h-4" />
+          {error}
+        </div>
+      )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
 
-                    {/* LEFT COLUMN */}
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <Label htmlFor="title">Quiz Title *</Label>
-                            <Input
-                                id="title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Enter quiz title"
-                            />
-                        </div>
+        {/* LEFT COLUMN */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <Label>Quiz Title *</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter quiz title"
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+            />
+          </div>
 
-                        <div className="space-y-1">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Optional description"
-                                rows={3}
-                            />
-                        </div>
+          <div className="space-y-1">
+            <Label>Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+            />
+          </div>
 
-                        <div className="space-y-1">
-                            <Label htmlFor="status">Status *</Label>
-                            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.values(QUIZ_STATUS).map((s) => (
-                                        <SelectItem key={s} value={s}>
-                                            {s.charAt(0) + s.slice(1).toLowerCase()}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+          <div className="space-y-1">
+            <Label>Status *</Label>
+            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                {Object.values(QUIZ_STATUS).map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s.charAt(0) + s.slice(1).toLowerCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-                        <div className="space-y-1">
-                            <Label htmlFor="passing">Passing Percentage *</Label>
-                            <Input
-                                id="passing"
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={passingPercentage}
-                                onChange={(e) => setPassingPercentage(Number(e.target.value))}
-                            />
-                        </div>
-                    </div>
+          <div className="space-y-1">
+            <Label>Passing Percentage *</Label>
+            <Input
+              type="number"
+              min="1"
+              max="100"
+              value={passingPercentage}
+              onChange={(e) => setPassingPercentage(Number(e.target.value))}
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+            />
+          </div>
+        </div>
 
-                    {/* RIGHT COLUMN */}
-                    <div className="space-y-4">
+        {/* RIGHT COLUMN */}
+        <div className="space-y-4">
 
-                        {/* Start Time Section */}
-                        <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <Label className="text-blue-700 font-semibold flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                Start Time *
-                            </Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                    <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
-                                    <Input
-                                        id="scheduledDate"
-                                        type="date"
-                                        value={scheduledDate}
-                                        onChange={(e) => handleTimeChange('start', { date: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="scheduledTime" className="text-sm">Time</Label>
-                                    <Input
-                                        id="scheduledTime"
-                                        type="time"
-                                        value={scheduledTime}
-                                        onChange={(e) => handleTimeChange('start', { time: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+          {/* Start Time */}
+          <div
+            className="space-y-3 p-3 rounded-lg border
+            bg-blue-50 border-blue-200
+            dark:bg-blue-900/30 dark:border-blue-800"
+          >
+            <Label className="font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <Clock className="w-4 h-4" />
+              Start Time *
+            </Label>
 
-                        {/* End Time Section */}
-                        <div className="space-y-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                            <Label className="text-orange-700 font-semibold flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                End Time
-                            </Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                    <Label htmlFor="endDate" className="text-sm">Date</Label>
-                                    <Input
-                                        id="endDate"
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => handleTimeChange('end', { date: e.target.value })}
-                                        min={scheduledDate}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="endTime" className="text-sm">Time</Label>
-                                    <Input
-                                        id="endTime"
-                                        type="time"
-                                        value={endTime}
-                                        onChange={(e) => handleTimeChange('end', { time: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => handleTimeChange('start', { date: e.target.value })}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+              />
+              <Input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => handleTimeChange('start', { time: e.target.value })}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+              />
+            </div>
+          </div>
 
-                        <div className="space-y-1">
-                            <Label htmlFor="duration">Duration (minutes) *</Label>
-                            <Input
-                                id="duration"
-                                type="number"
-                                min="1"
-                                value={durationMinutes}
-                                onChange={(e) => handleTimeChange('duration', Number(e.target.value))}
-                            />
-                        </div>
+          {/* End Time */}
+          <div
+            className="space-y-3 p-3 rounded-lg border
+            bg-orange-50 border-orange-200
+            dark:bg-orange-900/30 dark:border-orange-800"
+          >
+            <Label className="font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-300">
+              <Clock className="w-4 h-4" />
+              End Time
+            </Label>
 
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="allowAll"
-                                checked={allowAllStudents}
-                                onCheckedChange={(v) => setAllowAllStudents(Boolean(v))}
-                            />
-                            <Label htmlFor="allowAll">Allow all students</Label>
-                        </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                value={endDate}
+                min={scheduledDate}
+                onChange={(e) => handleTimeChange('end', { date: e.target.value })}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+              />
+              <Input
+                type="time"
+                value={endTime}
+                onChange={(e) => handleTimeChange('end', { time: e.target.value })}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+              />
+            </div>
+          </div>
 
-                        {!allowAllStudents && (
-                            <div className="space-y-2">
-                                <Label>Allowed Student Emails</Label>
+          <div className="space-y-1">
+            <Label>Duration (minutes) *</Label>
+            <Input
+              type="number"
+              min="1"
+              value={durationMinutes}
+              onChange={(e) => handleTimeChange('duration', Number(e.target.value))}
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+            />
+          </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                    {allowedStudentEmails.map((email) => (
-                                        <span
-                                            key={email}
-                                            className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
-                                        >
-                                            {email}
-                                            <button
-                                                type="button"
-                                                onClick={() => removeEmail(email)}
-                                                className="text-blue-500 hover:text-blue-700"
-                                            >
-                                                <X size={12} />
-                                            </button>
-                                        </span>
-                                    ))}
-                                </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={allowAllStudents}
+              onCheckedChange={(v) => setAllowAllStudents(Boolean(v))}
+            />
+            <Label>Allow all students</Label>
+          </div>
 
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="Add email or comma-separated emails"
-                                        value={newEmailInput}
-                                        onChange={(e) => setNewEmailInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter" || e.key === ",") {
-                                                e.preventDefault();
-                                                addEmailsFromInput();
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={addEmailsFromInput}
-                                    >
-                                        Add
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+          {!allowAllStudents && (
+            <div className="space-y-2">
+              <Label>Allowed Student Emails</Label>
 
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="sidebarNav"
-                                checked={enableFreeNavigation}
-                                onCheckedChange={(v) => setEnableFreeNavigation(Boolean(v))}
-                            />
-                            <Label htmlFor="sidebarNav">Enable sidebar navigation</Label>
-                        </div>
+              <div className="flex flex-wrap gap-2">
+                {allowedStudentEmails.map(email => (
+                  <span
+                    key={email}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
+                      bg-blue-100 text-blue-800
+                      dark:bg-blue-900/40 dark:text-blue-300"
+                  >
+                    {email}
+                    <button
+                      type="button"
+                      onClick={() => removeEmail(email)}
+                      className="hover:text-red-500"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
 
-                    </div>
-                </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newEmailInput}
+                  placeholder="Add email or comma-separated emails"
+                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault()
+                      addEmailsFromInput()
+                    }
+                  }}
+                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+                />
+                <Button variant="outline" onClick={addEmailsFromInput}>
+                  Add
+                </Button>
+              </div>
+            </div>
+          )}
 
-                <DialogFooter className="mt-6">
-                    <Button variant="outline" onClick={onClose} disabled={loading}>
-                        Cancel
-                    </Button>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={enableFreeNavigation}
+              onCheckedChange={(v) => setEnableFreeNavigation(Boolean(v))}
+            />
+            <Label>Enable sidebar navigation</Label>
+          </div>
+        </div>
+      </div>
 
-                    <Button onClick={handleSave} disabled={loading}>
-                        {loading ? "Saving…" : "Save Changes"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+      <DialogFooter className="mt-6">
+        <Button variant="outline" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? 'Saving…' : 'Save Changes'}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)
+
 };
 
 export default EditQuizModal;
