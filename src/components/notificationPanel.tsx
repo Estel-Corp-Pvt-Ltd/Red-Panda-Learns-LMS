@@ -246,7 +246,7 @@ return (
               <div
                 className="p-2.5 rounded-2xl shadow-lg"
                 style={{
-                  background: "linear-gradient(135deg, #ff19ff, #29abe2)",
+                  background: "#ff19ff",
                   boxShadow: "0 10px 25px -5px rgba(255, 25, 255, 0.25)",
                 }}
               >
@@ -265,13 +265,13 @@ return (
               <h2
                 className="text-lg font-bold bg-clip-text text-transparent"
                 style={{
-                  backgroundImage:
-                    "linear-gradient(to right, #1f2937, #4b5563)",
+                  backgroundColor:
+                 " #1f2937",
                 }}
               >
                 Notifications
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-white-400">
                 {unreadCount > 0 ? (
                   <span
                     className="font-semibold"
@@ -639,7 +639,7 @@ return (
           >
             <CheckCheck className="h-5 w-5" />
             <span>You're all caught up!</span>
-            <span className="text-lg">🎉</span>
+           
           </div>
         </div>
       )}

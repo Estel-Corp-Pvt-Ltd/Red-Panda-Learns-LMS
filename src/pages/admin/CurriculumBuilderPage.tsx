@@ -73,7 +73,7 @@ const CurriculumBuilderPage = () => {
   const [courseId, setCourseId] = useState("");
   const [copied, setCopied] = useState(false);
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
-  const [isCertificateEnabled, SetISCertificateEnabled] = useState(false);
+  const [isCertificateEnabled, SetIsCertificateEnabled] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -162,7 +162,7 @@ const CurriculumBuilderPage = () => {
         setThumbnailUrl(data.thumbnail ?? "");
         // ADD THIS LINE:
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
-        SetISCertificateEnabled(data.isCertificateEnabled ?? false);
+        SetIsCertificateEnabled(data.isCertificateEnabled ?? false);
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -424,7 +424,7 @@ const CurriculumBuilderPage = () => {
               isMailSendingEnabled={isMailSendingEnabled}
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}
-              SetISCertificateEnabled={SetISCertificateEnabled}
+              SetIsCertificateEnabled={SetIsCertificateEnabled}
               onSave={saveAdditionalSettings}
             />
           </TabsContent>
