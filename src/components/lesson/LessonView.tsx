@@ -65,7 +65,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Constants
-  const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minute (for testing)
+  const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes
   const HEARTBEAT_INTERVAL = 60 * 1000; // Report time every 60 seconds
   const MIN_REPORT_TIME = 5; // Minimum 5 seconds to report
   const DEBOUNCE_INTERACTION = 500; // Debounce interactions to 500ms

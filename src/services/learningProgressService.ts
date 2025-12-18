@@ -92,7 +92,7 @@ class LearningProgressService {
   async timeSpentOnLesson(courseId: string, lessonId: string, timeSpentSec: number): Promise<Result<null>> {
     try {
       const idToken = await authService.getToken();
-      await fetch(`${this.backendUrl}/lessonTimeSpent`, {
+      const response = await fetch(`${this.backendUrl}/lessonTimeSpent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,6 +104,9 @@ class LearningProgressService {
           timeSpentSec,
         }),
       });
+      if (!response.ok) {
+        return fail("Failed to update time spent.");
+      }
       return ok(null);
     } catch {
       console.error("spendTimeOnLesson error");
