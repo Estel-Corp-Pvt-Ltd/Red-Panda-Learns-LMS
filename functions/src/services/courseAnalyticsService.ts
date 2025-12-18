@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { courseService } from './courseService';
+import { CourseAnalyticsUpdate } from '../types/analytics';
+import { COLLECTION } from '../constants';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -9,27 +11,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export interface CourseAnalytics {
-  id: string; // courseId
-  courseId: string;
-  courseTitle: string;
-  totalTimeSpentSec: number;
-  coursesCompleted: number;
-  totalLearners: number;
-  updatedAt: Date | null;
-  createdAt: Date | null;
-}
-
-export interface CourseAnalyticsUpdate {
-  courseId: string;
-  courseTitle?: string;
-  timeSpentSec?: number;
-  coursesCompletedIncrement?: number;
-  learnerIncrement?: number;
-}
-
 class CourseAnalyticsService {
-  private collectionName = "CourseAnalytics";
 
   /**
    * Update course analytics (incremental updates)
@@ -37,7 +19,7 @@ class CourseAnalyticsService {
   async updateCourseAnalytics(update: CourseAnalyticsUpdate): Promise<void> {
     try {
       const { courseId, timeSpentSec = 0, coursesCompletedIncrement = 0, learnerIncrement = 0 } = update;
-      const docRef = db.collection(this.collectionName).doc(courseId);
+      const docRef = db.collection(COLLECTION.COURSE_ANALYTICS).doc(courseId);
       const docSnap = await docRef.get();
 
       const updateData: any = {
@@ -62,9 +44,6 @@ class CourseAnalyticsService {
       if (docSnap.exists) {
         // Update existing document
         await docRef.update(updateData);
-
-        // Recalculate average completion rate
-        // await this.recalculateCompletionRate(courseId);
       } else {
         if (!update.courseTitle) {
           const courseResult = await courseService.getCourseById(courseId);

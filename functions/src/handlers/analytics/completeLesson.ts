@@ -6,7 +6,7 @@ import { corsMiddleware } from "../../middlewares/cors";
 import { authMiddleware } from "../../middlewares/auth";
 import { onRequest } from "firebase-functions/https";
 import { lessonAnalyticsService } from "../../services/lessonAnalyticsService";
-import { learningProgressService } from "../../services/lessonProgressService";
+import { learningProgressService } from "../../services/learningProgressService";
 import { lessonService } from "../../services/lessonService";
 import { LEARNING_CONTENT } from "../../constants";
 

@@ -7,7 +7,7 @@ import { authMiddleware } from "../../middlewares/auth";
 import { onRequest } from "firebase-functions/https";
 import { lessonAnalyticsService } from "../../services/lessonAnalyticsService";
 import { courseAnalyticsService } from "../../services/courseAnalyticsService";
-import { learningProgressService } from "../../services/lessonProgressService";
+import { learningProgressService } from "../../services/learningProgressService";
 
 if (!admin.apps.length) admin.initializeApp();
 

@@ -410,7 +410,9 @@ export const COLLECTION = {
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions",
   ANNOUNCEMENTS: "Announcements",
-  CERTIFICATE_REQUESTS: "CertificateRequests"
+  CERTIFICATE_REQUESTS: "CertificateRequests",
+  LESSON_ANALYTICS: "LessonAnalytics",
+  COURSE_ANALYTICS: "CourseAnalytics",
 } as const;
 
 export const ATTRIBUTE_TYPE = {

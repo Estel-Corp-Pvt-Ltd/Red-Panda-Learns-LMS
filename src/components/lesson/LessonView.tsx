@@ -122,8 +122,6 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       const courseId = lesson.courseId;
       await learningProgressService.timeSpentOnLesson(courseId, lessonId, totalTimeToReport);
 
-      console.log(`⏱️ Reported time spent: ${totalTimeToReport} seconds (session end: ${isSessionEnd})`);
-
       // Reset accumulated time
       state.totalTimeSpent = 0;
       state.lastReportTime = now;
@@ -393,7 +391,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      logError('Fullscreen error:', error);
     }
   }, []);
 

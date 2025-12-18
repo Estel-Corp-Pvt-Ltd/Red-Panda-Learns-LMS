@@ -3,6 +3,8 @@ import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { courseService } from './courseService';
 import { lessonService } from './lessonService';
+import { LessonAnalyticsUpdate } from '../types/analytics';
+import { COLLECTION } from '../constants';
 
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
@@ -11,36 +13,14 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export interface LessonAnalytics {
-  id: string; // Format: {courseId}_{lessonId}
-  courseId: string;
-  courseTitle: string;
-  lessonId: string;
-  lessonTitle: string;
-  totalTimeSpentSec: number;
-  totalLearners: number;
-  totalCompletions: number;
-  updatedAt: Date | null;
-  createdAt: Date | null;
-}
 
-export interface LessonAnalyticsUpdate {
-  courseId: string;
-  courseTitle?: string;
-  lessonId: string;
-  lessonTitle?: string;
-  timeSpentSec?: number; // Time to increment
-  completionIncrement?: number; // +1 when marked complete
-  learnersIncrement?: number; // +1 when a new learner engages
-}
 
 class LessonAnalyticsService {
-  private collectionName = "LessonAnalytics";
 
   /**
    * Get analytics document ID
    */
-  private getDocId(courseId: string, lessonId: string): string {
+  private getDocId(lessonId: string): string {
     return `${lessonId}`;
   }
 
@@ -50,8 +30,8 @@ class LessonAnalyticsService {
   async updateLessonAnalytics(update: LessonAnalyticsUpdate): Promise<void> {
     try {
       const { courseId, lessonId, timeSpentSec = 0, completionIncrement = 0 } = update;
-      const docId = this.getDocId(courseId, lessonId);
-      const docRef = db.collection(this.collectionName).doc(docId);
+      const docId = this.getDocId(lessonId);
+      const docRef = db.collection(COLLECTION.LESSON_ANALYTICS).doc(docId);
       const docSnap = await docRef.get();
 
       const updateData: any = {

@@ -16,6 +16,7 @@ import {
 import { db } from "@/firebaseConfig";
 import { logError } from "@/utils/logger";
 import { lessonAnalyticsService } from "./lessonAnalyticsService";
+import { COLLECTION } from "@/constants";
 
 export interface CourseAnalytics {
   id: string; // courseId
@@ -57,14 +58,13 @@ function formatSeconds(seconds: number): string {
 }
 
 class CourseAnalyticsService {
-  private collectionName = "CourseAnalytics";
 
   /**
    * Get course analytics
    */
   async getCourseAnalytics(courseId: string): Promise<CourseAnalytics | null> {
     try {
-      const docRef = doc(db, this.collectionName, courseId);
+      const docRef = doc(db, COLLECTION.COURSE_ANALYTICS, courseId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -114,7 +114,7 @@ class CourseAnalyticsService {
         : 0;
 
       // Update course analytics with calculated rate
-      const docRef = doc(db, this.collectionName, courseId);
+      const docRef = doc(db, COLLECTION.COURSE_ANALYTICS, courseId);
       await updateDoc(docRef, {
         avgCompletionRate,
         updatedAt: serverTimestamp(),
@@ -129,7 +129,7 @@ class CourseAnalyticsService {
    */
   async getAllCourseAnalytics(): Promise<CourseAnalytics[]> {
     try {
-      const q = collection(db, this.collectionName);
+      const q = collection(db, COLLECTION.COURSE_ANALYTICS);
       const querySnapshot = await getDocs(q);
 
       const analytics: CourseAnalytics[] = [];
@@ -163,7 +163,7 @@ class CourseAnalyticsService {
     try {
       // Use Firestore's orderBy and limit for server-side sorting
       const q = query(
-        collection(db, this.collectionName),
+        collection(db, COLLECTION.COURSE_ANALYTICS),
         orderBy("totalTimeSpentSec", "desc"),
         firestoreLimit(limitCount)
       );
@@ -201,7 +201,7 @@ class CourseAnalyticsService {
   async getTopCoursesByCompletionRate(limitCount: number = 10): Promise<CourseAnalytics[]> {
     try {
       // Fetch all courses (or implement a stored avgCompletionRate field for server-side sorting)
-      const q = collection(db, this.collectionName);
+      const q = collection(db, COLLECTION.COURSE_ANALYTICS);
       const querySnapshot = await getDocs(q);
       const analytics: CourseAnalytics[] = [];
 
@@ -289,7 +289,7 @@ class CourseAnalyticsService {
         ? (totalCompletions / totalPossibleCompletions) * 100
         : 0;
 
-      const docRef = doc(db, this.collectionName, courseId);
+      const docRef = doc(db, COLLECTION.COURSE_ANALYTICS, courseId);
       const docSnap = await getDoc(docRef);
 
       const updateData = {

@@ -409,7 +409,9 @@ export const COLLECTION = {
   QUIZ_SUBMISSIONS: "QuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
-  ANNOUNCEMENTS: "Announcements"
+  ANNOUNCEMENTS: "Announcements",
+  LESSON_ANALYTICS: "LessonAnalytics",
+  COURSE_ANALYTICS: "CourseAnalytics",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
@@ -449,12 +451,12 @@ export const CART_ACTION = {
 } as const;
 
 export const EMAIL_TYPE = {
-COURSE_ANNOUNCEMENT : "Course Announcement",
-GENERAL_ALL : "General All",
-RB_INSTRUCTOR:"Rb Instructor",
-RB_TEACHER : "Rb Teacher",
-RB_ACCOUNTANT:"Rb Accountant",
-RB_STUDENT:"Rb Student"
+  COURSE_ANNOUNCEMENT: "Course Announcement",
+  GENERAL_ALL: "General All",
+  RB_INSTRUCTOR: "Rb Instructor",
+  RB_TEACHER: "Rb Teacher",
+  RB_ACCOUNTANT: "Rb Accountant",
+  RB_STUDENT: "Rb Student"
 } as const;
 export const POPUP_COURSE_TYPE = {
   LIVE: "LIVE",
