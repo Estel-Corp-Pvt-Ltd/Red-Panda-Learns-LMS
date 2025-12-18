@@ -73,6 +73,7 @@ const CurriculumBuilderPage = () => {
   const [courseId, setCourseId] = useState("");
   const [copied, setCopied] = useState(false);
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
+  const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -130,50 +131,50 @@ const CurriculumBuilderPage = () => {
 
   /** Load course and flatten structure into draggable list */
 
-useEffect(() => {
-  if (!param) return;
-  const loadCourse = async () => {
-    try {
-      let data = await courseService.getCourseById(param);
+  useEffect(() => {
+    if (!param) return;
+    const loadCourse = async () => {
+      try {
+        let data = await courseService.getCourseById(param);
 
-      if (!data) {
-        console.warn("Course not found for CourseId:", param);
-        return;
+        if (!data) {
+          console.warn("Course not found for CourseId:", param);
+          return;
+        }
+
+        setCourse(data);
+        setCourseId(data.id);
+        setTitle(data.title);
+        setDescription(data.description);
+        setSlug(data.slug ? `${data.slug}` : `${data.id ?? courseId}`);
+        setStatus(data.status);
+        setDuration({
+          hours: data.duration?.hours ?? 0,
+          minutes: data.duration?.minutes ?? 0,
+        });
+        setRegularPrice(data.regularPrice ?? 0);
+        setSalePrice(data.salePrice ?? 0);
+        setSelectedCategories(data.categoryIds ?? []);
+        setSelectedTargetAudiences(data.targetAudienceIds ?? []);
+        setTags(data.tags ?? []);
+        setInstructorId(data.instructorId ?? "");
+        setInstructorName(data.instructorName ?? "");
+        setThumbnailUrl(data.thumbnail ?? "");
+        // ADD THIS LINE:
+        setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
+        setIsCertificateEnabled(data.isCertificateEnabled ?? false);
+      } catch (err) {
+        toast({
+          title: "Error loading course",
+          description: String(err),
+          variant: "destructive",
+        });
+      } finally {
+        hideOverlay();
       }
-
-      setCourse(data);
-      setCourseId(data.id);
-      setTitle(data.title);
-      setDescription(data.description);
-      setSlug(data.slug ? `${data.slug}` : `${data.id ?? courseId}`);
-      setStatus(data.status);
-      setDuration({
-        hours: data.duration?.hours ?? 0,
-        minutes: data.duration?.minutes ?? 0,
-      });
-      setRegularPrice(data.regularPrice ?? 0);
-      setSalePrice(data.salePrice ?? 0);
-      setSelectedCategories(data.categoryIds ?? []);
-      setSelectedTargetAudiences(data.targetAudienceIds ?? []);
-      setTags(data.tags ?? []);
-      setInstructorId(data.instructorId ?? "");
-      setInstructorName(data.instructorName ?? "");
-      setThumbnailUrl(data.thumbnail ?? "");
-      // ADD THIS LINE:
-      setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
-    } catch (err) {
-      toast({
-        title: "Error loading course",
-        description: String(err),
-        variant: "destructive",
-      });
-    } finally {
-      hideOverlay();
-    }
-  };
-  loadCourse();
-}, [param]); // Also changed param to param here - this was likely a bug
-
+    };
+    loadCourse();
+  }, [param]); // Also changed param to param here - this was likely a bug
 
   // ───────────────────────────────────────────────────────────────
   // ─── BASICS TAB LOGIC ──────────────────────────────────────────
@@ -266,28 +267,26 @@ useEffect(() => {
     );
   };
 
-
-
   // Add a save function for additional settings:
-const saveAdditionalSettings = async () => {
-  if (!courseId) return;
-  try {
-    showOverlay("Saving additional settings...");
-    await courseService.updateCourse(courseId, {
-      isMailSendingEnabled,
-    });
-    toast({ title: "Saved", description: "Additional settings updated." });
-  } catch (err) {
-    toast({
-      title: "Error",
-      description: String(err),
-      variant: "destructive",
-    });
-  } finally {
-    hideOverlay();
-  }
-};
-
+  const saveAdditionalSettings = async () => {
+    if (!courseId) return;
+    try {
+      showOverlay("Saving additional settings...");
+      await courseService.updateCourse(courseId, {
+        isMailSendingEnabled,
+        isCertificateEnabled,
+      });
+      toast({ title: "Saved", description: "Additional settings updated." });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: String(err),
+        variant: "destructive",
+      });
+    } finally {
+      hideOverlay();
+    }
+  };
 
   /** Can the basic course info be saved (validation) */
   const canSaveBasics =
@@ -420,13 +419,15 @@ const saveAdditionalSettings = async () => {
 
           {/* ─── ADDITIONAL TAB ────────────────────────────────────── */}
 
-<TabsContent value="additional">
-  <AdditionalTab
-    isMailSendingEnabled={isMailSendingEnabled}
-    setIsMailSendingEnabled={setIsMailSendingEnabled}
-    onSave={saveAdditionalSettings}
-  />
-</TabsContent>
+          <TabsContent value="additional">
+            <AdditionalTab
+              isMailSendingEnabled={isMailSendingEnabled}
+              setIsMailSendingEnabled={setIsMailSendingEnabled}
+              isCertificateEnabled={isCertificateEnabled}
+              setIsCertificateEnabled={setIsCertificateEnabled}
+              onSave={saveAdditionalSettings}
+            />
+          </TabsContent>
         </Tabs>
       </main>
     </div>

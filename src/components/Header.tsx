@@ -111,7 +111,7 @@ export function Header({
                           </a>
                         </NavigationMenuLink>
                       </li>
-                      {/* <li>
+                      <li>
                         <NavigationMenuLink asChild>
                           <a
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
@@ -125,7 +125,7 @@ export function Header({
                             </p>
                           </a>
                         </NavigationMenuLink>
-                      </li> */}
+                      </li>
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
@@ -465,7 +465,7 @@ export function Header({
 
             {user ? (
               <>
-              
+
                 <button
                   onClick={() => setIsNotificationOpen(true)}
                   className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
@@ -473,7 +473,7 @@ export function Header({
                 >
                   <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
 
-                 
+
                   {unreadCount > 0 && (
                     <span
                       className={cn(
@@ -521,7 +521,7 @@ export function Header({
                       <span>Dashboard</span>
                     </Button>
                   </Link>
-                        {/* Logged-in dropdown (hover to open on desktop) */}
+                  {/* Logged-in dropdown (hover to open on desktop) */}
                   {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -584,7 +584,7 @@ export function Header({
       <NotificationPanel
         isOpen={isNotificationOpen}
         onClose={() => setIsNotificationOpen(false)}
-        onUnreadChange={setUnreadCount}  
+        onUnreadChange={setUnreadCount}
       />
     </>
   );

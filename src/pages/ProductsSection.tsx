@@ -13,15 +13,15 @@ const products = [
     gradient: "from-[#fbb03b] to-[#ff9500]",
     bgClass: "bg-black dark:bg-gray-900",
   },
-  // {
-  //   logo: "/vizz-logo.png",
-  //   title: "Vizz-AI",
-  //   description: "Your Personalized AI Tutor for Every Vizuara's Course",
-  //   link: "https://vizz.vizuara.ai/",
-  //   color: "#ff00ff",
-  //   gradient: "from-[#ff00ff] to-[#cc00cc]",
-  //   bgClass: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-blue-900/30",
-  // },
+  {
+    logo: "/vizz-logo.png",
+    title: "Vizz-AI",
+    description: "Your Personalized AI Tutor for Every Vizuara's Course",
+    link: "https://vizz.vizuara.ai/",
+    color: "#ff00ff",
+    gradient: "from-[#ff00ff] to-[#cc00cc]",
+    bgClass: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-blue-900/30",
+  },
 ];
 
 const ProductsSection = () => {

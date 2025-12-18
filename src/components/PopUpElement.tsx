@@ -27,7 +27,7 @@ const PopUpElement = ({
       const savedTime = Number(saved);
       const now = Date.now();
 
-      const twentyFourHours = 60 * 1000; // ms in 24h
+      const twentyFourHours = 12 * 60 * 60 * 1000; // ms in 12h
 
       if (now - savedTime > twentyFourHours) {
         return true;
