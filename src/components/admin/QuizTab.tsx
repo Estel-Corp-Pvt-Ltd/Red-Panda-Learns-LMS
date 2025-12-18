@@ -325,7 +325,7 @@ const SortableQuestionCard = ({
             <label
               htmlFor={`attachment-upload-${id}`}
               className="w-8 h-8 flex items-center justify-center rounded cursor-pointer
-                text-pink-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                text-primary hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <ImagePlus size={16} />
             </label>
@@ -488,13 +488,13 @@ const Questions = ({
 
                 <button
                     onClick={() => document.getElementById("excelUpload")?.click()}
-                    className="px-4 py-2 text-white rounded-full bg-pink-600 hover:bg-pink-700"
+                    className="px-4 py-2 text-white rounded-full bg-primary hover:bg-accent"
                 >
                     Import Questions from Excel
                 </button>
 
                 <button
-                    className="px-4 py-2 text-white rounded-full bg-[#ff00ff] hover:bg-pink-500"
+                    className="px-4 py-2 text-white rounded-full bg-primary hover:bg-accent"
                     onClick={addQuestion}
                 >
                     + Add Question
@@ -534,7 +534,7 @@ const Questions = ({
             {
                 questions.length > 0 ?
                     <button
-                        className={`px-4 py-2 text-white rounded-full ${isSaveDisabled ? "bg-pink-700" : "bg-[#ff00ff] hover:bg-pink-500 cursor-pointer"}`}
+                        className={`px-4 py-2 text-white rounded-full ${isSaveDisabled ? "bg-pink-700" : "bg-[#ff00ff] hover:bg-accent cursor-pointer"}`}
                         onClick={handleSaveQuestions}
                         disabled={isSaveDisabled}
                     >
@@ -748,13 +748,13 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
     <div className="w-full">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                <ListChecks className="w-6 h-6 text-pink-500 dark:text-pink-300" />
+                <ListChecks className="w-6 h-6 text-primary dark:text-pink-300" />
                 Quizzes
             </h2>
 
             <button
                 onClick={() => setOpenCreateModal(true)}
-                className="bg-[#ff00ff] hover:bg-pink-500 text-white px-5 py-2 rounded-full flex items-center gap-2 transition dark:bg-[#ff00ff] dark:hover:bg-pink-500"
+                className="bg-primary hover:bg-accent  text-white px-5 py-2 rounded-full flex items-center gap-2 transition dark:bg-[#ff00ff] dark:hover:bg-accent"
             >
                 <Plus size={16} />
                 Add Quiz
@@ -790,7 +790,7 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                                             className={`transition-transform duration-200 ${expandedQuizId === quiz.id ? "rotate-90" : ""}`}
                                         />
                                     </button>
-                                    <Folder className="w-5 h-5 text-pink-500 dark:text-pink-300" />
+                                    <Folder className="w-5 h-5 text-primary dark:text-pink-300" />
                                     <span className="font-medium text-gray-800 dark:text-gray-100">
                                         {quiz.title || `Quiz ${idx + 1}`}
                                     </span>
@@ -798,7 +798,7 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
 
                                 <div className="flex items-center gap-3">
                                     <button
-                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-600 transition flex items-center gap-2"
+                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-900 transition flex items-center gap-2"
                                         onClick={() => {
                                             setSelectedQuizId(quiz.id);
                                             setOpenSubmissionsModal(true);
@@ -813,7 +813,7 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
                                             setSelectedQuizId(quiz.id);
                                             setOpenEditModal(true);
                                         }}
-                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-600 transition flex items-center gap-2"
+                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-900 transition flex items-center gap-2"
                                     >
                                         <Pencil size={14} />
                                         Update

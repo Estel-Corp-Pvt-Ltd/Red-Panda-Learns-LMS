@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, Calendar, Clock, X } from "lucide-react";
+import { AlertCircle, Calendar, Clock, LayoutDashboard, Save, Settings2, Users, X } from "lucide-react";
 
 import {
     Select,
@@ -265,225 +265,284 @@ const EditQuizModal = ({
         }
     };
 
-return (
-  <Dialog open={open} onOpenChange={onClose}>
-    <DialogContent
-      className="max-w-2xl w-[95%] rounded-xl max-h-[90vh] overflow-y-auto
-      bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
-    >
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-pink-500" />
-          Edit Quiz
-        </DialogTitle>
-      </DialogHeader>
 
-      {error && (
-        <div
-          className="flex items-center gap-2 text-sm p-3 rounded-lg
-          text-red-600 bg-red-50
-          dark:text-red-400 dark:bg-red-900/30"
-        >
-          <AlertCircle className="w-4 h-4" />
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-
-        {/* LEFT COLUMN */}
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <Label>Quiz Title *</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter quiz title"
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Status *</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                {Object.values(QUIZ_STATUS).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s.charAt(0) + s.slice(1).toLowerCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label>Passing Percentage *</Label>
-            <Input
-              type="number"
-              min="1"
-              max="100"
-              value={passingPercentage}
-              onChange={(e) => setPassingPercentage(Number(e.target.value))}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            />
-          </div>
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white dark:bg-gray-950 border-0 shadow-2xl">
+        
+        {/* HEADER */}
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b px-6 py-4 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm">
+          <DialogHeader className="p-0">
+            <DialogTitle className="flex items-center gap-2.5 text-xl font-bold tracking-tight">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <Settings2 className="w-5 h-5" />
+              </div>
+              Edit Quiz
+            </DialogTitle>
+          </DialogHeader>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            className="rounded-full hover:bg-accent hover:text-accent-foreground"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="space-y-4">
-
-          {/* Start Time */}
-          <div
-            className="space-y-3 p-3 rounded-lg border
-            bg-blue-50 border-blue-200
-            dark:bg-blue-900/30 dark:border-blue-800"
-          >
-            <Label className="font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <Clock className="w-4 h-4" />
-              Start Time *
-            </Label>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => handleTimeChange('start', { date: e.target.value })}
-                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-              />
-              <Input
-                type="time"
-                value={scheduledTime}
-                onChange={(e) => handleTimeChange('start', { time: e.target.value })}
-                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-              />
-            </div>
-          </div>
-
-          {/* End Time */}
-          <div
-            className="space-y-3 p-3 rounded-lg border
-            bg-orange-50 border-orange-200
-            dark:bg-orange-900/30 dark:border-orange-800"
-          >
-            <Label className="font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-300">
-              <Clock className="w-4 h-4" />
-              End Time
-            </Label>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                value={endDate}
-                min={scheduledDate}
-                onChange={(e) => handleTimeChange('end', { date: e.target.value })}
-                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-              />
-              <Input
-                type="time"
-                value={endTime}
-                onChange={(e) => handleTimeChange('end', { time: e.target.value })}
-                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label>Duration (minutes) *</Label>
-            <Input
-              type="number"
-              min="1"
-              value={durationMinutes}
-              onChange={(e) => handleTimeChange('duration', Number(e.target.value))}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={allowAllStudents}
-              onCheckedChange={(v) => setAllowAllStudents(Boolean(v))}
-            />
-            <Label>Allow all students</Label>
-          </div>
-
-          {!allowAllStudents && (
-            <div className="space-y-2">
-              <Label>Allowed Student Emails</Label>
-
-              <div className="flex flex-wrap gap-2">
-                {allowedStudentEmails.map(email => (
-                  <span
-                    key={email}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
-                      bg-blue-100 text-blue-800
-                      dark:bg-blue-900/40 dark:text-blue-300"
-                  >
-                    {email}
-                    <button
-                      type="button"
-                      onClick={() => removeEmail(email)}
-                      className="hover:text-red-500"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <Input
-                  value={newEmailInput}
-                  placeholder="Add email or comma-separated emails"
-                  onChange={(e) => setNewEmailInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ',') {
-                      e.preventDefault()
-                      addEmailsFromInput()
-                    }
-                  }}
-                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-                />
-                <Button variant="outline" onClick={addEmailsFromInput}>
-                  Add
-                </Button>
-              </div>
+        <div className="p-6">
+          {error && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg bg-red-50 p-3 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-900">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <p className="text-sm font-medium">{error}</p>
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={enableFreeNavigation}
-              onCheckedChange={(v) => setEnableFreeNavigation(Boolean(v))}
-            />
-            <Label>Enable sidebar navigation</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            {/* --- LEFT COLUMN --- */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
+                  Quiz Details
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Quiz Title <span className="text-red-500">*</span></Label>
+                    <Input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter quiz title"
+                      className="h-10"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={3}
+                      placeholder="Optional description..."
+                      className="resize-none min-h-[100px]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                      <Label>Status <span className="text-red-500">*</span></Label>
+                      <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(QUIZ_STATUS).map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s.charAt(0) + s.slice(1).toLowerCase()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Passing % <span className="text-red-500">*</span></Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={passingPercentage}
+                          onChange={(e) => setPassingPercentage(Number(e.target.value))}
+                          className="pr-8"
+                        />
+                        <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Card */}
+              <div className="pt-4 border-t">
+                 <div className="flex items-start gap-3 p-3 rounded-lg border bg-accent/20">
+                    <Checkbox
+                      id="edit-nav-check"
+                      checked={enableFreeNavigation}
+                      onCheckedChange={(v) => setEnableFreeNavigation(Boolean(v))}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-nav-check" className="font-medium cursor-pointer flex items-center gap-2">
+                        <LayoutDashboard className="w-3.5 h-3.5" />
+                        Sidebar Navigation
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Allow students to navigate freely between questions via the sidebar.
+                      </p>
+                    </div>
+                  </div>
+              </div>
+            </div>
+
+            {/* --- RIGHT COLUMN --- */}
+            <div className="space-y-6">
+              
+              {/* Scheduling */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <Calendar className="w-4 h-4" /> Scheduling
+                </h3>
+
+                <div className="rounded-xl border p-4 space-y-4 bg-card shadow-sm">
+                  {/* Start Time */}
+                  <div className="space-y-2">
+                     <Label className="text-xs font-bold text-muted-foreground uppercase">Start Date & Time <span className="text-red-500">*</span></Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        type="date"
+                        value={scheduledDate}
+                        onChange={(e) => handleTimeChange('start', { date: e.target.value })}
+                      />
+                      <Input
+                        type="time"
+                        value={scheduledTime}
+                        onChange={(e) => handleTimeChange('start', { time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* End Time */}
+                  <div className="space-y-2">
+                     <Label className="text-xs font-bold text-muted-foreground uppercase">End Date & Time</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        type="date"
+                        value={endDate}
+                        min={scheduledDate}
+                        onChange={(e) => handleTimeChange('end', { date: e.target.value })}
+                      />
+                      <Input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => handleTimeChange('end', { time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <Label className="flex items-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      Duration (Minutes) <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={durationMinutes}
+                      onChange={(e) => handleTimeChange('duration', Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Access Control */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Participants
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="edit-all-students"
+                      checked={allowAllStudents}
+                      onCheckedChange={(v) => setAllowAllStudents(Boolean(v))}
+                    />
+                    <Label htmlFor="edit-all-students">Allow all students</Label>
+                  </div>
+
+                  {!allowAllStudents && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                       <Label className="text-xs">Whitelist Emails</Label>
+                      
+                      <div className="min-h-[90px] p-3 rounded-lg border border-dashed bg-accent/10 space-y-3">
+                        {allowedStudentEmails.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {allowedStudentEmails.map((email: string) => (
+                              <span
+                                key={email}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                              >
+                                {email}
+                                <button
+                                  type="button"
+                                  onClick={() => removeEmail(email)}
+                                  className="ml-1 hover:text-red-500 transition-colors"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Input
+                            value={newEmailInput}
+                            placeholder="Add email..."
+                            onChange={(e) => setNewEmailInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault();
+                                addEmailsFromInput();
+                              }
+                            }}
+                            className="bg-transparent shadow-none border-0 border-b rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={addEmailsFromInput}
+                            disabled={!newEmailInput}
+                            className="h-8 text-xs hover:bg-primary hover:text-primary-foreground"
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <DialogFooter className="mt-6">
-        <Button variant="outline" onClick={onClose} disabled={loading}>
-          Cancel
-        </Button>
-        <Button onClick={handleSave} disabled={loading}>
-          {loading ? 'Saving…' : 'Save Changes'}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-)
+        {/* FOOTER */}
+        <DialogFooter className="sticky bottom-0 border-t p-6 bg-white dark:bg-gray-950 z-20">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={loading}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md min-w-[120px]"
+          >
+            {loading ? (
+               "Saving..."
+            ) : (
+              <span className="flex items-center gap-2">
+                <Save className="w-4 h-4" /> Save Changes
+              </span>
+            )}
+          </Button>
+        </DialogFooter>
+
+      </DialogContent>
+    </Dialog>
+  )
 
 };
 

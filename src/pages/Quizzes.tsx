@@ -63,7 +63,7 @@ const Quizzes = () => {
                         {/* Header Section */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-pink-100 dark:bg-pink-500/10 rounded-2xl shadow-sm border border-pink-100 dark:border-pink-500/20">
+                                <div className="p-3 bg-pink-100 dark:bg-accent/10 rounded-2xl shadow-sm border border-pink-100 dark:border-accent/20">
                                     <ListChecks className="w-6 h-6 text-pink-600 dark:text-pink-400" />
                                 </div>
                                 <div>
@@ -80,7 +80,7 @@ const Quizzes = () => {
                         {/* Loading State */}
                         {loading && (
                             <div className="flex flex-col items-center justify-center h-64 gap-3">
-                                <Loader2 className="w-10 h-10 animate-spin text-pink-500" />
+                                <Loader2 className="w-10 h-10 animate-spin text-accent" />
                                 <p className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">
                                     Loading your assessments...
                                 </p>

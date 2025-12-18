@@ -447,7 +447,7 @@ const AttemptQuiz = () => {
                             : timeLeft <= 30 
                                 ? "bg-red-50 text-red-600 border-red-200 animate-pulse" 
                                 : timeLeft <= 60 
-                                    ? "bg-amber-50 text-amber-600 border-amber-200" 
+                                    ? "bg-primary text-amber-600 border-amber-200" 
                                     : "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200"
                         }
                     `}>
@@ -461,7 +461,7 @@ const AttemptQuiz = () => {
                         disabled={isSubmitting}
                         className="
                             flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold
-                            bg-fuchsia-600 text-white hover:bg-fuchsia-700
+                            bg-primary text-white hover:bg-accent
                             active:scale-95 transition-all duration-200
                             disabled:opacity-50 disabled:cursor-not-allowed
                         "
@@ -572,7 +572,7 @@ const AttemptQuiz = () => {
                                 className="
                                     hidden lg:flex w-full items-center justify-center gap-2
                                     px-5 py-3 rounded-lg text-sm font-semibold
-                                    bg-cyan-600 text-white hover:bg-cyan-700
+                                    bg-primary text-white hover:bg-accent
                                     active:scale-[0.98] transition-all duration-150
                                     disabled:opacity-50 disabled:cursor-not-allowed
                                 "
@@ -818,7 +818,7 @@ const AttemptQuiz = () => {
             body="Are you sure you want to end the quiz? This will submit all your current answers."
             confirmText="End & Submit"
             cancelText="Cancel"
-            variant="default"
+            variant="danger"
             dismissible
         />
     </div>
