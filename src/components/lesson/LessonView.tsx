@@ -7,7 +7,15 @@ import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
 import { Lesson, LessonAttachment } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import { CheckCircle, Download, FileText, Loader2, Maximize2, Minimize2, Video } from "lucide-react";
+import {
+  CheckCircle,
+  Download,
+  FileText,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Video,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
@@ -16,9 +24,13 @@ interface LessonViewProps {
   lessonId: string;
   onComplete: () => void;
   completed: boolean;
-};
+}
 
-export function LessonView({ lessonId, onComplete, completed }: LessonViewProps) {
+export function LessonView({
+  lessonId,
+  onComplete,
+  completed,
+}: LessonViewProps) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +44,8 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleChange);
-    return () => document.removeEventListener('fullscreenchange', handleChange);
+    document.addEventListener("fullscreenchange", handleChange);
+    return () => document.removeEventListener("fullscreenchange", handleChange);
   }, []);
 
   useEffect(() => {
@@ -59,7 +71,9 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
     const fetchLessonAttachments = async () => {
       try {
         if (!lessonId) return;
-        const attachments = await lessonService.getAttachmentsByLessonId(lessonId);
+        const attachments = await lessonService.getAttachmentsByLessonId(
+          lessonId
+        );
         setAttachments(attachments);
       } catch (error) {
         logError("fetchLessonAttachments", error);
@@ -90,7 +104,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      console.error("Fullscreen error:", error);
     }
   }, []);
 
@@ -105,7 +119,10 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <Loader2 className="animate-spin mx-auto mt-20 text-muted-foreground" size={50} />
+        <Loader2
+          className="animate-spin mx-auto mt-20 text-muted-foreground"
+          size={50}
+        />
       </div>
     );
   }
@@ -127,7 +144,6 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
   }
 
   const hasVideo = lesson.type === LESSON_TYPE.VIDEO_LECTURE;
-
 
   const extractIframeSrc = (html: string): string | null => {
     // Very simple regex to grab src="...".
@@ -152,7 +168,11 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
           return (
             <iframe
               src={lesson.embedUrl}
-              style={{ border: 0, width: '100%', height: isFullscreen ? '100%' : '500px' }}
+              style={{
+                border: 0,
+                width: "100%",
+                height: isFullscreen ? "100%" : "500px",
+              }}
               allowFullScreen
               loading="lazy"
             />
@@ -215,7 +235,9 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
 
       default:
         return lesson.embedUrl ? (
-          <div className={isFullscreen ? "w-full h-full overflow-auto" : "w-full"}>
+          <div
+            className={isFullscreen ? "w-full h-full overflow-auto" : "w-full"}
+          >
             <div
               className="prose prose-sm max-w-none dark:prose-invert leading-relaxed w-full"
               dangerouslySetInnerHTML={{ __html: lesson.embedUrl }}
@@ -241,7 +263,11 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       }
     >
       {/* Header */}
-      <div className={`flex items-start justify-between gap-4 w-full ${isFullscreen ? 'p-4 border-b shrink-0' : ''}`}>
+      <div
+        className={`flex items-start justify-between gap-4 w-full ${
+          isFullscreen ? "p-4 border-b shrink-0" : ""
+        }`}
+      >
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             {lesson.title}
@@ -266,7 +292,12 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
 
         <div className="flex gap-2">
           {completed ? (
-            <Button variant="default" size="sm" disabled className="cursor-default bg-green-600 text-white">
+            <Button
+              variant="default"
+              size="sm"
+              disabled
+              className="cursor-default bg-green-600 text-white"
+            >
               <CheckCircle className="h-4 w-4 mr-2" /> Completed
             </Button>
           ) : (
@@ -284,7 +315,11 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
          - In Fullscreen: flex-1 allows it to take ALL remaining height.
          - overflow-hidden prevents double scrollbars if the iframe has its own scroll.
       */}
-      <div className={`w-full ${isFullscreen ? 'flex-1 h-full overflow-hidden' : ''}`}>
+      <div
+        className={`w-full ${
+          isFullscreen ? "flex-1 h-full overflow-hidden" : ""
+        }`}
+      >
         {getLessonContent()}
       </div>
 
@@ -313,20 +348,29 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
           <div className="flex flex-col md:flex-row gap-4">
             <Card className="md:w-2/3 bg-muted/30">
               <CardContent className="py-4">
-                <h2 className="text-lg font-semibold mb-2">Lesson Description</h2>
+                <h2 className="text-lg font-semibold mb-2">
+                  Lesson Description
+                </h2>
+
                 {lesson.description ? (
-                  <MarkdownViewer value={lesson.description} />
+                  <div className="prose max-w-none break-words overflow-hidden">
+                    <MarkdownViewer value={lesson.description} />
+                  </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No description provided for this lesson.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No description provided for this lesson.
+                  </p>
                 )}
               </CardContent>
             </Card>
+
             <Card className="w-full md:w-1/3">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold">Attachments</h2>
                   <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                    {attachments.length} file{attachments.length !== 1 ? 's' : ''}
+                    {attachments.length} file
+                    {attachments.length !== 1 ? "s" : ""}
                   </span>
                 </div>
               </CardHeader>
@@ -334,7 +378,9 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
                 {attachments.length === 0 ? (
                   <div className="text-center py-6 border-2 border-dashed rounded-lg">
                     <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                    <p className="text-sm text-muted-foreground">No attachments for this lesson</p>
+                    <p className="text-sm text-muted-foreground">
+                      No attachments for this lesson
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -345,11 +391,16 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
                       >
                         <div className="flex items-center space-x-3 min-w-0 flex-1">
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm truncate" title={attachment.name}>
+                            <p
+                              className="font-medium text-sm truncate"
+                              title={attachment.name}
+                            >
                               {attachment.name}
                             </p>
                             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                              <span className="capitalize">{attachment.type.toLowerCase()}</span>
+                              <span className="capitalize">
+                                {attachment.type.toLowerCase()}
+                              </span>
                               <span>•</span>
                               <span>{formatFileSize(attachment.size)}</span>
                             </div>
@@ -385,4 +436,4 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
       )}
     </div>
   );
-};
+}
