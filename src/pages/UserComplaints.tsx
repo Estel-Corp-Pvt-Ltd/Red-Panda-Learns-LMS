@@ -9,7 +9,7 @@ import { complaintService } from "@/services/complaintService";
 import { motion } from "framer-motion";
 import { Loader2, RefreshCcw, CheckCircle2, Clock, Calendar, ImageIcon, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
-import ImageModal from "@/components/complaintsImageModal";
+import ImageModal from "@/components/ComplaintAttachmentsModal";
 
 export default function UserComplaints() {
     const { user } = useAuth();
