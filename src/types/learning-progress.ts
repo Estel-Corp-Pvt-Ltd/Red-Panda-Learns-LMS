@@ -9,13 +9,20 @@ export interface LearningProgress {
   courseId: string;
   currentLessonId: string | null;
   lastAccessed: Timestamp | FieldValue;
-  lessonHistory: string[];
+  lessonHistory: {
+    [lessonId: string]: {
+      timeSpent: number;
+      markedAsComplete: boolean;
+      completedAt: Timestamp | FieldValue | null;
+    };
+  };
   certification?: {
     issued: boolean;
     issuedAt: Timestamp | FieldValue;
     certificateId: string;
     grade?: number | string | null;
   };
-  completionDate?: Timestamp | FieldValue;
+  completionDate: Timestamp | FieldValue | null;
   updatedAt: Timestamp | FieldValue;
 };
+
