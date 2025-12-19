@@ -41,7 +41,7 @@ const AdditionalTab = ({
   id="mail-sending"
   checked={isMailSendingEnabled}
   onCheckedChange={setIsMailSendingEnabled}
-  className="bg-gray-200 dark:bg-gray-700 data-[state=checked]:bg-blue-500"
+  className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
 />
       </div>
 
@@ -64,7 +64,7 @@ const AdditionalTab = ({
   id="enable-certificate"
   checked={isCertificateEnabled} 
   onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
-  className="bg-gray-200 dark:bg-gray-700 data-[state=checked]:bg-blue-500"
+  className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
 />
       </div>
 
