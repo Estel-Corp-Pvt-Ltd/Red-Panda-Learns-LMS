@@ -109,25 +109,33 @@ const AdminCourses = () => {
   }, [useClientSearch]);
 
   // Load courses when filters or pagination change
-  useEffect(() => {
-    if (
-      useClientSearch &&
-      (searchQuery ||
-        statusFilter !== "ALL" ||
-        coursePriceFilterValue !== "All Prices")
-    ) {
-      performClientSearch();
-    } else {
-      loadCourses();
+useEffect(() => {
+  if (
+    useClientSearch &&
+    (searchQuery ||
+      statusFilter !== "ALL" ||
+      coursePriceFilterValue !== "All Prices")
+  ) {
+    // Guard: wait for allCourses to be loaded
+    if (allCourses.length === 0 && !isLoading) {
+      loadAllCourses();
+      return;
     }
-  }, [
-    searchQuery,
-    statusFilter,
-    coursePriceFilterValue,
-    paginationState,
-    useClientSearch,
-    itemsPerPage,
-  ]);
+    if (allCourses.length > 0) {
+      performClientSearch();
+    }
+  } else {
+    loadCourses();
+  }
+}, [
+  searchQuery,
+  statusFilter,
+  coursePriceFilterValue,
+  paginationState,
+  useClientSearch,
+  itemsPerPage,
+  allCourses.length, // Add this
+]);
 
   const isProbablyHtml = (text?: string | null) => {
     if (!text) return false;
