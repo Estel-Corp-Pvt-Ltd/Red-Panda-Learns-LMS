@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { COLLECTION } from "../constants";
+import { COLLECTION, QUIZ_SUBMISSION_STATUS } from "../constants";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -96,67 +96,53 @@ export const getQuizTimeLeftHandler = async (
       .limit(1)
       .get();
 
-    let effectiveEndMillis: number;
+let startedAtMillis: number | null;
 
-    if (endAtMillis != null) {
-      /**
-       * Case 1: Quiz has a fixed endAt configured.
-       * All students share this hard deadline, regardless of when they started.
-       */
-      effectiveEndMillis = endAtMillis;
-      functions.logger.info("[getQuizTimeLeft] Using quiz endAt", {
-        effectiveEndMillis: new Date(effectiveEndMillis).toISOString(),
-      });
-    } else if (!submissionSnap.empty) {
-      /**
-       * Case 2: No fixed endAt, but this user already has a submission.
-       * Use submission.startedAt + duration to determine when this user’s quiz ends.
-       */
-      const submission = submissionSnap.docs[0].data();
-      const startedAtMillis = toMillis(submission.startedAt);
+// 1. Ensure startedAt exists (persist once)
+if (!submissionSnap.empty) {
+  const submission = submissionSnap.docs[0].data();
+  startedAtMillis = toMillis(submission.startedAt);
 
-      if (!startedAtMillis) {
-        functions.logger.error(
-          "[getQuizTimeLeft] Submission has invalid startedAt",
-          {
-            quizId,
-            userId: req.auth.uid,
-            startedAt: submission.startedAt,
-          }
-        );
-        return {
-          success: false,
-          message: "Invalid submission start time.",
-        };
-      }
+  if (!startedAtMillis) {
+    functions.logger.error("[getQuizTimeLeft] Invalid startedAt", {
+      quizId,
+      userId: req.auth.uid,
+      startedAt: submission.startedAt,
+    });
+    return { success: false, message: "Invalid submission start time." };
+  }
+} else {
+  const startedAt = admin.firestore.Timestamp.now();
 
-      effectiveEndMillis = startedAtMillis + durationMs;
+  await db.collection(COLLECTION.QUIZ_SUBMISSIONS).add({
+    quizId,
+    userId: req.auth.uid,
+    startedAt,
+    status: QUIZ_SUBMISSION_STATUS.IN_PROGRESS,
+  });
 
-      functions.logger.info(
-        "[getQuizTimeLeft] No quiz endAt, using submission.startedAt",
-        {
-          startedAt: new Date(startedAtMillis).toISOString(),
-          effectiveEndMillis: new Date(effectiveEndMillis).toISOString(),
-        }
-      );
-    } else {
-      /**
-       * Case 3: No fixed endAt and no previous submission.
-       * This is effectively the user’s first time starting the quiz.
-       * Use now + duration as their personal end time.
-       *
-       * NOTE: If you want to persist this "start" moment, you should
-       * create a submission document here with startedAt = nowMillis.
-       */
-      effectiveEndMillis = nowMillis + durationMs;
+  startedAtMillis = startedAt.toMillis();
 
-      functions.logger.info(
-        "[getQuizTimeLeft] No quiz endAt and no previous submission; using now + duration",
-        {
-          effectiveEndMillis: new Date(effectiveEndMillis).toISOString(),
-        }
-      );
-    }
+  functions.logger.info("[getQuizTimeLeft] Created submission", {
+    startedAt: new Date(startedAtMillis).toISOString(),
+  });
+}
+
+// 2. Calculate duration-based end
+const durationEndMillis = startedAtMillis + durationMs;
+
+// 3. Apply absolute quiz expiry (endAt)
+const effectiveEndMillis =
+  endAtMillis != null
+    ? Math.min(durationEndMillis, endAtMillis)
+    : durationEndMillis;
+
+functions.logger.info("[getQuizTimeLeft] Effective end calculated", {
+  startedAt: new Date(startedAtMillis).toISOString(),
+  durationEnd: new Date(durationEndMillis).toISOString(),
+  quizEndAt: endAtMillis ? new Date(endAtMillis).toISOString() : null,
+  effectiveEnd: new Date(effectiveEndMillis).toISOString(),
+});
 
     // 5. Compute remaining time in whole seconds, never less than 0
     const timeLeftSeconds = Math.max(
