@@ -43,7 +43,7 @@ class LearningProgressService {
         courseId,
         currentLessonId: null,
         lastAccessed: serverTimestamp(),
-        lessonHistory: [],
+        lessonHistory: {},
         completionDate: null,
         updatedAt: serverTimestamp(),
       };
