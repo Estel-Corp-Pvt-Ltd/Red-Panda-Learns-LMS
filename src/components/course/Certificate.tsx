@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { USER_ROLE } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import ShareCertificate from "./ShareCertificate";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -12,8 +15,16 @@ const Certificate: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (user.id !== enrollmentId.split("_")[0] && user.role !== USER_ROLE.ADMIN) {
+      navigate("/dashboard");
+    }
+
     const fetchEnrollmentAndCompletion = async () => {
       setIsLoading(true);
       try {
@@ -24,15 +35,15 @@ const Certificate: React.FC = () => {
           const enrollment = enrollmentResult.data;
           setEnrollmentData(enrollment);
 
-          // ✅ Fetch completion date using userId + courseId
           const completionResult =
-            await learningProgressService.getFormattedCompletionDate(
+            await learningProgressService.getFormattedCompletionDateAndCertificateId(
               enrollment.userId,
               enrollment.courseId
             );
 
           if (completionResult.success) {
-            setCompletionDate(completionResult.data);
+            setCompletionDate(completionResult.data.completionDate);
+            setCertificateId(completionResult.data.certificateId);
           }
         }
       } catch (error) {
@@ -176,24 +187,28 @@ const Certificate: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200 p-4 print:p-0">
       {/* Action Buttons */}
       <div className="fixed top-6 right-6 z-50 flex gap-3 print-button">
-        <Button
-          onClick={handleDownloadAsImage}
-          disabled={isPrinting}
-          variant="outline"
-          className="bg-secondary text-black hover:text-secondary hover:bg-primary"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {isPrinting ? "Processing..." : "Download PNG"}
-        </Button>
-        <Button
-          onClick={handlePrint}
-          disabled={isPrinting}
-          className="bg-secondary text-black hover:text-secondary hover:bg-primary"
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          {isPrinting ? "Preparing..." : "Print Certificate"}
-        </Button>
-      </div>
+  <ShareCertificate certificateId={certificateId} />
+
+  <Button
+    onClick={handleDownloadAsImage}
+    disabled={isPrinting}
+    variant="outline"
+    className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !dark:bg-gray-200 !dark:text-black"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    {isPrinting ? "Processing..." : "Download PNG"}
+  </Button>
+
+  <Button
+    onClick={handlePrint}
+    disabled={isPrinting}
+    className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !dark:bg-gray-200 !dark:text-black"
+  >
+    <Printer className="h-4 w-4 mr-2" />
+    {isPrinting ? "Preparing..." : "Print Certificate"}
+  </Button>
+</div>
+
       <div className="max-w-full overflow-scroll lg:overflow-visible"> {/* Allow horizontal scroll for smaller screens */}
         {/* Certificate Container - Exact Fixed Size */}
         <div className="relative w-[760px] h-[540px] bg-white shadow-xl border border-gray-300 overflow-hidden certificate-container print:shadow-none">

@@ -6,7 +6,7 @@ export interface InvoiceItem {
   gstPercentage: number;
   gstAmount: number;
   amount: number;
-}
+};
 
 export interface Address {
   line1: string;
@@ -15,7 +15,7 @@ export interface Address {
   state: string;
   country: string;
   postalCode: string;
-}
+};
 
 export interface CompanyInfo {
   name: string;
@@ -24,12 +24,12 @@ export interface CompanyInfo {
   phone: string;
   email: string;
   website: string;
-}
+};
 
 export interface CustomerInfo {
   name: string;
   address: Address;
-}
+};
 
 export interface InvoiceData {
   invoiceNumber: string;
@@ -46,4 +46,4 @@ export interface InvoiceData {
   paymentMade: number;
   balanceDue: number;
   note?: string;
-}
+};

@@ -13,7 +13,7 @@ async function assignStudentsToAdminHandler(req: Request, res: Response) {
       return;
     }
 
-    const { adminId, studentIds } = req.body;
+    const { adminId, studentIds , notificationEmail  } = req.body;
 
     if (!adminId || !Array.isArray(studentIds) || studentIds.length === 0) {
       res.status(400).json({
@@ -24,7 +24,8 @@ async function assignStudentsToAdminHandler(req: Request, res: Response) {
 
     const assigned = await assignStudentsService.assignStudentsToAdmin(
       adminId,
-      studentIds
+      studentIds,
+      notificationEmail
     );
 
     res.status(200).json({ success: true, data: assigned });

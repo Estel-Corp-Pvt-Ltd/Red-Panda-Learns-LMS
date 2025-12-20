@@ -27,7 +27,7 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "../ui/switch";
 import { parseQuizQuestionsFromExcel } from "@/utils/parse-quiz-questions-from-excel";
-import QuizSubmissionModal from "../quiz/QuizSubmissionModel";
+import QuizSubmissionModal from "../quiz/QuizSubmissionModal";
 import { fileService } from "@/services/fileService";
 
 type SortableQuestionCardProps = {
@@ -109,284 +109,291 @@ const SortableQuestionCard = ({
         updateQuestion(id, { attachments: updatedAttachments });
     }
 
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            className="p-4 border rounded-lg bg-gray-50 mb-3 shadow-sm"
-        >
-            <div className="flex gap-2 items-center mb-2">
-                <div {...listeners} {...attributes}>
-                    <GripVertical className="text-gray-500 cursor-grab" />
-                </div>
-                <div className="flex-1 flex gap-3 items-center">
-                    <Input
-                        className="flex-1"
-                        placeholder="Question description"
-                        value={question.description}
-                        onChange={(e) => updateQuestion(id, { description: e.target.value })}
-                    />
-                </div>
+   return (
+  <div
+    ref={setNodeRef}
+    style={style}
+    className="p-4 mb-3 rounded-lg border shadow-sm
+      bg-gray-50 border-gray-200
+      dark:bg-gray-800 dark:border-gray-700"
+  >
+    <div className="flex gap-2 items-center mb-2">
+      <div {...listeners} {...attributes}>
+        <GripVertical className="cursor-grab text-gray-500 dark:text-gray-400" />
+      </div>
 
+      <div className="flex-1 flex gap-3 items-center">
+        <Input
+          className="flex-1 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
+          placeholder="Question description"
+          value={question.description}
+          onChange={(e) => updateQuestion(id, { description: e.target.value })}
+        />
+      </div>
+
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
+      >
+        <ChevronDown
+          className={`transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`}
+        />
+      </button>
+
+      <button
+        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+        onClick={() => deleteQuestion(id)}
+      >
+        <Trash2 size={18} />
+      </button>
+    </div>
+
+    {!collapsed && (
+      <div className="flex gap-3">
+
+        {/* Question Content */}
+        <div className="relative flex-1 p-4 rounded-lg
+          bg-white dark:bg-gray-900 border border-transparent dark:border-gray-700">
+
+          <div className="mb-3">
+            <label className="text-sm font-medium">Type</label>
+            <Select
+              value={question.type}
+              onValueChange={(val) =>
+                updateQuestion(id, { type: val as QuizQuestionType })
+              }
+            >
+              <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
+                <SelectValue placeholder="Select Question Type" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                {Object.values(QUIZ_QUESTION_TYPE).map(t => (
+                  <SelectItem key={t} value={t}>
+                    {t === QUIZ_QUESTION_TYPE.MCQ && "MCQ"}
+                    {t === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && "Multiple Answer"}
+                    {t === QUIZ_QUESTION_TYPE.FILL_BLANK && "Fill in the Blank"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {[QUIZ_QUESTION_TYPE.MCQ, QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER].includes(question.type as any) && (
+            <div className="mb-3">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-medium">Options</h4>
                 <button
-                    onClick={() => setCollapsed(!collapsed)}
-                    className="text-pink-600 hover:text-pink-700"
+                  className="flex items-center gap-1
+                    text-pink-600 hover:text-pink-700
+                    dark:text-pink-400 dark:hover:text-pink-300"
+                  onClick={() => addOption(id)}
                 >
-                    <ChevronDown
-                        className={`transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`}
-                    />
+                  <PlusCircle size={18} />
+                  Add Option
                 </button>
-                <button
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => deleteQuestion(id)}
-                >
-                    <Trash2 size={18} />
-                </button>
+              </div>
+
+              {question.options.map((opt, idx) => (
+                <div key={idx} className="flex gap-2 items-center mb-2">
+                  <Input
+                    className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+                    placeholder={`Option ${idx + 1}`}
+                    value={opt}
+                    onChange={(e) => updateOption(id, idx, e.target.value)}
+                  />
+                  <button
+                    className="text-red-400 hover:text-red-600 dark:hover:text-red-300"
+                    onClick={() => deleteOption(id, idx)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
+          )}
 
-            {!collapsed && (
-                <div className="flex gap-3">
-                    {/* Question Content */}
-                    <div className="relative bg-white p-4 rounded-lg flex-1 max-h-full">
-                        <div className="mb-3">
-                            <label className="text-sm font-medium">Type</label>
-                            <Select
-                                value={question.type}
-                                onValueChange={(val) =>
-                                    updateQuestion(id, { type: val as QuizQuestionType })
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select Question Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.values(QUIZ_QUESTION_TYPE).map(t => (
-                                        <SelectItem key={t} value={t}>
-                                            {t === QUIZ_QUESTION_TYPE.MCQ && "MCQ"}
-                                            {t === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && "Multiple Answer"}
-                                            {t === QUIZ_QUESTION_TYPE.FILL_BLANK && "Fill in the Blank"}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        {[QUIZ_QUESTION_TYPE.MCQ, QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER].includes(question.type as any) && (
-                            <div className="mb-3">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="font-medium">Options</h4>
-                                    <button
-                                        className="text-pink-600 flex items-center gap-1 hover:text-pink-700"
-                                        onClick={() => addOption(id)}
-                                    >
-                                        <PlusCircle size={18} />
-                                        Add Option
-                                    </button>
-                                </div>
+          {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+            <div>
+              <h3 className="mb-2 font-medium">Rules</h3>
+              <div className="mb-3 flex gap-4">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Switch
+                    checked={question.rules?.caseInSensitive ?? false}
+                    onCheckedChange={(val) =>
+                      updateQuestion(id, {
+                        rules: { ...question.rules, caseInSensitive: val }
+                      })
+                    }
+                  />
+                  Case Insensitive
+                </label>
 
-                                {question.options.map((opt, idx) => (
-                                    <div key={idx} className="flex gap-2 items-center mb-2">
-                                        <Input
-                                            className="flex-1"
-                                            placeholder={`Option ${idx + 1}`}
-                                            value={opt}
-                                            onChange={(e) => updateOption(id, idx, e.target.value)}
-                                        />
-                                        <button
-                                            className="text-red-400 hover:text-red-600"
-                                            onClick={() => deleteOption(id, idx)}
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
-                            <div>
-                                <h3 className="mb-2">Rules</h3>
-                                <div className="mb-3 flex gap-4">
-                                    <label className="text-sm font-medium mr-4 flex items-center gap-2">
-                                        <Switch
-                                            checked={question.rules?.caseInSensitive ?? false}
-                                            onCheckedChange={(val) =>
-                                                updateQuestion(id, {
-                                                    rules: {
-                                                        ...question.rules,
-                                                        caseInSensitive: val
-                                                    }
-                                                })
-                                            }
-                                        /> Case InSensitive
-                                    </label>
-                                    <label className="text-sm font-medium mr-4 flex items-center gap-2">
-                                        <Switch
-                                            checked={question.rules?.spaceRemoval ?? false}
-                                            onCheckedChange={(val) =>
-                                                updateQuestion(id, {
-                                                    rules: {
-                                                        ...question.rules,
-                                                        spaceRemoval: val
-                                                    }
-                                                })
-                                            }
-                                        />
-                                        Ignore Spaces
-                                    </label>
-                                </div>
-                            </div>
-                        )}
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Switch
+                    checked={question.rules?.spaceRemoval ?? false}
+                    onCheckedChange={(val) =>
+                      updateQuestion(id, {
+                        rules: { ...question.rules, spaceRemoval: val }
+                      })
+                    }
+                  />
+                  Ignore Spaces
+                </label>
+              </div>
+            </div>
+          )}
 
-                        <div>
-                            <label className="text-sm font-medium">
-                                Correct Answer
-                            </label>
-                            {question.type === QUIZ_QUESTION_TYPE.MCQ && (
-                                <Select
-                                    value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
-                                    onValueChange={(val) => updateCorrectAnswer(id, val)}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select Correct Option" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {question.options.filter(q => q.trim() !== "").map((o, idx) => (
-                                            <SelectItem key={idx} value={o}>
-                                                {o}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            {question.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    {question.options.map((o, idx) => {
-                                        const arr = Array.isArray(question.correctAnswer)
-                                            ? question.correctAnswer
-                                            : [];
-                                        const checked = arr.includes(o);
+          <div>
+            <label className="text-sm font-medium">Correct Answer</label>
 
-                                        return (
-                                            <div key={idx} className="flex gap-2 items-center">
-                                                <Checkbox
-                                                    checked={checked}
-                                                    onCheckedChange={() => {
-                                                        let next = checked
-                                                            ? arr.filter(x => x !== o)
-                                                            : [...arr, o];
-                                                        updateCorrectAnswer(id, next);
-                                                    }}
-                                                />
-                                                <span>{o}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                            {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
-                                <input
-                                    type="text"
-                                    className="mt-2 w-full border px-3 py-2 rounded-md"
-                                    value={question.correctAnswer as string}
-                                    onChange={e => updateCorrectAnswer(id, e.target.value)}
-                                />
-                            )}
-                        </div>
-
-                        <div className="mt-3">
-                            <label className="text-sm font-medium">Marks: </label>
-                            <input
-                                type="number"
-                                min={1}
-                                className="mt-1 w-24 border px-3 py-2 rounded-md"
-                                value={question.marks ?? 1}
-                                onChange={e =>
-                                    updateQuestion(id, { marks: parseInt(e.target.value) || 1 })
-                                }
-                            />
-                        </div>
-                    </div>
-
-                    {/* Attachments Sidebar */}
-                    <div className="w-48 bg-white p-3 rounded-lg border">
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-medium text-sm">Attachments</h4>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                id={`attachment-upload-${id}`}
-                                onChange={addAttachment}
-                            />
-                            <label
-                                htmlFor={`attachment-upload-${id}`}
-                                className="flex items-center justify-center w-8 h-8 text-primary hover:bg-gray-100 rounded cursor-pointer"
-                                title="Add attachment"
-                            >
-                                <ImagePlus size={16} />
-                            </label>
-                        </div>
-                        {isUploading && (
-                            <div className="relative bg-blue-500/20 p-2 rounded mb-3 flex items-center justify-center">
-                                <UploadCloud className="w-4 h-4 text-blue-500 mr-2" />
-                                <span className="text-sm">Uploading...</span>
-                            </div>
-                        )}
-
-                        {!question.attachments?.length ? (
-                            <div className="text-center text-gray-500 text-sm py-4">
-                                No attachments
-                            </div>
-                        ) : (
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {question.attachments.map((att, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="relative group border rounded-md overflow-hidden"
-                                    >
-                                        <img
-                                            src={att}
-                                            alt={`Attachment ${idx + 1}`}
-                                            className="w-full h-20 object-cover cursor-pointer hover:opacity-90"
-                                            onClick={() => setSelectedImageSrc(att)}
-                                        />
-                                        <button
-                                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
-                                            onClick={() => deleteAttachment(idx)}
-                                            title="Delete attachment"
-                                        >
-                                            <X size={12} />
-                                        </button>
-                                        <div className="p-1 text-xs text-gray-600 truncate">
-                                            Attachment {idx + 1}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+            {question.type === QUIZ_QUESTION_TYPE.MCQ && (
+              <Select
+                value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
+                onValueChange={(val) => updateCorrectAnswer(id, val)}
+              >
+                <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
+                  <SelectValue placeholder="Select Correct Option" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  {question.options.filter(o => o.trim()).map((o, idx) => (
+                    <SelectItem key={idx} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
 
-            {/* Image Preview Modal */}
-            {selectedImageSrc && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="relative bg-white p-4 rounded-lg max-w-4xl max-h-full">
-                        <img
-                            src={selectedImageSrc}
-                            alt="Attachment preview"
-                            className="max-w-full max-h-[80vh] object-contain"
-                        />
-                        <button
-                            className="absolute top-2 right-2 w-8 h-8 bg-pink-600 text-white rounded-full hover:bg-pink-700 flex items-center justify-center"
-                            onClick={() => setSelectedImageSrc(null)}
-                        >
-                            <X size={16} />
-                        </button>
+            {question.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && (
+              <div className="flex flex-col gap-1 mt-2">
+                {question.options.map((o, idx) => {
+                  const arr = Array.isArray(question.correctAnswer)
+                    ? question.correctAnswer
+                    : []
+                  const checked = arr.includes(o)
+
+                  return (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => {
+                          const next = checked
+                            ? arr.filter(x => x !== o)
+                            : [...arr, o]
+                          updateCorrectAnswer(id, next)
+                        }}
+                      />
+                      <span>{o}</span>
                     </div>
-                </div>
+                  )
+                })}
+              </div>
             )}
+
+            {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+              <input
+                type="text"
+                className="mt-2 w-full px-3 py-2 rounded-md
+                  bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+                value={question.correctAnswer as string}
+                onChange={(e) => updateCorrectAnswer(id, e.target.value)}
+              />
+            )}
+          </div>
+
+          <div className="mt-3">
+            <label className="text-sm font-medium">Marks</label>
+            <input
+              type="number"
+              min={1}
+              className="mt-1 w-24 px-3 py-2 rounded-md
+                bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+              value={question.marks ?? 1}
+              onChange={(e) =>
+                updateQuestion(id, { marks: parseInt(e.target.value) || 1 })
+              }
+            />
+          </div>
         </div>
-    );
+
+        {/* Attachments Sidebar */}
+        <div className="w-48 p-3 rounded-lg border
+          bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-sm">Attachments</h4>
+            <label
+              htmlFor={`attachment-upload-${id}`}
+              className="w-8 h-8 flex items-center justify-center rounded cursor-pointer
+                text-primary hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <ImagePlus size={16} />
+            </label>
+          </div>
+
+          {isUploading && (
+            <div className="bg-blue-500/20 p-2 rounded mb-3 flex items-center justify-center">
+              <UploadCloud className="w-4 h-4 text-blue-400 mr-2" />
+              <span className="text-sm">Uploading…</span>
+            </div>
+          )}
+
+          {!question.attachments?.length ? (
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+              No attachments
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {question.attachments.map((att, idx) => (
+                <div
+                  key={idx}
+                  className="relative group border rounded-md overflow-hidden
+                    border-gray-200 dark:border-gray-700"
+                >
+                  <img
+                    src={att}
+                    className="w-full h-20 object-cover cursor-pointer hover:opacity-90"
+                    onClick={() => setSelectedImageSrc(att)}
+                  />
+                  <button
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full
+                      bg-red-500 text-white opacity-0 group-hover:opacity-100 transition"
+                    onClick={() => deleteAttachment(idx)}
+                  >
+                    <X size={12} />
+                  </button>
+                  <div className="p-1 text-xs text-gray-600 dark:text-gray-400 truncate">
+                    Attachment {idx + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Image Preview */}
+    {selectedImageSrc && (
+      <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div className="relative bg-white dark:bg-gray-900 p-4 rounded-lg max-w-4xl">
+          <img
+            src={selectedImageSrc}
+            className="max-w-full max-h-[80vh] object-contain"
+          />
+          <button
+            className="absolute top-2 right-2 w-8 h-8 rounded-full
+              bg-pink-600 hover:bg-pink-700 text-white"
+            onClick={() => setSelectedImageSrc(null)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 };
 
 const Questions = ({
@@ -481,13 +488,13 @@ const Questions = ({
 
                 <button
                     onClick={() => document.getElementById("excelUpload")?.click()}
-                    className="px-4 py-2 text-white rounded-full bg-pink-600 hover:bg-pink-700"
+                    className="px-4 py-2 text-white rounded-full bg-primary hover:bg-accent"
                 >
                     Import Questions from Excel
                 </button>
 
                 <button
-                    className="px-4 py-2 text-white rounded-full bg-[#ff00ff] hover:bg-pink-500"
+                    className="px-4 py-2 text-white rounded-full bg-primary hover:bg-accent"
                     onClick={addQuestion}
                 >
                     + Add Question
@@ -527,7 +534,7 @@ const Questions = ({
             {
                 questions.length > 0 ?
                     <button
-                        className={`px-4 py-2 text-white rounded-full ${isSaveDisabled ? "bg-pink-700" : "bg-[#ff00ff] hover:bg-pink-500 cursor-pointer"}`}
+                        className={`px-4 py-2 text-white rounded-full ${isSaveDisabled ? "bg-pink-700" : "bg-[#ff00ff] hover:bg-accent cursor-pointer"}`}
                         onClick={handleSaveQuestions}
                         disabled={isSaveDisabled}
                     >
@@ -737,174 +744,177 @@ const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => 
         }
     };
 
-    return (
-        <div className="w-full">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                    <ListChecks className="w-6 h-6 text-pink-500" />
-                    Quizzes
-                </h2>
+  return (
+    <div className="w-full">
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                <ListChecks className="w-6 h-6 text-primary dark:text-pink-300" />
+                Quizzes
+            </h2>
 
-                <button
-                    onClick={() => setOpenCreateModal(true)}
-                    className="bg-[#ff00ff] hover:bg-pink-500 text-white px-5 py-2 rounded-full flex items-center gap-2 transition"
-                >
-                    <Plus size={16} />
-                    Add Quiz
-                </button>
-            </div>
-            <div className="border border-gray-200 rounded-xl bg-white shadow-sm p-4">
-                {loading ? (
-                    <div className="text-gray-500 text-center py-10">
-                        Loading quizzes…
-                    </div>
-                ) : quizzes.length === 0 ? (
-                    <div className="text-gray-400 text-center py-10">
-                        No quizzes added yet.
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {quizzes.map((quiz, idx) => (
-                            <div
-                                key={quiz.id}
-                                className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition"
-                            >
-                                {/* Header Row */}
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        {/* Expand/Collapse Button */}
-                                        <button
-                                            onClick={() => handleExpandQuiz(quiz.id)}
-                                            className="p-2 rounded-full hover:bg-gray-100 transition"
-                                        >
-                                            <ChevronRight
-                                                size={18}
-                                                className={`transition-transform duration-200 ${expandedQuizId === quiz.id ? "rotate-90" : ""}`}
-                                            />
-                                        </button>
-                                        <Folder className="w-5 h-5 text-pink-500" />
-                                        <span className="font-medium text-gray-800">
-                                            {quiz.title || `Quiz ${idx + 1}`}
-                                        </span>
-                                    </div>
+            <button
+                onClick={() => setOpenCreateModal(true)}
+                className="bg-primary hover:bg-accent  text-white px-5 py-2 rounded-full flex items-center gap-2 transition dark:bg-[#ff00ff] dark:hover:bg-accent"
+            >
+                <Plus size={16} />
+                Add Quiz
+            </button>
+        </div>
 
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition flex items-center gap-2"
-                                            onClick={() => {
-                                                setSelectedQuizId(quiz.id);
-                                                setOpenSubmissionsModal(true);
-                                            }}
-                                        >
-                                            <ListChecks size={14} />
-                                            Submissions</button>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedQuizId(quiz.id);
-                                                setOpenEditModal(true);
-                                            }}
-                                            className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition flex items-center gap-2"
-                                        >
-                                            <Pencil size={14} />
-                                            Update
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setSelectedQuizId(quiz.id);
-                                                setOpenDeleteModal(true);
-                                            }}
-                                            className="px-4 py-1.5 text-sm rounded-full border border-red-300 text-red-500 hover:bg-red-50 transition flex items-center gap-2"
-                                        >
-                                            <Trash2 size={14} />
-                                            Delete
-                                        </button>
-
-                                        <div className="flex items-center gap-3">
-                                            <label className="flex items-center gap-2 text-sm">
-                                                <span>Release Scores</span>
-                                                <Switch
-                                                    checked={quiz.releaseScores ?? false}
-                                                    onCheckedChange={async (val) => {
-                                                        const res = await quizService.setReleaseScores(quiz.id, val);
-                                                        if (!res.success) {
-                                                            toast({
-                                                                title: "Failed to update release scores",
-                                                                variant: "destructive"
-                                                            });
-                                                            return;
-                                                        }
-
-                                                        setQuizzes(prev =>
-                                                            prev.map(q => q.id === quiz.id ? { ...q, releaseScores: val } : q)
-                                                        );
-                                                    }}
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
+        <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm p-4">
+            {loading ? (
+                <div className="text-gray-500 dark:text-gray-400 text-center py-10">
+                    Loading quizzes…
+                </div>
+            ) : quizzes.length === 0 ? (
+                <div className="text-gray-400 dark:text-gray-500 text-center py-10">
+                    No quizzes added yet.
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {quizzes.map((quiz, idx) => (
+                        <div
+                            key={quiz.id}
+                            className="p-4 border rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                        >
+                            {/* Header Row */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    {/* Expand/Collapse Button */}
+                                    <button
+                                        onClick={() => handleExpandQuiz(quiz.id)}
+                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                                    >
+                                        <ChevronRight
+                                            size={18}
+                                            className={`transition-transform duration-200 ${expandedQuizId === quiz.id ? "rotate-90" : ""}`}
+                                        />
+                                    </button>
+                                    <Folder className="w-5 h-5 text-primary dark:text-pink-300" />
+                                    <span className="font-medium text-gray-800 dark:text-gray-100">
+                                        {quiz.title || `Quiz ${idx + 1}`}
+                                    </span>
                                 </div>
 
-                                {/* Expanded Questions Section */}
-                                {expandedQuizId === quiz.id && (
-                                    <div className="mt-4 border-t pt-4">
-                                        <Questions
-                                            questions={questions}
-                                            setQuestions={setQuestions}
-                                            addQuestion={addQuestion}
-                                            updateQuestion={updateQuestion}
-                                            deleteQuestion={deleteQuestion}
-                                            addOption={addOption}
-                                            updateOption={updateOption}
-                                            deleteOption={deleteOption}
-                                            updateCorrectAnswer={updateCorrectAnswer}
-                                            handleSaveQuestions={handleSaveQuestions}
-                                        />
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-900 transition flex items-center gap-2"
+                                        onClick={() => {
+                                            setSelectedQuizId(quiz.id);
+                                            setOpenSubmissionsModal(true);
+                                        }}
+                                    >
+                                        <ListChecks size={14} />
+                                        Submissions
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setSelectedQuizId(quiz.id);
+                                            setOpenEditModal(true);
+                                        }}
+                                        className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-900 transition flex items-center gap-2"
+                                    >
+                                        <Pencil size={14} />
+                                        Update
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setSelectedQuizId(quiz.id);
+                                            setOpenDeleteModal(true);
+                                        }}
+                                        className="px-4 py-1.5 text-sm rounded-full border border-red-300 text-red-500 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white transition flex items-center gap-2"
+                                    >
+                                        <Trash2 size={14} />
+                                        Delete
+                                    </button>
+
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                                            <span>Release Scores</span>
+                                            <Switch
+                                                checked={quiz.releaseScores ?? false}
+                                                onCheckedChange={async (val) => {
+                                                    const res = await quizService.setReleaseScores(quiz.id, val);
+                                                    if (!res.success) {
+                                                        toast({
+                                                            title: "Failed to update release scores",
+                                                            variant: "destructive"
+                                                        });
+                                                        return;
+                                                    }
+
+                                                    setQuizzes(prev =>
+                                                        prev.map(q => q.id === quiz.id ? { ...q, releaseScores: val } : q)
+                                                    );
+                                                }}
+                                            />
+                                        </label>
                                     </div>
-                                )}
+                                </div>
                             </div>
 
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <EditQuizModal
-                open={openEditModal}
-                onClose={() => { setSelectedQuizId(""); setOpenEditModal(false); }}
-                quiz={selectedQuiz}
-            />
-
-            <CreateQuizModal
-                open={openCreateModal}
-                onClose={() => setOpenCreateModal(false)}
-                createdBy={userId}
-                courseId={courseId}
-            />
-
-            <ConfirmDialog
-                open={openDeleteModal}
-                onCancel={() => {
-                    setSelectedQuizId("");
-                    setOpenDeleteModal(false);
-                }}
-                onConfirm={deleteQuiz}
-                title="Delete Quiz"
-                body={`Are you sure you want to delete the quiz titled "${selectedQuiz?.title}"? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
-                variant="danger"
-                dismissible
-            />
-            {selectedQuizId && (
-                <QuizSubmissionModal
-                    open={openSubmissionsModal}
-                    onClose={() => setOpenSubmissionsModal(false)}
-                    quiz={quizzes.find(q => q.id === selectedQuizId) || null}
-                />
+                            {/* Expanded Questions Section */}
+                            {expandedQuizId === quiz.id && (
+                                <div className="mt-4 border-t pt-4 border-gray-300 dark:border-gray-600">
+                                    <Questions
+                                        questions={questions}
+                                        setQuestions={setQuestions}
+                                        addQuestion={addQuestion}
+                                        updateQuestion={updateQuestion}
+                                        deleteQuestion={deleteQuestion}
+                                        addOption={addOption}
+                                        updateOption={updateOption}
+                                        deleteOption={deleteOption}
+                                        updateCorrectAnswer={updateCorrectAnswer}
+                                        handleSaveQuestions={handleSaveQuestions}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             )}
         </div>
-    );
+
+        <EditQuizModal
+            open={openEditModal}
+            onClose={() => { setSelectedQuizId(""); setOpenEditModal(false); }}
+            quiz={selectedQuiz}
+        />
+
+        <CreateQuizModal
+            open={openCreateModal}
+            onClose={() => setOpenCreateModal(false)}
+            createdBy={userId}
+            courseId={courseId}
+        />
+
+        <ConfirmDialog
+            open={openDeleteModal}
+            onCancel={() => {
+                setSelectedQuizId("");
+                setOpenDeleteModal(false);
+            }}
+            onConfirm={deleteQuiz}
+            title="Delete Quiz"
+            body={`Are you sure you want to delete the quiz titled "${selectedQuiz?.title}"? This action cannot be undone.`}
+            confirmText="Delete"
+            cancelText="Cancel"
+            variant="danger"
+            dismissible
+        />
+        {selectedQuizId && (
+            <QuizSubmissionModal
+                open={openSubmissionsModal}
+                onClose={() => setOpenSubmissionsModal(false)}
+                quiz={quizzes.find(q => q.id === selectedQuizId) || null}
+            />
+        )}
+    </div>
+);
+
 };
 
 export default QuizTab;

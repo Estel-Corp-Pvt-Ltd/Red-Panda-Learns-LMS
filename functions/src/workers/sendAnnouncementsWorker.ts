@@ -1,18 +1,24 @@
-// sendMailWorkerForNotif.ts
 import { onMessagePublished } from "firebase-functions/v2/pubsub";
 import { logger } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import fetch from "node-fetch";
 
+// 🔐 Define the secrets
 const BREVO_API_KEY = defineSecret("BREVO_API_KEY");
+const FALLBACK_EMAILS = defineSecret("FALLBACK_EMAILS"); // comma-separated emails
 
 export const sendAnnouncementEmailWorker = onMessagePublished(
   {
     topic: "send-announcements",
-    secrets: [BREVO_API_KEY],
+    secrets: [BREVO_API_KEY, FALLBACK_EMAILS],
   },
   async (event) => {
     const apiKey = BREVO_API_KEY.value();
+    const fallbackEmails = FALLBACK_EMAILS.value()
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean);
+
     const payload = event.data.message.json;
 
     try {
@@ -38,8 +44,17 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
       const safeTo = Array.isArray(to) ? to.filter(Boolean) : [];
       const safeBcc = Array.isArray(bcc) ? bcc.filter(Boolean) : [];
 
-      if (safeTo.length === 0 && safeBcc.length === 0) {
-        logger.warn("⚠️ No recipients, skipping email:", payload);
+      // If 'to' is empty, use fallback emails
+      if (safeTo.length === 0) {
+        safeTo.push(...fallbackEmails);
+        logger.info(
+          "No 'to' recipients found, using fallback emails:",
+          fallbackEmails
+        );
+      }
+
+      if (safeTo.length === 0) {
+        logger.warn("⚠️ No recipients available after fallback, skipping email");
         return;
       }
 
@@ -56,8 +71,7 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
       // Plain text fallback
       // ────────────────────────────────────────────
 
-      const textContent =
-        text || (html ? html.replace(/<[^>]+>/g, "") : "");
+      const textContent = text || (html ? html.replace(/<[^>]+>/g, "") : "");
 
       // ────────────────────────────────────────────
       // Build Brevo payload
@@ -69,7 +83,7 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
         bcc: safeBcc.map((email: string) => ({ email })),
         subject,
         htmlContent: html || "",
-        textContent: textContent,
+        textContent,
       };
 
       logger.info("📧 Worker sending email batch", {
@@ -92,15 +106,13 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(
-          `Brevo API failed (${res.status}): ${text}`
-        );
+        const respText = await res.text();
+        throw new Error(`Brevo API failed (${res.status}): ${respText}`);
       }
 
       logger.info("✅ Worker batch sent successfully", {
-        to: safeTo.length,
-        bcc: safeBcc.length,
+        toCount: safeTo.length,
+        bccCount: safeBcc.length,
         subject,
       });
 

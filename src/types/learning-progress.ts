@@ -20,6 +20,7 @@ export interface LearningProgress {
     issued: boolean;
     issuedAt: Timestamp | FieldValue;
     certificateId: string;
+    remark?: string;
     grade?: number | string | null;
   };
   completionDate: Timestamp | FieldValue | null;

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bell, Copy, Mail, Menu, ShoppingCart, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Copy, HeartHandshake, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,8 @@ import { useCart } from "@/contexts/CartContext";
 import { USER_ROLE } from "@/constants";
 import { cn } from "@/lib/utils";
 
-import { LifeBuoy } from "lucide-react";
 import { CreateComplaint } from "./CreateComplaint";
+import { NotificationPanel } from "./notificationPanel";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -27,7 +27,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "./ui/navigation-menu";
-import { NotificationPanel } from "./notificationPanel";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -45,7 +44,7 @@ export function Header({
   const { toast } = useToast();
   const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-
+  const [unreadCount, setUnreadCount] = useState(0);
   const email = "hello@vizuara.com";
 
   const copyEmail = () => {
@@ -55,6 +54,8 @@ export function Header({
       description: "The email address has been copied to your clipboard.",
     });
   };
+
+
 
   return (
     <>
@@ -453,7 +454,7 @@ export function Header({
                       variant="ghost"
                       className="font-medium text-sm flex items-center gap-2"
                     >
-                      <LifeBuoy className="h-4 w-4" />
+                      <HeartHandshake className="h-4 w-4" />
                       <span className="hidden sm:block">Customer Support</span>
                     </Button>
                   }
@@ -464,12 +465,30 @@ export function Header({
 
             {user ? (
               <>
-                {/* Bell Icon Button */}
+
                 <button
                   onClick={() => setIsNotificationOpen(true)}
                   className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  aria-label="Notifications"
                 >
                   <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+
+
+                  {unreadCount > 0 && (
+                    <span
+                      className={cn(
+                        "absolute -top-1 -right-1",
+                        "bg-red-500 text-white text-[10px] font-bold",
+                        "min-w-[18px] h-[18px] px-1",
+                        "flex items-center justify-center",
+                        "rounded-full shadow-lg",
+                        "border-2 border-white dark:border-neutral-900",
+                        "animate-pulse"
+                      )}
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </button>
 
                 <div className="flex items-center">
@@ -488,8 +507,8 @@ export function Header({
                       user?.role === USER_ROLE.ADMIN
                         ? "/admin"
                         : user?.role === USER_ROLE.ACCOUNTANT
-                        ? "/accountant"
-                        : "/dashboard"
+                          ? "/accountant"
+                          : "/dashboard"
                     }
                     className="ml-2"
                   >
@@ -562,10 +581,10 @@ export function Header({
         </div>
       </header>
 
-      {/* Notification Panel - moved outside header */}
       <NotificationPanel
         isOpen={isNotificationOpen}
         onClose={() => setIsNotificationOpen(false)}
+        onUnreadChange={setUnreadCount}
       />
     </>
   );

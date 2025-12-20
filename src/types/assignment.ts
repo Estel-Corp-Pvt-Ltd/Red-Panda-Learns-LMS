@@ -1,6 +1,5 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
-
 export interface Assignment {
   id: string;
   title: string;
@@ -15,7 +14,7 @@ export interface Assignment {
   authorId?: string;
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-}
+};
 
 export interface AssignmentSubmission {
   id: string;
@@ -31,4 +30,4 @@ export interface AssignmentSubmission {
   links: string[];
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-}
+};

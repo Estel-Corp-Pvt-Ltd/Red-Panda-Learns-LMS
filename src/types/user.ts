@@ -12,6 +12,7 @@ export interface User {
     status: UserStatus;
     organizationId?: string;
     photoURL?: string;
+    readAt:Timestamp | FieldValue;
     createdAt: Timestamp | FieldValue;
     updatedAt: Timestamp | FieldValue;
 };

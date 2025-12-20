@@ -51,6 +51,7 @@ class UserService {
                 status: data.status,
                 organizationId: data.organizationId || "",
                 photoURL: data.photoURL || "",
+                readAt:serverTimestamp(),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -149,6 +150,31 @@ class UserService {
             return fail("Failed to fetch user by email");
         }
     }
+
+
+ 
+
+
+    // Mark all notifications as read (sets readAt to now)
+ async updateNotificationStatus(uid: string): Promise<Result<Partial<User>>> {
+    try {
+        const userRef = doc(db, COLLECTION.USERS, uid);
+
+        await updateDoc(userRef, {
+            readAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
+        return ok({
+            id: uid,
+            readAt: serverTimestamp()
+        });
+
+    } catch (error) {
+        logError("UserService.updateNotificationStatus", error);
+        return fail("Failed to update read notification");
+    }
+}
 
     /**
      * Retrieves a single user by ID.
@@ -356,6 +382,7 @@ class UserService {
                     enrollments: data.enrollments || [],
                     organizationId: data.organizationId,
                     photoURL: data.photoURL,
+                    readAt:data.readAt?.toDate?.() || data.readAt,
                     createdAt: data.createdAt?.toDate?.() || data.createdAt,
                     updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
                 } as User;

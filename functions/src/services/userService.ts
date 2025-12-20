@@ -3,13 +3,16 @@ import { UserRole } from '../types/general';
 import { User } from '../types/user';
 import { COLLECTION } from '../constants';
 import { Result, ok, fail } from '../utils/response';
+import { logger } from 'firebase-functions';
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const db = admin.firestore();
-
+const SKIP_DOMAIN = "vizuara.ai";
+const SKIP_TEST = "test"
+const SKIP_EMAIL = "email"
 class UserService {
   /**
    * Creates a new user in Firestore.
@@ -102,6 +105,88 @@ class UserService {
       return fail("Failed to fetch user by email");
     }
   }
+
+
+/**
+ * Retrieves all user emails in chunks from the Firestore database
+ * @param chunkSize - The number of emails to fetch per request
+ */
+async  getAllUserEmails(chunkSize: number = 100): Promise<string[]> {
+  let emails: string[] = [];
+  let lastVisible = null;
+
+ 
+try {
+  let query = db
+    .collection(COLLECTION.USERS)
+    .orderBy("email")
+    .limit(chunkSize);
+
+  while (true) {
+    const snapshot = await query.get();
+
+    logger.info("Fetched user batch", { size: snapshot.size });
+
+    if (snapshot.empty) break;
+
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+
+      logger.debug("User doc fields", {
+        keys: Object.keys(data),
+        email: data.email,
+        userEmail: data.userEmail,
+      });
+
+      // ⚠️ FIX: use correct field
+      const email: string | undefined = data.email ?? data.userEmail;
+
+      if (!email) {
+        logger.debug("Skipping user: no email field");
+        return;
+      }
+
+      const lowerEmail = email.toLowerCase();
+
+      if (lowerEmail.includes(SKIP_DOMAIN)) {
+        logger.debug("Skipping email (domain)", email);
+        return;
+      }
+
+      if (lowerEmail.includes(SKIP_TEST)) {
+        logger.debug("Skipping email (test)", email);
+        return;
+      }
+
+      if (lowerEmail.includes(SKIP_EMAIL)) {
+        logger.debug("Skipping email (explicit)", email);
+        return;
+      }
+
+      emails.push(email);
+    });
+
+    lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+    query = db
+      .collection(COLLECTION.USERS)
+      .orderBy("email")
+      .startAfter(lastVisible)
+      .limit(chunkSize);
+  }
+
+  logger.info("Final recipient email count", {
+    count: emails.length,
+  });
+
+  return emails;
+} catch (error) {
+  logger.error("Failed to fetch all user emails", error);
+  return [];
+}
+
+
+}
 
   /**
    * Retrieves a single user by ID.

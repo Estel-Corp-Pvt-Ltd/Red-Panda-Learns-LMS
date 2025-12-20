@@ -3,6 +3,7 @@ import type { DurationForm } from "@/components/admin/CourseBasicsTab";
 import CourseBasicsTab from "@/components/admin/CourseBasicsTab";
 import CurriculumTab from "@/components/admin/CurriculumTab";
 import QuizTab from "@/components/admin/QuizTab";
+import AdditionalTab from "@/components/admin/AdminCourseAdditionalTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ATTRIBUTE_TYPE, COURSE_STATUS } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +72,8 @@ const CurriculumBuilderPage = () => {
   const [slug, setSlug] = useState("");
   const [courseId, setCourseId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
+  const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -127,6 +130,7 @@ const CurriculumBuilderPage = () => {
   }, []);
 
   /** Load course and flatten structure into draggable list */
+
   useEffect(() => {
     if (!param) return;
     const loadCourse = async () => {
@@ -134,7 +138,7 @@ const CurriculumBuilderPage = () => {
         let data = await courseService.getCourseById(param);
 
         if (!data) {
-          console.warn("Course not found for param:", param);
+          console.warn("Course not found for CourseId:", param);
           return;
         }
 
@@ -142,7 +146,7 @@ const CurriculumBuilderPage = () => {
         setCourseId(data.id);
         setTitle(data.title);
         setDescription(data.description);
-        setSlug(data.slug ? `${data.slug}` : `${data.id ?? param}`);
+        setSlug(data.slug ? `${data.slug}` : `${data.id ?? courseId}`);
         setStatus(data.status);
         setDuration({
           hours: data.duration?.hours ?? 0,
@@ -156,7 +160,9 @@ const CurriculumBuilderPage = () => {
         setInstructorId(data.instructorId ?? "");
         setInstructorName(data.instructorName ?? "");
         setThumbnailUrl(data.thumbnail ?? "");
-
+        // ADD THIS LINE:
+        setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
+        setIsCertificateEnabled(data.isCertificateEnabled ?? false);
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -168,7 +174,7 @@ const CurriculumBuilderPage = () => {
       }
     };
     loadCourse();
-  }, [courseId]);
+  }, [param]); // Also changed param to param here - this was likely a bug
 
   // ───────────────────────────────────────────────────────────────
   // ─── BASICS TAB LOGIC ──────────────────────────────────────────
@@ -261,6 +267,27 @@ const CurriculumBuilderPage = () => {
     );
   };
 
+  // Add a save function for additional settings:
+  const saveAdditionalSettings = async () => {
+    if (!courseId) return;
+    try {
+      showOverlay("Saving additional settings...");
+      await courseService.updateCourse(courseId, {
+        isMailSendingEnabled,
+        isCertificateEnabled,
+      });
+      toast({ title: "Saved", description: "Additional settings updated." });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: String(err),
+        variant: "destructive",
+      });
+    } finally {
+      hideOverlay();
+    }
+  };
+
   /** Can the basic course info be saved (validation) */
   const canSaveBasics =
     title.trim() &&
@@ -314,8 +341,6 @@ const CurriculumBuilderPage = () => {
   // ─── CURRICULUM TAB LOGIC ──────────────────────────────────────
   // ───────────────────────────────────────────────────────────────
 
-
-
   // ───────────────────────────────────────────────────────────────
   // ─── RENDER ────────────────────────────────────────────────────
   // ───────────────────────────────────────────────────────────────
@@ -329,6 +354,8 @@ const CurriculumBuilderPage = () => {
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
             <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+            <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
+            {/* New tab trigger */}
           </TabsList>
 
           {/* ─── BASICS TAB ───────────────────────────────────────── */}
@@ -383,13 +410,23 @@ const CurriculumBuilderPage = () => {
 
           {/* ─── CURRICULUM TAB ───────────────────────────────────── */}
           <TabsContent value="curriculum">
-            <CurriculumTab
-              course={course}
-            />
+            <CurriculumTab course={course} />
           </TabsContent>
 
           <TabsContent value="quizzes">
             <QuizTab courseId={courseId} userId={user.id} />
+          </TabsContent>
+
+          {/* ─── ADDITIONAL TAB ────────────────────────────────────── */}
+
+          <TabsContent value="additional">
+            <AdditionalTab
+              isMailSendingEnabled={isMailSendingEnabled}
+              setIsMailSendingEnabled={setIsMailSendingEnabled}
+              isCertificateEnabled={isCertificateEnabled}
+              setIsCertificateEnabled={setIsCertificateEnabled}
+              onSave={saveAdditionalSettings}
+            />
           </TabsContent>
         </Tabs>
       </main>

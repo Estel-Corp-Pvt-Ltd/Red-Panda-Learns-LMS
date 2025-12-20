@@ -1,6 +1,6 @@
 
 import { ok, fail, Result } from "../utils/response";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { AnnouncementStatus } from "../types/general";
 import {
   ANNOUNCEMENT_SCOPE,
@@ -10,6 +10,8 @@ import {
 } from "../constants";
 import * as admin from "firebase-admin";
 import { Announcement } from "../types/announcements";
+import { v4 as uuidv4 } from 'uuid';
+import { logError } from "../utils/logger";
 
 // import { sendMail } from './email/sendMail'; // <-- Ensure this exists
 
@@ -103,6 +105,96 @@ const announcementService = {
     }
   },
 
+async createGlobalAnnouncement(params: {
+  title: string;
+  body: string;
+  createdBy: string | null;
+  status?: AnnouncementStatus;
+}): Promise<Result<string>> {
+  try {
+    const {
+      title,
+      body,
+      createdBy,
+      status = ANNOUNCEMENT_STATUS.PUBLISHED
+    } = params;
+
+    const uid = uuidv4();
+    const announcementId = `G_ALL_${uid}`;
+
+    const docRef = db
+      .collection(COLLECTION.ANNOUNCEMENTS)
+      .doc(announcementId);
+
+    const announcement: Announcement = {
+      id: announcementId,
+      scope: ANNOUNCEMENT_SCOPE.GLOBAL,
+      title,
+      body,
+      status,
+      createdBy,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    await docRef.set(announcement);
+
+    return ok(announcementId);
+  } catch (error: any) {
+    console.error("Error creating global assignment announcement", error); // ✅ Fixed message
+    return fail("Failed to create global assignment announcement"); // ✅ Fixed message
+  }
+},
+
+
+
+
+async createCourseManualAnnouncemenet(params: {
+  title: string;
+  body: string;
+  courseId:string;
+  createdBy: string | null;
+  status?: AnnouncementStatus;
+}): Promise<Result<string>> {
+  try {
+    const {
+      title,
+      body,
+      courseId,
+      createdBy,
+      status = ANNOUNCEMENT_STATUS.PUBLISHED
+    } = params;
+
+ if (!courseId) {
+        return fail("courseId is required");
+      }
+    const uid = uuidv4();
+    const announcementId = `CM_${courseId}_${uid}`;
+
+    const docRef = db
+      .collection(COLLECTION.ANNOUNCEMENTS)
+      .doc(announcementId);
+
+    const announcement: Announcement = {
+      id: announcementId,
+      scope: ANNOUNCEMENT_SCOPE.COURSE,
+      courseId,
+      title,
+      body,
+      status,
+      createdBy,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    await docRef.set(announcement);
+
+    return ok(announcementId);
+  } catch (error: any) {
+    console.error("Error creating global assignment announcement", error); // ✅ Fixed message
+    return fail("Failed to create global assignment announcement"); // ✅ Fixed message
+  }
+},
   /**
    * Example of another function you could add related to announcements.
    * @param {string} announcementId - The ID of the announcement to fetch.
@@ -125,6 +217,60 @@ const announcementService = {
       return fail("Failed to fetch announcement");
     }
   },
+
+
+
+/**
+ * Updates an existing announcement
+ */
+async updateAnnouncement(
+    announcementId: string,
+    updates: Partial<Pick<Announcement, "title" | "body">>
+): Promise<Result<void>> {
+    try {
+        const db = getFirestore();
+        const announcementRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
+
+        const doc = await announcementRef.get();
+        if (!doc.exists) {
+            return fail("Announcement not found");
+        }
+
+        await announcementRef.update({
+            ...updates,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        return ok(undefined);
+    } catch (error) {
+        console.error("❌ Error updating announcement:", error);
+        logError("AnnouncementService.updateAnnouncement", error);
+        return fail("Failed to update announcement");
+    }
+},
+
+/**
+ * Deletes an announcement
+ */
+async deleteAnnouncement(announcementId: string): Promise<Result<void>> {
+    try {
+        const db = getFirestore();
+        const announcementRef = db.collection(COLLECTION.ANNOUNCEMENTS).doc(announcementId);
+
+        const doc = await announcementRef.get();
+        if (!doc.exists) {
+            return fail("Announcement not found");
+        }
+
+        await announcementRef.delete();
+
+        return ok(undefined);
+    } catch (error) {
+        console.error("❌ Error deleting announcement:", error);
+        logError("AnnouncementService.deleteAnnouncement", error);
+        return fail("Failed to delete announcement");
+    }
+},
 
   /**
    * Example of another function to list announcements by course.

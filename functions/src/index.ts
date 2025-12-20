@@ -11,13 +11,13 @@ import { enrollFreeCourse } from "./handlers/enrollments/enrollFreeCourse";
 import { resetUserPassword } from "./handlers/resetUserPassword";
 import { canStartQuiz } from "./handlers/canStartQuiz";
 import { getQuizTimeLeft } from "./handlers/getQuizTimeLeft";
-import { generateComplaintId } from './handlers/generateComplaintId';
+import { generateComplaintId } from "./handlers/generateComplaintId";
 import {
   enrollStudentsInBulk,
   processEnrollmentTask,
 } from "./handlers/enrollments/enrollStudentsInBulk";
-import { reminderWorker } from "./workers/scheduleReminderWorker";
-// import { sendAnnouncementEmailWorker } from "./workers/sendAnnouncementsWorker";
+// import { reminderWorker } from "./workers/scheduleReminderWorker";
+import { sendAnnouncementEmailWorker } from "./workers/sendAnnouncementsWorker";
 // Cascade delete workers
 import { courseDeleteCascade } from "./workers/courseDeleteCascade";
 import { lessonDeleteCascade } from "./workers/lessonDeleteCascade";
@@ -27,17 +27,25 @@ import { pauseStudentNotifications } from "./handlers/pauseStudentNotifications"
 import { createNotification } from "./handlers/notifications/notificationController";
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
 import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";
-import { userDeleteCascade } from './workers/userDeleteCascade';
-import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
-import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
-import { createCouponUsage } from "./handlers/createCouponUsage";
-// import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
-// import { sendAnnouncementEmailNotification } from "./handlers/announcements/sendAnnouncementsMail";
 import { lessonTimeSpent } from "./handlers/analytics/lessonTimeSpent";
-// Event handlers
 import { onEnrollmentCreated } from "./events/onEnrollmentCreated";
 import { completeLesson } from "./handlers/analytics/completeLesson";
 import { completeCourse } from "./handlers/analytics/completeCourse";
+import { userDeleteCascade } from "./workers/userDeleteCascade";
+import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
+import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
+import { createCouponUsage } from "./handlers/createCouponUsage";
+import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
+import { sendAnnouncementEmailonRequest } from "./handlers/announcements/sendAnnouncementsMail";
+import { createGlobalAnnouncement } from "./handlers/createGlobalAnnouncements";
+import { createCourseManualAnnouncement } from "./handlers/createCourseManualAnnouncements";
+import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMail";
+import { sendComplaintRedressalMailWorker } from "./workers/sendComplaintRedressalMailWorker";
+import { deleteAnnouncement } from "./handlers/announcements/deleteAnnouncements";
+import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement";
+import { unpauseReminderForAssignments } from "./handlers/unpauseReminderForAssignments";
+import { showCertificatePreview } from "./handlers/showCertificatePreview";
+import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
 
 export {
   enrollStudent,
@@ -65,15 +73,24 @@ export {
   createNotification,
   sendInitialNotification,
   SendMailWorkerForNotif,
-  reminderWorker,
+  // reminderWorker,
   pauseReminderForAssignments,
   markSubmissionNotificationsEvaluated,
   createCouponUsage,
-  // onCourseUpdated,
-  // sendAnnouncementEmailWorker,
-  // sendAnnouncementEmailNotification
   onEnrollmentCreated,
   lessonTimeSpent,
   completeLesson,
   completeCourse,
+  onCourseUpdated,
+  sendAnnouncementEmailWorker,
+  sendAnnouncementEmailonRequest,
+  createGlobalAnnouncement,
+  createCourseManualAnnouncement,
+  sendComplaintRedressalMail,
+  sendComplaintRedressalMailWorker,
+  updateAnnouncement,
+  deleteAnnouncement,
+  unpauseReminderForAssignments,
+  showCertificatePreview,
+  bulkIssueCertificates
 };

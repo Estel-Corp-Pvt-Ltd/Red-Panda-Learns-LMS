@@ -1,9 +1,33 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
-import { AlarmClockPlus, Award, Book, BookOpen, Building2, ChartBar, ClipboardList, FilePenLine, KeyRound, LayoutDashboard, ListOrdered, LogOut, Menu, MessageSquareText, NotepadText, PictureInPicture, ShoppingBag, TicketPercent, UserPen, UserPlus, Users, X } from 'lucide-react';
-import React, { ReactNode, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Header } from './Header';
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import {
+  AlarmClockPlus,
+  Award,
+  Book,
+  BookOpen,
+  Building2,
+  ChartBar,
+  ClipboardList,
+  FilePenLine,
+  KeyRound,
+  LayoutDashboard,
+  ListOrdered,
+  LogOut,
+  Megaphone,
+  Menu,
+  MessageSquareText,
+  NotepadText,
+  PictureInPicture,
+  ShoppingBag,
+  TicketPercent,
+  UserPen,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import React, { ReactNode, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Header } from "./Header";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -13,7 +37,7 @@ interface MenuItem {
   name: string;
   path: string;
   icon: React.ReactNode;
-};
+}
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { logout } = useAuth();
@@ -42,14 +66,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <Book className="h-5 w-5" />,
     },
     {
-      name: "Submissions",
+      name: "Assignment Submissions",
       path: "/admin/submissions",
       icon: <NotepadText className="h-5 w-5" />,
     },
     {
-      name: "Manage Assignments",
+      name: "Assignment Manager",
       path: "/admin/manage-assignment-authors",
       icon: <FilePenLine className="h-5 w-5" />,
+    },
+    {
+      name: "Admin Assign Students",
+      path: "/admin/assign-students",
+      icon: <UserPlus className="h-5 w-5" />,
     },
     {
       name: "Coupons",
@@ -57,18 +86,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <TicketPercent className="h-5 w-5" />,
     },
     {
-      name: 'Orders',
-      path: '/admin/orders',
-      icon: <ShoppingBag className="h-5 w-5" />
-    }, {
-      name: 'Enrollments',
-      path: '/admin/enrollments',
-      icon: <AlarmClockPlus className="h-5 w-5" />
+      name: "Orders",
+      path: "/admin/orders",
+      icon: <ShoppingBag className="h-5 w-5" />,
     },
     {
-      name: 'Assign Students',
-      path: '/admin/assign-students',
-      icon: <UserPlus className="h-5 w-5" />
+      name: "Enrollments",
+      path: "/admin/enrollments",
+      icon: <AlarmClockPlus className="h-5 w-5" />,
     },
     {
       name: "Pop-Ups",
@@ -101,6 +126,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <UserPlus className="h-5 w-5" />,
     },
     {
+      name: "Announcements",
+      path: "/admin/announcements",
+      icon: <Megaphone className="h-5 w-5" />,
+    },
+    {
+      name: "Banners",
+      path: "/admin/banners",
+      icon: <PictureInPicture className="h-5 w-5" />,
+    },
+    {
       name: "Bulk Enroll Students",
       path: "/admin/bulk-student-enroll",
       icon: <UserPlus className="h-5 w-5" />,
@@ -124,7 +159,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Certificate Requests",
       path: "/admin/certificate-requests",
       icon: <Award className="h-5 w-5" />,
-    }
+    },
   ];
 
   const handleLogout = async () => {
@@ -163,11 +198,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col border-r z-40 transition-transform duration-300 ease-in-out bg-white border border-white/40 shadow-lg dark:bg-neutral-900 dark:border-white/10 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]",
+            "fixed sm:static inset-0 sm:inset-auto sm:w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out bg-white dark:bg-neutral-900",
+            "border-r border-primary/10 dark:border-primary/20",
             sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
           )}
         >
-          <nav className="relative z-10 flex-1 p-4 overflow-y-auto mt-14 sm:mt-0">
+          <nav className="relative z-10 flex-1 p-4 overflow-y-auto mt-14 sm:mt-0 scrollbar-hide">
             <button
               onClick={() => setSidebarOpen(false)}
               className="absolute right-5 top-2 p-0 rounded-full hover:bg-accent hover:text-accent-foreground mt-4 text-black sm:hidden border bg-white hover:bg-sky-600"
@@ -208,9 +244,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 p-4 sm:p-6 overflow-y-auto">{children}</main>
+          <main className="flex-1 p-4 sm:p-6 overflow-y-auto scrollbar-hide">
+            {children}
+          </main>
         </div>
       </div>
+
+      {/* CSS for hiding scrollbar */}
+      <style>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 };

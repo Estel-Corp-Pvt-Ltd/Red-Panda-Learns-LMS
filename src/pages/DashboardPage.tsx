@@ -11,13 +11,15 @@ import { useCourseQuery } from '@/hooks/useCaching';
 import { certificateRequestService } from '@/services/certificate-request-service';
 import { enrollmentService } from '@/services/enrollmentService';
 import { learningProgressService } from '@/services/learningProgressService';
+import { bannerService } from '@/services/bannerService';
 import { Enrollment } from '@/types/enrollment';
+import { Banner } from '@/types/banner';
 import { CertificateRequestStatus } from '@/types/general';
 import { formatDate } from '@/utils/date-time';
 import { BookOpen, CheckCircle, Clock, Eye, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
+import { BannerSlider } from '@/components/BannerSlider';
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
@@ -35,6 +37,7 @@ function EnrolledCourseCard({
 
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false); // completionDate exists
+  const [isCertificateIdAvailable, setIsCertificateIdAvailable] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
   const totalLessons = course?.topics?.reduce((sum, topic) => {
@@ -89,7 +92,7 @@ function EnrolledCourseCard({
           completedLessonsCount >= Math.ceil(0.9 * totalLessons);
 
         setIsEligibleForCertificate(eligible);
-
+        setIsCertificateIdAvailable(!!progress.certification?.certificateId);
         setIsCompleted(!!progress.completionDate);
       }
       setIsProgressLoading(false);
@@ -123,6 +126,9 @@ function EnrolledCourseCard({
     }
   };
 
+  // Check if certificate features should be shown
+  const showCertificateFeatures = course.isCertificateEnabled;
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -131,14 +137,6 @@ function EnrolledCourseCard({
             <h3 className="font-semibold text-lg mb-2">{enrollment.courseName || course.title}</h3>
             <p className="text-muted-foreground text-sm mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
             </p>
-
-            {/* <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between text-sm">
-                <span>Progress</span>
-                <span>{enrollment.progressSummary?.percent ?? 0}%</span>
-              </div>
-              <Progress value={enrollment.progressSummary?.percent ?? 0} />
-            </div> */}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -157,70 +155,82 @@ function EnrolledCourseCard({
                   Continue
                 </Button>
 
-                {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
-                  <Button
-                    size="sm"
-                    onClick={handleCompleteCourse}
-                    disabled={isCompleting}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {isCompleting ? "Completing..." : "Complete Course"}
-                  </Button>
-                )}
-
-                {!isProgressLoading && isCompleted && (
+                {/* Only show certificate-related features if enabled */}
+                {showCertificateFeatures && (
                   <>
-                    {certificateStatus === null && (
-                      <Badge variant="secondary" className="text-xs">
-                        Certificate available on request
-                      </Badge>
-                    )}
-
-                    {certificateStatus === null && (
+                    {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          const res = await certificateRequestService.requestCertificate(
-                            enrollment.userId,
-                            enrollment.courseId
-                          );
-
-                          if (res.success) {
-                            toast({
-                              title: "Certificate requested",
-                              description: "Pending approval",
-                            });
-                            fetchEnrollmentsAndCertificateRequestStatuses();
-                          } else {
-                            toast({
-                              title: "Certificate request failed",
-                              description: "Try again later",
-                            });
-                          }
-                        }}
+                        onClick={handleCompleteCourse}
+                        disabled={isCompleting}
                       >
-                        Request Certificate
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {isCompleting ? "Completing..." : "Complete Course"}
                       </Button>
                     )}
 
-                    {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING && (
-                      <Badge variant="outline" className="text-xs flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Certificate request pending
-                      </Badge>
-                    )}
+                    {!isProgressLoading && isCompleted && (
+                      <>
+                        {/* PRIORITY 1: Show certificate if it exists (bypasses all request logic) */}
+                        {isCertificateIdAvailable ? (
+                          <Link to={`/certificate/${user.id}_${course.id}/`}>
+                            <Button size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Certificate
+                            </Button>
+                          </Link>
+                        ) : (
+                          /* PRIORITY 2: Handle request flow only if certificate doesn't exist */
+                          <>
+                            {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING ? (
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Certificate request pending
+                              </Badge>
+                            ) : certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED ? (
+                              <Badge variant="secondary" className="text-xs">
+                                Certificate approved - generating...
+                              </Badge>
+                            ) : (
+                              /* No request made yet - show request option */
+                              <>
+                                <Badge variant="secondary" className="text-xs">
+                                  Certificate available on request
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    const res = await certificateRequestService.requestCertificate(
+                                      enrollment.userId,
+                                      enrollment.courseId
+                                    );
 
-                    {certificateStatus === CERTIFICATE_REQUEST_STATUS.APPROVED && (
-                      <Link to={`/certificate/${user.id}_${course.id}/`}>
-                        <Button size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Certificate
-                        </Button>
-                      </Link>
+                                    if (res.success) {
+                                      toast({
+                                        title: "Certificate requested",
+                                        description: "Pending approval",
+                                      });
+                                      fetchEnrollmentsAndCertificateRequestStatuses();
+                                    } else {
+                                      toast({
+                                        title: "Certificate request failed",
+                                        description: "Try again later",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Request Certificate
+                                </Button>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </>
                     )}
                   </>
                 )}
+                
               </div>
             </div>
           </div>
@@ -228,13 +238,15 @@ function EnrolledCourseCard({
       </CardContent>
     </Card>
   );
-};
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [certificateStatusMap, setCertificateStatusMap] = useState<Record<string, CertificateRequestStatus | null>>({});
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isBannersLoading, setIsBannersLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -256,10 +268,31 @@ export default function DashboardPage() {
       if (certificateStatusResult.success) {
         setCertificateStatusMap(certificateStatusResult.data);
       }
+
+      // Fetch banners for enrolled courses
+      await fetchBanners(courseIds);
     } else {
       setEnrollments([]);
     }
     setIsLoading(false);
+  };
+
+  const fetchBanners = async (enrolledCourseIds: string[]) => {
+    if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
+      setBanners([]);
+      return;
+    }
+
+    setIsBannersLoading(true);
+    const result = await bannerService.getActiveBannersForUser(enrolledCourseIds);
+    console.log("Fetched banners:", result);
+    if (result.success) {
+      setBanners(result.data);
+    } else {
+      console.error("Failed to fetch banners:", result.error);
+      setBanners([]);
+    }
+    setIsBannersLoading(false);
   };
 
   useEffect(() => {
@@ -279,9 +312,9 @@ export default function DashboardPage() {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-scroll">
+        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
           {/* Header */}
-          <div className="mb-8">
+          {/* <div className="mb-8">
             <div className="flex items-center justify-between gap-2 mb-2">
               <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
               <Link className='md:hidden' to="/submissions"><Button>View Submissions</Button> </Link>
@@ -289,8 +322,14 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Track your learning progress and continue your courses
             </p>
-          </div>
+          </div> */}
 
+          {/* Banners Section */}
+          {!isBannersLoading && banners.length > 0 && (
+            <div className="mb-8">
+              <BannerSlider banners={banners} autoSlideInterval={5000} />
+            </div>
+          )}
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
