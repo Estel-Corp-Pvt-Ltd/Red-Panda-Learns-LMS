@@ -1,5 +1,4 @@
-// src/types/window.d.ts
-export {};
+export { };
 
 declare global {
   interface Window {
@@ -8,4 +7,4 @@ declare global {
       execute: (siteKey: string, options: { action: string }) => Promise<string>;
     };
   }
-}
+};

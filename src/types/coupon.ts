@@ -15,7 +15,7 @@ export interface Coupon {
   createdbyMail: string;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-}
+};
 
 export interface CouponUsage {
   id: string;

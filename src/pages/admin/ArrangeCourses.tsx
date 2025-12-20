@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { courseArrangementService } from "@/services/courseArrangementService";
 import { Bundle } from "@/types/bundle";
 import { Course } from "@/types/course";
-import { CoursePageHeading } from "@/types/courseArrangement";
+import { CoursePageHeading } from "@/types/course-arrangement";
 import {
   closestCenter,
   DndContext,
