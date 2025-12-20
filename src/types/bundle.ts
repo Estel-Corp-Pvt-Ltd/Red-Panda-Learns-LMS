@@ -24,4 +24,4 @@ export interface Bundle {
   status: BundleStatus;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-}
+};
