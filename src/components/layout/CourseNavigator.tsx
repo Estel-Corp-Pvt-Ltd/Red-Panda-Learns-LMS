@@ -9,7 +9,7 @@ import { Course, Topic, TopicItem } from "@/types/course";
 interface CourseNavigatorProps {
   course: Course;
   currentLesson: TopicItem | null;
-  lessonHistory: string[];
+  lessonHistory: string[] | object;
   className?: string;
   onLessonClick: (lesson: TopicItem) => void;
 }
@@ -28,9 +28,8 @@ export function CourseNavigator({
   };
 
   const isCompleted = (lessonId: string) => {
-    if (!lessonHistory || lessonHistory.length === 0)
-      return false;
-    return lessonHistory.includes(lessonId);
+    if (!lessonHistory) return false;
+    return Array.isArray(lessonHistory) ? lessonHistory.includes(lessonId) : !!lessonHistory[lessonId];
   }
 
   // Reusable rendering for topics

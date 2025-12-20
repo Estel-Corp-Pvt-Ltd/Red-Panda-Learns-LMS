@@ -50,19 +50,14 @@ function EnrolledCourseCard({
   const handleCompleteCourse = async () => {
     try {
       setIsCompleting(true);
-
-      const result =
-        await learningProgressService.completeCourse(
-          enrollment.userId,
-          enrollment.courseId,
-          totalLessons
-        );
+      const result = await learningProgressService.completeCourse(enrollment.userId, enrollment.courseId);
 
       if (result.success && result.data) {
         setIsCompleted(true);
 
         toast({
           title: "Course completed 🎉",
+          description: "You have successfully completed the course.",
         });
       } else {
         toast({
@@ -88,9 +83,13 @@ function EnrolledCourseCard({
       const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
       if (result.success && result.data[0]) {
         const progress = result.data[0];
+        const completedLessonsCount = Array.isArray(progress.lessonHistory)
+          ? progress.lessonHistory.length
+          : Object.keys(progress.lessonHistory).length;
+
         const eligible =
           totalLessons > 0 &&
-          progress.lessonHistory.length >= Math.ceil(0.9 * totalLessons);
+          completedLessonsCount >= Math.ceil(0.9 * totalLessons);
 
         setIsEligibleForCertificate(eligible);
         setIsCertificateIdAvailable(!!progress.certification?.certificateId);
@@ -242,7 +241,6 @@ function EnrolledCourseCard({
 }
 
 export default function DashboardPage() {
-
   const { user } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);

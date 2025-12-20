@@ -27,6 +27,10 @@ import { pauseStudentNotifications } from "./handlers/pauseStudentNotifications"
 import { createNotification } from "./handlers/notifications/notificationController";
 import { sendInitialNotification } from "./handlers/notifications/sendInitialEmail";
 import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";
+import { lessonTimeSpent } from "./handlers/analytics/lessonTimeSpent";
+import { onEnrollmentCreated } from "./events/onEnrollmentCreated";
+import { completeLesson } from "./handlers/analytics/completeLesson";
+import { completeCourse } from "./handlers/analytics/completeCourse";
 import { userDeleteCascade } from "./workers/userDeleteCascade";
 import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
@@ -73,6 +77,10 @@ export {
   pauseReminderForAssignments,
   markSubmissionNotificationsEvaluated,
   createCouponUsage,
+  onEnrollmentCreated,
+  lessonTimeSpent,
+  completeLesson,
+  completeCourse,
   onCourseUpdated,
   sendAnnouncementEmailWorker,
   sendAnnouncementEmailonRequest,

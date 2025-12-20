@@ -416,6 +416,8 @@ export const COLLECTION = {
   COMPLAINT_ACTIONS: "ComplaintActions",
   ANNOUNCEMENTS: "Announcements",
   CERTIFICATE_REQUESTS: "CertificateRequests",
+  LESSON_ANALYTICS: "LessonAnalytics",
+  COURSE_ANALYTICS: "CourseAnalytics",
   BANNERS: "Banners"
 } as const;
 
