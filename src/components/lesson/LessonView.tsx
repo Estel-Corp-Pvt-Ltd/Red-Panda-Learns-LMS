@@ -561,9 +561,8 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
     >
       {/* Header */}
       <div
-        className={`flex items-start justify-between gap-4 w-full ${
-          isFullscreen ? "p-4 border-b shrink-0" : ""
-        }`}
+        className={`flex items-start justify-between gap-4 w-full ${isFullscreen ? "p-4 border-b shrink-0" : ""
+          }`}
       >
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -597,17 +596,24 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
             >
               <CheckCircle className="h-4 w-4 mr-2" /> Completed
             </Button>
-          </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={onComplete}>
+              <CheckCircle className="h-4 w-4 mr-2" /> Mark Complete
+            </Button>
+          )}
+          <Button onClick={toggleFullscreen} variant="outline" size="icon">
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </Button>
         </div>
+      </div>
 
       {/* Content Wrapper: 
          - In Fullscreen: flex-1 allows it to take ALL remaining height.
          - overflow-hidden prevents double scrollbars if the iframe has its own scroll.
       */}
       <div
-        className={`w-full ${
-          isFullscreen ? "flex-1 h-full overflow-hidden" : ""
-        }`}
+        className={`w-full ${isFullscreen ? "flex-1 h-full overflow-hidden" : ""
+          }`}
       >
         {getLessonContent()}
       </div>
@@ -714,36 +720,36 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
                           </div>
                         </div>
                       ))}
-                    </div>
-                  )}
-                </CardContent>
+                      </div>
+                    )}
+                  </CardContent>
               </Card>
-            </div>
-            <Comments lessonId={lesson.id} courseId={lesson.courseId} />
-          </>
-        )}
-      </div>
+          </div>
+          <Comments lessonId={lesson.id} courseId={lesson.courseId} />
+        </>
+      )}
+    </div>
 
-      {/* Inactivity Prompt Dialog */}
-      <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you still there?</AlertDialogTitle>
-            <AlertDialogDescription>
-              It looks like you haven't interacted with the lesson for 1 minute.
-              Your learning progress has been saved. Do you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleInactivityPromptClose}>
-              Continue Learning
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleInactivityPromptClose}>
-              Yes, I'm Back
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Inactivity Prompt Dialog */ }
+  <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you still there?</AlertDialogTitle>
+        <AlertDialogDescription>
+          It looks like you haven't interacted with the lesson for 1 minute.
+          Your learning progress has been saved. Do you want to continue?
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel onClick={handleInactivityPromptClose}>
+          Continue Learning
+        </AlertDialogCancel>
+        <AlertDialogAction onClick={handleInactivityPromptClose}>
+          Yes, I'm Back
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
     </>
   );
 }
