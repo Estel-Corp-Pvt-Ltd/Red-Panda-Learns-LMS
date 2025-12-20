@@ -624,6 +624,12 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
         This ensures the interactive project takes the whole space.
         -----------------------------------------------------
       */}
+      {/* 
+        -----------------------------------------------------
+        FIX 2: Only render Progress and Attachments if NOT in fullscreen.
+        This ensures the interactive project takes the whole space.
+        -----------------------------------------------------
+      */}
       {!shouldHideDetails && (
         <>
           {/* Progress Indicator */}
@@ -700,56 +706,54 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
                               <span>{formatFileSize(attachment.size)}</span>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-1 ml-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              asChild
-                            >
-                              <a
-                                href={attachment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download={attachment.name}
-                                title="Download file"
-                              >
-                                <Download className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          </div>
                         </div>
-                      ))}
+                        <div className="flex items-center space-x-1 ml-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            asChild
+                          >
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={attachment.name}
+                              title="Download file"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-              </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
           <Comments lessonId={lesson.id} courseId={lesson.courseId} />
         </>
       )}
+      <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you still there?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It looks like you haven't interacted with the lesson for 1 minute.
+              Your learning progress has been saved. Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleInactivityPromptClose}>
+              Continue Learning
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleInactivityPromptClose}>
+              Yes, I'm Back
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-
-      {/* Inactivity Prompt Dialog */ }
-  <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>Are you still there?</AlertDialogTitle>
-        <AlertDialogDescription>
-          It looks like you haven't interacted with the lesson for 1 minute.
-          Your learning progress has been saved. Do you want to continue?
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel onClick={handleInactivityPromptClose}>
-          Continue Learning
-        </AlertDialogCancel>
-        <AlertDialogAction onClick={handleInactivityPromptClose}>
-          Yes, I'm Back
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-    </>
   );
-}
+};
