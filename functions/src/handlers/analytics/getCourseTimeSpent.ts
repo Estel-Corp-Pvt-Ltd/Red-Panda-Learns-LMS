@@ -32,7 +32,7 @@ async function courseTimeSpentHandler(req: Request, res: Response) {
     }
 
     const progressData = lessonResult.data[0];
-    const lessonHistory = progressData.lessonHistory;
+    const lessonHistory = progressData?.lessonHistory;
 
     let totalTimeSpentSec = 0;
 

@@ -13,6 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Clock, BookOpen, Award } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Course } from "@/types/course";
+import { courseService } from "@/services/courseService";
 
 interface CertificateApprovalModalProps {
     open: boolean;
@@ -37,6 +39,9 @@ export default function CertificateApprovalModal({
     const [totalTimeSpent, setTotalTimeSpent] = useState(0);
     const [completedLessons, setCompletedLessons] = useState(0);
     const [isLoadingData, setIsLoadingData] = useState(true);
+    const [course, setCourse] = useState<Course>(null);
+
+    let totalLessons = course ? course.topics.reduce((acc, topic) => acc + topic.items.length, 0) : 0;
 
     const formatTime = (seconds: number): string => {
         const hours = Math.floor(seconds / 3600);
@@ -51,6 +56,14 @@ export default function CertificateApprovalModal({
             return `${secs}s`;
         }
     };
+
+    useEffect(() => {
+        const fetchCourseDetails = async () => {
+            const data = await courseService.getCourseById(courseId);
+            if (data) setCourse(data);
+        };
+        fetchCourseDetails();
+    }, [courseId]);
 
     useEffect(() => {
         const fetchTotalTimeSpent = async () => {
@@ -130,7 +143,7 @@ export default function CertificateApprovalModal({
                                     {isLoadingData ? (
                                         <div className="h-6 w-12 bg-muted animate-pulse rounded" />
                                     ) : (
-                                        <p className="text-lg font-semibold">{completedLessons}</p>
+                                        <p className="text-lg font-semibold">{completedLessons}/{totalLessons}</p>
                                     )}
                                 </div>
                             </div>
