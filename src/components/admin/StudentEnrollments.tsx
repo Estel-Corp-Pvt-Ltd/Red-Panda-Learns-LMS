@@ -13,7 +13,7 @@ import { learningProgressService } from '@/services/learningProgressService'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle } from 'lucide-react'
 
 const StudentEnrollments: React.FC = () => {
 
@@ -51,6 +51,13 @@ const StudentEnrollments: React.FC = () => {
     key: 'timeSpent' | 'completedLessons' | null;
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [bulkResults, setBulkResults] = useState<{
+    issued: number;
+    skipped: number;
+    issuedCertificates: string[];
+    skippedEnrollments: string[];
+  } | null>(null);
 
   const fetchEnrollments = useCallback(async (
     cursor?: DocumentSnapshot | null,
@@ -450,6 +457,13 @@ const StudentEnrollments: React.FC = () => {
           variant: "destructive"
         });
       } else {
+        setBulkResults({
+          issued: data.issued || 0,
+          skipped: data.skipped || 0,
+          issuedCertificates: data.issuedCertificates || [],
+          skippedEnrollments: data.skippedEnrollments || []
+        });
+        setShowResultsModal(true);
         toast({
           title: "Certificates Issued",
         });
@@ -1021,6 +1035,117 @@ const StudentEnrollments: React.FC = () => {
                 ) : (
                   `Issue ${selectedModalEnrollments.size} Certificate${selectedModalEnrollments.size !== 1 ? 's' : ''}`
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Results Modal */}
+        <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Bulk Certificate Issuance Results</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="font-semibold text-green-900 dark:text-green-100">Issued</span>
+                  </div>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {bulkResults?.issued || 0}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <span className="font-semibold text-orange-900 dark:text-orange-100">Skipped</span>
+                  </div>
+                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                    {bulkResults?.skipped || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Issued Certificates List */}
+              {bulkResults && bulkResults.issuedCertificates.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800 px-4 py-3">
+                    <h3 className="font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Successfully Issued Certificates ({bulkResults.issuedCertificates.length})
+                    </h3>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {bulkResults.issuedCertificates.map((cert, index) => {
+                        const [userId, courseId] = cert.split('_', 2);
+                        const enrollment = enrollments.data.find(
+                          e => e.id === cert || (e.userId === userId && e.courseId === courseId)
+                        );
+                        return (
+                          <li key={index} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <div className="text-sm">
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {enrollment?.userName || userId}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400">
+                                {enrollment?.courseName || courseId}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Skipped Enrollments List */}
+              {bulkResults && bulkResults.skippedEnrollments.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800 px-4 py-3">
+                    <h3 className="font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
+                      <XCircle className="h-4 w-4" />
+                      Skipped Enrollments ({bulkResults.skippedEnrollments.length})
+                    </h3>
+                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                      Either 90% course not completed or no learning progress found
+                    </p>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {bulkResults.skippedEnrollments.map((skip, index) => {
+                        const [userId, courseId] = skip.split('_', 2);
+                        const enrollment = enrollments.data.find(
+                          e => e.id === skip || (e.userId === userId && e.courseId === courseId)
+                        );
+                        return (
+                          <li key={index} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <div className="text-sm">
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {enrollment?.userName || userId}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400">
+                                {enrollment?.courseName || courseId}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button onClick={() => setShowResultsModal(false)}>
+                Close
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -20,8 +20,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 async function bulkIssueCertificatesHandler(req: Request, res: Response) {
     try {
-        const user = (req as any).user;
-        if (!user || user.role !== USER_ROLE.ADMIN) {
+        if (!(req as any).user || (req as any).user.role !== USER_ROLE.ADMIN) {
             res.status(401).json({ error: "Unauthorized" });
             return;
         }
@@ -55,7 +54,9 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
         const now = admin.firestore.FieldValue.serverTimestamp();
 
         let issuedCount = 0;
+        const issuedCertificates: string[] = [];
         let skippedCount = 0;
+        const skippedEnrollments: string[] = [];
 
         const enrollmentChunks = chunk(enrollments, 450);
         const READ_CONCURRENCY = 15;
@@ -77,13 +78,21 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     })
                 );
 
-                for (const snap of progressSnaps) {
-                    if (!snap || snap.empty) continue;
+                for (let i = 0; i < progressSnaps.length; i++) {
+                    const snap = progressSnaps[i];
+                    const enrollment = readChunk[i];
+
+                    if (!snap || snap.empty) {
+                        skippedEnrollments.push(`${enrollment.userId}_${enrollment.courseId}`);
+                        skippedCount++;
+                        continue;
+                    }
 
                     const doc = snap.docs[0];
                     const data = doc.data();
 
                     if (data.certification?.issued === true) {
+                        skippedEnrollments.push(`${data.userId}_${data.courseId}`);
                         skippedCount++;
                         continue;
                     }
@@ -100,7 +109,7 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                         completionDate: data.completionDate ?? now,
                         updatedAt: now,
                     });
-
+                    issuedCertificates.push(`${data.userId}_${data.courseId}`);
                     issuedCount++;
                 }
             }
@@ -113,6 +122,8 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
             message: "Certificates issued successfully",
             issued: issuedCount,
             skipped: skippedCount,
+            issuedCertificates,
+            skippedEnrollments,
         });
         return;
     } catch (err: any) {
