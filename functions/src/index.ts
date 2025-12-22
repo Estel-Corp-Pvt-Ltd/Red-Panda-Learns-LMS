@@ -46,6 +46,7 @@ import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement"
 import { unpauseReminderForAssignments } from "./handlers/unpauseReminderForAssignments";
 import { showCertificatePreview } from "./handlers/showCertificatePreview";
 import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
+import { getCourseTimeSpent } from "./handlers/analytics/getCourseTimeSpent";
 
 export {
   enrollStudent,
@@ -92,5 +93,6 @@ export {
   deleteAnnouncement,
   unpauseReminderForAssignments,
   showCertificatePreview,
-  bulkIssueCertificates
+  bulkIssueCertificates,
+  getCourseTimeSpent,
 };

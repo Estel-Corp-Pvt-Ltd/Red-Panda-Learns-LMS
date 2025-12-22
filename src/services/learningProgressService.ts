@@ -479,6 +479,34 @@ class LearningProgressService {
       );
     }
   }
+
+  async getCourseTimeSpent(userId: string, courseId: string): Promise<Result<{ totalTimeSpentSec: number, lessonHistory: LearningProgress["lessonHistory"] }>> {
+    try {
+      const idToken = await authService.getToken();
+      const response = await fetch(`${this.backendUrl}/getCourseTimeSpent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          userId,
+          courseId,
+        }),
+      });
+
+      if (!response.ok) {
+        return fail("Failed to fetch course time spent.");
+      }
+
+      const data = await response.json();
+      return ok(data.data);
+
+    } catch (error: any) {
+      logError("LearningProgressService.getCourseTimeSpent", error);
+      return fail("Failed to fetch course time spent.", error.code || error.message);
+    }
+  }
 }
 
 export const learningProgressService = new LearningProgressService();

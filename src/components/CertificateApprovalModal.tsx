@@ -7,9 +7,12 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { learningProgressService } from "@/services/learningProgressService";
-import { useState } from "react";
+import { Clock, BookOpen, Award } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface CertificateApprovalModalProps {
     open: boolean;
@@ -31,6 +34,39 @@ export default function CertificateApprovalModal({
 
     const [remark, setRemark] = useState("");
     const [loading, setLoading] = useState(false);
+    const [totalTimeSpent, setTotalTimeSpent] = useState(0);
+    const [completedLessons, setCompletedLessons] = useState(0);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+
+    const formatTime = (seconds: number): string => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${secs}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    };
+
+    useEffect(() => {
+        const fetchTotalTimeSpent = async () => {
+            setIsLoadingData(true);
+            const response = await learningProgressService.getCourseTimeSpent(userId, courseId);
+            if (response.success && response.data) {
+                setTotalTimeSpent(response.data.totalTimeSpentSec);
+                setCompletedLessons(Object.keys(response.data.lessonHistory).length);
+            }
+            setIsLoadingData(false);
+        };
+
+        if (open) {
+            fetchTotalTimeSpent();
+        }
+    }, [userId, courseId, open]);
 
     const handleApproval = async () => {
         setLoading(true);
@@ -50,16 +86,64 @@ export default function CertificateApprovalModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md w-[95vw] p-6 space-y-4">
-                <DialogHeader>
-                    <DialogTitle>Approve Certificate Request</DialogTitle>
-                    <DialogDescription>
-                        Optional: You may add a remark that will be visible to the student.
+            <DialogContent className="max-w-lg w-[95vw] p-6 space-y-6">
+                <DialogHeader className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Award className="h-5 w-5 text-primary" />
+                        </div>
+                        <DialogTitle>Approve Certificate Request</DialogTitle>
+                    </div>
+                    <DialogDescription className="text-base">
+                        Review the student's progress and optionally add a personalized remark.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Remark (optional)</label>
+                {/* Progress Stats */}
+                <div className="grid grid-cols-2 gap-3">
+                    <Card className="border-2">
+                        <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground mb-1">Total Time Spent</p>
+                                    {isLoadingData ? (
+                                        <div className="h-6 w-20 bg-muted animate-pulse rounded" />
+                                    ) : (
+                                        <p className="text-lg font-semibold truncate">{formatTime(totalTimeSpent)}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2">
+                        <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                    <BookOpen className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground mb-1">Completed Lessons</p>
+                                    {isLoadingData ? (
+                                        <div className="h-6 w-12 bg-muted animate-pulse rounded" />
+                                    ) : (
+                                        <p className="text-lg font-semibold">{completedLessons}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Remark Section */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Certificate Remark</label>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                    </div>
                     <Textarea
                         placeholder="Enter remark..."
                         value={remark}
@@ -78,8 +162,8 @@ export default function CertificateApprovalModal({
                         Cancel
                     </Button>
 
-                    <Button onClick={handleApproval} disabled={loading}>
-                        {loading ? "Approving..." : "Approve"}
+                    <Button onClick={handleApproval} disabled={loading || isLoadingData}>
+                        {loading ? "Approving..." : "Approve Certificate"}
                     </Button>
                 </div>
             </DialogContent>
