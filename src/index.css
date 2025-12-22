@@ -219,3 +219,153 @@ body {
   -ms-overflow-style: none;  /* IE & Edge */
   scrollbar-width: none;     /* Firefox */
 }
+
+
+/* styles/editor.css or add to your global styles */
+
+/* Editor container styles */
+.markdown-editor-wrapper {
+  position: relative;
+}
+
+/* Editor content area */
+.markdown-editor-wrapper .ProseMirror {
+  min-height: 100%;
+  outline: none;
+}
+
+.markdown-editor-wrapper .ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Image styles in editor */
+.markdown-editor-wrapper .editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.markdown-editor-wrapper .editor-image:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.markdown-editor-wrapper .editor-image.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Link styles */
+.markdown-editor-wrapper .editor-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.markdown-editor-wrapper .editor-link:hover {
+  color: #2563eb;
+}
+
+/* Code block styles */
+.markdown-editor-wrapper pre {
+  background: #1e1e1e;
+  border-radius: 0.5rem;
+  color: #d4d4d4;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.markdown-editor-wrapper pre code {
+  background: transparent;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+/* Inline code */
+.markdown-editor-wrapper code {
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  color: #ef4444;
+  font-size: 0.875em;
+  padding: 0.2em 0.4em;
+}
+
+.dark .markdown-editor-wrapper code {
+  background-color: #374151;
+}
+
+/* Blockquote */
+.markdown-editor-wrapper blockquote {
+  border-left: 4px solid #3b82f6;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: #6b7280;
+}
+
+/* Lists */
+.markdown-editor-wrapper ul,
+.markdown-editor-wrapper ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-editor-wrapper li {
+  margin: 0.25rem 0;
+}
+
+/* Task list */
+.markdown-editor-wrapper ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-editor-wrapper ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.markdown-editor-wrapper ul[data-type="taskList"] li input[type="checkbox"] {
+  margin-top: 0.25rem;
+}
+
+/* Headings */
+.markdown-editor-wrapper h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.markdown-editor-wrapper h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+.markdown-editor-wrapper h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem;
+}
+
+/* Bubble menu */
+.bubble-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Highlight */
+.markdown-editor-wrapper mark {
+  background-color: #fef08a;
+  border-radius: 0.125rem;
+  padding: 0 0.125rem;
+}

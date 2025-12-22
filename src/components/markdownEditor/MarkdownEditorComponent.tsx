@@ -1,7 +1,7 @@
 // components/MarkdownEditor/MarkdownEditor.tsx
 import React, { useCallback, useEffect, useState } from 'react';
 import { useEditor, EditorContent, Editor, } from '@tiptap/react';
-import { BubbleMenu } from '@tiptap/react/menus';   
+import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -13,9 +13,12 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import TurndownService from 'turndown';
 import { marked } from 'marked';
-import ImageUploadModal from './markdownEditor/ImageUploadMarkdown';
-import EditorToolbar from './markdownEditor/EditorToolbar';
-import LinkModal from './markdownEditor/ImageLinkUpload';
+import { Extension } from '@tiptap/core';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import ImageUploadModal from './ImageUploadMarkdown';
+import EditorToolbar from './EditorToolbar';
+import LinkModal from './ImageLinkUpload';
+
 const lowlight = createLowlight(common);
 
 // Turndown service for HTML to Markdown conversion
@@ -34,6 +37,81 @@ turndownService.addRule('image', {
     const src = img.src || '';
     const title = img.title ? ` "${img.title}"` : '';
     return `![${alt}](${src}${title})`;
+  },
+});
+
+// Helper function to detect if text is markdown
+const isMarkdown = (text: string): boolean => {
+  const markdownPatterns = [
+    /^#{1,6}\s+.+$/m,                    // Headers: # Header
+    /\*\*[^*]+\*\*/,                      // Bold: **text**
+    /\*[^*]+\*/,                          // Italic: *text*
+    /__[^_]+__/,                          // Bold: __text__
+    /_[^_]+_/,                            // Italic: _text_
+    /\[([^\]]+)\]\(([^)]+)\)/,           // Links: [text](url)
+    /!\[([^\]]*)\]\(([^)]+)\)/,          // Images: ![alt](url)
+    /^>\s+.+$/m,                          // Blockquotes: > text
+    /^[-*+]\s+.+$/m,                      // Unordered lists: - item
+    /^\d+\.\s+.+$/m,                      // Ordered lists: 1. item
+    /`[^`]+`/,                            // Inline code: `code`
+    /^```[\s\S]*?```$/m,                  // Code blocks: ```code```
+    /^\|.+\|$/m,                          // Tables: | col |
+    /^---+$/m,                            // Horizontal rules: ---
+    /^===+$/m,                            // Horizontal rules: ===
+    /~~[^~]+~~/,                          // Strikethrough: ~~text~~
+    /\[\^[^\]]+\]/,                       // Footnotes: [^1]
+  ];
+
+  return markdownPatterns.some(pattern => pattern.test(text));
+};
+
+// Custom extension to handle markdown paste
+const MarkdownPasteHandler = Extension.create({
+  name: 'markdownPasteHandler',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('markdownPasteHandler'),
+        props: {
+          handlePaste: (view, event, slice) => {
+            const clipboardData = event.clipboardData;
+            if (!clipboardData) return false;
+
+            // Check if there's HTML content (from rich text copy)
+            const htmlContent = clipboardData.getData('text/html');
+            if (htmlContent && htmlContent.trim()) {
+              // Let Tiptap handle HTML paste normally
+              return false;
+            }
+
+            // Get plain text
+            const text = clipboardData.getData('text/plain');
+            if (!text) return false;
+
+            // Check if it looks like markdown
+            if (isMarkdown(text)) {
+              event.preventDefault();
+
+              try {
+                // Convert markdown to HTML
+                const html = marked.parse(text, { async: false }) as string;
+
+                // Insert the HTML content
+                this.editor.commands.insertContent(html);
+
+                return true;
+              } catch (error) {
+                console.error('Error parsing markdown:', error);
+                return false;
+              }
+            }
+
+            return false;
+          },
+        },
+      }),
+    ];
   },
 });
 
@@ -103,6 +181,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       CodeBlockLowlight.configure({
         lowlight,
       }),
+      MarkdownPasteHandler, // Add the custom paste handler
     ],
     content: getInitialContent(),
     editable: !disabled,
