@@ -28,6 +28,30 @@ const turndownService = new TurndownService({
   emDelimiter: '*',
 });
 
+// ✅ If <a href="URL">URL</a> => store as plain URL (not [URL](URL))
+turndownService.addRule('link-plain-url', {
+  filter: (node) => node.nodeName === 'A',
+  replacement: (content, node) => {
+    const a = node as HTMLAnchorElement;
+
+    const href = (a.getAttribute('href') || '').trim();
+    const text = (a.textContent || '').trim();
+
+    if (!href) return content;
+
+    // If user pasted a URL and Tiptap auto-linked it, keep it as-is:
+    if (text === href) {
+      return href;
+    }
+
+    // Otherwise keep normal markdown link syntax for "real" links
+    const title = (a.getAttribute('title') || '').trim();
+    const titlePart = title ? ` "${title.replace(/"/g, '\\"')}"` : '';
+
+    return `[${content}](${href}${titlePart})`;
+  },
+});
+
 // Custom rule for images
 turndownService.addRule('image', {
   filter: 'img',
@@ -40,29 +64,78 @@ turndownService.addRule('image', {
   },
 });
 
+// Helper function to check if text is just URLs (one or more)
+const isPlainUrl = (text: string): boolean => {
+  const trimmedText = text.trim();
+  
+  // Check if it's a single URL
+  const singleUrlPattern = /^https?:\/\/[^\s]+$/;
+  if (singleUrlPattern.test(trimmedText)) {
+    return true;
+  }
+  
+  // Check if it's multiple URLs (one per line)
+  const lines = trimmedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length > 0 && lines.every(line => singleUrlPattern.test(line))) {
+    return true;
+  }
+  
+  return false;
+};
+
 // Helper function to detect if text is markdown
 const isMarkdown = (text: string): boolean => {
+  const trimmedText = text.trim();
+  
+  // If it's just plain URLs, don't treat as markdown
+  if (isPlainUrl(trimmedText)) {
+    return false;
+  }
+  
+  // Check for actual markdown syntax patterns
   const markdownPatterns = [
-    /^#{1,6}\s+.+$/m,                    // Headers: # Header
+    /^#{1,6}\s+.+/m,                      // Headers: # Header
     /\*\*[^*]+\*\*/,                      // Bold: **text**
-    /\*[^*]+\*/,                          // Italic: *text*
+    /(?<![*\w])\*[^*\s][^*]*\*(?![*\w])/, // Italic: *text* (not URLs with asterisks)
     /__[^_]+__/,                          // Bold: __text__
-    /_[^_]+_/,                            // Italic: _text_
-    /\[([^\]]+)\]\(([^)]+)\)/,           // Links: [text](url)
-    /!\[([^\]]*)\]\(([^)]+)\)/,          // Images: ![alt](url)
-    /^>\s+.+$/m,                          // Blockquotes: > text
-    /^[-*+]\s+.+$/m,                      // Unordered lists: - item
-    /^\d+\.\s+.+$/m,                      // Ordered lists: 1. item
-    /`[^`]+`/,                            // Inline code: `code`
-    /^```[\s\S]*?```$/m,                  // Code blocks: ```code```
-    /^\|.+\|$/m,                          // Tables: | col |
-    /^---+$/m,                            // Horizontal rules: ---
-    /^===+$/m,                            // Horizontal rules: ===
+    /(?<![_\w])_[^_\s][^_]*_(?![_\w])/,   // Italic: _text_ (not snake_case)
+    /\[([^\]]+)\]\(([^)]+)\)/,            // Links: [text](url)
+    /!\[([^\]]*)\]\(([^)]+)\)/,           // Images: ![alt](url)
+    /^>\s+.+/m,                           // Blockquotes: > text
+    /^[\t ]*[-*+]\s+.+/m,                 // Unordered lists: - item
+    /^[\t ]*\d+\.\s+.+/m,                 // Ordered lists: 1. item
+    /`[^`\n]+`/,                          // Inline code: `code`
+    /^```/m,                              // Code blocks start: ```
+    /^\|.+\|.+\|/m,                       // Tables: | col | col |
+    /^-{3,}$/m,                           // Horizontal rules: ---
+    /^={3,}$/m,                           // Horizontal rules: ===
     /~~[^~]+~~/,                          // Strikethrough: ~~text~~
-    /\[\^[^\]]+\]/,                       // Footnotes: [^1]
+    /^\s*[-*+] \[[x ]\]/im,               // Task lists: - [ ] or - [x]
   ];
 
-  return markdownPatterns.some(pattern => pattern.test(text));
+  // Must match at least one markdown pattern
+  const hasMarkdown = markdownPatterns.some(pattern => pattern.test(trimmedText));
+  
+  // Additional check: if it's a very short text without clear markdown, skip
+  if (!hasMarkdown) {
+    return false;
+  }
+  
+  // Avoid false positives: check if the markdown characters are meaningful
+  // For example, "I love *cats*" is markdown, but "5 * 3 = 15" is not
+  const meaningfulMarkdown = [
+    /^#{1,6}\s+\S/m,                      // Real headers have content
+    /\*\*\S.*\S\*\*/,                     // Bold has content
+    /\*\S.*\S\*/,                         // Italic has content
+    /\[[^\]]+\]\([^)]+\)/,                // Links have both text and URL
+    /^>\s+\S/m,                           // Blockquotes have content
+    /^[\t ]*[-*+]\s+\S/m,                 // Lists have content
+    /^[\t ]*\d+\.\s+\S/m,                 // Ordered lists have content
+    /`\S[^`]*`/,                          // Code has content
+    /^```/m,                              // Code blocks
+  ];
+  
+  return meaningfulMarkdown.some(pattern => pattern.test(trimmedText));
 };
 
 // Custom extension to handle markdown paste
@@ -88,6 +161,11 @@ const MarkdownPasteHandler = Extension.create({
             // Get plain text
             const text = clipboardData.getData('text/plain');
             if (!text) return false;
+
+            // If it's just a plain URL, let Tiptap handle it normally (as plain text)
+            if (isPlainUrl(text)) {
+              return false; // Don't intercept, paste as plain text
+            }
 
             // Check if it looks like markdown
             if (isMarkdown(text)) {
