@@ -347,7 +347,7 @@ const StudentEnrollments: React.FC = () => {
 
     try {
       const selectedEnrollmentsList = enrollments.data.filter(e => selectedEnrollments.has(e.id));
-      
+
       const progressDataPromises = selectedEnrollmentsList.map(async (enrollment) => {
         const timeSpentResponse = await learningProgressService.getCourseTimeSpent(
           enrollment.userId,
@@ -379,7 +379,7 @@ const StudentEnrollments: React.FC = () => {
 
       const progressData = await Promise.all(progressDataPromises);
       setBulkCertificateData(progressData);
-      
+
       // Initialize modal selections with enrollment IDs that don't have certificates yet
       const enrollmentsWithoutCertificates = selectedEnrollmentsList.filter(e => {
         const certInfo = enrollmentCertificateInfo.find(
@@ -861,139 +861,138 @@ const StudentEnrollments: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="border rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th className="px-4 py-3 w-12">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                            checked={selectedModalEnrollments.size === bulkCertificateData.length && bulkCertificateData.length > 0}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedModalEnrollments(new Set(bulkCertificateData.map(d => d.enrollment.id)));
-                              } else {
-                                setSelectedModalEnrollments(new Set());
-                              }
-                            }}
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                          Student
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                          Course
-                        </th>
-                        <th 
-                          className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => handleSort('timeSpent')}
-                        >
-                          <div className="flex items-center gap-2">
-                            Time Spent
-                            {sortConfig.key === 'timeSpent' ? (
-                              sortConfig.direction === 'asc' ? (
-                                <ArrowUp className="h-4 w-4" />
-                              ) : (
-                                <ArrowDown className="h-4 w-4" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-4 w-4 opacity-50" />
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => handleSort('completedLessons')}
-                        >
-                          <div className="flex items-center gap-2">
-                            Lessons Completed
-                            {sortConfig.key === 'completedLessons' ? (
-                              sortConfig.direction === 'asc' ? (
-                                <ArrowUp className="h-4 w-4" />
-                              ) : (
-                                <ArrowDown className="h-4 w-4" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-4 w-4 opacity-50" />
-                            )}
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      {getSortedData().map((data, index) => {
-                        const hasCertificate = enrollmentCertificateInfo.find(
-                          info => info.courseId === data.enrollment.courseId && info.userId === data.enrollment.userId
-                        )?.isCertificateIssued;
-                        
-                        return (
-                          <tr 
-                            key={index} 
-                            className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                              hasCertificate ? 'bg-pink-50 dark:bg-pink-900/20' : ''
-                            }`}
-                          >
-                          <td className="px-4 py-3">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th className="px-4 py-3 w-12">
                             <input
                               type="checkbox"
                               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                              checked={selectedModalEnrollments.has(data.enrollment.id)}
-                              onChange={() => {
-                                setSelectedModalEnrollments(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(data.enrollment.id)) {
-                                    newSet.delete(data.enrollment.id);
-                                  } else {
-                                    newSet.add(data.enrollment.id);
-                                  }
-                                  return newSet;
-                                });
+                              checked={selectedModalEnrollments.size === bulkCertificateData.length && bulkCertificateData.length > 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedModalEnrollments(new Set(bulkCertificateData.map(d => d.enrollment.id)));
+                                } else {
+                                  setSelectedModalEnrollments(new Set());
+                                }
                               }}
                             />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm">
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {data.enrollment.userName || 'N/A'}
-                              </div>
-                              <div className="text-gray-500 dark:text-gray-400">
-                                {data.enrollment.userEmail || 'N/A'}
-                              </div>
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Student
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Course
+                          </th>
+                          <th
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => handleSort('timeSpent')}
+                          >
+                            <div className="flex items-center gap-2">
+                              Time Spent
+                              {sortConfig.key === 'timeSpent' ? (
+                                sortConfig.direction === 'asc' ? (
+                                  <ArrowUp className="h-4 w-4" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 opacity-50" />
+                              )}
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {data.enrollment.courseName}
+                          </th>
+                          <th
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => handleSort('completedLessons')}
+                          >
+                            <div className="flex items-center gap-2">
+                              Lessons Completed
+                              {sortConfig.key === 'completedLessons' ? (
+                                sortConfig.direction === 'asc' ? (
+                                  <ArrowUp className="h-4 w-4" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 opacity-50" />
+                              )}
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded">
-                                <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <span className="text-gray-900 dark:text-white font-medium">
-                                {formatTime(data.timeSpent)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded">
-                                <BookOpen className="h-4 w-4 text-green-600 dark:text-green-400" />
-                              </div>
-                              <span className="text-gray-900 dark:text-white font-medium">
-                                {data.completedLessons} / {data.totalLessons}
-                              </span>
-                            </div>
-                          </td>
+                          </th>
                         </tr>
-                      );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                        {getSortedData().map((data, index) => {
+                          const hasCertificate = enrollmentCertificateInfo.find(
+                            info => info.courseId === data.enrollment.courseId && info.userId === data.enrollment.userId
+                          )?.isCertificateIssued;
+
+                          return (
+                            <tr
+                              key={index}
+                              className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${hasCertificate ? 'bg-pink-50 dark:bg-pink-900/20' : ''
+                                }`}
+                            >
+                              <td className="px-4 py-3">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                                  checked={selectedModalEnrollments.has(data.enrollment.id)}
+                                  onChange={() => {
+                                    setSelectedModalEnrollments(prev => {
+                                      const newSet = new Set(prev);
+                                      if (newSet.has(data.enrollment.id)) {
+                                        newSet.delete(data.enrollment.id);
+                                      } else {
+                                        newSet.add(data.enrollment.id);
+                                      }
+                                      return newSet;
+                                    });
+                                  }}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="text-sm">
+                                  <div className="font-medium text-gray-900 dark:text-white">
+                                    {data.enrollment.userName || 'N/A'}
+                                  </div>
+                                  <div className="text-gray-500 dark:text-gray-400">
+                                    {data.enrollment.userEmail || 'N/A'}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="text-sm text-gray-900 dark:text-white">
+                                  {data.enrollment.courseName}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded">
+                                    <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </div>
+                                  <span className="text-gray-900 dark:text-white font-medium">
+                                    {formatTime(data.timeSpent)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded">
+                                    <BookOpen className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                  </div>
+                                  <span className="text-gray-900 dark:text-white font-medium">
+                                    {data.completedLessons} / {data.totalLessons}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </>
               )}
             </div>
