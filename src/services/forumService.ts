@@ -1,0 +1,431 @@
+import { COLLECTION } from "@/constants";
+import { db } from "@/firebaseConfig";
+import { ForumChannel, ChannelMessage, ForumMessageUpvote, MessageType, MessageStatus } from "@/types/forum";
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  updateDoc,
+  deleteDoc,
+  increment,
+  Timestamp,
+  onSnapshot,
+  QueryConstraint,
+  DocumentSnapshot,
+  startAfter,
+  QueryDocumentSnapshot,
+  WhereFilterOp,
+} from "firebase/firestore";
+import { Result, ok, fail } from "@/utils/response";
+
+// ==================== FORUM CHANNELS ====================
+
+export const forumChannelService = {
+  /**
+   * Create a new forum channel
+   */
+  async createChannel(
+    channelData: Omit<ForumChannel, "id" | "createdAt">
+  ): Promise<Result<ForumChannel>> {
+    try {
+      const channelRef = doc(collection(db, COLLECTION.FORUM_CHANNELS));
+      const newChannel: ForumChannel = {
+        ...channelData,
+        id: channelRef.id,
+        createdAt: Timestamp.now(),
+      };
+
+      await setDoc(channelRef, newChannel);
+
+      return ok(newChannel);
+    } catch (error: any) {
+      console.error("Error creating channel:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Get all channels for a course
+   */
+  async getChannelsByCourse(courseId: string): Promise<Result<ForumChannel[]>> {
+    try {
+      const q = query(
+        collection(db, COLLECTION.FORUM_CHANNELS),
+        where("courseId", "==", courseId),
+        where("isArchived", "==", false),
+        orderBy("order", "asc")
+      );
+
+      const snapshot = await getDocs(q);
+      const channels = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ForumChannel[];
+
+      return ok(channels);
+    } catch (error: any) {
+      console.error("Error getting channels:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Get a single channel by ID
+   */
+  async getChannelById(channelId: string): Promise<Result<ForumChannel>> {
+    try {
+      const channelRef = doc(db, COLLECTION.FORUM_CHANNELS, channelId);
+      const channelSnap = await getDoc(channelRef);
+
+      if (!channelSnap.exists()) {
+        return fail("Channel not found");
+      }
+
+      return ok({ ...channelSnap.data(), id: channelSnap.id } as ForumChannel);
+    } catch (error: any) {
+      console.error("Error getting channel:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Update a channel
+   */
+  async updateChannel(
+    channelId: string,
+    updates: Partial<Omit<ForumChannel, "id" | "createdAt">>
+  ): Promise<Result<void>> {
+    try {
+      const channelRef = doc(db, COLLECTION.FORUM_CHANNELS, channelId);
+      await updateDoc(channelRef, updates);
+
+      return ok(undefined);
+    } catch (error: any) {
+      console.error("Error updating channel:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Archive a channel
+   */
+  async archiveChannel(channelId: string): Promise<Result<void>> {
+    return this.updateChannel(channelId, { isArchived: true });
+  },
+
+  /**
+   * Delete a channel
+   */
+  async deleteChannel(channelId: string): Promise<Result<void>> {
+    try {
+      const channelRef = doc(db, COLLECTION.FORUM_CHANNELS, channelId);
+      await deleteDoc(channelRef);
+
+      return ok(undefined);
+    } catch (error: any) {
+      console.error("Error deleting channel:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Real-time listener for channels
+   */
+  subscribeToChannels(
+    courseId: string,
+    callback: (channels: ForumChannel[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, COLLECTION.FORUM_CHANNELS),
+      where("courseId", "==", courseId),
+      where("isArchived", "==", false),
+      orderBy("order", "asc")
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const channels = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ForumChannel[];
+      callback(channels);
+    });
+  },
+};
+
+// ==================== CHANNEL MESSAGES ====================
+
+export const channelMessageService = {
+  /**
+   * Send a new message
+   */
+  async sendMessage(
+    messageData: Omit<ChannelMessage, "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount">
+  ): Promise<Result<ChannelMessage>> {
+    try {
+      const messageRef = doc(collection(db, COLLECTION.CHANNEL_MESSAGES));
+      const newMessage: ChannelMessage = {
+        ...messageData,
+        id: messageRef.id,
+        isEdited: false,
+        upvoteCount: 0,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+
+      await setDoc(messageRef, newMessage);
+
+      return ok(newMessage);
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Get messages for a channel with pagination
+   */
+  async getMessages(
+    channelId: string,
+    limitCount: number = 50,
+    lastDoc?: DocumentSnapshot
+  ): Promise<Result<{ messages: ChannelMessage[]; lastDoc: DocumentSnapshot | null }>> {
+    try {
+      const constraints: QueryConstraint[] = [
+        where("channelId", "==", channelId),
+        where("status", "==", "ACTIVE"),
+        orderBy("createdAt", "desc"),
+        limit(limitCount),
+      ];
+
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+      }
+
+      const q = query(collection(db, COLLECTION.CHANNEL_MESSAGES), ...constraints);
+      const snapshot = await getDocs(q);
+
+      const messages = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ChannelMessage[];
+
+      return ok({
+        messages,
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+      });
+    } catch (error: any) {
+      console.error("Error getting messages:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Get a single message by ID
+   */
+  async getMessageById(messageId: string): Promise<Result<ChannelMessage>> {
+    try {
+      const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
+      const messageSnap = await getDoc(messageRef);
+
+      if (!messageSnap.exists()) {
+        return fail("Message not found");
+      }
+
+      return ok({ ...messageSnap.data(), id: messageSnap.id } as ChannelMessage);
+    } catch (error: any) {
+      console.error("Error getting message:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Update a message (edit)
+   */
+  async updateMessage(
+    messageId: string,
+    newContent: { text: string; url?: string | null }
+  ): Promise<Result<void>> {
+    try {
+      const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
+      await updateDoc(messageRef, {
+        "content.text": newContent.text,
+        ...(newContent.url !== undefined && { "content.url": newContent.url }),
+        isEdited: true,
+        updatedAt: Timestamp.now(),
+      });
+
+      return ok(undefined);
+    } catch (error: any) {
+      console.error("Error updating message:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Change message status (hide/delete)
+   */
+  async changeMessageStatus(
+    messageId: string,
+    status: MessageStatus
+  ): Promise<Result<void>> {
+    try {
+      const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
+      await updateDoc(messageRef, {
+        status,
+        updatedAt: Timestamp.now(),
+      });
+
+      return ok(undefined);
+    } catch (error: any) {
+      console.error("Error changing message status:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Delete a message (soft delete)
+   */
+  async deleteMessage(messageId: string): Promise<Result<void>> {
+    return this.changeMessageStatus(messageId, "DELETED");
+  },
+
+  /**
+   * Hide a message
+   */
+  async hideMessage(messageId: string): Promise<Result<void>> {
+    return this.changeMessageStatus(messageId, "HIDDEN");
+  },
+
+  /**
+   * Real-time listener for messages in a channel
+   */
+  subscribeToMessages(
+    channelId: string,
+    callback: (messages: ChannelMessage[]) => void,
+    limitCount: number = 50
+  ): () => void {
+    const q = query(
+      collection(db, COLLECTION.CHANNEL_MESSAGES),
+      where("channelId", "==", channelId),
+      where("status", "==", "ACTIVE"),
+      orderBy("createdAt", "asc"),
+      limit(limitCount)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ChannelMessage[];
+      callback(messages);
+    });
+  },
+};
+
+// ==================== MESSAGE UPVOTES ====================
+
+export const messageUpvoteService = {
+  /**
+   * Toggle upvote on a message
+   */
+  async toggleUpvote(
+    userId: string,
+    messageId: string,
+    courseId: string,
+    channelId: string
+  ): Promise<Result<{ isUpvoted: boolean }>> {
+    try {
+      const upvoteId = `${userId}_${messageId}`;
+      const upvoteRef = doc(db, COLLECTION.FORUM_MESSAGE_UPVOTES, upvoteId);
+      const upvoteSnap = await getDoc(upvoteRef);
+
+      const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
+
+      if (upvoteSnap.exists()) {
+        // Remove upvote
+        await deleteDoc(upvoteRef);
+        await updateDoc(messageRef, {
+          upvoteCount: increment(-1),
+        });
+
+        return ok({ isUpvoted: false });
+      } else {
+        // Add upvote
+        const newUpvote: ForumMessageUpvote = {
+          id: upvoteId,
+          userId,
+          messageId,
+          courseId,
+          channelId,
+          createdAt: Timestamp.now(),
+        };
+
+        await setDoc(upvoteRef, newUpvote);
+        await updateDoc(messageRef, {
+          upvoteCount: increment(1),
+        });
+
+        return ok({ isUpvoted: true });
+      }
+    } catch (error: any) {
+      console.error("Error toggling upvote:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Check if user has upvoted a message
+   */
+  async hasUserUpvoted(userId: string, messageId: string): Promise<boolean> {
+    try {
+      const upvoteId = `${userId}_${messageId}`;
+      const upvoteRef = doc(db, COLLECTION.FORUM_MESSAGE_UPVOTES, upvoteId);
+      const upvoteSnap = await getDoc(upvoteRef);
+
+      return upvoteSnap.exists();
+    } catch (error) {
+      console.error("Error checking upvote:", error);
+      return false;
+    }
+  },
+
+  /**
+   * Get upvotes for multiple messages (batch check)
+   */
+  async getUserUpvotesForMessages(
+    userId: string,
+    messageIds: string[]
+  ): Promise<Set<string>> {
+    try {
+      const upvotedIds = new Set<string>();
+
+      // Check in batches of 10 (Firestore 'in' limit)
+      for (let i = 0; i < messageIds.length; i += 10) {
+        const batch = messageIds.slice(i, i + 10);
+        const upvoteIds = batch.map((msgId) => `${userId}_${msgId}`);
+
+        const promises = upvoteIds.map((id) =>
+          getDoc(doc(db, COLLECTION.FORUM_MESSAGE_UPVOTES, id))
+        );
+
+        const results = await Promise.all(promises);
+        results.forEach((snap, idx) => {
+          if (snap.exists()) {
+            upvotedIds.add(batch[idx]);
+          }
+        });
+      }
+
+      return upvotedIds;
+    } catch (error) {
+      console.error("Error getting user upvotes:", error);
+      return new Set();
+    }
+  },
+};

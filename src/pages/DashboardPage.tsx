@@ -16,10 +16,11 @@ import { Enrollment } from '@/types/enrollment';
 import { Banner } from '@/types/banner';
 import { CertificateRequestStatus } from '@/types/general';
 import { formatDate } from '@/utils/date-time';
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BannerSlider } from '@/components/BannerSlider';
+
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
@@ -155,6 +156,13 @@ function EnrolledCourseCard({
                   Continue
                 </Button>
 
+                <Link to={`/courses/${course.id}/forum`}>
+                  <Button size="sm" variant="outline">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Forum
+                  </Button>
+                </Link>
+
                 {/* Only show certificate-related features if enabled */}
                 {showCertificateFeatures && (
                   <>
@@ -230,7 +238,6 @@ function EnrolledCourseCard({
                     )}
                   </>
                 )}
-                
               </div>
             </div>
           </div>

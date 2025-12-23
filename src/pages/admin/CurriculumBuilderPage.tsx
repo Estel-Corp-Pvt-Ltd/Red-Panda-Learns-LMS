@@ -425,6 +425,7 @@ const CurriculumBuilderPage = () => {
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
+              courseId={course?.id}
               onSave={saveAdditionalSettings}
             />
           </TabsContent>
