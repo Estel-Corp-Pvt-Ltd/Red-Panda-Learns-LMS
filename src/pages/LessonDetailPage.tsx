@@ -16,6 +16,7 @@ import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useNavigate } from "react-router-dom";
 import { learningProgressService } from "@/services/learningProgressService";
 import { LearningProgress } from "@/types/learning-progress";
+import { serverTimestamp } from "firebase/firestore";
 
 export default function LessonDetailPage() {
   const { param, lessonId } = useParams<{
@@ -157,7 +158,7 @@ export default function LessonDetailPage() {
     if (result.success) {
       setUserProgress(prev =>
         prev
-          ? { ...prev, lessonHistory: { ...prev.lessonHistory, [selectedItem.id]: { timeSpent: 0, completed: true } } }
+          ? { ...prev, lessonHistory: { ...prev.lessonHistory, [selectedItem.id]: { timeSpent: 0, markedAsComplete: true, completedAt: serverTimestamp() } } }
           : prev
       );
 
@@ -312,6 +313,7 @@ export default function LessonDetailPage() {
           ) : (
             <LessonView
               lessonId={selectedItem.id}
+              courseName={course.title}
               onComplete={handleMarkComplete}
               completed={lessonCompleted}
             />

@@ -5,6 +5,8 @@ export interface Comment {
   id: string;
   lessonId: string;
   courseId: string;
+  lessonName: string;
+  courseName: string;
   parentCommentId: string | null;
   userId: string;
   userName: string;

@@ -34,6 +34,7 @@ import {
 
 interface LessonViewProps {
   lessonId: string;
+  courseName: string;
   onComplete: () => void;
   completed: boolean;
 }
@@ -46,7 +47,7 @@ interface TimeTrackingState {
   isActiveSession: boolean;
 }
 
-export function LessonView({ lessonId, onComplete, completed }: LessonViewProps) {
+export function LessonView({ lessonId, courseName, onComplete, completed }: LessonViewProps) {
   const { user } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -732,7 +733,7 @@ export function LessonView({ lessonId, onComplete, completed }: LessonViewProps)
               </CardContent>
             </Card>
           </div>
-          <Comments lessonId={lesson.id} courseId={lesson.courseId} />
+          <Comments lessonId={lesson.id} courseId={lesson.courseId} lessonName={lesson.title} courseName={courseName} />
         </>
       )}
       <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>

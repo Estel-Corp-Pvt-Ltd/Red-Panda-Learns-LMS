@@ -9,6 +9,8 @@ import { formatDateTime } from '@/utils/date-time';
 interface CommentsProps {
   lessonId: string;
   courseId: string;
+  lessonName: string;
+  courseName: string;
 };
 
 interface CommentWithReplies extends Comment {
@@ -258,7 +260,7 @@ const CommentThread: React.FC<{
     );
   };
 
-const Comments: React.FC<CommentsProps> = ({ lessonId, courseId }) => {
+const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, courseName }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -473,7 +475,9 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId }) => {
     try {
       const result = await commentService.createComment({
         lessonId,
+        lessonName,
         courseId,
+        courseName,
         userId: user.id,
         userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || 'Anonymous',
         content: content.trim(),
@@ -512,7 +516,9 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId }) => {
     try {
       const result = await commentService.createComment({
         lessonId,
+        lessonName,
         courseId,
+        courseName,
         userId: user.id,
         userName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || 'Anonymous',
         content: newComment.trim(),
