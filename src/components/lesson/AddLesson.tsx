@@ -24,7 +24,7 @@ import { Lesson } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import { Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import MarkdownEditor from "../MarkdownEditor";
+import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
 
 type CreateLessonModalProps = {
   courseId: string;
