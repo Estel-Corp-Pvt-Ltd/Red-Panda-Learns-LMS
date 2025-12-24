@@ -74,6 +74,8 @@ const CurriculumBuilderPage = () => {
   const [copied, setCopied] = useState(false);
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
+  const [customCertificateName, setCustomCertificateName] = useState("");
+
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -129,6 +131,7 @@ const CurriculumBuilderPage = () => {
     fetchInstructors();
   }, []);
 
+
   /** Load course and flatten structure into draggable list */
 
   useEffect(() => {
@@ -160,9 +163,11 @@ const CurriculumBuilderPage = () => {
         setInstructorId(data.instructorId ?? "");
         setInstructorName(data.instructorName ?? "");
         setThumbnailUrl(data.thumbnail ?? "");
-        // ADD THIS LINE:
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
+        setCustomCertificateName(
+          data.customCertificateName || data.title || ""
+        );
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -174,7 +179,7 @@ const CurriculumBuilderPage = () => {
       }
     };
     loadCourse();
-  }, [param]); // Also changed param to param here - this was likely a bug
+  }, [param]);
 
   // ───────────────────────────────────────────────────────────────
   // ─── BASICS TAB LOGIC ──────────────────────────────────────────
@@ -275,6 +280,7 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, {
         isMailSendingEnabled,
         isCertificateEnabled,
+        customCertificateName,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
     } catch (err) {
@@ -425,6 +431,8 @@ const CurriculumBuilderPage = () => {
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
+              customCertificateName={customCertificateName}
+              setCustomCertificateName={setCustomCertificateName}
               onSave={saveAdditionalSettings}
             />
           </TabsContent>

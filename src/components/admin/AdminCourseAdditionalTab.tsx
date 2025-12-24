@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface AdditionalTabProps {
   isMailSendingEnabled: boolean;
   setIsMailSendingEnabled: (value: boolean) => void;
   isCertificateEnabled?: boolean;
-  setIsCertificateEnabled?: (value: boolean) => void; 
+  setIsCertificateEnabled?: (value: boolean) => void;
+  customCertificateName: string;
+  setCustomCertificateName: (value: string) => void;
   onSave: () => Promise<void> | void;
 }
 
@@ -15,6 +18,8 @@ const AdditionalTab = ({
   setIsMailSendingEnabled,
   isCertificateEnabled,
   setIsCertificateEnabled,
+  customCertificateName,
+  setCustomCertificateName,
   onSave,
 }: AdditionalTabProps) => {
   return (
@@ -37,12 +42,12 @@ const AdditionalTab = ({
           </p>
         </div>
 
-      <Switch
-  id="mail-sending"
-  checked={isMailSendingEnabled}
-  onCheckedChange={setIsMailSendingEnabled}
-  className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
-/>
+        <Switch
+          id="mail-sending"
+          checked={isMailSendingEnabled}
+          onCheckedChange={setIsMailSendingEnabled}
+          className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+        />
       </div>
 
       {/* Certificate Toggle */}
@@ -60,13 +65,34 @@ const AdditionalTab = ({
           </p>
         </div>
 
-       <Switch
-  id="enable-certificate"
-  checked={isCertificateEnabled} 
-  onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
-  className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
-/>
+        <Switch
+          id="enable-certificate"
+          checked={isCertificateEnabled}
+          onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
+          className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+        />
       </div>
+
+      {/* Custom Certificate Name Input (Conditionally Rendered) */}
+      {isCertificateEnabled && (
+        <div className="space-y-3 p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label htmlFor="certificate-name" className="text-base font-medium">
+              Custom Certificate Name
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Customize the name that appears on the certificate. By default, it
+              uses the course title.
+            </p>
+          </div>
+          <Input
+            id="certificate-name"
+            value={customCertificateName}
+            onChange={(e) => setCustomCertificateName(e.target.value)}
+            placeholder="Enter custom certificate name"
+          />
+        </div>
+      )}
 
       {/* Save Button */}
       <div className="flex justify-end">

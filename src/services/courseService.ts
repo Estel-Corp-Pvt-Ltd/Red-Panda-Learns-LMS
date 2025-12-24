@@ -90,6 +90,7 @@ class CourseService {
       | "url"
       | "isMailSendingEnabled"
       | "isCertificateEnabled"
+      | "CustomCertificateName"
     >
   ): Promise<string> {
     try {
@@ -189,6 +190,9 @@ class CourseService {
         updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
       if (updates.isMailSendingEnabled !== undefined)
         updateData.isMailSendingEnabled = updates.isMailSendingEnabled;
+      if (updates.customCertificateName !== undefined) {
+        updateData.customCertificateName = updates.customCertificateName;
+      }
       if (updates.isCertificateEnabled !== undefined)
         updateData.isCertificateEnabled = updates.isCertificateEnabled;
       if (updates.certificateTemplateId)
@@ -385,6 +389,7 @@ class CourseService {
           cohorts: data.cohorts || [],
           topics: data.topics || [],
           isEnrollmentPaused: data.isEnrollmentPaused || false,
+          customCertificateName: data.customCertificateName || "",
           isCertificateEnabled: data.isCertificateEnabled || false,
           isMailSendingEnabled: data.isMailSendingEnabled || false,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
