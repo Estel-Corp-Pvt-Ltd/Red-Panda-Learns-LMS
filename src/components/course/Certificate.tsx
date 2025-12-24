@@ -5,7 +5,8 @@ import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { Download, Printer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import QRCode from "react-qr-code";
 import { useNavigate, useParams } from "react-router-dom";
 import ShareCertificate from "./ShareCertificate";
 import { courseService } from "@/services/courseService";
@@ -17,32 +18,71 @@ const Certificate: React.FC = () => {
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
   const [certificateId, setCertificateId] = useState<string | null>(null);
-  const [certificateName, setCertificateName] = useState<string | null>(null);
+    const [certificateName, setCertificateName] = useState<string | null>(null);
+  // State for mobile scaling
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Load Fonts
   useEffect(() => {
-    if (user.id !== enrollmentId.split("_")[0] && user.role !== USER_ROLE.ADMIN) {
+    const link = document.createElement("link");
+    link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600;700&family=Merriweather:wght@300;400;700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
+  // Handle Mobile Scaling
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const parentWidth = window.innerWidth;
+        // 840 is the certificate base width (800) + margins. 
+        if (parentWidth < 840) {
+          const newScale = (parentWidth - 32) / 800; // 32px padding buffer
+          setScale(newScale);
+        } else {
+          setScale(1);
+        }
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (user.id !== enrollmentId?.split("_")[0] && user.role !== USER_ROLE.ADMIN) {
       navigate("/dashboard");
     }
 
     const fetchEnrollmentAndCompletion = async () => {
       setIsLoading(true);
       try {
-        const enrollmentResult =
-          await enrollmentService.getEnrollmentById(enrollmentId!);
+        const enrollmentResult = await enrollmentService.getEnrollmentById(enrollmentId!);
 
         if (enrollmentResult.success) {
           const enrollment = enrollmentResult.data;
           setEnrollmentData(enrollment);
 
-          const completionResult =
-            await learningProgressService.getFormattedCompletionDateAndCertificateId(
-              enrollment.userId,
-              enrollment.courseId
-            );
-          
-            try{
+          const completionResult = await learningProgressService.getFormattedCompletionDateAndCertificateId(
+            enrollment.userId,
+            enrollment.courseId
+          );
+
+          if (completionResult.success) {
+            setCompletionDate(completionResult.data.completionDate);
+            setCertificateId(completionResult.data.certificateId);
+          }
+
+
+             try{
               const certificateName = await courseService.getCetificateNamebyID(enrollment.courseId);
               setCertificateName(certificateName);
 
@@ -50,12 +90,7 @@ const Certificate: React.FC = () => {
             catch(error){
               console.error("Error fetching certificate name:", error);
             }
-            
 
-          if (completionResult.success) {
-            setCompletionDate(completionResult.data.completionDate);
-            setCertificateId(completionResult.data.certificateId);
-          }
         }
       } catch (error) {
         console.error("Error fetching certificate data:", error);
@@ -67,71 +102,42 @@ const Certificate: React.FC = () => {
     fetchEnrollmentAndCompletion();
   }, [enrollmentId]);
 
-
   const handlePrint = () => {
     setIsPrinting(true);
 
-    // Create a print-specific stylesheet
     const printStyles = `
       @media print {
-        body, html {
+        @page { size: landscape; margin: 0; }
+        body { 
+          margin: 0; 
+          -webkit-print-color-adjust: exact !important; 
+          print-color-adjust: exact !important; 
+        }
+        .print-hide { display: none !important; }
+        .certificate-wrapper {
+          transform: scale(1) !important;
+          height: 100vh;
+          width: 100vw;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: white;
           margin: 0 !important;
-          padding: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          display: flex !important;
-          justify-content: center !important;
-          align-items: center !important;
-          background: white !important;
         }
-
-        body * {
-          visibility: hidden;
-        }
-        
-        .certificate-container, 
-        .certificate-container * {
-          visibility: visible !important;
-        }
-        
         .certificate-container {
-          position: relative !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 760px !important;
-          height: 540px !important;
-          margin: 0 !important;
-          padding: 0 !important;
           box-shadow: none !important;
-          border: 1px solid #ddd !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-          transform: none !important;
-          zoom: 1 !important;
-        }
-        
-        .print-button,
-        .print-instructions {
-          display: none !important;
-        }
-        
-        @page {
-          size: auto !important;
-          margin: 0 !important;
+          border: none !important;
+          margin: 0 auto;
         }
       }
     `;
 
-    // Add print styles
     const styleSheet = document.createElement("style");
     styleSheet.innerHTML = printStyles;
     document.head.appendChild(styleSheet);
 
-    // Trigger print
-    window.print();
-
-    // Clean up
     setTimeout(() => {
+      window.print();
       document.head.removeChild(styleSheet);
       setIsPrinting(false);
     }, 100);
@@ -140,183 +146,186 @@ const Certificate: React.FC = () => {
   const handleDownloadAsImage = async () => {
     try {
       setIsPrinting(true);
-
-      // Import html2canvas dynamically
       const html2canvas = (await import('html2canvas')).default;
-      const certificateElement = document.querySelector('.certificate-container') as HTMLElement;
+      const element = document.querySelector('.certificate-container') as HTMLElement;
 
-      if (certificateElement) {
-        // Hide the print button temporarily
-        const printButton = document.querySelector('.print-button');
-        if (printButton) (printButton as HTMLElement).style.display = 'none';
-
-        const canvas = await html2canvas(certificateElement, {
-          scale: 2, // Higher resolution
-          backgroundColor: '#ffffff',
+      if (element) {
+        const canvas = await html2canvas(element, {
+          scale: 3, // High resolution
           useCORS: true,
+          backgroundColor: '#ffffff',
           logging: false,
-          width: 760,
-          height: 540,
-          windowWidth: 760,
-          windowHeight: 540
         });
 
-        // Show the print button again
-        if (printButton) (printButton as HTMLElement).style.display = '';
-
-        // Convert canvas to image and download
         const link = document.createElement('a');
-        link.download = `vizuara-certificate-${Date.now()}.png`;
+        link.download = `vizuara-certificate-${certificateId || 'download'}.png`;
         link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
       }
     } catch (error) {
       console.error('Error downloading certificate:', error);
-      alert('Failed to download certificate. Please try the print option instead.');
     } finally {
       setIsPrinting(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading certificate...</p>
-      </div>
-    );
-  }
+  // Generate URL for QR Code
+  const qrUrl = certificateId 
+    ? `${window.location.origin}/certificate/public/view/${certificateId}`
+    : window.location.origin;
 
-  if (!enrollmentData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>No Certificate Exists.</p>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!enrollmentData) return <div className="min-h-screen flex items-center justify-center">No Certificate Found.</div>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200 p-4 print:p-0">
-      {/* Action Buttons */}
-      <div className="fixed top-6 right-6 z-50 flex gap-3 print-button">
-  <ShareCertificate certificateId={certificateId} />
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 print:p-0 font-sans">
+      
+      {/* Controls */}
+      <div className="fixed top-4 right-4 z-50 flex gap-2 print-hide">
+        <ShareCertificate certificateId={certificateId} />
+        <Button onClick={handleDownloadAsImage} disabled={isPrinting} variant="outline" className="bg-white shadow-sm">
+          <Download className="h-4 w-4 mr-2" /> {isPrinting ? "..." : "Download"}
+        </Button>
+        <Button onClick={handlePrint} disabled={isPrinting} className="bg-white text-black hover:bg-gray-100 shadow-sm border">
+          <Printer className="h-4 w-4 mr-2" /> Print
+        </Button>
+      </div>
 
-  <Button
-    onClick={handleDownloadAsImage}
-    disabled={isPrinting}
-    variant="outline"
-    className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !dark:bg-gray-200 !dark:text-black"
-  >
-    <Download className="h-4 w-4 mr-2" />
-    {isPrinting ? "Processing..." : "Download PNG"}
-  </Button>
+      {/* Scaling Wrapper for Mobile */}
+      <div 
+        ref={containerRef}
+        className="certificate-wrapper transition-transform origin-top-center duration-300 ease-out"
+        style={{ 
+          transform: `scale(${isPrinting ? 1 : scale})`,
+          marginBottom: isPrinting ? 0 : `-${(1 - scale) * 600}px` 
+        }}
+      >
+        {/* CERTIFICATE CONTAINER - Fixed Size 800x600px */}
+        <div className="certificate-container relative w-[800px] h-[600px] bg-white text-gray-900 shadow-2xl overflow-hidden mx-auto">
+          
+          {/* Background Texture (Subtle) */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+               style={{ 
+                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+               }} 
+          />
 
-  <Button
-    onClick={handlePrint}
-    disabled={isPrinting}
-    className="bg-gray-200 text-black hover:bg-gray-300 hover:text-black !dark:bg-gray-200 !dark:text-black"
-  >
-    <Printer className="h-4 w-4 mr-2" />
-    {isPrinting ? "Preparing..." : "Print Certificate"}
-  </Button>
-</div>
-
-      <div className="max-w-full overflow-scroll lg:overflow-visible"> {/* Allow horizontal scroll for smaller screens */}
-        {/* Certificate Container - Exact Fixed Size */}
-        <div className="relative w-[760px] h-[540px] bg-white shadow-xl border border-gray-300 overflow-hidden certificate-container print:shadow-none">
-          {/* Decorative border */}
-          <div className="absolute inset-4 border-2 border-gray-100 pointer-events-none" />
-
-          {/* Left ribbon */}
-          <div className="absolute left-10 top-0 w-32 bg-gray-100 flex flex-col items-center pt-10 z-20">
-            <div className="text-[14px] font-bold tracking-[0.2em] text-gray-500 mb-4 text-center">
-              VERIFIED<br />CERTIFICATE
-            </div>
-
-            <div className="w-32 h-32 flex items-center justify-center">
-              <div className="flex flex-col items-center text-center">
-                <img src="/certificate-logo.png" alt="Vizuara Logo" className="mb-2 w-[90%]" />
-              </div>
-            </div>
-            <div className="absolute -bottom-10 w-20 h-20 bg-gray-100 transform rotate-45 -z-10 scale-110" />
+          {/* QR Code - Top Right */}
+          <div className="absolute top-8 right-8 z-10">
+             <div className="bg-white p-1">
+               <QRCode 
+                 value={qrUrl}
+                 size={64}
+                 fgColor="#000000"
+                 bgColor="#ffffff"
+                 level="M"
+               />
+             </div>
           </div>
 
-          {/* Main body */}
-          <div className="h-full px-14 py-12 flex flex-col justify-between">
-            {/* Header + title */}
-            <div className="ml-40">
-              <div>
-                <h1 className="text-3xl font-semibold text-gray-900">
-                  Vizuara AI Labs
-                </h1>
+          <div className="flex h-full">
+            
+            {/* LEFT SIDE: Ribbon */}
+            <div className="relative w-[30%] h-full">
+              {/* Ribbon Graphic - Increased Size */}
+              <div 
+                className="absolute top-0 left-8 w-44 h-[380px] bg-slate-100 shadow-sm flex flex-col items-center pt-10 z-20"
+                style={{ clipPath: "polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)" }} 
+              >
+                <span className="text-[10px] font-bold tracking-[0.2em] text-gray-400 text-center leading-relaxed font-sans mb-8">
+                  VERIFIED<br />CERTIFICATE
+                </span>
 
-                <p className="mt-6 text-xs font-bold uppercase tracking-[0.22em] text-gray-800">
-                  Congratulations on completing
-                </p>
-
-                <h2 className="text-4xl font-semibold text-gray-900 leading-tight w-96">
-                  {certificateName || enrollmentData.courseName}
-                </h2>
-
-                <p className="mt-3 text-xs font-bold text-gray-500 max-w-72">
-                  Successfully completed the course, assignments and
-                  received passing grade.
-                </p>
+                {/* Vizuara Logo - Increased Size */}
+                <div className="w-32 h-32 mb-2 flex items-center justify-center">
+                  <img 
+                    src="/certificate-logo.png" 
+                    alt="Vizuara AI Labs" 
+                    className="w-full h-full object-contain drop-shadow-sm" 
+                  />
+                </div>
+                
+                {/* Logo Text/Pill */}
+                <div className="mt-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full">
+                  <span className="text-[10px] font-bold text-purple-600 tracking-wider">VIZUARA AI LABS</span>
+                </div>
               </div>
             </div>
-            {/* Footer area */}
-            <div className="flex justify-between items-end">
-              {/* Name + date */}
+
+            {/* RIGHT SIDE: Content */}
+            <div className="flex-1 pt-16 pr-12 pb-12 flex flex-col justify-between pl-6">
+              
+              {/* Header Content */}
               <div>
-                <p className="text-lg font-medium text-gray-800">
-                  {enrollmentData.userName}
+                <h2 className="text-4xl font-bold text-gray-900 font-sans tracking-tight mb-8">
+                  Vizuara AI Labs
+                </h2>
+
+                <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-4 font-sans">
+                  CONGRATULATIONS ON COMPLETING
                 </p>
-                <p className="text-xs font-medium text-gray-800 mt-1">
-                  Course completed on {completionDate ?? "—"}
+
+                {/* Course Name - Main Title */}
+                <h1 className="text-[3.25rem] font-bold text-gray-900 leading-[1.1] mb-6 font-sans tracking-tight -ml-1">
+                {certificateName || enrollmentData.courseName}
+                </h1>
+
+                <p className="text-sm text-gray-600 font-medium max-w-md leading-relaxed font-sans">
+                  Successfully completed the course, assignments and received passing grade.
                 </p>
               </div>
 
-              {/* Signatures */}
-              <div className="text-right space-y-4 text-xs text-gray-700">
-                <div>
-                  <p className="h-4 text-xs font-bold text-gray-400 italic">
-                    <img
-                      src="/images/signatures/raj-dandekar-signature.png"
-                      alt="Signature of Dr. Raj Dandekar"
-                      className="h-4 mx-auto"
-                    />
-                  </p>
-                  <p className="font-bold text-xs">
-                    Dr. Raj Dandekar (MIT PhD)
-                  </p>
+              {/* Footer / Signatures */}
+              <div className="flex justify-between items-end mt-8">
+                
+                {/* Student Name & Date */}
+                <div className="mb-2">
+                  <div className="text-[2.5rem] text-gray-900 mb-2 leading-none pl-1" style={{ fontFamily: '"Great Vibes", cursive' }}>
+                    {enrollmentData.userName}
+                  </div>
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider font-sans mt-3">
+                    Course completed on {completionDate || new Date().toLocaleDateString()}
+                  </div>
                 </div>
-                <div>
-                  <p className="h-4 text-xs font-bold text-gray-400 italic" >
-                    <img
-                      src="/images/signatures/rajat-dandekar-signature.png"
-                      alt="Signature of Dr. Rajat Dandekar"
-                      className="h-4 mx-auto"
-                    />
-                  </p>
-                  <p className="font-bold text-xs">
-                    Dr. Rajat Dandekar (Purdue PhD)
-                  </p>
-                </div>
-                <div>
-                  <p className="h-4 text-xs font-bold text-gray-400 italic">
-                    <img
-                      src="/images/signatures/sreedath-panat-signature.png"
-                      alt="Signature of Dr. Sreedath Panat"
-                      className="h-3 mx-auto"
-                    />
-                  </p>
-                  <p className="font-bold text-xs">
-                    Dr. Sreedath Panat (MIT PhD)
-                  </p>
+
+                {/* Signatures List - Right Aligned */}
+                <div className="flex flex-col space-y-6 text-right pb-1">
+                  
+                  {/* Signature 1 */}
+                  <div className="flex flex-col items-end">
+                    <div className="text-[11px] font-serif font-bold text-gray-800 mb-1">
+                      Dr. Raj Dandekar (MIT PhD)
+                    </div>
+                    <img src="/images/signatures/raj-dandekar-signature.png" alt="Signature" className="h-6 opacity-80" />
+                  </div>
+
+                  {/* Signature 2 */}
+                  <div className="flex flex-col items-end">
+                    <div className="text-[11px] font-serif font-bold text-gray-800 mb-1">
+                      Dr. Rajat Dandekar (Purdue PhD)
+                    </div>
+                    <img src="/images/signatures/rajat-dandekar-signature.png" alt="Signature" className="h-6 opacity-80" />
+                  </div>
+
+                  {/* Signature 3 */}
+                  <div className="flex flex-col items-end">
+                    <div className="text-[11px] font-serif font-bold text-gray-800 mb-1">
+                      Dr. Sreedath Panat (MIT PhD)
+                    </div>
+                    <img src="/images/signatures/sreedath-panat-signature.png" alt="Signature" className="h-5 opacity-80" />
+                  </div>
+
                 </div>
               </div>
+
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Mobile Hint */}
+      <div className="mt-8 text-xs text-gray-400 print-hide md:hidden text-center">
+        Pinch to zoom or rotate device for better view
       </div>
     </div>
   );
