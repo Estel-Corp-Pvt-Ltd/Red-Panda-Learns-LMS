@@ -6,9 +6,9 @@ interface AdditionalTabProps {
   isMailSendingEnabled: boolean;
   setIsMailSendingEnabled: (value: boolean) => void;
   isCertificateEnabled?: boolean;
-  setIsCertificateEnabled?: (value: boolean) => void; 
+  setIsCertificateEnabled?: (value: boolean) => void;
   onSave: () => Promise<void> | void;
-}
+};
 
 const AdditionalTab = ({
   isMailSendingEnabled,
@@ -37,12 +37,12 @@ const AdditionalTab = ({
           </p>
         </div>
 
-      <Switch
-  id="mail-sending"
-  checked={isMailSendingEnabled}
-  onCheckedChange={setIsMailSendingEnabled}
-  className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
-/>
+        <Switch
+          id="mail-sending"
+          checked={isMailSendingEnabled}
+          onCheckedChange={setIsMailSendingEnabled}
+          className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+        />
       </div>
 
       {/* Certificate Toggle */}
@@ -60,12 +60,12 @@ const AdditionalTab = ({
           </p>
         </div>
 
-       <Switch
-  id="enable-certificate"
-  checked={isCertificateEnabled} 
-  onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
-  className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
-/>
+        <Switch
+          id="enable-certificate"
+          checked={isCertificateEnabled}
+          onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
+          className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+        />
       </div>
 
       {/* Save Button */}

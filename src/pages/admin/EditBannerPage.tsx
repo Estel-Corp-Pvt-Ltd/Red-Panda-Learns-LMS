@@ -22,6 +22,7 @@ import { fileService } from "@/services/fileService";
 import { BANNER_STATUS } from "@/constants";
 import { BannerFormData } from "@/types/banner";
 import { getDownloadURL } from "firebase/storage";
+import { Switch } from "@/components/ui/switch";
 
 export default function EditBannerPage() {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function EditBannerPage() {
     gradientColors: ["#3B82F6", "#8B5CF6"],
     courseIds: [],
     status: BANNER_STATUS.ACTIVE,
+    showToAllUsers: null,
   });
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
@@ -79,6 +81,7 @@ export default function EditBannerPage() {
           gradientColors: banner.gradientColors,
           courseIds: banner.courseIds,
           status: banner.status,
+          showToAllUsers: banner.showToAllUsers
         });
       } else {
         toast({
@@ -449,8 +452,18 @@ export default function EditBannerPage() {
                   </div>
                 </div>
 
+                <div className="gap-2 flex items-center">
+                  <Label htmlFor="show-to-all-users">Show to All Users (whether enrolled or not)</Label>
+                  <Switch
+                    id="show-to-all-users"
+                    checked={formData.showToAllUsers}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showToAllUsers: checked }))}
+                    className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+                  />
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">Status <span className="text-destructive">*</span></Label>
                   <Select
                     value={formData.status}
                     onValueChange={(value) =>
