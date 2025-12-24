@@ -1,28 +1,28 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Loader2, Plus, X } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { BANNER_STATUS } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
 import { bannerService } from "@/services/bannerService";
 import { courseService } from "@/services/courseService";
 import { fileService } from "@/services/fileService";
-import { useAuth } from "@/contexts/AuthContext";
-import { BANNER_STATUS } from "@/constants";
 import { BannerFormData } from "@/types/banner";
 import { getDownloadURL } from "firebase/storage";
+import { ArrowLeft, Loader2, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateBannerPage() {
   const navigate = useNavigate();

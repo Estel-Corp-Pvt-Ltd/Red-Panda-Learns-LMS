@@ -1,22 +1,21 @@
+import { BANNER_STATUS, COLLECTION } from "@/constants";
+import { db } from "@/firebaseConfig";
+import { Banner, BannerFormData } from "@/types/banner";
+import { logError } from "@/utils/logger";
+import { fail, ok, Result } from "@/utils/response";
 import {
   collection,
+  deleteDoc,
   doc,
-  getDocs,
   getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
   setDoc,
   updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  serverTimestamp,
-  Timestamp,
+  where
 } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
-import { COLLECTION, BANNER_STATUS } from "@/constants";
-import { Banner, BannerFormData } from "@/types/banner";
-import { Result, ok, fail } from "@/utils/response";
-import { logError } from "@/utils/logger";
 
 class BannerService {
   /**
