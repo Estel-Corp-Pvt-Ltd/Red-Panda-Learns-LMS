@@ -8,6 +8,7 @@ import { Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ShareCertificate from "./ShareCertificate";
+import { courseService } from "@/services/courseService";
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -16,7 +17,7 @@ const Certificate: React.FC = () => {
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
   const [certificateId, setCertificateId] = useState<string | null>(null);
-
+  const [certificateName, setCertificateName] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -40,6 +41,16 @@ const Certificate: React.FC = () => {
               enrollment.userId,
               enrollment.courseId
             );
+          
+            try{
+              const certificateName = await courseService.getCetificateNamebyID(enrollment.courseId);
+              setCertificateName(certificateName);
+
+            }
+            catch(error){
+              console.error("Error fetching certificate name:", error);
+            }
+            
 
           if (completionResult.success) {
             setCompletionDate(completionResult.data.completionDate);
@@ -243,7 +254,7 @@ const Certificate: React.FC = () => {
                 </p>
 
                 <h2 className="text-4xl font-semibold text-gray-900 leading-tight w-96">
-                  {enrollmentData.courseName}
+                  {certificateName || enrollmentData.courseName}
                 </h2>
 
                 <p className="mt-3 text-xs font-bold text-gray-500 max-w-72">
