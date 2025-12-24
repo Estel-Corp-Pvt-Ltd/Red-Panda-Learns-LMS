@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ForumChannel, ChannelMessage, MessageType } from '@/types/forum';
+import { ForumChannel, ChannelMessage, MessageAttachment } from '@/types/forum';
 import { forumChannelService, channelMessageService, messageUpvoteService } from '@/services/forumService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,8 @@ const Forum: React.FC = () => {
 
   // Message input
   const [messageText, setMessageText] = useState('');
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [attachedFilePreviews, setAttachedFilePreviews] = useState<{ file: File; preview: string | null }[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -128,22 +129,61 @@ const Forum: React.FC = () => {
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      setAttachedFile(files[0]);
+      const newPreviews: { file: File; preview: string | null }[] = [];
+
+      files.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            newPreviews.push({ file, preview: reader.result as string });
+            if (newPreviews.length === files.length) {
+              setAttachedFilePreviews((prev) => [...prev, ...newPreviews]);
+            }
+          };
+          reader.readAsDataURL(file);
+        } else {
+          newPreviews.push({ file, preview: null });
+          if (newPreviews.length === files.length) {
+            setAttachedFilePreviews((prev) => [...prev, ...newPreviews]);
+          }
+        }
+      });
+
+      setAttachedFiles((prev) => [...prev, ...files]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      setAttachedFile(files[0]);
+      const newFiles = Array.from(files);
+      const newPreviews: { file: File; preview: string | null }[] = [];
+
+      newFiles.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            newPreviews.push({ file, preview: reader.result as string });
+            if (newPreviews.length === newFiles.length) {
+              setAttachedFilePreviews((prev) => [...prev, ...newPreviews]);
+            }
+          };
+          reader.readAsDataURL(file);
+        } else {
+          newPreviews.push({ file, preview: null });
+          if (newPreviews.length === newFiles.length) {
+            setAttachedFilePreviews((prev) => [...prev, ...newPreviews]);
+          }
+        }
+      });
+
+      setAttachedFiles((prev) => [...prev, ...newFiles]);
     }
   };
 
-  const removeAttachment = () => {
-    setAttachedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const removeAttachment = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+    setAttachedFilePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const uploadFile = async (file: File): Promise<string | null> => {
@@ -166,26 +206,39 @@ const Forum: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!user || !selectedChannel || !courseId) return;
-    if (!messageText.trim() && !attachedFile) return;
+    if (!messageText.trim() && attachedFiles.length === 0) return;
 
     setSending(true);
     const textToSend = messageText.trim();
     try {
-      let fileUrl: string | null = null;
-      let messageType: MessageType = 'TEXT';
+      const attachments: MessageAttachment[] = [];
 
-      // Upload file if attached
-      if (attachedFile) {
-        fileUrl = await uploadFile(attachedFile);
-        if (!fileUrl) {
-          throw new Error('Failed to upload file');
-        }
+      // Upload all attached files
+      if (attachedFiles.length > 0) {
+        for (const file of attachedFiles) {
+          const fileUrl = await uploadFile(file);
+          if (!fileUrl) {
+            throw new Error(`Failed to upload ${file.name}`);
+          }
 
-        // Determine message type based on file type
-        if (attachedFile.type.startsWith('image/')) {
-          messageType = 'IMAGE';
-        } else {
-          messageType = 'LINK'; // Use LINK type for other files
+          // Determine attachment type based on file type
+          let attachmentType: MessageAttachment['type'] = 'other';
+          if (file.type.startsWith('image/')) {
+            attachmentType = 'image';
+          } else if (file.type.startsWith('video/')) {
+            attachmentType = 'video';
+          } else if (file.type.startsWith('audio/')) {
+            attachmentType = 'audio';
+          } else if (file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text')) {
+            attachmentType = 'document';
+          }
+
+          attachments.push({
+            url: fileUrl,
+            type: attachmentType,
+            name: file.name,
+            size: file.size,
+          });
         }
       }
 
@@ -194,11 +247,8 @@ const Forum: React.FC = () => {
         senderId: user.id,
         senderName: displayName,
         senderRole: (user.role as any) || USER_ROLE.STUDENT,
-        messageType,
-        content: {
-          text: textToSend || (attachedFile ? attachedFile.name : ''),
-          url: fileUrl,
-        },
+        text: textToSend,
+        attachments,
         status: 'ACTIVE',
         courseId,
         channelId: selectedChannel.id,
@@ -206,7 +256,8 @@ const Forum: React.FC = () => {
 
       if (result.success) {
         setMessageText('');
-        setAttachedFile(null);
+        setAttachedFiles([]);
+        setAttachedFilePreviews([]);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -265,7 +316,7 @@ const Forum: React.FC = () => {
 
   const handleUpdateMessage = async (messageId: string, text: string) => {
     try {
-      const result = await channelMessageService.updateMessage(messageId, { text });
+      const result = await channelMessageService.updateMessage(messageId, text);
       if (!result.success) {
         throw new Error(result.error?.message || 'Failed to update message');
       }
@@ -484,25 +535,57 @@ const Forum: React.FC = () => {
 
               {/* Message Input */}
               <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                {attachedFile && (
-                  <div className="mb-2 flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-lg">
-                    <Paperclip className="h-4 w-4 text-gray-500" />
-                    <span className="flex-1 truncate text-gray-700 dark:text-gray-300">{attachedFile.name}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={removeAttachment}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                {attachedFilePreviews.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {attachedFilePreviews.map((item, index) => (
+                        <div key={index} className="relative group">
+                          {item.preview ? (
+                            <div className="relative">
+                              <img
+                                src={item.preview}
+                                alt={item.file.name}
+                                className="w-24 h-24 rounded-lg border-2 border-gray-300 dark:border-gray-600 object-cover"
+                              />
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => removeAttachment(index)}
+                                className="absolute -top-2 -right-2 h-5 w-5 p-0 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 rounded-b-lg truncate">
+                                {item.file.name}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative w-24 h-24 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center p-2">
+                              <Paperclip className="h-6 w-6 text-gray-500 mb-1" />
+                              <span className="text-xs text-gray-600 dark:text-gray-400 text-center truncate w-full px-1">
+                                {item.file.name}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => removeAttachment(index)}
+                                className="absolute -top-2 -right-2 h-5 w-5 p-0 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className="flex items-end gap-2">
+                <div className="flex items-start gap-2">
                   <input
                     ref={fileInputRef}
                     type="file"
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -534,7 +617,7 @@ const Forum: React.FC = () => {
 
                   <Button
                     onClick={handleSendMessage}
-                    disabled={sending || uploadingFile || (!messageText.trim() && !attachedFile)}
+                    disabled={sending || uploadingFile || (!messageText.trim() && attachedFiles.length === 0)}
                     size="sm"
                     className="h-9 px-3 flex-shrink-0"
                   >

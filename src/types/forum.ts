@@ -1,19 +1,12 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import { UserRole } from "./general";
 
-export const MESSAGE_TYPE = {
-  TEXT: "TEXT",
-  LINK: "LINK",
-  IMAGE: "IMAGE",
-} as const;
-
 export const MESSAGE_STATUS = {
   ACTIVE: "ACTIVE",
   HIDDEN: "HIDDEN",
   DELETED: "DELETED",
 } as const;
 
-export type MessageType = (typeof MESSAGE_TYPE)[keyof typeof MESSAGE_TYPE];
 export type MessageStatus = (typeof MESSAGE_STATUS)[keyof typeof MESSAGE_STATUS];
 
 export interface ForumChannel {
@@ -28,9 +21,11 @@ export interface ForumChannel {
   isModerated: boolean;
 }
 
-export interface MessageContent {
-  text: string;
-  url: string | null;
+export interface MessageAttachment {
+  url: string;
+  type: 'image' | 'video' | 'audio' | 'document' | 'other';
+  name?: string;
+  size?: number;
 }
 
 export interface ChannelMessage {
@@ -38,8 +33,8 @@ export interface ChannelMessage {
   senderId: string;
   senderName: string;
   senderRole: UserRole;
-  messageType: MessageType;
-  content: MessageContent;
+  text: string;
+  attachments: MessageAttachment[];
   isEdited: boolean;
   status: MessageStatus;
   upvoteCount: number;

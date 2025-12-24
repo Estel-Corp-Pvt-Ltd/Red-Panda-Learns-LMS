@@ -1,6 +1,6 @@
 import { COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
-import { ForumChannel, ChannelMessage, ForumMessageUpvote, MessageType, MessageStatus } from "@/types/forum";
+import { ForumChannel, ChannelMessage, ForumMessageUpvote, MessageStatus } from "@/types/forum";
 import {
   collection,
   doc,
@@ -259,13 +259,12 @@ export const channelMessageService = {
    */
   async updateMessage(
     messageId: string,
-    newContent: { text: string; url?: string | null }
+    newText: string
   ): Promise<Result<void>> {
     try {
       const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
       await updateDoc(messageRef, {
-        "content.text": newContent.text,
-        ...(newContent.url !== undefined && { "content.url": newContent.url }),
+        text: newText,
         isEdited: true,
         updatedAt: Timestamp.now(),
       });
