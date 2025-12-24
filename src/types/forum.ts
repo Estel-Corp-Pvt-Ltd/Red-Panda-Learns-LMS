@@ -25,6 +25,7 @@ export interface ForumChannel {
   createdBy: string;
   createdAt: Timestamp | FieldValue;
   isArchived: boolean;
+  isModerated: boolean;
 }
 
 export interface MessageContent {

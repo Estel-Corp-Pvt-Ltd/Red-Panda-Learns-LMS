@@ -44,6 +44,7 @@ const AdditionalTab = ({
     name: '',
     description: '',
     order: 1,
+    isModerated: false,
   });
 
   useEffect(() => {
@@ -75,6 +76,7 @@ const AdditionalTab = ({
         name: channel.name,
         description: channel.description,
         order: channel.order,
+        isModerated: channel.isModerated || false,
       });
     } else {
       setEditingChannel(null);
@@ -82,6 +84,7 @@ const AdditionalTab = ({
         name: '',
         description: '',
         order: channels.length + 1,
+        isModerated: false,
       });
     }
     setShowModal(true);
@@ -94,6 +97,7 @@ const AdditionalTab = ({
       name: '',
       description: '',
       order: 1,
+      isModerated: false,
     });
   };
 
@@ -130,6 +134,7 @@ const AdditionalTab = ({
           courseId,
           createdBy: user.id,
           isArchived: false,
+          isModerated: formData.isModerated,
         });
 
         if (result.success) {
@@ -313,9 +318,16 @@ const AdditionalTab = ({
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
-                        {channel.isArchived ? 'Archived' : 'Active'}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
+                          {channel.isArchived ? 'Archived' : 'Active'}
+                        </Badge>
+                        {channel.isModerated && (
+                          <Badge variant="outline" className="text-xs">
+                            Moderated
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -399,6 +411,22 @@ const AdditionalTab = ({
               <p className="text-xs text-muted-foreground mt-1">
                 Lower numbers appear first in the channel list
               </p>
+            </div>
+
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-1">
+                <Label htmlFor="moderation" className="text-base font-medium">
+                  Enable Moderation
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  When enabled, all messages in this channel will be hidden by default and require approval from an admin or instructor before becoming visible to students.
+                </p>
+              </div>
+              <Switch
+                id="moderation"
+                checked={formData.isModerated}
+                onCheckedChange={(checked) => setFormData({ ...formData, isModerated: checked })}
+              />
             </div>
           </div>
 

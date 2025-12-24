@@ -1,4 +1,4 @@
-import { COLLECTION } from "@/constants";
+import { COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { ForumChannel, ChannelMessage, ForumMessageUpvote, MessageType, MessageStatus } from "@/types/forum";
 import {
@@ -23,6 +23,7 @@ import {
   WhereFilterOp,
 } from "firebase/firestore";
 import { Result, ok, fail } from "@/utils/response";
+import { UserRole } from "@/types/general";
 
 // ==================== FORUM CHANNELS ====================
 
@@ -165,15 +166,24 @@ export const channelMessageService = {
    * Send a new message
    */
   async sendMessage(
-    messageData: Omit<ChannelMessage, "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount">
+    messageData: Omit<ChannelMessage, "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount">,
+    isChannelModerated: boolean = false
   ): Promise<Result<ChannelMessage>> {
     try {
       const messageRef = doc(collection(db, COLLECTION.CHANNEL_MESSAGES));
+
+      // If channel is moderated, set message status to HIDDEN by default
+      // unless sender is admin or instructor
+      const shouldAutoHide = isChannelModerated &&
+        messageData.senderRole !== USER_ROLE.ADMIN &&
+        messageData.senderRole !== USER_ROLE.INSTRUCTOR;
+
       const newMessage: ChannelMessage = {
         ...messageData,
         id: messageRef.id,
         isEdited: false,
         upvoteCount: 0,
+        status: shouldAutoHide ? "HIDDEN" : messageData.status,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
@@ -303,17 +313,53 @@ export const channelMessageService = {
   },
 
   /**
+   * Unhide a message
+   */
+  async unhideMessage(messageId: string): Promise<Result<void>> {
+    return this.changeMessageStatus(messageId, "ACTIVE");
+  },
+
+  /**
+   * Toggle message visibility (hide/unhide)
+   */
+  async toggleMessageVisibility(messageId: string, currentStatus: MessageStatus): Promise<Result<void>> {
+    const newStatus = currentStatus === "HIDDEN" ? "ACTIVE" : "HIDDEN";
+    return this.changeMessageStatus(messageId, newStatus);
+  },
+
+  /**
    * Real-time listener for messages in a channel
    */
   subscribeToMessages(
+    userRole: UserRole,
     channelId: string,
+    currentUserId: string,
     callback: (messages: ChannelMessage[]) => void,
     limitCount: number = 50
   ): () => void {
+    // Admin and instructor can see all messages (including hidden)
+    if (userRole === USER_ROLE.ADMIN || userRole === USER_ROLE.INSTRUCTOR) {
+      const q = query(
+        collection(db, COLLECTION.CHANNEL_MESSAGES),
+        where("channelId", "==", channelId),
+        orderBy("createdAt", "asc"),
+        limit(limitCount)
+      );
+
+      return onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        })) as ChannelMessage[];
+        callback(messages);
+      });
+    }
+
+    // Students see all messages but will filter on client side
+    // (can't use compound where with status OR senderId in Firestore)
     const q = query(
       collection(db, COLLECTION.CHANNEL_MESSAGES),
       where("channelId", "==", channelId),
-      where("status", "==", "ACTIVE"),
       orderBy("createdAt", "asc"),
       limit(limitCount)
     );
@@ -323,7 +369,13 @@ export const channelMessageService = {
         ...doc.data(),
         id: doc.id,
       })) as ChannelMessage[];
-      callback(messages);
+
+      // Filter to show only ACTIVE messages or user's own messages
+      const filteredMessages = messages.filter(
+        (msg) => msg.status === "ACTIVE" || msg.senderId === currentUserId
+      );
+
+      callback(filteredMessages);
     });
   },
 };
