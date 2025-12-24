@@ -20,8 +20,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 async function bulkIssueCertificatesHandler(req: Request, res: Response) {
     try {
-        const user = (req as any).user;
-        if (!user || user.role !== USER_ROLE.ADMIN) {
+        if (!(req as any).user || (req as any).user.role !== USER_ROLE.ADMIN) {
             res.status(401).json({ error: "Unauthorized" });
             return;
         }
@@ -55,7 +54,9 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
         const now = admin.firestore.FieldValue.serverTimestamp();
 
         let issuedCount = 0;
+        const issuedCertificates: string[] = [];
         let skippedCount = 0;
+        const skippedEnrollments: string[] = [];
 
         const enrollmentChunks = chunk(enrollments, 450);
         const READ_CONCURRENCY = 15;
@@ -77,13 +78,40 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     })
                 );
 
-                for (const snap of progressSnaps) {
-                    if (!snap || snap.empty) continue;
+                for (let i = 0; i < progressSnaps.length; i++) {
+                    const snap = progressSnaps[i];
+                    const enrollment = readChunk[i];
+
+                    if (!snap || snap.empty) {
+                        const certificateId = crypto.randomUUID();
+                        batch.create(
+                            db.collection(COLLECTION.LEARNING_PROGRESS).doc(),
+                            {
+                                userId: enrollment.userId,
+                                courseId: enrollment.courseId,
+                                currentLessonId: null,
+                                lastAccessed: now,
+                                lessonHistory: {},
+                                certification: {
+                                    issued: true,
+                                    issuedAt: now,
+                                    certificateId,
+                                    remark,
+                                },
+                                completionDate: now,
+                                updatedAt: now,
+                            }
+                        );
+                        issuedCertificates.push(`${enrollment.userId}_${enrollment.courseId}`);
+                        issuedCount++;
+                        continue;
+                    }
 
                     const doc = snap.docs[0];
                     const data = doc.data();
 
                     if (data.certification?.issued === true) {
+                        skippedEnrollments.push(`${data.userId}_${data.courseId}`);
                         skippedCount++;
                         continue;
                     }
@@ -91,16 +119,14 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     const certificateId = crypto.randomUUID();
 
                     batch.update(doc.ref, {
-                        certification: {
-                            issued: true,
-                            issuedAt: now,
-                            certificateId,
-                            remark,
-                        },
+                        "certification.issued": true,
+                        "certification.issuedAt": now,
+                        "certification.certificateId": certificateId,
+                        "certification.remark": remark,
                         completionDate: data.completionDate ?? now,
                         updatedAt: now,
                     });
-
+                    issuedCertificates.push(`${data.userId}_${data.courseId}`);
                     issuedCount++;
                 }
             }
@@ -113,6 +139,8 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
             message: "Certificates issued successfully",
             issued: issuedCount,
             skipped: skippedCount,
+            issuedCertificates,
+            skippedEnrollments,
         });
         return;
     } catch (err: any) {
