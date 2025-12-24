@@ -1,22 +1,21 @@
+import { BANNER_STATUS, COLLECTION } from "@/constants";
+import { db } from "@/firebaseConfig";
+import { Banner, BannerFormData } from "@/types/banner";
+import { logError } from "@/utils/logger";
+import { fail, ok, Result } from "@/utils/response";
 import {
   collection,
+  deleteDoc,
   doc,
-  getDocs,
   getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
   setDoc,
   updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  serverTimestamp,
-  Timestamp,
+  where
 } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
-import { COLLECTION, BANNER_STATUS } from "@/constants";
-import { Banner, BannerFormData } from "@/types/banner";
-import { Result, ok, fail } from "@/utils/response";
-import { logError } from "@/utils/logger";
 
 class BannerService {
   /**
@@ -129,6 +128,37 @@ class BannerService {
   }
 
   /**
+ * Get active banners visible to all users
+ * Only returns banners where:
+ * 1. Status is ACTIVE
+ * 2. showToAllUsers is true
+ */
+  async getActiveGlobalBanners(): Promise<Result<Banner[]>> {
+    try {
+      const bannersRef = collection(db, COLLECTION.BANNERS);
+
+      const q = query(
+        bannersRef,
+        where("status", "==", BANNER_STATUS.ACTIVE),
+        where("showToAllUsers", "==", true),
+        orderBy("createdAt", "desc")
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      const banners = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Banner[];
+
+      return ok(banners);
+    } catch (error) {
+      logError("BannerService.getActiveGlobalBanners", error);
+      return fail("Failed to fetch global banners");
+    }
+  }
+
+  /**
    * Get active banners for a user based on their enrolled course IDs
    * Only returns banners where:
    * 1. Status is ACTIVE
@@ -161,13 +191,13 @@ class BannerService {
 
           // If banner has no specific course targeting, don't show it
           // Only show banners explicitly assigned to courses the user is enrolled in
-          if (!bannerData.courseIds || bannerData.courseIds.length === 0) {
+          if ((!bannerData.courseIds || bannerData.courseIds.length === 0) && !bannerData.showToAllUsers) {
             return false;
           }
 
           // Check if user is enrolled in at least one of the banner's target courses
           return bannerData.courseIds.some((courseId) =>
-            enrolledCourseIds.includes(courseId)
+            enrolledCourseIds.includes(courseId) || bannerData.showToAllUsers
           );
         }) as Banner[];
 

@@ -11,7 +11,7 @@ interface AdditionalTabProps {
   customCertificateName: string;
   setCustomCertificateName: (value: string) => void;
   onSave: () => Promise<void> | void;
-}
+};
 
 const AdditionalTab = ({
   isMailSendingEnabled,

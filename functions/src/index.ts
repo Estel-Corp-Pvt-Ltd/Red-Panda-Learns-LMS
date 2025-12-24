@@ -46,7 +46,12 @@ import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement"
 import { unpauseReminderForAssignments } from "./handlers/unpauseReminderForAssignments";
 import { showCertificatePreview } from "./handlers/showCertificatePreview";
 import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
-
+import {
+  getOrders,
+  getOrderById,
+  getOrderStats,
+  ordersHealthCheck,
+} from "./handlers/api/ordersApiHandlers";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -92,5 +97,9 @@ export {
   deleteAnnouncement,
   unpauseReminderForAssignments,
   showCertificatePreview,
-  bulkIssueCertificates
+  bulkIssueCertificates,
+  getOrders,
+  getOrderById,
+  getOrderStats,
+  ordersHealthCheck,
 };
