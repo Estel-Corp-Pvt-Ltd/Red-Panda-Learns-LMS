@@ -1,15 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { USER_ROLE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { courseService } from "@/services/courseService";
 import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { Download, Printer } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import QRCode from "react-qr-code";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ShareCertificate from "./ShareCertificate";
-import { courseService } from "@/services/courseService";
+
+// Dynamic import for QRCode
+const QRCode = lazy(() => import("react-qr-code"));
 
 const Certificate: React.FC = () => {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
@@ -18,7 +20,8 @@ const Certificate: React.FC = () => {
   const [enrollmentData, setEnrollmentData] = useState<Enrollment | null>(null);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
   const [certificateId, setCertificateId] = useState<string | null>(null);
-    const [certificateName, setCertificateName] = useState<string | null>(null);
+  const [certificateName, setCertificateName] = useState<string | null>(null);
+  
   // State for mobile scaling
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,10 +29,10 @@ const Certificate: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Load Fonts
+  // Load Fonts - Simplified to just Inter (Body) and Great Vibes (Handwritten Name)
   useEffect(() => {
     const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600;700&family=Merriweather:wght@300;400;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600;700&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
     return () => {
@@ -81,16 +84,12 @@ const Certificate: React.FC = () => {
             setCertificateId(completionResult.data.certificateId);
           }
 
-
-             try{
-              const certificateName = await courseService.getCetificateNamebyID(enrollment.courseId);
-              setCertificateName(certificateName);
-
-            }
-            catch(error){
-              console.error("Error fetching certificate name:", error);
-            }
-
+          try {
+            const certName = await courseService.getCetificateNamebyID(enrollment.courseId);
+            setCertificateName(certName);
+          } catch (error) {
+            console.error("Error fetching certificate name:", error);
+          }
         }
       } catch (error) {
         console.error("Error fetching certificate data:", error);
@@ -201,7 +200,7 @@ const Certificate: React.FC = () => {
         }}
       >
         {/* CERTIFICATE CONTAINER - Fixed Size 800x600px */}
-        <div className="certificate-container relative w-[800px] h-[600px] bg-white text-gray-900 shadow-2xl overflow-hidden mx-auto">
+        <div className="certificate-container relative w-[800px] h-[600px] bg-white text-gray-900 shadow-2xl overflow-hidden mx-auto font-sans">
           
           {/* Background Texture (Subtle) */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
@@ -213,13 +212,15 @@ const Certificate: React.FC = () => {
           {/* QR Code - Top Right */}
           <div className="absolute top-8 right-8 z-10">
              <div className="bg-white p-1">
-               <QRCode 
-                 value={qrUrl}
-                 size={64}
-                 fgColor="#000000"
-                 bgColor="#ffffff"
-                 level="M"
-               />
+               <Suspense fallback={<div className="w-[64px] h-[64px] bg-gray-100 animate-pulse" />}>
+                 <QRCode 
+                   value={qrUrl}
+                   size={64}
+                   fgColor="#000000"
+                   bgColor="#ffffff"
+                   level="M"
+                 />
+               </Suspense>
              </div>
           </div>
 
@@ -227,27 +228,22 @@ const Certificate: React.FC = () => {
             
             {/* LEFT SIDE: Ribbon */}
             <div className="relative w-[30%] h-full">
-              {/* Ribbon Graphic - Increased Size */}
+              {/* Ribbon Graphic */}
               <div 
                 className="absolute top-0 left-8 w-44 h-[380px] bg-slate-100 shadow-sm flex flex-col items-center pt-10 z-20"
                 style={{ clipPath: "polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)" }} 
               >
-                <span className="text-[10px] font-bold tracking-[0.2em] text-gray-400 text-center leading-relaxed font-sans mb-8">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-gray-400 text-center leading-relaxed mb-8">
                   VERIFIED<br />CERTIFICATE
                 </span>
 
-                {/* Vizuara Logo - Increased Size */}
-                <div className="w-32 h-32 mb-2 flex items-center justify-center">
+                {/* Vizuara Logo */}
+                <div className="w-36 h-36 mb-2 flex items-center justify-center">
                   <img 
-                    src="/certificate-logo.png" 
+                    src="/Vizuara_Logo_Design.png" 
                     alt="Vizuara AI Labs" 
                     className="w-full h-full object-contain drop-shadow-sm" 
                   />
-                </div>
-                
-                {/* Logo Text/Pill */}
-                <div className="mt-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full">
-                  <span className="text-[10px] font-bold text-purple-600 tracking-wider">VIZUARA AI LABS</span>
                 </div>
               </div>
             </div>
@@ -257,20 +253,20 @@ const Certificate: React.FC = () => {
               
               {/* Header Content */}
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 font-sans tracking-tight mb-8">
+                <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-8">
                   Vizuara AI Labs
                 </h2>
 
-                <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-4 font-sans">
+                <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-4">
                   CONGRATULATIONS ON COMPLETING
                 </p>
 
                 {/* Course Name - Main Title */}
-                <h1 className="text-[3.25rem] font-bold text-gray-900 leading-[1.1] mb-6 font-sans tracking-tight -ml-1">
-                {certificateName || enrollmentData.courseName}
+                <h1 className="text-[3.25rem] font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight -ml-1">
+                  {certificateName || enrollmentData.courseName}
                 </h1>
 
-                <p className="text-sm text-gray-600 font-medium max-w-md leading-relaxed font-sans">
+                <p className="text-sm text-gray-600 font-medium max-w-md leading-relaxed">
                   Successfully completed the course, assignments and received passing grade.
                 </p>
               </div>
@@ -283,7 +279,7 @@ const Certificate: React.FC = () => {
                   <div className="text-[2.5rem] text-gray-900 mb-2 leading-none pl-1" style={{ fontFamily: '"Great Vibes", cursive' }}>
                     {enrollmentData.userName}
                   </div>
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider font-sans mt-3">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-3">
                     Course completed on {completionDate || new Date().toLocaleDateString()}
                   </div>
                 </div>
@@ -293,7 +289,7 @@ const Certificate: React.FC = () => {
                   
                   {/* Signature 1 */}
                   <div className="flex flex-col items-end">
-                    <div className="text-[11px] font-serif font-bold text-gray-800 mb-1">
+                    <div className="text-[11px] font-bold text-gray-800 mb-1">
                       Dr. Raj Dandekar (MIT PhD)
                     </div>
                     <img src="/images/signatures/raj-dandekar-signature.png" alt="Signature" className="h-6 opacity-80" />
@@ -301,7 +297,7 @@ const Certificate: React.FC = () => {
 
                   {/* Signature 2 */}
                   <div className="flex flex-col items-end">
-                    <div className="text-[11px] font-serif font-bold text-gray-800 mb-1">
+                    <div className="text-[11px] font-bold text-gray-800 mb-1">
                       Dr. Rajat Dandekar (Purdue PhD)
                     </div>
                     <img src="/images/signatures/rajat-dandekar-signature.png" alt="Signature" className="h-6 opacity-80" />
@@ -309,7 +305,7 @@ const Certificate: React.FC = () => {
 
                   {/* Signature 3 */}
                   <div className="flex flex-col items-end">
-                    <div className="text-[11px] font-serif font-bold text-gray-800 mb-1">
+                    <div className="text-[11px] font-bold text-gray-800 mb-1">
                       Dr. Sreedath Panat (MIT PhD)
                     </div>
                     <img src="/images/signatures/sreedath-panat-signature.png" alt="Signature" className="h-5 opacity-80" />
