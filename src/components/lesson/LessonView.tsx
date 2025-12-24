@@ -19,24 +19,65 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
+import { learningProgressService } from "@/services/learningProgressService";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface LessonViewProps {
   lessonId: string;
+  courseName: string;
   onComplete: () => void;
   completed: boolean;
 }
 
-export function LessonView({
-  lessonId,
-  onComplete,
-  completed,
-}: LessonViewProps) {
+interface TimeTrackingState {
+  startTime: number | null;
+  totalTimeSpent: number;
+  lastReportTime: number | null;
+  isReporting: boolean;
+  isActiveSession: boolean;
+}
+
+export function LessonView({ lessonId, courseName, onComplete, completed }: LessonViewProps) {
+  const { user } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
+
+  // Time tracking state
+  const timeTrackingRef = useRef<TimeTrackingState>({
+    startTime: null,
+    totalTimeSpent: 0,
+    lastReportTime: null,
+    isReporting: false,
+    isActiveSession: true
+  });
+
+  // Inactivity monitoring
+  const lastInteractionTimeRef = useRef<number>(Date.now());
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showInactivityPrompt, setShowInactivityPrompt] = useState(false);
+  const isTabActiveRef = useRef<boolean>(true);
+  const isWindowVisibleRef = useRef<boolean>(true);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Constants
+  const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+  const HEARTBEAT_INTERVAL = 60 * 1000; // Report time every 60 seconds
+  const MIN_REPORT_TIME = 5; // Minimum 5 seconds to report
+  const DEBOUNCE_INTERACTION = 500; // Debounce interactions to 500ms
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -48,15 +89,283 @@ export function LessonView({
     return () => document.removeEventListener("fullscreenchange", handleChange);
   }, []);
 
+  // Enhanced time reporting with proper session management
+  const reportTimeSpent = useCallback(async (forceReport: boolean = false, isSessionEnd: boolean = false) => {
+    const state = timeTrackingRef.current;
+
+    if (!state.startTime || !lessonId || !lesson || state.isReporting) {
+      return 0;
+    }
+
+    // If session is not active, don't report (wait for next active session)
+    if (!state.isActiveSession && !forceReport) {
+      return 0;
+    }
+
+    const now = Date.now();
+    const sessionTime = state.lastReportTime
+      ? Math.floor((now - state.lastReportTime) / 1000)
+      : Math.floor((now - state.startTime) / 1000);
+
+    // Only count time if session is active
+    const activeSessionTime = state.isActiveSession ? sessionTime : 0;
+    const totalTimeToReport = state.totalTimeSpent + activeSessionTime;
+
+    // Only report if enough time has passed or we're forcing a report
+    if (!forceReport && totalTimeToReport < MIN_REPORT_TIME) {
+      // Accumulate time for later reporting
+      if (state.isActiveSession) {
+        state.totalTimeSpent += activeSessionTime;
+        state.lastReportTime = now;
+      }
+      return 0;
+    }
+
+    if (totalTimeToReport < 1 && !forceReport) {
+      return 0;
+    }
+
+    state.isReporting = true;
+
+    try {
+      const courseId = lesson.courseId;
+      await learningProgressService.timeSpentOnLesson(courseId, lessonId, totalTimeToReport);
+
+      // Reset accumulated time
+      state.totalTimeSpent = 0;
+      state.lastReportTime = now;
+
+      return totalTimeToReport;
+    } catch (error) {
+      logError("reportTimeSpent", error);
+      // On error, keep the time to report later
+      if (state.isActiveSession) {
+        state.totalTimeSpent = totalTimeToReport;
+      }
+      return 0;
+    } finally {
+      state.isReporting = false;
+    }
+  }, [lessonId, lesson, user]);
+
+  // Heartbeat reporting - only when session is active
   useEffect(() => {
-    const fetchLesson = async () => {
+    const startHeartbeat = () => {
+      clearHeartbeat();
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (timeTrackingRef.current.isActiveSession) {
+          reportTimeSpent();
+        }
+      }, HEARTBEAT_INTERVAL);
+    };
+
+    const clearHeartbeat = () => {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
+      }
+    };
+
+    if (lesson && user) {
+      startHeartbeat();
+    }
+
+    return () => {
+      clearHeartbeat();
+    };
+  }, [lesson, user, reportTimeSpent]);
+
+  // Visibility and focus handlers - FIXED
+  useEffect(() => {
+    let isMounted = true;
+
+    const handleVisibilityChange = () => {
+      if (!isMounted) return;
+
+      const isVisible = !document.hidden;
+      isTabActiveRef.current = isVisible;
+
+      if (isVisible) {
+        // Tab became active - resume session
+        timeTrackingRef.current.isActiveSession = true;
+        lastInteractionTimeRef.current = Date.now();
+        timeTrackingRef.current.lastReportTime = Date.now();
+        resetInactivityTimer();
+      } else {
+        // Tab became inactive - pause session and report time
+        timeTrackingRef.current.isActiveSession = false;
+        reportTimeSpent(true, false);
+        clearInactivityTimer();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      if (!isMounted) return;
+
+      isWindowVisibleRef.current = true;
+      timeTrackingRef.current.isActiveSession = true;
+      lastInteractionTimeRef.current = Date.now();
+      resetInactivityTimer();
+    };
+
+    const handleWindowBlur = () => {
+      if (!isMounted) return;
+
+      isWindowVisibleRef.current = false;
+      // Only pause if tab is also inactive
+      if (!isTabActiveRef.current) {
+        timeTrackingRef.current.isActiveSession = false;
+        reportTimeSpent(true, false);
+      }
+      clearInactivityTimer();
+    };
+
+    const handlePageUnload = () => {
+      // Force report on page unload with session end flag
+      reportTimeSpent(true, true);
+    };
+
+    // Interaction handler with debouncing - FIXED
+    let interactionDebounceTimer: NodeJS.Timeout | null = null;
+    const handleUserInteraction = () => {
+      if (!isMounted) return;
+
+      // Clear any existing debounce timer
+      if (interactionDebounceTimer) {
+        clearTimeout(interactionDebounceTimer);
+      }
+
+      // Set new debounce timer
+      interactionDebounceTimer = setTimeout(() => {
+        lastInteractionTimeRef.current = Date.now();
+        resetInactivityTimer();
+
+        // Ensure session is active on interaction
+        timeTrackingRef.current.isActiveSession = true;
+
+        interactionDebounceTimer = null;
+      }, DEBOUNCE_INTERACTION);
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('pagehide', handlePageUnload);
+    window.addEventListener('beforeunload', handlePageUnload);
+
+    // Add interaction listeners
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click', 'wheel'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserInteraction, { passive: true });
+    });
+
+    // Initialize time tracking
+    if (!timeTrackingRef.current.startTime) {
+      timeTrackingRef.current.startTime = Date.now();
+      timeTrackingRef.current.lastReportTime = Date.now();
+      timeTrackingRef.current.isActiveSession = true;
+    }
+
+    return () => {
+      isMounted = false;
+
+      // Clean up timers
+      if (interactionDebounceTimer) {
+        clearTimeout(interactionDebounceTimer);
+      }
+      clearInactivityTimer();
+      clearHeartbeat();
+
+      // Clean up event listeners
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('pagehide', handlePageUnload);
+      window.removeEventListener('beforeunload', handlePageUnload);
+
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+
+      // Final report on unmount
+      reportTimeSpent(true, true);
+    };
+  }, [reportTimeSpent]);
+
+  // Inactivity timer management - FIXED
+  const clearInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+  };
+
+  const clearHeartbeat = () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
+  const resetInactivityTimer = () => {
+    clearInactivityTimer();
+
+    if (isTabActiveRef.current && isWindowVisibleRef.current && timeTrackingRef.current.isActiveSession) {
+      inactivityTimerRef.current = setTimeout(() => {
+        // Check inactivity
+        const currentTime = Date.now();
+        const timeSinceLastInteraction = currentTime - lastInteractionTimeRef.current;
+
+        if (timeSinceLastInteraction >= INACTIVITY_TIMEOUT) {
+          setShowInactivityPrompt(true);
+          // Pause session when showing inactivity prompt
+          timeTrackingRef.current.isActiveSession = false;
+          reportTimeSpent(true, false);
+        }
+      }, INACTIVITY_TIMEOUT);
+    }
+  };
+
+  const handleInactivityPromptClose = () => {
+    setShowInactivityPrompt(false);
+    lastInteractionTimeRef.current = Date.now();
+    // Resume session when user acknowledges prompt
+    timeTrackingRef.current.isActiveSession = true;
+    timeTrackingRef.current.lastReportTime = Date.now();
+    resetInactivityTimer();
+  };
+
+  // Fetch lesson data
+  useEffect(() => {
+    const fetchLessonData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const lessonData = await lessonService.getLessonById(lessonId);
+
+        const [lessonData, attachmentsData] = await Promise.all([
+          lessonService.getLessonById(lessonId),
+          lessonService.getAttachmentsByLessonId(lessonId)
+        ]);
+
         setLesson(lessonData);
+        setAttachments(attachmentsData);
+
+        // Reset time tracking for new lesson
+        timeTrackingRef.current = {
+          startTime: Date.now(),
+          totalTimeSpent: 0,
+          lastReportTime: Date.now(),
+          isReporting: false,
+          isActiveSession: true
+        };
+
+        // Start inactivity timer
+        lastInteractionTimeRef.current = Date.now();
+        resetInactivityTimer();
+
       } catch (error) {
-        logError("fetchLesson", error);
+        logError("fetchLessonData", error);
         setError("Failed to load lesson. Please try again.");
         toast({
           title: "Error",
@@ -81,9 +390,14 @@ export function LessonView({
     };
 
     if (lessonId) {
-      fetchLesson();
-      fetchLessonAttachments();
+      fetchLessonData();
     }
+
+    // Cleanup on lesson change
+    return () => {
+      reportTimeSpent(true, true);
+      clearInactivityTimer();
+    };
   }, [lessonId]);
 
   const toggleFullscreen = useCallback(async () => {
@@ -91,20 +405,14 @@ export function LessonView({
 
     try {
       if (!document.fullscreenElement) {
-        // Enter fullscreen
-        if (containerRef.current.requestFullscreen) {
-          await containerRef.current.requestFullscreen();
-        }
+        await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
       } else {
-        // Exit fullscreen
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        }
+        await document.exitFullscreen();
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.error("Fullscreen error:", error);
+      logError('Fullscreen error:', error);
     }
   }, []);
 
@@ -146,7 +454,6 @@ export function LessonView({
   const hasVideo = lesson.type === LESSON_TYPE.VIDEO_LECTURE;
 
   const extractIframeSrc = (html: string): string | null => {
-    // Very simple regex to grab src="...".
     const match = html.match(/src="([^"]+)"/);
     return match ? match[1] : null;
   };
@@ -185,10 +492,8 @@ export function LessonView({
         );
 
       case LESSON_TYPE.INTERACTIVE_PROJECT: {
-        // Try to treat embedUrl as HTML that contains an <iframe>
         const srcFromHtml = extractIframeSrc(lesson.embedUrl);
         if (srcFromHtml) {
-          // We control sizing here, ignoring width/height in the original HTML
           return (
             <div
               className={
@@ -199,9 +504,6 @@ export function LessonView({
             >
               <iframe
                 src={srcFromHtml}
-                // -----------------------------------------------------
-                // FIX 1: Added allow attribute for Camera/Microphone
-                // -----------------------------------------------------
                 allow="camera; microphone; accelerometer; gyroscope; magnetometer"
                 className="w-full h-full block"
                 style={{ border: 0 }}
@@ -211,7 +513,6 @@ export function LessonView({
           );
         }
 
-        // Fallback: if we couldn't parse src, just render raw HTML
         return (
           <div
             className={
@@ -247,9 +548,6 @@ export function LessonView({
     }
   };
 
-  // Helper to determine if details should be hidden.
-  // Currently hides details for ANY fullscreen mode to ensure best experience,
-  // but satisfies your request specifically for Interactive Projects.
   const shouldHideDetails = isFullscreen;
 
   return (
@@ -264,9 +562,8 @@ export function LessonView({
     >
       {/* Header */}
       <div
-        className={`flex items-start justify-between gap-4 w-full ${
-          isFullscreen ? "p-4 border-b shrink-0" : ""
-        }`}
+        className={`flex items-start justify-between gap-4 w-full ${isFullscreen ? "p-4 border-b shrink-0" : ""
+          }`}
       >
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -316,13 +613,18 @@ export function LessonView({
          - overflow-hidden prevents double scrollbars if the iframe has its own scroll.
       */}
       <div
-        className={`w-full ${
-          isFullscreen ? "flex-1 h-full overflow-hidden" : ""
-        }`}
+        className={`w-full ${isFullscreen ? "flex-1 h-full overflow-hidden" : ""
+          }`}
       >
         {getLessonContent()}
       </div>
 
+      {/* 
+        -----------------------------------------------------
+        FIX 2: Only render Progress and Attachments if NOT in fullscreen.
+        This ensures the interactive project takes the whole space.
+        -----------------------------------------------------
+      */}
       {/* 
         -----------------------------------------------------
         FIX 2: Only render Progress and Attachments if NOT in fullscreen.
@@ -431,9 +733,28 @@ export function LessonView({
               </CardContent>
             </Card>
           </div>
-          <Comments lessonId={lesson.id} courseId={lesson.courseId} />
+          <Comments lessonId={lesson.id} courseId={lesson.courseId} lessonName={lesson.title} courseName={courseName} />
         </>
       )}
+      <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you still there?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It looks like you haven't interacted with the lesson for 1 minute.
+              Your learning progress has been saved. Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleInactivityPromptClose}>
+              Continue Learning
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleInactivityPromptClose}>
+              Yes, I'm Back
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-}
+};

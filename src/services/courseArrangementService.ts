@@ -1,6 +1,6 @@
 import { COLLECTION } from '@/constants';
 import { db } from '@/firebaseConfig';
-import { CourseArrangement, CoursePageHeading } from '@/types/courseArrangement';
+import { CourseArrangement, CoursePageHeading } from '@/types/course-arrangement';
 import { fail, ok, Result } from '@/utils/response';
 import {
   collection,

@@ -14,7 +14,7 @@ export interface Banner {
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
   createdBy: string | null;
-}
+};
 
 export interface BannerFormData {
   title: string;
@@ -25,4 +25,4 @@ export interface BannerFormData {
   gradientColors: string[];
   courseIds: string[];
   status: BannerStatus;
-}
+};

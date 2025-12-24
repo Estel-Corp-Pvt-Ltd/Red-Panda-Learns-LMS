@@ -13,8 +13,6 @@ export interface Enrollment {
     enrollmentDate: Timestamp | FieldValue;
     status: EnrollmentStatus;
     orderId: string;
-
     createdAt: Timestamp | FieldValue;
     updatedAt: Timestamp | FieldValue;
 };
-

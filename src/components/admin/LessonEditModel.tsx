@@ -24,7 +24,7 @@ import { logError } from "@/utils/logger";
 import { serverTimestamp } from "firebase/firestore";
 import { FileText, Upload, Download, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import MarkdownEditor from "../MarkdownEditor";
+import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
 
 interface EditLessonModalProps {
   courseId: string;

@@ -1,4 +1,4 @@
-import { ATTACHMENT_TYPE, LEARNING_CONTENT, LESSON_TYPE, VIDEO_SOURCE } from "@/constants";
+import { ATTACHMENT_TYPE, LEARNING_CONTENT, LESSON_TYPE } from "@/constants";
 import { FieldValue, Timestamp } from "firebase/firestore";
 import { Duration } from "./general";
 

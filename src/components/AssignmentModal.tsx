@@ -16,7 +16,7 @@ import { logError } from '@/utils/logger';
 import { Assignment } from '@/types/assignment';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import MarkdownEditor from './MarkdownEditor';
+import MarkdownEditor from './markdownEditor/MarkdownEditorComponent';
 
 export interface AssignmentFormData {
   title: string;

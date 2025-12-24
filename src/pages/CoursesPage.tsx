@@ -27,7 +27,7 @@ import { usePublishedBundlesQuery } from "@/hooks/useBundleApi";
 import { useCoursesQuery } from "@/hooks/useCaching";
 import { cn } from "@/lib/utils";
 import { courseArrangementService } from "@/services/courseArrangementService";
-import { CoursePageHeading } from "@/types/courseArrangement";
+import { CoursePageHeading } from "@/types/course-arrangement";
 import { useNavigate } from "react-router-dom";
 
 interface ArrangedContent {

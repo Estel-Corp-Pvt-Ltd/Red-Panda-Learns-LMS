@@ -16,6 +16,7 @@ import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useNavigate } from "react-router-dom";
 import { learningProgressService } from "@/services/learningProgressService";
 import { LearningProgress } from "@/types/learning-progress";
+import { serverTimestamp } from "firebase/firestore";
 
 export default function LessonDetailPage() {
   const { param, lessonId } = useParams<{
@@ -144,25 +145,20 @@ export default function LessonDetailPage() {
       setLessonCompleted(false);
       return;
     }
-
+    const lessonHistory = userProgress.lessonHistory;
     setLessonCompleted(
-      userProgress.lessonHistory.includes(selectedItem.id)
+      Array.isArray(lessonHistory) ? lessonHistory.includes(selectedItem.id) : !!lessonHistory[selectedItem.id]
     );
   }, [selectedItem?.id, userProgress?.lessonHistory]);
 
   const handleMarkComplete = async () => {
     if (!user || !courseId || !selectedItem) return;
 
-    const result = await learningProgressService.completeLesson(
-      user.id,
-      courseId,
-      selectedItem.id
-    );
-
+    const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type);
     if (result.success) {
       setUserProgress(prev =>
         prev
-          ? { ...prev, lessonHistory: [...prev.lessonHistory, selectedItem.id] }
+          ? { ...prev, lessonHistory: { ...prev.lessonHistory, [selectedItem.id]: { timeSpent: 0, markedAsComplete: true, completedAt: serverTimestamp() } } }
           : prev
       );
 
@@ -317,6 +313,7 @@ export default function LessonDetailPage() {
           ) : (
             <LessonView
               lessonId={selectedItem.id}
+              courseName={course.title}
               onComplete={handleMarkComplete}
               completed={lessonCompleted}
             />
