@@ -156,7 +156,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/courses/:courseId/forum"
+                        path="/courses/:courseSlug/forum"
                         element={
                           <AuthGuard
                             requireAuth

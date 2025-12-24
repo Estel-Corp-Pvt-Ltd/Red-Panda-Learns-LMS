@@ -15,12 +15,14 @@ import { USER_ROLE } from '@/constants';
 import { Header } from '@/components/Header';
 import { fileService } from '@/services/fileService';
 import { MessageContent } from '@/components/MessageContent';
+import { useCourseQuery } from '@/hooks/useCaching';
 
 const Forum: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { courseSlug } = useParams<{ courseSlug: string }>();
+  const { data: course, isLoading } = useCourseQuery(courseSlug || '');
+  const courseId = course?.id || '';
   const { user } = useAuth();
   const { toast } = useToast();
-
   const [channels, setChannels] = useState<ForumChannel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<ForumChannel | null>(null);
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
@@ -395,7 +397,7 @@ const Forum: React.FC = () => {
       .slice(0, 2);
   };
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -811,7 +811,7 @@ const AdminCourses = () => {
                           </Button>
                           {course.isForumEnabled && (
                             <Link
-                              to={`/courses/${course.id}/forum`}
+                              to={`/courses/${course.slug}/forum`}
                               title="View Forum"
                               className="text-primary hover:bg-secondary"
                             >

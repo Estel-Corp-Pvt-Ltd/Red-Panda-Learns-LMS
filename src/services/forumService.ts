@@ -186,6 +186,7 @@ export const channelMessageService = {
         isEdited: false,
         upvoteCount: 0,
         replyCount: 0,
+        replyTo: messageData.replyTo || null,
         status: shouldAutoHide ? "HIDDEN" : messageData.status,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),

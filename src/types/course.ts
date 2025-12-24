@@ -51,8 +51,8 @@ export interface Course {
   certificateTemplateId?: string;
   topics: Topic[];
   isEnrollmentPaused: boolean;
-  isMailSendingEnabled:boolean;
-  isCertificateEnabled:boolean;
+  isMailSendingEnabled: boolean;
+  isCertificateEnabled: boolean;
   isForumEnabled: boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;

@@ -152,7 +152,7 @@ function EnrolledCourseCard({
               </div>
               <div className="flex gap-3">
                 {course?.isForumEnabled && (
-                  <Link to={`/courses/${course.id}/forum`}>
+                  <Link to={`/courses/${course.slug}/forum`}>
                     <Button size="sm" variant="outline">
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Forum
