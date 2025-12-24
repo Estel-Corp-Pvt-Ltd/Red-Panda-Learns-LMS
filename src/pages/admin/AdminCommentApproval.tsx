@@ -5,12 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { commentService } from '@/services/commentService';
+import { courseService } from '@/services/courseService';
+import { lessonService } from '@/services/lessonService';
 import { Comment } from '@/types/comment';
+import { Course } from '@/types/course';
+import { Lesson } from '@/types/lesson';
 import { formatDate } from '@/utils/date-time';
 import { WhereFilterOp } from 'firebase/firestore';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const AdminCommentApproval: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -19,6 +27,51 @@ const AdminCommentApproval: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<'pending' | 'approved' | 'deleted'>('pending');
   const [selectedComments, setSelectedComments] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Course and Lesson filters
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
+  const [courseFilter, setCourseFilter] = useState('all');
+  const [lessonFilter, setLessonFilter] = useState('all');
+  const [courseOpen, setCourseOpen] = useState(false);
+  const [lessonOpen, setLessonOpen] = useState(false);
+
+  // Load courses and lessons on mount
+  useEffect(() => {
+    const loadDropdownData = async () => {
+      try {
+        const coursesData = await courseService.getAllCourses();
+        setCourses(coursesData);
+
+        const lessonsData = await lessonService.getAllLessons();
+        setAllLessons(lessonsData);
+        setLessons(lessonsData);
+      } catch (error) {
+        console.error('Error loading dropdown data:', error);
+      }
+    };
+
+    loadDropdownData();
+  }, []);
+
+  // Filter lessons based on selected course
+  useEffect(() => {
+    if (courseFilter === 'all') {
+      setLessons(allLessons);
+    } else {
+      const filteredLessons = allLessons.filter(
+        (lesson) => lesson.courseId === courseFilter
+      );
+      setLessons(filteredLessons);
+
+      // Reset lesson filter if current selection is not in filtered list
+      if (lessonFilter !== 'all' &&
+        !filteredLessons.some(l => l.id === lessonFilter)) {
+        setLessonFilter('all');
+      }
+    }
+  }, [courseFilter, allLessons, lessonFilter]);
 
   // Load comments
   const loadComments = useCallback(async () => {
@@ -35,6 +88,16 @@ const AdminCommentApproval: React.FC = () => {
           { field: 'status', op: '==', value: selectedTab.toUpperCase() as Comment['status'] }
         ];
 
+      // Add course filter
+      if (courseFilter !== 'all') {
+        filters.push({ field: 'courseId', op: '==', value: courseFilter });
+      }
+
+      // Add lesson filter
+      if (lessonFilter !== 'all') {
+        filters.push({ field: 'lessonId', op: '==', value: lessonFilter });
+      }
+
       const result = await commentService.getComments(filters, {
         limit: 50,
         orderBy: { field: 'createdAt', direction: 'desc' }
@@ -50,7 +113,7 @@ const AdminCommentApproval: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedTab]);
+  }, [selectedTab, courseFilter, lessonFilter]);
 
   useEffect(() => {
     loadComments();
@@ -252,16 +315,159 @@ const AdminCommentApproval: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Search and Bulk Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between">
-              <div className="flex-1">
+            {/* Filters Row */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Course Combobox */}
+              <Popover open={courseOpen} onOpenChange={setCourseOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={courseOpen}
+                    className="w-full sm:w-[250px] justify-between"
+                  >
+                    <span className="truncate">
+                      {courseFilter === 'all'
+                        ? 'All Courses'
+                        : courses.find((c) => c.id === courseFilter)?.title || 'Select course'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full sm:w-[250px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search courses..." />
+                    <CommandList>
+                      <CommandEmpty>No courses found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setCourseFilter('all');
+                            setCourseOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              courseFilter === 'all' ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          All Courses
+                        </CommandItem>
+                        {courses.map((course) => (
+                          <CommandItem
+                            key={course.id}
+                            value={course.id}
+                            onSelect={(currentValue) => {
+                              setCourseFilter(currentValue);
+                              setCourseOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                courseFilter === course.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            {course.title}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Lesson Combobox */}
+              <Popover open={lessonOpen} onOpenChange={setLessonOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={lessonOpen}
+                    className="w-full sm:w-[250px] justify-between"
+                    disabled={lessons.length === 0}
+                  >
+                    <span className="truncate">
+                      {lessonFilter === 'all'
+                        ? 'All Lessons'
+                        : lessons.find((l) => l.id === lessonFilter)?.title || 'Select lesson'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full sm:w-[250px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search lessons..." />
+                    <CommandList>
+                      <CommandEmpty>No lessons found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setLessonFilter('all');
+                            setLessonOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              lessonFilter === 'all' ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          All Lessons
+                        </CommandItem>
+                        {lessons.map((lesson) => (
+                          <CommandItem
+                            key={lesson.id}
+                            value={lesson.id}
+                            onSelect={(currentValue) => {
+                              setLessonFilter(currentValue);
+                              setLessonOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                lessonFilter === lesson.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            {lesson.title}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search comments..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
+                  className="pl-9 w-full"
                 />
               </div>
+
+              {/* Clear Filters */}
+              {(courseFilter !== 'all' || lessonFilter !== 'all' || searchTerm) && (
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setCourseFilter('all');
+                  setLessonFilter('all');
+                  setSearchTerm('');
+                }}>
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+
+            {/* Bulk Actions */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between">
+              <div className="flex-1" />
 
               {selectedComments.size > 0 && (
                 <div className="flex gap-2">
@@ -293,6 +499,8 @@ const AdminCommentApproval: React.FC = () => {
                       />
                     </TableHead>
                     <TableHead>User</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Lesson</TableHead>
                     <TableHead>Comment</TableHead>
                     <TableHead className="w-32">Date</TableHead>
                     <TableHead className="w-24">Actions</TableHead>
@@ -313,6 +521,16 @@ const AdminCommentApproval: React.FC = () => {
                           <div className="text-sm text-muted-foreground">
                             {comment.upvoteCount} upvotes • {comment.countReplies} replies
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          <p className="text-sm truncate">{comment?.courseName}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          <p className="text-sm truncate">{comment?.lessonName}</p>
                         </div>
                       </TableCell>
                       <TableCell>

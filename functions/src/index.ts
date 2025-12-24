@@ -48,6 +48,13 @@ import { showCertificatePreview } from "./handlers/showCertificatePreview";
 import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
 import { getCourseTimeSpent } from "./handlers/analytics/getCourseTimeSpent";
 
+import {
+  getOrders,
+  getOrderById,
+  getOrderStats,
+  ordersHealthCheck,
+} from "./handlers/api/ordersApiHandlers";
+
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -95,4 +102,8 @@ export {
   showCertificatePreview,
   bulkIssueCertificates,
   getCourseTimeSpent,
+  getOrders,
+  getOrderById,
+  getOrderStats,
+  ordersHealthCheck,
 };

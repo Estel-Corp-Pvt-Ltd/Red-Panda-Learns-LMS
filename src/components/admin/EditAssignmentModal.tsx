@@ -9,7 +9,7 @@ import { logError } from "@/utils/logger";
 import { timestampToLocalInput } from "@/utils/date-time";
 import { Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import MarkdownEditor from "../MarkdownEditor";
+import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
 /* ------------------------------------------------------------------ */
 
 interface EditAssignmentModalProps {
