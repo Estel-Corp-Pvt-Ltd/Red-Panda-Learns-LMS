@@ -83,8 +83,27 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     const enrollment = readChunk[i];
 
                     if (!snap || snap.empty) {
-                        skippedEnrollments.push(`${enrollment.userId}_${enrollment.courseId}`);
-                        skippedCount++;
+                        const certificateId = crypto.randomUUID();
+                        batch.create(
+                            db.collection(COLLECTION.LEARNING_PROGRESS).doc(),
+                            {
+                                userId: enrollment.userId,
+                                courseId: enrollment.courseId,
+                                currentLessonId: null,
+                                lastAccessed: now,
+                                lessonHistory: {},
+                                certification: {
+                                    issued: true,
+                                    issuedAt: now,
+                                    certificateId,
+                                    remark,
+                                },
+                                completionDate: now,
+                                updatedAt: now,
+                            }
+                        );
+                        issuedCertificates.push(`${enrollment.userId}_${enrollment.courseId}`);
+                        issuedCount++;
                         continue;
                     }
 
@@ -100,12 +119,10 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     const certificateId = crypto.randomUUID();
 
                     batch.update(doc.ref, {
-                        certification: {
-                            issued: true,
-                            issuedAt: now,
-                            certificateId,
-                            remark,
-                        },
+                        "certification.issued": true,
+                        "certification.issuedAt": now,
+                        "certification.certificateId": certificateId,
+                        "certification.remark": remark,
                         completionDate: data.completionDate ?? now,
                         updatedAt: now,
                     });
