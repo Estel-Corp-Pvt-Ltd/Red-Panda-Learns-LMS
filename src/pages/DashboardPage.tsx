@@ -151,17 +151,18 @@ function EnrolledCourseCard({
                 </Badge>
               </div>
               <div className="flex gap-3">
+                {course?.isForumEnabled && (
+                  <Link to={`/courses/${course.id}/forum`}>
+                    <Button size="sm" variant="outline">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Forum
+                    </Button>
+                  </Link>
+                )}
                 <Button size="sm" onClick={handleContinueLearning}>
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Continue
                 </Button>
-
-                <Link to={`/courses/${course.id}/forum`}>
-                  <Button size="sm" variant="outline">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Forum
-                  </Button>
-                </Link>
 
                 {/* Only show certificate-related features if enabled */}
                 {showCertificateFeatures && (

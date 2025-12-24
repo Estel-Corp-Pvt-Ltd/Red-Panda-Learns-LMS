@@ -53,6 +53,7 @@ export interface Course {
   isEnrollmentPaused: boolean;
   isMailSendingEnabled:boolean;
   isCertificateEnabled:boolean;
+  isForumEnabled: boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

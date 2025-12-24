@@ -90,6 +90,7 @@ class CourseService {
       | "url"
       | "isMailSendingEnabled"
       | "isCertificateEnabled"
+      | "isForumEnabled"
     >
   ): Promise<string> {
     try {
@@ -112,6 +113,9 @@ class CourseService {
         topics: [],
         duration: { hours: 0, minutes: 0 },
         isEnrollmentPaused: true,
+        isMailSendingEnabled: false,
+        isCertificateEnabled: false,
+        isForumEnabled: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -191,6 +195,8 @@ class CourseService {
         updateData.isMailSendingEnabled = updates.isMailSendingEnabled;
       if (updates.isCertificateEnabled !== undefined)
         updateData.isCertificateEnabled = updates.isCertificateEnabled;
+      if (updates.isForumEnabled !== undefined)
+        updateData.isForumEnabled = updates.isForumEnabled;
       if (updates.certificateTemplateId)
         updateData.certificateTemplateId = updates.certificateTemplateId;
       if (updates.duration !== undefined) {
@@ -386,6 +392,7 @@ class CourseService {
           topics: data.topics || [],
           isEnrollmentPaused: data.isEnrollmentPaused || false,
           isCertificateEnabled: data.isCertificateEnabled || false,
+          isForumEnabled: data.isForumEnabled || false,
           isMailSendingEnabled: data.isMailSendingEnabled || false,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
           updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,

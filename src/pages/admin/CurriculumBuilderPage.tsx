@@ -74,6 +74,7 @@ const CurriculumBuilderPage = () => {
   const [copied, setCopied] = useState(false);
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
+  const [isForumEnabled, setIsForumEnabled] = useState(false);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -163,6 +164,7 @@ const CurriculumBuilderPage = () => {
         // ADD THIS LINE:
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
+        setIsForumEnabled(data.isForumEnabled ?? false);
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -275,6 +277,7 @@ const CurriculumBuilderPage = () => {
       await courseService.updateCourse(courseId, {
         isMailSendingEnabled,
         isCertificateEnabled,
+        isForumEnabled,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
     } catch (err) {
@@ -421,6 +424,8 @@ const CurriculumBuilderPage = () => {
 
           <TabsContent value="additional">
             <AdditionalTab
+              isForumEnabled={isForumEnabled}
+              setIsForumEnabled={setIsForumEnabled}
               isMailSendingEnabled={isMailSendingEnabled}
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}

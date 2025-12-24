@@ -19,6 +19,8 @@ interface AdditionalTabProps {
   setIsMailSendingEnabled: (value: boolean) => void;
   isCertificateEnabled?: boolean;
   setIsCertificateEnabled?: (value: boolean) => void;
+  isForumEnabled: boolean;
+  setIsForumEnabled: (value: boolean) => void;
   courseId?: string;
   onSave: () => Promise<void> | void;
 }
@@ -28,6 +30,8 @@ const AdditionalTab = ({
   setIsMailSendingEnabled,
   isCertificateEnabled,
   setIsCertificateEnabled,
+  isForumEnabled,
+  setIsForumEnabled,
   courseId,
   onSave,
 }: AdditionalTabProps) => {
@@ -253,6 +257,27 @@ const AdditionalTab = ({
           />
         </div>
 
+        {/* Forum Toggle */}
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label htmlFor="enable-forum" className="text-base font-medium">
+              Enable Forum
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              When enabled, students will have access to forum channels for discussions.
+              <br />
+              You can create and manage multiple channels below once the forum is enabled.
+            </p>
+          </div>
+
+          <Switch
+            id="enable-forum"
+            checked={isForumEnabled}
+            onCheckedChange={(checked) => setIsForumEnabled?.(checked)}
+            className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+          />
+        </div>
+
         {/* Save Button */}
         <div className="flex justify-end">
           <Button onClick={onSave}>Save Settings</Button>
@@ -260,110 +285,112 @@ const AdditionalTab = ({
       </div>
 
       {/* Forum Channels Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Forum Channels</CardTitle>
-              <CardDescription>
-                {channels.length} channel{channels.length !== 1 ? 's' : ''} configured
-              </CardDescription>
-            </div>
-            <Button onClick={() => handleOpenModal()} size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Channel
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loadingChannels ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : channels.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Hash className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No channels created yet</p>
-              <Button onClick={() => handleOpenModal()} variant="outline" className="mt-4 gap-2">
+      {isForumEnabled && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Forum Channels</CardTitle>
+                <CardDescription>
+                  {channels.length} channel{channels.length !== 1 ? 's' : ''} configured
+                </CardDescription>
+              </div>
+              <Button onClick={() => handleOpenModal()} size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
-                Create First Channel
+                Create Channel
               </Button>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Order</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-32">Status</TableHead>
-                  <TableHead className="w-40 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {channels.map((channel) => (
-                  <TableRow key={channel.id}>
-                    <TableCell>
-                      <Badge variant="outline">{channel.order}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Hash className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{channel.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {channel.description || '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
-                          {channel.isArchived ? 'Archived' : 'Active'}
-                        </Badge>
-                        {channel.isModerated && (
-                          <Badge variant="outline" className="text-xs">
-                            Moderated
+          </CardHeader>
+          <CardContent>
+            {loadingChannels ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : channels.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Hash className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No channels created yet</p>
+                <Button onClick={() => handleOpenModal()} variant="outline" className="mt-4 gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create First Channel
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">Order</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="w-40 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {channels.map((channel) => (
+                    <TableRow key={channel.id}>
+                      <TableCell>
+                        <Badge variant="outline">{channel.order}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Hash className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{channel.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {channel.description || '—'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
+                            {channel.isArchived ? 'Archived' : 'Active'}
                           </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenModal(channel)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        {!channel.isArchived && (
+                          {channel.isModerated && (
+                            <Badge variant="outline" className="text-xs">
+                              Moderated
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleArchive(channel.id)}
+                            onClick={() => handleOpenModal(channel)}
                           >
-                            <Archive className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(channel.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                          {!channel.isArchived && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleArchive(channel.id)}
+                            >
+                              <Archive className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(channel.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create/Edit Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
