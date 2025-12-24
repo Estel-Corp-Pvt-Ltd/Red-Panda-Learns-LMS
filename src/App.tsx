@@ -96,6 +96,7 @@ import AdminCertificateRequests from "./pages/admin/AdminCertificateRequests";
 import UserComplaints from "./pages/UserComplaints";
 import PublicCertificate from "./components/course/PublicCertificate";
 import Forum from "./pages/Forum";
+import AdminMessageApproval from "./pages/admin/AdminMessageApproval";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -379,6 +380,14 @@ const App = () => (
                         element={
                           <AuthGuard requireAdmin>
                             <AdminCommentApproval />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/admin/messages"
+                        element={
+                          <AuthGuard requireAdmin>
+                            <AdminMessageApproval />
                           </AuthGuard>
                         }
                       />

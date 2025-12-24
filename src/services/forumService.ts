@@ -21,9 +21,11 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   WhereFilterOp,
+  getCountFromServer,
 } from "firebase/firestore";
 import { Result, ok, fail } from "@/utils/response";
 import { UserRole } from "@/types/general";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 
 // ==================== FORUM CHANNELS ====================
 
@@ -193,6 +195,81 @@ export const channelMessageService = {
       return ok(newMessage);
     } catch (error: any) {
       console.error("Error sending message:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Get messages with filters and pagination
+   */
+  async getMessagesWithFilters(
+    filters?: {
+      field: keyof ChannelMessage;
+      op: WhereFilterOp;
+      value: any;
+    }[],
+    options: PaginationOptions<ChannelMessage> = {}
+  ): Promise<Result<PaginatedResult<ChannelMessage>>> {
+    try {
+      const {
+        limit: limitCount = 50,
+        orderBy: orderByOption,
+        cursor: startAfterDoc,
+      } = options;
+
+      // Build query constraints
+      const constraints: QueryConstraint[] = [];
+
+      // Add filters
+      if (filters && filters.length > 0) {
+        filters.forEach((filter) => {
+          constraints.push(where(filter.field as string, filter.op, filter.value));
+        });
+      }
+
+      // Add ordering
+      const orderByField = orderByOption?.field || "createdAt";
+      const orderByDirection = orderByOption?.direction || "desc";
+      constraints.push(orderBy(orderByField as string, orderByDirection));
+
+      // Add limit
+      constraints.push(limit(limitCount));
+
+      // Add pagination cursor
+      if (startAfterDoc) {
+        constraints.push(startAfter(startAfterDoc));
+      }
+
+      // Execute query
+      const q = query(collection(db, COLLECTION.CHANNEL_MESSAGES), ...constraints);
+      const snapshot = await getDocs(q);
+
+      const messages = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ChannelMessage[];
+
+      // Get total count
+      const countQuery = query(
+        collection(db, COLLECTION.CHANNEL_MESSAGES),
+        ...constraints.filter((c) => {
+          const str = c.toString();
+          return !str.includes("limit") && !str.includes("startAfter");
+        })
+      );
+      const countSnapshot = await getCountFromServer(countQuery);
+      const totalCount = countSnapshot.data().count;
+
+      return ok({
+        data: messages,
+        totalCount,
+        hasNextPage: messages.length === limitCount,
+        hasPreviousPage: false, // Not tracking previous pages for now
+        nextCursor: snapshot.docs[snapshot.docs.length - 1] || null,
+        previousCursor: null,
+      });
+    } catch (error: any) {
+      console.error("Error getting messages with filters:", error);
       return fail(error.message);
     }
   },

@@ -261,14 +261,6 @@ const Forum: React.FC = () => {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-
-        // Show message if channel is moderated and user is not admin/instructor
-        if (selectedChannel.isModerated && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.INSTRUCTOR) {
-          toast({
-            title: 'Message submitted for review',
-            description: 'Your message will be visible after approval from an instructor or admin.',
-          });
-        }
       } else {
         throw new Error(result.error?.message || 'Failed to send message');
       }
