@@ -168,7 +168,7 @@ export const channelMessageService = {
    * Send a new message
    */
   async sendMessage(
-    messageData: Omit<ChannelMessage, "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount">,
+    messageData: Omit<ChannelMessage, "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount" | "replyCount">,
     isChannelModerated: boolean = false
   ): Promise<Result<ChannelMessage>> {
     try {
@@ -185,12 +185,21 @@ export const channelMessageService = {
         id: messageRef.id,
         isEdited: false,
         upvoteCount: 0,
+        replyCount: 0,
         status: shouldAutoHide ? "HIDDEN" : messageData.status,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
 
       await setDoc(messageRef, newMessage);
+
+      // If this is a reply, increment the reply count of the parent message
+      if (messageData.replyTo) {
+        const parentRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageData.replyTo);
+        await updateDoc(parentRef, {
+          replyCount: increment(1),
+        });
+      }
 
       return ok(newMessage);
     } catch (error: any) {
@@ -329,6 +338,79 @@ export const channelMessageService = {
       console.error("Error getting message:", error);
       return fail(error.message);
     }
+  },
+
+  /**
+   * Get replies for a message
+   */
+  async getReplies(
+    messageId: string,
+    userRole: UserRole,
+    userId: string
+  ): Promise<Result<ChannelMessage[]>> {
+    try {
+      const q = query(
+        collection(db, COLLECTION.CHANNEL_MESSAGES),
+        where("replyTo", "==", messageId),
+        orderBy("createdAt", "asc")
+      );
+
+      const snapshot = await getDocs(q);
+      let replies = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ChannelMessage[];
+
+      // Filter based on user role
+      if (userRole === USER_ROLE.STUDENT) {
+        replies = replies.filter(
+          (reply) =>
+            reply.status === "ACTIVE" ||
+            (reply.status === "HIDDEN" && reply.senderId === userId)
+        );
+      }
+
+      return ok(replies);
+    } catch (error: any) {
+      console.error("Error getting replies:", error);
+      return fail(error.message);
+    }
+  },
+
+  /**
+   * Subscribe to replies for a message
+   */
+  subscribeToReplies(
+    messageId: string,
+    userRole: UserRole,
+    userId: string,
+    onUpdate: (replies: ChannelMessage[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, COLLECTION.CHANNEL_MESSAGES),
+      where("replyTo", "==", messageId),
+      orderBy("createdAt", "asc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let replies = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as ChannelMessage[];
+
+      // Filter based on user role
+      if (userRole === USER_ROLE.STUDENT) {
+        replies = replies.filter(
+          (reply) =>
+            reply.status === "ACTIVE" ||
+            (reply.status === "HIDDEN" && reply.senderId === userId)
+        );
+      }
+
+      onUpdate(replies);
+    });
+
+    return unsubscribe;
   },
 
   /**

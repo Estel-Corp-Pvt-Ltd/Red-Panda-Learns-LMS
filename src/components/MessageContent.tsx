@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ThumbsUp, Edit2, Trash2, EyeOff, Check, X, Image as ImageIcon, FileText, Download, Video, Music, File } from 'lucide-react';
+import { ThumbsUp, Edit2, Trash2, EyeOff, Check, X, Image as ImageIcon, FileText, Download, Video, Music, File, MessageSquare, Reply } from 'lucide-react';
 import { ChannelMessage, MessageAttachment } from '@/types/forum';
 import { USER_ROLE } from '@/constants';
 
@@ -16,6 +16,9 @@ interface MessageContentProps {
   onUpdateMessage: (messageId: string, text: string) => Promise<void>;
   onDeleteMessage: (messageId: string) => void;
   onToggleHideMessage: (messageId: string, currentStatus: string) => void;
+  onReply?: (messageId: string, messageSenderName: string) => void;
+  replyToMessage?: ChannelMessage | null;
+  showReplies?: boolean;
   className?: string;
 }
 
@@ -43,6 +46,9 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   onUpdateMessage,
   onDeleteMessage,
   onToggleHideMessage,
+  onReply,
+  replyToMessage,
+  showReplies = true,
   className = '',
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -129,6 +135,18 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           </span>
         </div>
       )}
+
+      {/* Reply indicator */}
+      {replyToMessage && (
+        <div className="mb-2 pl-3 border-l-2 border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1">
+            <Reply className="h-3 w-3" />
+            <span className="font-medium">{replyToMessage.senderName}</span>
+          </div>
+          <p className="line-clamp-2 text-xs mt-0.5">{replyToMessage.text}</p>
+        </div>
+      )}
+
       <div className={`markdown-content text-lg text-gray-800 dark:text-gray-200 break-words whitespace-pre-wrap ${className}`}>
         <ReactMarkdown
           components={{
@@ -326,6 +344,18 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           <ThumbsUp className={`h-4 w-4 mr-1 ${isUpvoted ? 'fill-current' : ''}`} />
           {message.upvoteCount > 0 && message.upvoteCount}
         </Button>
+
+        {onReply && showReplies && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onReply(message.id, message.senderName)}
+            className="h-8 px-2 text-sm text-gray-500"
+          >
+            <MessageSquare className="h-4 w-4 mr-1" />
+            {message.replyCount > 0 && message.replyCount}
+          </Button>
+        )}
 
         {canModerate && (
           <>

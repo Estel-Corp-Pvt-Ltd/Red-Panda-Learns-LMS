@@ -38,6 +38,8 @@ export interface ChannelMessage {
   isEdited: boolean;
   status: MessageStatus;
   upvoteCount: number;
+  replyCount: number;
+  replyTo?: string; // ID of the message being replied to
   courseId: string;
   channelId: string;
   createdAt: Timestamp | FieldValue;

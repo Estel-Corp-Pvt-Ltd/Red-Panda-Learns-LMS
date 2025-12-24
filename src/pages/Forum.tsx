@@ -29,6 +29,9 @@ const Forum: React.FC = () => {
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
 
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState<{ id: string; senderName: string } | null>(null);
+
   // Message input
   const [messageText, setMessageText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -252,12 +255,14 @@ const Forum: React.FC = () => {
         status: 'ACTIVE',
         courseId,
         channelId: selectedChannel.id,
+        replyTo: replyingTo?.id,
       }, selectedChannel.isModerated);
 
       if (result.success) {
         setMessageText('');
         setAttachedFiles([]);
         setAttachedFilePreviews([]);
+        setReplyingTo(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -366,6 +371,15 @@ const Forum: React.FC = () => {
     }
   };
 
+  const handleReply = (messageId: string, senderName: string) => {
+    setReplyingTo({ id: messageId, senderName });
+    textInputRef.current?.focus();
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+  };
+
   const formatMessageTime = (timestamp: any) => {
     if (!timestamp) return '';
     const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
@@ -463,6 +477,7 @@ const Forum: React.FC = () => {
                   <div className="space-y-0">
                     {messages.map((message, idx) => {
                       const showAvatar = idx === 0 || messages[idx - 1].senderId !== message.senderId;
+                      const replyToMessage = message.replyTo ? messages.find(m => m.id === message.replyTo) : null;
 
                       return (
                         <div
@@ -504,6 +519,9 @@ const Forum: React.FC = () => {
                                 onUpdateMessage={handleUpdateMessage}
                                 onDeleteMessage={handleDeleteMessage}
                                 onToggleHideMessage={handleToggleHideMessage}
+                                onReply={handleReply}
+                                replyToMessage={replyToMessage}
+                                showReplies={true}
                               />
                             </div>
                           </div>
@@ -527,6 +545,24 @@ const Forum: React.FC = () => {
 
               {/* Message Input */}
               <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Reply indicator */}
+                {replyingTo && (
+                  <div className="mb-2 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm text-blue-600 dark:text-blue-400">
+                      Replying to <span className="font-semibold">{replyingTo.senderName}</span>
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelReply}
+                      className="ml-auto h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
                 {attachedFilePreviews.length > 0 && (
                   <div className="mb-3">
                     <div className="flex flex-wrap gap-2">
