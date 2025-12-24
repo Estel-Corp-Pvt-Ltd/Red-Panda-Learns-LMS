@@ -118,9 +118,8 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   }
 
   return (
-    <div className={`relative hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-sm group ${(message.senderRole === USER_ROLE.ADMIN || message.senderRole === USER_ROLE.INSTRUCTOR)
-        ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-blue-500'
-        : ''
+    <div className={`relative hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-sm group ${(message.senderRole === USER_ROLE.ADMIN || message.senderRole === USER_ROLE.INSTRUCTOR) ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-blue-500'
+      : ''
       }`}>
       {message.status === 'HIDDEN' && (currentUserRole === USER_ROLE.ADMIN || currentUserRole === USER_ROLE.INSTRUCTOR) && (
         <div className="mb-1">
