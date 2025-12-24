@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ThumbsUp, Edit2, Trash2, EyeOff, Check, X, Image as ImageIcon, FileText, Download, Video, Music, File, MessageSquare, Reply } from 'lucide-react';
+import { ThumbsUp, Edit2, Trash2, EyeOff, Check, X, Image as ImageIcon, FileText, Download, Video, Music, File, MessageSquare, Reply, Loader2 } from 'lucide-react';
 import { ChannelMessage, MessageAttachment } from '@/types/forum';
 import { USER_ROLE } from '@/constants';
 
@@ -55,6 +55,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   const [editText, setEditText] = useState(message.text);
   const [selectedAttachment, setSelectedAttachment] = useState<MessageAttachment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const canModerate = currentUserId && (
@@ -88,6 +89,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   const openAttachment = (attachment: MessageAttachment) => {
     setSelectedAttachment(attachment);
     setIsModalOpen(true);
+    setIsLoading(true);
   };
 
   const downloadAttachment = (attachment: MessageAttachment) => {
@@ -101,24 +103,52 @@ export const MessageContent: React.FC<MessageContentProps> = ({
 
   if (isEditing) {
     return (
-      <div className="flex items-start gap-2 mt-1">
-        <Textarea
-          ref={editTextareaRef}
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSaveEdit();
-            }
-            if (e.key === 'Escape') {
-              handleCancelEdit();
-            }
-          }}
-          className="flex-1 min-h-[60px] max-h-[200px] text-base resize-none no-scrollbar"
-          autoFocus
-          spellCheck={false}
-        />
+      <div className="space-y-2">
+        <div className="flex items-start gap-2">
+          <Textarea
+            ref={editTextareaRef}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSaveEdit();
+              }
+              if (e.key === 'Escape') {
+                handleCancelEdit();
+              }
+            }}
+            className="flex-1 min-h-[60px] max-h-[200px] text-base resize-none no-scrollbar"
+            autoFocus
+            spellCheck={false}
+          />
+        </div>
+
+        {/* Show attachments while editing */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 px-2">
+            {message.attachments.map((attachment, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600"
+              >
+                <div className="text-gray-600 dark:text-gray-400">
+                  {getFileIcon(attachment.type)}
+                </div>
+                <div className="flex flex-col items-start min-w-0">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[200px]">
+                    {attachment.name || 'File'}
+                  </span>
+                  {attachment.size && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {(attachment.size / 1024).toFixed(1)} KB
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -278,17 +308,37 @@ export const MessageContent: React.FC<MessageContentProps> = ({
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
           <div className="mt-4 flex items-center justify-center">
             {selectedAttachment?.type === 'image' ? (
-              <img
-                src={selectedAttachment.url}
-                alt={selectedAttachment.name || 'Image'}
-                className="max-w-full max-h-[70vh] object-contain rounded-lg"
-              />
+              <div className="relative w-full flex items-center justify-center">
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                )}
+                <img
+                  src={selectedAttachment.url}
+                  alt={selectedAttachment.name || 'Image'}
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                  onLoad={() => setIsLoading(false)}
+                  onError={() => setIsLoading(false)}
+                  style={{ display: isLoading ? 'none' : 'block' }}
+                />
+              </div>
             ) : selectedAttachment?.type === 'video' ? (
-              <video
-                src={selectedAttachment.url}
-                controls
-                className="max-w-full max-h-[70vh] rounded-lg"
-              />
+              <div className="relative w-full flex items-center justify-center">
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                )}
+                <video
+                  src={selectedAttachment.url}
+                  controls
+                  className="max-w-full max-h-[70vh] rounded-lg"
+                  onLoadedData={() => setIsLoading(false)}
+                  onError={() => setIsLoading(false)}
+                  style={{ display: isLoading ? 'none' : 'block' }}
+                />
+              </div>
             ) : selectedAttachment?.type === 'audio' ? (
               <div className="w-full max-w-md">
                 <audio
