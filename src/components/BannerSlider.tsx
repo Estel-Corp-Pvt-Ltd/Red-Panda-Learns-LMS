@@ -67,7 +67,7 @@ export function BannerSlider({ banners, autoSlideInterval = 5000 }: BannerSlider
       <Button
         variant="ghost"
         size="icon"
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 shadow-lg rounded-full h-10 w-10 text-gray-900 dark:text-gray-100 hover:bg-primary"
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 dark:bg-gray-800/30 shadow-lg rounded-full h-10 w-10 text-gray-900 dark:text-gray-100 hover:bg-primary dark:hover:bg-primary"
         onClick={goToPrevious}
         aria-label="Previous banner"
       >
@@ -77,7 +77,7 @@ export function BannerSlider({ banners, autoSlideInterval = 5000 }: BannerSlider
       <Button
         variant="ghost"
         size="icon"
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 shadow-lg rounded-full h-10 w-10 text-gray-900 dark:text-gray-100 hover:bg-primary"
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 dark:bg-gray-800/30 shadow-lg rounded-full h-10 w-10 text-gray-900 dark:text-gray-100 hover:bg-primary dark:hover:bg-primary"
         onClick={goToNext}
         aria-label="Next banner"
       >

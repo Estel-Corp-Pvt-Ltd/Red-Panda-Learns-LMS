@@ -1,28 +1,29 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Loader2, Plus, X } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { BANNER_STATUS } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
 import { bannerService } from "@/services/bannerService";
 import { courseService } from "@/services/courseService";
 import { fileService } from "@/services/fileService";
-import { useAuth } from "@/contexts/AuthContext";
-import { BANNER_STATUS } from "@/constants";
 import { BannerFormData } from "@/types/banner";
 import { getDownloadURL } from "firebase/storage";
+import { ArrowLeft, Loader2, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateBannerPage() {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export default function CreateBannerPage() {
     gradientColors: ["#3B82F6", "#8B5CF6"],
     courseIds: [],
     status: BANNER_STATUS.ACTIVE,
+    showToAllUsers: null,
   });
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
@@ -408,8 +410,17 @@ export default function CreateBannerPage() {
                   </div>
                 </div>
 
+                <div className="gap-2 flex items-center">
+                  <Label htmlFor="show-to-all-users">Show to All Users (whether enrolled or not)</Label>
+                  <Switch
+                    id="show-to-all-users"
+                    checked={formData.showToAllUsers}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showToAllUsers: checked }))}
+                    className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+                  />
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">Status <span className="text-destructive">*</span></Label>
                   <Select
                     value={formData.status}
                     onValueChange={(value) =>
