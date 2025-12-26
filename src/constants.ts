@@ -382,6 +382,18 @@ export const COUPON_STATUS = {
   EXPIRED: "EXPIRED",
 } as const;
 
+export const MESSAGE_TYPE = {
+  TEXT: "TEXT",
+  LINK: "LINK",
+  IMAGE: "IMAGE",
+} as const;
+
+export const MESSAGE_STATUS = {
+  ACTIVE: "ACTIVE",
+  HIDDEN: "HIDDEN",
+  DELETED: "DELETED",
+} as const;
+
 export const COLLECTION = {
   ASSIGNMENTS: "Assignments",
   ASSIGNMENT_SUBMISSIONS: "AssignmentSubmissions",
@@ -418,7 +430,10 @@ export const COLLECTION = {
   CERTIFICATE_REQUESTS: "CertificateRequests",
   LESSON_ANALYTICS: "LessonAnalytics",
   COURSE_ANALYTICS: "CourseAnalytics",
-  BANNERS: "Banners"
+  BANNERS: "Banners",
+  FORUM_CHANNELS: "ForumChannels",
+  CHANNEL_MESSAGES: "ChannelMessages",
+  FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes"
 } as const;
 
 export const ATTRIBUTE_TYPE = {

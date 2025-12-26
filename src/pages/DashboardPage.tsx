@@ -16,10 +16,11 @@ import { Enrollment } from '@/types/enrollment';
 import { Banner } from '@/types/banner';
 import { CertificateRequestStatus } from '@/types/general';
 import { formatDate } from '@/utils/date-time';
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BannerSlider } from '@/components/BannerSlider';
+
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
@@ -150,6 +151,14 @@ function EnrolledCourseCard({
                 </Badge>
               </div>
               <div className="flex gap-3">
+                {course?.isForumEnabled && (
+                  <Link to={`/courses/${course.slug}/forum`}>
+                    <Button size="sm" variant="outline">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Forum
+                    </Button>
+                  </Link>
+                )}
                 <Button size="sm" onClick={handleContinueLearning}>
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Continue
@@ -230,7 +239,6 @@ function EnrolledCourseCard({
                     )}
                   </>
                 )}
-
               </div>
             </div>
           </div>

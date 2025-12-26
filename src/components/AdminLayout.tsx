@@ -151,6 +151,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <ClipboardList className="h-5 w-5" />,
     },
     {
+      name: "Messages",
+      path: "/admin/messages",
+      icon: <MessageSquareText className="h-5 w-5" />,
+    },
+    {
       name: "Comments",
       path: "/admin/comments",
       icon: <MessageSquareText className="h-5 w-5" />,

@@ -74,6 +74,7 @@ const CurriculumBuilderPage = () => {
   const [copied, setCopied] = useState(false);
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
+  const [isForumEnabled, setIsForumEnabled] = useState(false);
   const [customCertificateName, setCustomCertificateName] = useState("");
   const itemId = new URLSearchParams(location.search).get("itemId");
 const [activeTab, setActiveTab] = useState("basics");
@@ -177,6 +178,7 @@ useEffect(() => {
         setThumbnailUrl(data.thumbnail ?? "");
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
+        setIsForumEnabled(data.isForumEnabled ?? false);
         setCustomCertificateName(
           data.customCertificateName || data.title || ""
         );
@@ -292,6 +294,7 @@ useEffect(() => {
       await courseService.updateCourse(courseId, {
         isMailSendingEnabled,
         isCertificateEnabled,
+        isForumEnabled,
         customCertificateName,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
@@ -439,10 +442,13 @@ useEffect(() => {
 
           <TabsContent value="additional">
             <AdditionalTab
+              isForumEnabled={isForumEnabled}
+              setIsForumEnabled={setIsForumEnabled}
               isMailSendingEnabled={isMailSendingEnabled}
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
+              courseId={course?.id}
               customCertificateName={customCertificateName}
               setCustomCertificateName={setCustomCertificateName}
               onSave={saveAdditionalSettings}
