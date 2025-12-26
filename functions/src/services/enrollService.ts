@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { bundleService } from "./bundleService";
+import { learningProgressService } from "./learningProgressService";
 import { Result, ok, fail } from "../utils/response";
 import {
   COLLECTION,
@@ -85,6 +86,9 @@ class EnrollmentService {
             db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId),
             enrollment
           );
+
+          // Create learning progress for the course
+          await learningProgressService.createLessonProgress(user.id, item.itemId);
         } else if (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE) {
           // Bundle enrollment - create enrollments for each course in the bundle
           const bundleResult = await bundleService.getBundleById(item.itemId);
@@ -121,6 +125,9 @@ class EnrollmentService {
               db.collection(COLLECTION.ENROLLMENTS).doc(courseEnrollmentId),
               courseEnrollment
             );
+
+            // Create learning progress for the bundle course
+            await learningProgressService.createLessonProgress(user.id, course.id);
           }
         }
       }
@@ -184,6 +191,9 @@ class EnrollmentService {
       functions.logger.info(
         `Successfully enrolled user ${user.id} in free course ${courseId}`
       );
+
+      // Create learning progress for the free course
+      await learningProgressService.createLessonProgress(user.id, courseId);
 
       return ok(enrollmentId);
     } catch (error: any) {
