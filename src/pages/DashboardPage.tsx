@@ -287,17 +287,20 @@ export default function DashboardPage() {
 
   const fetchBanners = async (enrolledCourseIds: string[]) => {
     if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
-      setBanners([]);
+      const result = await bannerService.getActiveGlobalBanners();
+      if (result.success) {
+        setBanners(result.data);
+      } else {
+        setBanners([]);
+      }
       return;
     }
 
     setIsBannersLoading(true);
     const result = await bannerService.getActiveBannersForUser(enrolledCourseIds);
-    console.log("Fetched banners:", result);
     if (result.success) {
       setBanners(result.data);
     } else {
-      console.error("Failed to fetch banners:", result.error);
       setBanners([]);
     }
     setIsBannersLoading(false);

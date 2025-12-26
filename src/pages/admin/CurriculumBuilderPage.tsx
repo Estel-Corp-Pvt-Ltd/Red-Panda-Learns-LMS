@@ -19,7 +19,7 @@ import { logError } from "@/utils/logger";
 import { getFullName } from "@/utils/name";
 import { getDownloadURL } from "firebase/storage";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 /** Type guard for numeric checks */
 const isNum = (v: number | null | undefined): v is number =>
@@ -48,7 +48,7 @@ const CurriculumBuilderPage = () => {
   });
 
   const { user } = useAuth();
-
+   const location = useLocation();
   // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
@@ -75,6 +75,20 @@ const CurriculumBuilderPage = () => {
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
   const [isForumEnabled, setIsForumEnabled] = useState(false);
+  const [customCertificateName, setCustomCertificateName] = useState("");
+  const itemId = new URLSearchParams(location.search).get("itemId");
+const [activeTab, setActiveTab] = useState("basics");
+
+// Handle URL parameters to switch to curriculum tab
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const itemId = params.get("itemId");
+  
+  if (itemId) {
+    setActiveTab("curriculum");
+  }
+}, [location.search]);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -130,6 +144,7 @@ const CurriculumBuilderPage = () => {
     fetchInstructors();
   }, []);
 
+
   /** Load course and flatten structure into draggable list */
 
   useEffect(() => {
@@ -161,10 +176,12 @@ const CurriculumBuilderPage = () => {
         setInstructorId(data.instructorId ?? "");
         setInstructorName(data.instructorName ?? "");
         setThumbnailUrl(data.thumbnail ?? "");
-        // ADD THIS LINE:
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
         setIsForumEnabled(data.isForumEnabled ?? false);
+        setCustomCertificateName(
+          data.customCertificateName || data.title || ""
+        );
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -176,7 +193,7 @@ const CurriculumBuilderPage = () => {
       }
     };
     loadCourse();
-  }, [param]); // Also changed param to param here - this was likely a bug
+  }, [param]);
 
   // ───────────────────────────────────────────────────────────────
   // ─── BASICS TAB LOGIC ──────────────────────────────────────────
@@ -278,6 +295,7 @@ const CurriculumBuilderPage = () => {
         isMailSendingEnabled,
         isCertificateEnabled,
         isForumEnabled,
+        customCertificateName,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
     } catch (err) {
@@ -352,7 +370,7 @@ const CurriculumBuilderPage = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="basics" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
@@ -413,7 +431,7 @@ const CurriculumBuilderPage = () => {
 
           {/* ─── CURRICULUM TAB ───────────────────────────────────── */}
           <TabsContent value="curriculum">
-            <CurriculumTab course={course} />
+           <CurriculumTab course={course} initialItemId={itemId} />
           </TabsContent>
 
           <TabsContent value="quizzes">
@@ -431,6 +449,8 @@ const CurriculumBuilderPage = () => {
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
               courseId={course?.id}
+              customCertificateName={customCertificateName}
+              setCustomCertificateName={setCustomCertificateName}
               onSave={saveAdditionalSettings}
             />
           </TabsContent>

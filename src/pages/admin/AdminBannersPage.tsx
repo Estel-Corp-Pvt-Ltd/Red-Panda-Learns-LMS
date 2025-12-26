@@ -1,27 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/AdminLayout';
-import { bannerService } from '@/services/bannerService';
-import { Banner } from '@/types/banner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Loader2,
-  Eye,
-  Image as ImageIcon
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BANNER_STATUS } from '@/constants';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import { bannerService } from '@/services/bannerService';
+import { Banner } from '@/types/banner';
 import { formatDate } from '@/utils/date-time';
+import {
+  Copy,
+  Edit,
+  Eye,
+  Image as ImageIcon,
+  Loader2,
+  Plus,
+  Trash2
+} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminBannersPage: React.FC = () => {
+
+  const { user } = useAuth();
+
   const navigate = useNavigate();
+
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -128,6 +134,31 @@ const AdminBannersPage: React.FC = () => {
     );
   };
 
+  const duplicateBanner = async (banner: Banner) => {
+    const response = await bannerService.createBanner({
+      title: banner.title,
+      description: banner.description,
+      ctaTitle: banner.ctaTitle,
+      ctaLink: banner.ctaLink,
+      imageUrl: banner.imageUrl,
+      gradientColors: banner.gradientColors,
+      courseIds: banner.courseIds,
+      status: banner.status,
+    }, user.id);
+
+    if (response.success) {
+      await loadBanners();
+      toast({
+        title: "Banner dupicated successfully!"
+      });
+      return;
+    }
+
+    toast({
+      title: "Banner dupication failed!"
+    });
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -228,6 +259,13 @@ const AdminBannersPage: React.FC = () => {
                               onClick={() => navigate(`/admin/edit-banner/${banner.id}`)}
                             >
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => duplicateBanner(banner)}
+                            >
+                              <Copy className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"

@@ -91,6 +91,7 @@ class CourseService {
       | "isMailSendingEnabled"
       | "isCertificateEnabled"
       | "isForumEnabled"
+      | "CustomCertificateName"
     >
   ): Promise<string> {
     try {
@@ -193,6 +194,9 @@ class CourseService {
         updateData.isEnrollmentPaused = updates.isEnrollmentPaused;
       if (updates.isMailSendingEnabled !== undefined)
         updateData.isMailSendingEnabled = updates.isMailSendingEnabled;
+      if (updates.customCertificateName !== undefined) {
+        updateData.customCertificateName = updates.customCertificateName;
+      }
       if (updates.isCertificateEnabled !== undefined)
         updateData.isCertificateEnabled = updates.isCertificateEnabled;
       if (updates.isForumEnabled !== undefined)
@@ -391,6 +395,7 @@ class CourseService {
           cohorts: data.cohorts || [],
           topics: data.topics || [],
           isEnrollmentPaused: data.isEnrollmentPaused || false,
+          customCertificateName: data.customCertificateName || "",
           isCertificateEnabled: data.isCertificateEnabled || false,
           isForumEnabled: data.isForumEnabled || false,
           isMailSendingEnabled: data.isMailSendingEnabled || false,
@@ -684,6 +689,24 @@ class CourseService {
       const slug = (data.slug ?? "").trim();
 
       return slug.length ? slug : null;
+    } catch (error: any) {
+      logError("CourseService.getCourseSlugById", error);
+      return null;
+    }
+  }
+
+
+    async getCetificateNamebyID(courseId: string): Promise<string | null> {
+    try {
+      const ref = doc(db, COLLECTION.COURSES, courseId);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) return null;
+
+      const data = snap.data() as Partial<Course>;
+      const customCertificateName = (data.customCertificateName ?? "").trim();
+
+      return customCertificateName.length ? customCertificateName : null;
     } catch (error: any) {
       logError("CourseService.getCourseSlugById", error);
       return null;

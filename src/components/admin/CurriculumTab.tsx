@@ -114,13 +114,14 @@ const SortableItem = ({ id, children, type, depth, onChange }: SortableItemProps
 
 // ─── Props ─────────────────────────────────────────────
 type CurriculumTabProps = {
-  course: Course;
+    course: Course | null;
+  initialItemId?: string | null;
 };
 
 
 
 // ─── Component ─────────────────────────────────────────────
-const CurriculumTab = ({ course }: CurriculumTabProps) => {
+const CurriculumTab = ({ course  , initialItemId}: CurriculumTabProps) => {
   const { toast } = useToast();
   const { showOverlay, hideOverlay } = useLoadingOverlay();
   const sensors = useSensors(
@@ -147,10 +148,12 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [editingItemType, setEditingItemType] = useState<LearningUnit | null>(null);
 
+  // ✅ Add null check for course in useEffect
   useEffect(() => {
-    setCurriculum(getFlatCurriculum(course));
+    if (course) {
+      setCurriculum(getFlatCurriculum(course));
+    }
   }, [course]);
-
   const handleDragMove = (event: DragMoveEvent) => {
     const { active } = event;
     setIsDragging(true);
@@ -571,6 +574,48 @@ const CurriculumTab = ({ course }: CurriculumTabProps) => {
   const activeItem = useMemo(() => {
     return curriculum.find((i) => i.id === activeId);
   }, [activeId, curriculum]);
+
+
+
+
+// Handle initial itemId to open modal (from URL parameter)
+useEffect(() => {
+  if (initialItemId && curriculum.length > 0) {
+    // Find the item in curriculum
+    const item = curriculum.find(
+      (i) => i.id === initialItemId || i.refId === initialItemId
+    );
+
+    if (item) {
+      // Check item type and open appropriate modal
+      if (item.type === LEARNING_UNIT.LESSON) {
+        setEditingItemId(initialItemId);
+        setIsLessonEditModelOpen(true);
+      } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
+        setEditingItemId(initialItemId);
+        setIsAssignmentEditModalOpen(true);
+      }
+
+      // Clear the URL parameter after handling
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }
+}, [initialItemId, curriculum]);
+
+
+
+  if (!course) {
+    return (
+      <Card className="shadow-lg border">
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">
+            Loading curriculum...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>

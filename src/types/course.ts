@@ -51,8 +51,9 @@ export interface Course {
   certificateTemplateId?: string;
   topics: Topic[];
   isEnrollmentPaused: boolean;
-  isMailSendingEnabled: boolean;
-  isCertificateEnabled: boolean;
+  isMailSendingEnabled:boolean;
+  isCertificateEnabled:boolean;
+  customCertificateName:string;      // To Specify a custom name for the course certificate default is course title
   isForumEnabled: boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
