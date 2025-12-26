@@ -384,7 +384,7 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/admin/messages"
+                        path="/admin/forum-messages"
                         element={
                           <AuthGuard requireAdmin>
                             <AdminMessageApproval />
