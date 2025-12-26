@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { courseService } from "@/services/courseService";
 import { Course } from "@/types/course";
 import {
@@ -31,6 +31,7 @@ import {
   X,
   Filter,
   Eye,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { COURSE_STATUS, CURRENCY } from "@/constants";
@@ -109,33 +110,33 @@ const AdminCourses = () => {
   }, [useClientSearch]);
 
   // Load courses when filters or pagination change
-useEffect(() => {
-  if (
-    useClientSearch &&
-    (searchQuery ||
-      statusFilter !== "ALL" ||
-      coursePriceFilterValue !== "All Prices")
-  ) {
-    // Guard: wait for allCourses to be loaded
-    if (allCourses.length === 0 && !isLoading) {
-      loadAllCourses();
-      return;
+  useEffect(() => {
+    if (
+      useClientSearch &&
+      (searchQuery ||
+        statusFilter !== "ALL" ||
+        coursePriceFilterValue !== "All Prices")
+    ) {
+      // Guard: wait for allCourses to be loaded
+      if (allCourses.length === 0 && !isLoading) {
+        loadAllCourses();
+        return;
+      }
+      if (allCourses.length > 0) {
+        performClientSearch();
+      }
+    } else {
+      loadCourses();
     }
-    if (allCourses.length > 0) {
-      performClientSearch();
-    }
-  } else {
-    loadCourses();
-  }
-}, [
-  searchQuery,
-  statusFilter,
-  coursePriceFilterValue,
-  paginationState,
-  useClientSearch,
-  itemsPerPage,
-  allCourses.length, // Add this
-]);
+  }, [
+    searchQuery,
+    statusFilter,
+    coursePriceFilterValue,
+    paginationState,
+    useClientSearch,
+    itemsPerPage,
+    allCourses.length, // Add this
+  ]);
 
   const isProbablyHtml = (text?: string | null) => {
     if (!text) return false;
@@ -778,7 +779,7 @@ useEffect(() => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -808,6 +809,17 @@ useEffect(() => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                          {course.isForumEnabled && (
+                            <Link
+                              to={`/courses/${course.slug}/forum`}
+                              title="View Forum"
+                              className="text-primary hover:bg-secondary"
+                            >
+                              <Button variant="ghost" size="sm">
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

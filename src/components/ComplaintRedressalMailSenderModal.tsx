@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
 import { complaintService } from "@/services/complaintService";
 import { Complaint } from "@/types/complaint";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
     open: boolean;
@@ -32,6 +32,10 @@ export function ComplaintRedressalMailSenderModal({
     const [subject, setSubject] = useState(`Update regarding complaint #${complaint.id}`);
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        setSubject(`Update regarding complaint #${complaint.id}`);
+    }, [complaint.id, open]);
 
     const handleSend = async () => {
         if (!subject.trim() || !message.trim()) {

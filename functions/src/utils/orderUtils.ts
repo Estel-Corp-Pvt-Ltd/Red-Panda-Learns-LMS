@@ -5,30 +5,31 @@ import { bundleService } from "../services/bundleService";
 import { couponService } from "../services/couponService";
 import { fail, ok } from "./response";
 import { ItemsDetails } from "./types";
+import { ENROLLED_PROGRAM_TYPE } from "../constants";
 
 export const getItemsDetails = async (items: OrderItem[]) => {
   const itemsDetails: ItemsDetails[] = [];
 
   await Promise.all(items.map(async (item) => {
-    if (item.itemType === "COURSE") {
+    if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE) {
       const result = await courseService.getCourseById(item.itemId);
       if (result.success && result.data) {
         itemsDetails.push({
           name: result.data.title,
           amount: result.data.salePrice,
-          itemType: "COURSE",
+          itemType: ENROLLED_PROGRAM_TYPE.COURSE,
           itemId: item.itemId,
         });
       } else {
         functions.logger.warn("Course not found for item ID:", item.itemId, result.error);
       }
-    } else if (item.itemType === "BUNDLE") {
+    } else if (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE) {
       const result = await bundleService.getBundleById(item.itemId);
       if (result.success && result.data) {
         itemsDetails.push({
           name: result.data.title,
           amount: result.data.salePrice,
-          itemType: "BUNDLE",
+          itemType: ENROLLED_PROGRAM_TYPE.BUNDLE,
           itemId: item.itemId,
         });
       } else {
@@ -55,10 +56,10 @@ export const getCouponDiscount = async (items: ItemsDetails[], couponCode: strin
 
     items.forEach((item) => {
       if (restUsages <= 0) return;
-      if (item.itemType === "COURSE" && linkedCourseIds.includes(item.itemId)) {
+      if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE && linkedCourseIds.includes(item.itemId)) {
         discountItems.push(item);
         restUsages--;
-      } else if (item.itemType === "BUNDLE" && linkedBundleIds.includes(item.itemId)) {
+      } else if (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE && linkedBundleIds.includes(item.itemId)) {
         discountItems.push(item);
         restUsages--;
       }

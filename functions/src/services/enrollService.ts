@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { bundleService } from "./bundleService";
+import { learningProgressService } from "./learningProgressService";
 import { Result, ok, fail } from "../utils/response";
 import {
   COLLECTION,
@@ -56,7 +57,9 @@ class EnrollmentService {
 
     const batch = db.batch();
     const enrollmentIds: string[] = [];
-
+    const userName = [user.firstName, user.middleName, user.lastName]
+      .filter((namePart) => namePart && namePart.trim() !== "")
+      .join(" ");
     try {
       for (const item of items) {
         if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE) {
@@ -67,7 +70,7 @@ class EnrollmentService {
           const enrollment: Enrollment = {
             id: enrollmentId,
             userId: user.id,
-            userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+            userName: userName,
             userEmail: user.email,
             courseId: item.itemId,
             courseName: item.name,
@@ -83,6 +86,9 @@ class EnrollmentService {
             db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId),
             enrollment
           );
+
+          // Create learning progress for the course
+          await learningProgressService.createLessonProgress(user.id, item.itemId);
         } else if (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE) {
           // Bundle enrollment - create enrollments for each course in the bundle
           const bundleResult = await bundleService.getBundleById(item.itemId);
@@ -103,7 +109,7 @@ class EnrollmentService {
             const courseEnrollment: Enrollment = {
               id: courseEnrollmentId,
               userId: user.id,
-              userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+              userName: userName,
               userEmail: user.email,
               courseId: course.id,
               courseName: course.title,
@@ -119,6 +125,9 @@ class EnrollmentService {
               db.collection(COLLECTION.ENROLLMENTS).doc(courseEnrollmentId),
               courseEnrollment
             );
+
+            // Create learning progress for the bundle course
+            await learningProgressService.createLessonProgress(user.id, course.id);
           }
         }
       }
@@ -160,11 +169,13 @@ class EnrollmentService {
       if (enrollmentSnap.exists) {
         return ok(enrollmentId);
       }
-
+      const userName = [user.firstName, user.middleName, user.lastName]
+        .filter((namePart) => namePart && namePart.trim() !== "")
+        .join(" ");
       const enrollment: Enrollment = {
         id: enrollmentId,
         userId: user.id,
-        userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+        userName: userName,
         userEmail: user.email,
         courseId: courseId,
         courseName: courseResult.data.title,
@@ -180,6 +191,9 @@ class EnrollmentService {
       functions.logger.info(
         `Successfully enrolled user ${user.id} in free course ${courseId}`
       );
+
+      // Create learning progress for the free course
+      await learningProgressService.createLessonProgress(user.id, courseId);
 
       return ok(enrollmentId);
     } catch (error: any) {
@@ -214,87 +228,87 @@ class EnrollmentService {
 
   // Helper to get enrolled students for a course
   // Efficiently fetch enrolled emails in chunks (batch reads)
-async getCourseEnrolledEmails(courseId: string): Promise<string[]> {
-  const CHUNK_SIZE = 500;
-  const emails: string[] = [];
-  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  async getCourseEnrolledEmails(courseId: string): Promise<string[]> {
+    const CHUNK_SIZE = 500;
+    const emails: string[] = [];
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
-try {
-  while (true) {
-    let q = db
-      .collection(COLLECTION.ENROLLMENTS)
-      .where("courseId", "==", courseId)
-      .orderBy(admin.firestore.FieldPath.documentId())
-      .limit(CHUNK_SIZE);
+    try {
+      while (true) {
+        let q = db
+          .collection(COLLECTION.ENROLLMENTS)
+          .where("courseId", "==", courseId)
+          .orderBy(admin.firestore.FieldPath.documentId())
+          .limit(CHUNK_SIZE);
 
-    if (lastDoc) {
-      q = q.startAfter(lastDoc);
-    }
+        if (lastDoc) {
+          q = q.startAfter(lastDoc);
+        }
 
-    const snapshot = await q.get();
+        const snapshot = await q.get();
 
-    logger.info("Enrollment batch fetched", {
-      courseId,
-      size: snapshot.size,
-    });
+        logger.info("Enrollment batch fetched", {
+          courseId,
+          size: snapshot.size,
+        });
 
-    if (snapshot.empty) break;
+        if (snapshot.empty) break;
 
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
 
-      logger.debug("Enrollment doc fields", {
-        docId: doc.id,
-        keys: Object.keys(data),
-        email: data.email,
-        userEmail: data.userEmail,
-        userId: data.userId,
+          logger.debug("Enrollment doc fields", {
+            docId: doc.id,
+            keys: Object.keys(data),
+            email: data.email,
+            userEmail: data.userEmail,
+            userId: data.userId,
+          });
+
+          const email: string | undefined = data.email ?? data.userEmail;
+
+          if (!email) {
+            logger.debug("Skipping enrollment: no email", { docId: doc.id });
+            continue;
+          }
+
+          const lowerEmail = email.toLowerCase();
+
+          if (lowerEmail.includes(SKIP_DOMAIN)) {
+            logger.debug("Skipping enrollment email (domain)", email);
+            continue;
+          }
+
+          if (lowerEmail.includes(SKIP_TEST)) {
+            logger.debug("Skipping enrollment email (test)", email);
+            continue;
+          }
+
+          if (lowerEmail.includes(SKIP_EMAIL)) {
+            logger.debug("Skipping enrollment email (explicit)", email);
+            continue;
+          }
+
+          emails.push(email);
+        }
+
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+        if (snapshot.size < CHUNK_SIZE) break;
+      }
+
+      functions.logger.info("Final enrolled email count", {
+        courseId,
+        count: emails.length,
       });
 
-      const email: string | undefined = data.email ?? data.userEmail;
-
-      if (!email) {
-        logger.debug("Skipping enrollment: no email", { docId: doc.id });
-        continue;
-      }
-
-      const lowerEmail = email.toLowerCase();
-
-      if (lowerEmail.includes(SKIP_DOMAIN)) {
-        logger.debug("Skipping enrollment email (domain)", email);
-        continue;
-      }
-
-      if (lowerEmail.includes(SKIP_TEST)) {
-        logger.debug("Skipping enrollment email (test)", email);
-        continue;
-      }
-
-      if (lowerEmail.includes(SKIP_EMAIL)) {
-        logger.debug("Skipping enrollment email (explicit)", email);
-        continue;
-      }
-
-      emails.push(email);
+      return emails;
+    } catch (error) {
+      logger.error("Error fetching course enrolled emails", error);
+      return [];
     }
 
-    lastDoc = snapshot.docs[snapshot.docs.length - 1];
-
-    if (snapshot.size < CHUNK_SIZE) break;
   }
-
-  functions.logger.info("Final enrolled email count", {
-    courseId,
-    count: emails.length,
-  });
-
-  return emails;
-} catch (error) {
-  logger.error("Error fetching course enrolled emails", error);
-  return [];
-}
-
-}
 
 }
 export const enrollmentService = new EnrollmentService();
