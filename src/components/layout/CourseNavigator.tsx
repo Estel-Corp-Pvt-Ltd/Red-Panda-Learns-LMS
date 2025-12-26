@@ -47,7 +47,7 @@ export function CourseNavigator({
             variant="ghost"
             className="w-full justify-between p-3 h-auto text-left hover:bg-muted/50 transition-colors whitespace-normal items-start"
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 no-scrollbar .no-scrollbar::-webkit-scrollbar ">
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm text-foreground text-wrap whitespace-normal break-words leading-snug">
                   {topic.title}

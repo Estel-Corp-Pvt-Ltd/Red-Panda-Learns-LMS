@@ -1,9 +1,9 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { assignmentService } from '@/services/assignmentService';
-import { fileService } from '@/services/fileService';
-import { Assignment, AssignmentSubmission } from '@/types/assignment';
-import { formatDate } from '@/utils/date-time';
-import { logError } from '@/utils/logger';
+import { useAuth } from "@/contexts/AuthContext";
+import { assignmentService } from "@/services/assignmentService";
+import { fileService } from "@/services/fileService";
+import { Assignment, AssignmentSubmission } from "@/types/assignment";
+import { formatDate } from "@/utils/date-time";
+import { logError } from "@/utils/logger";
 import {
   Award,
   Clock,
@@ -20,22 +20,27 @@ import {
   Minimize2,
   Eye,
   Edit3,
-  Split
-} from 'lucide-react';
-import React, { ChangeEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import MarkdownViewer from '../MarkdownViewer';
-import MDEditor from '@uiw/react-md-editor';
-import { adminAssignedStudentsService } from '@/services/adminAssignedStudentsService';
-import { notificationApiService } from '@/services/notificationApiService';
-import { authService } from '@/services/authService';
+  Split,
+  CheckCircle2,
+  MessageSquare,
+} from "lucide-react";
+import React, { ChangeEvent, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import MarkdownViewer from "../MarkdownViewer";
+import MDEditor from "@uiw/react-md-editor";
+import { adminAssignedStudentsService } from "@/services/adminAssignedStudentsService";
+import { notificationApiService } from "@/services/notificationApiService";
+import { authService } from "@/services/authService";
 
 type AssignmentProps = {
   assignmentId: string;
-  onComplete: () => void
+  onComplete: () => void;
 };
 
-const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete }) => {
+const AssignmentView: React.FC<AssignmentProps> = ({
+  assignmentId,
+  onComplete,
+}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
@@ -43,25 +48,42 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [existingSubmission, setExistingSubmission] = useState<AssignmentSubmission | null>(null);
+  const [message, setMessage] = useState("");
+  const [existingSubmission, setExistingSubmission] =
+    useState<AssignmentSubmission | null>(null);
 
-  // New states for text submission and links
   const [textSubmissions, setTextSubmissions] = useState<string[]>([]);
-  const [currentTextSubmission, setCurrentTextSubmission] = useState('');
+  const [currentTextSubmission, setCurrentTextSubmission] = useState("");
   const [links, setLinks] = useState<string[]>([]);
-  const [currentLink, setCurrentLink] = useState('');
+  const [currentLink, setCurrentLink] = useState("");
 
-  // Editor states
   const [isEditorMaximized, setIsEditorMaximized] = useState(false);
   const [isResponsesMaximized, setIsResponsesMaximized] = useState(false);
-  const [editorView, setEditorView] = useState<'edit' | 'preview' | 'live'>('live');
+  const [editorView, setEditorView] = useState<"edit" | "preview" | "live">(
+    "live"
+  );
 
   const [isAssigned, setIsAssigned] = useState<boolean | null>(null);
 
+  // Helper functions for grading display
+  const isGraded =
+    existingSubmission?.marks !== null &&
+    existingSubmission?.marks !== undefined;
 
+  const isPassing = () => {
+    if (!isGraded || !assignment) return false;
+    return (
+      (existingSubmission?.marks || 0) >= (assignment.minimumPassPoint || 0)
+    );
+  };
 
-  // ✅ Load assignment by ID
+  const getGradePercentage = () => {
+    if (!isGraded || !assignment?.totalPoints) return 0;
+    return Math.round(
+      ((existingSubmission?.marks || 0) / assignment.totalPoints) * 100
+    );
+  };
+
   useEffect(() => {
     const fetchAssignment = async () => {
       setIsLoading(true);
@@ -75,10 +97,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
     const fetchSubmission = async () => {
       if (!assignmentId || !user) return;
-      const submissionResult = await assignmentService.getSubmissionByStudentAndAssignment(user.id, assignmentId);
+      const submissionResult =
+        await assignmentService.getSubmissionByStudentAndAssignment(
+          user.id,
+          assignmentId
+        );
       if (submissionResult.success && submissionResult.data) {
         setExistingSubmission(submissionResult.data);
-        // Populate existing submission data
         setTextSubmissions(submissionResult.data.textSubmissions || []);
         setLinks(submissionResult.data.links || []);
       }
@@ -88,26 +113,23 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     fetchSubmission();
   }, [assignmentId, user]);
 
-  // Handle escape key for maximized editor
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isEditorMaximized) {
+      if (e.key === "Escape" && isEditorMaximized) {
         setIsEditorMaximized(false);
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isEditorMaximized]);
 
-  // ✅ Handle file selection
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const newFiles = Array.from(e.target.files);
     setSubmissionFiles((prev) => [...prev, ...newFiles]);
   };
 
-  // ✅ Remove file from submission list
   const removeFile = (index: number) => {
     setSubmissionFiles((prev) => prev.filter((_, i) => i !== index));
   };
@@ -115,46 +137,39 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   useEffect(() => {
     const checkAssignment = async () => {
       if (!user || !assignment) return;
-      const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(
-        user.id
-      );
+      const assigned =
+        await adminAssignedStudentsService.isStudentAssignedToAdmin(user.id);
       setIsAssigned(assigned);
-      console.log("isStudentAssignedToAdmin:", assigned);
     };
 
     checkAssignment();
   }, [user, assignment]);
 
-  // ✅ Add link to submission
   const addLink = () => {
     if (currentLink && isValidUrl(currentLink)) {
       setLinks((prev) => [...prev, currentLink]);
-      setCurrentLink('');
+      setCurrentLink("");
     } else {
-      setMessage('Please enter a valid URL');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Please enter a valid URL");
+      setTimeout(() => setMessage(""), 3000);
     }
   };
 
-  // ✅ Remove link from submission
   const removeLink = (index: number) => {
     setLinks((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ Add text submission
   const addTextSubmission = () => {
     if (currentTextSubmission.trim()) {
       setTextSubmissions((prev) => [...prev, currentTextSubmission.trim()]);
-      setCurrentTextSubmission('');
+      setCurrentTextSubmission("");
     }
   };
 
-  // ✅ Remove text submission
   const removeTextSubmission = (index: number) => {
     setTextSubmissions((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ Validate URL
   const isValidUrl = (string: string) => {
     try {
       new URL(string);
@@ -164,41 +179,48 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     }
   };
 
-  // ✅ Handle submission upload
   const handleSubmit = async () => {
     if (!assignment) {
-      setMessage('Assignment not found.');
+      setMessage("Assignment not found.");
       return;
     }
 
-    // Check if at least one type of submission is provided
-    if (submissionFiles.length === 0 && textSubmissions.length === 0 && links.length === 0) {
-      setMessage('Please provide at least one type of submission (files, text, or links).');
+    if (
+      submissionFiles.length === 0 &&
+      textSubmissions.length === 0 &&
+      links.length === 0
+    ) {
+      setMessage(
+        "Please provide at least one type of submission (files, text, or links)."
+      );
       return;
     }
 
     setIsSubmitting(true);
     setUploading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       if (assignment.deadline && new Date() > assignment.deadline.toDate()) {
-        setMessage('Assignment deadline has passed. Submission is not allowed.');
+        setMessage(
+          "Assignment deadline has passed. Submission is not allowed."
+        );
         setIsSubmitting(false);
         setUploading(false);
         return;
       }
 
-      // Upload files
       const uploadedUrls: string[] = [];
       for (const file of submissionFiles) {
-        const result = await fileService.uploadAttachment(`/submissions/${assignmentId}`, file);
+        const result = await fileService.uploadAttachment(
+          `/submissions/${assignmentId}`,
+          file
+        );
         if (result.success) {
           uploadedUrls.push(result.data);
         }
       }
 
-      // Save submission record
       const submission = {
         assignmentId,
         studentId: user.id,
@@ -209,74 +231,72 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         textSubmissions: textSubmissions,
         marks: null,
         feedback: null,
-        links: links
+        links: links,
       };
 
-      // Create submission and get the submission ID
-      const submissionResult = await assignmentService.createSubmission(submission);
+      const submissionResult = await assignmentService.createSubmission(
+        submission
+      );
 
-      // ✅ If student is assigned to admin, create notification
       if (isAssigned && submissionResult.success && submissionResult.data) {
         try {
           const idToken = await authService.getToken();
-
           const submissionId = submissionResult.data;
-          await notificationApiService.createNotification({
-            submissionId: submissionId,  // The ID returned from createSubmission
-            assignmentId: assignmentId,
-            studentId: user.id,
-          }, idToken);
-          console.log('✅ Notification created successfully');
+          await notificationApiService.createNotification(
+            {
+              submissionId: submissionId,
+              assignmentId: assignmentId,
+              studentId: user.id,
+            },
+            idToken
+          );
         } catch (notifError) {
-          console.error('Failed to create notification:', notifError);
-          // Don't fail the whole submission if notification fails
+          console.error("Failed to create notification:", notifError);
         }
       }
 
       await onComplete();
-      setMessage('Assignment submitted successfully!');
+      setMessage("Assignment submitted successfully!");
       setSubmissionFiles([]);
       setTextSubmissions([]);
       setLinks([]);
-      setCurrentTextSubmission('');
+      setCurrentTextSubmission("");
     } catch (error) {
-      logError('Error submitting assignment', error);
-      setMessage('❌ Failed to submit. Please try again.');
+      logError("Error submitting assignment", error);
+      setMessage("❌ Failed to submit. Please try again.");
     } finally {
       setIsSubmitting(false);
       setUploading(false);
     }
   };
 
-
-
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (isResponsesMaximized) setIsResponsesMaximized(false);
         if (isEditorMaximized) setIsEditorMaximized(false);
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isEditorMaximized, isResponsesMaximized]);
 
   const handleDeleteSubmission = async () => {
     if (!existingSubmission) return;
     setIsSubmitting(true);
-    setMessage('');
+    setMessage("");
 
     try {
       await assignmentService.deleteSubmission(existingSubmission.id);
       setExistingSubmission(null);
       setTextSubmissions([]);
       setLinks([]);
-      setMessage('Submission deleted successfully!');
+      setMessage("Submission deleted successfully!");
       await onComplete();
     } catch (error) {
-      logError('Error deleting submission', error);
-      setMessage('❌ Failed to delete submission. Please try again.');
+      logError("Error deleting submission", error);
+      setMessage("❌ Failed to delete submission. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -285,7 +305,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-600">
-        Loading assignment...
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+          <p>Loading assignment...</p>
+        </div>
       </div>
     );
   }
@@ -304,47 +327,50 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     );
   }
 
-  const colorMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  const colorMode =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
 
   return (
-    <div className="mx-auto p-6">
+    <div className="mx-auto p-6 no-scrollbar .no-scrollbar::-webkit-scrollbar  ">
       {/* Assignment Header */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-8 border border-gray-200 dark:border-gray-800">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
           {assignment.title}
         </h1>
 
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400 mb-6">
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4 text-primary-500" /> {formatDate(assignment.deadline)}
+        <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-4 w-4" /> {formatDate(assignment.deadline)}
           </div>
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 text-yellow-500" /> {assignment.totalPoints} pts
+          <div className="flex items-center gap-1.5">
+            <Star className="h-4 w-4" /> {assignment.totalPoints} pts
           </div>
-          <div className="flex items-center gap-1">
-            <Award className="h-4 w-4 text-green-600" /> Pass: {assignment.minimumPassPoint} pts
+          <div className="flex items-center gap-1.5">
+            <Award className="h-4 w-4" /> Pass: {assignment.minimumPassPoint}{" "}
+            pts
           </div>
         </div>
 
-        {/* Content */}
         <div className="prose dark:prose-invert max-w-none">
           <MarkdownViewer value={assignment.content} />
         </div>
 
-        {/* Attachments */}
         {assignment.attachments?.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary-500" /> Attachments
+          <div className="mt-8">
+            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <FileText className="h-4 w-4" /> Attachments
             </h2>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {assignment.attachments.map((url, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-md px-4 py-2 border border-gray-200 dark:border-gray-700"
+                  className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2.5 border border-gray-200 dark:border-gray-700"
                 >
-                  <div className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300">
-                    <FileDown className="h-4 w-4 text-primary-500" />
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <FileDown className="h-4 w-4 text-gray-400" />
                     <a
                       href={url}
                       target="_blank"
@@ -357,7 +383,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                   <a
                     href={url}
                     download
-                    className="text-primary-600 dark:text-primary-400 text-xs hover:underline"
+                    className="text-primary text-xs hover:underline"
                   >
                     Download
                   </a>
@@ -368,148 +394,271 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         )}
       </div>
 
+      {/* Graded Submission Display - Minimal */}
+      {existingSubmission && isGraded && (
+        <div className="mt-6 space-y-4">
+          {/* Grade Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                    Graded
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {isPassing() ? "Passed" : "Did not meet passing criteria"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <div className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {existingSubmission.marks}
+                  <span className="text-sm font-normal text-gray-400">
+                    /{assignment.totalPoints}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">{getGradePercentage()}%</p>
+              </div>
+            </div>
+
+            {/* Simple Progress Bar */}
+            <div className="mt-4">
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary dark:bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(getGradePercentage(), 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1.5 text-xs text-gray-400">
+                <span>0</span>
+                <span>Pass: {assignment.minimumPassPoint}</span>
+                <span>{assignment.totalPoints}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Feedback Card */}
+          {existingSubmission.feedback &&
+            existingSubmission.feedback.trim() && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Feedback
+                    </h3>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <MarkdownViewer value={existingSubmission.feedback} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {/* No Feedback */}
+          {(!existingSubmission.feedback ||
+            !existingSubmission.feedback.trim()) && (
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+              <MessageSquare className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No feedback provided
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Submission Section */}
-      <div className="mt-10 bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Upload className="h-5 w-5 text-primary" /> Submit Your Work
+      <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-5 flex items-center gap-2">
+          <Upload className="h-4 w-4" />
+          {existingSubmission ? "Your Submission" : "Submit Your Work"}
         </h2>
 
         {existingSubmission ? (
-          <div className="space-y-6">
-            {/* Display existing text submissions */}
-            {existingSubmission.textSubmissions && existingSubmission.textSubmissions.length > 0 && (
-              <div>
-                <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Text Submissions
-                </h3>
-                {existingSubmission.textSubmissions.map((text, idx) => (
-                  <div key={idx} className="mb-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <MarkdownViewer value={text} />
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="space-y-5">
+            {/* Status */}
+            <div className="flex items-center gap-2 text-sm">
+              {isGraded ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-gray-500" />
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Received {existingSubmission.marks}/{assignment.totalPoints}{" "}
+                    points
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4 text-orange-500" />
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Pending review
+                  </span>
+                </>
+              )}
+            </div>
 
-            {/* Display existing links */}
-            {existingSubmission.links && existingSubmission.links.length > 0 && (
-              <div>
-                <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Submitted Links
-                </h3>
-                <ul className="space-y-2">
-                  {existingSubmission.links.map((link, idx) => (
-                    <li
+            {/* Text Submissions */}
+            {existingSubmission.textSubmissions &&
+              existingSubmission.textSubmissions.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Text Responses
+                  </h3>
+                  {existingSubmission.textSubmissions.map((text, idx) => (
+                    <div
                       key={idx}
-                      className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                      className="mb-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
                     >
-                      <Link className="h-4 w-4 text-primary-500" />
-                      <a
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline flex-1"
-                      >
-                        {link}
-                      </a>
-                    </li>
+                      <MarkdownViewer value={text} />
+                    </div>
                   ))}
-                </ul>
-              </div>
+                </div>
+              )}
+
+            {/* Links */}
+            {existingSubmission.links &&
+              existingSubmission.links.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Links
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {existingSubmission.links.map((link, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                      >
+                        <Link className="h-3.5 w-3.5 text-gray-400" />
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline truncate"
+                        >
+                          {link}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+            {/* Files */}
+            {existingSubmission.submissionFiles &&
+              existingSubmission.submissionFiles.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Files
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {existingSubmission.submissionFiles.map((url, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileDown className="h-3.5 w-3.5 text-gray-400" />
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline text-gray-700 dark:text-gray-300"
+                          >
+                            File {idx + 1}
+                          </a>
+                        </div>
+                        <a
+                          href={url}
+                          download
+                          className="text-primary text-xs hover:underline"
+                        >
+                          Download
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+            {/* Delete Button */}
+            {!isGraded && (
+              <button
+                className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1.5 mt-4"
+                onClick={handleDeleteSubmission}
+                disabled={isSubmitting}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Submission
+              </button>
             )}
 
-            {/* Display existing files */}
-            {existingSubmission.submissionFiles && existingSubmission.submissionFiles.length > 0 && (
-              <div>
-                <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Submitted Files
-                </h3>
-                <ul className="space-y-2">
-                  {existingSubmission.submissionFiles.map((url, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
-                    >
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline"
-                      >
-                        File {idx + 1}
-                      </a>
-                      <a
-                        href={url}
-                        download
-                        className="text-primary-600 dark:text-primary-400 text-xs hover:underline"
-                      >
-                        Download
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {isGraded && (
+              <p className="text-xs text-gray-400 mt-4">
+                Graded submissions cannot be deleted.
+              </p>
             )}
-
-            <button
-              className='bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors'
-              onClick={handleDeleteSubmission}
-              disabled={isSubmitting}
-            >
-              Delete Submission
-            </button>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Enhanced Text Submission Field with Markdown Editor */}
-            <div className={`${isEditorMaximized ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6' : ''}`}>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Text Submission (Optional)
+          <div className="space-y-5">
+            {/* Text Submission Editor */}
+            <div
+              className={`${
+                isEditorMaximized
+                  ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6"
+                  : ""
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  Text Response
                 </label>
                 <div className="flex items-center gap-2">
-                  {/* View Mode Buttons */}
-                  <div className="flex rounded-lg border border-gray-300 dark:border-gray-600">
+                  <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <button
                       type="button"
-                      onClick={() => setEditorView('edit')}
-                      className={`px-3 py-1.5 text-xs flex items-center gap-1 ${editorView === 'edit'
-                        ? 'bg-primary text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                      onClick={() => setEditorView("edit")}
+                      className={`px-2.5 py-1 text-xs ${
+                        editorView === "edit"
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     >
                       <Edit3 className="h-3 w-3" />
-                      Write
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditorView('preview')}
-                      className={`px-3 py-1.5 text-xs flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 ${editorView === 'preview'
-                        ? 'bg-primary text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                      onClick={() => setEditorView("preview")}
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
+                        editorView === "preview"
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     >
                       <Eye className="h-3 w-3" />
-                      Preview
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditorView('live')}
-                      className={`px-3 py-1.5 text-xs flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 ${editorView === 'live'
-                        ? 'bg-primary text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        } rounded-r-lg`}
+                      onClick={() => setEditorView("live")}
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
+                        editorView === "live"
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     >
                       <Split className="h-3 w-3" />
-                      Split
                     </button>
                   </div>
 
-                  {/* Maximize Button */}
                   <button
                     type="button"
                     onClick={() => setIsEditorMaximized(!isEditorMaximized)}
-                    className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-                    title={isEditorMaximized ? "Exit fullscreen" : "Fullscreen"}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                   >
                     {isEditorMaximized ? (
                       <Minimize2 className="h-4 w-4" />
@@ -522,120 +671,105 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
               <div
                 data-color-mode={colorMode}
-                className={`border rounded-lg dark:border-gray-700 ${isEditorMaximized ? 'h-[calc(100vh-150px)]' : ''
-                  }`}
+                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${
+                  isEditorMaximized ? "h-[calc(100vh-150px)]" : ""
+                }`}
               >
                 <MDEditor
                   value={currentTextSubmission}
-                  onChange={(value) => setCurrentTextSubmission(value || '')}
+                  onChange={(value) => setCurrentTextSubmission(value || "")}
                   preview={editorView}
-                  height={isEditorMaximized ? undefined : 400}
+                  height={isEditorMaximized ? undefined : 300}
                   hideToolbar={false}
                   visibleDragbar={!isEditorMaximized}
                   textareaProps={{
-                    placeholder: 'Write your answer here... Supports **Markdown** formatting.\n\n### Tips:\n- Use **bold** for emphasis\n- Create lists with - or 1.\n- Add code blocks with ```\n- Insert links with [text](url)'
+                    placeholder:
+                      "Write your answer here... Supports Markdown formatting.",
                   }}
                 />
               </div>
 
-              <div className={`flex gap-2 ${isEditorMaximized ? 'mt-4' : 'mt-2'}`}>
+              <div
+                className={`flex gap-2 ${isEditorMaximized ? "mt-4" : "mt-2"}`}
+              >
                 <button
                   type="button"
                   onClick={addTextSubmission}
                   disabled={!currentTextSubmission.trim()}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 bg-primary dark:bg-primary text-white dark:text-white text-sm rounded-lg disabled:opacity-40"
                 >
-                  Add Text Response
+                  Add Response
                 </button>
                 {isEditorMaximized && (
                   <button
                     type="button"
                     onClick={() => setIsEditorMaximized(false)}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg"
                   >
-                    Close Fullscreen
+                    Close
                   </button>
                 )}
               </div>
 
-              {/* Added Text Submissions */}
+              {/* Added Responses */}
               {textSubmissions.length > 0 && !isEditorMaximized && (
-                <div className={`mt-3 space-y-2 ${isResponsesMaximized ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6 overflow-y-auto' : ''}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Added responses:</p>
-                    <button
-                      type="button"
-                      onClick={() => setIsResponsesMaximized(!isResponsesMaximized)}
-                      className="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                      title={isResponsesMaximized ? "Exit fullscreen" : "Expand all"}
-                    >
-                      {isResponsesMaximized ? (
-                        <Minimize2 className="h-4 w-4" />
-                      ) : (
-                        <Maximize2 className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-gray-400">Added responses:</p>
                   {textSubmissions.map((text, idx) => (
                     <div
                       key={idx}
                       className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
                     >
                       <div className="flex justify-between items-start">
-                        <div className="flex-1 prose dark:prose-invert max-w-none text-sm">
-                          <MarkdownViewer value={isResponsesMaximized ? text : (text.substring(0, 100) + (text.length > 100 ? '...' : ''))} />
+                        <div className="flex-1 prose prose-sm dark:prose-invert max-w-none">
+                          <MarkdownViewer
+                            value={
+                              text.substring(0, 100) +
+                              (text.length > 100 ? "..." : "")
+                            }
+                          />
                         </div>
                         <button
                           type="button"
                           onClick={() => removeTextSubmission(idx)}
-                          className="text-red-500 hover:text-red-700 ml-2"
+                          className="text-gray-400 hover:text-red-500 ml-2"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
                   ))}
-
-                  {isResponsesMaximized && (
-                    <button
-                      type="button"
-                      onClick={() => setIsResponsesMaximized(false)}
-                      className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                    >
-                      Close Fullscreen
-                    </button>
-                  )}
                 </div>
               )}
-
             </div>
 
-            {/* Links Submission - Hide when editor is maximized */}
+            {/* Links */}
             {!isEditorMaximized && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Links (Optional)
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-2">
+                  Links
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="url"
                     value={currentLink}
                     onChange={(e) => setCurrentLink(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addLink())
+                    }
                     placeholder="https://example.com"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600"
                   />
                   <button
                     type="button"
                     onClick={addLink}
-                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center gap-1"
+                    className="px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
                   >
-                    <Plus className="h-4 w-4" /> Add
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
                 {links.length > 0 && (
-                  <ul className="space-y-2">
+                  <ul className="space-y-1.5">
                     {links.map((link, idx) => (
                       <li
                         key={idx}
@@ -645,14 +779,14 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex-1"
+                          className="text-blue-600 hover:underline truncate flex-1"
                         >
                           {link}
                         </a>
                         <button
                           type="button"
                           onClick={() => removeLink(idx)}
-                          className="text-red-500 hover:text-red-700 ml-2"
+                          className="text-gray-400 hover:text-red-500 ml-2"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -663,15 +797,15 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
               </div>
             )}
 
-            {/* File Upload - Hide when editor is maximized */}
+            {/* File Upload */}
             {!isEditorMaximized && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  File Attachments (Optional)
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-2">
+                  Files
                 </label>
                 <label
                   htmlFor="submission-files"
-                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   <Upload className="h-4 w-4 mr-2" /> Choose Files
                 </label>
@@ -683,17 +817,19 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                   className="hidden"
                 />
                 {submissionFiles.length > 0 && (
-                  <ul className="space-y-2 mt-3">
+                  <ul className="space-y-1.5 mt-2">
                     {submissionFiles.map((file, idx) => (
                       <li
                         key={idx}
-                        className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                        className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
                       >
-                        <span className="truncate flex-1">{file.name}</span>
+                        <span className="truncate flex-1 text-gray-700 dark:text-gray-300">
+                          {file.name}
+                        </span>
                         <button
                           type="button"
                           onClick={() => removeFile(idx)}
-                          className="text-red-500 hover:text-red-700 ml-2"
+                          className="text-gray-400 hover:text-red-500 ml-2"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -704,21 +840,21 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
               </div>
             )}
 
-            {/* Submit Button - Hide when editor is maximized */}
+            {/* Submit Button */}
             {!isEditorMaximized && (
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || uploading}
-                className="px-6 py-2 bg-primary text-white rounded-lg flex items-center gap-2 disabled:opacity-50 hover:bg-primary-600 transition-colors"
+                className="px-4 py-2 bg-primary dark:bg-primary text-white dark:text-white-900 text-sm rounded-lg flex items-center gap-2 disabled:opacity-50 hover:accent dark:hover:bg-accent"
               >
                 {isSubmitting ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
+                    <div className="h-4 w-4 border-2 border-white dark:border-gray-900 border-t-transparent animate-spin rounded-full"></div>
                     Submitting...
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4" /> Submit Assignment
+                    <Send className="h-4 w-4" /> Submit
                   </>
                 )}
               </button>
@@ -727,7 +863,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         )}
 
         {message && (
-          <p className={`mt-4 text-sm ${message.includes('❌') || message.includes('not allowed') ? 'text-red-500' : 'text-green-500'}`}>
+          <p
+            className={`mt-4 text-sm ${
+              message.includes("❌") || message.includes("not allowed")
+                ? "text-red-500"
+                : "text-gray-600 dark:text-gray-400"
+            }`}
+          >
             {message}
           </p>
         )}
