@@ -13,7 +13,7 @@ import TestimonialsSection from "./TestimonialsSection";
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background no-scrollbar .no-scrollbar::-webkit-scrollbar">
       <Header />
       <HeroSection />
       <PhilosophySection />

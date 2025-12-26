@@ -1,9 +1,9 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { assignmentService } from '@/services/assignmentService';
-import { fileService } from '@/services/fileService';
-import { Assignment, AssignmentSubmission } from '@/types/assignment';
-import { formatDate } from '@/utils/date-time';
-import { logError } from '@/utils/logger';
+import { useAuth } from "@/contexts/AuthContext";
+import { assignmentService } from "@/services/assignmentService";
+import { fileService } from "@/services/fileService";
+import { Assignment, AssignmentSubmission } from "@/types/assignment";
+import { formatDate } from "@/utils/date-time";
+import { logError } from "@/utils/logger";
 import {
   Award,
   Clock,
@@ -23,21 +23,24 @@ import {
   Split,
   CheckCircle2,
   MessageSquare,
-} from 'lucide-react';
-import React, { ChangeEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import MarkdownViewer from '../MarkdownViewer';
-import MDEditor from '@uiw/react-md-editor';
-import { adminAssignedStudentsService } from '@/services/adminAssignedStudentsService';
-import { notificationApiService } from '@/services/notificationApiService';
-import { authService } from '@/services/authService';
+} from "lucide-react";
+import React, { ChangeEvent, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import MarkdownViewer from "../MarkdownViewer";
+import MDEditor from "@uiw/react-md-editor";
+import { adminAssignedStudentsService } from "@/services/adminAssignedStudentsService";
+import { notificationApiService } from "@/services/notificationApiService";
+import { authService } from "@/services/authService";
 
 type AssignmentProps = {
   assignmentId: string;
-  onComplete: () => void
+  onComplete: () => void;
 };
 
-const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete }) => {
+const AssignmentView: React.FC<AssignmentProps> = ({
+  assignmentId,
+  onComplete,
+}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
@@ -45,31 +48,40 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [existingSubmission, setExistingSubmission] = useState<AssignmentSubmission | null>(null);
+  const [message, setMessage] = useState("");
+  const [existingSubmission, setExistingSubmission] =
+    useState<AssignmentSubmission | null>(null);
 
   const [textSubmissions, setTextSubmissions] = useState<string[]>([]);
-  const [currentTextSubmission, setCurrentTextSubmission] = useState('');
+  const [currentTextSubmission, setCurrentTextSubmission] = useState("");
   const [links, setLinks] = useState<string[]>([]);
-  const [currentLink, setCurrentLink] = useState('');
+  const [currentLink, setCurrentLink] = useState("");
 
   const [isEditorMaximized, setIsEditorMaximized] = useState(false);
   const [isResponsesMaximized, setIsResponsesMaximized] = useState(false);
-  const [editorView, setEditorView] = useState<'edit' | 'preview' | 'live'>('live');
+  const [editorView, setEditorView] = useState<"edit" | "preview" | "live">(
+    "live"
+  );
 
   const [isAssigned, setIsAssigned] = useState<boolean | null>(null);
 
   // Helper functions for grading display
-  const isGraded = existingSubmission?.marks !== null && existingSubmission?.marks !== undefined;
+  const isGraded =
+    existingSubmission?.marks !== null &&
+    existingSubmission?.marks !== undefined;
 
   const isPassing = () => {
     if (!isGraded || !assignment) return false;
-    return (existingSubmission?.marks || 0) >= (assignment.minimumPassPoint || 0);
+    return (
+      (existingSubmission?.marks || 0) >= (assignment.minimumPassPoint || 0)
+    );
   };
 
   const getGradePercentage = () => {
     if (!isGraded || !assignment?.totalPoints) return 0;
-    return Math.round(((existingSubmission?.marks || 0) / assignment.totalPoints) * 100);
+    return Math.round(
+      ((existingSubmission?.marks || 0) / assignment.totalPoints) * 100
+    );
   };
 
   useEffect(() => {
@@ -85,7 +97,11 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
     const fetchSubmission = async () => {
       if (!assignmentId || !user) return;
-      const submissionResult = await assignmentService.getSubmissionByStudentAndAssignment(user.id, assignmentId);
+      const submissionResult =
+        await assignmentService.getSubmissionByStudentAndAssignment(
+          user.id,
+          assignmentId
+        );
       if (submissionResult.success && submissionResult.data) {
         setExistingSubmission(submissionResult.data);
         setTextSubmissions(submissionResult.data.textSubmissions || []);
@@ -99,13 +115,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isEditorMaximized) {
+      if (e.key === "Escape" && isEditorMaximized) {
         setIsEditorMaximized(false);
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isEditorMaximized]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +137,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   useEffect(() => {
     const checkAssignment = async () => {
       if (!user || !assignment) return;
-      const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(user.id);
+      const assigned =
+        await adminAssignedStudentsService.isStudentAssignedToAdmin(user.id);
       setIsAssigned(assigned);
     };
 
@@ -131,10 +148,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const addLink = () => {
     if (currentLink && isValidUrl(currentLink)) {
       setLinks((prev) => [...prev, currentLink]);
-      setCurrentLink('');
+      setCurrentLink("");
     } else {
-      setMessage('Please enter a valid URL');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Please enter a valid URL");
+      setTimeout(() => setMessage(""), 3000);
     }
   };
 
@@ -145,7 +162,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
   const addTextSubmission = () => {
     if (currentTextSubmission.trim()) {
       setTextSubmissions((prev) => [...prev, currentTextSubmission.trim()]);
-      setCurrentTextSubmission('');
+      setCurrentTextSubmission("");
     }
   };
 
@@ -164,22 +181,30 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
   const handleSubmit = async () => {
     if (!assignment) {
-      setMessage('Assignment not found.');
+      setMessage("Assignment not found.");
       return;
     }
 
-    if (submissionFiles.length === 0 && textSubmissions.length === 0 && links.length === 0) {
-      setMessage('Please provide at least one type of submission (files, text, or links).');
+    if (
+      submissionFiles.length === 0 &&
+      textSubmissions.length === 0 &&
+      links.length === 0
+    ) {
+      setMessage(
+        "Please provide at least one type of submission (files, text, or links)."
+      );
       return;
     }
 
     setIsSubmitting(true);
     setUploading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       if (assignment.deadline && new Date() > assignment.deadline.toDate()) {
-        setMessage('Assignment deadline has passed. Submission is not allowed.');
+        setMessage(
+          "Assignment deadline has passed. Submission is not allowed."
+        );
         setIsSubmitting(false);
         setUploading(false);
         return;
@@ -187,7 +212,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
       const uploadedUrls: string[] = [];
       for (const file of submissionFiles) {
-        const result = await fileService.uploadAttachment(`/submissions/${assignmentId}`, file);
+        const result = await fileService.uploadAttachment(
+          `/submissions/${assignmentId}`,
+          file
+        );
         if (result.success) {
           uploadedUrls.push(result.data);
         }
@@ -203,34 +231,39 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         textSubmissions: textSubmissions,
         marks: null,
         feedback: null,
-        links: links
+        links: links,
       };
 
-      const submissionResult = await assignmentService.createSubmission(submission);
+      const submissionResult = await assignmentService.createSubmission(
+        submission
+      );
 
       if (isAssigned && submissionResult.success && submissionResult.data) {
         try {
           const idToken = await authService.getToken();
           const submissionId = submissionResult.data;
-          await notificationApiService.createNotification({
-            submissionId: submissionId,
-            assignmentId: assignmentId,
-            studentId: user.id,
-          }, idToken);
+          await notificationApiService.createNotification(
+            {
+              submissionId: submissionId,
+              assignmentId: assignmentId,
+              studentId: user.id,
+            },
+            idToken
+          );
         } catch (notifError) {
-          console.error('Failed to create notification:', notifError);
+          console.error("Failed to create notification:", notifError);
         }
       }
 
       await onComplete();
-      setMessage('Assignment submitted successfully!');
+      setMessage("Assignment submitted successfully!");
       setSubmissionFiles([]);
       setTextSubmissions([]);
       setLinks([]);
-      setCurrentTextSubmission('');
+      setCurrentTextSubmission("");
     } catch (error) {
-      logError('Error submitting assignment', error);
-      setMessage('❌ Failed to submit. Please try again.');
+      logError("Error submitting assignment", error);
+      setMessage("❌ Failed to submit. Please try again.");
     } finally {
       setIsSubmitting(false);
       setUploading(false);
@@ -239,31 +272,31 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (isResponsesMaximized) setIsResponsesMaximized(false);
         if (isEditorMaximized) setIsEditorMaximized(false);
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isEditorMaximized, isResponsesMaximized]);
 
   const handleDeleteSubmission = async () => {
     if (!existingSubmission) return;
     setIsSubmitting(true);
-    setMessage('');
+    setMessage("");
 
     try {
       await assignmentService.deleteSubmission(existingSubmission.id);
       setExistingSubmission(null);
       setTextSubmissions([]);
       setLinks([]);
-      setMessage('Submission deleted successfully!');
+      setMessage("Submission deleted successfully!");
       await onComplete();
     } catch (error) {
-      logError('Error deleting submission', error);
-      setMessage('❌ Failed to delete submission. Please try again.');
+      logError("Error deleting submission", error);
+      setMessage("❌ Failed to delete submission. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -294,10 +327,14 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
     );
   }
 
-  const colorMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  const colorMode =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
 
   return (
-    <div className="mx-auto p-6">
+    <div className="mx-auto p-6 no-scrollbar .no-scrollbar::-webkit-scrollbar  ">
       {/* Assignment Header */}
       <div className="bg-white dark:bg-gray-900 rounded-xl p-8 border border-gray-200 dark:border-gray-800">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
@@ -312,7 +349,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
             <Star className="h-4 w-4" /> {assignment.totalPoints} pts
           </div>
           <div className="flex items-center gap-1.5">
-            <Award className="h-4 w-4" /> Pass: {assignment.minimumPassPoint} pts
+            <Award className="h-4 w-4" /> Pass: {assignment.minimumPassPoint}{" "}
+            pts
           </div>
         </div>
 
@@ -371,7 +409,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                     Graded
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {isPassing() ? 'Passed' : 'Did not meet passing criteria'}
+                    {isPassing() ? "Passed" : "Did not meet passing criteria"}
                   </p>
                 </div>
               </div>
@@ -379,7 +417,9 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
               <div className="text-right">
                 <div className="text-2xl font-semibold text-gray-900 dark:text-white">
                   {existingSubmission.marks}
-                  <span className="text-sm font-normal text-gray-400">/{assignment.totalPoints}</span>
+                  <span className="text-sm font-normal text-gray-400">
+                    /{assignment.totalPoints}
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500">{getGradePercentage()}%</p>
               </div>
@@ -402,27 +442,33 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
           </div>
 
           {/* Feedback Card */}
-          {existingSubmission.feedback && existingSubmission.feedback.trim() && (
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-gray-400" />
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Feedback</h3>
+          {existingSubmission.feedback &&
+            existingSubmission.feedback.trim() && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Feedback
+                    </h3>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <MarkdownViewer value={existingSubmission.feedback} />
+                  </div>
                 </div>
               </div>
-              <div className="p-5">
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <MarkdownViewer value={existingSubmission.feedback} />
-                </div>
-              </div>
-            </div>
-          )}
+            )}
 
           {/* No Feedback */}
-          {(!existingSubmission.feedback || !existingSubmission.feedback.trim()) && (
+          {(!existingSubmission.feedback ||
+            !existingSubmission.feedback.trim()) && (
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
               <MessageSquare className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">No feedback provided</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No feedback provided
+              </p>
             </div>
           )}
         </div>
@@ -432,7 +478,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
       <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
         <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-5 flex items-center gap-2">
           <Upload className="h-4 w-4" />
-          {existingSubmission ? 'Your Submission' : 'Submit Your Work'}
+          {existingSubmission ? "Your Submission" : "Submit Your Work"}
         </h2>
 
         {existingSubmission ? (
@@ -443,98 +489,107 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                 <>
                   <CheckCircle2 className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-600 dark:text-gray-400">
-                    Received {existingSubmission.marks}/{assignment.totalPoints} points
+                    Received {existingSubmission.marks}/{assignment.totalPoints}{" "}
+                    points
                   </span>
                 </>
               ) : (
                 <>
                   <Clock className="h-4 w-4 text-orange-500" />
-                  <span className="text-gray-600 dark:text-gray-400">Pending review</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Pending review
+                  </span>
                 </>
               )}
             </div>
 
             {/* Text Submissions */}
-            {existingSubmission.textSubmissions && existingSubmission.textSubmissions.length > 0 && (
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-                  Text Responses
-                </h3>
-                {existingSubmission.textSubmissions.map((text, idx) => (
-                  <div key={idx} className="mb-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <MarkdownViewer value={text} />
-                  </div>
-                ))}
-              </div>
-            )}
+            {existingSubmission.textSubmissions &&
+              existingSubmission.textSubmissions.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Text Responses
+                  </h3>
+                  {existingSubmission.textSubmissions.map((text, idx) => (
+                    <div
+                      key={idx}
+                      className="mb-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <MarkdownViewer value={text} />
+                    </div>
+                  ))}
+                </div>
+              )}
 
             {/* Links */}
-            {existingSubmission.links && existingSubmission.links.length > 0 && (
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-                  Links
-                </h3>
-                <ul className="space-y-1.5">
-                  {existingSubmission.links.map((link, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
-                    >
-                      <Link className="h-3.5 w-3.5 text-gray-400" />
-                      <a
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline truncate"
+            {existingSubmission.links &&
+              existingSubmission.links.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Links
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {existingSubmission.links.map((link, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
                       >
-                        {link}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Files */}
-            {existingSubmission.submissionFiles && existingSubmission.submissionFiles.length > 0 && (
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-                  Files
-                </h3>
-                <ul className="space-y-1.5">
-                  {existingSubmission.submissionFiles.map((url, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileDown className="h-3.5 w-3.5 text-gray-400" />
+                        <Link className="h-3.5 w-3.5 text-gray-400" />
                         <a
-                          href={url}
+                          href={link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:underline text-gray-700 dark:text-gray-300"
+                          className="text-blue-600 dark:text-blue-400 hover:underline truncate"
                         >
-                          File {idx + 1}
+                          {link}
                         </a>
-                      </div>
-                      <a
-                        href={url}
-                        download
-                        className="text-primary text-xs hover:underline"
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+            {/* Files */}
+            {existingSubmission.submissionFiles &&
+              existingSubmission.submissionFiles.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Files
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {existingSubmission.submissionFiles.map((url, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
                       >
-                        Download
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                        <div className="flex items-center gap-2">
+                          <FileDown className="h-3.5 w-3.5 text-gray-400" />
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline text-gray-700 dark:text-gray-300"
+                          >
+                            File {idx + 1}
+                          </a>
+                        </div>
+                        <a
+                          href={url}
+                          download
+                          className="text-primary text-xs hover:underline"
+                        >
+                          Download
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
             {/* Delete Button */}
             {!isGraded && (
               <button
-                className='text-red-500 hover:text-red-600 text-sm flex items-center gap-1.5 mt-4'
+                className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1.5 mt-4"
                 onClick={handleDeleteSubmission}
                 disabled={isSubmitting}
               >
@@ -552,7 +607,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         ) : (
           <div className="space-y-5">
             {/* Text Submission Editor */}
-            <div className={`${isEditorMaximized ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6' : ''}`}>
+            <div
+              className={`${
+                isEditorMaximized
+                  ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6"
+                  : ""
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Text Response
@@ -561,31 +622,34 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                   <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <button
                       type="button"
-                      onClick={() => setEditorView('edit')}
-                      className={`px-2.5 py-1 text-xs ${editorView === 'edit'
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                        : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                      onClick={() => setEditorView("edit")}
+                      className={`px-2.5 py-1 text-xs ${
+                        editorView === "edit"
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     >
                       <Edit3 className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditorView('preview')}
-                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${editorView === 'preview'
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                        : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                      onClick={() => setEditorView("preview")}
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
+                        editorView === "preview"
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     >
                       <Eye className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditorView('live')}
-                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${editorView === 'live'
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                        : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                      onClick={() => setEditorView("live")}
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
+                        editorView === "live"
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     >
                       <Split className="h-3 w-3" />
                     </button>
@@ -596,29 +660,38 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                     onClick={() => setIsEditorMaximized(!isEditorMaximized)}
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                   >
-                    {isEditorMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    {isEditorMaximized ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
               <div
                 data-color-mode={colorMode}
-                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${isEditorMaximized ? 'h-[calc(100vh-150px)]' : ''}`}
+                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${
+                  isEditorMaximized ? "h-[calc(100vh-150px)]" : ""
+                }`}
               >
                 <MDEditor
                   value={currentTextSubmission}
-                  onChange={(value) => setCurrentTextSubmission(value || '')}
+                  onChange={(value) => setCurrentTextSubmission(value || "")}
                   preview={editorView}
                   height={isEditorMaximized ? undefined : 300}
                   hideToolbar={false}
                   visibleDragbar={!isEditorMaximized}
                   textareaProps={{
-                    placeholder: 'Write your answer here... Supports Markdown formatting.'
+                    placeholder:
+                      "Write your answer here... Supports Markdown formatting.",
                   }}
                 />
               </div>
 
-              <div className={`flex gap-2 ${isEditorMaximized ? 'mt-4' : 'mt-2'}`}>
+              <div
+                className={`flex gap-2 ${isEditorMaximized ? "mt-4" : "mt-2"}`}
+              >
                 <button
                   type="button"
                   onClick={addTextSubmission}
@@ -649,7 +722,12 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1 prose prose-sm dark:prose-invert max-w-none">
-                          <MarkdownViewer value={text.substring(0, 100) + (text.length > 100 ? '...' : '')} />
+                          <MarkdownViewer
+                            value={
+                              text.substring(0, 100) +
+                              (text.length > 100 ? "..." : "")
+                            }
+                          />
                         </div>
                         <button
                           type="button"
@@ -676,7 +754,9 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                     type="url"
                     value={currentLink}
                     onChange={(e) => setCurrentLink(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addLink())
+                    }
                     placeholder="https://example.com"
                     className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600"
                   />
@@ -695,10 +775,19 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                         key={idx}
                         className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
                       >
-                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate flex-1">
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline truncate flex-1"
+                        >
                           {link}
                         </a>
-                        <button type="button" onClick={() => removeLink(idx)} className="text-gray-400 hover:text-red-500 ml-2">
+                        <button
+                          type="button"
+                          onClick={() => removeLink(idx)}
+                          className="text-gray-400 hover:text-red-500 ml-2"
+                        >
                           <X className="h-4 w-4" />
                         </button>
                       </li>
@@ -734,8 +823,14 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
                         key={idx}
                         className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
                       >
-                        <span className="truncate flex-1 text-gray-700 dark:text-gray-300">{file.name}</span>
-                        <button type="button" onClick={() => removeFile(idx)} className="text-gray-400 hover:text-red-500 ml-2">
+                        <span className="truncate flex-1 text-gray-700 dark:text-gray-300">
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(idx)}
+                          className="text-gray-400 hover:text-red-500 ml-2"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </li>
@@ -768,7 +863,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({ assignmentId, onComplete })
         )}
 
         {message && (
-          <p className={`mt-4 text-sm ${message.includes('❌') || message.includes('not allowed') ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}>
+          <p
+            className={`mt-4 text-sm ${
+              message.includes("❌") || message.includes("not allowed")
+                ? "text-red-500"
+                : "text-gray-600 dark:text-gray-400"
+            }`}
+          >
             {message}
           </p>
         )}
