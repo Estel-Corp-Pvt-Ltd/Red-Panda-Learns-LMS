@@ -1,19 +1,18 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Edit2, Trash2, Archive, Hash, Loader2 } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { forumChannelService } from "@/services/forumService";
 import { ForumChannel } from "@/types/forum";
+import { Archive, Edit2, Hash, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from "react";
-import { Switch } from "@/components/ui/switch";
 
 interface AdditionalTabProps {
   isMailSendingEnabled: boolean;
@@ -282,216 +281,217 @@ const AdditionalTab = ({
             className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
           />
         </div>
-        
-      {/* Custom Certificate Name Input (Conditionally Rendered) */}
-      {isCertificateEnabled && (
-        <div className="space-y-3 p-4 border rounded-lg">
-          <div className="space-y-1">
-            <Label htmlFor="certificate-name" className="text-base font-medium">
-              Custom Certificate Name
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Customize the name that appears on the certificate. By default, it
-              uses the course title.
-            </p>
-          </div>
-          <Input
-            id="certificate-name"
-            value={customCertificateName}
-            onChange={(e) => setCustomCertificateName(e.target.value)}
-            placeholder="Enter custom certificate name"
-          />
-        </div>
-      )}
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={onSave}>Save Settings</Button>
-      </div>
-
-      {/* Forum Channels Section */}
-      {isForumEnabled && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Forum Channels</CardTitle>
-                <CardDescription>
-                  {channels.length} channel{channels.length !== 1 ? 's' : ''} configured
-                </CardDescription>
-              </div>
-              <Button onClick={() => handleOpenModal()} size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Channel
-              </Button>
+        {/* Custom Certificate Name Input (Conditionally Rendered) */}
+        {isCertificateEnabled && (
+          <div className="space-y-3 p-4 border rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="certificate-name" className="text-base font-medium">
+                Custom Certificate Name
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Customize the name that appears on the certificate. By default, it
+                uses the course title.
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            {loadingChannels ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : channels.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Hash className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No channels created yet</p>
-                <Button onClick={() => handleOpenModal()} variant="outline" className="mt-4 gap-2">
+            <Input
+              id="certificate-name"
+              value={customCertificateName}
+              onChange={(e) => setCustomCertificateName(e.target.value)}
+              placeholder="Enter custom certificate name"
+            />
+          </div>
+        )}
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button onClick={onSave}>Save Settings</Button>
+        </div>
+
+        {/* Forum Channels Section */}
+        {isForumEnabled && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Forum Channels</CardTitle>
+                  <CardDescription>
+                    {channels.length} channel{channels.length !== 1 ? 's' : ''} configured
+                  </CardDescription>
+                </div>
+                <Button onClick={() => handleOpenModal()} size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Create First Channel
+                  Create Channel
                 </Button>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">Order</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="w-32">Status</TableHead>
-                    <TableHead className="w-40 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {channels.map((channel) => (
-                    <TableRow key={channel.id}>
-                      <TableCell>
-                        <Badge variant="outline">{channel.order}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Hash className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{channel.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {channel.description || '—'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
-                            {channel.isArchived ? 'Archived' : 'Active'}
-                          </Badge>
-                          {channel.isModerated && (
-                            <Badge variant="outline" className="text-xs">
-                              Moderated
+            </CardHeader>
+            <CardContent>
+              {loadingChannels ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : channels.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Hash className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No channels created yet</p>
+                  <Button onClick={() => handleOpenModal()} variant="outline" className="mt-4 gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create First Channel
+                  </Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">Order</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="w-32">Status</TableHead>
+                      <TableHead className="w-40 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {channels.map((channel) => (
+                      <TableRow key={channel.id}>
+                        <TableCell>
+                          <Badge variant="outline">{channel.order}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Hash className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{channel.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {channel.description || '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
+                              {channel.isArchived ? 'Archived' : 'Active'}
                             </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenModal(channel)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          {!channel.isArchived && (
+                            {channel.isModerated && (
+                              <Badge variant="outline" className="text-xs">
+                                Moderated
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleArchive(channel.id)}
+                              onClick={() => handleOpenModal(channel)}
                             >
-                              <Archive className="h-4 w-4" />
+                              <Edit2 className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(channel.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                            {!channel.isArchived && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleArchive(channel.id)}
+                              >
+                                <Archive className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(channel.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Create/Edit Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingChannel ? 'Edit Channel' : 'Create Channel'}</DialogTitle>
-            <DialogDescription>
-              {editingChannel ? 'Update channel details' : 'Add a new discussion channel'}
-            </DialogDescription>
-          </DialogHeader>
+        {/* Create/Edit Modal */}
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingChannel ? 'Edit Channel' : 'Create Channel'}</DialogTitle>
+              <DialogDescription>
+                {editingChannel ? 'Update channel details' : 'Add a new discussion channel'}
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="name">Channel Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., General Discussion"
-                className="mt-2"
-              />
-            </div>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="name">Channel Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., General Discussion"
+                  className="mt-2"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of this channel"
-                className="mt-2"
-              />
-            </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of this channel"
+                  className="mt-2"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="order">Display Order</Label>
-              <Input
-                id="order"
-                type="number"
-                min="1"
-                value={formData.order}
-                onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 1 })}
-                className="mt-2"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Lower numbers appear first in the channel list
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="space-y-1">
-                <Label htmlFor="moderation" className="text-base font-medium">
-                  Enable Moderation
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  When enabled, all messages in this channel will be hidden by default and require approval from an admin or instructor before becoming visible to students.
+              <div>
+                <Label htmlFor="order">Display Order</Label>
+                <Input
+                  id="order"
+                  type="number"
+                  min="1"
+                  value={formData.order}
+                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 1 })}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Lower numbers appear first in the channel list
                 </p>
               </div>
-              <Switch
-                id="moderation"
-                checked={formData.isModerated}
-                onCheckedChange={(checked) => setFormData({ ...formData, isModerated: checked })}
-              />
-            </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveChannel}>
-              {editingChannel ? 'Update' : 'Create'} Channel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <Label htmlFor="moderation" className="text-base font-medium">
+                    Enable Moderation
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, all messages in this channel will be hidden by default and require approval from an admin or instructor before becoming visible to students.
+                  </p>
+                </div>
+                <Switch
+                  id="moderation"
+                  checked={formData.isModerated}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isModerated: checked })}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveChannel}>
+                {editingChannel ? 'Update' : 'Create'} Channel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };
