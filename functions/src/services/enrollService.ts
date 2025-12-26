@@ -56,16 +56,15 @@ class EnrollmentService {
 
     const batch = db.batch();
     const enrollmentIds: string[] = [];
-
+    const userName = [user.firstName, user.middleName, user.lastName]
+      .filter((namePart) => namePart && namePart.trim() !== "")
+      .join(" ");
     try {
       for (const item of items) {
         if (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE) {
           const enrollmentId = this.generateEnrollmentId(user.id, item.itemId);
           enrollmentIds.push(enrollmentId);
 
-          const userName = [user.firstName, user.middleName, user.lastName]
-            .filter((namePart) => namePart && namePart.trim() !== "")
-            .join(" ");
           // Create enrollment for single course
           const enrollment: Enrollment = {
             id: enrollmentId,
@@ -106,7 +105,7 @@ class EnrollmentService {
             const courseEnrollment: Enrollment = {
               id: courseEnrollmentId,
               userId: user.id,
-              userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+              userName: userName,
               userEmail: user.email,
               courseId: course.id,
               courseName: course.title,
@@ -163,11 +162,13 @@ class EnrollmentService {
       if (enrollmentSnap.exists) {
         return ok(enrollmentId);
       }
-
+      const userName = [user.firstName, user.middleName, user.lastName]
+        .filter((namePart) => namePart && namePart.trim() !== "")
+        .join(" ");
       const enrollment: Enrollment = {
         id: enrollmentId,
         userId: user.id,
-        userName: `${user.firstName} ${user.middleName} ${user.lastName}`,
+        userName: userName,
         userEmail: user.email,
         courseId: courseId,
         courseName: courseResult.data.title,
