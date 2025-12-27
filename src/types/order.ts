@@ -24,7 +24,7 @@ export interface Order {
   items: TransactionLineItem[];
   status: OrderStatus;
   amount: number;
-  completedAt?: Timestamp | FieldValue;
+  completedAt: Timestamp;
   exchangeRate: number;
   transactionId?: string | null;
   currency: Currency;

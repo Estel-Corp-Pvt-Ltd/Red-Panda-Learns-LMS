@@ -1,6 +1,7 @@
 import { InvoiceComponent } from '@/components/Invoice';
 import { orderService } from '@/services/orderService';
 import { Address, Order } from '@/types/order';
+import { formatDateTime } from '@/utils/date-time';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -46,7 +47,7 @@ const InvoicePage: React.FC = () => {
   const invoiceData = {
     // Invoice basic info
     invoiceNumber: order.orderId.replace('order_', 'INV-'),
-    invoiceDate: "2024-01-15",
+    invoiceDate: order.completedAt ? formatDateTime(order.completedAt.toDate()) : 'Not Available',
     // Billing and shipping
     billTo: formatAddress(order?.billingAddress),
     shipTo: formatAddress(order?.shippingAddress),
