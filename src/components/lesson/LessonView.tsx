@@ -35,7 +35,7 @@ import {
 interface LessonViewProps {
   lessonId: string;
   courseName: string;
-  onComplete: () => void;
+  onComplete: (isCompleted: boolean) => void;
   completed: boolean;
 }
 
@@ -598,7 +598,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
               <CheckCircle className="h-4 w-4 mr-2" /> Completed
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={onComplete}>
+            <Button variant="outline" size="sm" onClick={async () => onComplete(true)}>
               <CheckCircle className="h-4 w-4 mr-2" /> Mark Complete
             </Button>
           )}

@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Course, Topic, TopicItem } from "@/types/course";
+import { LearningProgress } from "@/types/learning-progress";
 
 interface CourseNavigatorProps {
   course: Course;
   currentLesson: TopicItem | null;
-  lessonHistory: string[] | object;
+  lessonHistory: string[] | LearningProgress["lessonHistory"];
   className?: string;
   onLessonClick: (lesson: TopicItem) => void;
 }
@@ -29,9 +30,12 @@ export function CourseNavigator({
 
   const isCompleted = (lessonId: string) => {
     if (!lessonHistory) return false;
-    return Array.isArray(lessonHistory) ? lessonHistory.includes(lessonId) : !!lessonHistory[lessonId];
-  }
-
+    if (Array.isArray(lessonHistory)) {
+      return lessonHistory.includes(lessonId);
+    }
+    const lessonRecord = lessonHistory[lessonId];
+    return !!lessonRecord && lessonRecord.markedAsComplete && (lessonRecord?.type ? lessonRecord.type == currentLesson.type : true);
+  };
   // Reusable rendering for topics
   const renderTopic = (topic: Topic) => {
     const [isExpanded, setIsExpanded] = useState(topic.items.some(item => isLessonActive(item.id)));

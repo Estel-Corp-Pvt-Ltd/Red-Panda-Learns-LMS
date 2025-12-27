@@ -34,7 +34,7 @@ import { authService } from "@/services/authService";
 
 type AssignmentProps = {
   assignmentId: string;
-  onComplete: () => void;
+  onComplete: (isCompleted: boolean) => void;
 };
 
 const AssignmentView: React.FC<AssignmentProps> = ({
@@ -255,7 +255,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
         }
       }
 
-      await onComplete();
+      await onComplete(true);
       setMessage("Assignment submitted successfully!");
       setSubmissionFiles([]);
       setTextSubmissions([]);
@@ -293,7 +293,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
       setTextSubmissions([]);
       setLinks([]);
       setMessage("Submission deleted successfully!");
-      await onComplete();
+      await onComplete(false);
     } catch (error) {
       logError("Error deleting submission", error);
       setMessage("❌ Failed to delete submission. Please try again.");
@@ -329,7 +329,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
   const colorMode =
     typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
+      document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
@@ -464,13 +464,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({
           {/* No Feedback */}
           {(!existingSubmission.feedback ||
             !existingSubmission.feedback.trim()) && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
-              <MessageSquare className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                No feedback provided
-              </p>
-            </div>
-          )}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+                <MessageSquare className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No feedback provided
+                </p>
+              </div>
+            )}
         </div>
       )}
 
@@ -608,11 +608,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({
           <div className="space-y-5">
             {/* Text Submission Editor */}
             <div
-              className={`${
-                isEditorMaximized
+              className={`${isEditorMaximized
                   ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6"
                   : ""
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -623,33 +622,30 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                     <button
                       type="button"
                       onClick={() => setEditorView("edit")}
-                      className={`px-2.5 py-1 text-xs ${
-                        editorView === "edit"
+                      className={`px-2.5 py-1 text-xs ${editorView === "edit"
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      }`}
+                        }`}
                     >
                       <Edit3 className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditorView("preview")}
-                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
-                        editorView === "preview"
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${editorView === "preview"
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      }`}
+                        }`}
                     >
                       <Eye className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditorView("live")}
-                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
-                        editorView === "live"
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${editorView === "live"
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      }`}
+                        }`}
                     >
                       <Split className="h-3 w-3" />
                     </button>
@@ -671,9 +667,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
               <div
                 data-color-mode={colorMode}
-                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${
-                  isEditorMaximized ? "h-[calc(100vh-150px)]" : ""
-                }`}
+                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${isEditorMaximized ? "h-[calc(100vh-150px)]" : ""
+                  }`}
               >
                 <MDEditor
                   value={currentTextSubmission}
@@ -864,11 +859,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
         {message && (
           <p
-            className={`mt-4 text-sm ${
-              message.includes("❌") || message.includes("not allowed")
+            className={`mt-4 text-sm ${message.includes("❌") || message.includes("not allowed")
                 ? "text-red-500"
                 : "text-gray-600 dark:text-gray-400"
-            }`}
+              }`}
           >
             {message}
           </p>
