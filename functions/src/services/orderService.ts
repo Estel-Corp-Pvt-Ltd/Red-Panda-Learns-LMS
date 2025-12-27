@@ -245,7 +245,7 @@ class OrderService {
         return ok([]);
       }
 
-      const userOrders: Order[] = querySnapshot.docs.map((doc) => 
+      const userOrders: Order[] = querySnapshot.docs.map((doc) =>
         documentToOrder(doc.id, doc.data())
       );
 
@@ -348,75 +348,75 @@ class OrderService {
   /**
    * Get orders with optional filters - Serialized for API response
    */
- async getOrders(options: GetOrdersOptions = {}): Promise<Result<SerializedOrder[]>> {
-  try {
-    const {
-      status,
-      userId,
-      userEmail,
-      provider,
-      dateRange,
-      limit,
-      orderByField = 'createdAt',
-      orderDirection = 'desc',
-    } = options;
+  async getOrders(options: GetOrdersOptions = {}): Promise<Result<SerializedOrder[]>> {
+    try {
+      const {
+        status,
+        userId,
+        userEmail,
+        provider,
+        dateRange,
+        limit,
+        orderByField = 'createdAt',
+        orderDirection = 'desc',
+      } = options;
 
-    // Convert limit to number if provided
-    const queryLimit = limit !== undefined ? Number(limit) : undefined;
+      // Convert limit to number if provided
+      const queryLimit = limit !== undefined ? Number(limit) : undefined;
 
-    functions.logger.info('Fetching orders with options:', {
-      status,
-      userId,
-      userEmail,
-      provider,
-      dateRange,
-      limit: queryLimit,
-    });
+      functions.logger.info('Fetching orders with options:', {
+        status,
+        userId,
+        userEmail,
+        provider,
+        dateRange,
+        limit: queryLimit,
+      });
 
-    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
-      db.collection(COLLECTION.ORDERS);
+      let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
+        db.collection(COLLECTION.ORDERS);
 
-    if (status) query = query.where('status', '==', status);
-    if (userId) query = query.where('userId', '==', userId);
-    if (userEmail) query = query.where('userEmail', '==', userEmail);
-    if (provider) query = query.where('provider', '==', provider);
+      if (status) query = query.where('status', '==', status);
+      if (userId) query = query.where('userId', '==', userId);
+      if (userEmail) query = query.where('userEmail', '==', userEmail);
+      if (provider) query = query.where('provider', '==', provider);
 
-    if (dateRange?.startDate)
-      query = query.where('createdAt', '>=', Timestamp.fromDate(dateRange.startDate));
-    if (dateRange?.endDate) {
-      const endOfDay = new Date(dateRange.endDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      query = query.where('createdAt', '<=', Timestamp.fromDate(endOfDay));
-    }
+      if (dateRange?.startDate)
+        query = query.where('createdAt', '>=', Timestamp.fromDate(dateRange.startDate));
+      if (dateRange?.endDate) {
+        const endOfDay = new Date(dateRange.endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = query.where('createdAt', '<=', Timestamp.fromDate(endOfDay));
+      }
 
-    // Apply ordering
-    if (dateRange) {
-      query = query.orderBy('createdAt', orderDirection);
-      if (orderByField !== 'createdAt') {
+      // Apply ordering
+      if (dateRange) {
+        query = query.orderBy('createdAt', orderDirection);
+        if (orderByField !== 'createdAt') {
+          query = query.orderBy(orderByField, orderDirection);
+        }
+      } else {
         query = query.orderBy(orderByField, orderDirection);
       }
-    } else {
-      query = query.orderBy(orderByField, orderDirection);
+
+      // Apply limit only if provided
+      if (queryLimit && queryLimit > 0) {
+        query = query.limit(queryLimit);
+      }
+
+      const querySnapshot = await query.get();
+
+      const orders: SerializedOrder[] = querySnapshot.docs.map((docSnap) =>
+        serializeOrderFromDoc(docSnap.id, docSnap.data())
+      );
+
+      functions.logger.info(`OrderService.getOrders - Fetched: ${orders.length} orders`);
+      return ok(orders);
+    } catch (error: any) {
+      functions.logger.error('OrderService.getOrders error:', error);
+      return fail('Failed to fetch orders', error.message);
     }
-
-    // Apply limit only if provided
-    if (queryLimit && queryLimit > 0) {
-      query = query.limit(queryLimit);
-    }
-
-    const querySnapshot = await query.get();
-
-    const orders: SerializedOrder[] = querySnapshot.docs.map((docSnap) =>
-      serializeOrderFromDoc(docSnap.id, docSnap.data())
-    );
-
-    functions.logger.info(`OrderService.getOrders - Fetched: ${orders.length} orders`);
-    return ok(orders);
-  } catch (error: any) {
-    functions.logger.error('OrderService.getOrders error:', error);
-    return fail('Failed to fetch orders', error.message);
   }
-}
 
 
   /**
@@ -527,6 +527,7 @@ class OrderService {
         currency: data.currency,
         metadata: data.metadata || {},
         billingAddress: data.billingAddress,
+        completedAt: null,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
