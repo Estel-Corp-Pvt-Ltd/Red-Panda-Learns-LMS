@@ -57,6 +57,8 @@ class LearningProgressService {
     userId: string,
     courseId: string,
     completedLessonId: string,
+    type: string,
+    isCompleted: boolean
   ): Promise<Result<null>> {
     functions.logger.info(`User ${userId} completed lesson ${completedLessonId} in course ${courseId}`);
     try {
@@ -104,8 +106,9 @@ class LearningProgressService {
         ...(progress.lessonHistory || {}),
         [completedLessonId]: {
           timeSpent: progress.lessonHistory?.[completedLessonId]?.timeSpent || 0,
-          markedAsComplete: true,
-          completedAt: FieldValue.serverTimestamp(),
+          markedAsComplete: isCompleted,
+          type: type,
+          completedAt: isCompleted ? FieldValue.serverTimestamp() : null,
         },
       };
 

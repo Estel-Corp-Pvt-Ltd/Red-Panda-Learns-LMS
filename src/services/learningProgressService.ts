@@ -67,7 +67,8 @@ class LearningProgressService {
   async completeLesson(
     courseId: string,
     itemId: string,
-    type: string
+    type: string,
+    isCompleted: boolean
   ): Promise<Result<null>> {
     try {
       const idToken = await authService.getToken();
@@ -81,6 +82,7 @@ class LearningProgressService {
           courseId,
           itemId,
           type,
+          isCompleted
         }),
       });
       return ok(null);

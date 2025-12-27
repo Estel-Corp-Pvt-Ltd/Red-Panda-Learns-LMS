@@ -13,6 +13,7 @@ export interface LearningProgress {
     [lessonId: string]: {
       timeSpent: number;
       markedAsComplete: boolean;
+      type: string;
       completedAt: Timestamp | FieldValue | null;
     };
   };

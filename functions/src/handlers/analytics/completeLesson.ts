@@ -20,10 +20,18 @@ async function completeLessonHandler(req: Request, res: Response) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const { itemId, courseId, type } = req.body;
+    const { itemId, courseId, type, isCompleted } = req.body;
 
-    if (!itemId || !courseId) {
+    if (!itemId || !courseId || !type || isCompleted === undefined) {
       res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+
+    if (type == LEARNING_CONTENT.ASSIGNMENT) {
+      await learningProgressService.completeLesson(user.uid, courseId, itemId, type, isCompleted);
+      res.json({
+        success: true,
+      });
       return;
     }
 
@@ -32,14 +40,7 @@ async function completeLessonHandler(req: Request, res: Response) {
       res.status(404).json({ error: "Lesson not found" });
       return;
     }
-    if (type == LEARNING_CONTENT.ASSIGNMENT) {
-      await learningProgressService.completeLesson(user.uid, courseId, itemId);
-      res.json({
-        success: true,
-      });
-      return;
-    }
-    await learningProgressService.completeLesson(user.uid, courseId, itemId);
+    await learningProgressService.completeLesson(user.uid, courseId, itemId, type, isCompleted);
 
     // Analytics updates
     await lessonAnalyticsService.updateLessonAnalytics({
