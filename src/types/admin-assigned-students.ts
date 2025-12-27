@@ -7,4 +7,4 @@ export interface AdminAssignedStudents {
   active: boolean;
   createdAt: Timestamp | FieldValue;
   createdBy: string;
-};
+}
