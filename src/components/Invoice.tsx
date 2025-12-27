@@ -150,15 +150,15 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                       </tr>
                       <tr>
                         <td>Invoice Date</td>
-                        <td>: {invoiceData.invoiceDate}</td>
+                        <td className='pl-2'>: {invoiceData.invoiceDate}</td>
                       </tr>
                       <tr>
                         <td>Terms</td>
-                        <td>: {invoiceData.terms}</td>
+                        <td className='pl-2'>: {invoiceData.terms}</td>
                       </tr>
                       <tr>
                         <td>Due Date</td>
-                        <td>: {invoiceData.dueDate}</td>
+                        <td className='pl-2'>: {invoiceData.dueDate}</td>
                       </tr>
                     </table>
                   </td>

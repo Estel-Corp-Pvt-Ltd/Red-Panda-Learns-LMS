@@ -1,5 +1,6 @@
 import * as brevo from "@getbrevo/brevo";
 import { logger } from "firebase-functions";
+import { formatDateTime } from "./date-time";
 
 export type PaymentDetails = {
   name: string;
@@ -20,7 +21,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
       brevoApiKey
     );
 
-    const formattedPurchaseDate = (new Date(purchaseDate)).toLocaleDateString();
+    const formattedPurchaseDate = formatDateTime(new Date(purchaseDate));
 
     // --- Prepare and send email via Brevo ---
     const sendSmtpEmail = {
@@ -58,20 +59,20 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
           <table style="width:100 percent; border-collapse:collapse; font-size:15px;">
             <tr>
-              <td style="padding:6px 0; font-weight:bold; width:40 percent;">Order ID</td>
-              <td style="padding:6px 0;">#${orderId}</td>
+              <td style="padding:6px 3px; font-weight:bold; width:40 percent;">Order ID</td>
+              <td style="padding:6px 3px;">#${orderId}</td>
             </tr>
             <tr>
-              <td style="padding:6px 0; font-weight:bold;">Purchase Date</td>
-              <td style="padding:6px 0;">${formattedPurchaseDate}</td>
+              <td style="padding:6px 3px; font-weight:bold;">Purchase Date</td>
+              <td style="padding:6px 3px;">${formattedPurchaseDate}</td>
             </tr>
             <tr>
-              <td style="padding:6px 0; font-weight:bold;">Amount Paid</td>
-              <td style="padding:6px 0;">${currency}${amount}</td>
+              <td style="padding:6px 3px; font-weight:bold;">Amount Paid</td>
+              <td style="padding:6px 3px;">${currency}${amount}</td>
             </tr>
             <tr>
-              <td style="padding:6px 0; font-weight:bold; vertical-align:top;">Items</td>
-              <td style="padding:6px 0;">
+              <td style="padding:6px 3px; font-weight:bold; vertical-align:top;">Items</td>
+              <td style="padding:6px 3px;">
                 <ul style="margin:0; padding-left:18px;">
                   ${items.map(item => `<li style="margin:0; padding:0;">${item.name}</li>`).join('')}
                 </ul>
