@@ -1,7 +1,4 @@
-import {
-  FieldValue,
-  Timestamp
-} from "firebase/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 export interface LearningProgress {
   id: string;
@@ -13,6 +10,7 @@ export interface LearningProgress {
     [lessonId: string]: {
       timeSpent: number;
       markedAsComplete: boolean;
+      type: string;
       completedAt: Timestamp | FieldValue | null;
     };
   };
@@ -22,8 +20,8 @@ export interface LearningProgress {
     certificateId: string;
     remark?: string;
     grade?: number | string | null;
+    prefferedNAmeOnCertificate?: string | null;
   };
   completionDate: Timestamp | FieldValue | null;
   updatedAt: Timestamp | FieldValue;
-};
-
+}

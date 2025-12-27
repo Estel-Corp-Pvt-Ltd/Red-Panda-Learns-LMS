@@ -53,7 +53,8 @@ export type LearningUnit = (typeof LEARNING_UNIT)[keyof typeof LEARNING_UNIT];
 
 // ENROLLMENT
 export type EnrollmentStatus = (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS];
-export type EnrolledProgramType = (typeof ENROLLED_PROGRAM_TYPE)[keyof typeof ENROLLED_PROGRAM_TYPE];
+export type EnrolledProgramType =
+  (typeof ENROLLED_PROGRAM_TYPE)[keyof typeof ENROLLED_PROGRAM_TYPE];
 
 // PAYMENT
 export type Currency = (typeof CURRENCY)[keyof typeof CURRENCY];
@@ -61,9 +62,11 @@ export type TransactionStatus = (typeof TRANSACTION_STATUS)[keyof typeof TRANSAC
 export type TransactionType = (typeof TRANSACTION_TYPE)[keyof typeof TRANSACTION_TYPE];
 export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 export type PaymentProvider = (typeof PAYMENT_PROVIDER)[keyof typeof PAYMENT_PROVIDER];
-export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUS)[keyof typeof PAYMENT_ATTEMPT_STATUS];
+export type PaymentAttemptStatus =
+  (typeof PAYMENT_ATTEMPT_STATUS)[keyof typeof PAYMENT_ATTEMPT_STATUS];
 export type RefundInitiator = (typeof REFUND_INITIATOR)[keyof typeof REFUND_INITIATOR];
-export type RazorpayWebhookEvent = (typeof RAZORPAY_WEBHOOK_EVENT)[keyof typeof RAZORPAY_WEBHOOK_EVENT];
+export type RazorpayWebhookEvent =
+  (typeof RAZORPAY_WEBHOOK_EVENT)[keyof typeof RAZORPAY_WEBHOOK_EVENT];
 export type PayPalWebhookEvent = (typeof PAYPAL_WEBHOOK_EVENT)[keyof typeof PAYPAL_WEBHOOK_EVENT];
 
 // ORDER
@@ -81,7 +84,8 @@ export type PopUpCourseType = (typeof POPUP_COURSE_TYPE)[keyof typeof POPUP_COUR
 
 // QUIZ
 export type QuizQuestionType = (typeof QUIZ_QUESTION_TYPE)[keyof typeof QUIZ_QUESTION_TYPE];
-export type QuizSubmissionStatus = (typeof QUIZ_SUBMISSION_STATUS)[keyof typeof QUIZ_SUBMISSION_STATUS];
+export type QuizSubmissionStatus =
+  (typeof QUIZ_SUBMISSION_STATUS)[keyof typeof QUIZ_SUBMISSION_STATUS];
 export type QuizStatus = (typeof QUIZ_STATUS)[keyof typeof QUIZ_STATUS];
 
 // NOTIFICATION & ANNOUNCEMENT
@@ -95,14 +99,16 @@ export type CommentType = (typeof COMMENT_STATUS)[keyof typeof COMMENT_STATUS];
 // --- COMPLAINT ---
 export type ComplaintStatus = (typeof COMPLAINT_STATUS)[keyof typeof COMPLAINT_STATUS];
 export type ComplaintSeverity = (typeof COMPLAINT_SEVERITY)[keyof typeof COMPLAINT_SEVERITY];
-export type ComplaintActionType = (typeof COMPLAINT_ACTION_TYPE)[keyof typeof COMPLAINT_ACTION_TYPE];
+export type ComplaintActionType =
+  (typeof COMPLAINT_ACTION_TYPE)[keyof typeof COMPLAINT_ACTION_TYPE];
 export type ComplaintCategory = (typeof COMPLAINT_CATEGORY)[keyof typeof COMPLAINT_CATEGORY];
 
 // --- CERTIFICATE ---
-export type CertificateRequestStatus = typeof CERTIFICATE_REQUEST_STATUS[keyof typeof CERTIFICATE_REQUEST_STATUS];
+export type CertificateRequestStatus =
+  (typeof CERTIFICATE_REQUEST_STATUS)[keyof typeof CERTIFICATE_REQUEST_STATUS];
 
 // --- BANNER ---
-export type BannerStatus = typeof BANNER_STATUS[keyof typeof BANNER_STATUS];
+export type BannerStatus = (typeof BANNER_STATUS)[keyof typeof BANNER_STATUS];
 
 // MISCELLANEOUS
 export type Duration = {

@@ -16,7 +16,7 @@ import { Enrollment } from '@/types/enrollment';
 import { Banner } from '@/types/banner';
 import { CertificateRequestStatus } from '@/types/general';
 import { formatDate } from '@/utils/date-time';
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BannerSlider } from '@/components/BannerSlider';
@@ -135,7 +135,15 @@ function EnrolledCourseCard({
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h3 className="font-semibold text-lg mb-2">{enrollment.courseName || course.title}</h3>
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="font-semibold text-lg">{enrollment.courseName || course.title}</h3>
+              {showCertificateFeatures && (
+                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full">
+                  <Award className="h-5 w-5 text-amber-500" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Certificate</span>
+                </div>
+              )}
+            </div>
             <p className="text-muted-foreground text-sm mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
             </p>
 
@@ -312,10 +320,6 @@ export default function DashboardPage() {
 
   const stats = {
     totalCourses: enrollments.length,
-    // completedCourses: enrollments.filter(e => e.progressSummary?.percent === 100).length,
-    // averageProgress: enrollments.length > 0
-    //   ? Math.round(enrollments.reduce((sum, e) => sum + e.progressSummary?.percent, 0) / enrollments.length)
-    //   : 0,
   };
 
   return (
@@ -324,17 +328,6 @@ export default function DashboardPage() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
-          {/* Header */}
-          {/* <div className="mb-8">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
-              <Link className='md:hidden' to="/submissions"><Button>View Submissions</Button> </Link>
-            </div>
-            <p className="text-muted-foreground">
-              Track your learning progress and continue your courses
-            </p>
-          </div> */}
-
           {/* Banners Section */}
           {!isBannersLoading && banners.length > 0 && (
             <div className="mb-8">
@@ -355,32 +348,6 @@ export default function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
-
-            {/* <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.completedCourses}</div>
-                <p className="text-xs text-muted-foreground">
-                  Courses finished
-                </p>
-              </CardContent>
-            </Card> */}
-
-            {/* <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.averageProgress}%</div>
-                <p className="text-xs text-muted-foreground">
-                  Across all courses
-                </p>
-              </CardContent>
-            </Card> */}
           </div>
 
           {/* Enrolled Courses */}

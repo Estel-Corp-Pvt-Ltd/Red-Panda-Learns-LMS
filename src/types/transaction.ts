@@ -7,20 +7,20 @@ import {
   RefundInitiator,
   TransactionStatus,
   TransactionType,
-  EnrolledProgramType
+  EnrolledProgramType,
 } from "./general";
 
 // TODO: Store a replica for each event
 export type WebhookEvent = {
-  eventId: string;   // provider’s webhook ID
+  eventId: string; // provider’s webhook ID
   type: RazorpayWebhookEvent | PayPalWebhookEvent;
-  payload: any;      // raw JSON body
+  payload: any; // raw JSON body
   receivedAt: Date | string;
 };
 
 export type ProviderTimestamp = {
   raw: string | number; // the exact value from provider
-  asDate: Date;         // normalized for easy usage
+  asDate: Date; // normalized for easy usage
 };
 
 export type RazorpayPaymentDetails = {
@@ -45,8 +45,8 @@ export type PayPalPaymentDetails = {
 export type TransactionMetadata = {
   userEmail: string;
   itemTitles: string[];
-  displayTitle:string;
-  subtotal:number;
+  displayTitle: string;
+  subtotal: number;
   userAgent?: string;
   paymentAttempts: number;
   reasonForRefund?: string;
@@ -58,18 +58,18 @@ export type TransactionMetadata = {
 export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
 
 export interface TransactionLineItem {
-  itemId: string;            // The actual courseId or bundleId
+  itemId: string; // The actual courseId or bundleId
   itemType: EnrolledProgramType; // Helps you know which DB collection to look up later
-  name: string;              // Snapshot of the name at time of purchase (optional but useful)
-  amount: number;            // The price sold specifically for this item (after any item-specific discounts)
-  originalAmount?: number;   // The price before discounts (optional)
-};
+  name: string; // Snapshot of the name at time of purchase (optional but useful)
+  amount: number; // The price sold specifically for this item (after any item-specific discounts)
+  originalAmount?: number; // The price before discounts (optional)
+}
 
 export interface Transaction {
   id: string; // internal transaction ID (UUID)
   orderNumber: string;
   userId: string;
-  items: TransactionLineItem[]; 
+  items: TransactionLineItem[];
   parentTransactionId?: string; // if refund, points to original payment
   type: TransactionType;
   amount: number; // final charged amount
@@ -85,14 +85,14 @@ export interface Transaction {
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
   completedAt?: Timestamp | FieldValue;
-};
+}
 
 export type CurrencyRate = {
-  id: string;               // UUID or auto-increment
-  baseCurrency: string;     // e.g. "USD"
-  targetCurrency: string;   // e.g. "INR"
-  rate: number;             // average or closing rate for the day
-  date: string;             // YYYY-MM-DD (represents the snapshot day)
-  source: string;           // e.g. "ECB", "Fixer.io", "CurrencyLayer"
-  createdAt: Timestamp| FieldValue; // when this snapshot was stored
+  id: string; // UUID or auto-increment
+  baseCurrency: string; // e.g. "USD"
+  targetCurrency: string; // e.g. "INR"
+  rate: number; // average or closing rate for the day
+  date: string; // YYYY-MM-DD (represents the snapshot day)
+  source: string; // e.g. "ECB", "Fixer.io", "CurrencyLayer"
+  createdAt: Timestamp | FieldValue; // when this snapshot was stored
 };

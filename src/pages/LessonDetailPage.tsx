@@ -152,14 +152,46 @@ export default function LessonDetailPage() {
     );
   }, [selectedItem?.id, userProgress?.lessonHistory]);
 
-  const handleMarkComplete = async () => {
+  const onModalClose = async (isCompleted: boolean) => {
     if (!user || !courseId || !selectedItem) return;
 
-    const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type);
+    if (!isCompleted) {
+      const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type, isCompleted);
+      if (result.success) {
+        setUserProgress(prev =>
+          prev
+            ? {
+              ...prev, lessonHistory: {
+                ...prev.lessonHistory, [selectedItem.id]: {
+                  timeSpent: 0, markedAsComplete: false, completedAt: serverTimestamp(),
+                  type: selectedItem.type
+                }
+              }
+            }
+            : prev
+        );
+
+        toast({
+          title: "Incomplete",
+          description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} is not marked as complete.`,
+          variant: "default",
+        });
+      }
+      return;
+    }
+
+    const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type, isCompleted);
     if (result.success) {
       setUserProgress(prev =>
         prev
-          ? { ...prev, lessonHistory: { ...prev.lessonHistory, [selectedItem.id]: { timeSpent: 0, markedAsComplete: true, completedAt: serverTimestamp() } } }
+          ? {
+            ...prev, lessonHistory: {
+              ...prev.lessonHistory, [selectedItem.id]: {
+                timeSpent: 0, markedAsComplete: true, completedAt: serverTimestamp(), type: selectedItem.type
+
+              }
+            }
+          }
           : prev
       );
 
@@ -249,51 +281,51 @@ export default function LessonDetailPage() {
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
       {/* Top info bar: Course (bigger) + Lesson (smaller) */}
- <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-  <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-    <div className="flex gap-3">
-      <Link to={`/${user.role === USER_ROLE.ADMIN ? "admin" : "dashboard"}`}>
-        <Button>Back to Dashboard</Button>
-      </Link>
-      <div className="min-w-0">
-        {/* Course title bigger */}
-        <h1 className="text-lg md:text-xl font-semibold leading-tight">
-          {course.title}
-        </h1>
-        {/* Lesson title smaller */}
-        {selectedItem && (
-          <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
-            {selectedItem.title}
-          </p>
-        )}
+      <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex gap-3">
+            <Link to={`/${user.role === USER_ROLE.ADMIN ? "admin" : "dashboard"}`}>
+              <Button>Back to Dashboard</Button>
+            </Link>
+            <div className="min-w-0">
+              {/* Course title bigger */}
+              <h1 className="text-lg md:text-xl font-semibold leading-tight">
+                {course.title}
+              </h1>
+              {/* Lesson title smaller */}
+              {selectedItem && (
+                <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
+                  {selectedItem.title}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Edit button - Admin only */}
+            {user.role === USER_ROLE.ADMIN && selectedItem && (
+              <Link
+                to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}
+              >
+                <Button variant="outline" size="sm">
+                  <Edit2 className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              </Link>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open course outline"
+            >
+              Open Outline
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      {/* Edit button - Admin only */}
-      {user.role === USER_ROLE.ADMIN && selectedItem && (
-        <Link 
-          to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}
-        >
-          <Button variant="outline" size="sm">
-            <Edit2 className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-        </Link>
-      )}
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        className="lg:hidden"
-        onClick={() => setSidebarOpen(true)}
-        aria-label="Open course outline"
-      >
-        Open Outline
-      </Button>
-    </div>
-  </div>
-</div>
 
       <div className="flex h-screen overflow-hidden">
         {/* Fixed Sidebar */}
@@ -324,14 +356,13 @@ export default function LessonDetailPage() {
           ) : selectedItem.type === "ASSIGNMENT" ? (
             <AssignmentView
               assignmentId={selectedItem.id}
-              onComplete={handleMarkComplete}
-
+              onComplete={onModalClose}
             />
           ) : (
             <LessonView
               lessonId={selectedItem.id}
               courseName={course.title}
-              onComplete={handleMarkComplete}
+              onComplete={onModalClose}
               completed={lessonCompleted}
             />
           )}

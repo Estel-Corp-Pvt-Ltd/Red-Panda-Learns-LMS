@@ -14,7 +14,7 @@ export interface Address {
   phone?: string;
   landmark?: string;
   type: AddressType;
-};
+}
 
 export interface Order {
   orderId: string;
@@ -24,7 +24,7 @@ export interface Order {
   items: TransactionLineItem[];
   status: OrderStatus;
   amount: number;
-  completedAt?: Timestamp | FieldValue;
+  completedAt: Timestamp;
   exchangeRate: number;
   transactionId?: string | null;
   currency: Currency;
@@ -33,4 +33,4 @@ export interface Order {
   shippingAddress?: Address;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-};
+}

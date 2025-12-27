@@ -7,4 +7,4 @@ export interface Organization {
   type: OrganizationType;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-};
+}

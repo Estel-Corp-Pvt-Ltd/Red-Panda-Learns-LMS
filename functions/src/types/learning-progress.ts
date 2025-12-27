@@ -10,6 +10,7 @@ export interface LearningProgress {
   lessonHistory: {
     [lessonId: string]: {
       timeSpent: number;
+      type: string;
       markedAsComplete: boolean;
       completedAt: Timestamp | FieldValue | null;
     };

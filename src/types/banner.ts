@@ -15,7 +15,7 @@ export interface Banner {
   updatedAt: Timestamp | FieldValue;
   createdBy: string | null;
   showToAllUsers?: boolean;
-};
+}
 
 export interface BannerFormData {
   title: string;
@@ -27,4 +27,4 @@ export interface BannerFormData {
   courseIds: string[];
   status: BannerStatus;
   showToAllUsers?: boolean;
-};
+}
