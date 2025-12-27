@@ -6,7 +6,7 @@ import {
   Layers,
   Search,
   TrendingUp,
-  Users
+  Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -45,20 +45,13 @@ const CoursesPage = () => {
   const [isLoadingArrangement, setIsLoadingArrangement] = useState(false);
   const navigate = useNavigate();
 
-  const {
-    data: courses,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useCoursesQuery();
+  const { data: courses, isLoading, isError, error, refetch } = useCoursesQuery();
 
   const {
     data: allBundles,
     isLoading: bundlesLoading,
     isError: bundlesError,
   } = usePublishedBundlesQuery();
-
 
   // Load course arrangement on component mount
   useEffect(() => {
@@ -83,9 +76,7 @@ const CoursesPage = () => {
   // Simple login check: just rely on user presence
   const isLoggedIn = !!user;
 
-  const enrolledCourseIds = enrollments.map(
-    (enrollment) => enrollment.courseId
-  );
+  const enrolledCourseIds = enrollments.map((enrollment) => enrollment.courseId);
 
   const publishedCourses = useMemo(
     () => (courses ?? []).filter((c) => c?.status === COURSE_STATUS.PUBLISHED),
@@ -93,13 +84,13 @@ const CoursesPage = () => {
   );
 
   // Create maps for quick lookup
-  const courseMap = useMemo(() =>
-    new Map(publishedCourses.map(course => [course.id, course])),
+  const courseMap = useMemo(
+    () => new Map(publishedCourses.map((course) => [course.id, course])),
     [publishedCourses]
   );
 
-  const bundleMap = useMemo(() =>
-    new Map(allBundles?.map(bundle => [bundle.id, bundle]) || []),
+  const bundleMap = useMemo(
+    () => new Map(allBundles?.map((bundle) => [bundle.id, bundle]) || []),
     [allBundles]
   );
 
@@ -107,11 +98,11 @@ const CoursesPage = () => {
   const arrangedContent = useMemo((): ArrangedContent[] => {
     if (searchQuery.trim() || !courseArrangement.length) return [];
 
-    return courseArrangement.map(heading => {
+    return courseArrangement.map((heading) => {
       const headingCourses: any[] = [];
       const headingBundles: any[] = [];
 
-      heading.items.forEach(item => {
+      heading.items.forEach((item) => {
         if (item.type === "COURSE") {
           const course = courseMap.get(item.refId);
           if (course) {
@@ -139,15 +130,17 @@ const CoursesPage = () => {
 
     const searchTerm = searchQuery.toLowerCase();
 
-    const searchedCourses = publishedCourses.filter(course =>
-      course.title.toLowerCase().includes(searchTerm) ||
-      course.description?.toLowerCase().includes(searchTerm) ||
-      course.instructorName?.toLowerCase().includes(searchTerm)
+    const searchedCourses = publishedCourses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(searchTerm) ||
+        course.description?.toLowerCase().includes(searchTerm) ||
+        course.instructorName?.toLowerCase().includes(searchTerm)
     );
 
-    const searchedBundles = (allBundles || []).filter(bundle =>
-      bundle.title.toLowerCase().includes(searchTerm) ||
-      bundle.description?.toLowerCase().includes(searchTerm)
+    const searchedBundles = (allBundles || []).filter(
+      (bundle) =>
+        bundle.title.toLowerCase().includes(searchTerm) ||
+        bundle.description?.toLowerCase().includes(searchTerm)
     );
 
     return {
@@ -230,9 +223,7 @@ const CoursesPage = () => {
               </div>
               <div>
                 {stats.total}
-                <p className="text-sm text-muted-foreground">
-                  Available Courses
-                </p>
+                <p className="text-sm text-muted-foreground">Available Courses</p>
               </div>
             </div>
           </div>
@@ -243,12 +234,8 @@ const CoursesPage = () => {
                 <Layers className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {stats.bundles}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Available Bundles
-                </p>
+                <p className="text-2xl font-bold text-foreground">{stats.bundles}</p>
+                <p className="text-sm text-muted-foreground">Available Bundles</p>
               </div>
             </div>
           </div>
@@ -259,9 +246,7 @@ const CoursesPage = () => {
                 <CheckCircle className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {stats.completed}
-                </p>
+                <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
                 <p className="text-sm text-muted-foreground">Completed</p>
               </div>
             </div>
@@ -292,7 +277,8 @@ const CoursesPage = () => {
           </div>
           {!isSearchMode && arrangedContent.length > 0 && (
             <p className="text-sm text-muted-foreground mt-2">
-              Browse featured content organized by category. <b>Use search to explore all available courses and bundles.</b>
+              Browse featured content organized by category.{" "}
+              <b>Use search to explore all available courses and bundles.</b>
             </p>
           )}
         </div>
@@ -312,11 +298,7 @@ const CoursesPage = () => {
             ))}
           </div>
         ) : isError ? (
-          <ErrorState
-            error={(error as Error)}
-            onRetry={refetch}
-            className="my-12"
-          />
+          <ErrorState error={error as Error} onRetry={refetch} className="my-12" />
         ) : isSearchMode ? (
           // Search Results View
           <div className="space-y-8">
@@ -346,9 +328,7 @@ const CoursesPage = () => {
                       bundle={bundle}
                       index={index}
                       user={user}
-                      isEnrolledInBundle={async (id) =>
-                        Promise.resolve(isEnrolledInBundle(id))
-                      }
+                      isEnrolledInBundle={async (id) => Promise.resolve(isEnrolledInBundle(id))}
                       viewMode={viewMode}
                       handleBundlePurchase={(id) => {
                         handleBundlePurchase(id);
@@ -374,7 +354,7 @@ const CoursesPage = () => {
                 {viewMode === "grid" ? (
                   <div className="grid gap-6 animate-fade-in grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {searchResults.courses
-                      .filter(course => user?.role === USER_ROLE.ADMIN)
+                      .filter((course) => user?.role === USER_ROLE.ADMIN)
                       .map((course, index) => (
                         <div
                           key={course.id}
@@ -387,7 +367,11 @@ const CoursesPage = () => {
                   </div>
                 ) : (
                   <CourseListView
-                    courses={user?.role === USER_ROLE.ADMIN ? searchResults.courses : searchResults.courses.filter(course => course.salePrice > 0)}
+                    courses={
+                      user?.role === USER_ROLE.ADMIN
+                        ? searchResults.courses
+                        : searchResults.courses.filter((course) => course.salePrice > 0)
+                    }
                     enrolledCourseIds={enrolledCourseIds}
                   />
                 )}
@@ -441,9 +425,7 @@ const CoursesPage = () => {
                           bundle={bundle}
                           index={index}
                           user={user}
-                          isEnrolledInBundle={async (id) =>
-                            Promise.resolve(isEnrolledInBundle(id))
-                          }
+                          isEnrolledInBundle={async (id) => Promise.resolve(isEnrolledInBundle(id))}
                           viewMode={viewMode}
                           handleBundlePurchase={(id) => {
                             handleBundlePurchase(id);
@@ -460,15 +442,20 @@ const CoursesPage = () => {
                     {viewMode === "grid" ? (
                       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {content.courses
-                          .filter(course => user?.role === USER_ROLE.ADMIN || course.salePrice > 0)
+                          .filter(
+                            (course) => user?.role === USER_ROLE.ADMIN || course.salePrice > 0
+                          )
                           .map((course, index) => (
                             <div
                               key={course.id}
                               className="animate-fade-in-up relative"
                               style={{ animationDelay: `${index * 0.1}s` }}
                             >
-                              <div className="absolute top-2 right-2 z-10">
-                                <Badge variant="secondary" className="text-xs bg-blue-500 text-white">
+                              <div className="absolute top-2 left-2.5 z-10">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs bg-blue-500 text-white"
+                                >
                                   Featured
                                 </Badge>
                               </div>
@@ -478,7 +465,11 @@ const CoursesPage = () => {
                       </div>
                     ) : (
                       <CourseListView
-                        courses={user?.role === USER_ROLE.ADMIN ? content.courses : content.courses.filter(course => course.salePrice > 0)}
+                        courses={
+                          user?.role === USER_ROLE.ADMIN
+                            ? content.courses
+                            : content.courses.filter((course) => course.salePrice > 0)
+                        }
                         enrolledCourseIds={enrolledCourseIds}
                       />
                     )}
