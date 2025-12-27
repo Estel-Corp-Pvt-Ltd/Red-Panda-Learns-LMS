@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { OrderStatus, Currency } from "./general";
 import { AddressType, PaymentProvider } from "./general";
 import { TransactionLineItem } from "./transaction";
@@ -26,7 +26,7 @@ export interface Order {
   amount: number;
   exchangeRate: number;
   originalAmount: number;
-  completedAt?: Timestamp | FieldValue;
+  completedAt: FieldValue | null;
   promoCode: string;
   couponDiscount: number;
   provider: PaymentProvider;
@@ -35,6 +35,6 @@ export interface Order {
   metadata?: Record<string, any>;
   billingAddress: Address;
   shippingAddress?: Address;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
+  createdAt: FieldValue;
+  updatedAt: FieldValue;
 };

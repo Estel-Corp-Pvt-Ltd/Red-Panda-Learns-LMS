@@ -14,6 +14,7 @@ import { PubSub } from "@google-cloud/pubsub";
 import { PaymentDetails } from "../utils/invoice";
 import { courseService } from '../services/courseService';
 import { bundleService } from '../services/bundleService';
+import { Timestamp } from 'firebase-admin/firestore';
 
 const RAZORPAY_WEBHOOK_SECRET = defineSecret("RAZORPAY_WEBHOOK_SECRET");
 const pubsub = new PubSub();
@@ -251,7 +252,7 @@ async function enrollUserInPurchasedItems(orderId: string) {
         currency: order.currency,
         items: enrolledItems,
         orderId: order.orderId,
-        purchaseDate: order.createdAt.toString(),
+        purchaseDate: (order.completedAt as Timestamp).toDate().toString(),
       } as PaymentDetails,
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import { InvoiceComponent } from '@/components/Invoice';
 import { orderService } from '@/services/orderService';
 import { Address, Order } from '@/types/order';
 import { formatDateTime } from '@/utils/date-time';
+import { Timestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -15,7 +16,6 @@ const InvoicePage: React.FC = () => {
       try {
         const result = await orderService.getOrderById(orderId as string);
         if (result) {
-          console.log('Fetched order:', result);
           setOrder(result);
         }
       } catch (error) {
@@ -47,7 +47,7 @@ const InvoicePage: React.FC = () => {
   const invoiceData = {
     // Invoice basic info
     invoiceNumber: order.orderId.replace('order_', 'INV-'),
-    invoiceDate: order.completedAt ? formatDateTime(order.completedAt.toDate()) : 'Not Available',
+    invoiceDate: order.completedAt ? formatDateTime((order.completedAt as Timestamp).toDate()) : 'Not Available',
     // Billing and shipping
     billTo: formatAddress(order?.billingAddress),
     shipTo: formatAddress(order?.shippingAddress),
