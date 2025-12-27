@@ -144,6 +144,7 @@ class LearningProgressService {
     }
   }
 
+
   async getUserProgress(
     userId: string
   ): Promise<Result<LearningProgress[]>> {
@@ -396,7 +397,8 @@ class LearningProgressService {
       const formattedCompletionDate = formatDate(completionDate);
 
       return ok({
-        userName: enrollment.userName,
+        userName: progressData.certification.prefferedNAmeOnCertificate || enrollment.userName,
+        courseId: progressData.courseId,
         courseName: enrollment.courseName,
         completionDate: formattedCompletionDate === "—" ? null : formattedCompletionDate,
       });
@@ -411,6 +413,57 @@ class LearningProgressService {
       );
     }
   }
+
+
+    /**
+   * Updates the preferred name on the certificate for a user's course progress.
+   *
+   * @param userId - ID of the student
+   * @param courseId - ID of the course
+   * @param preferredName - The preferred name to be displayed on the certificate
+   * @returns A Result object indicating success or failure.
+   */
+  async updatePreferredNameOnCertificate(
+    userId: string,
+    courseId: string,
+    preferredName: string | null
+  ): Promise<Result<boolean>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
+
+      const snapshot = await getDocs(progressQuery);
+
+      if (snapshot.empty) {
+        return fail("Learning progress not found");
+      }
+
+      const progressDoc = snapshot.docs[0];
+      const progressRef = progressDoc.ref;
+
+      await updateDoc(progressRef, {
+        certification: {
+          ...(progressDoc.data().certification || {}),
+          prefferedNAmeOnCertificate: preferredName || null,
+        },
+        updatedAt: serverTimestamp(),
+      });
+      console.log("Preferred name on certificate updated successfully.");
+      return ok(true);
+
+    } catch (error: any) {
+      logError("LearningProgressService.updatePreferredNameOnCertificate", error);
+      return fail(
+        "Failed to update preferred name on certificate",
+        error.code || error.message
+      );
+    }
+  }
+
+
 
   async getCertificateStatusForPairs(
     pairs: { userId: string; courseId: string }[]
@@ -481,6 +534,54 @@ class LearningProgressService {
       );
     }
   }
+
+
+/**
+ * Checks if the preferred name is set for the certificate in the user's course progress.
+ *
+ * @param userId - ID of the student
+ * @param courseId - ID of the course
+ * @returns A Result object containing the preferred name if set, or null if not.
+ */
+async isPreferredNameSetForCertificate(
+  userId: string,
+  courseId: string
+): Promise<Result<string | null>> {
+  try {
+    const progressQuery = query(
+      collection(db, COLLECTION.LEARNING_PROGRESS),
+      where("userId", "==", userId),
+      where("courseId", "==", courseId)
+    );
+
+    const snapshot = await getDocs(progressQuery);
+
+    if (snapshot.empty) {
+      return fail("Learning progress not found");
+    }
+
+    const progressData = snapshot.docs[0].data() as LearningProgress;
+
+    // Check if preferredNameOnCertificate exists
+    const preferredName = progressData.certification?.prefferedNAmeOnCertificate;
+
+    if (preferredName && preferredName.trim() !== "") {
+      return ok(preferredName);  // Return the preferred name if set
+    }
+
+    return ok(null);  // Return null if the preferred name is not set
+
+  } catch (error: any) {
+    logError("LearningProgressService.isPreferredNameSetForCertificate", error);
+    return fail(
+      "Failed to check if preferred name is set for certificate",
+      error.code || error.message
+    );
+  }
+}
+
+
+
 
   async getCourseTimeSpent(userId: string, courseId: string): Promise<Result<{ totalTimeSpentSec: number, lessonHistory: LearningProgress["lessonHistory"] }>> {
     try {
