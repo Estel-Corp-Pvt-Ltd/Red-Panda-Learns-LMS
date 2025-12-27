@@ -6,13 +6,13 @@ export interface TopicItem {
   id: string;
   type: LearningContentType;
   title: string;
-};
+}
 
 export interface Topic {
   id: string;
   title: string;
   items: TopicItem[];
-};
+}
 
 export interface Cohort {
   id: string;
@@ -22,15 +22,15 @@ export interface Cohort {
   price: number;
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-};
+}
 
 export interface Enrollment {
-  id: string;           // enrollment document id
+  id: string; // enrollment document id
   userId: string;
   cohortId: string;
-  status: 'active' | 'inactive' | 'pending'; // or other statuses you want
+  status: "active" | "inactive" | "pending"; // or other statuses you want
   enrolledAt: Date;
-};
+}
 
 export interface Course {
   id: string;
@@ -51,10 +51,10 @@ export interface Course {
   certificateTemplateId?: string;
   topics: Topic[];
   isEnrollmentPaused: boolean;
-  isMailSendingEnabled:boolean;
-  isCertificateEnabled:boolean;
-  customCertificateName:string;      // To Specify a custom name for the course certificate default is course title
+  isMailSendingEnabled: boolean;
+  isCertificateEnabled: boolean;
+  customCertificateName: string; // To Specify a custom name for the course certificate default is course title
   isForumEnabled: boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-};
+}

@@ -23,7 +23,7 @@ export interface ForumChannel {
 
 export interface MessageAttachment {
   url: string;
-  type: 'image' | 'video' | 'audio' | 'document' | 'other';
+  type: "image" | "video" | "audio" | "document" | "other";
   name?: string;
   size?: number;
 }

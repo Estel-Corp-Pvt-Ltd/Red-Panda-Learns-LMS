@@ -14,7 +14,7 @@ export interface Address {
   phone?: string;
   landmark?: string;
   type: AddressType;
-};
+}
 
 export interface Order {
   orderId: string;
@@ -33,4 +33,4 @@ export interface Order {
   shippingAddress?: Address;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-};
+}

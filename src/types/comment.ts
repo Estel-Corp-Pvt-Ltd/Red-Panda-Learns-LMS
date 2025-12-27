@@ -16,7 +16,7 @@ export interface Comment {
   countReplies: number;
   createdAt: FieldValue;
   updatedAt: FieldValue;
-};
+}
 
 export interface CommentVotes {
   id: string;
@@ -24,4 +24,4 @@ export interface CommentVotes {
   userId: string;
   lessonId: string;
   createdAt: FieldValue;
-};
+}

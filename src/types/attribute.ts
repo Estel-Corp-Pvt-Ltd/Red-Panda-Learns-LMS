@@ -7,4 +7,4 @@ export interface Attribute {
   type: AttributeType;
   createdAt: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-};
+}

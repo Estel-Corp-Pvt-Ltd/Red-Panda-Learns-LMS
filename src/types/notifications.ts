@@ -8,10 +8,10 @@ export interface SubmissionNotification {
   studentId: string;
   adminId: string;
   adminEmail: string;
-  status: NotificationStatus
+  status: NotificationStatus;
   emailSentAt?: Timestamp | FieldValue;
-  reminderPaused: boolean;   // true if admin paused reminders for this notification
+  reminderPaused: boolean; // true if admin paused reminders for this notification
   createdAt: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
   lastError?: string;
-};
+}
