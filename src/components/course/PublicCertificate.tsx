@@ -46,10 +46,10 @@ const PublicCertificate: React.FC = () => {
   const [scale, setScale] = useState(1);
 
   // Additional state for custom certificate name
-  const [customCertificateName, setCustomCertificateName] = useState<string | null>(null);
+  const [customCertificateName, setCustomCertificateName] = useState<
+    string | null
+  >(null);
 
-
-  
   // ---------------------------------------------------------------------------
   // Mobile Scaling Handler
   // ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ const PublicCertificate: React.FC = () => {
           await learningProgressService.getCertificateByCertificateId(
             certificateId
           );
-          console.log("Certificate fetch result:", result);
+        console.log("Certificate fetch result:", result);
         if (result.success && result.data) {
           setData(result.data);
 
@@ -253,7 +253,7 @@ const PublicCertificate: React.FC = () => {
                 </p>
 
                 {/* Course Name */}
-                <h1 className="text-[3.25rem] font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight -ml-1">
+                <h1 className="text-[2.25rem] font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight -ml-1">
                   {displayCourseName}
                 </h1>
 
@@ -268,10 +268,15 @@ const PublicCertificate: React.FC = () => {
                 {/* Student Name & Completion Date */}
                 <div className="mb-2 ml-[-10px] absolute left-20 bottom-10">
                   <div
-                    className="text-[2.5rem] text-gray-900 mb-2 leading-none pl-1"
-                    style={{ fontFamily: '"Great Vibes", cursive' }}
+                    className="text-[2rem] text-gray-900 mb-2 leading-none pl-1"
+                    style={{ fontFamily: '"Figtree", sans-serif' }} // Default Figtree for other text
                   >
-                    {nameOnCertificate}
+                    <span
+                      className="text-[1.75rem] text-gray-900 mb-2 leading-none pl-1"
+                      style={{ fontFamily: '"Figtree", sans-serif' }} // Default Figtree
+                    >
+                      {nameOnCertificate}
+                    </span>
                   </div>
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-3">
                     Course completed on{" "}

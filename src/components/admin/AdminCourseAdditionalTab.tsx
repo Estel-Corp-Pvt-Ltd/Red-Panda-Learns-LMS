@@ -15,7 +15,7 @@ import { Archive, Edit2, Hash, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from "react";
 
 // Constants
-const MAX_CERTIFICATE_NAME_LENGTH = 38;
+const MAX_CERTIFICATE_NAME_LENGTH = 45;
 
 interface AdditionalTabProps {
   isMailSendingEnabled: boolean;

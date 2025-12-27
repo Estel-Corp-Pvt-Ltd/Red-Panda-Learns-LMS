@@ -41,7 +41,7 @@ const CERTIFICATE_WIDTH = 800;
 const CERTIFICATE_HEIGHT = 600;
 const MOBILE_BREAKPOINT = 840;
 const PADDING_BUFFER = 32;
-const MAX_NAME_LENGTH = 22;
+const MAX_NAME_LENGTH = 30;
 
 // =============================================================================
 // COMPONENT
@@ -157,7 +157,8 @@ const Certificate: React.FC = () => {
           );
 
         // 4. Determine if we need to show the modal
-        const hasPreferredName = preferredNameResult.success && preferredNameResult.data;
+        const hasPreferredName =
+          preferredNameResult.success && preferredNameResult.data;
         const userNameTooLong = enrollment.userName.length > MAX_NAME_LENGTH;
 
         if (!hasPreferredName) {
@@ -173,7 +174,10 @@ const Certificate: React.FC = () => {
               variant: "destructive",
             });
           }
-        } else if (hasPreferredName && preferredNameResult.data.length > MAX_NAME_LENGTH) {
+        } else if (
+          hasPreferredName &&
+          preferredNameResult.data.length > MAX_NAME_LENGTH
+        ) {
           // If existing preferred name is also too long, force update
           setShowPreferredNameModal(true);
           setIsNameRequired(true);
@@ -622,7 +626,7 @@ const Certificate: React.FC = () => {
                 </p>
 
                 {/* Course Name */}
-                <h1 className="text-[3.25rem] font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight -ml-1">
+                <h1 className="text-[2.25rem] font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight -ml-1">
                   {certificateData.certificateName ||
                     certificateData.enrollment.courseName}
                 </h1>
@@ -640,10 +644,13 @@ const Certificate: React.FC = () => {
                   {" "}
                   {/* Added negative margin-left */}
                   <div
-                    className="text-[2.5rem] text-gray-900 mb-2 leading-none pl-1  "
-                    style={{ fontFamily: '"Great Vibes", cursive' }}
+                    className="text-[1.75rem] text-gray-900 mb-2 leading-none pl-1"
+                    style={{ fontFamily: '"Figtree", sans-serif' }} // Default Figtree
                   >
-                    {certificateData.nameOnCertificate}
+                    <span className="fancy-name">
+                      {certificateData.nameOnCertificate}
+                    </span>{" "}
+                    {/* Apply fancy font here */}
                   </div>
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-3">
                     Course completed on{" "}
