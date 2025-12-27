@@ -14,6 +14,9 @@ import { ForumChannel } from "@/types/forum";
 import { Archive, Edit2, Hash, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from "react";
 
+// Constants
+const MAX_CERTIFICATE_NAME_LENGTH = 38;
+
 interface AdditionalTabProps {
   isMailSendingEnabled: boolean;
   setIsMailSendingEnabled: (value: boolean) => void;
@@ -22,6 +25,7 @@ interface AdditionalTabProps {
   isForumEnabled: boolean;
   setIsForumEnabled: (value: boolean) => void;
   courseId?: string;
+  courseTitle?: string;
   customCertificateName: string;
   setCustomCertificateName: (value: string) => void;
   onSave: () => Promise<void> | void;
@@ -35,6 +39,7 @@ const AdditionalTab = ({
   isForumEnabled,
   setIsForumEnabled,
   courseId,
+  courseTitle = "",
   customCertificateName,
   setCustomCertificateName,
   onSave,
@@ -211,6 +216,48 @@ const AdditionalTab = ({
     }
   };
 
+  /**
+   * Handle certificate toggle with validation
+   */
+  const handleCertificateToggle = (checked: boolean) => {
+    if (checked) {
+      // Check if course title is too long and no custom name is set
+      const effectiveName = customCertificateName.trim() || courseTitle;
+      
+      if (effectiveName.length > MAX_CERTIFICATE_NAME_LENGTH) {
+        toast({
+          title: 'Certificate name too long',
+          description: `The course title exceeds ${MAX_CERTIFICATE_NAME_LENGTH} characters. Please set a custom certificate name that is ${MAX_CERTIFICATE_NAME_LENGTH} characters or less before enabling certificates.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
+    setIsCertificateEnabled?.(checked);
+  };
+
+  /**
+   * Handle custom certificate name change with character limit
+   */
+  const handleCertificateNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.length <= MAX_CERTIFICATE_NAME_LENGTH) {
+      setCustomCertificateName(value);
+    }
+  };
+
+  // Check if course title exceeds limit
+  const isTitleTooLong = courseTitle.length > MAX_CERTIFICATE_NAME_LENGTH;
+  const hasValidCertificateName = customCertificateName.trim().length > 0 && 
+    customCertificateName.trim().length <= MAX_CERTIFICATE_NAME_LENGTH;
+  
+  // Certificate can only be enabled if title is within limit OR a valid custom name is set
+  const canEnableCertificate = !isTitleTooLong || hasValidCertificateName;
+
+  // Calculate remaining characters for certificate name
+  const remainingCertificateChars = MAX_CERTIFICATE_NAME_LENGTH - customCertificateName.length;
+
   return (
     <div className="space-y-6">
       <div className="space-y-6 p-6 bg-card rounded-lg border">
@@ -240,25 +287,67 @@ const AdditionalTab = ({
           />
         </div>
 
-        {/* Certificate Toggle */}
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="space-y-1">
-            <Label htmlFor="enable-certificate" className="text-base font-medium">
-              Enable Certificate
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              When enabled, students will receive a certificate upon completing the course.
-              <br />
-              Disabling this option will prevent students from receiving a certificate.
-            </p>
+        {/* Certificate Section */}
+        <div className="space-y-4 p-4 border rounded-lg">
+          {/* Certificate Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="enable-certificate" className="text-base font-medium">
+                Enable Certificate
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                When enabled, students will receive a certificate upon completing the course.
+                <br />
+                Disabling this option will prevent students from receiving a certificate.
+              </p>
+              {isTitleTooLong && !hasValidCertificateName && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                  ⚠️ Course title exceeds {MAX_CERTIFICATE_NAME_LENGTH} characters. 
+                  Please set a custom certificate name below to enable certificates.
+                </p>
+              )}
+            </div>
+
+            <Switch
+              id="enable-certificate"
+              checked={isCertificateEnabled}
+              onCheckedChange={handleCertificateToggle}
+              disabled={!canEnableCertificate && !isCertificateEnabled}
+              className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+            />
           </div>
 
-          <Switch
-            id="enable-certificate"
-            checked={isCertificateEnabled}
-            onCheckedChange={(checked) => setIsCertificateEnabled?.(checked)}
-            className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
-          />
+          {/* Custom Certificate Name Input - Always visible */}
+          <div className="space-y-2 pt-4 border-t">
+            <div className="space-y-1">
+              <Label htmlFor="certificate-name" className="text-base font-medium">
+                Custom Certificate Name {isTitleTooLong && <span className="text-destructive">*</span>}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {isTitleTooLong 
+                  ? `Required: Course title is too long (${courseTitle.length} characters). Set a name with ${MAX_CERTIFICATE_NAME_LENGTH} characters or less.`
+                  : "Customize the name that appears on the certificate. By default, it uses the course title."
+                }
+              </p>
+            </div>
+            <div className="relative">
+              <Input
+                id="certificate-name"
+                value={customCertificateName}
+                onChange={handleCertificateNameChange}
+                placeholder="Enter custom certificate name"
+                maxLength={MAX_CERTIFICATE_NAME_LENGTH}
+                className={isTitleTooLong && !hasValidCertificateName ? "border-amber-500 focus:ring-amber-500" : ""}
+              />
+              <div
+                className={`text-xs text-right mt-1 ${
+                  remainingCertificateChars <= 5 ? "text-amber-600" : "text-muted-foreground"
+                }`}
+              >
+                {remainingCertificateChars} characters remaining
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Forum Toggle */}
@@ -281,27 +370,6 @@ const AdditionalTab = ({
             className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
           />
         </div>
-
-        {/* Custom Certificate Name Input (Conditionally Rendered) */}
-        {isCertificateEnabled && (
-          <div className="space-y-3 p-4 border rounded-lg">
-            <div className="space-y-1">
-              <Label htmlFor="certificate-name" className="text-base font-medium">
-                Custom Certificate Name
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Customize the name that appears on the certificate. By default, it
-                uses the course title.
-              </p>
-            </div>
-            <Input
-              id="certificate-name"
-              value={customCertificateName}
-              onChange={(e) => setCustomCertificateName(e.target.value)}
-              placeholder="Enter custom certificate name"
-            />
-          </div>
-        )}
 
         {/* Save Button */}
         <div className="flex justify-end">
