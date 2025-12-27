@@ -71,7 +71,8 @@ const Certificate: React.FC = () => {
   const [showPreferredNameModal, setShowPreferredNameModal] = useState(false);
   const [preferredNameInput, setPreferredNameInput] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
-  const [isNameRequired, setIsNameRequired] = useState(false); // Track if name is required (can't skip)
+  const [isNameRequired, setIsNameRequired] = useState(false);
+  const [nameRequiredReason, setNameRequiredReason] = useState<string>("");
 
   // Mobile scaling
   const [scale, setScale] = useState(1);
@@ -156,37 +157,89 @@ const Certificate: React.FC = () => {
             enrollment.courseId
           );
 
-        // 4. Determine if we need to show the modal
+        // 4. Determine if we need to show the modal and if name is required
         const hasPreferredName =
-          preferredNameResult.success && preferredNameResult.data;
-        const userNameTooLong = enrollment.userName.length > MAX_NAME_LENGTH;
+          preferredNameResult.success &&
+          preferredNameResult.data &&
+          preferredNameResult.data.trim().length > 0 &&
+          !preferredNameResult.data.toLowerCase().includes("null");
 
-        if (!hasPreferredName) {
-          // Show modal if preferred name is not set
+        const userNameExists =
+          enrollment.userName && enrollment.userName.trim().length > 0;
+        const userNameTooLong =
+          userNameExists && enrollment.userName.length > MAX_NAME_LENGTH;
+        const userNameContainsNull =
+          userNameExists && enrollment.userName.toLowerCase().includes("null");
+        const preferredNameTooLong =
+          hasPreferredName && preferredNameResult.data.length > MAX_NAME_LENGTH;
+        const preferredNameContainsNull =
+          preferredNameResult.success &&
+          preferredNameResult.data &&
+          preferredNameResult.data.toLowerCase().includes("null");
+
+        // Determine if name is required and why
+        let requireName = false;
+        let reason = "";
+
+        if (!hasPreferredName || preferredNameContainsNull) {
+          // No preferred name set
           setShowPreferredNameModal(true);
 
-          // If username is too long, make setting preferred name required
-          if (userNameTooLong) {
-            setIsNameRequired(true);
+          if (!userNameExists) {
+            // Username is null or empty - MUST set preferred name
+            requireName = true;
+            reason =
+              "Your profile name is not set. Please enter a name for your certificate.";
+            toast({
+              title: "Name required",
+              description: reason,
+              variant: "destructive",
+            });
+          } else if (userNameContainsNull) {
+            // Username contains "null" string - MUST set preferred name
+            requireName = true;
+            reason =
+              "Your profile name appears to be invalid. Please enter a valid name for your certificate.";
+            toast({
+              title: "Valid name required",
+              description: reason,
+              variant: "destructive",
+            });
+          } else if (userNameTooLong) {
+            // Username is too long - MUST set preferred name
+            requireName = true;
+            reason = `Your name exceeds ${MAX_NAME_LENGTH} characters. Please set a shorter preferred name for your certificate.`;
             toast({
               title: "Preferred name required",
-              description: `Your name exceeds ${MAX_NAME_LENGTH} characters. Please set a shorter preferred name for your certificate.`,
+              description: reason,
+              variant: "destructive",
+            });
+          } else if (preferredNameContainsNull) {
+            // Preferred name contains "null" - MUST update
+            requireName = true;
+            reason =
+              "Your preferred name appears to be invalid. Please enter a valid name for your certificate.";
+            toast({
+              title: "Please update your preferred name",
+              description: reason,
               variant: "destructive",
             });
           }
-        } else if (
-          hasPreferredName &&
-          preferredNameResult.data.length > MAX_NAME_LENGTH
-        ) {
-          // If existing preferred name is also too long, force update
+          // If username exists, is valid, and is within limit, modal shows but skip is allowed
+        } else if (preferredNameTooLong) {
+          // Existing preferred name is too long - MUST update
           setShowPreferredNameModal(true);
-          setIsNameRequired(true);
+          requireName = true;
+          reason = `Your preferred name exceeds ${MAX_NAME_LENGTH} characters. Please set a shorter name.`;
           toast({
             title: "Please update your preferred name",
-            description: `Your preferred name exceeds ${MAX_NAME_LENGTH} characters. Please set a shorter name.`,
+            description: reason,
             variant: "destructive",
           });
         }
+
+        setIsNameRequired(requireName);
+        setNameRequiredReason(reason);
 
         // 5. Fetch certificate display name (optional - may fail gracefully)
         let certificateName: string | null = null;
@@ -201,8 +254,14 @@ const Certificate: React.FC = () => {
         }
 
         // 6. Determine the name to display on certificate
-        const nameOnCertificate =
-          preferredNameResult.data || enrollment.userName;
+
+        const validPreferredName =
+          hasPreferredName && !preferredNameContainsNull
+            ? preferredNameResult.data
+            : null;
+        const validUserName =
+          userNameExists && !userNameContainsNull ? enrollment.userName : null;
+        const nameOnCertificate = validPreferredName || validUserName || "";
 
         // Set all certificate data
         setCertificateData({
@@ -250,6 +309,16 @@ const Certificate: React.FC = () => {
 
     if (!trimmedName || !certificateData) return;
 
+    // Check for "null" string in the name
+    if (trimmedName.toLowerCase().includes("null")) {
+      toast({
+        title: "Invalid name",
+        description: "Please enter a valid name without 'null'.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (trimmedName.length > MAX_NAME_LENGTH) {
       toast({
         title: "Name too long",
@@ -283,6 +352,7 @@ const Certificate: React.FC = () => {
         setShowPreferredNameModal(false);
         setPreferredNameInput("");
         setIsNameRequired(false);
+        setNameRequiredReason("");
 
         toast({
           title: "Name saved",
@@ -307,7 +377,6 @@ const Certificate: React.FC = () => {
       setIsSavingName(false);
     }
   }, [preferredNameInput, certificateData]);
-
   /**
    * Handle print functionality with custom print styles
    */
@@ -402,15 +471,17 @@ const Certificate: React.FC = () => {
   const handleCloseModal = useCallback(() => {
     if (isNameRequired) {
       toast({
-        title: "Preferred name required",
-        description: `Your name is too long for the certificate. Please set a preferred name (max ${MAX_NAME_LENGTH} characters).`,
+        title: "Name required",
+        description:
+          nameRequiredReason ||
+          `Please set a preferred name (max ${MAX_NAME_LENGTH} characters) to view your certificate.`,
         variant: "destructive",
       });
       return;
     }
     setShowPreferredNameModal(false);
     setPreferredNameInput("");
-  }, [isNameRequired]);
+  }, [isNameRequired, nameRequiredReason]);
 
   // ---------------------------------------------------------------------------
   // Computed Values
@@ -428,6 +499,25 @@ const Certificate: React.FC = () => {
 
   // Character count for input
   const remainingChars = MAX_NAME_LENGTH - preferredNameInput.length;
+
+  // Get modal title based on reason
+  const getModalTitle = () => {
+    if (!isNameRequired) return "Preferred Name for Certificate";
+    if (nameRequiredReason.includes("profile name is not set"))
+      return "Name Required";
+    if (nameRequiredReason.includes("invalid")) return "Valid Name Required";
+    if (nameRequiredReason.includes("exceeds"))
+      return "Preferred Name Required";
+    return "Name Required";
+  };
+
+  // Get modal description
+  const getModalDescription = () => {
+    if (isNameRequired && nameRequiredReason) {
+      return nameRequiredReason;
+    }
+    return "Please enter the name you would like to appear on your certificate.";
+  };
 
   // ---------------------------------------------------------------------------
   // Render: Loading State
@@ -471,15 +561,11 @@ const Certificate: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 print-hide">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 mx-4">
             <h2 className="text-lg font-semibold mb-2 text-black">
-              {isNameRequired
-                ? "Preferred Name Required"
-                : "Preferred Name for Certificate"}
+              {getModalTitle()}
             </h2>
 
             <p className="text-sm text-gray-600 mb-4">
-              {isNameRequired
-                ? `Your current name exceeds ${MAX_NAME_LENGTH} characters. Please enter a shorter name for your certificate.`
-                : "Please enter the name you would like to appear on your certificate."}
+              {getModalDescription()}
             </p>
 
             <div className="relative">
@@ -487,13 +573,16 @@ const Certificate: React.FC = () => {
                 type="text"
                 value={preferredNameInput}
                 onChange={handlePreferredNameChange}
-                placeholder="Enter preferred name"
+                placeholder="Enter your name"
                 maxLength={MAX_NAME_LENGTH}
                 className="w-full border rounded-md px-3 py-2 mb-1 focus:outline-none focus:ring-2 focus:ring-black text-black"
                 disabled={isSavingName}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSavePreferredName();
+                  if (e.key === "Enter" && preferredNameInput.trim()) {
+                    handleSavePreferredName();
+                  }
                 }}
+                autoFocus
               />
               <div
                 className={`text-xs text-right mb-4 ${
@@ -645,12 +734,11 @@ const Certificate: React.FC = () => {
                   {/* Added negative margin-left */}
                   <div
                     className="text-[1.75rem] text-gray-900 mb-2 leading-none pl-1"
-                    style={{ fontFamily: '"Figtree", sans-serif' }} // Default Figtree
+                    style={{ fontFamily: '"Figtree", sans-serif' }}
                   >
                     <span className="fancy-name">
-                      {certificateData.nameOnCertificate}
-                    </span>{" "}
-                    {/* Apply fancy font here */}
+                      {certificateData.nameOnCertificate || "Unknown"}
+                    </span>
                   </div>
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-3">
                     Course completed on{" "}
