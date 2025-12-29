@@ -14,6 +14,7 @@ Always use serverTimestamp() when writing createdAt, updatedAt, lastActivityDate
 Never use new Date() for Firestore writes.
 
 ✅ Example:
+
 ```bash
 import { serverTimestamp } from "firebase/firestore";
 
@@ -23,9 +24,11 @@ await addDoc(collection(db, "cohorts"), {
   updatedAt: serverTimestamp()
 });
 ```
+
 🔹 Firestore Reads
 Firestore returns Timestamp objects. Convert them into JavaScript Date for consistency.
 ✅ Example:
+
 ```bash
 import { Timestamp } from "firebase/firestore";
 const docSnap = await getDoc(docRef);
@@ -52,8 +55,8 @@ const q = query(
 Always display times in the user’s local timezone unless explicitly specified.
 Absolute Date Display
 const formatted = new Intl.DateTimeFormat("default", {
-  dateStyle: "medium",
-  timeStyle: "short",
+dateStyle: "medium",
+timeStyle: "short",
 }).format(cohort.createdAt);
 Example output:
 Sep 29, 2025, 11:45 AM
@@ -78,24 +81,23 @@ Default = INDUSTRY for all manual signups (including Google).
 Always use the ORGANIZATION constant and OrganizationType type.
 Update this document if a new organization type is added.
 
-
 🔹User Identity Standardization
 Overview
 All user documents in Firestore are now keyed directly by the Firebase Authentication UID.
 The UID serves both as the Firestore document ID and is stored inside the document as its id field.
 
-This replaces the older custom format (user_<number>, e.g., user_10000000) that caused mismatches between Auth and Firestore identifiers.
-
+This replaces the older custom format (user\_<number>, e.g., user_10000000) that caused mismatches between Auth and Firestore identifiers.
 
 New Standard
-Aspect	Rule
-Firestore document path	/users/{uid}
-Document ID	The Firebase Auth uid
-Stored field	id: uid (explicitly stored in the document data)
-Removed field	uid (no longer a separate field in the document)
+Aspect Rule
+Firestore document path /users/{uid}
+Document ID The Firebase Auth uid
+Stored field id: uid (explicitly stored in the document data)
+Removed field uid (no longer a separate field in the document)
 
 Example
-```bash
+
+````bash
 
 users/
   ajx7T34HdSmKyP9zR21L9LQ7v5o2
@@ -129,7 +131,8 @@ JavaScript
 match /users/{uid} {
   allow read, update, delete: if request.auth.uid == uid;
 }
-```
+````
+
 Benefits
 One‑to‑one mapping between Firebase Auth and Firestore.
 Simplified queries, stronger security, and easier integrations.
