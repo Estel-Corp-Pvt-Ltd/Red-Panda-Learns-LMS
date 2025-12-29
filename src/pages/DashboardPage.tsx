@@ -143,7 +143,7 @@ function EnrolledCourseCard({
               <h3 className="font-semibold text-lg">{enrollment.courseName || course.title}</h3>
 
               {showCertificateFeatures && (
-                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5   px-2 py-1 rounded-full">
                   <img
                     src="/isCertificateAvailableIcon.png"
                     alt="Certificate available"
