@@ -26,14 +26,15 @@ This document explains the problem in detail and how it was resolved, following 
 ### ✅ Code That Caused the Error:
 
 ```ts
-import * as functions from 'firebase-functions';
-import { Request, Response } from 'express';
+import * as functions from "firebase-functions";
+import { Request, Response } from "express";
 
 export const myFunction = functions.https.onRequest(
   async (req: Request, res: Response): Promise<Response> => {
     return res.json({ success: true, transaction_id });
   }
 );
+```
 ````
 
 ### ❌ Error Message from TypeScript:
@@ -67,8 +68,8 @@ We removed the `return` keyword before `res.json(...)`, since sending the respon
 ### ✅ Fixed Code:
 
 ```ts
-import * as functions from 'firebase-functions';
-import { Request, Response } from 'express';
+import * as functions from "firebase-functions";
+import { Request, Response } from "express";
 
 export const myFunction = functions.https.onRequest(
   async (req: Request, res: Response): Promise<void> => {
@@ -81,7 +82,7 @@ Alternatively, if early exit is needed:
 
 ```ts
 if (someConditionFails) {
-  res.status(400).json({ error: 'Bad request' });
+  res.status(400).json({ error: "Bad request" });
   return;
 }
 ```
@@ -90,10 +91,10 @@ if (someConditionFails) {
 
 ## ✅ Best Practices
 
-* **Do not return `res.json(...)`** in Firebase Functions — this causes a type mismatch.
-* **Do call `res.json(...)`** to send the response, but avoid returning it.
-* **Use `return;` after `res.json(...)`** if you need to exit the function early.
-* **Avoid sending multiple responses**. Only call one of `res.json()`, `res.send()`, or `res.end()` once per request.
+- **Do not return `res.json(...)`** in Firebase Functions — this causes a type mismatch.
+- **Do call `res.json(...)`** to send the response, but avoid returning it.
+- **Use `return;` after `res.json(...)`** if you need to exit the function early.
+- **Avoid sending multiple responses**. Only call one of `res.json()`, `res.send()`, or `res.end()` once per request.
 
 ---
 
@@ -106,5 +107,3 @@ if (someConditionFails) {
 | Call `res.json()` once only     | Call `res.json()` multiple times    |
 
 ---
-
-
