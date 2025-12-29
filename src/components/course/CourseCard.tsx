@@ -18,11 +18,7 @@ type CourseCardProps = {
   variant?: "default" | "featured" | "compact";
 };
 
-const CourseCard = ({
-  course,
-  className,
-  variant = "default",
-}: CourseCardProps) => {
+const CourseCard = ({ course, className, variant = "default" }: CourseCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -46,7 +42,10 @@ const CourseCard = ({
       navigate("/cart");
       return;
     }
-    cartDispatch({ type: CART_ACTION.ADD, item: { type: "COURSE", refId: courseId } });
+    cartDispatch({
+      type: CART_ACTION.ADD,
+      item: { type: "COURSE", refId: courseId },
+    });
     toast({
       title: "Course added",
       description: `${course.title} has been added to your cart.`,
@@ -56,12 +55,11 @@ const CourseCard = ({
   const { lessonCount } = getCourseStructureCounts(course);
 
   // Pricing helpers
-  const regularPrice =
-    typeof course.regularPrice === "number" ? course.regularPrice : 0;
+  const regularPrice = typeof course.regularPrice === "number" ? course.regularPrice : 0;
   const hasSale = typeof course.salePrice === "number";
   const salePrice = hasSale ? (course.salePrice as number) : regularPrice;
   const isFree = salePrice === 0;
-  const showSlash = hasSale; // show slash if salePrice is present
+  const showSlash = hasSale;
 
   const formatINR = (amount: number) =>
     new Intl.NumberFormat("en-IN", {
@@ -72,160 +70,186 @@ const CourseCard = ({
     }).format(amount);
 
   return (
-     <div
+    <div
       onClick={() => navigate(`/courses/${course.slug}`)}
       className="cursor-pointer hover:shadow-lg transition-all"
     >
-    <Card
-      role="link"
-      tabIndex={0}
-      className={cn(
-        "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg hover:bg-gray-100/50 hover:scale-[1.01]",
-        isFeatured && "ring-2 ring-primary/20 shadow-glow",
-        className
-      )}
-    >
-      <div
+      <Card
+        role="link"
+        tabIndex={0}
         className={cn(
-          "relative overflow-hidden bg-muted",
-          isCompact ? "aspect-[16/9]" : "aspect-[16/10]"
+          "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg hover:bg-gray-100/50 hover:scale-[1.01] relative",
+          isFeatured && "ring-2 ring-primary/20 shadow-glow",
+          className
         )}
       >
-        {course.thumbnail && (
-          <img
-            src={course.thumbnail}
-            alt={`${course.title} thumbnail`}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4">
-            <Play className="h-6 w-6 text-primary-foreground fill-current" />
+        {/* Certificate Ribbon - Top Right Corner */}
+        {course.isCertificateEnabled && (
+          <div className="absolute top-0 right-0 z-20 overflow-hidden w-24 h-24 pointer-events-none ">
+            <div
+              className="absolute top-[12px] right-[-32px] w-[140px] transform rotate-45 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 text-white text-[10px] font-bold text-center py-1 shadow-md"
+              style={{
+                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              }}
+            >
+              CERTIFICATE
+            </div>
+            {/* Ribbon fold effect */}
+            <div
+              className="absolute top-[38px] right-0 w-0 h-0"
+              style={{
+                borderLeft: "6px solid transparent",
+                borderRight: "6px solid #b45309",
+                borderTop: "6px solid #b45309",
+                borderBottom: "6px solid transparent",
+              }}
+            />
           </div>
-        </div>
+        )}
 
-        <div className="absolute top-3 left-3 flex gap-2">
-          {userIsEnrolled && (
-            <Badge variant="secondary" className="bg-primary text-white">
-              Enrolled
-            </Badge>
-          )}
-          {isFeatured && (
-            <Badge className="bg-gradient-primary text-primary-foreground">
-              Featured
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      <CardContent
-        className={cn("p-4 space-y-2 px-2", isCompact && "p-3 space-y-1")}
-      >
-        <h3
+        <div
           className={cn(
-            "font-semibold leading-tight text-foreground transition-colors group-hover:text-primary line-clamp-1",
-            isCompact ? "text-sm" : "text-lg"
+            "relative overflow-hidden bg-muted",
+            isCompact ? "aspect-[16/9]" : "aspect-[16/10]"
           )}
         >
-          {course.title}
-        </h3>
+          {course.thumbnail && (
+            <img
+              src={course.thumbnail}
+              alt={`${course.title} thumbnail`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          )}
 
-        {!isCompact && (
-          <div className="text-sm text-muted-foreground line-clamp-2 h-10" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
-            {/* {course.description.replace(/<[^>]+>/g, '')} */}
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="bg-primary/90 backdrop-blur-sm rounded-full p-4">
+              <Play className="h-6 w-6 text-primary-foreground fill-current" />
+            </div>
           </div>
-        )}
-      </CardContent>
-      <CardFooter className={cn("pb-4 pt-0 px-2", isCompact && "px-3 pb-3")}>
-        <div className="w-full space-y-3">
-          <div className="flex flex-nowrap items-center justify-between gap-y-2 text-xs text-muted-foreground">
-            <div>
-              {course.instructorName && (
-                <p className="text-xs text-muted-foreground mb-2">
-                  by {course.instructorName}
-                </p>
-              )}
-              <div className="flex flex-nowrap items-center gap-x-4 gap-y-2">
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <BookOpen className="h-3 w-3 flex-shrink-0" />
-                  <span>{lessonCount} lessons</span>
-                </div>
-                {course.duration && (
-                  <div className="flex items-center gap-1.5 whitespace-nowrap">
-                    <Clock className="h-3 w-3 flex-shrink-0" />
-                    <span>
-                      {course.duration.hours} hrs {course.duration.minutes} min
-                    </span>
-                  </div>
+
+          {/* Top Left Badges */}
+          <div className="absolute top-10 left-3 z-10 flex flex-col items-start gap-1">
+            {isFeatured && (
+              <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-md ">
+                Featured
+              </Badge>
+            )}
+            {userIsEnrolled && (
+              <Badge variant="secondary" className="bg-primary text-white shadow-md">
+                Enrolled
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <CardContent className={cn("p-4 space-y-2 px-2", isCompact && "p-3 space-y-1")}>
+          <h3
+            className={cn(
+              "font-semibold leading-tight text-foreground transition-colors group-hover:text-primary line-clamp-1",
+              isCompact ? "text-sm" : "text-lg"
+            )}
+          >
+            {course.title}
+          </h3>
+
+          {!isCompact && (
+            <div
+              className="text-sm text-muted-foreground line-clamp-2 h-10"
+              dangerouslySetInnerHTML={{
+                __html: course.description.replace(/<[^>]+>/g, ""),
+              }}
+            ></div>
+          )}
+        </CardContent>
+        <CardFooter className={cn("pb-4 pt-0 px-2", isCompact && "px-3 pb-3")}>
+          <div className="w-full space-y-3">
+            <div className="flex flex-nowrap items-center justify-between gap-y-2 text-xs text-muted-foreground">
+              <div>
+                {course.instructorName && (
+                  <p className="text-xs text-muted-foreground mb-2">by {course.instructorName}</p>
                 )}
+                <div className="flex flex-nowrap items-center gap-x-4 gap-y-2">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <BookOpen className="h-3 w-3 flex-shrink-0" />
+                    <span>{lessonCount} lessons</span>
+                  </div>
+                  {course.duration && (
+                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                      <Clock className="h-3 w-3 flex-shrink-0" />
+                      <span>
+                        {course.duration.hours} hrs {course.duration.minutes} min
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Slash pricing */}
+              <div className="flex flex-col items-baseline whitespace-nowrap">
+                {showSlash && (
+                  <span className="line-through text-[10px] text-muted-foreground">
+                    {formatINR(regularPrice)}
+                  </span>
+                )}
+                <span className="font-semibold text-base text-primary">
+                  {isFree ? "FREE" : formatINR(salePrice)}
+                </span>
               </div>
             </div>
-            {/* Slash pricing */}
-            <div className="flex flex-col items-baseline whitespace-nowrap">
-              {showSlash && (
-                <span className="line-through text-[10px] text-muted-foreground">
-                  {formatINR(regularPrice)}
-                </span>
-              )}
-              <span className="font-semibold text-base text-primary">
-                {isFree ? "FREE" : formatINR(salePrice)}
-              </span>
-            </div>
-          </div>
-          {user?.role === USER_ROLE.ADMIN ? (
-            <div className="flex justify-between">
-              <Link to={courseUrl}><Button>View Course</Button></Link>
-              <Link to={`/admin/edit-course/${course.id}`}><Button>Edit Course</Button></Link>
-            </div>
-          ) : (<>
-            {userIsEnrolled ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(courseUrl);
-                }}
-              >
-                Continue Learning
-              </Button>
+            {user?.role === USER_ROLE.ADMIN ? (
+              <div className="flex justify-between">
+                <Link to={courseUrl}>
+                  <Button>View Course</Button>
+                </Link>
+                <Link to={`/admin/edit-course/${course.id}`}>
+                  <Button>Edit Course</Button>
+                </Link>
+              </div>
             ) : (
-              <div className="flex justify-between items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCart();
-                  }}
-                  className="flex-1 transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                >
-                  {isAddedToCart ? "Go to Cart" : "Add to Cart"}
-                </Button>
-                <Link
-                  to={courseUrl}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1"
-                >
+              <>
+                {userIsEnrolled ? (
                   <Button
                     variant="outline"
                     size="sm"
                     className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(courseUrl);
+                    }}
                   >
-                    View Course
+                    Continue Learning
                   </Button>
-                </Link>
-              </div>
+                ) : (
+                  <div className="flex justify-between items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCart();
+                      }}
+                      className="flex-1 transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                    >
+                      {isAddedToCart ? "Go to Cart" : "Add to Cart"}
+                    </Button>
+                    <Link to={courseUrl} onClick={(e) => e.stopPropagation()} className="flex-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                      >
+                        View Course
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </>
             )}
-          </>)}
-        </div>
-      </CardFooter>
-    </Card>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
