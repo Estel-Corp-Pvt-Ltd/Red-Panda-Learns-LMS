@@ -27,21 +27,16 @@ export default function LessonDetailPage() {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
-  const [courseId, setCourseId] = useState("")
+  const [courseId, setCourseId] = useState("");
   const { isEnrolled } = useEnrollment();
   const navigate = useNavigate();
-  const {
-    data: course,
-    isLoading: courseLoading,
-    error: courseError,
-  } = useCourseQuery(param!);
+  const { data: course, isLoading: courseLoading, error: courseError } = useCourseQuery(param!);
 
   const [userProgress, setUserProgress] = useState<LearningProgress | null>(null);
   useEffect(() => {
     if (!param || courseLoading || !course) return;
     setCourseId(course.id);
   }, [param, courseLoading, course?.id]);
-
 
   useEffect(() => {
     if (!courseId || !user || courseLoading) return;
@@ -56,7 +51,7 @@ export default function LessonDetailPage() {
       });
 
       // Small delay for the toast to appear before redirect
-      navigate(`/courses/${param}`)
+      navigate(`/courses/${param}`);
     }
   }, [courseId, user, courseLoading, isEnrolled]);
 
@@ -65,10 +60,9 @@ export default function LessonDetailPage() {
     if (!course?.title) return;
 
     const prefix = selectedItem
-      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT
-        ? "Assignment"
-        : "Lesson"
-      }: ${selectedItem.title}`
+      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${
+          selectedItem.title
+        }`
       : "Course";
 
     const prev = document.title;
@@ -101,9 +95,7 @@ export default function LessonDetailPage() {
     if (foundItem) {
       setSelectedItem(foundItem);
     } else {
-      console.error(
-        `Lesson/Assignment with id ${lessonId} not found in course ${courseId}`
-      );
+      console.error(`Lesson/Assignment with id ${lessonId} not found in course ${courseId}`);
       toast({
         title: "Content not found",
         description: "The requested lesson or assignment could not be found.",
@@ -113,10 +105,7 @@ export default function LessonDetailPage() {
   }, [course, lessonId, courseId]);
 
   const handleItemSelect = (item: TopicItem) => {
-    if (
-      item.type === LEARNING_UNIT.LESSON ||
-      item.type === LEARNING_UNIT.ASSIGNMENT
-    ) {
+    if (item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT) {
       setSelectedItem(item);
       setSidebarOpen(false);
     }
@@ -148,7 +137,9 @@ export default function LessonDetailPage() {
     }
     const lessonHistory = userProgress.lessonHistory;
     setLessonCompleted(
-      Array.isArray(lessonHistory) ? lessonHistory.includes(selectedItem.id) : !!lessonHistory[selectedItem.id]
+      Array.isArray(lessonHistory)
+        ? lessonHistory.includes(selectedItem.id)
+        : !!lessonHistory[selectedItem.id]
     );
   }, [selectedItem?.id, userProgress?.lessonHistory]);
 
@@ -156,48 +147,70 @@ export default function LessonDetailPage() {
     if (!user || !courseId || !selectedItem) return;
 
     if (!isCompleted) {
-      const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type, isCompleted);
+      const result = await learningProgressService.completeLesson(
+        courseId,
+        selectedItem.id,
+        selectedItem.type,
+        isCompleted
+      );
       if (result.success) {
-        setUserProgress(prev =>
+        setUserProgress((prev) =>
           prev
             ? {
-              ...prev, lessonHistory: {
-                ...prev.lessonHistory, [selectedItem.id]: {
-                  timeSpent: 0, markedAsComplete: false, completedAt: serverTimestamp(),
-                  type: selectedItem.type
-                }
+                ...prev,
+                lessonHistory: {
+                  ...prev.lessonHistory,
+                  [selectedItem.id]: {
+                    timeSpent: 0,
+                    markedAsComplete: false,
+                    completedAt: serverTimestamp(),
+                    type: selectedItem.type,
+                  },
+                },
               }
-            }
             : prev
         );
 
         toast({
           title: "Incomplete",
-          description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} is not marked as complete.`,
+          description: `${
+            selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+          } is not marked as complete.`,
           variant: "default",
         });
       }
       return;
     }
 
-    const result = await learningProgressService.completeLesson(courseId, selectedItem.id, selectedItem.type, isCompleted);
+    const result = await learningProgressService.completeLesson(
+      courseId,
+      selectedItem.id,
+      selectedItem.type,
+      isCompleted
+    );
     if (result.success) {
-      setUserProgress(prev =>
+      setUserProgress((prev) =>
         prev
           ? {
-            ...prev, lessonHistory: {
-              ...prev.lessonHistory, [selectedItem.id]: {
-                timeSpent: 0, markedAsComplete: true, completedAt: serverTimestamp(), type: selectedItem.type
-
-              }
+              ...prev,
+              lessonHistory: {
+                ...prev.lessonHistory,
+                [selectedItem.id]: {
+                  timeSpent: 0,
+                  markedAsComplete: true,
+                  completedAt: serverTimestamp(),
+                  type: selectedItem.type,
+                },
+              },
             }
-          }
           : prev
       );
 
       toast({
         title: "Success",
-        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} marked as completed!`,
+        description: `${
+          selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+        } marked as completed!`,
       });
     }
   };
@@ -231,8 +244,7 @@ export default function LessonDetailPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Course Not Found</h1>
             <p className="text-muted-foreground mb-4">
-              The course you're looking for doesn't exist or you don't have
-              access.
+              The course you're looking for doesn't exist or you don't have access.
             </p>
             <Button asChild>
               <Link to="/courses">Back to Courses</Link>
@@ -266,7 +278,9 @@ export default function LessonDetailPage() {
                   The lesson or assignment you're looking for doesn't exist.
                 </p>
                 <Button asChild>
-                  <Link to={`/courses/${course.slug ? course.slug : course.id}`}>Back to Course</Link>
+                  <Link to={`/courses/${course.slug ? course.slug : course.id}`}>
+                    Back to Course
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -289,9 +303,7 @@ export default function LessonDetailPage() {
             </Link>
             <div className="min-w-0">
               {/* Course title bigger */}
-              <h1 className="text-lg md:text-xl font-semibold leading-tight">
-                {course.title}
-              </h1>
+              <h1 className="text-lg md:text-xl font-semibold leading-tight">{course.title}</h1>
               {/* Lesson title smaller */}
               {selectedItem && (
                 <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
@@ -304,9 +316,7 @@ export default function LessonDetailPage() {
           <div className="flex items-center gap-2">
             {/* Edit button - Admin only */}
             {user.role === USER_ROLE.ADMIN && selectedItem && (
-              <Link
-                to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}
-              >
+              <Link to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}>
                 <Button variant="outline" size="sm">
                   <Edit2 className="h-4 w-4 mr-1" />
                   Edit
@@ -330,11 +340,11 @@ export default function LessonDetailPage() {
       <div className="flex h-screen overflow-hidden">
         {/* Fixed Sidebar */}
         <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm">
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 py-4 ">
             <CourseNavigator
               course={course}
               currentLesson={selectedItem}
-              lessonHistory={userProgress?.lessonHistory ?? []}  // <= important
+              lessonHistory={userProgress?.lessonHistory ?? []} // <= important
               onLessonClick={handleItemSelect}
             />
           </div>
@@ -345,19 +355,14 @@ export default function LessonDetailPage() {
           {!selectedItem ? (
             <div className="flex items-center justify-center min-h-[80vh]">
               <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2">
-                  Select content to start learning
-                </h2>
+                <h2 className="text-2xl font-bold mb-2">Select content to start learning</h2>
                 <p className="text-muted-foreground">
                   Choose a lesson or assignment from the sidebar to begin.
                 </p>
               </div>
             </div>
           ) : selectedItem.type === "ASSIGNMENT" ? (
-            <AssignmentView
-              assignmentId={selectedItem.id}
-              onComplete={onModalClose}
-            />
+            <AssignmentView assignmentId={selectedItem.id} onComplete={onModalClose} />
           ) : (
             <LessonView
               lessonId={selectedItem.id}
@@ -376,16 +381,11 @@ export default function LessonDetailPage() {
             <div className="p-4 border-b flex items-center justify-between shrink-0">
               <div className="min-w-0">
                 {/* Course bigger in sheet header too */}
-                <h2 className=" text-base md:text-lg font-semibold">
-                  {course.title}
-                </h2>
+                <h2 className=" text-base md:text-lg font-semibold">{course.title}</h2>
                 {selectedItem && (
-                  <p className=" text-xs text-muted-foreground">
-                    {selectedItem.title}
-                  </p>
+                  <p className=" text-xs text-muted-foreground">{selectedItem.title}</p>
                 )}
               </div>
-
             </div>
             <div className="flex-1 overflow-auto">
               <CourseNavigator
@@ -400,4 +400,4 @@ export default function LessonDetailPage() {
       </Sheet>
     </div>
   );
-};
+}
