@@ -1,36 +1,35 @@
-import { Header } from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT } from '@/constants';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
-import { useCourseQuery } from '@/hooks/useCaching';
-import { certificateRequestService } from '@/services/certificate-request-service';
-import { enrollmentService } from '@/services/enrollmentService';
-import { learningProgressService } from '@/services/learningProgressService';
-import { bannerService } from '@/services/bannerService';
-import { Enrollment } from '@/types/enrollment';
-import { Banner } from '@/types/banner';
-import { CertificateRequestStatus } from '@/types/general';
-import { formatDate } from '@/utils/date-time';
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { BannerSlider } from '@/components/BannerSlider';
+import { Header } from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import { useCourseQuery } from "@/hooks/useCaching";
+import { certificateRequestService } from "@/services/certificate-request-service";
+import { enrollmentService } from "@/services/enrollmentService";
+import { learningProgressService } from "@/services/learningProgressService";
+import { bannerService } from "@/services/bannerService";
+import { Enrollment } from "@/types/enrollment";
+import { Banner } from "@/types/banner";
+import { CertificateRequestStatus } from "@/types/general";
+import { formatDate } from "@/utils/date-time";
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { BannerSlider } from "@/components/BannerSlider";
 
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
-  fetchEnrollmentsAndCertificateRequestStatuses
+  fetchEnrollmentsAndCertificateRequestStatuses,
 }: {
   enrollment: Enrollment;
   certificateStatus: CertificateRequestStatus | null;
   fetchEnrollmentsAndCertificateRequestStatuses: () => void;
 }) {
-
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
@@ -41,17 +40,21 @@ function EnrolledCourseCard({
   const [isCertificateIdAvailable, setIsCertificateIdAvailable] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
-  const totalLessons = course?.topics?.reduce((sum, topic) => {
-    return sum + (topic.items ?
-      topic.items.filter(item => item.type === LEARNING_UNIT.LESSON).length
-      : 0
-    );
-  }, 0) || 0;
+  const totalLessons =
+    course?.topics?.reduce((sum, topic) => {
+      return (
+        sum +
+        (topic.items ? topic.items.filter((item) => item.type === LEARNING_UNIT.LESSON).length : 0)
+      );
+    }, 0) || 0;
 
   const handleCompleteCourse = async () => {
     try {
       setIsCompleting(true);
-      const result = await learningProgressService.completeCourse(enrollment.userId, enrollment.courseId);
+      const result = await learningProgressService.completeCourse(
+        enrollment.userId,
+        enrollment.courseId
+      );
 
       if (result.success && result.data) {
         setIsCompleted(true);
@@ -81,16 +84,17 @@ function EnrolledCourseCard({
   useEffect(() => {
     const fetchLearningProgress = async () => {
       setIsProgressLoading(true);
-      const result = await learningProgressService.getUserCourseProgress(enrollment.userId, enrollment.courseId);
+      const result = await learningProgressService.getUserCourseProgress(
+        enrollment.userId,
+        enrollment.courseId
+      );
       if (result.success && result.data[0]) {
         const progress = result.data[0];
         const completedLessonsCount = Array.isArray(progress.lessonHistory)
           ? progress.lessonHistory.length
           : Object.keys(progress.lessonHistory).length;
 
-        const eligible =
-          totalLessons > 0 &&
-          completedLessonsCount >= Math.ceil(0.9 * totalLessons);
+        const eligible = totalLessons > 0 && completedLessonsCount >= Math.ceil(0.9 * totalLessons);
 
         setIsEligibleForCertificate(eligible);
         setIsCertificateIdAvailable(!!progress.certification?.certificateId);
@@ -112,8 +116,8 @@ function EnrolledCourseCard({
     if (!course) return;
 
     const firstLessonId = course.topics
-      ?.flatMap(topic => topic.items || [])
-      .find(item => item?.id)?.id;
+      ?.flatMap((topic) => topic.items || [])
+      .find((item) => item?.id)?.id;
 
     if (firstLessonId) {
       const courseSlug = course.slug || course.id;
@@ -137,22 +141,28 @@ function EnrolledCourseCard({
           <div className="flex-1">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-semibold text-lg">{enrollment.courseName || course.title}</h3>
+
               {showCertificateFeatures && (
                 <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full">
-                  <Award className="h-5 w-5 text-amber-500" />
-                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Certificate</span>
+                  <img
+                    src="/isCertificateAvailableIcon.png"
+                    alt="Certificate available"
+                    className="h-8 w-8"
+                  />
                 </div>
               )}
             </div>
-            <p className="text-muted-foreground text-sm mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, '') }}>
-            </p>
+
+            <p
+              className="text-muted-foreground text-sm mb-4 line-clamp-2"
+              dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, "") }}
+            ></p>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>Enrolled {formatDate(
-                    enrollment.enrollmentDate)}</span>
+                  <span>Enrolled {formatDate(enrollment.enrollmentDate)}</span>
                 </div>
                 <Badge variant="outline" className="text-xs">
                   {enrollment.status}
@@ -176,11 +186,7 @@ function EnrolledCourseCard({
                 {showCertificateFeatures && (
                   <>
                     {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
-                      <Button
-                        size="sm"
-                        onClick={handleCompleteCourse}
-                        disabled={isCompleting}
-                      >
+                      <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
                         <CheckCircle className="h-4 w-4 mr-2" />
                         {isCompleting ? "Completing..." : "Complete Course"}
                       </Button>
@@ -260,7 +266,9 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [certificateStatusMap, setCertificateStatusMap] = useState<Record<string, CertificateRequestStatus | null>>({});
+  const [certificateStatusMap, setCertificateStatusMap] = useState<
+    Record<string, CertificateRequestStatus | null>
+  >({});
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isBannersLoading, setIsBannersLoading] = useState(false);
 
@@ -274,12 +282,10 @@ export default function DashboardPage() {
     if (result.success) {
       setEnrollments(result.data);
 
-      const courseIds = result.data.map(e => e.courseId);
+      const courseIds = result.data.map((e) => e.courseId);
 
-      const certificateStatusResult = await certificateRequestService.getCertificateRequestStatusForCourses(
-        user.id,
-        courseIds
-      );
+      const certificateStatusResult =
+        await certificateRequestService.getCertificateRequestStatusForCourses(user.id, courseIds);
 
       if (certificateStatusResult.success) {
         setCertificateStatusMap(certificateStatusResult.data);
@@ -343,18 +349,20 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalCourses}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active enrollments
-                </p>
+                <p className="text-xs text-muted-foreground">Active enrollments</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Enrolled Courses */}
           <div>
-            <div className='flex justify-between items-center mb-6'>
+            <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold">My Courses</h2>
-              {enrollments.length > 0 && (<Link to="/courses"><Button>Browse Courses</Button></Link>)}
+              {enrollments.length > 0 && (
+                <Link to="/courses">
+                  <Button>Browse Courses</Button>
+                </Link>
+              )}
             </div>
             {isLoading ? (
               <div className="grid gap-6">
@@ -368,7 +376,9 @@ export default function DashboardPage() {
                     key={enrollment.id}
                     enrollment={enrollment}
                     certificateStatus={certificateStatusMap[enrollment.courseId] ?? null}
-                    fetchEnrollmentsAndCertificateRequestStatuses={fetchEnrollmentsAndCertificateRequestStatuses}
+                    fetchEnrollmentsAndCertificateRequestStatuses={
+                      fetchEnrollmentsAndCertificateRequestStatuses
+                    }
                   />
                 ))}
               </div>
@@ -391,4 +401,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-};
+}
