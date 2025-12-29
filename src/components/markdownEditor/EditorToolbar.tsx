@@ -1,6 +1,6 @@
 // components/MarkdownEditor/EditorToolbar.tsx
-import React, { useState } from 'react';
-import { Editor } from '@tiptap/react';
+import React, { useState } from "react";
+import { Editor } from "@tiptap/react";
 
 interface EditorToolbarProps {
   editor: Editor;
@@ -29,40 +29,40 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     children: React.ReactNode;
   }> = ({ onClick, isActive = false, disabled: btnDisabled = false, title, children }) => (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled || btnDisabled}
       title={title}
       className={`p-2 rounded transition-colors ${
         isActive
-          ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
-          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+          ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
+          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
       } disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       {children}
     </button>
   );
 
-  const Divider = () => (
-    <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
-  );
+  const Divider = () => <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />;
 
   return (
     <div className="toolbar flex flex-wrap items-center gap-0.5 p-2 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
       {/* Heading Dropdown */}
       <div className="relative">
         <button
+        type="button"
           onClick={() => setShowHeadingDropdown(!showHeadingDropdown)}
           disabled={disabled || isSourceMode}
           className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
         >
           <span>
-            {editor.isActive('heading', { level: 1 })
-              ? 'H1'
-              : editor.isActive('heading', { level: 2 })
-              ? 'H2'
-              : editor.isActive('heading', { level: 3 })
-              ? 'H3'
-              : 'Paragraph'}
+            {editor.isActive("heading", { level: 1 })
+              ? "H1"
+              : editor.isActive("heading", { level: 2 })
+              ? "H2"
+              : editor.isActive("heading", { level: 3 })
+              ? "H3"
+              : "Paragraph"}
           </span>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -72,6 +72,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         {showHeadingDropdown && (
           <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
             <button
+            type="button"
               onClick={() => {
                 editor.chain().focus().setParagraph().run();
                 setShowHeadingDropdown(false);
@@ -84,15 +85,23 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <button
                 key={level}
                 onClick={() => {
-                  editor.chain().focus().toggleHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 }).run();
+                  editor
+                    .chain()
+                    .focus()
+                    .toggleHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 })
+                    .run();
                   setShowHeadingDropdown(false);
                 }}
                 className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 ${
-                  level === 1 ? 'text-2xl font-bold' :
-                  level === 2 ? 'text-xl font-bold' :
-                  level === 3 ? 'text-lg font-semibold' :
-                  level === 4 ? 'text-base font-semibold' :
-                  'text-sm font-medium'
+                  level === 1
+                    ? "text-2xl font-bold"
+                    : level === 2
+                    ? "text-xl font-bold"
+                    : level === 3
+                    ? "text-lg font-semibold"
+                    : level === 4
+                    ? "text-base font-semibold"
+                    : "text-sm font-medium"
                 }`}
               >
                 Heading {level}
@@ -107,7 +116,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {/* Text Formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
-        isActive={editor.isActive('bold')}
+        isActive={editor.isActive("bold")}
         disabled={isSourceMode}
         title="Bold (Ctrl+B)"
       >
@@ -118,7 +127,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        isActive={editor.isActive('italic')}
+        isActive={editor.isActive("italic")}
         disabled={isSourceMode}
         title="Italic (Ctrl+I)"
       >
@@ -129,7 +138,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        isActive={editor.isActive('underline')}
+        isActive={editor.isActive("underline")}
         disabled={isSourceMode}
         title="Underline (Ctrl+U)"
       >
@@ -140,7 +149,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        isActive={editor.isActive('strike')}
+        isActive={editor.isActive("strike")}
         disabled={isSourceMode}
         title="Strikethrough"
       >
@@ -151,7 +160,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHighlight().run()}
-        isActive={editor.isActive('highlight')}
+        isActive={editor.isActive("highlight")}
         disabled={isSourceMode}
         title="Highlight"
       >
@@ -165,7 +174,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {/* Lists */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive('bulletList')}
+        isActive={editor.isActive("bulletList")}
         disabled={isSourceMode}
         title="Bullet List"
       >
@@ -176,7 +185,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive('orderedList')}
+        isActive={editor.isActive("orderedList")}
         disabled={isSourceMode}
         title="Numbered List"
       >
@@ -187,7 +196,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleTaskList().run()}
-        isActive={editor.isActive('taskList')}
+        isActive={editor.isActive("taskList")}
         disabled={isSourceMode}
         title="Task List"
       >
@@ -201,7 +210,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {/* Quote & Code */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive('blockquote')}
+        isActive={editor.isActive("blockquote")}
         disabled={isSourceMode}
         title="Quote"
       >
@@ -212,7 +221,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleCode().run()}
-        isActive={editor.isActive('code')}
+        isActive={editor.isActive("code")}
         disabled={isSourceMode}
         title="Inline Code"
       >
@@ -223,7 +232,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        isActive={editor.isActive('codeBlock')}
+        isActive={editor.isActive("codeBlock")}
         disabled={isSourceMode}
         title="Code Block"
       >
@@ -235,11 +244,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <Divider />
 
       {/* Media */}
-      <ToolbarButton
-        onClick={onImageClick}
-        disabled={isSourceMode}
-        title="Insert Image"
-      >
+      <ToolbarButton onClick={onImageClick} disabled={isSourceMode} title="Insert Image">
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
           <path d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm1 2v10h14V7H5zm3 3a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm-2 6l3-3 2 2 4-4 4 4v1H6v0z" />
         </svg>
@@ -247,7 +252,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <ToolbarButton
         onClick={onLinkClick}
-        isActive={editor.isActive('link')}
+        isActive={editor.isActive("link")}
         disabled={isSourceMode}
         title="Insert Link"
       >
