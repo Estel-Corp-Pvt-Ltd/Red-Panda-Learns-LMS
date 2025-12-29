@@ -44,7 +44,6 @@ import {
   RefreshCw,
   Search,
   Filter,
-  X,
   Calendar,
   Edit,
   Pause,
@@ -58,21 +57,7 @@ import {
   ArrowUpRight,
   MoreHorizontal,
 } from "lucide-react";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { USER_ROLE, NOTIFICATION_STATUS, COLLECTION } from "@/constants";
 import { formatDateTime } from "@/utils/date-time";
 import EditAssignmentModal from "@/components/admin/EditAssignmentModal";
@@ -90,7 +75,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import CourseSearchSelector from "@/components/admin/CourseSearchSelector";
 
 interface PaginatedAssignments {
   data: Assignment[];
@@ -116,14 +102,13 @@ interface AssignmentNotificationStatus {
 
 const ManageAssignmentAuthors: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Course state
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const [courseSearchQuery, setCourseSearchQuery] = useState("");
-  const [openCombobox, setOpenCombobox] = useState(false);
-  const [isCourseSearchOpen, setIsCourseSearchOpen] = useState(false);
+
   // Assignments state
   const [assignments, setAssignments] = useState<PaginatedAssignments>({
     data: [],
@@ -186,14 +171,14 @@ const ManageAssignmentAuthors: React.FC = () => {
     try {
       const statusMap: AssignmentNotificationStatus = {};
 
-      // Query in batches of 10 (Firestore 'in' query limit)
       const batchSize = 10;
       for (let i = 0; i < assignmentIds.length; i += batchSize) {
         const batch = assignmentIds.slice(i, i + batchSize);
 
         const q = query(
           collection(db, COLLECTION.SUBMISSION_NOTIFICATION),
-          where("assignmentId", "in", batch)
+          where("assignmentId", "in", batch),
+          where("adminId", "==", user.id)
         );
 
         const querySnapshot = await getDocs(q);
@@ -203,7 +188,6 @@ const ManageAssignmentAuthors: React.FC = () => {
           const assignmentId = data.assignmentId;
           const status = data.status as NotificationStatus;
 
-          // If multiple records exist for same assignment, prioritize certain statuses
           if (
             !statusMap[assignmentId] ||
             status === NOTIFICATION_STATUS.PAUSED ||
@@ -215,7 +199,6 @@ const ManageAssignmentAuthors: React.FC = () => {
         });
       }
 
-      // Set null for assignments without notification records
       assignmentIds.forEach((id) => {
         if (!(id in statusMap)) {
           statusMap[id] = null;
@@ -429,7 +412,6 @@ const ManageAssignmentAuthors: React.FC = () => {
           totalCount: result.data.totalCount,
         });
 
-        // Load notification statuses for the fetched assignments
         const assignmentIds = result.data.data.map((a: Assignment) => a.id);
         loadNotificationStatuses(assignmentIds);
       } else {
@@ -466,10 +448,19 @@ const ManageAssignmentAuthors: React.FC = () => {
     setNotificationStatuses({});
   };
 
-  // ----------------- Filter Courses by Search -----------------
-  const filteredCourses = courses.filter((course) =>
-    course.title?.toLowerCase().includes(courseSearchQuery.toLowerCase())
-  );
+  // ----------------- Handle Clear Course Selection -----------------
+  const handleClearCourseSelection = () => {
+    setSelectedCourseId("");
+    setAssignments({
+      data: [],
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalCount: 0,
+    });
+    setPendingChanges(new Map());
+    setSelectedAssignmentIds([]);
+    setNotificationStatuses({});
+  };
 
   // ----------------- Client-side Deadline Filter -----------------
   const applyDeadlineFilter = (assignmentsList: Assignment[]): Assignment[] => {
@@ -587,7 +578,6 @@ const ManageAssignmentAuthors: React.FC = () => {
         description: `Reminders paused for ${selectedAssignmentIds.length} assignment(s)`,
       });
 
-      // Update local notification statuses
       const updatedStatuses: AssignmentNotificationStatus = {};
       selectedAssignmentIds.forEach((id) => {
         updatedStatuses[id] = NOTIFICATION_STATUS.PAUSED;
@@ -610,7 +600,6 @@ const ManageAssignmentAuthors: React.FC = () => {
   const handleUnpauseReminders = async () => {
     if (selectedAssignmentIds.length === 0) return;
 
-    // Filter only paused assignments
     const pausedAssignmentIds = selectedAssignmentIds.filter(
       (id) => notificationStatuses[id] === NOTIFICATION_STATUS.PAUSED
     );
@@ -636,7 +625,6 @@ const ManageAssignmentAuthors: React.FC = () => {
         description: `Reminders resumed for ${pausedAssignmentIds.length} assignment(s)`,
       });
 
-      // Update local notification statuses to REMINDER_SCHEDULED
       const updatedStatuses: AssignmentNotificationStatus = {};
       pausedAssignmentIds.forEach((id) => {
         updatedStatuses[id] = NOTIFICATION_STATUS.REMINDER_SCHEDULED;
@@ -653,16 +641,6 @@ const ManageAssignmentAuthors: React.FC = () => {
     } finally {
       setIsUnpausingReminders(false);
     }
-  };
-
-  // ----------------- Refresh Notification Statuses -----------------
-  const refreshNotificationStatuses = async () => {
-    const assignmentIds = assignments.data.map((a) => a.id);
-    await loadNotificationStatuses(assignmentIds);
-    toast({
-      title: "Refreshed",
-      description: "Notification statuses updated",
-    });
   };
 
   // ----------------- Edit Assignment Handler -----------------
@@ -882,19 +860,6 @@ const ManageAssignmentAuthors: React.FC = () => {
     return user ? `${user.firstName} ${user.lastName}` : null;
   };
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case USER_ROLE.ADMIN:
-        return "destructive";
-      case USER_ROLE.INSTRUCTOR:
-        return "default";
-      case USER_ROLE.TEACHER:
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
   const getCurrentAuthorId = (assignment: Assignment) => {
     return pendingChanges.get(assignment.id) || assignment.authorId || "";
   };
@@ -923,13 +888,7 @@ const ManageAssignmentAuthors: React.FC = () => {
     return { label: "Upcoming", variant: "secondary" as const };
   };
 
-  const getSelectedCourseName = () => {
-    const course = courses.find((c) => c.id === selectedCourseId);
-    return course?.title || "";
-  };
-
-  // Helper for status colors using theme variables
-  const getStatusColor = (variant) => {
+  const getStatusColor = (variant: string) => {
     switch (variant) {
       case "success":
         return "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
@@ -992,134 +951,15 @@ const ManageAssignmentAuthors: React.FC = () => {
             </p>
           </div>
 
-          {/* Course Selector - Combobox */}
-        {/* Course Selector - Spotlight Style */}
-<div className="w-full md:w-[350px] space-y-2">
-  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-    Active Course
-  </label>
-
-  {/* Trigger Button */}
-  <Button
-    variant="outline"
-    role="combobox"
-    onClick={() => setIsCourseSearchOpen(true)}
-    className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent hover:text-accent-foreground text-left"
-  >
-    <div className="flex items-center gap-2 overflow-hidden w-full">
-      <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-      <span className="truncate flex-1">
-        {selectedCourseId
-          ? courses.find((c) => c.id === selectedCourseId)?.title
-          : <span className="text-muted-foreground">Select a course...</span>}
-      </span>
-    </div>
-    <div className="flex items-center gap-1">
-      <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">
-        Search
-      </kbd>
-      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-    </div>
-  </Button>
-
-  {/* Centered Spotlight Dialog */}
-  <Dialog open={isCourseSearchOpen} onOpenChange={setIsCourseSearchOpen}>
-    <DialogContent className="p-0 gap-0 max-w-2xl outline-none overflow-hidden shadow-2xl bg-transparent border-none">
-      <div className="bg-background border rounded-lg overflow-hidden shadow-xl">
-        <Command className="w-full h-full max-h-[80vh] flex flex-col">
-          {/* Header Area */}
-          <div className="border-b px-4 py-3 flex items-center gap-2 bg-muted/20">
-            <Search className="h-5 w-5 text-muted-foreground" />
-            <CommandInput 
-              placeholder="Type to search courses..." 
-              className="border-none focus:ring-0 text-base h-9 bg-transparent"
-            />
-            <div className="ml-auto text-xs text-muted-foreground border px-2 py-0.5 rounded bg-background">
-              ESC to close
-            </div>
-          </div>
-          
-          <CommandList className="max-h-[500px] overflow-y-auto custom-scrollbar">
-            <CommandEmpty className="py-12 text-center text-sm text-muted-foreground">
-              No courses found.
-            </CommandEmpty>
-            
-            <CommandGroup heading="Available Courses" className="px-2 pb-2">
-              {courses.map((course) => (
-                <CommandItem
-                  key={course.id}
-                  value={course.title}
-                  onSelect={() => {
-                    handleCourseSelect(course.id);
-                    setIsCourseSearchOpen(false);
-                  }}
-                  className="aria-selected:bg-accent aria-selected:text-accent-foreground my-1 rounded-md px-4 py-3 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
-                        selectedCourseId === course.id 
-                          ? "bg-primary text-primary-foreground border-primary" 
-                          : "bg-background text-muted-foreground"
-                      )}>
-                        {selectedCourseId === course.id ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <BookOpen className="h-4 w-4" />
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="font-medium truncate text-sm sm:text-base">
-                          {course.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground truncate font-mono">
-                          ID: {course.id}
-                        </span>
-                      </div>
-                    </div>
-
-                    <Badge 
-                      variant={course.status === "PUBLISHED" ? 'default' : 'secondary'}
-                      className="shrink-0"
-                    >
-                      {course.status}
-                    </Badge>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </div>
-    </DialogContent>
-  </Dialog>
-
-  {selectedCourseId && (
-    <div className="flex justify-end mt-1">
-      <Button
-        variant="link"
-        size="sm"
-        onClick={() => {
-          setSelectedCourseId("");
-          setAssignments({
-            data: [],
-            hasNextPage: false,
-            hasPreviousPage: false,
-            totalCount: 0,
-          });
-          setPendingChanges(new Map());
-          setSelectedAssignmentIds([]);
-          setNotificationStatuses({});
-        }}
-        className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-      >
-        Clear selection
-      </Button>
-    </div>
-  )}
-</div>
+          {/* Course Selector - Using Reusable Component */}
+          <CourseSearchSelector
+            courses={courses}
+            selectedCourseId={selectedCourseId}
+            onCourseSelect={handleCourseSelect}
+            onClearSelection={handleClearCourseSelection}
+            isLoading={isLoadingCourses}
+            className="w-full md:w-[350px]"
+          />
         </div>
 
         <Separator />
