@@ -55,6 +55,7 @@ export interface Course {
   isCertificateEnabled: boolean;
   customCertificateName: string; // To Specify a custom name for the course certificate default is course title
   isForumEnabled: boolean;
+  isEnrollAnnouncementEnabled: boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 }

@@ -19,9 +19,12 @@ export const sendMailWorker = onMessagePublished({
       const apiKey = BREVO_API_KEY.value();
       await sendPaymentConfirmation(data, apiKey);
 
+
       logger.info("✅ Email sent successfully via worker:", data.email);
     } catch (err: any) {
       logger.error("❌ Worker email sending failed:", err);
     }
   }
 );
+
+// export const 
