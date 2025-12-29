@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { forumChannelService } from "@/services/forumService";
-import { courseEnrollAnnouncementService } from "@/services/courseEnrollAnnouncementService";
+import { courseWelcomeTemplateService } from "@/services/courseWelcomeTemplateService";
 import { ForumChannel } from "@/types/forum";
 import { Archive, Edit2, Hash, Loader2, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from "react";
@@ -85,7 +85,7 @@ const AdditionalTab = ({
 
     setLoadingAnnouncement(true);
     try {
-      const result = await courseEnrollAnnouncementService.getEnrollAnnouncement(courseId);
+      const result = await courseWelcomeTemplateService.getWelcomeTemplate(courseId);
       if (result.success && result.data) {
         setAnnouncementSubject(result.data.subject);
         setAnnouncementBody(result.data.body);
@@ -247,7 +247,7 @@ const AdditionalTab = ({
     }
   };
 
-  const handleSaveEnrollAnnouncement = async () => {
+  const handleSaveWelcomeTemplate = async () => {
     if (!courseId) return;
 
     if (!announcementSubject.trim() || !announcementBody.trim()) {
@@ -260,7 +260,7 @@ const AdditionalTab = ({
     }
 
     try {
-      const result = await courseEnrollAnnouncementService.saveEnrollAnnouncement(
+      const result = await courseWelcomeTemplateService.saveWelcomeTemplate(
         courseId,
         announcementSubject,
         announcementBody
@@ -269,7 +269,7 @@ const AdditionalTab = ({
       if (result.success) {
         toast({
           title: 'Success',
-          description: 'Enrollment announcement saved successfully',
+          description: 'Welcome template saved successfully',
         });
       } else {
         throw new Error(result.error?.message || 'Failed to save announcement');
@@ -513,7 +513,7 @@ const AdditionalTab = ({
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={handleSaveEnrollAnnouncement} size="sm">
+                    <Button onClick={handleSaveWelcomeTemplate} size="sm">
                       Save Announcement
                     </Button>
                   </div>

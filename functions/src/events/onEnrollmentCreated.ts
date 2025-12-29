@@ -5,6 +5,11 @@ import { courseAnalyticsService } from "../services/courseAnalyticsService";
 import { enrollmentService } from "../services/enrollService";
 import { courseService } from "../services/courseService";
 import { lessonAnalyticsService } from "../services/lessonAnalyticsService";
+import { PubSub } from "@google-cloud/pubsub";
+import { courseWelcomeTemplateService } from "../services/courseWelcomeTemplateService";
+import { CourseWelcomeEmail } from "../utils/course";
+
+const pubsub = new PubSub();
 
 export const onEnrollmentCreated = onDocumentCreated(
   `${COLLECTION.ENROLLMENTS}/{id}`,
@@ -24,6 +29,20 @@ export const onEnrollmentCreated = onDocumentCreated(
       if (!courseResult.success || !courseResult.data) {
         functions.logger.error(`Course data not found for ID: ${enrollmentData.data.courseId}`);
         return;
+      }
+
+      if (courseResult.data.isEnrollAnnouncementEnabled) {
+        const courseEnrollAnnouncement = await courseWelcomeTemplateService.getWelcomeTemplate(enrollmentData.data.courseId);
+
+        if (courseEnrollAnnouncement.success && courseEnrollAnnouncement.data) {
+          await pubsub.topic("course-welcome-message").publishMessage({
+            json: {
+              email: enrollmentData.data.userEmail,
+              subject: courseEnrollAnnouncement.data.subject,
+              body: courseEnrollAnnouncement.data.body,
+            } as CourseWelcomeEmail,
+          });
+        }
       }
 
       await courseAnalyticsService.updateCourseAnalytics({
