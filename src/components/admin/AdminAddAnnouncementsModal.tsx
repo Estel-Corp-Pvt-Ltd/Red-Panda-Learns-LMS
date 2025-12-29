@@ -111,7 +111,7 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
         [{ field: "status", op: "==", value: COURSE_STATUS.PUBLISHED }];
 
       const result = await courseService.getCourses(filters, {
-        limit: 100,
+        limit: 300,
         orderBy: { field: "title", direction: "asc" },
         cursor: null,
         pageDirection: "next",
