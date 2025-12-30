@@ -53,59 +53,63 @@ async createNotification(data: {
   adminIds: string[];
   notificationEmailAddresses: string[];
 }): Promise<SubmissionNotification[]> {
-  try {
-    // Check if reminders are paused for this assignment
-    // If any notification for this assignment has reminderPaused=true,
-    // new notifications should also be created in PAUSED state
-    const isPausedResult = await reminderService.checkIsReminderPausedForAssignment(
-      data.assignmentId
-    );
+try {
+  // Get the list of admin IDs who have paused reminders for this assignment
+  const pausedAdminsResult = await reminderService.checkIsReminderPausedForAssignmentforThisAdmin(
+    data.assignmentId
+  );
 
-    // Determine the initial status and reminderPaused flag based on pause state
-    // - PAUSED: Notifications won't trigger reminder emails
-    // - PENDING: Notifications will be picked up by the reminder scheduler
-    const isReminderPaused = isPausedResult.success && isPausedResult.data === true;
-    const initialStatus = isReminderPaused
+  // Get the array of paused admin IDs (empty array if none or on error)
+  const pausedAdminIds: string[] = 
+    pausedAdminsResult.success && pausedAdminsResult.data 
+      ? pausedAdminsResult.data 
+      : [];
+
+  const batch = db.batch();
+  const notifications: SubmissionNotification[] = [];
+
+  data.adminIds.forEach((adminId, index) => {
+    const adminEmail = data.notificationEmailAddresses[index] ?? null;
+
+    const shortAdminId = generateShortAdminId(adminId, 8);
+
+    // Use new ID scheme: N_<submissionId>_<shortAdminId>
+    const customId = `N_${data.submissionId}_${shortAdminId}`;
+
+    const docRef = notificationsRef.doc(customId);
+
+    // Check if THIS specific admin has paused reminders
+    const isThisAdminPaused = pausedAdminIds.includes(adminId);
+
+    // Determine status based on THIS admin's pause state
+    const initialStatus = isThisAdminPaused
       ? NOTIFICATION_STATUS.PAUSED
       : NOTIFICATION_STATUS.PENDING;
 
-    const batch = db.batch();
-    const notifications: SubmissionNotification[] = [];
+    const payload: SubmissionNotification = {
+      id: customId,
+      submissionId: data.submissionId,
+      assignmentId: data.assignmentId,
+      studentId: data.studentId,
+      adminId,
+      adminEmail,
+      // Status is determined by THIS admin's reminder pause state
+      status: initialStatus,
+      // Set pause state specific to THIS admin
+      reminderPaused: isThisAdminPaused,
+      createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
+    };
 
-    data.adminIds.forEach((adminId, index) => {
-      const adminEmail = data.notificationEmailAddresses[index] ?? null;
+    notifications.push(payload);
+    batch.set(docRef, payload);
+  });
 
-      const shortAdminId = generateShortAdminId(adminId, 8);
+  // Execute batch write only once → minimizes Firestore cost
+  await batch.commit();
 
-      // Use new ID scheme: N_<submissionId>_<shortAdminId>
-      const customId = `N_${data.submissionId}_${shortAdminId}`;
-
-      const docRef = notificationsRef.doc(customId);
-
-      const payload: SubmissionNotification = {
-        id: customId,
-        submissionId: data.submissionId,
-        assignmentId: data.assignmentId,
-        studentId: data.studentId,
-        adminId,
-        adminEmail,
-        // Status is determined by the assignment's current reminder pause state
-        status: initialStatus,
-        // Inherit the pause state from existing notifications for this assignment
-        reminderPaused: isReminderPaused,
-        createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp() as any,
-      };
-
-      notifications.push(payload);
-      batch.set(docRef, payload);
-    });
-
-    // Execute batch write only once → minimizes Firestore cost
-    await batch.commit();
-
-    return notifications;
-  } catch (error) {
+  return notifications;
+} catch (error) {
     console.error("Error in createNotification:", error);
     throw error;
   }
@@ -126,7 +130,7 @@ async createNotification(data: {
 
 async scheduleReminder(id: string) {
   try {
-    // Fetch the notification to get its assignmentId
+    // Fetch the notification to get its assignmentId and adminId
     const docRef = notificationsRef.doc(id);
     const docSnap = await docRef.get();
 
@@ -137,33 +141,38 @@ async scheduleReminder(id: string) {
 
     const data = docSnap.data() as SubmissionNotification;
     const assignmentId = data.assignmentId;
+    const adminId = data.adminId; // Get the specific admin ID for this notification
 
-    // Check if reminder is paused for this assignment
-    const isPausedResult = await reminderService.checkIsReminderPausedForAssignment(assignmentId);
+    // Check which admins have paused reminders for this assignment
+    const pausedAdminsResult = await reminderService.checkIsReminderPausedForAssignmentforThisAdmin(assignmentId);
 
-    if (!isPausedResult.success) {
+    if (!pausedAdminsResult.success) {
       console.error(
         `Failed to check pause status for assignment ${assignmentId}:`,
-        isPausedResult.error
+        pausedAdminsResult.error
       );
       throw new Error("Failed to check pause status");
     }
 
-    const isReminderPaused = isPausedResult.data === true;
+    // Get the array of paused admin IDs
+    const pausedAdminIds: string[] = pausedAdminsResult.data ?? [];
 
-    const newStatus = isReminderPaused
+    // Check if THIS specific admin has paused reminders
+    const isThisAdminPaused = pausedAdminIds.includes(adminId);
+
+    const newStatus = isThisAdminPaused
       ? NOTIFICATION_STATUS.PAUSED
       : NOTIFICATION_STATUS.REMINDER_SCHEDULED;
 
     await docRef.update({
       status: newStatus,
-      reminderPaused: isReminderPaused, // update the boolean field
+      reminderPaused: isThisAdminPaused, // update based on THIS admin's pause state
       emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     console.log(
-      `Notification ${id} updated. Status: ${newStatus}, reminderPaused: ${isReminderPaused}`
+      `Notification ${id} updated for admin ${adminId}. Status: ${newStatus}, reminderPaused: ${isThisAdminPaused}`
     );
   } catch (error) {
     console.error(`Error scheduling reminder for notification ${id}:`, error);
