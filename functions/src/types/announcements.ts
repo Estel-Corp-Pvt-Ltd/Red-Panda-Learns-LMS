@@ -19,3 +19,11 @@ export interface Announcement {
   createdBy: string | null;
 
 }
+
+export interface CourseWelcomeTemplate {
+  id: string;
+  courseId: string;
+  subject: string;
+  body: string;
+  createdAt: Timestamp | FieldValue;
+}

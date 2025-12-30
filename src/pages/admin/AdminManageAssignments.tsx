@@ -7,13 +7,7 @@ import { courseService } from "@/services/courseService";
 import { Assignment } from "@/types/assignment";
 import { User } from "@/types/user";
 import { Course } from "@/types/course";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -44,7 +38,6 @@ import {
   RefreshCw,
   Search,
   Filter,
-  X,
   Calendar,
   Edit,
   Pause,
@@ -58,21 +51,7 @@ import {
   ArrowUpRight,
   MoreHorizontal,
 } from "lucide-react";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { USER_ROLE, NOTIFICATION_STATUS, COLLECTION } from "@/constants";
 import { formatDateTime } from "@/utils/date-time";
 import EditAssignmentModal from "@/components/admin/EditAssignmentModal";
@@ -90,7 +69,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import CourseSearchSelector from "@/components/admin/CourseSearchSelector";
 
 interface PaginatedAssignments {
   data: Assignment[];
@@ -102,13 +82,7 @@ interface PaginatedAssignments {
 }
 
 type AuthorFilterType = "all" | "null" | "assigned" | string;
-type DeadlineFilterType =
-  | "all"
-  | "past"
-  | "upcoming"
-  | "today"
-  | "this-week"
-  | "no-deadline";
+type DeadlineFilterType = "all" | "past" | "upcoming" | "today" | "this-week" | "no-deadline";
 
 interface AssignmentNotificationStatus {
   [assignmentId: string]: NotificationStatus | null;
@@ -116,14 +90,13 @@ interface AssignmentNotificationStatus {
 
 const ManageAssignmentAuthors: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Course state
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const [courseSearchQuery, setCourseSearchQuery] = useState("");
-  const [openCombobox, setOpenCombobox] = useState(false);
-  const [isCourseSearchOpen, setIsCourseSearchOpen] = useState(false);
+
   // Assignments state
   const [assignments, setAssignments] = useState<PaginatedAssignments>({
     data: [],
@@ -143,40 +116,31 @@ const ManageAssignmentAuthors: React.FC = () => {
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
   // Track changes
-  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(
-    new Map()
-  );
-  const [savingAssignments, setSavingAssignments] = useState<Set<string>>(
-    new Set()
-  );
+  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(new Map());
+  const [savingAssignments, setSavingAssignments] = useState<Set<string>>(new Set());
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
   // Search and Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState<AuthorFilterType>("all");
-  const [deadlineFilter, setDeadlineFilter] =
-    useState<DeadlineFilterType>("all");
+  const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilterType>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   // Edit Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(
-    null
-  );
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
 
   // Selection state for assignments to pause/unpause reminders
-  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>(
-    []
-  );
+  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>([]);
   const [isPausingReminders, setIsPausingReminders] = useState(false);
   const [isUnpausingReminders, setIsUnpausingReminders] = useState(false);
 
   // Notification status state
-  const [notificationStatuses, setNotificationStatuses] =
-    useState<AssignmentNotificationStatus>({});
-  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] =
-    useState(false);
+  const [notificationStatuses, setNotificationStatuses] = useState<AssignmentNotificationStatus>(
+    {}
+  );
+  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] = useState(false);
 
   // ----------------- Load Notification Statuses -----------------
   const loadNotificationStatuses = async (assignmentIds: string[]) => {
@@ -186,14 +150,14 @@ const ManageAssignmentAuthors: React.FC = () => {
     try {
       const statusMap: AssignmentNotificationStatus = {};
 
-      // Query in batches of 10 (Firestore 'in' query limit)
       const batchSize = 10;
       for (let i = 0; i < assignmentIds.length; i += batchSize) {
         const batch = assignmentIds.slice(i, i + batchSize);
 
         const q = query(
           collection(db, COLLECTION.SUBMISSION_NOTIFICATION),
-          where("assignmentId", "in", batch)
+          where("assignmentId", "in", batch),
+          where("adminId", "==", user.id)
         );
 
         const querySnapshot = await getDocs(q);
@@ -203,7 +167,6 @@ const ManageAssignmentAuthors: React.FC = () => {
           const assignmentId = data.assignmentId;
           const status = data.status as NotificationStatus;
 
-          // If multiple records exist for same assignment, prioritize certain statuses
           if (
             !statusMap[assignmentId] ||
             status === NOTIFICATION_STATUS.PAUSED ||
@@ -215,7 +178,6 @@ const ManageAssignmentAuthors: React.FC = () => {
         });
       }
 
-      // Set null for assignments without notification records
       assignmentIds.forEach((id) => {
         if (!(id in statusMap)) {
           statusMap[id] = null;
@@ -250,10 +212,7 @@ const ManageAssignmentAuthors: React.FC = () => {
 
     if (status === null) {
       return (
-        <Badge
-          variant="outline"
-          className="text-xs flex items-center gap-1 text-gray-500"
-        >
+        <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
           <Bell className="h-3 w-3" />
           No Status
         </Badge>
@@ -263,30 +222,21 @@ const ManageAssignmentAuthors: React.FC = () => {
     switch (status) {
       case NOTIFICATION_STATUS.PAUSED:
         return (
-          <Badge
-            variant="destructive"
-            className="text-xs flex items-center gap-1"
-          >
+          <Badge variant="destructive" className="text-xs flex items-center gap-1">
             <BellOff className="h-3 w-3" />
             Paused
           </Badge>
         );
       case NOTIFICATION_STATUS.PENDING:
         return (
-          <Badge
-            variant="secondary"
-            className="text-xs flex items-center gap-1"
-          >
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
             <Clock className="h-3 w-3" />
             Pending
           </Badge>
         );
       case NOTIFICATION_STATUS.REMINDER_SCHEDULED:
         return (
-          <Badge
-            variant="default"
-            className="text-xs flex items-center gap-1 bg-blue-500"
-          >
+          <Badge variant="default" className="text-xs flex items-center gap-1 bg-blue-500">
             <Bell className="h-3 w-3" />
             Scheduled
           </Badge>
@@ -303,20 +253,14 @@ const ManageAssignmentAuthors: React.FC = () => {
         );
       case NOTIFICATION_STATUS.ARCHIVED:
         return (
-          <Badge
-            variant="outline"
-            className="text-xs flex items-center gap-1 text-gray-500"
-          >
+          <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
             <Archive className="h-3 w-3" />
             Archived
           </Badge>
         );
       case NOTIFICATION_STATUS.ERROR:
         return (
-          <Badge
-            variant="destructive"
-            className="text-xs flex items-center gap-1"
-          >
+          <Badge variant="destructive" className="text-xs flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
             Error
           </Badge>
@@ -429,7 +373,6 @@ const ManageAssignmentAuthors: React.FC = () => {
           totalCount: result.data.totalCount,
         });
 
-        // Load notification statuses for the fetched assignments
         const assignmentIds = result.data.data.map((a: Assignment) => a.id);
         loadNotificationStatuses(assignmentIds);
       } else {
@@ -466,10 +409,19 @@ const ManageAssignmentAuthors: React.FC = () => {
     setNotificationStatuses({});
   };
 
-  // ----------------- Filter Courses by Search -----------------
-  const filteredCourses = courses.filter((course) =>
-    course.title?.toLowerCase().includes(courseSearchQuery.toLowerCase())
-  );
+  // ----------------- Handle Clear Course Selection -----------------
+  const handleClearCourseSelection = () => {
+    setSelectedCourseId("");
+    setAssignments({
+      data: [],
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalCount: 0,
+    });
+    setPendingChanges(new Map());
+    setSelectedAssignmentIds([]);
+    setNotificationStatuses({});
+  };
 
   // ----------------- Client-side Deadline Filter -----------------
   const applyDeadlineFilter = (assignmentsList: Assignment[]): Assignment[] => {
@@ -539,17 +491,11 @@ const ManageAssignmentAuthors: React.FC = () => {
 
   const toggleSelectAllDisplayed = (displayed: Assignment[]) => {
     const displayedIds = displayed.map((a) => a.id);
-    const allSelected = displayedIds.every((id) =>
-      selectedAssignmentIds.includes(id)
-    );
+    const allSelected = displayedIds.every((id) => selectedAssignmentIds.includes(id));
     if (allSelected) {
-      setSelectedAssignmentIds((prev) =>
-        prev.filter((id) => !displayedIds.includes(id))
-      );
+      setSelectedAssignmentIds((prev) => prev.filter((id) => !displayedIds.includes(id)));
     } else {
-      setSelectedAssignmentIds((prev) =>
-        Array.from(new Set([...prev, ...displayedIds]))
-      );
+      setSelectedAssignmentIds((prev) => Array.from(new Set([...prev, ...displayedIds])));
     }
   };
 
@@ -577,17 +523,13 @@ const ManageAssignmentAuthors: React.FC = () => {
     setIsPausingReminders(true);
     try {
       const idToken = await authService.getToken();
-      await pauseReminderService.pauseReminder(
-        { assignmentIds: selectedAssignmentIds },
-        idToken
-      );
+      await pauseReminderService.pauseReminder({ assignmentIds: selectedAssignmentIds }, idToken);
 
       toast({
         title: "Success",
         description: `Reminders paused for ${selectedAssignmentIds.length} assignment(s)`,
       });
 
-      // Update local notification statuses
       const updatedStatuses: AssignmentNotificationStatus = {};
       selectedAssignmentIds.forEach((id) => {
         updatedStatuses[id] = NOTIFICATION_STATUS.PAUSED;
@@ -610,7 +552,6 @@ const ManageAssignmentAuthors: React.FC = () => {
   const handleUnpauseReminders = async () => {
     if (selectedAssignmentIds.length === 0) return;
 
-    // Filter only paused assignments
     const pausedAssignmentIds = selectedAssignmentIds.filter(
       (id) => notificationStatuses[id] === NOTIFICATION_STATUS.PAUSED
     );
@@ -626,17 +567,13 @@ const ManageAssignmentAuthors: React.FC = () => {
     setIsUnpausingReminders(true);
     try {
       const idToken = await authService.getToken();
-      await pauseReminderService.unpauseReminder(
-        { assignmentIds: pausedAssignmentIds },
-        idToken
-      );
+      await pauseReminderService.unpauseReminder({ assignmentIds: pausedAssignmentIds }, idToken);
 
       toast({
         title: "Success",
         description: `Reminders resumed for ${pausedAssignmentIds.length} assignment(s)`,
       });
 
-      // Update local notification statuses to REMINDER_SCHEDULED
       const updatedStatuses: AssignmentNotificationStatus = {};
       pausedAssignmentIds.forEach((id) => {
         updatedStatuses[id] = NOTIFICATION_STATUS.REMINDER_SCHEDULED;
@@ -653,16 +590,6 @@ const ManageAssignmentAuthors: React.FC = () => {
     } finally {
       setIsUnpausingReminders(false);
     }
-  };
-
-  // ----------------- Refresh Notification Statuses -----------------
-  const refreshNotificationStatuses = async () => {
-    const assignmentIds = assignments.data.map((a) => a.id);
-    await loadNotificationStatuses(assignmentIds);
-    toast({
-      title: "Refreshed",
-      description: "Notification statuses updated",
-    });
   };
 
   // ----------------- Edit Assignment Handler -----------------
@@ -779,17 +706,12 @@ const ManageAssignmentAuthors: React.FC = () => {
     setSavingAssignments((prev) => new Set(prev).add(assignmentId));
 
     try {
-      const result = await assignmentService.updateAssignmentAuthor(
-        assignmentId,
-        authorId
-      );
+      const result = await assignmentService.updateAssignmentAuthor(assignmentId, authorId);
 
       if (result.success) {
         setAssignments((prev) => ({
           ...prev,
-          data: prev.data.map((a) =>
-            a.id === assignmentId ? { ...a, authorId } : a
-          ),
+          data: prev.data.map((a) => (a.id === assignmentId ? { ...a, authorId } : a)),
         }));
 
         setPendingChanges((prev) => {
@@ -839,18 +761,13 @@ const ManageAssignmentAuthors: React.FC = () => {
         const authorId = pendingChanges.get(assignmentId);
         if (!authorId) continue;
 
-        const result = await assignmentService.updateAssignmentAuthor(
-          assignmentId,
-          authorId
-        );
+        const result = await assignmentService.updateAssignmentAuthor(assignmentId, authorId);
 
         if (result.success) {
           successCount++;
           setAssignments((prev) => ({
             ...prev,
-            data: prev.data.map((a) =>
-              a.id === assignmentId ? { ...a, authorId } : a
-            ),
+            data: prev.data.map((a) => (a.id === assignmentId ? { ...a, authorId } : a)),
           }));
         } else {
           failedCount++;
@@ -882,19 +799,6 @@ const ManageAssignmentAuthors: React.FC = () => {
     return user ? `${user.firstName} ${user.lastName}` : null;
   };
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case USER_ROLE.ADMIN:
-        return "destructive";
-      case USER_ROLE.INSTRUCTOR:
-        return "default";
-      case USER_ROLE.TEACHER:
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
   const getCurrentAuthorId = (assignment: Assignment) => {
     return pendingChanges.get(assignment.id) || assignment.authorId || "";
   };
@@ -913,8 +817,7 @@ const ManageAssignmentAuthors: React.FC = () => {
       return { label: "Past", variant: "destructive" as const };
     }
 
-    const diffHours =
-      (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const diffHours = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (diffHours <= 24) {
       return { label: "Due soon", variant: "default" as const };
@@ -923,13 +826,7 @@ const ManageAssignmentAuthors: React.FC = () => {
     return { label: "Upcoming", variant: "secondary" as const };
   };
 
-  const getSelectedCourseName = () => {
-    const course = courses.find((c) => c.id === selectedCourseId);
-    return course?.title || "";
-  };
-
-  // Helper for status colors using theme variables
-  const getStatusColor = (variant) => {
+  const getStatusColor = (variant: string) => {
     switch (variant) {
       case "success":
         return "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
@@ -992,134 +889,15 @@ const ManageAssignmentAuthors: React.FC = () => {
             </p>
           </div>
 
-          {/* Course Selector - Combobox */}
-        {/* Course Selector - Spotlight Style */}
-<div className="w-full md:w-[350px] space-y-2">
-  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-    Active Course
-  </label>
-
-  {/* Trigger Button */}
-  <Button
-    variant="outline"
-    role="combobox"
-    onClick={() => setIsCourseSearchOpen(true)}
-    className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent hover:text-accent-foreground text-left"
-  >
-    <div className="flex items-center gap-2 overflow-hidden w-full">
-      <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-      <span className="truncate flex-1">
-        {selectedCourseId
-          ? courses.find((c) => c.id === selectedCourseId)?.title
-          : <span className="text-muted-foreground">Select a course...</span>}
-      </span>
-    </div>
-    <div className="flex items-center gap-1">
-      <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">
-        Search
-      </kbd>
-      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-    </div>
-  </Button>
-
-  {/* Centered Spotlight Dialog */}
-  <Dialog open={isCourseSearchOpen} onOpenChange={setIsCourseSearchOpen}>
-    <DialogContent className="p-0 gap-0 max-w-2xl outline-none overflow-hidden shadow-2xl bg-transparent border-none">
-      <div className="bg-background border rounded-lg overflow-hidden shadow-xl">
-        <Command className="w-full h-full max-h-[80vh] flex flex-col">
-          {/* Header Area */}
-          <div className="border-b px-4 py-3 flex items-center gap-2 bg-muted/20">
-            <Search className="h-5 w-5 text-muted-foreground" />
-            <CommandInput 
-              placeholder="Type to search courses..." 
-              className="border-none focus:ring-0 text-base h-9 bg-transparent"
-            />
-            <div className="ml-auto text-xs text-muted-foreground border px-2 py-0.5 rounded bg-background">
-              ESC to close
-            </div>
-          </div>
-          
-          <CommandList className="max-h-[500px] overflow-y-auto custom-scrollbar">
-            <CommandEmpty className="py-12 text-center text-sm text-muted-foreground">
-              No courses found.
-            </CommandEmpty>
-            
-            <CommandGroup heading="Available Courses" className="px-2 pb-2">
-              {courses.map((course) => (
-                <CommandItem
-                  key={course.id}
-                  value={course.title}
-                  onSelect={() => {
-                    handleCourseSelect(course.id);
-                    setIsCourseSearchOpen(false);
-                  }}
-                  className="aria-selected:bg-accent aria-selected:text-accent-foreground my-1 rounded-md px-4 py-3 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
-                        selectedCourseId === course.id 
-                          ? "bg-primary text-primary-foreground border-primary" 
-                          : "bg-background text-muted-foreground"
-                      )}>
-                        {selectedCourseId === course.id ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <BookOpen className="h-4 w-4" />
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="font-medium truncate text-sm sm:text-base">
-                          {course.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground truncate font-mono">
-                          ID: {course.id}
-                        </span>
-                      </div>
-                    </div>
-
-                    <Badge 
-                      variant={course.status === "PUBLISHED" ? 'default' : 'secondary'}
-                      className="shrink-0"
-                    >
-                      {course.status}
-                    </Badge>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </div>
-    </DialogContent>
-  </Dialog>
-
-  {selectedCourseId && (
-    <div className="flex justify-end mt-1">
-      <Button
-        variant="link"
-        size="sm"
-        onClick={() => {
-          setSelectedCourseId("");
-          setAssignments({
-            data: [],
-            hasNextPage: false,
-            hasPreviousPage: false,
-            totalCount: 0,
-          });
-          setPendingChanges(new Map());
-          setSelectedAssignmentIds([]);
-          setNotificationStatuses({});
-        }}
-        className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-      >
-        Clear selection
-      </Button>
-    </div>
-  )}
-</div>
+          {/* Course Selector - Using Reusable Component */}
+          <CourseSearchSelector
+            courses={courses}
+            selectedCourseId={selectedCourseId}
+            onCourseSelect={handleCourseSelect}
+            onClearSelection={handleClearCourseSelection}
+            isLoading={isLoadingCourses}
+            className="w-full md:w-[350px]"
+          />
         </div>
 
         <Separator />
@@ -1132,8 +910,7 @@ const ManageAssignmentAuthors: React.FC = () => {
             </div>
             <h3 className="text-lg font-medium">No Course Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm mt-2">
-              Please select a course from the dropdown above to view
-              assignments.
+              Please select a course from the dropdown above to view assignments.
             </p>
           </div>
         ) : (
@@ -1143,10 +920,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                 <div className="space-y-1">
                   <CardTitle className="text-lg font-medium">
                     Assignments
-                    <Badge
-                      variant="secondary"
-                      className="ml-3 rounded-sm font-normal"
-                    >
+                    <Badge variant="secondary" className="ml-3 rounded-sm font-normal">
                       {assignments.totalCount} Total
                     </Badge>
                   </CardTitle>
@@ -1179,10 +953,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     <Filter className="h-4 w-4" />
                     Filters
                     {activeFiltersCount > 0 && (
-                      <Badge
-                        variant="default"
-                        className="h-5 px-1.5 min-w-[1.25rem]"
-                      >
+                      <Badge variant="default" className="h-5 px-1.5 min-w-[1.25rem]">
                         {activeFiltersCount}
                       </Badge>
                     )}
@@ -1201,9 +972,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     className="h-9 w-9 p-0"
                     title="Refresh & Reset"
                   >
-                    <RefreshCw
-                      className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                    />
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                   </Button>
                 </div>
               </div>
@@ -1215,10 +984,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     <label className="text-xs font-medium text-muted-foreground">
                       Author Status
                     </label>
-                    <Select
-                      value={authorFilter}
-                      onValueChange={setAuthorFilter}
-                    >
+                    <Select value={authorFilter} onValueChange={setAuthorFilter}>
                       <SelectTrigger className="bg-background h-9">
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
@@ -1236,14 +1002,10 @@ const ManageAssignmentAuthors: React.FC = () => {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Deadline
-                    </label>
+                    <label className="text-xs font-medium text-muted-foreground">Deadline</label>
                     <Select
                       value={deadlineFilter}
-                      onValueChange={(value: DeadlineFilterType) =>
-                        setDeadlineFilter(value)
-                      }
+                      onValueChange={(value: DeadlineFilterType) => setDeadlineFilter(value)}
                     >
                       <SelectTrigger className="bg-background h-9">
                         <SelectValue placeholder="All" />
@@ -1282,11 +1044,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     </div>
                     <p>No assignments found matching your criteria.</p>
                     {activeFiltersCount > 0 && (
-                      <Button
-                        variant="link"
-                        onClick={resetFilters}
-                        className="mt-2"
-                      >
+                      <Button variant="link" onClick={resetFilters} className="mt-2">
                         Clear filters
                       </Button>
                     )}
@@ -1299,9 +1057,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                           <input
                             type="checkbox"
                             className="translate-y-0.5 rounded border-primary text-primary focus:ring-primary h-4 w-4"
-                            onChange={() =>
-                              toggleSelectAllDisplayed(displayedAssignments)
-                            }
+                            onChange={() => toggleSelectAllDisplayed(displayedAssignments)}
                             checked={
                               displayedAssignments.length > 0 &&
                               displayedAssignments.every((a) =>
@@ -1312,18 +1068,14 @@ const ManageAssignmentAuthors: React.FC = () => {
                         </TableHead>
                         <TableHead>Assignment Details</TableHead>
                         <TableHead>Timeline</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
                         <TableHead className="w-[250px]">Author</TableHead>
-                        <TableHead className="w-[100px] text-right">
-                          Actions
-                        </TableHead>
+                        <TableHead className="w-[100px] text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {displayedAssignments.map((assignment) => {
-                        const deadlineStatus = getDeadlineStatus(
-                          assignment.deadline
-                        );
+                        const deadlineStatus = getDeadlineStatus(assignment.deadline);
                         const isChanged = hasChanges(assignment.id);
                         const isSaving = savingAssignments.has(assignment.id);
 
@@ -1332,23 +1084,15 @@ const ManageAssignmentAuthors: React.FC = () => {
                             key={assignment.id}
                             className={`
                               group transition-colors
-                              ${
-                                isChanged
-                                  ? "bg-accent/30 hover:bg-accent/40"
-                                  : "hover:bg-muted/50"
-                              }
+                              ${isChanged ? "bg-accent/30 hover:bg-accent/40" : "hover:bg-muted/50"}
                             `}
                           >
                             <TableCell className="text-center align-top pt-4">
                               <input
                                 type="checkbox"
                                 className="rounded border-muted-foreground/30 text-primary focus:ring-primary h-4 w-4"
-                                checked={selectedAssignmentIds.includes(
-                                  assignment.id
-                                )}
-                                onChange={() =>
-                                  toggleSelectAssignment(assignment.id)
-                                }
+                                checked={selectedAssignmentIds.includes(assignment.id)}
+                                onChange={() => toggleSelectAssignment(assignment.id)}
                               />
                             </TableCell>
 
@@ -1385,9 +1129,11 @@ const ManageAssignmentAuthors: React.FC = () => {
                               </div>
                             </TableCell>
 
-                            <TableCell className="align-top py-3">
-                              <div className="scale-90 origin-left">
-                                {getNotificationStatusBadge(assignment.id)}
+                            <TableCell className="align-top py-3 text-center ">
+                              <div className="scale-90 origin-center">
+                                <span className="text-center inline-block">
+                                  {getNotificationStatusBadge(assignment.id)}
+                                </span>
                               </div>
                             </TableCell>
 
@@ -1444,9 +1190,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                                     size="icon"
                                     variant="default"
                                     className="h-8 w-8 bg-amber-600 hover:bg-amber-700 text-white"
-                                    onClick={() =>
-                                      saveAssignmentAuthor(assignment.id)
-                                    }
+                                    onClick={() => saveAssignmentAuthor(assignment.id)}
                                     disabled={isSaving}
                                     title="Save Change"
                                   >
@@ -1459,19 +1203,13 @@ const ManageAssignmentAuthors: React.FC = () => {
                                 )}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
                                       <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem
-                                      onClick={() =>
-                                        handleEditAssignment(assignment.id)
-                                      }
+                                      onClick={() => handleEditAssignment(assignment.id)}
                                     >
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit Details
@@ -1559,11 +1297,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 border bg-secondary/50"
-                      >
+                      <Button variant="secondary" size="sm" className="h-8 border bg-secondary/50">
                         Notification Actions
                       </Button>
                     </DropdownMenuTrigger>
@@ -1571,9 +1305,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                       <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                       <DropdownMenuItem
                         onClick={handlePauseReminders}
-                        disabled={
-                          isPausingReminders || selectedUnpausedCount === 0
-                        }
+                        disabled={isPausingReminders || selectedUnpausedCount === 0}
                       >
                         {isPausingReminders ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1589,9 +1321,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={handleUnpauseReminders}
-                        disabled={
-                          isUnpausingReminders || selectedPausedCount === 0
-                        }
+                        disabled={isUnpausingReminders || selectedPausedCount === 0}
                         className="text-emerald-600 focus:text-emerald-700"
                       >
                         {isUnpausingReminders ? (
