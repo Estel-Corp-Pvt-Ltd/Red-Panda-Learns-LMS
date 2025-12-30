@@ -886,8 +886,8 @@ const AllSubmissionsPage = () => {
                   <TableHead className="w-[200px]">Student</TableHead>
                   <TableHead className="w-[250px]">Assignment</TableHead>
                   <TableHead className="w-[150px]">Submitted</TableHead>
-                  <TableHead className="w-[120px]">Marks</TableHead>
-                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[120px] text-center">Marks</TableHead>
+                  <TableHead className="w-[100px] text-center">Status</TableHead>
                   <TableHead className="w-[120px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -943,7 +943,7 @@ const AllSubmissionsPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm font-medium">
+                          <div className="text-sm font-medium flex justify-center ">
                             {submission.marks !== undefined && submission.marks !== null
                               ? `${submission.marks}`
                               : "-"
@@ -951,12 +951,15 @@ const AllSubmissionsPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getGradeStatus(submission)}>
+                          <div className="flex justify-center">
+                          <Badge variant={getGradeStatus(submission)} >
                             {submission.marks !== undefined && submission.marks !== null
                               ? "Graded"
                               : "Not Graded"
                             }
+                      
                           </Badge>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-1">

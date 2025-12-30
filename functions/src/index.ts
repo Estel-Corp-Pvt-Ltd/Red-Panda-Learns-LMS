@@ -32,7 +32,7 @@ import { onEnrollmentCreated } from "./events/onEnrollmentCreated";
 import { completeLesson } from "./handlers/analytics/completeLesson";
 import { completeCourse } from "./handlers/analytics/completeCourse";
 import { userDeleteCascade } from "./workers/userDeleteCascade";
-import { pauseReminderForAssignments } from "./handlers/pauseReminderForAssignments";
+import { pauseReminderForAssignments } from "./handlers/notifications/pauseReminderForAssignments";
 import { markSubmissionNotificationsEvaluated } from "./handlers/markSubmissionNotificationsEvaluated";
 import { createCouponUsage } from "./handlers/createCouponUsage";
 import { onCourseUpdated } from "./handlers/announcements/triggerAnnouncement";
@@ -43,7 +43,7 @@ import { sendComplaintRedressalMail } from "./handlers/sendComplaintRedressalMai
 import { sendComplaintRedressalMailWorker } from "./workers/sendComplaintRedressalMailWorker";
 import { deleteAnnouncement } from "./handlers/announcements/deleteAnnouncements";
 import { updateAnnouncement } from "./handlers/announcements/updateAnnouncement";
-import { unpauseReminderForAssignments } from "./handlers/unpauseReminderForAssignments";
+import { unpauseReminderForAssignments } from "./handlers/notifications/unpauseReminderForAssignments";
 import { showCertificatePreview } from "./handlers/showCertificatePreview";
 import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
 import { getCourseTimeSpent } from "./handlers/analytics/getCourseTimeSpent";
@@ -54,6 +54,7 @@ import {
   getOrderStats,
   ordersHealthCheck,
 } from "./handlers/api/ordersApiHandlers";
+import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 
 export {
   enrollStudent,
@@ -106,4 +107,5 @@ export {
   getOrderById,
   getOrderStats,
   ordersHealthCheck,
+  sendCourseWelcomeMailWorker,
 };

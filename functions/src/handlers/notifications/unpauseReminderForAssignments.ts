@@ -1,15 +1,22 @@
 import { Request, Response } from "express";
-import { withMiddleware } from "../middlewares";
-import { corsMiddleware } from "../middlewares/cors";
-import { authMiddleware } from "../middlewares/auth";
+import { withMiddleware } from "../../middlewares";
+import { corsMiddleware } from "../../middlewares/cors";
+import { authMiddleware } from "../../middlewares/auth";
 import { onRequest } from "firebase-functions/v2/https";
-import { reminderService } from "../services/reminderService";
+import { reminderService } from "../../services/reminderService";
 
-async function pauseReminderForAssignmentsHandler(req: Request, res: Response) {
+async function unpauseReminderForAssignmentsHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
     if (!user) {
       res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const adminId = user.uid; // Admin ID that we fetch from id token
+
+    if (!adminId) {
+      res.status(401).json({ error: "Unable to identify admin from token" });
       return;
     }
 
@@ -22,9 +29,7 @@ async function pauseReminderForAssignmentsHandler(req: Request, res: Response) {
       return;
     }
 
-    const paused = await reminderService.pauseRemindersForAssignments(
-     assignmentIds
-    );
+    const paused = await reminderService.unpauseRemindersForAssignments(assignmentIds,adminId);
 
     res.status(200).json({ success: true, data: paused });
   } catch (error: any) {
@@ -33,7 +38,7 @@ async function pauseReminderForAssignmentsHandler(req: Request, res: Response) {
   }
 }
 
-export const pauseReminderForAssignments = onRequest(
+export const unpauseReminderForAssignments = onRequest(
   { region: "us-central1" },
-  withMiddleware(corsMiddleware, authMiddleware, pauseReminderForAssignmentsHandler)
+  withMiddleware(corsMiddleware, authMiddleware, unpauseReminderForAssignmentsHandler)
 );

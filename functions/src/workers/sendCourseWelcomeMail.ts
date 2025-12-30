@@ -1,23 +1,23 @@
 import { onMessagePublished } from "firebase-functions/v2/pubsub";
 import { logger } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
-import { PaymentDetails, sendPaymentConfirmation } from "../utils/invoice";
+import { CourseWelcomeEmail, sendCourseWelcomeMessage } from "../utils/course";
 
 // 🔐 Define the secret
 const BREVO_API_KEY = defineSecret("BREVO_API_KEY");
 
 
-export const sendMailWorker = onMessagePublished({
-  topic: "send-mail",
+export const sendCourseWelcomeMailWorker = onMessagePublished({
+  topic: "course-welcome-message",
   secrets: [BREVO_API_KEY],
 },
   async (event) => {
     try {
-      const data = event.data.message.json as PaymentDetails;
+      const data = event.data.message.json as CourseWelcomeEmail;
       logger.info("📧 Worker received mail payload:", data);
 
       const apiKey = BREVO_API_KEY.value();
-      await sendPaymentConfirmation(data, apiKey);
+      await sendCourseWelcomeMessage(data, apiKey);
 
 
       logger.info("✅ Email sent successfully via worker:", data.email);
