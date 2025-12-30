@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { COLLECTION } from "../constants";
-import { CourseEnrollAnnouncement } from "../types/announcements";
+import { CourseWelcomeTemplate } from "../types/announcements";
 import { Result, ok, fail } from "../utils/response";
 
 const db = admin.firestore();
@@ -12,7 +12,7 @@ class CourseWelcomeTemplateService {
    */
   async getWelcomeTemplate(
     courseId: string
-  ): Promise<Result<CourseEnrollAnnouncement | null>> {
+  ): Promise<Result<CourseWelcomeTemplate | null>> {
     try {
       const docRef = db
         .collection(COLLECTION.COURSE_WELCOME_TEMPLATES)
@@ -26,7 +26,7 @@ class CourseWelcomeTemplateService {
       return ok({
         id: docSnap.id,
         ...docSnap.data(),
-      } as CourseEnrollAnnouncement);
+      } as CourseWelcomeTemplate);
     } catch (error) {
       functions.logger.error("❌ Error fetching welcome template:", error);
       return fail("Failed to fetch welcome template");
@@ -40,14 +40,14 @@ class CourseWelcomeTemplateService {
     courseId: string,
     subject: string,
     body: string
-  ): Promise<Result<CourseEnrollAnnouncement>> {
+  ): Promise<Result<CourseWelcomeTemplate>> {
     try {
       const docRef = db
         .collection(COLLECTION.COURSE_WELCOME_TEMPLATES)
         .doc(courseId);
       const docSnap = await docRef.get();
 
-      const templateData: Omit<CourseEnrollAnnouncement, "id"> = {
+      const templateData: Omit<CourseWelcomeTemplate, "id"> = {
         courseId,
         subject: subject.trim(),
         body: body.trim(),
@@ -69,7 +69,7 @@ class CourseWelcomeTemplateService {
       return ok({
         id: courseId,
         ...templateData,
-      } as CourseEnrollAnnouncement);
+      } as CourseWelcomeTemplate);
     } catch (error) {
       functions.logger.error("❌ Error saving welcome template:", error);
       return fail("Failed to save welcome template");

@@ -75,7 +75,7 @@ const CurriculumBuilderPage = () => {
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
   const [isForumEnabled, setIsForumEnabled] = useState(false);
-  const [isEnrollAnnouncementEnabled, setIsEnrollAnnouncementEnabled] = useState(false);
+  const [isWelcomeMessageEnabled, setIsEnrollAnnouncementEnabled] = useState(false);
   const [customCertificateName, setCustomCertificateName] = useState("");
   const itemId = new URLSearchParams(location.search).get("itemId");
   const [activeTab, setActiveTab] = useState("basics");
@@ -180,7 +180,7 @@ const CurriculumBuilderPage = () => {
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
         setIsForumEnabled(data.isForumEnabled ?? false);
-        setIsEnrollAnnouncementEnabled(data.isEnrollAnnouncementEnabled ?? false);
+        setIsEnrollAnnouncementEnabled(data.isWelcomeMessageEnabled ?? false);
         setCustomCertificateName(
           data.customCertificateName || data.title || ""
         );
@@ -297,7 +297,7 @@ const CurriculumBuilderPage = () => {
         isMailSendingEnabled,
         isCertificateEnabled,
         isForumEnabled,
-        isEnrollAnnouncementEnabled,
+        isWelcomeMessageEnabled,
         customCertificateName,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
@@ -451,7 +451,7 @@ const CurriculumBuilderPage = () => {
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
-              isEnrollAnnouncementEnabled={isEnrollAnnouncementEnabled}
+              isWelcomeMessageEnabled={isWelcomeMessageEnabled}
               setIsEnrollAnnouncementEnabled={setIsEnrollAnnouncementEnabled}
               courseId={course?.id}
               courseTitle={course?.title}

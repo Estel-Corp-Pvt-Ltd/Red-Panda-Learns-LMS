@@ -57,7 +57,7 @@ export interface Course {
   isEnrollmentPaused: boolean;
   isMailSendingEnabled: boolean;
   isCertificateEnabled: boolean;
-  isEnrollAnnouncementEnabled: boolean;
+  isWelcomeMessageEnabled: boolean;
   customCertificateName: string;  // To Specify a custom name for the course certificate default is course title
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;

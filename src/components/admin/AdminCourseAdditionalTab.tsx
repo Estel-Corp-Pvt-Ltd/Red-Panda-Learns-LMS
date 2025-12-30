@@ -27,7 +27,7 @@ interface AdditionalTabProps {
   setIsCertificateEnabled?: (value: boolean) => void;
   isForumEnabled: boolean;
   setIsForumEnabled: (value: boolean) => void;
-  isEnrollAnnouncementEnabled: boolean;
+  isWelcomeMessageEnabled: boolean;
   setIsEnrollAnnouncementEnabled: (value: boolean) => void;
   courseId?: string;
   courseTitle?: string;
@@ -43,7 +43,7 @@ const AdditionalTab = ({
   setIsCertificateEnabled,
   isForumEnabled,
   setIsForumEnabled,
-  isEnrollAnnouncementEnabled,
+  isWelcomeMessageEnabled,
   setIsEnrollAnnouncementEnabled,
   courseId,
   courseTitle = "",
@@ -455,7 +455,7 @@ const AdditionalTab = ({
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="enable-enroll-announcement" className="text-base font-medium">
-                Enable Enrollment Announcement
+                Enable Welcome Message
               </Label>
               <p className="text-sm text-muted-foreground">
                 When enabled, a custom announcement will be sent to students when they enroll in this course.
@@ -466,7 +466,7 @@ const AdditionalTab = ({
 
             <Switch
               id="enable-enroll-announcement"
-              checked={isEnrollAnnouncementEnabled}
+              checked={isWelcomeMessageEnabled}
               onCheckedChange={handleToggleEnrollAnnouncement}
               className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
             />
@@ -480,7 +480,7 @@ const AdditionalTab = ({
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              Configure Enrollment Message
+              Configure Welcome Message
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-4">
               {loadingAnnouncement ? (

@@ -91,7 +91,7 @@ class CourseService {
       | "isMailSendingEnabled"
       | "isCertificateEnabled"
       | "isForumEnabled"
-      | "isEnrollAnnouncementEnabled"
+      | "isWelcomeMessageEnabled"
       | "CustomCertificateName"
     >
   ): Promise<string> {
@@ -118,7 +118,7 @@ class CourseService {
         isMailSendingEnabled: false,
         isCertificateEnabled: false,
         isForumEnabled: false,
-        isEnrollAnnouncementEnabled: false,
+        isWelcomeMessageEnabled: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -203,8 +203,8 @@ class CourseService {
         updateData.isCertificateEnabled = updates.isCertificateEnabled;
       if (updates.isForumEnabled !== undefined)
         updateData.isForumEnabled = updates.isForumEnabled;
-      if (updates.isEnrollAnnouncementEnabled !== undefined)
-        updateData.isEnrollAnnouncementEnabled = updates.isEnrollAnnouncementEnabled;
+      if (updates.isWelcomeMessageEnabled !== undefined)
+        updateData.isWelcomeMessageEnabled = updates.isWelcomeMessageEnabled;
       if (updates.certificateTemplateId)
         updateData.certificateTemplateId = updates.certificateTemplateId;
       if (updates.duration !== undefined) {
@@ -401,7 +401,7 @@ class CourseService {
           isEnrollmentPaused: data.isEnrollmentPaused || false,
           customCertificateName: data.customCertificateName || "",
           isCertificateEnabled: data.isCertificateEnabled || false,
-          isEnrollAnnouncementEnabled: data.isEnrollAnnouncementEnabled || false,
+          isWelcomeMessageEnabled: data.isWelcomeMessageEnabled || false,
           isForumEnabled: data.isForumEnabled || false,
           isMailSendingEnabled: data.isMailSendingEnabled || false,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,

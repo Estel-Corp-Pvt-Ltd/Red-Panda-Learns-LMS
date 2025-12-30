@@ -14,7 +14,7 @@ export interface Announcement {
   createdBy: string | null;
 }
 
-export interface CourseEnrollAnnouncement {
+export interface CourseWelcomeTemplate {
   id: string;
   courseId: string;
   subject: string;

@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
-import { CourseEnrollAnnouncement } from "@/types/announcements";
+import { CourseWelcomeTemplate } from "@/types/announcements";
 import { Result, ok, fail } from "@/utils/response";
 import { logError } from "@/utils/logger";
 
@@ -17,7 +17,7 @@ class CourseWelcomeTemplateService {
   /**
    * Get welcome template configuration for a course
    */
-  async getWelcomeTemplate(courseId: string): Promise<Result<CourseEnrollAnnouncement | null>> {
+  async getWelcomeTemplate(courseId: string): Promise<Result<CourseWelcomeTemplate | null>> {
     try {
       const docRef = doc(db, COLLECTION.COURSE_WELCOME_TEMPLATES, courseId);
       const docSnap = await getDoc(docRef);
@@ -29,7 +29,7 @@ class CourseWelcomeTemplateService {
       return ok({
         id: docSnap.id,
         ...docSnap.data(),
-      } as CourseEnrollAnnouncement);
+      } as CourseWelcomeTemplate);
     } catch (error) {
       logError("CourseWelcomeTemplateService.getWelcomeTemplate", error);
       return fail("Failed to fetch welcome template");
@@ -43,12 +43,12 @@ class CourseWelcomeTemplateService {
     courseId: string,
     subject: string,
     body: string
-  ): Promise<Result<CourseEnrollAnnouncement>> {
+  ): Promise<Result<CourseWelcomeTemplate>> {
     try {
       const docRef = doc(db, COLLECTION.COURSE_WELCOME_TEMPLATES, courseId);
       const docSnap = await getDoc(docRef);
 
-      const templateData: Omit<CourseEnrollAnnouncement, "id"> = {
+      const templateData: Omit<CourseWelcomeTemplate, "id"> = {
         courseId,
         subject: subject.trim(),
         body: body.trim(),
@@ -64,7 +64,7 @@ class CourseWelcomeTemplateService {
       return ok({
         id: courseId,
         ...templateData,
-      } as CourseEnrollAnnouncement);
+      } as CourseWelcomeTemplate);
     } catch (error) {
       logError("CourseWelcomeTemplateService.saveWelcomeTemplate", error);
       return fail("Failed to save welcome template");

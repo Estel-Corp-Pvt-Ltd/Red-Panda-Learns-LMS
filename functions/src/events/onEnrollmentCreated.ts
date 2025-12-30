@@ -31,7 +31,7 @@ export const onEnrollmentCreated = onDocumentCreated(
         return;
       }
 
-      if (courseResult.data.isEnrollAnnouncementEnabled) {
+      if (courseResult.data.isWelcomeMessageEnabled) {
         const courseEnrollAnnouncement = await courseWelcomeTemplateService.getWelcomeTemplate(enrollmentData.data.courseId);
 
         if (courseEnrollAnnouncement.success && courseEnrollAnnouncement.data) {
