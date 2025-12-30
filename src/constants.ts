@@ -72,6 +72,11 @@ export const PRICING_MODEL = {
   PAID: "PAID",
 } as const;
 
+export const BANNER_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+} as const;
+
 export const USER_STATUS = {
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",
@@ -179,10 +184,6 @@ export const ANNOUNCEMENT_STATUS = {
   ARCHIVED: "ARCHIVED",
 } as const;
 
-export const BANNER_STATUS = {
-  ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE",
-} as const;
 
 
 
@@ -398,9 +399,11 @@ export const COLLECTION = {
   ASSIGNMENTS: "Assignments",
   ASSIGNMENT_SUBMISSIONS: "AssignmentSubmissions",
   COURSES: "Courses",
+  BANNERS: 'banners',
   BUNDLES: "Bundles",
   COHORTS: "Cohorts",
   COMMENTS: 'Comments',
+   STRIP_BANNERS: 'stripBanners',
   COMMENT_VOTES: 'CommentVotes',
   USERS: "Users",
   CARTS: "Carts",
@@ -430,7 +433,6 @@ export const COLLECTION = {
   CERTIFICATE_REQUESTS: "CertificateRequests",
   LESSON_ANALYTICS: "LessonAnalytics",
   COURSE_ANALYTICS: "CourseAnalytics",
-  BANNERS: "Banners",
   FORUM_CHANNELS: "ForumChannels",
   CHANNEL_MESSAGES: "ChannelMessages",
   FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes",

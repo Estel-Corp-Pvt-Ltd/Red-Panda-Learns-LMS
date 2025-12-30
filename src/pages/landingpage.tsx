@@ -10,22 +10,25 @@ import PhilosophySection from "./PhilosophySection";
 import ProductsSection from "./ProductsSection";
 import ResearchSection from "./ResearchSection";
 import TestimonialsSection from "./TestimonialsSection";
+import { StripBannerProvider } from "@/components/StripBannerProvider";
 
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background no-scrollbar .no-scrollbar::-webkit-scrollbar">
       <Header />
-      <HeroSection />
-      <PhilosophySection />
-      <ProductsSection />
-      <ResearchSection />
-      <AICoursesSection />
-      <CorporatesSection />
-      <TeamSection />
-      <OurImpactSection />
-      <TestimonialsSection />
-      <NewsletterSection />
-      <Footer />
+      {/* <StripBannerProvider className=" mx-auto px-2 mt-1"> */}
+        <HeroSection />
+        <PhilosophySection />
+        <ProductsSection />
+        <ResearchSection />
+        <AICoursesSection />
+        <CorporatesSection />
+        <TeamSection />
+        <OurImpactSection />
+        <TestimonialsSection />
+        <NewsletterSection />
+        <Footer />
+      {/* </StripBannerProvider> */}
     </div>
   );
 };
