@@ -291,11 +291,11 @@ export default function LessonDetailPage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
       {/* Top info bar: Course (bigger) + Lesson (smaller) */}
-      <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
           <div className="flex gap-3">
             <Link to={`/${user.role === USER_ROLE.ADMIN ? "admin" : "dashboard"}`}>
@@ -337,21 +337,20 @@ export default function LessonDetailPage() {
         </div>
       </div>
 
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex flex-1 min-h-0">
+        {" "}
+        {/* KEY: min-h-0 allows flex child to shrink */}
         {/* Fixed Sidebar */}
-        <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm">
-          <div className="flex-1 py-4 ">
-            <CourseNavigator
-              course={course}
-              currentLesson={selectedItem}
-              lessonHistory={userProgress?.lessonHistory ?? []} // <= important
-              onLessonClick={handleItemSelect}
-            />
-          </div>
+        <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm shrink-0">
+          <CourseNavigator
+            course={course}
+            currentLesson={selectedItem}
+            lessonHistory={userProgress?.lessonHistory ?? []}
+            onLessonClick={handleItemSelect}
+          />
         </aside>
-
         {/* Main Content */}
-        <main className="relative flex-1 p-4 lg:p-6 overflow-y-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-6">
           {!selectedItem ? (
             <div className="flex items-center justify-center min-h-[80vh]">
               <div className="text-center">
@@ -380,14 +379,15 @@ export default function LessonDetailPage() {
           <div className="h-full flex flex-col">
             <div className="p-4 border-b flex items-center justify-between shrink-0">
               <div className="min-w-0">
-                {/* Course bigger in sheet header too */}
-                <h2 className=" text-base md:text-lg font-semibold">{course.title}</h2>
+                <h2 className="text-base md:text-lg font-semibold">{course.title}</h2>
                 {selectedItem && (
-                  <p className=" text-xs text-muted-foreground">{selectedItem.title}</p>
+                  <p className="text-xs text-muted-foreground">{selectedItem.title}</p>
                 )}
               </div>
             </div>
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 min-h-0">
+              {" "}
+              {/* KEY: min-h-0 here too */}
               <CourseNavigator
                 course={course}
                 currentLesson={selectedItem}
