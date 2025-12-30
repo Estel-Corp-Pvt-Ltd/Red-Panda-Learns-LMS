@@ -20,6 +20,7 @@ import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } f
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
+import { StripBannerProvider } from "@/components/StripBannerProvider";
 
 function EnrolledCourseCard({
   enrollment,
@@ -331,6 +332,7 @@ export default function DashboardPage() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <Header />
+      {/* <StripBannerProvider className=" mx-auto px-4 mt-4"> */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
@@ -399,6 +401,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      {/* </StripBannerProvider> */}
     </div>
   );
 }

@@ -51,6 +51,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
+      name:"Strip Banners",
+      path:"/admin/strip-banners",
+      icon:<PictureInPicture className="h-5 w-5" />,
+    },
+    {
       name: "Statistics",
       path: "/admin/statistics",
       icon: <ChartBar className="h-5 w-5" />,

@@ -3,11 +3,7 @@ import { Bell, Copy, HeartHandshake, Mail, Menu, ShoppingCart, User } from "luci
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,6 +23,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "./ui/navigation-menu";
+import { StripBanner } from "./StripBanner";
+import { useStripBanner } from "@/contexts/StripBannerOverlayContext";
 
 type HeaderProps = {
   onMenuClick?: () => void;
@@ -34,11 +32,8 @@ type HeaderProps = {
   className?: string;
 };
 
-export function Header({
-  onMenuClick,
-  showMenuButton = false,
-  className,
-}: HeaderProps) {
+export function Header({ onMenuClick, showMenuButton = false, className }: HeaderProps) {
+  const { banners } = useStripBanner();
   const { user } = useAuth();
   const { cart } = useCart();
   const { toast } = useToast();
@@ -55,8 +50,6 @@ export function Header({
     });
   };
 
-
-
   return (
     <>
       <header
@@ -69,20 +62,12 @@ export function Header({
           {/* ----- Left: Logo + Navigation Menu ----- */}
           <div className="flex items-center gap-8">
             {showMenuButton && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onMenuClick}
-                className="md:hidden"
-              >
+              <Button variant="ghost" size="sm" onClick={onMenuClick} className="md:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
             )}
 
-            <Link
-              to="/"
-              className="flex items-center gap-2 font-semibold text-xl"
-            >
+            <Link to="/" className="flex items-center gap-2 font-semibold text-xl">
               <img src="/logo.png" className="w-10" alt="Logo" />
               <span>Vizuara</span>
             </Link>
@@ -102,9 +87,7 @@ export function Header({
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
                             href="https://dynaroute.vizuara.ai/"
                           >
-                            <div className="text-sm font-medium leading-none">
-                              DynaRoute
-                            </div>
+                            <div className="text-sm font-medium leading-none">DynaRoute</div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                               AI-powered routing and optimization solutions
                             </p>
@@ -117,9 +100,7 @@ export function Header({
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
                             href="https://vizz.vizuara.ai/"
                           >
-                            <div className="text-sm font-medium leading-none">
-                              Vizz-AI Tutor
-                            </div>
+                            <div className="text-sm font-medium leading-none">Vizz-AI Tutor</div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                               Your personal AI learning assistant
                             </p>
@@ -142,9 +123,7 @@ export function Header({
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
                             href="https://research.vizuara.ai/"
                           >
-                            <div className="text-sm font-medium leading-none">
-                              Research Domains
-                            </div>
+                            <div className="text-sm font-medium leading-none">Research Domains</div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                               SciML, GenAI, Vision, Inference, and Reasoning
                             </p>
@@ -161,8 +140,7 @@ export function Header({
                               AI Highschool Researcher Bootcamp
                             </div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Research training for aspiring high school AI
-                              researchers
+                              Research training for aspiring high school AI researchers
                             </p>
                           </a>
                         </NavigationMenuLink>
@@ -222,8 +200,7 @@ export function Header({
                               Computer Vision Research Bootcamp
                             </div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Build strong foundations, work on impactful
-                              problems in CV
+                              Build strong foundations, work on impactful problems in CV
                             </p>
                           </a>
                         </NavigationMenuLink>
@@ -319,9 +296,7 @@ export function Header({
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
                             href="https://www.youtube.com/@vizuara"
                           >
-                            <div className="text-sm font-medium leading-none">
-                              YouTube Channel
-                            </div>
+                            <div className="text-sm font-medium leading-none">YouTube Channel</div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                               Free AI/ML tutorials and content
                             </p>
@@ -344,8 +319,7 @@ export function Header({
                             Corporate AI Training
                           </div>
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Upskill your team with enterprise AI training
-                            programs
+                            Upskill your team with enterprise AI training programs
                           </p>
                         </div>
                       </li>
@@ -408,10 +382,7 @@ export function Header({
             {location.pathname === "/" && (
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="font-medium text-sm hidden lg:flex"
-                  >
+                  <Button variant="ghost" className="font-medium text-sm hidden lg:flex">
                     Contact us
                   </Button>
                 </PopoverTrigger>
@@ -430,12 +401,7 @@ export function Header({
                       <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
                         {email}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={copyEmail}
-                        className="shrink-0"
-                      >
+                      <Button size="sm" variant="outline" onClick={copyEmail} className="shrink-0">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
@@ -444,35 +410,28 @@ export function Header({
               </Popover>
             )}
 
-            {user &&
-              user.role !== USER_ROLE.ADMIN &&
-              user.role !== USER_ROLE.ACCOUNTANT && (
-                <CreateComplaint
-                  userId={user.id}
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      className="font-medium text-sm flex items-center gap-2"
-                    >
-                      <HeartHandshake className="h-4 w-4" />
-                      <span className="hidden sm:block">Customer Support</span>
-                    </Button>
-                  }
-                />
-              )}
+            {user && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && (
+              <CreateComplaint
+                userId={user.id}
+                trigger={
+                  <Button variant="ghost" className="font-medium text-sm flex items-center gap-2">
+                    <HeartHandshake className="h-4 w-4" />
+                    <span className="hidden sm:block">Customer Support</span>
+                  </Button>
+                }
+              />
+            )}
 
             <ThemeToggle />
 
             {user ? (
               <>
-
                 <button
                   onClick={() => setIsNotificationOpen(true)}
                   className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                   aria-label="Notifications"
                 >
                   <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-
 
                   {unreadCount > 0 && (
                     <span
@@ -507,16 +466,12 @@ export function Header({
                       user?.role === USER_ROLE.ADMIN
                         ? "/admin"
                         : user?.role === USER_ROLE.ACCOUNTANT
-                          ? "/accountant"
-                          : "/dashboard"
+                        ? "/accountant"
+                        : "/dashboard"
                     }
                     className="ml-2"
                   >
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="relative flex"
-                    >
+                    <Button variant="default" size="sm" className="relative flex">
                       <User className="mr-2 h-4 w-4" />
                       <span>Dashboard</span>
                     </Button>
@@ -586,6 +541,17 @@ export function Header({
         onClose={() => setIsNotificationOpen(false)}
         onUnreadChange={setUnreadCount}
       />
+      {(["/", "/dashboard"].includes(location.pathname) ||
+        /^\/courses\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname) ||
+        /^\/course\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname)) &&
+        banners.length > 0 && (
+          <StripBanner
+            banners={banners}
+            autoRotate={true}
+            rotationInterval={5000}
+            className="z-10"
+          />
+        )}
     </>
   );
 }
