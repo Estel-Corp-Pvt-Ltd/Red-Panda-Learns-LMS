@@ -433,7 +433,8 @@ export const COLLECTION = {
   BANNERS: "Banners",
   FORUM_CHANNELS: "ForumChannels",
   CHANNEL_MESSAGES: "ChannelMessages",
-  FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes"
+  FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes",
+  COURSE_WELCOME_TEMPLATES: "CourseWelcomeTemplates"
 } as const;
 
 export const ATTRIBUTE_TYPE = {

@@ -91,6 +91,7 @@ class CourseService {
       | "isMailSendingEnabled"
       | "isCertificateEnabled"
       | "isForumEnabled"
+      | "isWelcomeMessageEnabled"
       | "CustomCertificateName"
     >
   ): Promise<string> {
@@ -117,6 +118,7 @@ class CourseService {
         isMailSendingEnabled: false,
         isCertificateEnabled: false,
         isForumEnabled: false,
+        isWelcomeMessageEnabled: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -201,6 +203,8 @@ class CourseService {
         updateData.isCertificateEnabled = updates.isCertificateEnabled;
       if (updates.isForumEnabled !== undefined)
         updateData.isForumEnabled = updates.isForumEnabled;
+      if (updates.isWelcomeMessageEnabled !== undefined)
+        updateData.isWelcomeMessageEnabled = updates.isWelcomeMessageEnabled;
       if (updates.certificateTemplateId)
         updateData.certificateTemplateId = updates.certificateTemplateId;
       if (updates.duration !== undefined) {
@@ -397,6 +401,7 @@ class CourseService {
           isEnrollmentPaused: data.isEnrollmentPaused || false,
           customCertificateName: data.customCertificateName || "",
           isCertificateEnabled: data.isCertificateEnabled || false,
+          isWelcomeMessageEnabled: data.isWelcomeMessageEnabled || false,
           isForumEnabled: data.isForumEnabled || false,
           isMailSendingEnabled: data.isMailSendingEnabled || false,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
@@ -696,7 +701,7 @@ class CourseService {
   }
 
 
-    async getCetificateNamebyID(courseId: string): Promise<string | null> {
+  async getCetificateNamebyID(courseId: string): Promise<string | null> {
     try {
       const ref = doc(db, COLLECTION.COURSES, courseId);
       const snap = await getDoc(ref);
