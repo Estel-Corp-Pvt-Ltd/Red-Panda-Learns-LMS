@@ -60,9 +60,8 @@ export default function LessonDetailPage() {
     if (!course?.title) return;
 
     const prefix = selectedItem
-      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${
-          selectedItem.title
-        }`
+      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${selectedItem.title
+      }`
       : "Course";
 
     const prev = document.title;
@@ -139,7 +138,10 @@ export default function LessonDetailPage() {
     setLessonCompleted(
       Array.isArray(lessonHistory)
         ? lessonHistory.includes(selectedItem.id)
-        : !!lessonHistory[selectedItem.id]
+        : !!lessonHistory[selectedItem.id]?.markedAsComplete &&
+        (lessonHistory[selectedItem.id]?.type
+          ? lessonHistory[selectedItem.id].type === selectedItem.type
+          : true)
     );
   }, [selectedItem?.id, userProgress?.lessonHistory]);
 
@@ -157,25 +159,24 @@ export default function LessonDetailPage() {
         setUserProgress((prev) =>
           prev
             ? {
-                ...prev,
-                lessonHistory: {
-                  ...prev.lessonHistory,
-                  [selectedItem.id]: {
-                    timeSpent: 0,
-                    markedAsComplete: false,
-                    completedAt: serverTimestamp(),
-                    type: selectedItem.type,
-                  },
+              ...prev,
+              lessonHistory: {
+                ...prev.lessonHistory,
+                [selectedItem.id]: {
+                  timeSpent: 0,
+                  markedAsComplete: false,
+                  completedAt: serverTimestamp(),
+                  type: selectedItem.type,
                 },
-              }
+              },
+            }
             : prev
         );
 
         toast({
           title: "Incomplete",
-          description: `${
-            selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
-          } is not marked as complete.`,
+          description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+            } is not marked as complete.`,
           variant: "default",
         });
       }
@@ -192,25 +193,24 @@ export default function LessonDetailPage() {
       setUserProgress((prev) =>
         prev
           ? {
-              ...prev,
-              lessonHistory: {
-                ...prev.lessonHistory,
-                [selectedItem.id]: {
-                  timeSpent: 0,
-                  markedAsComplete: true,
-                  completedAt: serverTimestamp(),
-                  type: selectedItem.type,
-                },
+            ...prev,
+            lessonHistory: {
+              ...prev.lessonHistory,
+              [selectedItem.id]: {
+                timeSpent: 0,
+                markedAsComplete: true,
+                completedAt: serverTimestamp(),
+                type: selectedItem.type,
               },
-            }
+            },
+          }
           : prev
       );
 
       toast({
         title: "Success",
-        description: `${
-          selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
-        } marked as completed!`,
+        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
+          } marked as completed!`,
       });
     }
   };

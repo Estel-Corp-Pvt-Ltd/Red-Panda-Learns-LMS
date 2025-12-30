@@ -37,7 +37,7 @@ export function CourseNavigator({
     return (
       !!lessonRecord &&
       lessonRecord.markedAsComplete &&
-      (lessonRecord?.type ? lessonRecord.type == currentLesson.type : true)
+      (lessonRecord?.type ? lessonRecord.type === currentLesson.type : true)
     );
   };
   // Reusable rendering for topics
@@ -124,9 +124,8 @@ export function CourseNavigator({
                   </div>
                 </div>
                 <div
-                  className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${
-                    isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
-                  }`}
+                  className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
+                    }`}
                 >
                   {isCompleted(lessonItem.id) && <Check className="w-4 h-4 text-white" />}
                 </div>
