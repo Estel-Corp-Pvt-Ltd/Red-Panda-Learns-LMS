@@ -97,6 +97,7 @@ import UserComplaints from "./pages/UserComplaints";
 import PublicCertificate from "./components/course/PublicCertificate";
 import Forum from "./pages/Forum";
 import AdminMessageApproval from "./pages/admin/AdminMessageApproval";
+import Profile from "./pages/Profile";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -561,6 +562,14 @@ const App = () => (
                         element={
                           <AuthGuard>
                             <CartPage />
+                          </AuthGuard>
+                        }
+                      />
+                      <Route
+                        path="/profile"
+                        element={
+                          <AuthGuard>
+                            <Profile />
                           </AuthGuard>
                         }
                       />

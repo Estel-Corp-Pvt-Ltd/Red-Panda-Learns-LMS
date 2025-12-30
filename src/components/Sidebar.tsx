@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { Clipboard, LayoutDashboard, LogOut, Upload } from "lucide-react";
+import { Clipboard, LayoutDashboard, LogOut, Upload, UserIcon } from "lucide-react";
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -30,6 +30,11 @@ const Sidebar: React.FC = () => {
       name: "Submissions",
       path: "/submissions",
       icon: <Upload className="h-5 w-5" />
+    },
+    {
+      name: "Profile",
+      path: "/profile",
+      icon: <UserIcon className="h-5 w-5" />
     },
   ];
 

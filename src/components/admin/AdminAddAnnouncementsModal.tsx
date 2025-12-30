@@ -38,13 +38,13 @@ import { courseService } from "@/services/courseService";
 import { createAnnouncementApi } from "@/services/createAnnouncementApi";
 import { COURSE_STATUS } from "@/constants";
 import { Course } from "@/types/course";
-
+import CourseSearchSelector from "./CourseSearchSelector";
+import { AnnouncementScope } from "@/types/general";
 interface AnnouncementForm {
   title: string;
   body: string;
 }
 
-type AnnouncementType = "GLOBAL" | "COURSE";
 
 interface AddAnnouncementModalProps {
   open: boolean;
@@ -73,7 +73,7 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
   // UI / workflow state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [announcementType, setAnnouncementType] =
-    useState<AnnouncementType>("GLOBAL");
+    useState<AnnouncementScope>("GLOBAL");
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [loadingCourses, setLoadingCourses] = useState(false);
@@ -144,7 +144,7 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
   /**
    * Handle announcement type selection (GLOBAL or COURSE).
    */
-  const handleAnnouncementTypeChange = (value: AnnouncementType) => {
+  const handleAnnouncementTypeChange = (value: AnnouncementScope) => {
     setAnnouncementType(value);
     if (value === "GLOBAL") {
       setSelectedCourseId("");
@@ -154,8 +154,15 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
   /**
    * Handle course selection for COURSE announcement type.
    */
-  const handleCourseChange = (courseId: string) => {
+  const handleCourseSelect = (courseId: string) => {
     setSelectedCourseId(courseId);
+  };
+
+  /**
+   * Handle clearing course selection.
+   */
+  const handleClearCourseSelection = () => {
+    setSelectedCourseId("");
   };
 
   /**
@@ -379,42 +386,26 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
             {/* Course Selection (only for COURSE type) */}
             {announcementType === "COURSE" && (
               <div className="space-y-2">
-                <Label htmlFor="course">
+                <Label>
                   Select Course <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={selectedCourseId}
-                  onValueChange={handleCourseChange}
-                  disabled={isSubmitting || loadingCourses}
-                >
-                  <SelectTrigger id="course" className="w-full">
-                    <SelectValue
-                      placeholder={
-                        loadingCourses
-                          ? "Loading courses..."
-                          : "Select a course"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {loadingCourses ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Loading...
-                      </div>
-                    ) : courses.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No published courses available
-                      </div>
-                    ) : (
-                      courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id}>
-                          {course.title}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <CourseSearchSelector
+                  courses={courses}
+                  selectedCourseId={selectedCourseId}
+                  onCourseSelect={handleCourseSelect}
+                  onClearSelection={handleClearCourseSelection}
+                  isLoading={loadingCourses}
+                  label=""
+                  placeholder="Search and select a course..."
+                  showClearButton={true}
+                  className="w-full"
+                />
+                {loadingCourses && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Loading courses...
+                  </p>
+                )}
               </div>
             )}
 
