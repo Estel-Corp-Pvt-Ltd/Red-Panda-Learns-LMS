@@ -7,13 +7,7 @@ import { courseService } from "@/services/courseService";
 import { Assignment } from "@/types/assignment";
 import { User } from "@/types/user";
 import { Course } from "@/types/course";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -102,13 +96,7 @@ interface PaginatedAssignments {
 }
 
 type AuthorFilterType = "all" | "null" | "assigned" | string;
-type DeadlineFilterType =
-  | "all"
-  | "past"
-  | "upcoming"
-  | "today"
-  | "this-week"
-  | "no-deadline";
+type DeadlineFilterType = "all" | "past" | "upcoming" | "today" | "this-week" | "no-deadline";
 
 interface AssignmentNotificationStatus {
   [assignmentId: string]: NotificationStatus | null;
@@ -143,40 +131,31 @@ const ManageAssignmentAuthors: React.FC = () => {
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
   // Track changes
-  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(
-    new Map()
-  );
-  const [savingAssignments, setSavingAssignments] = useState<Set<string>>(
-    new Set()
-  );
+  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(new Map());
+  const [savingAssignments, setSavingAssignments] = useState<Set<string>>(new Set());
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
   // Search and Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState<AuthorFilterType>("all");
-  const [deadlineFilter, setDeadlineFilter] =
-    useState<DeadlineFilterType>("all");
+  const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilterType>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   // Edit Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(
-    null
-  );
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
 
   // Selection state for assignments to pause/unpause reminders
-  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>(
-    []
-  );
+  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>([]);
   const [isPausingReminders, setIsPausingReminders] = useState(false);
   const [isUnpausingReminders, setIsUnpausingReminders] = useState(false);
 
   // Notification status state
-  const [notificationStatuses, setNotificationStatuses] =
-    useState<AssignmentNotificationStatus>({});
-  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] =
-    useState(false);
+  const [notificationStatuses, setNotificationStatuses] = useState<AssignmentNotificationStatus>(
+    {}
+  );
+  const [isLoadingNotificationStatuses, setIsLoadingNotificationStatuses] = useState(false);
 
   // ----------------- Load Notification Statuses -----------------
   const loadNotificationStatuses = async (assignmentIds: string[]) => {
@@ -250,10 +229,7 @@ const ManageAssignmentAuthors: React.FC = () => {
 
     if (status === null) {
       return (
-        <Badge
-          variant="outline"
-          className="text-xs flex items-center gap-1 text-gray-500"
-        >
+        <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
           <Bell className="h-3 w-3" />
           No Status
         </Badge>
@@ -263,30 +239,21 @@ const ManageAssignmentAuthors: React.FC = () => {
     switch (status) {
       case NOTIFICATION_STATUS.PAUSED:
         return (
-          <Badge
-            variant="destructive"
-            className="text-xs flex items-center gap-1"
-          >
+          <Badge variant="destructive" className="text-xs flex items-center gap-1">
             <BellOff className="h-3 w-3" />
             Paused
           </Badge>
         );
       case NOTIFICATION_STATUS.PENDING:
         return (
-          <Badge
-            variant="secondary"
-            className="text-xs flex items-center gap-1"
-          >
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
             <Clock className="h-3 w-3" />
             Pending
           </Badge>
         );
       case NOTIFICATION_STATUS.REMINDER_SCHEDULED:
         return (
-          <Badge
-            variant="default"
-            className="text-xs flex items-center gap-1 bg-blue-500"
-          >
+          <Badge variant="default" className="text-xs flex items-center gap-1 bg-blue-500">
             <Bell className="h-3 w-3" />
             Scheduled
           </Badge>
@@ -303,20 +270,14 @@ const ManageAssignmentAuthors: React.FC = () => {
         );
       case NOTIFICATION_STATUS.ARCHIVED:
         return (
-          <Badge
-            variant="outline"
-            className="text-xs flex items-center gap-1 text-gray-500"
-          >
+          <Badge variant="outline" className="text-xs flex items-center gap-1 text-gray-500">
             <Archive className="h-3 w-3" />
             Archived
           </Badge>
         );
       case NOTIFICATION_STATUS.ERROR:
         return (
-          <Badge
-            variant="destructive"
-            className="text-xs flex items-center gap-1"
-          >
+          <Badge variant="destructive" className="text-xs flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
             Error
           </Badge>
@@ -539,17 +500,11 @@ const ManageAssignmentAuthors: React.FC = () => {
 
   const toggleSelectAllDisplayed = (displayed: Assignment[]) => {
     const displayedIds = displayed.map((a) => a.id);
-    const allSelected = displayedIds.every((id) =>
-      selectedAssignmentIds.includes(id)
-    );
+    const allSelected = displayedIds.every((id) => selectedAssignmentIds.includes(id));
     if (allSelected) {
-      setSelectedAssignmentIds((prev) =>
-        prev.filter((id) => !displayedIds.includes(id))
-      );
+      setSelectedAssignmentIds((prev) => prev.filter((id) => !displayedIds.includes(id)));
     } else {
-      setSelectedAssignmentIds((prev) =>
-        Array.from(new Set([...prev, ...displayedIds]))
-      );
+      setSelectedAssignmentIds((prev) => Array.from(new Set([...prev, ...displayedIds])));
     }
   };
 
@@ -577,10 +532,7 @@ const ManageAssignmentAuthors: React.FC = () => {
     setIsPausingReminders(true);
     try {
       const idToken = await authService.getToken();
-      await pauseReminderService.pauseReminder(
-        { assignmentIds: selectedAssignmentIds },
-        idToken
-      );
+      await pauseReminderService.pauseReminder({ assignmentIds: selectedAssignmentIds }, idToken);
 
       toast({
         title: "Success",
@@ -626,10 +578,7 @@ const ManageAssignmentAuthors: React.FC = () => {
     setIsUnpausingReminders(true);
     try {
       const idToken = await authService.getToken();
-      await pauseReminderService.unpauseReminder(
-        { assignmentIds: pausedAssignmentIds },
-        idToken
-      );
+      await pauseReminderService.unpauseReminder({ assignmentIds: pausedAssignmentIds }, idToken);
 
       toast({
         title: "Success",
@@ -779,17 +728,12 @@ const ManageAssignmentAuthors: React.FC = () => {
     setSavingAssignments((prev) => new Set(prev).add(assignmentId));
 
     try {
-      const result = await assignmentService.updateAssignmentAuthor(
-        assignmentId,
-        authorId
-      );
+      const result = await assignmentService.updateAssignmentAuthor(assignmentId, authorId);
 
       if (result.success) {
         setAssignments((prev) => ({
           ...prev,
-          data: prev.data.map((a) =>
-            a.id === assignmentId ? { ...a, authorId } : a
-          ),
+          data: prev.data.map((a) => (a.id === assignmentId ? { ...a, authorId } : a)),
         }));
 
         setPendingChanges((prev) => {
@@ -839,18 +783,13 @@ const ManageAssignmentAuthors: React.FC = () => {
         const authorId = pendingChanges.get(assignmentId);
         if (!authorId) continue;
 
-        const result = await assignmentService.updateAssignmentAuthor(
-          assignmentId,
-          authorId
-        );
+        const result = await assignmentService.updateAssignmentAuthor(assignmentId, authorId);
 
         if (result.success) {
           successCount++;
           setAssignments((prev) => ({
             ...prev,
-            data: prev.data.map((a) =>
-              a.id === assignmentId ? { ...a, authorId } : a
-            ),
+            data: prev.data.map((a) => (a.id === assignmentId ? { ...a, authorId } : a)),
           }));
         } else {
           failedCount++;
@@ -913,8 +852,7 @@ const ManageAssignmentAuthors: React.FC = () => {
       return { label: "Past", variant: "destructive" as const };
     }
 
-    const diffHours =
-      (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const diffHours = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (diffHours <= 24) {
       return { label: "Due soon", variant: "default" as const };
@@ -1132,8 +1070,7 @@ const ManageAssignmentAuthors: React.FC = () => {
             </div>
             <h3 className="text-lg font-medium">No Course Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm mt-2">
-              Please select a course from the dropdown above to view
-              assignments.
+              Please select a course from the dropdown above to view assignments.
             </p>
           </div>
         ) : (
@@ -1143,10 +1080,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                 <div className="space-y-1">
                   <CardTitle className="text-lg font-medium">
                     Assignments
-                    <Badge
-                      variant="secondary"
-                      className="ml-3 rounded-sm font-normal"
-                    >
+                    <Badge variant="secondary" className="ml-3 rounded-sm font-normal">
                       {assignments.totalCount} Total
                     </Badge>
                   </CardTitle>
@@ -1179,10 +1113,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     <Filter className="h-4 w-4" />
                     Filters
                     {activeFiltersCount > 0 && (
-                      <Badge
-                        variant="default"
-                        className="h-5 px-1.5 min-w-[1.25rem]"
-                      >
+                      <Badge variant="default" className="h-5 px-1.5 min-w-[1.25rem]">
                         {activeFiltersCount}
                       </Badge>
                     )}
@@ -1201,9 +1132,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     className="h-9 w-9 p-0"
                     title="Refresh & Reset"
                   >
-                    <RefreshCw
-                      className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                    />
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                   </Button>
                 </div>
               </div>
@@ -1215,10 +1144,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     <label className="text-xs font-medium text-muted-foreground">
                       Author Status
                     </label>
-                    <Select
-                      value={authorFilter}
-                      onValueChange={setAuthorFilter}
-                    >
+                    <Select value={authorFilter} onValueChange={setAuthorFilter}>
                       <SelectTrigger className="bg-background h-9">
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
@@ -1236,14 +1162,10 @@ const ManageAssignmentAuthors: React.FC = () => {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Deadline
-                    </label>
+                    <label className="text-xs font-medium text-muted-foreground">Deadline</label>
                     <Select
                       value={deadlineFilter}
-                      onValueChange={(value: DeadlineFilterType) =>
-                        setDeadlineFilter(value)
-                      }
+                      onValueChange={(value: DeadlineFilterType) => setDeadlineFilter(value)}
                     >
                       <SelectTrigger className="bg-background h-9">
                         <SelectValue placeholder="All" />
@@ -1282,11 +1204,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                     </div>
                     <p>No assignments found matching your criteria.</p>
                     {activeFiltersCount > 0 && (
-                      <Button
-                        variant="link"
-                        onClick={resetFilters}
-                        className="mt-2"
-                      >
+                      <Button variant="link" onClick={resetFilters} className="mt-2">
                         Clear filters
                       </Button>
                     )}
@@ -1299,9 +1217,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                           <input
                             type="checkbox"
                             className="translate-y-0.5 rounded border-primary text-primary focus:ring-primary h-4 w-4"
-                            onChange={() =>
-                              toggleSelectAllDisplayed(displayedAssignments)
-                            }
+                            onChange={() => toggleSelectAllDisplayed(displayedAssignments)}
                             checked={
                               displayedAssignments.length > 0 &&
                               displayedAssignments.every((a) =>
@@ -1312,18 +1228,14 @@ const ManageAssignmentAuthors: React.FC = () => {
                         </TableHead>
                         <TableHead>Assignment Details</TableHead>
                         <TableHead>Timeline</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
                         <TableHead className="w-[250px]">Author</TableHead>
-                        <TableHead className="w-[100px] text-right">
-                          Actions
-                        </TableHead>
+                        <TableHead className="w-[100px] text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {displayedAssignments.map((assignment) => {
-                        const deadlineStatus = getDeadlineStatus(
-                          assignment.deadline
-                        );
+                        const deadlineStatus = getDeadlineStatus(assignment.deadline);
                         const isChanged = hasChanges(assignment.id);
                         const isSaving = savingAssignments.has(assignment.id);
 
@@ -1332,23 +1244,15 @@ const ManageAssignmentAuthors: React.FC = () => {
                             key={assignment.id}
                             className={`
                               group transition-colors
-                              ${
-                                isChanged
-                                  ? "bg-accent/30 hover:bg-accent/40"
-                                  : "hover:bg-muted/50"
-                              }
+                              ${isChanged ? "bg-accent/30 hover:bg-accent/40" : "hover:bg-muted/50"}
                             `}
                           >
                             <TableCell className="text-center align-top pt-4">
                               <input
                                 type="checkbox"
                                 className="rounded border-muted-foreground/30 text-primary focus:ring-primary h-4 w-4"
-                                checked={selectedAssignmentIds.includes(
-                                  assignment.id
-                                )}
-                                onChange={() =>
-                                  toggleSelectAssignment(assignment.id)
-                                }
+                                checked={selectedAssignmentIds.includes(assignment.id)}
+                                onChange={() => toggleSelectAssignment(assignment.id)}
                               />
                             </TableCell>
 
@@ -1385,9 +1289,11 @@ const ManageAssignmentAuthors: React.FC = () => {
                               </div>
                             </TableCell>
 
-                            <TableCell className="align-top py-3">
-                              <div className="scale-90 origin-left">
-                                {getNotificationStatusBadge(assignment.id)}
+                            <TableCell className="align-top py-3 text-center ">
+                              <div className="scale-90 origin-center">
+                                <span className="text-center inline-block">
+                                  {getNotificationStatusBadge(assignment.id)}
+                                </span>
                               </div>
                             </TableCell>
 
@@ -1444,9 +1350,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                                     size="icon"
                                     variant="default"
                                     className="h-8 w-8 bg-amber-600 hover:bg-amber-700 text-white"
-                                    onClick={() =>
-                                      saveAssignmentAuthor(assignment.id)
-                                    }
+                                    onClick={() => saveAssignmentAuthor(assignment.id)}
                                     disabled={isSaving}
                                     title="Save Change"
                                   >
@@ -1459,19 +1363,13 @@ const ManageAssignmentAuthors: React.FC = () => {
                                 )}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
                                       <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem
-                                      onClick={() =>
-                                        handleEditAssignment(assignment.id)
-                                      }
+                                      onClick={() => handleEditAssignment(assignment.id)}
                                     >
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit Details
@@ -1559,11 +1457,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 border bg-secondary/50"
-                      >
+                      <Button variant="secondary" size="sm" className="h-8 border bg-secondary/50">
                         Notification Actions
                       </Button>
                     </DropdownMenuTrigger>
@@ -1571,9 +1465,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                       <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                       <DropdownMenuItem
                         onClick={handlePauseReminders}
-                        disabled={
-                          isPausingReminders || selectedUnpausedCount === 0
-                        }
+                        disabled={isPausingReminders || selectedUnpausedCount === 0}
                       >
                         {isPausingReminders ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1589,9 +1481,7 @@ const ManageAssignmentAuthors: React.FC = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={handleUnpauseReminders}
-                        disabled={
-                          isUnpausingReminders || selectedPausedCount === 0
-                        }
+                        disabled={isUnpausingReminders || selectedPausedCount === 0}
                         className="text-emerald-600 focus:text-emerald-700"
                       >
                         {isUnpausingReminders ? (
