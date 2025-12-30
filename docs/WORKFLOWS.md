@@ -31,24 +31,24 @@ Even though branch rules aren’t available on our private repo, we follow a **p
 
 - Every task, bug, or feature starts as a **GitHub Issue**.
 - Issues should include:
-    - Clear description of the problem or requirement
-    - Acceptance criteria
-    - Relevant labels (e.g., `bug`, `enhancement`, `documentation`)
+  - Clear description of the problem or requirement
+  - Acceptance criteria
+  - Relevant labels (e.g., `bug`, `enhancement`, `documentation`)
 
 ### Pull Requests (PRs)
 
 - All code changes must go through a **Pull Request**.
 - Each PR should:
-    - Reference its issue using keywords like `Closes #123` or `Fixes #123`
-    - Contain a meaningful title and description
-    - Pass automated checks before review
+  - Reference its issue using keywords like `Closes #123` or `Fixes #123`
+  - Contain a meaningful title and description
+  - Pass automated checks before review
 
 ### Closing the Loop
 
 - An issue is **open** while work is pending.
 - When a PR is merged:
-    - The linked issue is automatically **closed**.
-    - This ensures that tasks are completed and tracked without manual cleanup.
+  - The linked issue is automatically **closed**.
+  - This ensures that tasks are completed and tracked without manual cleanup.
 
 ---
 
@@ -81,19 +81,19 @@ To ensure code quality, consistent integration, and learning for all team member
 
 #### 1. Pull Request Reviews
 
-- Every PR must have at least **one primary reviewer**. A **secondary reviewer** may be assigned for additional feedback.  
-- Reviews should be conducted **within 24 hours** of the PR being marked `Ready for Review`.  
+- Every PR must have at least **one primary reviewer**. A **secondary reviewer** may be assigned for additional feedback.
+- Reviews should be conducted **within 24 hours** of the PR being marked `Ready for Review`.
 - **Review focus includes**:
   - Code correctness and functionality
   - Alignment with coding standards and project conventions
   - Proper TypeScript typing, error handling, and documentation
   - Passing automated tests and CI checks
-- Reviewers provide **inline comments** for clarity and actionable feedback.  
-- Developers are expected to **address comments promptly** before the PR can be merged.  
+- Reviewers provide **inline comments** for clarity and actionable feedback.
+- Developers are expected to **address comments promptly** before the PR can be merged.
 
 #### 2. Testing PR Merges Locally
 
-- Before merging, developers should **test how the PR integrates with the staging branch**.  
+- Before merging, developers should **test how the PR integrates with the staging branch**.
 - Recommended workflow:
   1. Fetch the latest `staging` branch:
      ```bash
@@ -102,8 +102,8 @@ To ensure code quality, consistent integration, and learning for all team member
      git fetch origin pull/<PR-NUMBER>/merge:pr-<PR-NUMBER>-merge
      git checkout pr-<PR-NUMBER>-merge
      ```
-  2. Build and run the application locally, ensuring functionality works as expected.  
-  3. Run unit tests and integration tests.  
+  2. Build and run the application locally, ensuring functionality works as expected.
+  3. Run unit tests and integration tests.
   4. Discard the temporary branch after testing:
      ```bash
      git checkout staging
@@ -113,9 +113,9 @@ To ensure code quality, consistent integration, and learning for all team member
 
 #### 3. Reviewer Etiquette & Responsibilities
 
-- **Timely reviews** prevent blocking teammates; aim for **same-day feedback** when possible.  
-- **Peer reviews** are encouraged for junior developers to learn and improve before senior review.  
-- Avoid waiting until a feature is fully completed—review in **smaller increments** to maintain fast feedback loops.  
+- **Timely reviews** prevent blocking teammates; aim for **same-day feedback** when possible.
+- **Peer reviews** are encouraged for junior developers to learn and improve before senior review.
+- Avoid waiting until a feature is fully completed—review in **smaller increments** to maintain fast feedback loops.
 - Only merge after all comments are addressed, automated checks pass, and at least one approval is received.
 
 ---
@@ -124,8 +124,8 @@ To ensure code quality, consistent integration, and learning for all team member
 
 - **Unit Tests** → Jest (JS/TS).
 - **CI/CD** → GitHub Actions (free tier):
-    - Run tests on every PR.
-    - Deploy `main` branch to production using Firebase.
+  - Run tests on every PR.
+  - Deploy `main` branch to production using Firebase.
 
 ---
 

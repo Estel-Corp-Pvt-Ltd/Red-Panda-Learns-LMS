@@ -1,4 +1,3 @@
-
 # Quiz Timer Fix Documentation
 
 ## **Background / Issue**
@@ -6,19 +5,16 @@
 Our quiz system had the following issues:
 
 1. **Quizzes without a fixed end time (`endAt` null) were considered expired immediately.**
-
-   * On the frontend, `serverTimeLeft` was 0 even for quizzes that just started.
-   * This caused users to be blocked from starting quizzes with no `endAt`.
+   - On the frontend, `serverTimeLeft` was 0 even for quizzes that just started.
+   - This caused users to be blocked from starting quizzes with no `endAt`.
 
 2. **Timer reset on page refresh for quizzes without `endAt`.**
-
-   * The timer was always computed as `now + duration` on every refresh.
-   * This allowed users to “restart” quizzes by refreshing the page.
+   - The timer was always computed as `now + duration` on every refresh.
+   - This allowed users to “restart” quizzes by refreshing the page.
 
 3. **Submissions with `startedAt` were not properly accounted for.**
-
-   * Even if a user had started a quiz, the `timeLeftSeconds` calculation didn’t respect the original start time.
-   * Slight clock differences between `now` and `startedAt` could produce `0` seconds left incorrectly.
+   - Even if a user had started a quiz, the `timeLeftSeconds` calculation didn’t respect the original start time.
+   - Slight clock differences between `now` and `startedAt` could produce `0` seconds left incorrectly.
 
 ---
 
@@ -34,24 +30,24 @@ let effectiveEndMillis = quiz.endAt ? quiz.endAt.toMillis() : now + durationMs;
 
 // Clamp by submission startedAt (attemptEndMillis)
 if (submission.startedAt) {
-    effectiveEndMillis = Math.min(effectiveEndMillis, submission.startedAt + durationMs);
+  effectiveEndMillis = Math.min(effectiveEndMillis, submission.startedAt + durationMs);
 }
 
-const timeLeftSeconds = Math.max(0, Math.floor((effectiveEndMillis - now)/1000));
+const timeLeftSeconds = Math.max(0, Math.floor((effectiveEndMillis - now) / 1000));
 ```
 
 **Problems:**
 
-* If `submission.startedAt` is slightly in the past or `endAt` is null, `effectiveEndMillis - now` could be negative → `timeLeftSeconds = 0`.
-* Users refreshing the page could “restart” the timer.
-* No priority logic: `endAt` and `submission.startedAt` were mixed, causing confusion.
+- If `submission.startedAt` is slightly in the past or `endAt` is null, `effectiveEndMillis - now` could be negative → `timeLeftSeconds = 0`.
+- Users refreshing the page could “restart” the timer.
+- No priority logic: `endAt` and `submission.startedAt` were mixed, causing confusion.
 
 **Example:**
 
-* Quiz duration: 30 min
-* Current time: 10:00
-* No `endAt`
-* Submission startedAt: 09:55
+- Quiz duration: 30 min
+- Current time: 10:00
+- No `endAt`
+- Submission startedAt: 09:55
 
 Calculation:
 
@@ -79,13 +75,12 @@ But if `now` = 10:26 (user refresh) → timeLeftSeconds = 0 ❌
    ```
 
 2. **Clamp effective end time**
-
-   * Ensures that the quiz timer never exceeds `submission.startedAt + duration`.
+   - Ensures that the quiz timer never exceeds `submission.startedAt + duration`.
 
 3. **Calculate `timeLeftSeconds` as:**
 
 ```ts
-timeLeftSeconds = max(0, floor((effectiveEndMillis - now)/1000))
+timeLeftSeconds = max(0, floor((effectiveEndMillis - now) / 1000));
 ```
 
 4. **Add logging** at every stage to track how `effectiveEndMillis` and `timeLeftSeconds` are computed.
@@ -101,13 +96,14 @@ if (quiz.endAt instanceof admin.firestore.Timestamp) {
   effectiveEndMillis = quiz.endAt.toMillis();
 } else if (!submissionSnap.empty && submissionSnap.docs[0].data().startedAt) {
   const submission = submissionSnap.docs[0].data();
-  const startedAtMillis = submission.startedAt.toMillis?.() ?? new Date(submission.startedAt).getTime();
+  const startedAtMillis =
+    submission.startedAt.toMillis?.() ?? new Date(submission.startedAt).getTime();
   effectiveEndMillis = startedAtMillis + durationMs;
 } else {
   effectiveEndMillis = now + durationMs;
 }
 
-const timeLeftSeconds = Math.max(0, Math.floor((effectiveEndMillis - now)/1000));
+const timeLeftSeconds = Math.max(0, Math.floor((effectiveEndMillis - now) / 1000));
 ```
 
 ---

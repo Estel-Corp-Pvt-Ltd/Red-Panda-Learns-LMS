@@ -1,7 +1,8 @@
 # TypeScript Universal Response & Error Handling Standard
 
 ## Why we do this
-This standard ensures all functions return a consistent, type-safe result, making error handling predictable across the project. 
+
+This standard ensures all functions return a consistent, type-safe result, making error handling predictable across the project.
 It simplifies async operations, prevents unhandled exceptions, and improves TypeScript type safety.
 
 **1️⃣ Our Universal Response Structure**
@@ -10,7 +11,6 @@ It simplifies async operations, prevents unhandled exceptions, and improves Type
 type Result<T> =
   | { success: true; data: T }
   | { success: false; error: { message: string; code?: string; stack?: string } };
-
 ```
 
 Every function — API, service, or utility — must return this Result<T>.
@@ -41,7 +41,6 @@ const fail = (
 ```
 
 We use ok() and fail() to standardize all returns.
-
 
 **🧱 3️⃣ Refactor Functions Incrementally**
 
@@ -155,8 +154,8 @@ will warn us unless we specify:
 export async function getUser(): Promise<Result<User>> { ... }
 ```
 
-
 **🧰 7️⃣ Universal Async Wrapper**
+
 > Use `handle()` for most async service calls. For complex flows where you need granular error handling, manual try/catch is still fine.
 
 ```ts

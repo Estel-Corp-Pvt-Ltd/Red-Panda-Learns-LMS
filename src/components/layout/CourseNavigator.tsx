@@ -20,12 +20,12 @@ export function CourseNavigator({
   currentLesson,
   className,
   lessonHistory,
-  onLessonClick
+  onLessonClick,
 }: CourseNavigatorProps) {
   const params = useParams();
 
   const isLessonActive = (lessonId: string) => {
-    return currentLesson && currentLesson.id === lessonId || params.lessonId === lessonId;
+    return (currentLesson && currentLesson.id === lessonId) || params.lessonId === lessonId;
   };
 
   const isCompleted = (lessonId: string) => {
@@ -34,11 +34,17 @@ export function CourseNavigator({
       return lessonHistory.includes(lessonId);
     }
     const lessonRecord = lessonHistory[lessonId];
-    return !!lessonRecord && lessonRecord.markedAsComplete && (lessonRecord?.type ? lessonRecord.type == currentLesson.type : true);
+    return (
+      !!lessonRecord &&
+      lessonRecord.markedAsComplete &&
+      (lessonRecord?.type ? lessonRecord.type == currentLesson.type : true)
+    );
   };
   // Reusable rendering for topics
   const renderTopic = (topic: Topic) => {
-    const [isExpanded, setIsExpanded] = useState(topic.items.some(item => isLessonActive(item.id)));
+    const [isExpanded, setIsExpanded] = useState(
+      topic.items.some((item) => isLessonActive(item.id))
+    );
 
     return (
       <Collapsible
@@ -56,7 +62,9 @@ export function CourseNavigator({
                 <div className="font-medium text-sm text-foreground text-wrap whitespace-normal break-words leading-snug">
                   {topic.title}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{topic.items?.length || 0} lessons</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {topic.items?.length || 0} lessons
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -78,21 +86,23 @@ export function CourseNavigator({
                 "max-w-full block ml-6 p-3 rounded-lg border border-transparent transition-all duration-200",
                 isLessonActive(lessonItem.id) && [
                   "bg-primary/5 border-primary/20 shadow-sm",
-                  "ring-1 ring-primary/10"
+                  "ring-1 ring-primary/10",
                 ],
                 "hover:bg-muted/30 hover:border-border"
               )}
-              onClick={() => onLessonClick({
-                id: lessonItem.id,
-                type: lessonItem.type,
-                title: lessonItem.title
-              })}
+              onClick={() =>
+                onLessonClick({
+                  id: lessonItem.id,
+                  type: lessonItem.type,
+                  title: lessonItem.title,
+                })
+              }
             >
               <div className="flex items-start gap-3">
                 <div
                   className={cn(
-                    "flex items-center justify-center w-6 h-6 rounded text-xs bg-muted text-muted-foreground",
-                    isLessonActive(lessonItem.id) && "bg-background text-primary-foreground "
+                    "flex items-center justify-center w-6 h-6 rounded text-xs  text-muted-foreground",
+                    isLessonActive(lessonItem.id) && " text-primary-foreground "
                   )}
                 >
                   {lessonItem.type === "LESSON" ? (
@@ -114,34 +124,32 @@ export function CourseNavigator({
                   </div>
                 </div>
                 <div
-                  className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
-                    }`}
-                >{isCompleted(lessonItem.id) && (<Check className="w-4 h-4 text-white" />)}</div>
+                  className={`w-5 h-5 flex items-center justify-center border rounded-full self-start ${
+                    isCompleted(lessonItem.id) ? "bg-primary" : "bg-transparent"
+                  }`}
+                >
+                  {isCompleted(lessonItem.id) && <Check className="w-4 h-4 text-white" />}
+                </div>
               </div>
             </Link>
           ))}
         </CollapsibleContent>
       </Collapsible>
-    )
+    );
   };
 
   return (
     <div
-      className={cn(
-        "w-80 h-full border-r bg-card/50 backdrop-blur-sm flex flex-col",
-        className
-      )}
+      className={cn("w-80 h-full border-r bg-card/50 backdrop-blur-sm flex flex-col", className)}
     >
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-2">
+      <div className="flex-1  py-4 mr-2">
+        <div className="">
           {/* === Top-level course topics === */}
           {course.topics?.length > 0 && (
-            <div className="space-y-2">
-              {course.topics.map((topic) => renderTopic(topic))}
-            </div>
+            <div className="">{course.topics.map((topic) => renderTopic(topic))}</div>
           )}
         </div>
       </div>
     </div>
   );
-};
+}
