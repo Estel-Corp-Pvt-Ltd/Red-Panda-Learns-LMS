@@ -38,7 +38,7 @@ export default function CreateBannerPage() {
     gradientColors: ["#3B82F6", "#8B5CF6"],
     courseIds: [],
     status: BANNER_STATUS.ACTIVE,
-    showToAllUsers: null,
+    showToAllUsers: false,
   });
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
@@ -238,7 +238,7 @@ export default function CreateBannerPage() {
       }
     }
 
-    if (formData.courseIds.length === 0) {
+    if (formData.courseIds.length === 0 && !formData.showToAllUsers) {
       toast({
         title: "No Courses Selected",
         description: "Please select at least one course to target",
