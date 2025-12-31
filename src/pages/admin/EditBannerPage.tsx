@@ -37,7 +37,7 @@ export default function EditBannerPage() {
     gradientColors: ["#3B82F6", "#8B5CF6"],
     courseIds: [],
     status: BANNER_STATUS.ACTIVE,
-    showToAllUsers: null,
+    showToAllUsers: false,
   });
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
@@ -81,7 +81,7 @@ export default function EditBannerPage() {
           gradientColors: banner.gradientColors,
           courseIds: banner.courseIds,
           status: banner.status,
-          showToAllUsers: banner.showToAllUsers
+          showToAllUsers: banner.showToAllUsers || false,
         });
       } else {
         toast({
@@ -278,7 +278,7 @@ export default function EditBannerPage() {
       }
     }
 
-    if (formData.courseIds.length === 0) {
+    if (formData.courseIds.length === 0 && !formData.showToAllUsers) {
       toast({
         title: "No Courses Selected",
         description: "Please select at least one course to target",
