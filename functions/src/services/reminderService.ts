@@ -3,6 +3,7 @@ import { SubmissionNotification } from "../types/notifications";
 import { COLLECTION, NOTIFICATION_STATUS } from "../constants";
 
 import { ok, Result } from "../utils/response";
+import { logger } from "firebase-functions";
 
 const db = admin.firestore();
 const notificationsRef = db.collection(COLLECTION.SUBMISSION_NOTIFICATION);
@@ -21,38 +22,36 @@ export const reminderService = {
     }
   },
 async pauseRemindersForAssignments(
-  assignmentIds: string[]
+  assignmentIds: string[],
+  adminId: string
 ): Promise<Result<SubmissionNotification[]>> {
   try {
-
-    if (!assignmentIds.length) {
-      return ok([]);
-    }
+    if (!assignmentIds.length) return ok([]);
 
     const updatedNotifications: SubmissionNotification[] = [];
+    logger.info(`Pausing reminders for assignments: ${assignmentIds.join(", ")} by admin: ${adminId}`);
+    // Firestore 'in' query supports max 10 items
     const chunkSize = 10;
-
     for (let i = 0; i < assignmentIds.length; i += chunkSize) {
       const chunk = assignmentIds.slice(i, i + chunkSize);
 
       const snapshot = await db
         .collection(COLLECTION.SUBMISSION_NOTIFICATION)
         .where("assignmentId", "in", chunk)
+        .where("adminId", "==", adminId) // Only this admin's notifications
         .where("reminderPaused", "==", false)
-        .where("status", "==", NOTIFICATION_STATUS.REMINDER_SCHEDULED)
+        .where("status", "in", [
+          NOTIFICATION_STATUS.PENDING,
+          NOTIFICATION_STATUS.REMINDER_SCHEDULED,
+        ])
         .get();
 
-
-      if (snapshot.empty) {
-        console.log("No notifications to update in this chunk");
-        continue;
-      }
+      if (snapshot.empty) continue;
 
       const batch = db.batch();
 
       snapshot.docs.forEach((doc) => {
         const data = doc.data() as SubmissionNotification;
-        console.log("Updating notification:", doc.id, data);
 
         batch.update(doc.ref, {
           reminderPaused: true,
@@ -68,17 +67,14 @@ async pauseRemindersForAssignments(
         });
       });
 
-      console.log("Committing batch for this chunk");
+      // Commit batch
       await batch.commit();
-      console.log("Batch committed successfully");
     }
 
-    console.log("All chunks processed, total updated notifications:", updatedNotifications.length);
     return ok(updatedNotifications);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const stack = error instanceof Error ? error.stack : undefined;
-    console.error("Error pausing reminders:", message, stack);
     return {
       success: false,
       error: { message, stack },
@@ -86,10 +82,9 @@ async pauseRemindersForAssignments(
   }
 },
 
-
-
-    async unpauseRemindersForAssignments(
-    assignmentIds: string[]
+  async unpauseRemindersForAssignments(
+    assignmentIds: string[],
+    adminId: string
   ): Promise<Result<SubmissionNotification[]>> {
     try {
       if (!assignmentIds.length) return ok([]);
@@ -104,6 +99,7 @@ async pauseRemindersForAssignments(
         const snapshot = await db
           .collection(COLLECTION.SUBMISSION_NOTIFICATION)
           .where("assignmentId", "in", chunk)
+          .where("adminId", "==", adminId) // Only this admin's notifications
           .where("reminderPaused", "==", true)
           .where("status", "==", NOTIFICATION_STATUS.PAUSED)
           .get();
@@ -144,40 +140,46 @@ async pauseRemindersForAssignments(
     }
   },
 
+  /**
+   * Get the list of admin IDs who have paused reminders for this assignment
+   * @param assignmentId - The assignment ID to check
+   * @returns Array of admin IDs who have paused their reminders
+   */
+  async checkIsReminderPausedForAssignmentforThisAdmin(
+    assignmentId: string
+  ): Promise<Result<string[]>> {
+    try {
+      // Fetch all notifications for this assignment that are paused
+      const snapshot = await db
+        .collection(COLLECTION.SUBMISSION_NOTIFICATION)
+        .where("assignmentId", "==", assignmentId)
+        .where("reminderPaused", "==", true)
+        .where("status", "==", NOTIFICATION_STATUS.PAUSED)
+        .get();
 
-  
-async checkIsReminderPausedForAssignment(
-  assignmentId: string
-): Promise<Result<boolean>> {
-  try {
-    // Fetch all notifications for this assignment
-    const snapshot = await db
-      .collection(COLLECTION.SUBMISSION_NOTIFICATION)
-      .where("assignmentId", "==", assignmentId)
-      .get();
+      // If no paused notifications exist, return empty array
+      if (snapshot.empty) {
+        return ok([]);
+      }
 
-    // If no notification exists yet, pause the first one by default
-    if (snapshot.empty) {
-      return ok(true);
+      // Extract unique admin IDs who have paused notifications
+      const pausedAdminIds: string[] = [];
+      snapshot.docs.forEach((doc) => {
+        const adminId = doc.get("adminId") as string;
+        if (adminId && !pausedAdminIds.includes(adminId)) {
+          pausedAdminIds.push(adminId);
+        }
+      });
+
+      return ok(pausedAdminIds);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      return {
+        success: false,
+        error: { message, stack },
+      };
     }
-
-    // Check if any existing notification is paused
-    const isAnyPaused = snapshot.docs.some(
-      (doc) =>
-        doc.get("reminderPaused") === true &&
-        doc.get("status") === NOTIFICATION_STATUS.PAUSED
-    );
-
-    return ok(isAnyPaused);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const stack = error instanceof Error ? error.stack : undefined;
-
-    return {
-      success: false,
-      error: { message, stack },
-    };
-  }
-}
-
+  },
 };

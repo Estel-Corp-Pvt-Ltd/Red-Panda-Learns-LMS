@@ -78,32 +78,44 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
         role="link"
         tabIndex={0}
         className={cn(
-          "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg hover:bg-gray-100/50 hover:scale-[1.01] relative",
+          "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg        hover:bg-secondary hover:scale-[1.01] relative",
           isFeatured && "ring-2 ring-primary/20 shadow-glow",
           className
         )}
       >
         {/* Certificate Ribbon - Top Right Corner */}
+        {/* Certificate Ribbon - Top Right Corner */}
         {course.isCertificateEnabled && (
-          <div className="absolute top-0 right-0 z-20 overflow-hidden w-24 h-24 pointer-events-none ">
+          <div className="absolute top-0 right-0 z-20 overflow-hidden w-28 h-28 pointer-events-none">
+            {/* Ribbon */}
             <div
-              className="absolute top-[12px] right-[-32px] w-[140px] transform rotate-45 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 text-white text-[10px] font-bold text-center py-1 shadow-md"
+              className="
+        absolute top-[22px] right-[-40px]
+        w-[180px] h-[28px]
+        flex items-center justify-center
+        rotate-45
+        bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500
+        text-white
+        text-[13px] font-extrabold tracking-wide
+        shadow-lg
+      "
               style={{
-                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
               }}
             >
               CERTIFICATE
             </div>
+
             {/* Ribbon fold effect */}
-            <div
-              className="absolute top-[38px] right-0 w-0 h-0"
+            {/* <div
+              className="absolute top-[48px] right-0 w-0 h-0"
               style={{
-                borderLeft: "6px solid transparent",
-                borderRight: "6px solid #b45309",
-                borderTop: "6px solid #b45309",
-                borderBottom: "6px solid transparent",
+                borderLeft: "7px solid transparent",
+                borderRight: "7px solid #b45309",
+                borderTop: "7px solid #b45309",
+                borderBottom: "7px solid transparent",
               }}
-            />
+            /> */}
           </div>
         )}
 

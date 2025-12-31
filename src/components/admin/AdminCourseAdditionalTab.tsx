@@ -7,12 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { forumChannelService } from "@/services/forumService";
+import { courseWelcomeTemplateService } from "@/services/courseWelcomeTemplateService";
 import { ForumChannel } from "@/types/forum";
-import { Archive, Edit2, Hash, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Archive, Edit2, Hash, Loader2, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from "react";
+import { logError } from "@/utils/logger";
 
 // Constants
 const MAX_CERTIFICATE_NAME_LENGTH = 45;
@@ -24,6 +27,8 @@ interface AdditionalTabProps {
   setIsCertificateEnabled?: (value: boolean) => void;
   isForumEnabled: boolean;
   setIsForumEnabled: (value: boolean) => void;
+  isWelcomeMessageEnabled: boolean;
+  setIsEnrollAnnouncementEnabled: (value: boolean) => void;
   courseId?: string;
   courseTitle?: string;
   customCertificateName: string;
@@ -38,6 +43,8 @@ const AdditionalTab = ({
   setIsCertificateEnabled,
   isForumEnabled,
   setIsForumEnabled,
+  isWelcomeMessageEnabled,
+  setIsEnrollAnnouncementEnabled,
   courseId,
   courseTitle = "",
   customCertificateName,
@@ -52,6 +59,12 @@ const AdditionalTab = ({
   const [showModal, setShowModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<ForumChannel | null>(null);
 
+  // Enrollment announcement state
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+  const [announcementSubject, setAnnouncementSubject] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(false);
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -63,8 +76,26 @@ const AdditionalTab = ({
   useEffect(() => {
     if (courseId) {
       loadChannels();
+      loadEnrollAnnouncement();
     }
   }, [courseId]);
+
+  const loadEnrollAnnouncement = async () => {
+    if (!courseId) return;
+
+    setLoadingAnnouncement(true);
+    try {
+      const result = await courseWelcomeTemplateService.getWelcomeTemplate(courseId);
+      if (result.success && result.data) {
+        setAnnouncementSubject(result.data.subject);
+        setAnnouncementBody(result.data.body);
+      }
+    } catch (error) {
+      logError('Error loading enrollment announcement:', error);
+    } finally {
+      setLoadingAnnouncement(false);
+    }
+  };
 
   const loadChannels = async () => {
     if (!courseId) return;
@@ -76,7 +107,7 @@ const AdditionalTab = ({
         setChannels(result.data);
       }
     } catch (error) {
-      console.error('Error loading channels:', error);
+      logError('Error loading channels:', error);
     } finally {
       setLoadingChannels(false);
     }
@@ -216,6 +247,55 @@ const AdditionalTab = ({
     }
   };
 
+  const handleSaveWelcomeTemplate = async () => {
+    if (!courseId) return;
+
+    if (!announcementSubject.trim() || !announcementBody.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Subject and body are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const result = await courseWelcomeTemplateService.saveWelcomeTemplate(
+        courseId,
+        announcementSubject,
+        announcementBody
+      );
+
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Welcome template saved successfully',
+        });
+      } else {
+        throw new Error(result.error?.message || 'Failed to save announcement');
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleEnrollAnnouncement = async (checked: boolean) => {
+    if (checked && (!announcementSubject.trim() || !announcementBody.trim())) {
+      toast({
+        title: 'Configuration Required',
+        description: 'Please configure the subject and body before enabling enrollment announcements',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsEnrollAnnouncementEnabled(checked);
+  };
+
   /**
    * Handle certificate toggle with validation
    */
@@ -223,7 +303,7 @@ const AdditionalTab = ({
     if (checked) {
       // Check if course title is too long and no custom name is set
       const effectiveName = customCertificateName.trim() || courseTitle;
-      
+
       if (effectiveName.length > MAX_CERTIFICATE_NAME_LENGTH) {
         toast({
           title: 'Certificate name too long',
@@ -233,7 +313,7 @@ const AdditionalTab = ({
         return;
       }
     }
-    
+
     setIsCertificateEnabled?.(checked);
   };
 
@@ -249,9 +329,9 @@ const AdditionalTab = ({
 
   // Check if course title exceeds limit
   const isTitleTooLong = courseTitle.length > MAX_CERTIFICATE_NAME_LENGTH;
-  const hasValidCertificateName = customCertificateName.trim().length > 0 && 
+  const hasValidCertificateName = customCertificateName.trim().length > 0 &&
     customCertificateName.trim().length <= MAX_CERTIFICATE_NAME_LENGTH;
-  
+
   // Certificate can only be enabled if title is within limit OR a valid custom name is set
   const canEnableCertificate = !isTitleTooLong || hasValidCertificateName;
 
@@ -302,7 +382,7 @@ const AdditionalTab = ({
               </p>
               {isTitleTooLong && !hasValidCertificateName && (
                 <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-                  ⚠️ Course title exceeds {MAX_CERTIFICATE_NAME_LENGTH} characters. 
+                  ⚠️ Course title exceeds {MAX_CERTIFICATE_NAME_LENGTH} characters.
                   Please set a custom certificate name below to enable certificates.
                 </p>
               )}
@@ -324,7 +404,7 @@ const AdditionalTab = ({
                 Custom Certificate Name {isTitleTooLong && <span className="text-destructive">*</span>}
               </Label>
               <p className="text-sm text-muted-foreground">
-                {isTitleTooLong 
+                {isTitleTooLong
                   ? `Required: Course title is too long (${courseTitle.length} characters). Set a name with ${MAX_CERTIFICATE_NAME_LENGTH} characters or less.`
                   : "Customize the name that appears on the certificate. By default, it uses the course title."
                 }
@@ -340,9 +420,8 @@ const AdditionalTab = ({
                 className={isTitleTooLong && !hasValidCertificateName ? "border-amber-500 focus:ring-amber-500" : ""}
               />
               <div
-                className={`text-xs text-right mt-1 ${
-                  remainingCertificateChars <= 5 ? "text-amber-600" : "text-muted-foreground"
-                }`}
+                className={`text-xs text-right mt-1 ${remainingCertificateChars <= 5 ? "text-amber-600" : "text-muted-foreground"
+                  }`}
               >
                 {remainingCertificateChars} characters remaining
               </div>
@@ -369,6 +448,79 @@ const AdditionalTab = ({
             onCheckedChange={(checked) => setIsForumEnabled?.(checked)}
             className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
           />
+        </div>
+
+        {/* Enrollment Announcement Section */}
+        <div className="space-y-4 p-4 border rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="enable-enroll-announcement" className="text-base font-medium">
+                Enable Welcome Message
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                When enabled, a custom announcement will be sent to students when they enroll in this course.
+                <br />
+                Configure the subject and body below.
+              </p>
+            </div>
+
+            <Switch
+              id="enable-enroll-announcement"
+              checked={isWelcomeMessageEnabled}
+              onCheckedChange={handleToggleEnrollAnnouncement}
+              className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+            />
+          </div>
+
+          {/* Collapsible Configuration */}
+          <Collapsible open={isAnnouncementOpen} onOpenChange={setIsAnnouncementOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:underline">
+              {isAnnouncementOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+              Configure Welcome Message
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-4">
+              {loadingAnnouncement ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label htmlFor="announcement-subject">Subject *</Label>
+                    <Input
+                      id="announcement-subject"
+                      value={announcementSubject}
+                      onChange={(e) => setAnnouncementSubject(e.target.value)}
+                      placeholder="e.g., Welcome to the course!"
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="announcement-body">Body *</Label>
+                    <Textarea
+                      id="announcement-body"
+                      value={announcementBody}
+                      onChange={(e) => setAnnouncementBody(e.target.value)}
+                      placeholder="Enter the announcement message that students will see when they enroll..."
+                      rows={6}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button onClick={handleSaveWelcomeTemplate} size="sm">
+                      Save Announcement
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Save Button */}

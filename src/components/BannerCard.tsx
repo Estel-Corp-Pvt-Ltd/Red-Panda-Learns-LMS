@@ -9,19 +9,19 @@ interface BannerCardProps {
 }
 
 export function BannerCard({ banner }: BannerCardProps) {
-  const backgroundStyle = banner.imageUrl
-    ? { backgroundImage: `url(${banner.imageUrl})` }
-    : { background: `linear-gradient(to right, ${banner.gradientColors.join(", ")})` };
+  // const backgroundStyle = banner.imageUrl
+  //   ? { backgroundImage: `url(${banner.imageUrl})` }
+  //   : { background: `linear-gradient(to right, ${banner.gradientColors.join(", ")})` };
 
   return (
     <Card className="overflow-hidden border-none shadow-lg">
       <div
         className="relative min-h-[200px] md:min-h-[250px] bg-cover bg-center p-6 md:p-8 flex items-center"
-        style={backgroundStyle}
+      // style={backgroundStyle}
       >
         {/* Overlay for better text readability when using images */}
         {banner.imageUrl && (
-          <div className="absolute inset-0" />
+          <img src={banner.imageUrl} alt={banner.title} className="absolute inset-0 w-full h-full object-cover" />
         )}
 
         {/* Content */}
