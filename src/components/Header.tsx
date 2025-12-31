@@ -868,7 +868,7 @@ export function Header({ className }: HeaderProps) {
                     </Accordion>
                   </nav>
 
-                  <div className="border-t border-border pt-4 space-y-4">
+                  <div className=" pt-2 space-y-4">
                     {/* Contact us (mobile, inside menu) */}
                     <div className="space-y-2">
                       <div className="text-sm font-medium flex items-center gap-2">
