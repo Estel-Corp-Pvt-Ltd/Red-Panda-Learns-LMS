@@ -454,18 +454,18 @@ const AdditionalTab = ({
         <div className="space-y-4 p-4 border rounded-lg">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label htmlFor="enable-enroll-announcement" className="text-base font-medium">
+              <Label htmlFor="enable-welcome-message" className="text-base font-medium">
                 Enable Welcome Message
               </Label>
               <p className="text-sm text-muted-foreground">
-                When enabled, a custom announcement will be sent to students when they enroll in this course.
+                When enabled, a custom welcome message will be sent to students when they enroll in this course.
                 <br />
                 Configure the subject and body below.
               </p>
             </div>
 
             <Switch
-              id="enable-enroll-announcement"
+              id="enable-welcome-message"
               checked={isWelcomeMessageEnabled}
               onCheckedChange={handleToggleEnrollAnnouncement}
               className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
