@@ -180,7 +180,7 @@ export const StripBanner: React.FC<StripBannerProps> = ({
 
               {/* Subtitle */}
               {currentBanner.subtitle && (
-                <p className="hidden md:block text-xs text-muted-foreground font-medium truncate max-w-[200px] lg:max-w-xs border-l border-foreground/10 pl-3">
+                <p className="hidden md:block text-xs text-white font-medium truncate max-w-[200px] lg:max-w-xs border-l border-foreground/10 pl-3">
                   {currentBanner.subtitle}
                 </p>
               )}
