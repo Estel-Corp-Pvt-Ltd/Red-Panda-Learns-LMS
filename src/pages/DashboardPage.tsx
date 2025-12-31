@@ -337,7 +337,7 @@ export default function DashboardPage() {
         {/* Desktop sidebar (hidden on mobile inside Sidebar component) */}
         <Sidebar />
 
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar">
+        <div className="flex-1 w-full mx-auto p-2 sm:p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
           {/* Mobile top bar: title + arrow toggle for sidebar */}
           <div className="flex items-center justify-between mb-4 md:hidden">
             <h1 className="text-lg font-semibold">Dashboard</h1>

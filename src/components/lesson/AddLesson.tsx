@@ -338,7 +338,8 @@ export const CreateLessonModal = ({
                     </SelectContent>
                   </Select>
                 </div>
-                {lesson.type === LESSON_TYPE.PDF ? (
+
+                {lesson.type === LESSON_TYPE.TEXT ? (<></>) : lesson.type === LESSON_TYPE.PDF ? (
                   <div className="space-y-1">
                     <Label>PDF Resource *</Label>
                     <label
