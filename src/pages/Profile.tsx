@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { UserSidebarMobileToggle } from "@/components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,7 +76,7 @@ const Profile = () => {
         throw new Error(result.error.message || "Failed to update profile");
       }
 
-      setUserData((prev) => prev ? { ...prev, ...updateData } : null);
+      setUserData((prev) => (prev ? { ...prev, ...updateData } : null));
       setIsEditing(false);
 
       // Refresh user data in AuthContext
@@ -160,6 +160,10 @@ const Profile = () => {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
+          <div className="flex items-center justify-between mb-4 md:hidden">
+            <h1 className="text-lg font-semibold">Dashboard</h1>
+            <UserSidebarMobileToggle />
+          </div>
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground">Profile</h1>
             <p className="text-muted-foreground mt-2">
@@ -195,11 +199,7 @@ const Profile = () => {
                   </Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button
-                      onClick={handleCancel}
-                      variant="outline"
-                      disabled={isSaving}
-                    >
+                    <Button onClick={handleCancel} variant="outline" disabled={isSaving}>
                       <X className="h-4 w-4 mr-2" />
                       Cancel
                     </Button>
@@ -260,12 +260,7 @@ const Profile = () => {
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      value={formData.email}
-                      disabled
-                      className="pl-10 bg-muted"
-                    />
+                    <Input id="email" value={formData.email} disabled className="pl-10 bg-muted" />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Email cannot be changed. Contact support if you need to update it.
@@ -300,9 +295,7 @@ const Profile = () => {
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Status</p>
-                      <Badge
-                        variant={userData?.status === "ACTIVE" ? "default" : "secondary"}
-                      >
+                      <Badge variant={userData?.status === "ACTIVE" ? "default" : "secondary"}>
                         {userData?.status || "N/A"}
                       </Badge>
                     </div>
