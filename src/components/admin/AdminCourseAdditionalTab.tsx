@@ -28,7 +28,7 @@ interface AdditionalTabProps {
   isForumEnabled: boolean;
   setIsForumEnabled: (value: boolean) => void;
   isWelcomeMessageEnabled: boolean;
-  setIsEnrollAnnouncementEnabled: (value: boolean) => void;
+  setIsWelcomeMessageEnabled: (value: boolean) => void;
   courseId?: string;
   courseTitle?: string;
   customCertificateName: string;
@@ -44,7 +44,7 @@ const AdditionalTab = ({
   isForumEnabled,
   setIsForumEnabled,
   isWelcomeMessageEnabled,
-  setIsEnrollAnnouncementEnabled,
+  setIsWelcomeMessageEnabled,
   courseId,
   courseTitle = "",
   customCertificateName,
@@ -293,7 +293,7 @@ const AdditionalTab = ({
       return;
     }
 
-    setIsEnrollAnnouncementEnabled(checked);
+    setIsWelcomeMessageEnabled(checked);
   };
 
   /**
