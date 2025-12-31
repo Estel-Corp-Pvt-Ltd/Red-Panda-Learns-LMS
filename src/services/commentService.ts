@@ -21,12 +21,13 @@ import {
   WhereFilterOp,
 } from "firebase/firestore";
 
-import { COLLECTION, COMMENT_STATUS } from "@/constants";
+import { COLLECTION, COMMENT_STATUS, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Comment, CommentVotes } from "@/types/comment";
 import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { logError } from "@/utils/logger";
+import { User } from "@/types/user";
 
 class CommentService {
 
@@ -43,7 +44,7 @@ class CommentService {
    * @returns A promise that resolves to the generated comment ID if creation is successful.
    * @throws An error if the comment could not be created in Firestore.
    */
-  async createComment(
+  async createComment(user: User,
     data: Omit<
       Comment,
       | "id"
@@ -68,7 +69,7 @@ class CommentService {
         userId: data.userId,
         userName: data.userName,
         content: data.content,
-        status: COMMENT_STATUS.PENDING, // Default status
+        status: (user && user.role === USER_ROLE.ADMIN) ? COMMENT_STATUS.APPROVED : COMMENT_STATUS.PENDING, // Default status
         upvoteCount: 0,
         countReplies: 0,
         createdAt: serverTimestamp(),
@@ -309,14 +310,17 @@ class CommentService {
    * @returns A promise that resolves to paginated replies.
    */
   async getCommentReplies(
-    userId: string,
+    user: User | null,
     parentCommentId: string,
     options: PaginationOptions<Comment> = {}
   ): Promise<Result<PaginatedResult<Comment>>> {
+    if (!user) {
+      return fail("User not authenticated");
+    }
 
     const userPendingReplies = await this.getComments([
       { field: "parentCommentId", op: "==", value: parentCommentId },
-      { field: "userId", op: "==", value: userId },
+      { field: "userId", op: "==", value: user.id },
       { field: "status", op: "==", value: "PENDING" },
     ]);
 
@@ -469,11 +473,8 @@ class CommentService {
 
         const comment = commentDoc.data();
 
-        // Soft delete the comment
-        transaction.update(commentRef, {
-          status: "DELETED",
-          updatedAt: serverTimestamp(),
-        });
+        // delete the comment
+        transaction.delete(commentRef);
 
         // If this is a reply, decrement parent's reply count
         if (comment.parentCommentId) {
