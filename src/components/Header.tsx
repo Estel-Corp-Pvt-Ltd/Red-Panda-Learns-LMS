@@ -534,6 +534,17 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
             )}
           </div>
         </div>
+        {(["/", "/dashboard", "/courses"].includes(location.pathname) ||
+          /^\/courses\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname) ||
+          /^\/course\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname)) &&
+          banners.length > 0 && (
+            <StripBanner
+              banners={banners}
+              autoRotate={true}
+              rotationInterval={5000}
+              className="z-10 "
+            />
+          )}
       </header>
 
       <NotificationPanel
@@ -541,17 +552,6 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
         onClose={() => setIsNotificationOpen(false)}
         onUnreadChange={setUnreadCount}
       />
-      {(["/", "/dashboard", "/courses"].includes(location.pathname) ||
-        /^\/courses\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname) ||
-        /^\/course\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname)) &&
-        banners.length > 0 && (
-          <StripBanner
-            banners={banners}
-            autoRotate={true}
-            rotationInterval={5000}
-            className="z-10"
-          />
-        )}
     </>
   );
 }
