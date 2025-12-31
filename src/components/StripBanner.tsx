@@ -160,8 +160,6 @@ export const StripBanner: React.FC<StripBannerProps> = ({
       >
         {/* Inner Capsule: Uses theme variables (background/foreground) instead of hardcoded colors */}
         <div className="relative flex items-center h-14 sm:h-12 px-3 sm:px-4  bg-background/5  overflow-hidden ">
-         
-
           {/* Central Content Stage */}
           <div className="flex-1 overflow-hidden relative h-full flex items-center justify-center px-2">
             {/* Animated Wrapper */}
@@ -175,19 +173,14 @@ export const StripBanner: React.FC<StripBannerProps> = ({
               {/* Title & Badge */}
               <div className="flex items-center gap-2 max-w-full">
                 <span className="hidden xs:flex items-center justify-center h-5 w-5 rounded-full bg-foreground/5 shrink-0"></span>
-                <h3
-                  className="text-sm font-semibold tracking-tight text-foreground whitespace-nowrap truncate"
-                  style={{ color: currentBanner.textColor || "inherit" }}
-                >
+                <h3 className="text-sm font-semibold tracking-tight text-white whitespace-nowrap truncate">
                   {currentBanner.title}
                 </h3>
               </div>
 
               {/* Subtitle */}
               {currentBanner.subtitle && (
-                <p className="hidden md:block text-xs text-muted-foreground font-medium truncate max-w-[200px] lg:max-w-xs border-l border-foreground/10 pl-3"
-                  style={{ color: currentBanner.textColor || "inherit" }}>
-
+                <p className="hidden md:block text-xs text-muted-foreground font-medium truncate max-w-[200px] lg:max-w-xs border-l border-foreground/10 pl-3">
                   {currentBanner.subtitle}
                 </p>
               )}
@@ -200,9 +193,8 @@ export const StripBanner: React.FC<StripBannerProps> = ({
                   variant="secondary"
                   className={cn(
                     "h-7 px-3 text-[10px] sm:text-xs font-semibold rounded-full",
-                    "bg-foreground/10 hover:bg-foreground/10 text-foreground border border-foreground/5",
+                    "bg-white/10 hover:bg-white/10 text-white border border-foreground/5",
                     "transition-all hover:scale-105 active:scale-95  ml-1 sm:ml-0"
-                    
                   )}
                 >
                   {currentBanner.ctaText}
@@ -226,14 +218,12 @@ export const StripBanner: React.FC<StripBannerProps> = ({
 
             <button
               onClick={handleDismiss}
-              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all duration-200"
+              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-destructive/10 hover:text-destructive text-white transition-all duration-200"
               aria-label="Dismiss"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-
-          
         </div>
       </div>
     </div>
