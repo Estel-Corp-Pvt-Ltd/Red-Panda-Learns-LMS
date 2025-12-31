@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, Copy, HeartHandshake, Mail, Menu, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -26,13 +26,28 @@ import {
 import { StripBanner } from "./StripBanner";
 import { useStripBanner } from "@/contexts/StripBannerOverlayContext";
 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
 type HeaderProps = {
   onMenuClick?: () => void;
   showMenuButton?: boolean;
   className?: string;
 };
 
-export function Header({ onMenuClick, showMenuButton = false, className }: HeaderProps) {
+export function Header({ className }: HeaderProps) {
   const { banners } = useStripBanner();
   const { user } = useAuth();
   const { cart } = useCart();
@@ -50,6 +65,13 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
     });
   };
 
+  const dashboardPath =
+    user?.role === USER_ROLE.ADMIN
+      ? "/admin"
+      : user?.role === USER_ROLE.ACCOUNTANT
+      ? "/accountant"
+      : "/dashboard";
+
   return (
     <>
       <header
@@ -59,22 +81,17 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
         )}
       >
         <div className="container flex h-16 items-center justify-between px-4">
-          {/* ----- Left: Logo + Navigation Menu ----- */}
+          {/* ----- Left: Logo + Desktop Navigation Menu ----- */}
           <div className="flex items-center gap-8">
-            {showMenuButton && (
-              <Button variant="ghost" size="sm" onClick={onMenuClick} className="md:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
-
             <Link to="/" className="flex items-center gap-2 font-semibold text-xl">
               <img src="/logo.png" className="w-10" alt="Logo" />
               <span>Vizuara</span>
             </Link>
 
-            {/* Navigation Menu - hover to open */}
+            {/* Desktop Navigation Menu - hover to open */}
             <NavigationMenu className="hidden lg:flex" delayDuration={0}>
               <NavigationMenuList>
+                {/* Products */}
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                     Products
@@ -111,6 +128,7 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
                   </NavigationMenuContent>
                 </NavigationMenuItem>
 
+                {/* Research */}
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                     Research
@@ -224,6 +242,7 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
                   </NavigationMenuContent>
                 </NavigationMenuItem>
 
+                {/* Courses */}
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                     Courses
@@ -307,6 +326,7 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
                   </NavigationMenuContent>
                 </NavigationMenuItem>
 
+                {/* For businesses */}
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
                     For businesses
@@ -376,8 +396,8 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
             </NavigationMenu>
           </div>
 
-          {/* ----- Right: Actions ----- */}
-          <div className="flex items-center gap-4">
+          {/* ----- Right: Actions (Desktop + Mobile) ----- */}
+          <div className="flex items-center gap-3">
             {/* Contact Us Popover - Desktop only */}
             {location.pathname === "/" && (
               <Popover>
@@ -410,29 +430,33 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
               </Popover>
             )}
 
+            {/* Customer Support - Desktop only (mobile version inside Sheet) */}
             {user && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && (
-              <CreateComplaint
-                userId={user.id}
-                trigger={
-                  <Button variant="ghost" className="font-medium text-sm flex items-center gap-2">
-                    <HeartHandshake className="h-4 w-4" />
-                    <span className="hidden sm:block">Customer Support</span>
-                  </Button>
-                }
-              />
+              <div className="hidden lg:block">
+                <CreateComplaint
+                  userId={user.id}
+                  trigger={
+                    <Button variant="ghost" className="font-medium text-sm flex items-center gap-2">
+                      <HeartHandshake className="h-4 w-4" />
+                      <span className="hidden sm:block">Customer Support</span>
+                    </Button>
+                  }
+                />
+              </div>
             )}
 
+            {/* Theme toggle - consistent across sizes */}
             <ThemeToggle />
 
             {user ? (
               <>
+                {/* Notifications - always outside, next to cart */}
                 <button
                   onClick={() => setIsNotificationOpen(true)}
-                  className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  className="relative p-2 rounded-full hover:bg-muted transition-colors"
                   aria-label="Notifications"
                 >
-                  <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-
+                  <Bell className="h-5 w-5 text-foreground" />
                   {unreadCount > 0 && (
                     <span
                       className={cn(
@@ -441,7 +465,7 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
                         "min-w-[18px] h-[18px] px-1",
                         "flex items-center justify-center",
                         "rounded-full shadow-lg",
-                        "border-2 border-white dark:border-neutral-900",
+                        "border-2 border-background",
                         "animate-pulse"
                       )}
                     >
@@ -450,79 +474,28 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
                   )}
                 </button>
 
-                <div className="flex items-center">
-                  {user?.role !== USER_ROLE.ADMIN && (
-                    <Link to="/cart" className="relative mr-3">
-                      <ShoppingCart className="w-6 h-6" />
-                      {cart.length > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                          {cart.length}
-                        </span>
-                      )}
-                    </Link>
-                  )}
-                  <Link
-                    to={
-                      user?.role === USER_ROLE.ADMIN
-                        ? "/admin"
-                        : user?.role === USER_ROLE.ACCOUNTANT
-                        ? "/accountant"
-                        : "/dashboard"
-                    }
-                    className="ml-2"
-                  >
-                    <Button variant="default" size="sm" className="relative flex">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Button>
+                {/* Cart - always outside, next to notifications (except admin) */}
+                {user?.role !== USER_ROLE.ADMIN && (
+                  <Link to="/cart" className="relative">
+                    <ShoppingCart className="w-5 h-5" />
+                    {cart.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {cart.length}
+                      </span>
+                    )}
                   </Link>
-                  {/* Logged-in dropdown (hover to open on desktop) */}
-                  {/* <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="relative flex"
-                      onMouseEnter={() => setAccountOpen(true)}
-                      onMouseLeave={() => setAccountOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-foreground" />
-                        </div>
-                        <span className="hidden sm:inline text-sm font-medium">
-                          {user.firstName && user.lastName
-                            ? `${user.firstName}`
-                            : user.firstName || "Account"}
-                        </span>
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
+                )}
 
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-56"
-                    onMouseEnter={() => setAccountOpen(true)}
-                    onMouseLeave={() => setAccountOpen(false)}
-                  >
-                    <DropdownMenuItem asChild>
-                      <Link to={user?.role === USER_ROLE.ADMIN ? "/admin" : "/dashboard"}>
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu> */}
-                  {/* </div> */}
-                </div>
+                {/* Dashboard button - Desktop only (mobile inside Sheet) */}
+                <Link to={dashboardPath} className="hidden lg:block">
+                  <Button variant="default" size="sm" className="relative flex">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Button>
+                </Link>
               </>
             ) : (
-              // Logged-out: Login + Signup buttons
+              // Logged-out: Login + Signup buttons - Desktop only (mobile inside Sheet)
               <div className="hidden lg:flex items-center gap-2">
                 <Button variant="ghost" asChild>
                   <Link to="/auth/login">Login</Link>
@@ -532,8 +505,395 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
                 </Button>
               </div>
             )}
+
+            {/* Mobile Hamburger (right side) */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden"
+                  aria-label="Open navigation menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+
+              <SheetContent side="right" className="flex flex-col">
+                <SheetHeader className="pb-4">
+                  <SheetTitle className="text-lg font-semibold">
+                    <SheetClose asChild>
+                      <Link to="/" className="flex items-center gap-2">
+                        <img src="/logo.png" className="w-8" alt="Logo" />
+                        <span>Vizuara</span>
+                      </Link>
+                    </SheetClose>
+                  </SheetTitle>
+                </SheetHeader>
+
+                <div className="flex-1 overflow-y-auto space-y-6">
+                  {/* Mobile nav – accordions for main sections */}
+                  <nav className="space-y-2">
+                    <Accordion type="multiple" className="w-full">
+                      {/* Products */}
+                      <AccordionItem value="products">
+                        <AccordionTrigger className="text-base font-medium">
+                          Products
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ul className="space-y-3 pt-2">
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://dynaroute.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">DynaRoute</div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    AI-powered routing and optimization solutions
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://vizz.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    Vizz-AI Tutor
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Your personal AI learning assistant
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Research */}
+                      <AccordionItem value="research">
+                        <AccordionTrigger className="text-base font-medium">
+                          Research
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ul className="space-y-3 pt-2">
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://research.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    Research Domains
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    SciML, GenAI, Vision, Inference, and Reasoning
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://ai-highschool-research.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    AI Highschool Researcher Bootcamp
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Research training for aspiring high school AI researchers
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://rlresearcherbootcamp.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    Reinforcement Learning Research Bootcamp
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Master the fundamentals of Reinforcement Learning
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://flyvidesh.online/ml-bootcamp"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    SciML Research Bootcamp
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Deep dive into Scientific Machine Learning
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://flyvidesh.online/ml-dl-bootcamp"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    ML-DL Research Bootcamp
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Comprehensive ML and Deep Learning research
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://cvresearchbootcamp.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    Computer Vision Research Bootcamp
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Build strong foundations, work on impactful problems in CV
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://flyvidesh.online/gen-ai-professional-bootcamp"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    GenAI Professional Bootcamp
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Advanced Generative AI for professionals
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Courses */}
+                      <AccordionItem value="courses">
+                        <AccordionTrigger className="text-base font-medium">
+                          Courses
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ul className="space-y-3 pt-2">
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://minor.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    Minor in AI (LIVE)
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Comprehensive AI fundamentals program
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="http://genai-minor.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    Minor in GenAI (LIVE)
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Specialized generative AI curriculum
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://courses.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    For Undergrads, Grads & Professionals
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Self-paced courses by top instructors
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://interactive-ai-courses.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    For School Students (Grades 1-10)
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Interactive AI learning for all ages
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://www.youtube.com/@vizuara"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    YouTube Channel
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Free AI/ML tutorials and content
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* For businesses */}
+                      <AccordionItem value="business">
+                        <AccordionTrigger className="text-base font-medium">
+                          For businesses
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ul className="space-y-3 pt-2">
+                            <li>
+                              <div className="block rounded-md px-2 py-2">
+                                <div className="text-sm font-medium leading-none">
+                                  Corporate AI Training
+                                </div>
+                                <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                  Upskill your team with enterprise AI training programs
+                                </p>
+                              </div>
+                            </li>
+                            <li>
+                              <div className="block rounded-md px-2 py-2">
+                                <div className="text-sm font-medium leading-none">
+                                  AI Product Development
+                                </div>
+                                <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                  Build custom AI solutions for your business
+                                </p>
+                              </div>
+                            </li>
+                            <li>
+                              <SheetClose asChild>
+                                <a
+                                  href="https://dynaroute.vizuara.ai/"
+                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
+                                >
+                                  <div className="text-sm font-medium leading-none">
+                                    DynaRoute API for Enterprises
+                                  </div>
+                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
+                                    Enterprise-grade AI routing and optimization API
+                                  </p>
+                                </a>
+                              </SheetClose>
+                            </li>
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </nav>
+
+                  <div className="border-t border-border pt-4 space-y-4">
+                    {/* Contact us (mobile, inside menu) */}
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Contact us
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                          {email}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={copyEmail}
+                          className="shrink-0"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Customer Support (mobile) */}
+                    {user &&
+                      user.role !== USER_ROLE.ADMIN &&
+                      user.role !== USER_ROLE.ACCOUNTANT && (
+                        <CreateComplaint
+                          userId={user.id}
+                          trigger={
+                            <Button variant="outline" className="w-full justify-start gap-2">
+                              <HeartHandshake className="h-4 w-4" />
+                              <span>Customer Support</span>
+                            </Button>
+                          }
+                        />
+                      )}
+
+                    {/* Auth + Dashboard (mobile) */}
+                    {user ? (
+                      <div className="space-y-2">
+                        <SheetClose asChild>
+                          <Link to={dashboardPath}>
+                            <Button className="w-full justify-start gap-2">
+                              <User className="h-4 w-4" />
+                              <span>Dashboard</span>
+                            </Button>
+                          </Link>
+                        </SheetClose>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <SheetClose asChild>
+                          <Button variant="outline" asChild className="w-full justify-center">
+                            <Link to="/auth/login">Login</Link>
+                          </Button>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Button variant="default" asChild className="w-full justify-center">
+                            <Link to="/auth/signup">Sign Up</Link>
+                          </Button>
+                        </SheetClose>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
+
         {(["/", "/dashboard", "/courses"].includes(location.pathname) ||
           /^\/courses\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname) ||
           /^\/course\/[^\/]+\/lesson(\/[^\/]+)?$/.test(location.pathname)) &&
@@ -542,7 +902,7 @@ export function Header({ onMenuClick, showMenuButton = false, className }: Heade
               banners={banners}
               autoRotate={true}
               rotationInterval={5000}
-              className="z-10 "
+              className="z-0 "
             />
           )}
       </header>

@@ -1,5 +1,5 @@
 import { Header } from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { UserSidebarMobileToggle } from "@/components/Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -332,16 +332,25 @@ export default function DashboardPage() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <Header />
-      {/* <StripBannerProvider className=" mx-auto px-4 mt-4"> */}
+
       <div className="flex flex-1 overflow-hidden">
+        {/* Desktop sidebar (hidden on mobile inside Sidebar component) */}
         <Sidebar />
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
+
+        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar">
+          {/* Mobile top bar: title + arrow toggle for sidebar */}
+          <div className="flex items-center justify-between mb-4 md:hidden">
+            <h1 className="text-lg font-semibold">Dashboard</h1>
+            <UserSidebarMobileToggle />
+          </div>
+
           {/* Banners Section */}
           {!isBannersLoading && banners.length > 0 && (
             <div className="mb-8">
               <BannerSlider banners={banners} autoSlideInterval={5000} />
             </div>
           )}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
@@ -366,6 +375,7 @@ export default function DashboardPage() {
                 </Link>
               )}
             </div>
+
             {isLoading ? (
               <div className="grid gap-6">
                 <LoadingSkeleton className="h-48" />
@@ -401,7 +411,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      {/* </StripBannerProvider> */}
     </div>
   );
 }
