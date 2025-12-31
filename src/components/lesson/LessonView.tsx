@@ -469,8 +469,12 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
 
   const getLessonContent = () => {
     switch (lesson.type) {
+      case LESSON_TYPE.TEXT:
+        return <></>;
+
       case LESSON_TYPE.SLIDE_DECK:
       case LESSON_TYPE.PDF:
+      case LESSON_TYPE.MIRO_BOARD:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
@@ -491,7 +495,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
           />
         );
 
-      case LESSON_TYPE.INTERACTIVE_PROJECT: {
+      case LESSON_TYPE.INTERACTIVE_PROJECT:
         const srcFromHtml = extractIframeSrc(lesson.embedUrl);
         if (srcFromHtml) {
           return (
@@ -529,7 +533,6 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
             </div>
           </div>
         );
-      }
 
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
@@ -634,7 +637,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
       {!shouldHideDetails && (
         <>
           {/* Progress Indicator */}
-          <Card className="bg-muted/30">
+          {/* <Card className="bg-muted/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Lesson Progress</span>
@@ -644,7 +647,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
               </div>
               <Progress value={completed ? 100 : 0} className="h-2" />
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Lesson Description */}
           <div className="flex flex-col md:flex-row gap-4">
