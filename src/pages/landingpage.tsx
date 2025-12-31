@@ -24,7 +24,7 @@ const LandingPage = () => {
       try {
         const result = await bannerService.getAllBanners();
         if (result.success) {
-          setBanners(result.data.filter((banner) => banner.status === "ACTIVE" && banner.showInDashboard));
+          setBanners(result.data.filter((banner) => banner.status === "ACTIVE" && banner.showInLandingPage));
         }
       } catch (error) {
         console.error("Error fetching banners:", error);
