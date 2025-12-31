@@ -532,8 +532,52 @@ export function Header({ className }: HeaderProps) {
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto space-y-6">
+                  {/* Top: primary actions (Dashboard + CS OR Login/Signup) */}
+                  <div className="space-y-2 pb-4 border-b border-border">
+                    {user ? (
+                      <>
+                        {/* Dashboard (mobile) */}
+                        <SheetClose asChild>
+                          <Link to={dashboardPath}>
+                            <Button className="w-full justify-start gap-2">
+                              <User className="h-4 w-4" />
+                              <span>Dashboard</span>
+                            </Button>
+                          </Link>
+                        </SheetClose>
+
+                        {/* Customer Support (mobile) */}
+                        {user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && (
+                          <CreateComplaint
+                            userId={user.id}
+                            trigger={
+                              <Button variant="outline" className="w-full justify-start gap-2">
+                                <HeartHandshake className="h-4 w-4" />
+                                <span>Customer Support</span>
+                              </Button>
+                            }
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Login / Sign Up (mobile, at top when logged out) */}
+                        <SheetClose asChild>
+                          <Button variant="outline" asChild className="w-full justify-center">
+                            <Link to="/auth/login">Login</Link>
+                          </Button>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Button variant="default" asChild className="w-full justify-center">
+                            <Link to="/auth/signup">Sign Up</Link>
+                          </Button>
+                        </SheetClose>
+                      </>
+                    )}
+                  </div>
+
                   {/* Mobile nav – accordions for main sections */}
-                  <nav className="space-y-2">
+                  <nav className="space-y-2 pt-2">
                     <Accordion type="multiple" className="w-full">
                       {/* Products */}
                       <AccordionItem value="products">
@@ -845,48 +889,6 @@ export function Header({ className }: HeaderProps) {
                         </Button>
                       </div>
                     </div>
-
-                    {/* Customer Support (mobile) */}
-                    {user &&
-                      user.role !== USER_ROLE.ADMIN &&
-                      user.role !== USER_ROLE.ACCOUNTANT && (
-                        <CreateComplaint
-                          userId={user.id}
-                          trigger={
-                            <Button variant="outline" className="w-full justify-start gap-2">
-                              <HeartHandshake className="h-4 w-4" />
-                              <span>Customer Support</span>
-                            </Button>
-                          }
-                        />
-                      )}
-
-                    {/* Auth + Dashboard (mobile) */}
-                    {user ? (
-                      <div className="space-y-2">
-                        <SheetClose asChild>
-                          <Link to={dashboardPath}>
-                            <Button className="w-full justify-start gap-2">
-                              <User className="h-4 w-4" />
-                              <span>Dashboard</span>
-                            </Button>
-                          </Link>
-                        </SheetClose>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <SheetClose asChild>
-                          <Button variant="outline" asChild className="w-full justify-center">
-                            <Link to="/auth/login">Login</Link>
-                          </Button>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Button variant="default" asChild className="w-full justify-center">
-                            <Link to="/auth/signup">Sign Up</Link>
-                          </Button>
-                        </SheetClose>
-                      </div>
-                    )}
                   </div>
                 </div>
               </SheetContent>
