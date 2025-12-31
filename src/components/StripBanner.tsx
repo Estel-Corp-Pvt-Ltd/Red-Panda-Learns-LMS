@@ -193,7 +193,7 @@ export const StripBanner: React.FC<StripBannerProps> = ({
                   variant="secondary"
                   className={cn(
                     "h-7 px-3 text-[10px] sm:text-xs font-semibold rounded-full",
-                    "bg-white/10 hover:bg-foreground/10 text-white border border-foreground/5",
+                    "bg-white/10 hover:bg-white/10 text-white border border-foreground/5",
                     "transition-all hover:scale-105 active:scale-95  ml-1 sm:ml-0"
                   )}
                 >
