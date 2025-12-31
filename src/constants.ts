@@ -16,6 +16,7 @@ export const LESSON_TYPE = {
   VIDEO_LECTURE: "VIDEO LECTURE",
   INTERACTIVE_PROJECT: "INTERACTIVE PROJECT",
   PDF: "PDF",
+  MIRO_BOARD: "MIRO BOARD",
 } as const;
 
 export const VIDEO_SOURCE = {
@@ -403,7 +404,7 @@ export const COLLECTION = {
   BUNDLES: "Bundles",
   COHORTS: "Cohorts",
   COMMENTS: 'Comments',
-   STRIP_BANNERS: 'StripBanners',
+  STRIP_BANNERS: 'StripBanners',
   COMMENT_VOTES: 'CommentVotes',
   USERS: "Users",
   CARTS: "Carts",

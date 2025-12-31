@@ -471,6 +471,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
     switch (lesson.type) {
       case LESSON_TYPE.SLIDE_DECK:
       case LESSON_TYPE.PDF:
+      case LESSON_TYPE.MIRO_BOARD:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
@@ -491,7 +492,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
           />
         );
 
-      case LESSON_TYPE.INTERACTIVE_PROJECT: {
+      case LESSON_TYPE.INTERACTIVE_PROJECT:
         const srcFromHtml = extractIframeSrc(lesson.embedUrl);
         if (srcFromHtml) {
           return (
@@ -529,7 +530,6 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
             </div>
           </div>
         );
-      }
 
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
