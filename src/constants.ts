@@ -17,6 +17,7 @@ export const LESSON_TYPE = {
   INTERACTIVE_PROJECT: "INTERACTIVE PROJECT",
   PDF: "PDF",
   MIRO_BOARD: "MIRO BOARD",
+  TEXT: "TEXT",
 } as const;
 
 export const VIDEO_SOURCE = {
