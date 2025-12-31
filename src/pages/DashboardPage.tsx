@@ -335,7 +335,7 @@ export default function DashboardPage() {
       {/* <StripBannerProvider className=" mx-auto px-4 mt-4"> */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
+        <div className="flex-1 w-full mx-auto p-2 sm:p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
           {/* Banners Section */}
           {!isBannersLoading && banners.length > 0 && (
             <div className="mb-8">
