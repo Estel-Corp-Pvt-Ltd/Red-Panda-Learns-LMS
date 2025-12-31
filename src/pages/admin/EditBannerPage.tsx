@@ -38,6 +38,7 @@ export default function EditBannerPage() {
     courseIds: [],
     status: BANNER_STATUS.ACTIVE,
     showToAllUsers: false,
+    showInDashboard: false,
   });
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
@@ -82,6 +83,7 @@ export default function EditBannerPage() {
           courseIds: banner.courseIds,
           status: banner.status,
           showToAllUsers: banner.showToAllUsers || false,
+          showInDashboard: banner.showInDashboard || false,
         });
       } else {
         toast({
@@ -458,6 +460,15 @@ export default function EditBannerPage() {
                     id="show-to-all-users"
                     checked={formData.showToAllUsers}
                     onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showToAllUsers: checked }))}
+                    className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+                  />
+                </div>
+                <div className="gap-2 flex items-center">
+                  <Label htmlFor="show-in-dashboard">Show in Dashboard</Label>
+                  <Switch
+                    id="show-in-dashboard"
+                    checked={formData.showInDashboard}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showInDashboard: checked }))}
                     className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
                   />
                 </div>

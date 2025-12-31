@@ -7,9 +7,10 @@ import { Button } from "./ui/button";
 interface BannerSliderProps {
   banners: Banner[];
   autoSlideInterval?: number; // milliseconds
+  className?: string;
 }
 
-export function BannerSlider({ banners, autoSlideInterval = 5000 }: BannerSliderProps) {
+export function BannerSlider({ banners, autoSlideInterval = 5000, className }: BannerSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -40,12 +41,12 @@ export function BannerSlider({ banners, autoSlideInterval = 5000 }: BannerSlider
 
   // If only one banner, show it without slider controls
   if (banners.length === 1) {
-    return <BannerCard banner={banners[0]} />;
+    return <BannerCard banner={banners[0]} className={className} />;
   }
 
   return (
     <div
-      className="relative"
+      className={`relative ${className}`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

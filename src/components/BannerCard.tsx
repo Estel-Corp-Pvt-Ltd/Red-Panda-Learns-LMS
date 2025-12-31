@@ -6,13 +6,14 @@ import { Link } from "react-router-dom";
 
 interface BannerCardProps {
   banner: Banner;
+  className?: string;
 }
 
-export function BannerCard({ banner }: BannerCardProps) {
+export function BannerCard({ banner, className }: BannerCardProps) {
   const backgroundStyle = `linear-gradient(to right, ${banner.gradientColors.join(", ")})`;
 
   return (
-    <Card className="overflow-hidden border-none shadow-lg p-0">
+    <Card className={`overflow-hidden border-none shadow-lg p-0 ${className}`}>
       <div
         className="relative h-[150px] sm:h-[250px] bg-cover bg-center"
         style={{ backgroundImage: backgroundStyle }}
