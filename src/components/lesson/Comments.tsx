@@ -3,8 +3,11 @@ import { commentService } from '@/services/commentService';
 import { Comment } from '@/types/comment';
 import { useAuth } from '@/contexts/AuthContext';
 import { PaginatedResult } from '@/utils/pagination';
-import { COMMENT_STATUS } from '@/constants';
+import { COMMENT_STATUS, USER_ROLE } from '@/constants';
 import { formatDateTime } from '@/utils/date-time';
+import { WhereFilterOp } from 'firebase-admin/firestore';
+import { Button } from '../ui/button';
+import { ChevronUp, Loader2, MessageCircle, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 
 interface CommentsProps {
   lessonId: string;
@@ -83,6 +86,8 @@ const CommentThread: React.FC<{
   onToggleReplies: (commentId: string, show: boolean) => void;
   onSetLoadingReplies: (commentId: string, loading: boolean) => void;
   onReply: (parentCommentId: string, content: string) => Promise<void>;
+  onApprove: (commentId: string) => Promise<void>;
+  onDelete: (commentId: string) => Promise<void>;
   currentUser: any;
 }> = ({
   comment,
@@ -92,8 +97,11 @@ const CommentThread: React.FC<{
   onToggleReplies,
   onSetLoadingReplies,
   onReply,
+  onApprove,
+  onDelete,
   currentUser
 }) => {
+    const { user } = useAuth();
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [submittingReply, setSubmittingReply] = useState(false);
     const [upvoting, setUpvoting] = useState(false);
@@ -161,7 +169,6 @@ const CommentThread: React.FC<{
                 </p>
               </div>
             </div>
-
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleToggleUpvote}
@@ -173,16 +180,9 @@ const CommentThread: React.FC<{
                 title={isUpvoted ? 'Remove upvote' : 'Upvote'}
               >
                 {upvoting ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <svg
-                    className="w-4 h-4"
-                    fill={isUpvoted ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
+                  <ChevronUp className="w-4 h-4" />
                 )}
                 <span className="text-sm">{comment.upvoteCount || 0}</span>
               </button>
@@ -193,28 +193,55 @@ const CommentThread: React.FC<{
             <p className="text-foreground whitespace-pre-wrap">{comment.content}</p>
           </div>
 
-          <div className="mt-3 flex items-center space-x-4 text-sm">
-            {currentUser && depth < 3 && (
-              <button
-                onClick={() => setShowReplyForm(true)}
-                className="text-primary hover:text-primary/80 font-medium"
-              >
-                Reply
-              </button>
-            )}
+          <div className="mt-3 flex items-center justify-between space-x-4 text-sm">
+            <div className="flex items-center space-x-4">
+              {currentUser && depth < 3 && (
+                <button
+                  onClick={() => setShowReplyForm(true)}
+                  className="text-primary hover:text-primary/80 font-medium"
+                >
+                  Reply
+                </button>
+              )}
 
-            {hasReplies && (
-              <button
-                onClick={toggleReplies}
-                disabled={loadingReplies}
-                className="text-muted-foreground hover:text-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingReplies ? (
-                  'Loading replies...'
-                ) : (
-                  `${showReplies ? 'Hide' : 'Show'} ${comment.countReplies} ${comment.countReplies === 1 ? 'reply' : 'replies'}`
+              {hasReplies && (
+                <button
+                  onClick={toggleReplies}
+                  disabled={loadingReplies}
+                  className="text-muted-foreground hover:text-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingReplies ? (
+                    'Loading replies...'
+                  ) : (
+                    `${showReplies ? 'Hide' : 'Show'} ${comment.countReplies} ${comment.countReplies === 1 ? 'reply' : 'replies'}`
+                  )}
+                </button>
+              )}
+            </div>
+            {user && user.role === USER_ROLE.ADMIN && (
+              <div className="flex items-center space-x-2">
+                {comment.status === COMMENT_STATUS.PENDING && (
+                  <Button
+                    className="text-xs text-green-600 font-medium py-2 border border-green-600/50 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20"
+                    onClick={async () => await onApprove(comment.id)}
+                  >
+                    <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                    Approve
+                  </Button>
                 )}
-              </button>
+                <Trash2
+                  // variant="outline"
+                  className="text-xs text-red-600 font-medium border rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to delete this comment?')) {
+                      await onDelete(comment.id);
+                    }
+                  }}
+                />
+                {/* <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Delete
+                </Button> */}
+              </div>
             )}
           </div>
 
@@ -243,6 +270,8 @@ const CommentThread: React.FC<{
                   onLoadReplies={onLoadReplies}
                   onToggleReplies={onToggleReplies}
                   onSetLoadingReplies={onSetLoadingReplies}
+                  onApprove={onApprove}
+                  onDelete={onDelete}
                   onReply={onReply}
                   currentUser={currentUser}
                 />
@@ -328,14 +357,20 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
     try {
       // Load user upvotes first
       await loadUserUpvotes();
-
-      const [approvedResult, userCommentResult] = await Promise.all([
-        commentService.getComments([
+      const filters: {
+        field: keyof Comment;
+        op: WhereFilterOp;
+        value: any;
+      }[] = [
           { field: "lessonId", op: "==", value: lessonId },
           { field: "parentCommentId", op: "==", value: null },
-          { field: "status", op: "==", value: COMMENT_STATUS.APPROVED },
           { field: "userId", op: "!=", value: user?.id || "none" },
-        ], {
+        ]
+      if (user && user.role !== USER_ROLE.ADMIN) {
+        filters.push({ field: "status", op: "==", value: COMMENT_STATUS.APPROVED });
+      }
+      const [approvedResult, userCommentResult] = await Promise.all([
+        commentService.getComments(filters, {
           limit: 15,
           orderBy: { field: 'createdAt', direction: 'desc' }
         }),
@@ -395,7 +430,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
   // Load replies for a comment
   const loadReplies = async (commentId: string) => {
     try {
-      const result = await commentService.getCommentReplies(user.id, commentId, {
+      const result = await commentService.getCommentReplies(user, commentId, {
         limit: 50,
         orderBy: { field: 'createdAt', direction: 'asc' }
       });
@@ -473,7 +508,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
     setError(null);
 
     try {
-      const result = await commentService.createComment({
+      const result = await commentService.createComment(user, {
         lessonId,
         lessonName,
         courseId,
@@ -514,7 +549,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
     setError(null);
 
     try {
-      const result = await commentService.createComment({
+      const result = await commentService.createComment(user, {
         lessonId,
         lessonName,
         courseId,
@@ -536,6 +571,54 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
       setError('Failed to submit comment');
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleApprove = async (commentId: string) => {
+    if (!user || user.role !== USER_ROLE.ADMIN) return;
+
+    try {
+      await commentService.approveComment(commentId);
+      updateCommentState(commentId, { status: COMMENT_STATUS.APPROVED });
+    } catch (error) {
+      console.error('Failed to approve comment:', error);
+    }
+  };
+
+  const handleDelete = async (commentId: string) => {
+    if (!user || user.role !== USER_ROLE.ADMIN) return;
+
+    try {
+      const result = await commentService.deleteComment(commentId);
+      if (result.success) {
+        // Remove the comment from the state
+        setComments(prev => prev.filter(comment => comment.id !== commentId));
+
+        // If it's a reply, we need to remove it from parent's replies
+        setComments(prev => prev.map(comment => {
+          if (comment.replies) {
+            const removeReplyRecursive = (replies: CommentWithReplies[]): CommentWithReplies[] => {
+              return replies
+                .filter(reply => reply.id !== commentId)
+                .map(reply => ({
+                  ...reply,
+                  replies: reply.replies ? removeReplyRecursive(reply.replies) : []
+                }));
+            };
+            return {
+              ...comment,
+              replies: removeReplyRecursive(comment.replies),
+              countReplies: Math.max(0, (comment.countReplies || 0) - 1)
+            };
+          }
+          return comment;
+        }));
+      } else {
+        setError(result.error?.message || 'Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      setError('Failed to delete comment');
     }
   };
 
@@ -575,9 +658,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
       {error && (
         <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
           <div className="flex items-center">
-            <svg className="w-5 h-5 text-destructive mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <AlertCircle className="w-5 h-5 text-destructive mr-2" />
             <span className="text-destructive-foreground">{error}</span>
           </div>
           <button
@@ -623,9 +704,7 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
       <div className="space-y-6">
         {comments.length === 0 && !loading ? (
           <div className="text-center py-12">
-            <svg className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <MessageCircle className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No comments yet</h3>
             <p className="text-muted-foreground">Be the first to share your thoughts!</p>
           </div>
@@ -639,6 +718,8 @@ const Comments: React.FC<CommentsProps> = ({ lessonId, courseId, lessonName, cou
               onToggleReplies={toggleReplies}
               onSetLoadingReplies={setLoadingReplies}
               onReply={handleSubmitReply}
+              onApprove={handleApprove}
+              onDelete={handleDelete}
               currentUser={user}
             />
           ))
