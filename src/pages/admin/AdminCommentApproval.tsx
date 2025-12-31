@@ -17,8 +17,15 @@ import { formatDate } from '@/utils/date-time';
 import { WhereFilterOp } from 'firebase/firestore';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronsUpDown, Search, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const AdminCommentApproval: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -27,6 +34,7 @@ const AdminCommentApproval: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<'pending' | 'approved' | 'deleted'>('pending');
   const [selectedComments, setSelectedComments] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewingComment, setViewingComment] = useState<Comment | null>(null);
 
   // Course and Lesson filters
   const [courses, setCourses] = useState<Course[]>([]);
@@ -536,6 +544,16 @@ const AdminCommentApproval: React.FC = () => {
                       <TableCell>
                         <div className="max-w-md">
                           <p className="line-clamp-2">{comment.content}</p>
+                          {comment.content.length > 100 && (
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="h-auto p-0 text-xs text-primary"
+                              onClick={() => setViewingComment(comment)}
+                            >
+                              Read more
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -545,6 +563,15 @@ const AdminCommentApproval: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2 items-center">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2"
+                            onClick={() => setViewingComment(comment)}
+                            title="View full comment"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Link to={`/courses/${comment.courseId}/lesson/${comment.lessonId}`}>
                             <Button size="sm" variant="ghost" className="h-8 px-2">
                               View Lesson
@@ -576,6 +603,94 @@ const AdminCommentApproval: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* View Comment Dialog */}
+        <Dialog open={!!viewingComment} onOpenChange={(open) => !open && setViewingComment(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Comment Details</DialogTitle>
+              <DialogDescription>
+                Full comment content and information
+              </DialogDescription>
+            </DialogHeader>
+
+            {viewingComment && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-lg">{viewingComment.userName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(viewingComment.createdAt)}
+                      </p>
+                    </div>
+                    <Badge variant={
+                      viewingComment.status === 'APPROVED' ? 'default' :
+                        viewingComment.status === 'PENDING' ? 'secondary' : 'destructive'
+                    }>
+                      {viewingComment.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Course</p>
+                  <p className="text-sm">{viewingComment.courseName}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Lesson</p>
+                  <p className="text-sm">{viewingComment.lessonName}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Comment</p>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm whitespace-pre-wrap break-words">{viewingComment.content}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>{viewingComment.upvoteCount} upvotes</span>
+                  <span>•</span>
+                  <span>{viewingComment.countReplies} replies</span>
+                </div>
+
+                <div className="flex gap-2 pt-4 border-t">
+                  <Link
+                    to={`/courses/${viewingComment.courseId}/lesson/${viewingComment.lessonId}`}
+                    className="flex-1"
+                  >
+                    <Button variant="outline" className="w-full">
+                      View in Lesson
+                    </Button>
+                  </Link>
+                  {viewingComment.status === 'PENDING' && (
+                    <Button
+                      onClick={() => {
+                        handleApproveComment(viewingComment.id);
+                        setViewingComment(null);
+                      }}
+                      className="flex-1"
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      handleDeleteComment(viewingComment.id);
+                      setViewingComment(null);
+                    }}
+                    className="flex-1"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
