@@ -415,14 +415,14 @@ class LearningProgressService {
   }
 
 
-    /**
-   * Updates the preferred name on the certificate for a user's course progress.
-   *
-   * @param userId - ID of the student
-   * @param courseId - ID of the course
-   * @param preferredName - The preferred name to be displayed on the certificate
-   * @returns A Result object indicating success or failure.
-   */
+  /**
+ * Updates the preferred name on the certificate for a user's course progress.
+ *
+ * @param userId - ID of the student
+ * @param courseId - ID of the course
+ * @param preferredName - The preferred name to be displayed on the certificate
+ * @returns A Result object indicating success or failure.
+ */
   async updatePreferredNameOnCertificate(
     userId: string,
     courseId: string,
@@ -467,7 +467,7 @@ class LearningProgressService {
 
   async getCertificateStatusForPairs(
     pairs: { userId: string; courseId: string }[]
-  ): Promise<Result<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; }[]>> {
+  ): Promise<Result<{ userId: string; courseId: string; certificateId: string | null; isCertificateIssued: boolean, remark: string; }[]>> {
     try {
       if (!Array.isArray(pairs) || pairs.length === 0) {
         return ok([]);
@@ -516,7 +516,8 @@ class LearningProgressService {
             userId,
             courseId,
             isCertificateIssued: progress.certification?.issued === true,
-            remark: progress.certification?.remark || "N/A"
+            remark: progress.certification?.remark || "N/A",
+            certificateId: progress.certification?.certificateId || null
           });
         });
       }
@@ -536,49 +537,49 @@ class LearningProgressService {
   }
 
 
-/**
- * Checks if the preferred name is set for the certificate in the user's course progress.
- *
- * @param userId - ID of the student
- * @param courseId - ID of the course
- * @returns A Result object containing the preferred name if set, or null if not.
- */
-async isPreferredNameSetForCertificate(
-  userId: string,
-  courseId: string
-): Promise<Result<string | null>> {
-  try {
-    const progressQuery = query(
-      collection(db, COLLECTION.LEARNING_PROGRESS),
-      where("userId", "==", userId),
-      where("courseId", "==", courseId)
-    );
+  /**
+   * Checks if the preferred name is set for the certificate in the user's course progress.
+   *
+   * @param userId - ID of the student
+   * @param courseId - ID of the course
+   * @returns A Result object containing the preferred name if set, or null if not.
+   */
+  async isPreferredNameSetForCertificate(
+    userId: string,
+    courseId: string
+  ): Promise<Result<string | null>> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
 
-    const snapshot = await getDocs(progressQuery);
+      const snapshot = await getDocs(progressQuery);
 
-    if (snapshot.empty) {
-      return fail("Learning progress not found");
+      if (snapshot.empty) {
+        return fail("Learning progress not found");
+      }
+
+      const progressData = snapshot.docs[0].data() as LearningProgress;
+
+      // Check if preferredNameOnCertificate exists
+      const preferredName = progressData.certification?.prefferedNAmeOnCertificate;
+
+      if (preferredName && preferredName.trim() !== "") {
+        return ok(preferredName);  // Return the preferred name if set
+      }
+
+      return ok(null);  // Return null if the preferred name is not set
+
+    } catch (error: any) {
+      logError("LearningProgressService.isPreferredNameSetForCertificate", error);
+      return fail(
+        "Failed to check if preferred name is set for certificate",
+        error.code || error.message
+      );
     }
-
-    const progressData = snapshot.docs[0].data() as LearningProgress;
-
-    // Check if preferredNameOnCertificate exists
-    const preferredName = progressData.certification?.prefferedNAmeOnCertificate;
-
-    if (preferredName && preferredName.trim() !== "") {
-      return ok(preferredName);  // Return the preferred name if set
-    }
-
-    return ok(null);  // Return null if the preferred name is not set
-
-  } catch (error: any) {
-    logError("LearningProgressService.isPreferredNameSetForCertificate", error);
-    return fail(
-      "Failed to check if preferred name is set for certificate",
-      error.code || error.message
-    );
   }
-}
 
 
 
