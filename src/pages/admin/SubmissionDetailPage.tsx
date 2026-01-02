@@ -16,11 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -68,6 +64,7 @@ import ViewSubmissionModal from "@/components/admin/ViewSubmissionModal";
 import { markSubmissionEvaluatedService } from "@/services/markSubmissionEvaluatedService";
 import { authService } from "@/services/authService";
 import { WhereFilterOp } from "firebase-admin/firestore";
+import { pushNotificationService } from "@/services/pushNotificationService";
 
 interface FilterState {
   gradingStatus: "all" | "graded" | "ungraded";
@@ -83,7 +80,7 @@ interface ExportData {
   "Assignment Title": string;
   "Assignment ID": string;
   "Submitted Date": string;
-  "Marks": string;
+  Marks: string;
 }
 
 const AllSubmissionsPage = () => {
@@ -134,7 +131,7 @@ const AllSubmissionsPage = () => {
   const [courseOpen, setCourseOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
-
+  const [assignmentTitle, setAssignmentTitle] = useState<Record<string, string>>({});
   // Filter assignments based on selected course
   useEffect(() => {
     if (filters.courseFilter === "all") {
@@ -146,9 +143,11 @@ const AllSubmissionsPage = () => {
       setAssignments(filteredAssignments);
 
       // Reset assignment filter if current selection is not in filtered list
-      if (filters.assignmentFilter !== "all" &&
-        !filteredAssignments.some(a => a.id === filters.assignmentFilter)) {
-        setFilters(prev => ({ ...prev, assignmentFilter: "all" }));
+      if (
+        filters.assignmentFilter !== "all" &&
+        !filteredAssignments.some((a) => a.id === filters.assignmentFilter)
+      ) {
+        setFilters((prev) => ({ ...prev, assignmentFilter: "all" }));
       }
     }
   }, [filters.courseFilter, allAssignments]);
@@ -404,6 +403,12 @@ const AllSubmissionsPage = () => {
         console.error("No ID token found — user not authenticated");
       }
 
+      await pushNotificationService.sendGradedNotification(
+        selectedSubmission.id!,
+        numericMarks,
+        getAssignmentTitle(selectedSubmission),
+        idToken
+      );
       closeGradeModal();
     } catch (error) {
       console.error("Error saving grade:", error);
@@ -420,9 +425,7 @@ const AllSubmissionsPage = () => {
       setDeleting(submissionToDelete.id!);
       await assignmentService.deleteSubmission(submissionToDelete.id!);
 
-      setSubmissions((prev) =>
-        prev.filter((sub) => sub.id !== submissionToDelete.id)
-      );
+      setSubmissions((prev) => prev.filter((sub) => sub.id !== submissionToDelete.id));
       setSubmissionToDelete(null);
     } catch (error) {
       console.error("Error deleting submission:", error);
@@ -432,11 +435,39 @@ const AllSubmissionsPage = () => {
     }
   };
 
-  const getAssignmentTitle = (assignmentId: string) => {
-    const assignment = allAssignments.find((a) => a.id === assignmentId);
-    return assignment?.title || assignmentId;
-  };
+// Replace the existing getAssignmentTitle function with this
+const getAssignmentTitle = useCallback(
+  (submission: AssignmentSubmission | null): string => {
+    // Handle null submission
+    if (!submission) {
+      return "";
+    }
 
+    // First priority: use assignmentTitle from submission document
+    if (submission.assignmentTitle) {
+      return submission.assignmentTitle;
+    }
+
+    // Second priority: check cache
+    if (assignmentTitle[submission.assignmentId]) {
+      return assignmentTitle[submission.assignmentId];
+    }
+
+    // Third priority: find in allAssignments and cache it
+    const assignment = allAssignments.find((a) => a.id === submission.assignmentId);
+    if (assignment?.title) {
+      setAssignmentTitle((prev) => ({
+        ...prev,
+        [submission.assignmentId]: assignment.title,
+      }));
+      return assignment.title;
+    }
+
+    // Fallback: return assignmentId
+    return submission.assignmentId;
+  },
+  [allAssignments, assignmentTitle]
+);
   const getGradeText = (submission: AssignmentSubmission) => {
     return submission.marks !== undefined && submission.marks !== null
       ? `${submission.marks}`
@@ -451,7 +482,12 @@ const AllSubmissionsPage = () => {
   };
 
   const hasActiveFilters = () => {
-    return filters.courseFilter !== "all" || filters.assignmentFilter !== "all" || filters.gradingStatus !== "all" || studentSearch.trim() !== "";
+    return (
+      filters.courseFilter !== "all" ||
+      filters.assignmentFilter !== "all" ||
+      filters.gradingStatus !== "all" ||
+      studentSearch.trim() !== ""
+    );
   };
 
   // Check if export button should be enabled
@@ -465,9 +501,11 @@ const AllSubmissionsPage = () => {
       setExporting(true);
 
       // Get all submissions for the selected assignment
-      const exportFilters: { field: keyof AssignmentSubmission; op: WhereFilterOp; value: any }[] = [
-        { field: "assignmentId", op: "==", value: filters.assignmentFilter }
-      ];
+      const exportFilters: {
+        field: keyof AssignmentSubmission;
+        op: WhereFilterOp;
+        value: any;
+      }[] = [{ field: "assignmentId", op: "==", value: filters.assignmentFilter }];
 
       // Also apply grading status filter if selected
       if (filters.gradingStatus === "graded") {
@@ -495,11 +533,10 @@ const AllSubmissionsPage = () => {
       }
 
       // Prepare data for CSV with only required fields
-      const csvData: ExportData[] = allSubmissions.map(submission => {
-        const assignmentTitle = getAssignmentTitle(submission.assignmentId);
-        const submittedDate = submission.createdAt
-          ? formatDate(submission.createdAt)
-          : "N/A";
+      const csvData: ExportData[] = allSubmissions.map((submission) => {
+        const assignmentTitle = getAssignmentTitle(submission);
+
+        const submittedDate = submission.createdAt ? formatDate(submission.createdAt) : "N/A";
 
         return {
           "Student Name": submission.studentName,
@@ -507,7 +544,7 @@ const AllSubmissionsPage = () => {
           "Assignment Title": assignmentTitle,
           "Assignment ID": submission.assignmentId,
           "Submitted Date": submittedDate,
-          "Marks": submission.marks?.toString() || "Not Graded",
+          Marks: submission.marks?.toString() || "Not Graded",
         };
       });
 
@@ -520,12 +557,15 @@ const AllSubmissionsPage = () => {
 
       // Convert to CSV format
       const headers = Object.keys(csvData[0]).join(",");
-      const rows = csvData.map(row =>
-        Object.values(row).map(value =>
-          typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))
-            ? `"${value.replace(/"/g, '""')}"`
-            : value
-        ).join(",")
+      const rows = csvData.map((row) =>
+        Object.values(row)
+          .map((value) =>
+            typeof value === "string" &&
+            (value.includes(",") || value.includes('"') || value.includes("\n"))
+              ? `"${value.replace(/"/g, '""')}"`
+              : value
+          )
+          .join(",")
       );
 
       const csvContent = [headers, ...rows].join("\n");
@@ -536,14 +576,16 @@ const AllSubmissionsPage = () => {
       const url = URL.createObjectURL(blob);
 
       // Create filename based on selected assignment
-      const selectedAssignment = allAssignments.find(a => a.id === filters.assignmentFilter);
+      const selectedAssignment = allAssignments.find((a) => a.id === filters.assignmentFilter);
       let filename = "submissions";
       if (selectedAssignment) {
-        filename = `${selectedAssignment.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_submissions`;
+        filename = `${selectedAssignment.title
+          .replace(/[^a-z0-9]/gi, "_")
+          .toLowerCase()}_submissions`;
       }
 
       link.setAttribute("href", url);
-      link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `${filename}_${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -563,7 +605,7 @@ const AllSubmissionsPage = () => {
     studentSearch.trim() === ""
       ? true
       : submission.studentName.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
+        submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
   );
   const showingItems = filteredSubmissions.length;
 
@@ -574,9 +616,7 @@ const AllSubmissionsPage = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">
-                Loading submissions...
-              </p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading submissions...</p>
             </div>
           </div>
         </div>
@@ -585,8 +625,7 @@ const AllSubmissionsPage = () => {
   }
 
   const colorMode =
-    typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
@@ -598,15 +637,17 @@ const AllSubmissionsPage = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Assignment Submissions
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            View and manage student submissions
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">View and manage student submissions</p>
         </div>
         <Button
           onClick={exportToCSV}
           disabled={exporting || !canExport}
           className="gap-2"
-          title={canExport ? "Export submissions for selected assignment" : "Please select an assignment to enable export"}
+          title={
+            canExport
+              ? "Export submissions for selected assignment"
+              : "Please select an assignment to enable export"
+          }
         >
           {exporting ? (
             <>
@@ -640,7 +681,8 @@ const AllSubmissionsPage = () => {
                     <span className="truncate">
                       {filters.courseFilter === "all"
                         ? "All Courses"
-                        : courses.find((course) => course.id === filters.courseFilter)?.title || "Select Course"}
+                        : courses.find((course) => course.id === filters.courseFilter)?.title ||
+                          "Select Course"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -704,8 +746,10 @@ const AllSubmissionsPage = () => {
                       {assignments.length === 0
                         ? "No assignments available"
                         : filters.assignmentFilter === "all"
-                          ? "All Assignments"
-                          : assignments.find((assignment) => assignment.id === filters.assignmentFilter)?.title || "Select Assignment"}
+                        ? "All Assignments"
+                        : assignments.find(
+                            (assignment) => assignment.id === filters.assignmentFilter
+                          )?.title || "Select Assignment"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -743,7 +787,9 @@ const AllSubmissionsPage = () => {
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                filters.assignmentFilter === assignment.id ? "opacity-100" : "opacity-0"
+                                filters.assignmentFilter === assignment.id
+                                  ? "opacity-100"
+                                  : "opacity-0"
                               )}
                             />
                             <span className="truncate">{assignment.title}</span>
@@ -834,9 +880,9 @@ const AllSubmissionsPage = () => {
                   </Label>
                   <Select
                     value={filters.sortBy}
-                    onValueChange={(
-                      value: "studentName" | "createdAt" | "marks"
-                    ) => handleFilterChange("sortBy", value)}
+                    onValueChange={(value: "studentName" | "createdAt" | "marks") =>
+                      handleFilterChange("sortBy", value)
+                    }
                   >
                     <SelectTrigger className="flex-1 max-w-[200px]">
                       <SelectValue />
@@ -851,10 +897,7 @@ const AllSubmissionsPage = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() =>
-                      handleFilterChange(
-                        "sortOrder",
-                        filters.sortOrder === "asc" ? "desc" : "asc"
-                      )
+                      handleFilterChange("sortOrder", filters.sortOrder === "asc" ? "desc" : "asc")
                     }
                     className="h-9 w-9"
                   >
@@ -894,10 +937,7 @@ const AllSubmissionsPage = () => {
               <TableBody>
                 {submissions.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       {loading ? "Loading..." : "No submissions found"}
                     </TableCell>
                   </TableRow>
@@ -906,8 +946,10 @@ const AllSubmissionsPage = () => {
                     .filter((submission) =>
                       studentSearch.trim() === ""
                         ? true
-                        : submission.studentName.toLowerCase().includes(studentSearch.toLowerCase()) ||
-                        submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
+                        : submission.studentName
+                            .toLowerCase()
+                            .includes(studentSearch.toLowerCase()) ||
+                          submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
                     )
                     .map((submission) => (
                       <TableRow
@@ -918,9 +960,7 @@ const AllSubmissionsPage = () => {
                           <div className="flex items-center space-x-2">
                             <User className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <div className="font-medium text-sm">
-                                {submission.studentName}
-                              </div>
+                              <div className="font-medium text-sm">{submission.studentName}</div>
                               {submission.studentEmail && (
                                 <div className="text-xs text-muted-foreground">
                                   ({submission.studentEmail})
@@ -932,9 +972,9 @@ const AllSubmissionsPage = () => {
                         <TableCell>
                           <div
                             className="text-sm truncate max-w-[230px]"
-                            title={getAssignmentTitle(submission.assignmentId)}
+                            title={getAssignmentTitle(submission)}
                           >
-                            {getAssignmentTitle(submission.assignmentId)}
+                            {getAssignmentTitle(submission)}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -946,16 +986,14 @@ const AllSubmissionsPage = () => {
                           <div className="text-sm font-medium">
                             {submission.marks !== undefined && submission.marks !== null
                               ? `${submission.marks}`
-                              : "-"
-                            }
+                              : "-"}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={getGradeStatus(submission)}>
                             {submission.marks !== undefined && submission.marks !== null
                               ? "Graded"
-                              : "Not Graded"
-                            }
+                              : "Not Graded"}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -1000,7 +1038,8 @@ const AllSubmissionsPage = () => {
           <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Showing {showingItems}{studentSearch ? ` of ${submissions.length}` : ` of ${totalItems}`} submissions
+                Showing {showingItems}
+                {studentSearch ? ` of ${submissions.length}` : ` of ${totalItems}`} submissions
                 {hasActiveFilters() && " (filtered)"}
               </div>
               <div className="flex gap-1">
@@ -1045,7 +1084,7 @@ const AllSubmissionsPage = () => {
             <DialogTitle className="text-lg">Grade Submission</DialogTitle>
             <DialogDescription>
               {selectedSubmission?.studentName} -{" "}
-              {getAssignmentTitle(selectedSubmission?.assignmentId || "")}
+              {getAssignmentTitle(selectedSubmission)}
             </DialogDescription>
           </DialogHeader>
 
@@ -1071,10 +1110,7 @@ const AllSubmissionsPage = () => {
               <Label htmlFor="feedback" className="text-sm">
                 Feedback
               </Label>
-              <div
-                data-color-mode={colorMode}
-                className="border rounded-lg dark:border-gray-700"
-              >
+              <div data-color-mode={colorMode} className="border rounded-lg dark:border-gray-700">
                 <MDEditor
                   value={feedback}
                   onChange={(value) => setFeedback(value || "")}
@@ -1111,11 +1147,7 @@ const AllSubmissionsPage = () => {
           </DialogHeader>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setSubmissionToDelete(null)}
-              size="sm"
-            >
+            <Button variant="outline" onClick={() => setSubmissionToDelete(null)} size="sm">
               Cancel
             </Button>
             <Button
