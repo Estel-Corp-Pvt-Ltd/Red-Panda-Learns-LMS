@@ -150,7 +150,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                       </tr>
                       <tr>
                         <td>Invoice Date</td>
-                        <td className='pl-2'>: {invoiceData.invoiceDate}</td>
+                        <td className='pl-2'>: {invoiceData.invoiceDate} (UTC)</td>
                       </tr>
                       <tr>
                         <td>Terms</td>
