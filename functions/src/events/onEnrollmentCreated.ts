@@ -32,14 +32,14 @@ export const onEnrollmentCreated = onDocumentCreated(
       }
 
       if (courseResult.data.isWelcomeMessageEnabled) {
-        const courseWelcomeMessage = await courseWelcomeTemplateService.getWelcomeTemplate(enrollmentData.data.courseId);
+        const courseEnrollAnnouncement = await courseWelcomeTemplateService.getWelcomeTemplate(enrollmentData.data.courseId);
 
-        if (courseWelcomeMessage.success && courseWelcomeMessage.data) {
+        if (courseEnrollAnnouncement.success && courseEnrollAnnouncement.data) {
           await pubsub.topic("course-welcome-message").publishMessage({
             json: {
               email: enrollmentData.data.userEmail,
-              subject: courseWelcomeMessage.data.subject,
-              body: courseWelcomeMessage.data.body,
+              subject: courseEnrollAnnouncement.data.subject,
+              body: courseEnrollAnnouncement.data.body,
             } as CourseWelcomeEmail,
           });
         }
