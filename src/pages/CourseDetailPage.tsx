@@ -51,7 +51,7 @@ export default function CourseDetailPage() {
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
   const [courseId, setCourseId] = useState("");
-  const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
+  // const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
   const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
 
   const isAddedToCart = cart.some((item) => item.type === ENROLLED_PROGRAM_TYPE.COURSE && item.refId === courseId);
@@ -98,24 +98,24 @@ export default function CourseDetailPage() {
   }, [user, courseId, isEnrolled]);
 
   // Fetch lesson descriptions separately
-  useEffect(() => {
-    const fetchLessonDescriptions = async () => {
-      if (!courseId) return;
+  // useEffect(() => {
+  //   const fetchLessonDescriptions = async () => {
+  //     if (!courseId) return;
 
-      const result = await lessonService.getLessonDetailsByCourseId(courseId);
-      if (result.success) {
-        setLessonDescriptions(result.data.descriptions);
-        setCourseDuration(result.data.totalDuration);
-      } else {
-        toast({
-          title: "Lesson descriptions unavailable",
-          description: `Could not fetch lesson descriptions`,
-        });
-      }
-    };
+  //     const result = await lessonService.getLessonDetailsByCourseId(courseId);
+  //     if (result.success) {
+  //       setLessonDescriptions(result.data.descriptions);
+  //       setCourseDuration(result.data.totalDuration);
+  //     } else {
+  //       toast({
+  //         title: "Lesson descriptions unavailable",
+  //         description: `Could not fetch lesson descriptions`,
+  //       });
+  //     }
+  //   };
 
-    fetchLessonDescriptions();
-  }, [courseId]);
+  //   fetchLessonDescriptions();
+  // }, [courseId]);
 
 
   const handleAddToCart = async () => {
@@ -283,7 +283,7 @@ export default function CourseDetailPage() {
                     <p className="flex-1 min-w-0 text-[0.9rem] font-medium text-foreground truncate">
                       {lessonTitle}
                     </p>
-                    <div className="relative group">
+                    {/* <div className="relative group">
                       <Info
                         className="text-muted-foreground hover:text-foreground cursor-pointer"
                         size={16}
@@ -294,7 +294,7 @@ export default function CourseDetailPage() {
                             "No description available."}
                         </p>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </Link>
               ) : (

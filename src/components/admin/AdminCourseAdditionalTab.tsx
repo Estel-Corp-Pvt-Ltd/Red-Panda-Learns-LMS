@@ -76,11 +76,11 @@ const AdditionalTab = ({
   useEffect(() => {
     if (courseId) {
       loadChannels();
-      loadEnrollAnnouncement();
+      loadCourseWelcomeMessage();
     }
   }, [courseId]);
 
-  const loadEnrollAnnouncement = async () => {
+  const loadCourseWelcomeMessage = async () => {
     if (!courseId) return;
 
     setLoadingAnnouncement(true);
@@ -283,7 +283,7 @@ const AdditionalTab = ({
     }
   };
 
-  const handleToggleEnrollAnnouncement = async (checked: boolean) => {
+  const handleToggleCourseWelcomeMessage = async (checked: boolean) => {
     if (checked && (!announcementSubject.trim() || !announcementBody.trim())) {
       toast({
         title: 'Configuration Required',
@@ -467,7 +467,7 @@ const AdditionalTab = ({
             <Switch
               id="enable-welcome-message"
               checked={isWelcomeMessageEnabled}
-              onCheckedChange={handleToggleEnrollAnnouncement}
+              onCheckedChange={handleToggleCourseWelcomeMessage}
               className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
             />
           </div>
