@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT } from "@/constants";
+import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT, PLATFROM_TYPE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useCourseQuery } from "@/hooks/useCaching";
@@ -16,10 +16,24 @@ import { Enrollment } from "@/types/enrollment";
 import { Banner } from "@/types/banner";
 import { CertificateRequestStatus } from "@/types/general";
 import { formatDate } from "@/utils/date-time";
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Eye,
+  PlayCircle,
+  MessageSquare,
+  Award,
+  Bell,
+  BellOff,
+} from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
+import { userService } from "@/services/userService";
+import { getToken } from "firebase/messaging";
+import { messaging } from "@/firebaseConfig";
+import { Timestamp } from "firebase/firestore";
 
 function EnrolledCourseCard({
   enrollment,
@@ -36,7 +50,7 @@ function EnrolledCourseCard({
   const [isProgressLoading, setIsProgressLoading] = useState(true);
 
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false); // completionDate exists
+  const [isCompleted, setIsCompleted] = useState(false);
   const [isCertificateIdAvailable, setIsCertificateIdAvailable] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -60,7 +74,7 @@ function EnrolledCourseCard({
         setIsCompleted(true);
 
         toast({
-          title: "Course completed 🎉",
+          title: "Course completed",
           description: "You have successfully completed the course.",
         });
       } else {
@@ -131,7 +145,6 @@ function EnrolledCourseCard({
     }
   };
 
-  // Check if certificate features should be shown
   const showCertificateFeatures = course.isCertificateEnabled;
 
   return (
@@ -141,21 +154,20 @@ function EnrolledCourseCard({
           <div className="flex-1">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-semibold text-lg">{enrollment.courseName || course.title}</h3>
-
               {showCertificateFeatures && (
-                <div className="flex items-center gap-1.5   px-2 py-1 rounded-full">
-                  <img
-                    src="/isCertificateAvailableIcon.png"
-                    alt="Certificate available"
-                    className="h-8 w-8"
-                  />
+                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full">
+                  <Award className="h-5 w-5 text-amber-500" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Certificate
+                  </span>
                 </div>
               )}
             </div>
-
             <p
               className="text-muted-foreground text-sm mb-4 line-clamp-2"
-              dangerouslySetInnerHTML={{ __html: course.description.replace(/<[^>]+>/g, "") }}
+              dangerouslySetInnerHTML={{
+                __html: course.description.replace(/<[^>]+>/g, ""),
+              }}
             ></p>
 
             <div className="flex items-center justify-between">
@@ -182,7 +194,6 @@ function EnrolledCourseCard({
                   Continue
                 </Button>
 
-                {/* Only show certificate-related features if enabled */}
                 {showCertificateFeatures && (
                   <>
                     {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
@@ -194,7 +205,6 @@ function EnrolledCourseCard({
 
                     {!isProgressLoading && isCompleted && (
                       <>
-                        {/* PRIORITY 1: Show certificate if it exists (bypasses all request logic) */}
                         {isCertificateIdAvailable ? (
                           <Link to={`/certificate/${user.id}_${course.id}/`}>
                             <Button size="sm">
@@ -203,7 +213,6 @@ function EnrolledCourseCard({
                             </Button>
                           </Link>
                         ) : (
-                          /* PRIORITY 2: Handle request flow only if certificate doesn't exist */
                           <>
                             {certificateStatus === CERTIFICATE_REQUEST_STATUS.PENDING ? (
                               <Badge variant="outline" className="text-xs flex items-center gap-1">
@@ -215,7 +224,6 @@ function EnrolledCourseCard({
                                 Certificate approved - generating...
                               </Badge>
                             ) : (
-                              /* No request made yet - show request option */
                               <>
                                 <Badge variant="secondary" className="text-xs">
                                   Certificate available on request
@@ -272,7 +280,25 @@ export default function DashboardPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isBannersLoading, setIsBannersLoading] = useState(false);
 
+  // Notification states
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>("default");
+  const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
+
   const navigate = useNavigate();
+
+
+
+
+ 
+useEffect(() => {
+  if (!("Notification" in window)) return;
+
+  setNotificationPermission(Notification.permission);
+}, []);
+
+
+  // Handle enabling notifications (button click)
 
   const fetchEnrollmentsAndCertificateRequestStatuses = async () => {
     if (!user || !user.email) return;
@@ -291,7 +317,6 @@ export default function DashboardPage() {
         setCertificateStatusMap(certificateStatusResult.data);
       }
 
-      // Fetch banners for enrolled courses
       await fetchBanners(courseIds);
     } else {
       setEnrollments([]);
@@ -299,6 +324,7 @@ export default function DashboardPage() {
     setIsLoading(false);
   };
 
+  console.log("fcm token",user.fcmTokens)
   const fetchBanners = async (enrolledCourseIds: string[]) => {
     if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
       const result = await bannerService.getActiveGlobalBanners();
@@ -322,24 +348,109 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchEnrollmentsAndCertificateRequestStatuses();
-  }, [user, navigate]);
+  }, [user?.id]);
 
   const stats = {
     totalCourses: enrollments.length,
   };
+
+  // Determine notification button state
+  const getNotificationButtonContent = () => {
+    if (notificationPermission === "granted") {
+      return {
+        icon: <Bell className="h-4 w-4 mr-2" />,
+        text: "Notifications Enabled",
+        variant: "secondary" as const,
+        disabled: true,
+      };
+    }
+    if (notificationPermission === "denied") {
+      return {
+        icon: <BellOff className="h-4 w-4 mr-2" />,
+        text: "Enable Notifications",
+        variant: "outline" as const,
+        disabled: false, // Keep enabled so user can click
+      };
+    }
+    return {
+      icon: <Bell className="h-4 w-4 mr-2" />,
+      text: isEnablingNotifications ? "Enabling..." : "Enable Notifications",
+      variant: "outline" as const,
+      disabled: isEnablingNotifications,
+    };
+  };
+
+  // Handle enabling notifications (button click)
+const handleEnableNotifications = async () => {
+  if (!user?.id) return;
+
+  try {
+    setIsEnablingNotifications(true);
+
+    if (!("Notification" in window)) {
+      toast({
+        title: "Notifications not supported",
+        description: "Your browser doesn't support notifications.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (Notification.permission === "denied") {
+      toast({
+        title: "Notifications are blocked",
+        description:
+          "Enable notifications from your browser settings, then refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission !== "granted") {
+      toast({
+        title: "Notifications disabled",
+        description:
+          "You denied notification permission. You can enable it in browser settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+  
+
+    toast({
+      title: "Notifications enabled",
+      description: "You'll be notified when grading is completed.",
+    });
+  } catch (error) {
+    toast({
+      title: "Notification setup failed",
+      description: "Please try again later.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsEnablingNotifications(false);
+  }
+};
+
+  const notificationButton = getNotificationButtonContent();
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar  no-scrollbar">
+        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
           {/* Banners Section */}
           {!isBannersLoading && banners.length > 0 && (
             <div className="mb-8">
               <BannerSlider banners={banners} autoSlideInterval={5000} />
             </div>
           )}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
@@ -358,12 +469,23 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold">My Courses</h2>
-              {enrollments.length > 0 && (
-                <Link to="/courses">
-                  <Button>Browse Courses</Button>
-                </Link>
-              )}
+              <div className="flex gap-3">
+                {enrollments.length > 0 && (
+                  <Link to="/courses">
+                    <Button>Browse Courses</Button>
+                  </Link>
+                )}
+                <Button
+                  variant={notificationButton.variant}
+                  onClick={handleEnableNotifications}
+                  disabled={notificationButton.disabled}
+                >
+                  {notificationButton.icon}
+                  {notificationButton.text}
+                </Button>
+              </div>
             </div>
+
             {isLoading ? (
               <div className="grid gap-6">
                 <LoadingSkeleton className="h-48" />
