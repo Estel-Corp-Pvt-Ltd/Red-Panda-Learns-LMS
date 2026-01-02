@@ -10,6 +10,22 @@ export const LEARNING_CONTENT = {
   ASSIGNMENT: "ASSIGNMENT",
 } as const;
 
+
+export const PLATFROM_TYPE = {
+  WEB: "WEB",
+  ANDROID : "ANDROID",  
+  IOS : "IOS",
+} as const;
+
+
+export const PUSH_NOTIFICATION_TYPE = {
+  SUCCESS: "SUCCESS",
+  WARNING: "WARNING",
+  ERROR: "ERROR",
+  GRADING: "GRADING"
+};
+
+
 export const LESSON_TYPE = {
   SLIDE_DECK: "SLIDE DECK",
   VIDEO_LECTURE: "VIDEO LECTURE",

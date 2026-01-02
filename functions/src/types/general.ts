@@ -34,6 +34,7 @@ import {
   COMPLAINT_SEVERITY,
   COMPLAINT_ACTION_TYPE,
   COMPLAINT_CATEGORY,
+  PLATFROM_TYPE,
 } from "../constants";
 
 export type AttributeType =
@@ -83,7 +84,8 @@ export type AnnouncementScope =
   (typeof ANNOUNCEMENT_SCOPE)[keyof typeof ANNOUNCEMENT_SCOPE];
 export type AnnouncementStatus =
   (typeof ANNOUNCEMENT_STATUS)[keyof typeof ANNOUNCEMENT_STATUS];
-
+// -- PLATFORM TYPE ---
+export type PlatformType = (typeof PLATFROM_TYPE)[keyof typeof PLATFROM_TYPE];
 // --- COMPLAINT ---
 export type ComplaintStatus =
   (typeof COMPLAINT_STATUS)[keyof typeof COMPLAINT_STATUS];

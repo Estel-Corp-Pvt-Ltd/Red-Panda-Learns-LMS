@@ -1,3 +1,5 @@
+import { isiOS } from "@tiptap/core";
+
 export const USER_ROLE = {
   STUDENT: "STUDENT",
   TEACHER: "TEACHER",
@@ -54,6 +56,20 @@ export const COURSE_STATUS = {
   PUBLISHED: "PUBLISHED",
   ARCHIVED: "ARCHIVED",
 } as const;
+
+
+export const PLATFROM_TYPE = {
+  WEB: "WEB",
+  ANDROID : "ANDROID",  
+  IOS : "IOS",
+} as const;
+
+export const PUSH_NOTIFICATION_TYPE = {
+  SUCCESS: "SUCCESS",
+  WARNING: "WARNING",
+  ERROR: "ERROR",
+  GRADING: "GRADING"
+};
 
 export const BUNDLE_STATUS = {
   DRAFT: "DRAFT",
