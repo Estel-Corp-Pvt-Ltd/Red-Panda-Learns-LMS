@@ -482,7 +482,7 @@ const Forum: React.FC = () => {
                 <Hash className="h-5 w-5 text-gray-500" />
                 <div>
                   <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedChannel.name} - <b>{course.title}</b>
+                    {selectedChannel.name}
                   </h1>
                   {selectedChannel.description && (
                     <p className="text-base text-muted-foreground">{selectedChannel.description}</p>

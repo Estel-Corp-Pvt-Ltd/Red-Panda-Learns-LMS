@@ -28,7 +28,7 @@ interface AdditionalTabProps {
   isForumEnabled: boolean;
   setIsForumEnabled: (value: boolean) => void;
   isWelcomeMessageEnabled: boolean;
-  setIsWelcomeMessageEnabled: (value: boolean) => void;
+  setIsEnrollAnnouncementEnabled: (value: boolean) => void;
   courseId?: string;
   courseTitle?: string;
   customCertificateName: string;
@@ -44,7 +44,7 @@ const AdditionalTab = ({
   isForumEnabled,
   setIsForumEnabled,
   isWelcomeMessageEnabled,
-  setIsWelcomeMessageEnabled,
+  setIsEnrollAnnouncementEnabled,
   courseId,
   courseTitle = "",
   customCertificateName,
@@ -76,11 +76,11 @@ const AdditionalTab = ({
   useEffect(() => {
     if (courseId) {
       loadChannels();
-      loadCourseWelcomeMessage();
+      loadEnrollAnnouncement();
     }
   }, [courseId]);
 
-  const loadCourseWelcomeMessage = async () => {
+  const loadEnrollAnnouncement = async () => {
     if (!courseId) return;
 
     setLoadingAnnouncement(true);
@@ -283,7 +283,7 @@ const AdditionalTab = ({
     }
   };
 
-  const handleToggleCourseWelcomeMessage = async (checked: boolean) => {
+  const handleToggleEnrollAnnouncement = async (checked: boolean) => {
     if (checked && (!announcementSubject.trim() || !announcementBody.trim())) {
       toast({
         title: 'Configuration Required',
@@ -293,7 +293,7 @@ const AdditionalTab = ({
       return;
     }
 
-    setIsWelcomeMessageEnabled(checked);
+    setIsEnrollAnnouncementEnabled(checked);
   };
 
   /**
@@ -454,20 +454,20 @@ const AdditionalTab = ({
         <div className="space-y-4 p-4 border rounded-lg">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label htmlFor="enable-welcome-message" className="text-base font-medium">
+              <Label htmlFor="enable-enroll-announcement" className="text-base font-medium">
                 Enable Welcome Message
               </Label>
               <p className="text-sm text-muted-foreground">
-                When enabled, a custom welcome message will be sent to students when they enroll in this course.
+                When enabled, a custom announcement will be sent to students when they enroll in this course.
                 <br />
                 Configure the subject and body below.
               </p>
             </div>
 
             <Switch
-              id="enable-welcome-message"
+              id="enable-enroll-announcement"
               checked={isWelcomeMessageEnabled}
-              onCheckedChange={handleToggleCourseWelcomeMessage}
+              onCheckedChange={handleToggleEnrollAnnouncement}
               className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
             />
           </div>
