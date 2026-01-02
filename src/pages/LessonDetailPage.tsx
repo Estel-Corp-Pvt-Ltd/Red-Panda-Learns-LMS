@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { learningProgressService } from "@/services/learningProgressService";
 import { LearningProgress } from "@/types/learning-progress";
 import { serverTimestamp } from "firebase/firestore";
-import { Edit2 } from "lucide-react";
+import { ChevronLeft, Edit2 } from "lucide-react";
 
 export default function LessonDetailPage() {
   const { param, lessonId } = useParams<{
@@ -297,9 +297,9 @@ export default function LessonDetailPage() {
       {/* Top info bar: Course (bigger) + Lesson (smaller) */}
       <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             <Link to={`/${user.role === USER_ROLE.ADMIN ? "admin" : "dashboard"}`}>
-              <Button>Back to Dashboard</Button>
+              <ChevronLeft className="h-10 w-10 hover:bg-primary hover:text-white rounded-md p-1" />
             </Link>
             <div className="min-w-0">
               {/* Course title bigger */}
