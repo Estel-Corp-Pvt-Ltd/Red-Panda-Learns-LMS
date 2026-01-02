@@ -13,7 +13,8 @@ import { learningProgressService } from '@/services/learningProgressService'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle } from 'lucide-react'
+import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle, Award, Edit } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const StudentEnrollments: React.FC = () => {
 
@@ -56,6 +57,13 @@ const StudentEnrollments: React.FC = () => {
     issuedCertificates: string[];
     skippedEnrollments: string[];
   } | null>(null);
+
+  // Edit Certificate Modal State
+  const [showEditCertificateModal, setShowEditCertificateModal] = useState(false);
+  const [editingEnrollment, setEditingEnrollment] = useState<Enrollment | null>(null);
+  const [editPreferredName, setEditPreferredName] = useState('');
+  const [editCompletionDate, setEditCompletionDate] = useState('');
+  const [editCertificateLoading, setEditCertificateLoading] = useState(false);
 
   const fetchEnrollments = useCallback(async (
     cursor?: DocumentSnapshot | null,
@@ -454,6 +462,70 @@ const StudentEnrollments: React.FC = () => {
     }
   };
 
+  // Edit Certificate Handlers
+  const handleOpenEditCertificate = (enrollment: Enrollment) => {
+    setEditingEnrollment(enrollment);
+    setEditPreferredName(enrollment.certification?.preferredName || '');
+
+    // Format completionDate for the date input
+    if (enrollment.completionDate && typeof enrollment.completionDate !== 'symbol') {
+      const date = (enrollment.completionDate as any).toDate ?
+        (enrollment.completionDate as any).toDate() :
+        new Date(enrollment.completionDate as any);
+      setEditCompletionDate(date.toISOString().split('T')[0]);
+    } else {
+      setEditCompletionDate('');
+    }
+
+    setShowEditCertificateModal(true);
+  };
+
+  const handleSaveEditCertificate = async () => {
+    if (!editingEnrollment) return;
+
+    setEditCertificateLoading(true);
+    try {
+      const completionDate = editCompletionDate ? new Date(editCompletionDate) : null;
+
+      const result = await enrollmentService.updateCertificateDetails(
+        editingEnrollment.id,
+        editPreferredName || null,
+        completionDate
+      );
+
+      if (result.success) {
+        toast({
+          title: "Certificate Updated",
+          description: "Certificate details have been updated successfully.",
+        });
+
+        // Refresh the enrollments list
+        await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate);
+
+        // Close modal and reset state
+        setShowEditCertificateModal(false);
+        setEditingEnrollment(null);
+        setEditPreferredName('');
+        setEditCompletionDate('');
+      } else {
+        toast({
+          title: "Update Failed",
+          description: typeof result.error === 'string' ? result.error : result.error?.message || "Failed to update certificate details.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating certificate:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setEditCertificateLoading(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
@@ -661,9 +733,6 @@ const StudentEnrollments: React.FC = () => {
                         Order ID
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Certificate Issued
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Remark
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -713,13 +782,26 @@ const StudentEnrollments: React.FC = () => {
                             {enrollment.orderId || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                            {enrollment.certification?.issued ? "Yes" : "No"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
                             {enrollment.certification?.remark || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex gap-2">
+                              {enrollment.certification?.issued ? (
+                                <>
+                                  <Link to={`/certificate/public/view/${enrollment.certification.certificateId}`} target="_blank" rel="noopener noreferrer" title="View Certificate">
+                                    <Award className="text-primary" />
+                                  </Link>
+                                  <button
+                                    onClick={() => handleOpenEditCertificate(enrollment)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                    title="Edit Certificate"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                </>
+                              ) : (
+                                <Award className="text-gray-400" />
+                              )}
                               {enrollment.status === ENROLLMENT_STATUS.ACTIVE && (
                                 <button
                                   onClick={() => handleUpdateEnrollmentStatus(enrollment.id, ENROLLMENT_STATUS.DROPPED)}
@@ -1113,6 +1195,86 @@ const StudentEnrollments: React.FC = () => {
             <DialogFooter>
               <Button onClick={() => setShowResultsModal(false)}>
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Certificate Modal */}
+        <Dialog open={showEditCertificateModal} onOpenChange={setShowEditCertificateModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Certificate Details</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Student and Course Info */}
+              {editingEnrollment && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-sm">
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {editingEnrollment.userName || editingEnrollment.userId}
+                    </div>
+                    <div className="text-gray-500 dark:text-gray-400">
+                      {editingEnrollment.courseName}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Preferred Name Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Preferred Name on Certificate
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter preferred name..."
+                  value={editPreferredName}
+                  onChange={(e) => setEditPreferredName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Completion Date Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Completion Date
+                </label>
+                <Input
+                  type="date"
+                  value={editCompletionDate}
+                  onChange={(e) => setEditCompletionDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditCertificateModal(false);
+                  setEditingEnrollment(null);
+                  setEditPreferredName('');
+                  setEditCompletionDate('');
+                }}
+                disabled={editCertificateLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveEditCertificate}
+                disabled={editCertificateLoading}
+              >
+                {editCertificateLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
