@@ -435,6 +435,8 @@ class EnrollmentService {
           bundleId: data.bundleId || '',
           enrollmentDate: data.enrollmentDate,
           status: data.status,
+          completionDate: data.completionDate || null,
+          certification: data.certification || null,
           orderId: data.orderId || '',
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,

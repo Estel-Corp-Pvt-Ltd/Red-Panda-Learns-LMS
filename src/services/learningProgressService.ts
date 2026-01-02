@@ -45,7 +45,6 @@ class LearningProgressService {
         currentLessonId: null,
         lastAccessed: serverTimestamp(),
         lessonHistory: {},
-        completionDate: null,
         updatedAt: serverTimestamp(),
       };
 
@@ -225,41 +224,32 @@ class LearningProgressService {
         return fail("Only ADMIN can issue certificates");
       }
 
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      const enrollmentSnap = await getDoc(enrollmentRef);
 
-      const snapshot = await getDocs(progressQuery);
-
-      if (snapshot.empty) {
-        return fail("Learning progress not found");
+      if (!enrollmentSnap.exists()) {
+        return fail("Enrollment not found");
       }
 
-      const progressDoc = snapshot.docs[0];
-      const progressData = progressDoc.data() as LearningProgress;
+      const enrollmentData = enrollmentSnap.data() as Enrollment;
 
-      if (!progressData.completionDate) {
+      if (!enrollmentData.completionDate) {
         return fail("Course not completed yet");
       }
 
-      if (progressData.certification?.issued) {
+      if (enrollmentData.certification?.issued) {
         return ok(false);
       }
 
-      await updateDoc(
-        doc(db, COLLECTION.LEARNING_PROGRESS, progressDoc.id),
-        {
-          certification: {
-            issued: true,
-            issuedAt: serverTimestamp(),
-            // later do on server
-            certificateId: crypto.randomUUID(),
-          },
-          updatedAt: serverTimestamp(),
-        }
-      );
+      await updateDoc(enrollmentRef, {
+        certification: {
+          issued: true,
+          issuedAt: serverTimestamp(),
+          certificateId: crypto.randomUUID(),
+        },
+        updatedAt: serverTimestamp(),
+      });
 
       return ok(true);
 
@@ -277,25 +267,21 @@ class LearningProgressService {
     courseId: string
   ): Promise<Result<{ completionDate: string | null; certificateId: string | null; }>> {
     try {
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      const enrollmentSnap = await getDoc(enrollmentRef);
 
-      const snapshot = await getDocs(progressQuery);
-
-      if (snapshot.empty) {
+      if (!enrollmentSnap.exists()) {
         return ok(null);
       }
 
-      const progressData = snapshot.docs[0].data() as LearningProgress;
+      const enrollmentData = enrollmentSnap.data() as Enrollment;
 
-      const formattedDate = formatDate(progressData.completionDate);
+      const formattedDate = formatDate(enrollmentData.completionDate);
 
       return ok({
         completionDate: formattedDate === "—" ? null : formattedDate,
-        certificateId: progressData.certification.certificateId
+        certificateId: enrollmentData.certification?.certificateId || null
       });
 
     } catch (error: any) {
@@ -311,7 +297,7 @@ class LearningProgressService {
   }
 
   /**
- * Sets or updates the certification remark for a user's course progress.
+ * Sets or updates the certification remark for a user's course enrollment.
  *
  * @param userId - ID of the student
  * @param courseId - ID of the course
@@ -323,24 +309,19 @@ class LearningProgressService {
     remark: string | null
   ): Promise<Result<boolean>> {
     try {
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      const enrollmentSnap = await getDoc(enrollmentRef);
 
-      const snapshot = await getDocs(progressQuery);
-
-      if (snapshot.empty) {
-        return fail("Learning progress not found");
+      if (!enrollmentSnap.exists()) {
+        return fail("Enrollment not found");
       }
 
-      const progressDoc = snapshot.docs[0];
-      const progressRef = progressDoc.ref;
+      const enrollmentData = enrollmentSnap.data() as Enrollment;
 
-      await updateDoc(progressRef, {
+      await updateDoc(enrollmentRef, {
         certification: {
-          ...(progressDoc.data().certification || {}),
+          ...(enrollmentData.certification || {}),
           remark: remark || null,
         },
         updatedAt: serverTimestamp(),
@@ -360,7 +341,7 @@ class LearningProgressService {
   async getCertificateByCertificateId(certificateId: string) {
     try {
       const q = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
+        collection(db, COLLECTION.ENROLLMENTS),
         where("certification.certificateId", "==", certificateId),
         where("certification.issued", "==", true)
       );
@@ -371,34 +352,14 @@ class LearningProgressService {
         return fail("Certificate not found");
       }
 
-      const progressDoc = snapshot.docs[0];
-      const progressData = progressDoc.data() as LearningProgress;
+      const enrollmentDoc = snapshot.docs[0];
+      const enrollment = enrollmentDoc.data() as Enrollment;
 
-      const { userId, courseId, completionDate } = progressData;
-
-      const enrollmentId = `${userId}_${courseId}`;
-
-      const enrollmentRef = doc(
-        db,
-        COLLECTION.ENROLLMENTS,
-        enrollmentId
-      );
-      const enrollmentSnap = await getDoc(enrollmentRef);
-
-      if (!enrollmentSnap.exists()) {
-        return fail("Enrollment not found");
-      }
-
-      const enrollment: Enrollment = {
-        id: enrollmentSnap.id,
-        ...(enrollmentSnap.data() as Enrollment),
-      };
-
-      const formattedCompletionDate = formatDate(completionDate);
+      const formattedCompletionDate = formatDate(enrollment.completionDate);
 
       return ok({
-        userName: progressData.certification.prefferedNAmeOnCertificate || enrollment.userName,
-        courseId: progressData.courseId,
+        userName: enrollment.certification?.preferredName || enrollment.userName,
+        courseId: enrollment.courseId,
         courseName: enrollment.courseName,
         completionDate: formattedCompletionDate === "—" ? null : formattedCompletionDate,
       });
@@ -415,39 +376,34 @@ class LearningProgressService {
   }
 
 
-    /**
-   * Updates the preferred name on the certificate for a user's course progress.
-   *
-   * @param userId - ID of the student
-   * @param courseId - ID of the course
-   * @param preferredName - The preferred name to be displayed on the certificate
-   * @returns A Result object indicating success or failure.
-   */
+  /**
+ * Updates the preferred name on the certificate for a user's course enrollment.
+ *
+ * @param userId - ID of the student
+ * @param courseId - ID of the course
+ * @param preferredName - The preferred name to be displayed on the certificate
+ * @returns A Result object indicating success or failure.
+ */
   async updatePreferredNameOnCertificate(
     userId: string,
     courseId: string,
     preferredName: string | null
   ): Promise<Result<boolean>> {
     try {
-      const progressQuery = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId)
-      );
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      const enrollmentSnap = await getDoc(enrollmentRef);
 
-      const snapshot = await getDocs(progressQuery);
-
-      if (snapshot.empty) {
-        return fail("Learning progress not found");
+      if (!enrollmentSnap.exists()) {
+        return fail("Enrollment not found");
       }
 
-      const progressDoc = snapshot.docs[0];
-      const progressRef = progressDoc.ref;
+      const enrollmentData = enrollmentSnap.data() as Enrollment;
 
-      await updateDoc(progressRef, {
+      await updateDoc(enrollmentRef, {
         certification: {
-          ...(progressDoc.data().certification || {}),
-          prefferedNAmeOnCertificate: preferredName || null,
+          ...(enrollmentData.certification || {}),
+          preferredName: preferredName || null,
         },
         updatedAt: serverTimestamp(),
       });
@@ -486,22 +442,17 @@ class LearningProgressService {
       for (let i = 0; i < pairs.length; i += READ_CONCURRENCY) {
         const chunk = pairs.slice(i, i + READ_CONCURRENCY);
 
-        const snaps = await Promise.all(
-          chunk.map(({ userId, courseId }) =>
-            getDocs(
-              query(
-                collection(db, COLLECTION.LEARNING_PROGRESS),
-                where("userId", "==", userId),
-                where("courseId", "==", courseId)
-              )
-            )
-          )
+        const enrollmentDocs = await Promise.all(
+          chunk.map(({ userId, courseId }) => {
+            const enrollmentId = `${userId}_${courseId}`;
+            return getDoc(doc(db, COLLECTION.ENROLLMENTS, enrollmentId));
+          })
         );
 
-        snaps.forEach((snap, index) => {
+        enrollmentDocs.forEach((enrollmentSnap, index) => {
           const { userId, courseId } = chunk[index];
 
-          if (snap.empty) {
+          if (!enrollmentSnap.exists()) {
             results.push({
               userId,
               courseId,
@@ -511,12 +462,12 @@ class LearningProgressService {
             return;
           }
 
-          const progress = snap.docs[0].data() as LearningProgress;
+          const enrollment = enrollmentSnap.data() as Enrollment;
           results.push({
             userId,
             courseId,
-            isCertificateIssued: progress.certification?.issued === true,
-            remark: progress.certification?.remark || "N/A"
+            isCertificateIssued: enrollment.certification?.issued === true,
+            remark: enrollment.certification?.remark || "N/A"
           });
         });
       }
@@ -536,49 +487,45 @@ class LearningProgressService {
   }
 
 
-/**
- * Checks if the preferred name is set for the certificate in the user's course progress.
- *
- * @param userId - ID of the student
- * @param courseId - ID of the course
- * @returns A Result object containing the preferred name if set, or null if not.
- */
-async isPreferredNameSetForCertificate(
-  userId: string,
-  courseId: string
-): Promise<Result<string | null>> {
-  try {
-    const progressQuery = query(
-      collection(db, COLLECTION.LEARNING_PROGRESS),
-      where("userId", "==", userId),
-      where("courseId", "==", courseId)
-    );
+  /**
+   * Checks if the preferred name is set for the certificate in the user's course enrollment.
+   *
+   * @param userId - ID of the student
+   * @param courseId - ID of the course
+   * @returns A Result object containing the preferred name if set, or null if not.
+   */
+  async isPreferredNameSetForCertificate(
+    userId: string,
+    courseId: string
+  ): Promise<Result<string | null>> {
+    try {
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      const enrollmentSnap = await getDoc(enrollmentRef);
 
-    const snapshot = await getDocs(progressQuery);
+      if (!enrollmentSnap.exists()) {
+        return fail("Enrollment not found");
+      }
 
-    if (snapshot.empty) {
-      return fail("Learning progress not found");
+      const enrollmentData = enrollmentSnap.data() as Enrollment;
+
+      // Check if preferredName exists
+      const preferredName = enrollmentData.certification?.preferredName;
+
+      if (preferredName && preferredName.trim() !== "") {
+        return ok(preferredName);  // Return the preferred name if set
+      }
+
+      return ok(null);  // Return null if the preferred name is not set
+
+    } catch (error: any) {
+      logError("LearningProgressService.isPreferredNameSetForCertificate", error);
+      return fail(
+        "Failed to check if preferred name is set for certificate",
+        error.code || error.message
+      );
     }
-
-    const progressData = snapshot.docs[0].data() as LearningProgress;
-
-    // Check if preferredNameOnCertificate exists
-    const preferredName = progressData.certification?.prefferedNAmeOnCertificate;
-
-    if (preferredName && preferredName.trim() !== "") {
-      return ok(preferredName);  // Return the preferred name if set
-    }
-
-    return ok(null);  // Return null if the preferred name is not set
-
-  } catch (error: any) {
-    logError("LearningProgressService.isPreferredNameSetForCertificate", error);
-    return fail(
-      "Failed to check if preferred name is set for certificate",
-      error.code || error.message
-    );
   }
-}
 
 
 

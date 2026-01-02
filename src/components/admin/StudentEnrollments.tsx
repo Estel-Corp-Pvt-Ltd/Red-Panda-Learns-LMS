@@ -25,8 +25,6 @@ const StudentEnrollments: React.FC = () => {
     previousCursor: null,
     totalCount: 0
   });
-  const [enrollmentCertificateInfo, setEnrollmentCertificateInfo] = useState<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; }[]>([]);
-
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState<'courseName' | 'userName' | 'userEmail'>('courseName');
@@ -116,27 +114,8 @@ const StudentEnrollments: React.FC = () => {
       })
 
       if (response.success && response.data) {
+        console.log('Fetched enrollments:', response.data);
         setEnrollments(response.data);
-
-        const progressIdentifiers = response
-          .data
-          .data
-          .map(e => ({
-            userId: e.userId,
-            courseId: e.courseId
-          }));
-
-        const certificateInfoResponse = await learningProgressService.getCertificateStatusForPairs(progressIdentifiers);
-        if (!certificateInfoResponse.success) {
-          setEnrollmentCertificateInfo([]);
-          toast({
-            title: "Certificate status info fetching failed"
-          });
-        } else {
-          setEnrollmentCertificateInfo(certificateInfoResponse.data);
-        }
-        // Clear selection when data changes
-        setSelectedEnrollments(new Set());
       }
     } catch (error) {
       console.error('Error fetching enrollments:', error)
@@ -388,12 +367,7 @@ const StudentEnrollments: React.FC = () => {
       setBulkCertificateData(progressData);
 
       // Initialize modal selections with enrollment IDs that don't have certificates yet
-      const enrollmentsWithoutCertificates = selectedEnrollmentsList.filter(e => {
-        const certInfo = enrollmentCertificateInfo.find(
-          info => info.courseId === e.courseId && info.userId === e.userId
-        );
-        return !certInfo?.isCertificateIssued;
-      });
+      const enrollmentsWithoutCertificates = selectedEnrollmentsList.filter(e => !e.certification?.issued);
       setSelectedModalEnrollments(new Set(enrollmentsWithoutCertificates.map(e => e.id)));
     } catch (error) {
       console.error('Error fetching progress data:', error);
@@ -426,10 +400,7 @@ const StudentEnrollments: React.FC = () => {
     const progressIdentifiers = enrollments
       .data
       .filter(e => selectedModalEnrollments.has(e.id))
-      .map(e => ({
-        userId: e.userId,
-        courseId: e.courseId
-      }));
+      .map(e => e.id);
 
     try {
       const idToken = await authService.getToken();
@@ -742,12 +713,10 @@ const StudentEnrollments: React.FC = () => {
                             {enrollment.orderId || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                            {
-                              (enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.isCertificateIssued ? "Yes" : "No")
-                            }
+                            {enrollment.certification?.issued ? "Yes" : "No"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                            {enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.remark || 'N/A'}
+                            {enrollment.certification?.remark || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex gap-2">
@@ -938,9 +907,7 @@ const StudentEnrollments: React.FC = () => {
                       </thead>
                       <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                         {getSortedData().map((data, index) => {
-                          const hasCertificate = enrollmentCertificateInfo.find(
-                            info => info.courseId === data.enrollment.courseId && info.userId === data.enrollment.userId
-                          )?.isCertificateIssued;
+                          const hasCertificate = data.enrollment.certification?.issued;
 
                           return (
                             <tr

@@ -15,12 +15,5 @@ export interface LearningProgress {
       completedAt: Timestamp | FieldValue | null;
     };
   };
-  certification?: {
-    issued: boolean;
-    issuedAt: Timestamp | FieldValue;
-    certificateId: string;
-    grade?: number | string | null;
-  };
-  completionDate: Timestamp | FieldValue | null;
   updatedAt: Timestamp | FieldValue;
 };
