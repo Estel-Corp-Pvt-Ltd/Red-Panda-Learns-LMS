@@ -57,7 +57,7 @@ const InvoicePage: React.FC = () => {
       description: item.name,
       quantity: 1,
       rate: (item.amount - (item.amount) * 0.18) * order.exchangeRate,
-      hsnSac: "998314",
+      hsnSac: "999293",
       gstPercentage: 18,
       gstAmount: ((item.amount) * 0.18) * order.exchangeRate,
       amount: item.amount * order.exchangeRate
