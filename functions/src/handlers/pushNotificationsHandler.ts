@@ -17,7 +17,7 @@ async function sendSubmissionGradedNotificationHandler(req: Request, res: Respon
       return;
     }
 
-    const { submissionId, title, body, marks, assignmentTitle } = req.body;
+    const { submissionId, title, body, marks, assignmentTitle, isReevaluated } = req.body;
 
     if (!submissionId || !title || !body) {
       res.status(400).json({ error: "Missing required fields" });
@@ -53,7 +53,8 @@ async function sendSubmissionGradedNotificationHandler(req: Request, res: Respon
         email,
         userName || firstName || "Student",
         marks,
-        assignmentTitle || "Assignment"
+        assignmentTitle || "Assignment",
+        isReevaluated || false
       );
       if (!result.success) {
         console.error("Error sending graded assignment email:", result.error);

@@ -403,11 +403,15 @@ const AllSubmissionsPage = () => {
         console.error("No ID token found — user not authenticated");
       }
 
+      const isReevaluated =
+        selectedSubmission.marks !== null && selectedSubmission.marks !== undefined;
+
       await pushNotificationService.sendGradedNotification(
         selectedSubmission.id!,
         numericMarks,
         getAssignmentTitle(selectedSubmission),
-        idToken
+        idToken,
+        isReevaluated
       );
       closeGradeModal();
     } catch (error) {
@@ -435,39 +439,39 @@ const AllSubmissionsPage = () => {
     }
   };
 
-// Replace the existing getAssignmentTitle function with this
-const getAssignmentTitle = useCallback(
-  (submission: AssignmentSubmission | null): string => {
-    // Handle null submission
-    if (!submission) {
-      return "";
-    }
+  // Replace the existing getAssignmentTitle function with this
+  const getAssignmentTitle = useCallback(
+    (submission: AssignmentSubmission | null): string => {
+      // Handle null submission
+      if (!submission) {
+        return "";
+      }
 
-    // First priority: use assignmentTitle from submission document
-    if (submission.assignmentTitle) {
-      return submission.assignmentTitle;
-    }
+      // First priority: use assignmentTitle from submission document
+      if (submission.assignmentTitle) {
+        return submission.assignmentTitle;
+      }
 
-    // Second priority: check cache
-    if (assignmentTitle[submission.assignmentId]) {
-      return assignmentTitle[submission.assignmentId];
-    }
+      // Second priority: check cache
+      if (assignmentTitle[submission.assignmentId]) {
+        return assignmentTitle[submission.assignmentId];
+      }
 
-    // Third priority: find in allAssignments and cache it
-    const assignment = allAssignments.find((a) => a.id === submission.assignmentId);
-    if (assignment?.title) {
-      setAssignmentTitle((prev) => ({
-        ...prev,
-        [submission.assignmentId]: assignment.title,
-      }));
-      return assignment.title;
-    }
+      // Third priority: find in allAssignments and cache it
+      const assignment = allAssignments.find((a) => a.id === submission.assignmentId);
+      if (assignment?.title) {
+        setAssignmentTitle((prev) => ({
+          ...prev,
+          [submission.assignmentId]: assignment.title,
+        }));
+        return assignment.title;
+      }
 
-    // Fallback: return assignmentId
-    return submission.assignmentId;
-  },
-  [allAssignments, assignmentTitle]
-);
+      // Fallback: return assignmentId
+      return submission.assignmentId;
+    },
+    [allAssignments, assignmentTitle]
+  );
   const getGradeText = (submission: AssignmentSubmission) => {
     return submission.marks !== undefined && submission.marks !== null
       ? `${submission.marks}`
@@ -1081,10 +1085,14 @@ const getAssignmentTitle = useCallback(
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle className="text-lg">Grade Submission</DialogTitle>
+            <DialogTitle className="text-lg">
+              {selectedSubmission &&
+              (selectedSubmission.marks === null || selectedSubmission.marks === undefined)
+                ? "Grade Submission"
+                : "Re-grade Submission"}
+            </DialogTitle>
             <DialogDescription>
-              {selectedSubmission?.studentName} -{" "}
-              {getAssignmentTitle(selectedSubmission)}
+              {selectedSubmission?.studentName} - {getAssignmentTitle(selectedSubmission)}
             </DialogDescription>
           </DialogHeader>
 
