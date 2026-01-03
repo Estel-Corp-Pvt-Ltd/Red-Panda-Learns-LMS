@@ -1,7 +1,8 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect } from "react";
 import { Address, InvoiceData } from "../types/invoice";
-import { Button } from './ui/button';
-import { amountToWords } from '@/utils/currency';
+import { Button } from "./ui/button";
+import { amountToWords } from "@/utils/currency";
+import { Printer } from "lucide-react";
 
 interface InvoiceComponentProps {
   invoiceData: InvoiceData;
@@ -11,8 +12,8 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const formatCurrency = (amount: number, currency: string): string => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
       currency: currency,
@@ -34,18 +35,38 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
     window.print();
   };
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    // Store previous state (optional, but clean)
+    const hadDarkClass = html.classList.contains("dark");
+
+    // Force light mode
+    html.classList.remove("dark");
+    body.classList.remove("dark");
+
+    return () => {
+      // Restore previous state when leaving page
+      if (hadDarkClass) {
+        html.classList.add("dark");
+        body.classList.add("dark");
+      }
+    };
+  }, []);
+
   // Handle Ctrl+P keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
+      if ((event.ctrlKey || event.metaKey) && event.key === "p") {
         event.preventDefault();
         handlePrint();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
@@ -63,18 +84,18 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
       // SGST and CGST - each half of total tax
       const sgstCgstAmount = invoiceData.totalTax / 2;
       return {
-        type: 'SGST_CGST' as const,
+        type: "SGST_CGST" as const,
         sgstAmount: sgstCgstAmount,
         cgstAmount: sgstCgstAmount,
-        igstAmount: 0
+        igstAmount: 0,
       };
     } else {
       // IGST
       return {
-        type: 'IGST' as const,
+        type: "IGST" as const,
         sgstAmount: 0,
         cgstAmount: 0,
-        igstAmount: invoiceData.totalTax
+        igstAmount: invoiceData.totalTax,
       };
     }
   };
@@ -87,9 +108,10 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
       <div className="no-print mb-6 flex justify-end print:hidden">
         <Button
           onClick={handlePrint}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow hover:shadow-md transition-all duration-200"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow hover:shadow-md transition-all duration-200 flex items-center gap-2"
         >
-          🖨️ Print Invoice (Ctrl+P)
+          <Printer className="w-4 h-4" />
+          Print Invoice (Ctrl+P)
         </Button>
       </div>
 
@@ -142,7 +164,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
             <div className="">
               <table className="w-full text-sm print:text-sm">
                 <tr>
-                  <td className='border p-2'>
+                  <td className="border p-2">
                     <table>
                       <tr>
                         <td>#</td>
@@ -150,19 +172,19 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                       </tr>
                       <tr>
                         <td>Invoice Date</td>
-                        <td className='pl-2'>: {invoiceData.invoiceDate} (UTC)</td>
+                        <td className="pl-2">: {invoiceData.invoiceDate} (UTC)</td>
                       </tr>
                       <tr>
                         <td>Terms</td>
-                        <td className='pl-2'>: {invoiceData.terms}</td>
+                        <td className="pl-2">: {invoiceData.terms}</td>
                       </tr>
                       <tr>
                         <td>Due Date</td>
-                        <td className='pl-2'>: {invoiceData.dueDate}</td>
+                        <td className="pl-2">: {invoiceData.dueDate}</td>
                       </tr>
                     </table>
                   </td>
-                  <td className='border p-2'>
+                  <td className="border p-2">
                     <table>
                       <tr>
                         <td>Place Of Supply</td>
@@ -176,17 +198,17 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                   </td>
                 </tr>
                 <tr>
-                  <td className='border bg-gray-200 p-2'>Bill To</td>
-                  <td className='border bg-gray-200 p-2'>Ship To</td>
+                  <td className="border bg-gray-200 p-2">Bill To</td>
+                  <td className="border bg-gray-200 p-2">Ship To</td>
                 </tr>
-                <tr className=''>
-                  <td className='border p-2'>
+                <tr className="">
+                  <td className="border p-2">
                     <p>{invoiceData.billTo?.name}</p>
                     {billToAddressLines.map((line, index) => (
                       <p key={index}>{line}</p>
                     ))}
                   </td>
-                  <td className='border p-2'>
+                  <td className="border p-2">
                     <p>{invoiceData.shipTo?.name}</p>
                     {shipToAddressLines.map((line, index) => (
                       <p key={index}>{line}</p>
@@ -201,43 +223,94 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
               <table className="items-table w-full border border-gray-300 text-xs print:border print:text-xs">
                 <thead>
                   <tr className="bg-gray-100 print:bg-gray-100">
-                    <th rowSpan={2} className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">#</th>
-                    <th rowSpan={2} className="border border-gray-300 p-1 text-left font-semibold print:border print:p-1 print:font-semibold">Item & Description</th>
-                    <th rowSpan={2} className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">HSN/SAC</th>
-                    <th rowSpan={2} className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">Qty</th>
-                    <th rowSpan={2} className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">Rate</th>
+                    <th
+                      rowSpan={2}
+                      className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold"
+                    >
+                      #
+                    </th>
+                    <th
+                      rowSpan={2}
+                      className="border border-gray-300 p-1 text-left font-semibold print:border print:p-1 print:font-semibold"
+                    >
+                      Item & Description
+                    </th>
+                    <th
+                      rowSpan={2}
+                      className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold"
+                    >
+                      HSN/SAC
+                    </th>
+                    <th
+                      rowSpan={2}
+                      className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold"
+                    >
+                      Qty
+                    </th>
+                    <th
+                      rowSpan={2}
+                      className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold"
+                    >
+                      Rate
+                    </th>
 
                     {/* Dynamic GST Header based on state */}
                     {isSameState ? (
                       <>
-                        <th colSpan={2} className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">
+                        <th
+                          colSpan={2}
+                          className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold"
+                        >
                           SGST
                         </th>
-                        <th colSpan={2} className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">
+                        <th
+                          colSpan={2}
+                          className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold"
+                        >
                           CGST
                         </th>
                       </>
                     ) : (
-                      <th colSpan={2} className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">
+                      <th
+                        colSpan={2}
+                        className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold"
+                      >
                         IGST
                       </th>
                     )}
 
-                    <th rowSpan={2} className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">Amount</th>
+                    <th
+                      rowSpan={2}
+                      className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold"
+                    >
+                      Amount
+                    </th>
                   </tr>
                   <tr className="bg-gray-100 print:bg-gray-100">
                     {/* Dynamic GST Sub-headers */}
                     {isSameState ? (
                       <>
-                        <th className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">%</th>
-                        <th className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">Amt</th>
-                        <th className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">%</th>
-                        <th className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">Amt</th>
+                        <th className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">
+                          %
+                        </th>
+                        <th className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">
+                          Amt
+                        </th>
+                        <th className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">
+                          %
+                        </th>
+                        <th className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">
+                          Amt
+                        </th>
                       </>
                     ) : (
                       <>
-                        <th className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">%</th>
-                        <th className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">Amt</th>
+                        <th className="border border-gray-300 p-1 text-center font-semibold print:border print:p-1 print:font-semibold">
+                          %
+                        </th>
+                        <th className="border border-gray-300 p-1 text-right font-semibold print:border print:p-1 print:font-semibold">
+                          Amt
+                        </th>
                       </>
                     )}
                   </tr>
@@ -254,31 +327,55 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
 
                     return (
                       <tr key={index}>
-                        <td className="border border-gray-300 p-1 text-center print:border print:p-1">{index + 1}</td>
-                        <td className="border border-gray-300 p-1 print:border print:p-1">{item.description}</td>
-                        <td className="border border-gray-300 p-1 text-center print:border print:p-1">{item.hsnSac}</td>
-                        <td className="border border-gray-300 p-1 text-center print:border print:p-1">{item.quantity.toFixed(2)}</td>
-                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(item.rate, invoiceData.currency)}</td>
+                        <td className="border border-gray-300 p-1 text-center print:border print:p-1">
+                          {index + 1}
+                        </td>
+                        <td className="border border-gray-300 p-1 print:border print:p-1">
+                          {item.description}
+                        </td>
+                        <td className="border border-gray-300 p-1 text-center print:border print:p-1">
+                          {item.hsnSac}
+                        </td>
+                        <td className="border border-gray-300 p-1 text-center print:border print:p-1">
+                          {item.quantity.toFixed(2)}
+                        </td>
+                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">
+                          {formatCurrency(item.rate, invoiceData.currency)}
+                        </td>
 
                         {/* Dynamic GST columns */}
                         {isSameState ? (
                           <>
                             {/* SGST Columns */}
-                            <td className="border border-gray-300 p-1 text-center print:border print:p-1">{itemSgstCgstPercentage.toFixed(2)}%</td>
-                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemSgstCgstAmount, invoiceData.currency)}</td>
+                            <td className="border border-gray-300 p-1 text-center print:border print:p-1">
+                              {itemSgstCgstPercentage.toFixed(2)}%
+                            </td>
+                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">
+                              {formatCurrency(itemSgstCgstAmount, invoiceData.currency)}
+                            </td>
                             {/* CGST Columns */}
-                            <td className="border border-gray-300 p-1 text-center print:border print:p-1">{itemSgstCgstPercentage.toFixed(2)}%</td>
-                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemSgstCgstAmount, invoiceData.currency)}</td>
+                            <td className="border border-gray-300 p-1 text-center print:border print:p-1">
+                              {itemSgstCgstPercentage.toFixed(2)}%
+                            </td>
+                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">
+                              {formatCurrency(itemSgstCgstAmount, invoiceData.currency)}
+                            </td>
                           </>
                         ) : (
                           <>
                             {/* IGST Columns */}
-                            <td className="border border-gray-300 p-1 text-center print:border print:p-1">{itemGstPercentage}%</td>
-                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(itemGstAmount, invoiceData.currency)}</td>
+                            <td className="border border-gray-300 p-1 text-center print:border print:p-1">
+                              {itemGstPercentage}%
+                            </td>
+                            <td className="border border-gray-300 p-1 text-right print:border print:p-1">
+                              {formatCurrency(itemGstAmount, invoiceData.currency)}
+                            </td>
                           </>
                         )}
 
-                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">{formatCurrency(item.amount, invoiceData.currency)}</td>
+                        <td className="border border-gray-300 p-1 text-right print:border print:p-1">
+                          {formatCurrency(item.amount, invoiceData.currency)}
+                        </td>
                       </tr>
                     );
                   })}
@@ -289,13 +386,17 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
             {/* Totals Section */}
             <div className="totals-section flex flex-col md:flex-row mb-4 print:flex print:flex-row print:mb-4">
               <div className="notes-section flex-1 mb-4 md:mb-0 md:pr-4 print:flex-1 print:pr-4">
-                <h4 className="font-semibold text-gray-900 mb-1 text-sm print:font-semibold print:mb-1 print:text-sm">Total In Words</h4>
+                <h4 className="font-semibold text-gray-900 mb-1 text-sm print:font-semibold print:mb-1 print:text-sm">
+                  Total In Words
+                </h4>
                 <p className="text-xs text-gray-700 italic mb-2 print:text-xs print:italic print:mb-2">
                   <em>{amountToWords(invoiceData.total, invoiceData.currency)}</em>
                 </p>
                 {invoiceData.note && (
                   <>
-                    <h4 className="font-semibold text-gray-900 mb-1 text-sm print:font-semibold print:mb-1 print:text-sm">Notes</h4>
+                    <h4 className="font-semibold text-gray-900 mb-1 text-sm print:font-semibold print:mb-1 print:text-sm">
+                      Notes
+                    </h4>
                     <div className="text-xs text-gray-700 space-y-0.5 print:text-xs print:space-y-0.5">
                       <pre>{invoiceData.note}</pre>
                     </div>
@@ -307,40 +408,70 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                 <table className="w-full text-sm print:text-sm">
                   <tbody>
                     <tr>
-                      <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">Sub Total</td>
-                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(invoiceData.subtotal, invoiceData.currency)}</td>
+                      <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">
+                        Sub Total
+                      </td>
+                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">
+                        {formatCurrency(invoiceData.subtotal, invoiceData.currency)}
+                      </td>
                     </tr>
 
                     {/* Dynamic GST rows based on state */}
                     {isSameState ? (
                       <>
                         <tr>
-                          <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">SGST</td>
-                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.sgstAmount, invoiceData.currency)}</td>
+                          <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">
+                            SGST
+                          </td>
+                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">
+                            {formatCurrency(gstBreakdown.sgstAmount, invoiceData.currency)}
+                          </td>
                         </tr>
                         <tr>
-                          <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">CGST</td>
-                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.cgstAmount, invoiceData.currency)}</td>
+                          <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">
+                            CGST
+                          </td>
+                          <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">
+                            {formatCurrency(gstBreakdown.cgstAmount, invoiceData.currency)}
+                          </td>
                         </tr>
                       </>
                     ) : (
                       <tr>
-                        <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">IGST</td>
-                        <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">{formatCurrency(gstBreakdown.igstAmount, invoiceData.currency)}</td>
+                        <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">
+                          IGST
+                        </td>
+                        <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">
+                          {formatCurrency(gstBreakdown.igstAmount, invoiceData.currency)}
+                        </td>
                       </tr>
                     )}
 
                     <tr className="total-row border-t border-gray-400 print:border-t">
-                      <td className="total-label text-right font-bold text-gray-900 py-1 pr-2 print:font-bold print:py-1 print:pr-2"><strong>Total</strong></td>
-                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2"><strong>{formatCurrency(invoiceData.total, invoiceData.currency)}</strong></td>
+                      <td className="total-label text-right font-bold text-gray-900 py-1 pr-2 print:font-bold print:py-1 print:pr-2">
+                        <strong>Total</strong>
+                      </td>
+                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2">
+                        <strong>{formatCurrency(invoiceData.total, invoiceData.currency)}</strong>
+                      </td>
                     </tr>
                     <tr>
-                      <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">Payment Made</td>
-                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">(-) {formatCurrency(invoiceData.paymentMade, invoiceData.currency)}</td>
+                      <td className="total-label text-right font-semibold text-gray-700 py-1 pr-2 print:font-semibold print:py-1 print:pr-2">
+                        Payment Made
+                      </td>
+                      <td className="total-value text-right text-gray-900 py-1 pl-2 print:py-1 print:pl-2">
+                        (-) {formatCurrency(invoiceData.paymentMade, invoiceData.currency)}
+                      </td>
                     </tr>
                     <tr className="balance-row border-t border-gray-400 print:border-t">
-                      <td className="total-label text-right font-bold text-gray-900 py-1 pr-2 print:font-bold print:py-1 print:pr-2"><strong>Balance Due</strong></td>
-                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2"><strong>{formatCurrency(invoiceData.balanceDue, invoiceData.currency)}</strong></td>
+                      <td className="total-label text-right font-bold text-gray-900 py-1 pr-2 print:font-bold print:py-1 print:pr-2">
+                        <strong>Balance Due</strong>
+                      </td>
+                      <td className="total-value text-right font-bold text-gray-900 py-1 pl-2 print:font-bold print:py-1 print:pl-2">
+                        <strong>
+                          {formatCurrency(invoiceData.balanceDue, invoiceData.currency)}
+                        </strong>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -360,16 +491,45 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
             {/* Policy Links Section */}
             <div className="policy-links border-t border-gray-300 pt-4 mt-36 text-center print:border-t print:pt-4 print:mt-36">
               <p className="text-xs text-gray-600 mb-1 print:text-xs print:mb-1">
-                <a href="https://vizuara.ai/terms" target="_blank" rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 print:text-black">Payment Terms and Conditions</a> |
-                <a href="https://vizuara.ai/privacy" target="_blank" rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 print:text-black"> Privacy Policy</a> |
-                <a href="https://vizuara.ai/refund-policy" target="_blank" rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 print:text-black"> Refund Policy</a>
+                <a
+                  href="https://vizuara.ai/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 print:text-black"
+                >
+                  Payment Terms and Conditions
+                </a>{" "}
+                |
+                <a
+                  href="https://vizuara.ai/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 print:text-black"
+                >
+                  {" "}
+                  Privacy Policy
+                </a>{" "}
+                |
+                <a
+                  href="https://vizuara.ai/refund-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 print:text-black"
+                >
+                  {" "}
+                  Refund Policy
+                </a>
               </p>
               <p className="text-xs text-gray-600 print:text-xs">
-                For more information, visit: <a href="https://vizuara.ai" target="_blank" rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 print:text-black">https://vizuara.ai</a>
+                For more information, visit:{" "}
+                <a
+                  href="https://vizuara.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 print:text-black"
+                >
+                  https://vizuara.ai
+                </a>
               </p>
             </div>
           </div>
