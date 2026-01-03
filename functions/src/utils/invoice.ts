@@ -64,7 +64,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
             </tr>
             <tr>
               <td style="padding:6px 3px; font-weight:bold;">Purchase Date</td>
-              <td style="padding:6px 3px;">${formattedPurchaseDate}</td>
+              <td style="padding:6px 3px;">${formattedPurchaseDate} (UTC)</td>
             </tr>
             <tr>
               <td style="padding:6px 3px; font-weight:bold;">Amount Paid</td>

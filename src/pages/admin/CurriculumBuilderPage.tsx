@@ -75,7 +75,7 @@ const CurriculumBuilderPage = () => {
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
   const [isForumEnabled, setIsForumEnabled] = useState(false);
-  const [isWelcomeMessageEnabled, setIsEnrollAnnouncementEnabled] = useState(false);
+  const [isWelcomeMessageEnabled, setIsWelcomeMessageEnabled] = useState(false);
   const [customCertificateName, setCustomCertificateName] = useState("");
   const itemId = new URLSearchParams(location.search).get("itemId");
   const [activeTab, setActiveTab] = useState("basics");
@@ -180,7 +180,7 @@ const CurriculumBuilderPage = () => {
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
         setIsForumEnabled(data.isForumEnabled ?? false);
-        setIsEnrollAnnouncementEnabled(data.isWelcomeMessageEnabled ?? false);
+        setIsWelcomeMessageEnabled(data.isWelcomeMessageEnabled ?? false);
         setCustomCertificateName(
           data.customCertificateName || data.title || ""
         );
@@ -374,13 +374,16 @@ const CurriculumBuilderPage = () => {
       <Header />
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList>
-            <TabsTrigger value="basics">Basics</TabsTrigger>
-            <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
-            <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
-            {/* New tab trigger */}
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{title || course?.title || "Untitled Course"}</h1>
+            <TabsList>
+              <TabsTrigger value="basics">Basics</TabsTrigger>
+              <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+              <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+              <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
+              {/* New tab trigger */}
+            </TabsList>
+          </div>
 
           {/* ─── BASICS TAB ───────────────────────────────────────── */}
           <TabsContent value="basics">
@@ -452,7 +455,7 @@ const CurriculumBuilderPage = () => {
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
               isWelcomeMessageEnabled={isWelcomeMessageEnabled}
-              setIsEnrollAnnouncementEnabled={setIsEnrollAnnouncementEnabled}
+              setIsWelcomeMessageEnabled={setIsWelcomeMessageEnabled}
               courseId={course?.id}
               courseTitle={course?.title}
               customCertificateName={customCertificateName}

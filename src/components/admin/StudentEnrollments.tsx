@@ -13,7 +13,8 @@ import { learningProgressService } from '@/services/learningProgressService'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle } from 'lucide-react'
+import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle, Award } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const StudentEnrollments: React.FC = () => {
 
@@ -25,7 +26,7 @@ const StudentEnrollments: React.FC = () => {
     previousCursor: null,
     totalCount: 0
   });
-  const [enrollmentCertificateInfo, setEnrollmentCertificateInfo] = useState<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; }[]>([]);
+  const [enrollmentCertificateInfo, setEnrollmentCertificateInfo] = useState<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; certificateId: string; }[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,6 +59,12 @@ const StudentEnrollments: React.FC = () => {
     issuedCertificates: string[];
     skippedEnrollments: string[];
   } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => { } });
 
   const fetchEnrollments = useCallback(async (
     cursor?: DocumentSnapshot | null,
@@ -247,12 +254,31 @@ const StudentEnrollments: React.FC = () => {
 
   // Single enrollment status update
   const handleUpdateEnrollmentStatus = async (enrollmentId: string, newStatus: EnrollmentStatus) => {
-    try {
-      await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
-      await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
-    } catch (error) {
-      console.error(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollment:`, error)
-    }
+    const enrollment = enrollments.data.find(e => e.id === enrollmentId);
+    const action = newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activate' : 'deactivate';
+
+    setConfirmDialog({
+      open: true,
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} Enrollment`,
+      message: `Are you sure you want to ${action} enrollment for "${enrollment?.userName || 'this student'}" in "${enrollment?.courseName || 'this course'}"?`,
+      onConfirm: async () => {
+        try {
+          await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
+          await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
+          toast({
+            title: "Success",
+            description: `Enrollment ${action}d successfully`
+          });
+        } catch (error) {
+          console.error(`Error ${action}ing enrollment:`, error)
+          toast({
+            title: "Error",
+            description: `Failed to ${action} enrollment`,
+            variant: "destructive"
+          });
+        }
+      }
+    });
   }
 
   // Check if selected enrollments can be activated (all are DROPPED)
@@ -690,9 +716,6 @@ const StudentEnrollments: React.FC = () => {
                         Order ID
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Certificate Issued
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Remark
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -742,15 +765,27 @@ const StudentEnrollments: React.FC = () => {
                             {enrollment.orderId || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                            {
-                              (enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.isCertificateIssued ? "Yes" : "No")
-                            }
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
                             {enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.remark || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex gap-2">
+                              {enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.isCertificateIssued ? (
+                                <Link
+                                  to={`/certificate/public/view/${enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.certificateId}`}
+                                  className="inline-flex items-center justify-center p-2 text-primary rounded transition-colors"
+                                  title="View Certificate"
+                                >
+                                  <Award className="h-4 w-4" />
+                                </Link>
+                              ) : (
+                                <button
+                                  className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-500 cursor-not-allowed rounded"
+                                  title="No Certificate Issued"
+                                  disabled
+                                >
+                                  <Award className="h-4 w-4" />
+                                </button>
+                              )}
                               {enrollment.status === ENROLLMENT_STATUS.ACTIVE && (
                                 <button
                                   onClick={() => handleUpdateEnrollmentStatus(enrollment.id, ENROLLMENT_STATUS.DROPPED)}
@@ -1146,6 +1181,32 @@ const StudentEnrollments: React.FC = () => {
             <DialogFooter>
               <Button onClick={() => setShowResultsModal(false)}>
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{confirmDialog.title}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{confirmDialog.message}</p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog({ ...confirmDialog, open: false });
+                }}
+              >
+                Confirm
               </Button>
             </DialogFooter>
           </DialogContent>
