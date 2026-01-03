@@ -17,6 +17,8 @@ import React, {
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ShareCertificate from "./ShareCertificate";
+import { formatDate } from "@/utils/date-time";
+import { logError } from "@/utils/logger";
 
 // Lazy load QRCode for better performance
 const QRCode = lazy(() => import("react-qr-code"));
@@ -129,9 +131,7 @@ const Certificate: React.FC = () => {
 
       try {
         // 1. Fetch enrollment
-        const enrollmentResult = await enrollmentService.getEnrollmentById(
-          enrollmentId
-        );
+        const enrollmentResult = await enrollmentService.getEnrollmentById(enrollmentId);
 
         if (!enrollmentResult.success || !enrollmentResult.data) {
           throw new Error("Failed to fetch enrollment data");
@@ -139,135 +139,78 @@ const Certificate: React.FC = () => {
 
         const enrollment = enrollmentResult.data;
 
-        // 2. Fetch completion date and certificate ID
-        const completionResult =
-          await learningProgressService.getFormattedCompletionDateAndCertificateId(
-            enrollment.userId,
-            enrollment.courseId
-          );
+        // 2. Validate and normalize names
+        const preferredName = (enrollment.certification.preferredName || "").trim();
+        const userName = (enrollment.userName || "").trim();
 
-        if (!completionResult.success) {
-          throw new Error("Failed to fetch completion data");
-        }
+        const preferredNameLower = preferredName.toLowerCase();
+        const userNameLower = userName.toLowerCase();
 
-        // 3. Check if preferred name is set
-        const preferredNameResult =
-          await learningProgressService.isPreferredNameSetForCertificate(
-            enrollment.userId,
-            enrollment.courseId
-          );
+        const hasValidPreferredName = preferredName.length > 0 &&
+          !preferredNameLower.includes("null") &&
+          preferredName.length <= MAX_NAME_LENGTH;
 
-        // 4. Determine if we need to show the modal and if name is required
-        const hasPreferredName =
-          preferredNameResult.success &&
-          preferredNameResult.data &&
-          preferredNameResult.data.trim().length > 0 &&
-          !preferredNameResult.data.toLowerCase().includes("null");
+        const hasValidUserName = userName.length > 0 &&
+          !userNameLower.includes("null");
 
-        const userNameExists =
-          enrollment.userName && enrollment.userName.trim().length > 0;
-        const userNameTooLong =
-          userNameExists && enrollment.userName.length > MAX_NAME_LENGTH;
-        const userNameContainsNull =
-          userNameExists && enrollment.userName.toLowerCase().includes("null");
-        const preferredNameTooLong =
-          hasPreferredName && preferredNameResult.data.length > MAX_NAME_LENGTH;
-        const preferredNameContainsNull =
-          preferredNameResult.success &&
-          preferredNameResult.data &&
-          preferredNameResult.data.toLowerCase().includes("null");
-
-        // Determine if name is required and why
+        // 3. Determine name requirement and reason
         let requireName = false;
         let reason = "";
+        let showModal = false;
 
-        if (!hasPreferredName || preferredNameContainsNull) {
-          // No preferred name set
-          setShowPreferredNameModal(true);
+        if (!hasValidPreferredName) {
+          showModal = true;
 
-          if (!userNameExists) {
-            // Username is null or empty - MUST set preferred name
+          if (!hasValidUserName) {
+            // No valid names at all
             requireName = true;
-            reason =
-              "Your profile name is not set. Please enter a name for your certificate.";
-            toast({
-              title: "Name required",
-              description: reason,
-              variant: "destructive",
-            });
-          } else if (userNameContainsNull) {
-            // Username contains "null" string - MUST set preferred name
-            requireName = true;
-            reason =
-              "Your profile name appears to be invalid. Please enter a valid name for your certificate.";
-            toast({
-              title: "Valid name required",
-              description: reason,
-              variant: "destructive",
-            });
-          } else if (userNameTooLong) {
-            // Username is too long - MUST set preferred name
+            reason = userName.length === 0
+              ? "Your profile name is not set. Please enter a name for your certificate."
+              : "Your profile name appears to be invalid. Please enter a valid name for your certificate.";
+          } else if (userName.length > MAX_NAME_LENGTH) {
+            // Username too long
             requireName = true;
             reason = `Your name exceeds ${MAX_NAME_LENGTH} characters. Please set a shorter preferred name for your certificate.`;
-            toast({
-              title: "Preferred name required",
-              description: reason,
-              variant: "destructive",
-            });
-          } else if (preferredNameContainsNull) {
-            // Preferred name contains "null" - MUST update
+          } else if (preferredNameLower.includes("null")) {
+            // Preferred name contains "null"
             requireName = true;
-            reason =
-              "Your preferred name appears to be invalid. Please enter a valid name for your certificate.";
+            reason = "Your preferred name appears to be invalid. Please enter a valid name for your certificate.";
+          }
+
+          // Show toast only if name is required
+          if (requireName) {
             toast({
-              title: "Please update your preferred name",
+              title: userName.length === 0 ? "Name required" :
+                userName.length > MAX_NAME_LENGTH ? "Preferred name required" :
+                  "Valid name required",
               description: reason,
               variant: "destructive",
             });
           }
-          // If username exists, is valid, and is within limit, modal shows but skip is allowed
-        } else if (preferredNameTooLong) {
-          // Existing preferred name is too long - MUST update
-          setShowPreferredNameModal(true);
-          requireName = true;
-          reason = `Your preferred name exceeds ${MAX_NAME_LENGTH} characters. Please set a shorter name.`;
-          toast({
-            title: "Please update your preferred name",
-            description: reason,
-            variant: "destructive",
-          });
         }
 
         setIsNameRequired(requireName);
         setNameRequiredReason(reason);
+        setShowPreferredNameModal(showModal);
 
-        // 5. Fetch certificate display name (optional - may fail gracefully)
+        // 4. Fetch certificate display name (optional - may fail gracefully)
         let certificateName: string | null = null;
         try {
-          certificateName = await courseService.getCetificateNamebyID(
-            enrollment.courseId
-          );
+          certificateName = await courseService.getCertificateNamebyID(enrollment.courseId);
         } catch (err) {
-          console.warn(
-            "Could not fetch certificate name, using course name instead"
-          );
+          logError("Certificate.fetchCertificateData", err);
         }
 
-        // 6. Determine the name to display on certificate
+        // 5. Determine the name to display on certificate
+        const nameOnCertificate = hasValidPreferredName
+          ? preferredName
+          : (hasValidUserName ? userName : "");
 
-        const validPreferredName =
-          hasPreferredName && !preferredNameContainsNull
-            ? preferredNameResult.data
-            : null;
-        const validUserName =
-          userNameExists && !userNameContainsNull ? enrollment.userName : null;
-        const nameOnCertificate = validPreferredName || validUserName || "";
-
-        // Set all certificate data
+        // 6. Set all certificate data
         setCertificateData({
           enrollment,
-          completionDate: completionResult.data?.completionDate ?? null,
-          certificateId: completionResult.data?.certificateId ?? null,
+          completionDate: formatDate(enrollment?.completionDate) ?? null,
+          certificateId: enrollment?.certification?.certificateId ?? null,
           certificateName,
           nameOnCertificate,
         });
@@ -332,7 +275,7 @@ const Certificate: React.FC = () => {
 
     try {
       const result =
-        await learningProgressService.updatePreferredNameOnCertificate(
+        await enrollmentService.updatePreferredNameOnCertificate(
           certificateData.enrollment.userId,
           certificateData.enrollment.courseId,
           trimmedName
@@ -343,9 +286,9 @@ const Certificate: React.FC = () => {
         setCertificateData((prev) =>
           prev
             ? {
-                ...prev,
-                nameOnCertificate: trimmedName,
-              }
+              ...prev,
+              nameOnCertificate: trimmedName,
+            }
             : null
         );
 
@@ -453,9 +396,8 @@ const Certificate: React.FC = () => {
 
       // Create download link
       const link = document.createElement("a");
-      link.download = `vizuara-certificate-${
-        certificateData?.certificateId || "download"
-      }.png`;
+      link.download = `vizuara-certificate-${certificateData?.certificateId || "download"
+        }.png`;
       link.href = canvas.toDataURL("image/png", 1.0);
       link.click();
     } catch (err) {
@@ -585,9 +527,8 @@ const Certificate: React.FC = () => {
                 autoFocus
               />
               <div
-                className={`text-xs text-right mb-4 ${
-                  remainingChars <= 5 ? "text-amber-600" : "text-gray-400"
-                }`}
+                className={`text-xs text-right mb-4 ${remainingChars <= 5 ? "text-amber-600" : "text-gray-400"
+                  }`}
               >
                 {remainingChars} characters remaining
               </div>

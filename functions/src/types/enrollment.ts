@@ -13,7 +13,15 @@ export interface Enrollment {
   enrollmentDate: Timestamp | FieldValue;
   status: EnrollmentStatus;
   orderId: string;
-
+  certification: {
+    issued: boolean;
+    issuedAt: Timestamp | FieldValue;
+    certificateId: string;
+    remark?: string;
+    grade?: number | string | null;
+    preferredName?: string | null;
+  } | null;
+  completionDate: Timestamp | FieldValue | null;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };
