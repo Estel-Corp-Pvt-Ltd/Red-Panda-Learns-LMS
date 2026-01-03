@@ -227,25 +227,75 @@ const StudentEnrollments: React.FC = () => {
 
       await Promise.all(updatePromises)
 
+      toast({
+        title: `Enrollments ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'Activated' : 'Deactivated'}`,
+        description: `Successfully updated ${selectedEnrollments.size} enrollment(s).`,
+      });
+
       // Refresh the data
       await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
       setSelectedEnrollments(new Set())
 
     } catch (error) {
       logError(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollments:`, error)
+      toast({
+        title: "Error",
+        description: `Failed to ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activate' : 'deactivate'} enrollments.`,
+        variant: "destructive",
+      });
     } finally {
       setBulkActionLoading(false)
     }
+  }
+
+  // Show confirmation for bulk status update
+  const confirmBulkStatusUpdate = (newStatus: EnrollmentStatus) => {
+    const action = newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activate' : 'deactivate';
+    const selected = getSelectedEnrollments();
+
+    setConfirmDialog({
+      open: true,
+      title: `Confirm Bulk ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+      message: `Are you sure you want to ${action} ${selected.length} enrollment(s)?`,
+      onConfirm: () => {
+        handleBulkStatusUpdate(newStatus);
+        setConfirmDialog({ ...confirmDialog, open: false });
+      }
+    });
   }
 
   // Single enrollment status update
   const handleUpdateEnrollmentStatus = async (enrollmentId: string, newStatus: EnrollmentStatus) => {
     try {
       await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
+      toast({
+        title: `Enrollment ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'Activated' : 'Deactivated'}`,
+        description: "Successfully updated enrollment status.",
+      });
       await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
     } catch (error) {
       logError(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollment:`, error)
+      toast({
+        title: "Error",
+        description: `Failed to ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activate' : 'deactivate'} enrollment.`,
+        variant: "destructive",
+      });
     }
+  }
+
+  // Show confirmation for single enrollment status update
+  const confirmUpdateEnrollmentStatus = (enrollment: Enrollment, newStatus: EnrollmentStatus) => {
+    const action = newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activate' : 'deactivate';
+
+    setConfirmDialog({
+      open: true,
+      title: `Confirm ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+      message: `Are you sure you want to ${action} the enrollment for "${enrollment.userName || enrollment.userId}" in "${enrollment.courseName}"?`,
+      onConfirm: () => {
+        handleUpdateEnrollmentStatus(enrollment.id, newStatus);
+        setConfirmDialog({ ...confirmDialog, open: false });
+      }
+    });
   }
 
   // Check if selected enrollments can be activated (all are DROPPED)
@@ -635,7 +685,7 @@ const StudentEnrollments: React.FC = () => {
                   {/* Activate Button */}
                   {canActivateSelected() && (
                     <button
-                      onClick={() => handleBulkStatusUpdate(ENROLLMENT_STATUS.ACTIVE)}
+                      onClick={() => confirmBulkStatusUpdate(ENROLLMENT_STATUS.ACTIVE)}
                       disabled={bulkActionLoading}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
                     >
@@ -646,7 +696,7 @@ const StudentEnrollments: React.FC = () => {
                   {/* Deactivate Button */}
                   {canDeactivateSelected() && (
                     <button
-                      onClick={() => handleBulkStatusUpdate(ENROLLMENT_STATUS.DROPPED)}
+                      onClick={() => confirmBulkStatusUpdate(ENROLLMENT_STATUS.DROPPED)}
                       disabled={bulkActionLoading}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
                     >
@@ -810,7 +860,7 @@ const StudentEnrollments: React.FC = () => {
                               )}
                               {enrollment.status === ENROLLMENT_STATUS.ACTIVE && (
                                 <button
-                                  onClick={() => handleUpdateEnrollmentStatus(enrollment.id, ENROLLMENT_STATUS.DROPPED)}
+                                  onClick={() => confirmUpdateEnrollmentStatus(enrollment, ENROLLMENT_STATUS.DROPPED)}
                                   className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
                                   disabled={bulkActionLoading}
                                 >
@@ -819,7 +869,7 @@ const StudentEnrollments: React.FC = () => {
                               )}
                               {enrollment.status === ENROLLMENT_STATUS.DROPPED && (
                                 <button
-                                  onClick={() => handleUpdateEnrollmentStatus(enrollment.id, ENROLLMENT_STATUS.ACTIVE)}
+                                  onClick={() => confirmUpdateEnrollmentStatus(enrollment, ENROLLMENT_STATUS.ACTIVE)}
                                   className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50"
                                   disabled={bulkActionLoading}
                                 >
@@ -1201,6 +1251,34 @@ const StudentEnrollments: React.FC = () => {
             <DialogFooter>
               <Button onClick={() => setShowResultsModal(false)}>
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{confirmDialog.title}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {confirmDialog.message}
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmDialog.onConfirm}
+                variant="default"
+              >
+                Confirm
               </Button>
             </DialogFooter>
           </DialogContent>

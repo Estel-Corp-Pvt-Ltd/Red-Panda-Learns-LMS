@@ -141,7 +141,7 @@ const Certificate: React.FC = () => {
 
         // 2. Fetch completion date and certificate ID
         const completionResult =
-          await learningProgressService.getFormattedCompletionDateAndCertificateId(
+          await enrollmentService.getFormattedCompletionDateAndCertificateId(
             enrollment.userId,
             enrollment.courseId
           );
@@ -152,7 +152,7 @@ const Certificate: React.FC = () => {
 
         // 3. Check if preferred name is set
         const preferredNameResult =
-          await learningProgressService.isPreferredNameSetForCertificate(
+          await enrollmentService.isPreferredNameSetForCertificate(
             enrollment.userId,
             enrollment.courseId
           );
@@ -332,7 +332,7 @@ const Certificate: React.FC = () => {
 
     try {
       const result =
-        await learningProgressService.updatePreferredNameOnCertificate(
+        await enrollmentService.updatePreferredNameOnCertificate(
           certificateData.enrollment.userId,
           certificateData.enrollment.courseId,
           trimmedName
@@ -343,9 +343,9 @@ const Certificate: React.FC = () => {
         setCertificateData((prev) =>
           prev
             ? {
-                ...prev,
-                nameOnCertificate: trimmedName,
-              }
+              ...prev,
+              nameOnCertificate: trimmedName,
+            }
             : null
         );
 
@@ -453,9 +453,8 @@ const Certificate: React.FC = () => {
 
       // Create download link
       const link = document.createElement("a");
-      link.download = `vizuara-certificate-${
-        certificateData?.certificateId || "download"
-      }.png`;
+      link.download = `vizuara-certificate-${certificateData?.certificateId || "download"
+        }.png`;
       link.href = canvas.toDataURL("image/png", 1.0);
       link.click();
     } catch (err) {
@@ -585,9 +584,8 @@ const Certificate: React.FC = () => {
                 autoFocus
               />
               <div
-                className={`text-xs text-right mb-4 ${
-                  remainingChars <= 5 ? "text-amber-600" : "text-gray-400"
-                }`}
+                className={`text-xs text-right mb-4 ${remainingChars <= 5 ? "text-amber-600" : "text-gray-400"
+                  }`}
               >
                 {remainingChars} characters remaining
               </div>

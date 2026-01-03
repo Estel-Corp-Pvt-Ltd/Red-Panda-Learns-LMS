@@ -84,7 +84,7 @@ class StripBannerService {
     try {
       const bannerRef = doc(db, COLLECTION.STRIP_BANNERS, id);
       const bannerDoc = await getDoc(bannerRef);
-      
+
       if (!bannerDoc.exists()) {
         return fail("Banner not found", "NOT_FOUND");
       }
@@ -103,7 +103,7 @@ class StripBannerService {
         ...updates,
         updatedAt: serverTimestamp(),
       });
-      
+
       console.log("StripBannerService - Updated banner:", id);
       return ok(null);
     } catch (error) {
@@ -149,7 +149,7 @@ class StripBannerService {
         orderBy("displayOrder", "asc"),
         orderBy("createdAt", "desc")
       );
-      
+
       const querySnapshot = await getDocs(q);
       const banners = querySnapshot.docs.map((doc) => {
         const data = doc.data();
@@ -178,7 +178,7 @@ class StripBannerService {
         where("active", "==", true),
         orderBy("displayOrder", "asc")
       );
-      
+
       const querySnapshot = await getDocs(q);
       const banners = querySnapshot.docs.map((doc) => doc.data() as StripBanner);
       return ok(banners);
@@ -234,15 +234,15 @@ class StripBannerService {
       q = query(q, ...queryConstraints);
 
       const querySnapshot = await getDocs(q);
-      const documents = querySnapshot.docs ;
+      const documents = querySnapshot.docs;
 
       const banners = documents.map(doc => {
-        const data = doc.data();
+        const data = doc.data() as StripBanner;
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate?.(),
-          updatedAt: data.updatedAt?.toDate?.(),
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
         } as StripBanner;
       });
 
@@ -286,7 +286,7 @@ class StripBannerService {
     try {
       const bannerRef = doc(db, COLLECTION.STRIP_BANNERS, id);
       const bannerDoc = await getDoc(bannerRef);
-      
+
       if (!bannerDoc.exists()) {
         return fail("Banner not found", "NOT_FOUND");
       }
