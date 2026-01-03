@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle, Award, Edit } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { logError } from '@/utils/logger'
 
 const StudentEnrollments: React.FC = () => {
 
@@ -122,11 +123,10 @@ const StudentEnrollments: React.FC = () => {
       })
 
       if (response.success && response.data) {
-        console.log('Fetched enrollments:', response.data);
         setEnrollments(response.data);
       }
     } catch (error) {
-      console.error('Error fetching enrollments:', error)
+      logError('Error fetching enrollments:', error)
     } finally {
       setLoading(false)
     }
@@ -226,7 +226,7 @@ const StudentEnrollments: React.FC = () => {
       setSelectedEnrollments(new Set())
 
     } catch (error) {
-      console.error(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollments:`, error)
+      logError(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollments:`, error)
     } finally {
       setBulkActionLoading(false)
     }
@@ -238,7 +238,7 @@ const StudentEnrollments: React.FC = () => {
       await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
       await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
     } catch (error) {
-      console.error(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollment:`, error)
+      logError(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollment:`, error)
     }
   }
 
@@ -378,7 +378,7 @@ const StudentEnrollments: React.FC = () => {
       const enrollmentsWithoutCertificates = selectedEnrollmentsList.filter(e => !e.certification?.issued);
       setSelectedModalEnrollments(new Set(enrollmentsWithoutCertificates.map(e => e.id)));
     } catch (error) {
-      console.error('Error fetching progress data:', error);
+      logError('Error fetching progress data:', error);
       toast({
         title: "Failed to load progress data",
         variant: "destructive"
@@ -455,7 +455,7 @@ const StudentEnrollments: React.FC = () => {
       setBulkCertificateData([]);
       setSelectedModalEnrollments(new Set());
     } catch (err) {
-      console.error('Error issuing certificates:', err);
+      logError('Error issuing certificates:', err);
     } finally {
       setBulkActionLoading(false);
       setIsIssuingCertificates(false);
@@ -515,7 +515,7 @@ const StudentEnrollments: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error updating certificate:', error);
+      logError('Error updating certificate:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred.",

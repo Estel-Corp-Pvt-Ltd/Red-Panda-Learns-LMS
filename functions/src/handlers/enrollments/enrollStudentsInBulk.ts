@@ -121,7 +121,7 @@ export const processEnrollmentTask = onTaskDispatched(
       courseId,
       currentLessonId: null,
       lastAccessed: null,
-      lessonHistory: [],
+      lessonHistory: {},
       updatedAt: now,
     });
 
