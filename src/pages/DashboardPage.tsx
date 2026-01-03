@@ -16,7 +16,7 @@ import { Enrollment } from "@/types/enrollment";
 import { Banner } from "@/types/banner";
 import { CertificateRequestStatus } from "@/types/general";
 import { formatDate } from "@/utils/date-time";
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } from "lucide-react";
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
@@ -186,7 +186,7 @@ function EnrolledCourseCard({
                   <>
                     {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
                       <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
-                        <CheckCircle className="h-4 w-4 sm:mr-2" />
+                        {isCompleting ? <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 sm:mr-2" />}
                         <span className="hidden sm:inline">{isCompleting ? "Completing..." : "Complete Course"}</span>
                       </Button>
                     )}
