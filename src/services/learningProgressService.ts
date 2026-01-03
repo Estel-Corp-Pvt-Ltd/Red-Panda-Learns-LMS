@@ -423,7 +423,7 @@ class LearningProgressService {
 
   async getCertificateStatusForPairs(
     pairs: { userId: string; courseId: string }[]
-  ): Promise<Result<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; }[]>> {
+  ): Promise<Result<{ userId: string; courseId: string; certificateId: string | null; isCertificateIssued: boolean, remark: string; }[]>> {
     try {
       if (!Array.isArray(pairs) || pairs.length === 0) {
         return ok([]);

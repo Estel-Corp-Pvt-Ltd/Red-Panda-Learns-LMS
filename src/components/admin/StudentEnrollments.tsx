@@ -58,6 +58,12 @@ const StudentEnrollments: React.FC = () => {
     issuedCertificates: string[];
     skippedEnrollments: string[];
   } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => { } });
 
   // Edit Certificate Modal State
   const [showEditCertificateModal, setShowEditCertificateModal] = useState(false);

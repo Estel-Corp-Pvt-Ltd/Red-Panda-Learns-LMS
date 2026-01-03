@@ -1,3 +1,24 @@
+export const loadRecaptcha = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // already loaded
+    if ((window as any).grecaptcha) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => resolve();
+    script.onerror = () => reject("Failed to load reCAPTCHA");
+
+    document.body.appendChild(script);
+  });
+};
+
+
 export const getRecaptchaToken = async (action = "submit") => {
   return new Promise<string>((resolve, reject) => {
     const grecaptcha = (window as any).grecaptcha;

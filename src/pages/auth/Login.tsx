@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { USER_ROLE } from "@/constants";
 import { getRecaptchaToken, isLowEndDevice } from "@/utils/recaptcha";
+import { loadRecaptcha } from "@/utils/recaptcha"; // Ensure recaptcha is loaded
+
 import EmailNotVerifiedPopup from "@/components/auth/EmailNotVerifiedPopup";
 import { UserCredential } from "firebase/auth";
 
@@ -38,6 +41,12 @@ export default function Login() {
 
   const from = (location.state as any)?.from?.pathname || "/dashboard";
   const message = (location.state as any)?.message;
+
+  useEffect(() => {
+    loadRecaptcha().catch((err) => {
+      console.error("reCAPTCHA failed to load", err);
+    });
+  }, []);
 
   // 🔹 Shared reCAPTCHA verification logic
   const verifyRecaptcha = async () => {
@@ -72,11 +81,9 @@ export default function Login() {
         const { user, userCredential } = response.data;
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
-        }
-        else if (user?.role === USER_ROLE.ACCOUNTANT) {
-          navigate("/accountant", { replace: true })
-        }
-        else if (userCredential.user.emailVerified == true) {
+        } else if (user?.role === USER_ROLE.ACCOUNTANT) {
+          navigate("/accountant", { replace: true });
+        } else if (userCredential.user.emailVerified == true) {
           navigate(from || "/dashboard", { replace: true });
         } else {
           setUserCredential(userCredential);
@@ -105,11 +112,9 @@ export default function Login() {
       toast({ title: "Welcome!", description: "You signed in with Google." });
       if (user?.role === USER_ROLE.ADMIN) {
         navigate("/admin", { replace: true });
-      }
-      else if (user?.role === USER_ROLE.ACCOUNTANT) {
-        navigate("/accountant", { replace: true })
-      }
-      else {
+      } else if (user?.role === USER_ROLE.ACCOUNTANT) {
+        navigate("/accountant", { replace: true });
+      } else {
         navigate("/dashboard", { replace: true });
       }
     } catch (err: any) {
@@ -139,9 +144,7 @@ export default function Login() {
               <span className="text-2xl font-bold">Vizuara AI Labs</span>
             </div>
             <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
-            </CardDescription>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -172,12 +175,7 @@ export default function Login() {
     disabled:opacity-90
   "
             >
-              <img
-                src="/google-logo.svg"
-                alt="Google"
-                className="h-6 w-6"
-                loading="eager"
-              />
+              <img src="/google-logo.svg" alt="Google" className="h-6 w-6" loading="eager" />
               {loading ? "Signing in..." : "Continue with Google"}
             </Button>
 
@@ -240,10 +238,7 @@ export default function Login() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Link
-                  to="/auth/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
+                <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -281,10 +276,7 @@ export default function Login() {
             <p className="text-sm text-muted-foreground">
               {" "}
               Don&apos;t have an account?{" "}
-              <Link
-                to="/auth/signup"
-                className="text-primary hover:underline font-medium"
-              >
+              <Link to="/auth/signup" className="text-primary hover:underline font-medium">
                 {" "}
                 Sign up{" "}
               </Link>{" "}
@@ -316,7 +308,12 @@ export default function Login() {
           </CardFooter>
         </Card>
       </div>
-      {showEmailNotVerifiedPopup && userCredential && !userCredential.user.emailVerified && (<EmailNotVerifiedPopup userCredential={userCredential} setVisible={setShowEmailNotVerifiedPopup} />)}
+      {showEmailNotVerifiedPopup && userCredential && !userCredential.user.emailVerified && (
+        <EmailNotVerifiedPopup
+          userCredential={userCredential}
+          setVisible={setShowEmailNotVerifiedPopup}
+        />
+      )}
     </div>
   );
 }
