@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { learningProgressService } from "@/services/learningProgressService";
 import { courseService } from "@/services/courseService";
+import { enrollmentService } from "@/services/enrollmentService";
+import { logError } from "@/utils/logger";
 
 // Lazy load QRCode for better performance
 const QRCode = lazy(() => import("react-qr-code"));
@@ -85,27 +86,21 @@ const PublicCertificate: React.FC = () => {
 
       try {
         // 1. Fetch basic certificate data
-        const result =
-          await learningProgressService.getCertificateByCertificateId(
-            certificateId
-          );
-        console.log("Certificate fetch result:", result);
+        const result = await enrollmentService.getCertificateByCertificateId(certificateId);
         if (result.success && result.data) {
           setData(result.data);
 
           // 2. Fetch custom certificate name from course (if courseId is available)
           if (result.data.courseId) {
             try {
-              const certificateName = await courseService.getCetificateNamebyID(
+              const certificateName = await courseService.getCertificateNamebyID(
                 result.data.courseId
               );
               if (certificateName) {
                 setCustomCertificateName(certificateName);
               }
             } catch (err) {
-              console.warn(
-                "Could not fetch certificate name, using course name instead"
-              );
+              logError("PublicCertificate.fetchCertificate", err);
             }
           }
         } else {

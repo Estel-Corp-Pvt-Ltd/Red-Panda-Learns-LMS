@@ -701,7 +701,7 @@ class CourseService {
   }
 
 
-  async getCetificateNamebyID(courseId: string): Promise<string | null> {
+  async getCertificateNamebyID(courseId: string): Promise<string | null> {
     try {
       const ref = doc(db, COLLECTION.COURSES, courseId);
       const snap = await getDoc(ref);
