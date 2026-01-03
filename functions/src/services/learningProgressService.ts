@@ -35,7 +35,6 @@ class LearningProgressService {
         currentLessonId: null,
         lastAccessed: FieldValue.serverTimestamp(),
         lessonHistory: {},
-        completionDate: null,
         updatedAt: FieldValue.serverTimestamp(),
       };
 
@@ -90,7 +89,6 @@ class LearningProgressService {
           courseId,
           currentLessonId: null,
           lessonHistory: {},
-          completionDate: null,
           lastAccessed: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         };
@@ -253,11 +251,23 @@ class LearningProgressService {
 
       const completionPercentage = (completedLessons / totalLessons) * 100;
 
-      if (!!progressData.completionDate) {
+      // Check enrollment completion status
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = this.db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
+      const enrollmentSnap = await enrollmentRef.get();
+
+      if (!enrollmentSnap.exists) {
+        return fail("Enrollment not found");
+      }
+
+      const enrollmentData = enrollmentSnap.data();
+
+      if (!!enrollmentData?.completionDate) {
         return fail("Course already completed");
       }
-      if (completionPercentage >= 90 && !progressData.completionDate) {
-        await progressDoc.ref.update({
+
+      if (completionPercentage >= 90 && !enrollmentData?.completionDate) {
+        await enrollmentRef.update({
           completionDate: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         });
@@ -294,33 +304,28 @@ class LearningProgressService {
         return fail("Only ADMIN can issue certificates");
       }
 
-      const snapshot = await this.db
-        .collection(COLLECTION.LEARNING_PROGRESS)
-        .where("userId", "==", userId)
-        .where("courseId", "==", courseId)
-        .get();
+      const enrollmentId = `${userId}_${courseId}`;
+      const enrollmentRef = this.db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
+      const enrollmentSnap = await enrollmentRef.get();
 
-      if (snapshot.empty) {
-        return fail("Learning progress not found");
+      if (!enrollmentSnap.exists) {
+        return fail("Enrollment not found");
       }
 
-      const progressDoc = snapshot.docs[0];
-      const progressData = progressDoc.data() as LearningProgress;
+      const enrollmentData = enrollmentSnap.data();
 
-      if (!progressData.completionDate) {
+      if (!enrollmentData?.completionDate) {
         return fail("Course not completed yet");
       }
 
-      if (progressData.certification?.issued) {
+      if (enrollmentData.certification?.issued) {
         return ok(false);
       }
 
-      await progressDoc.ref.update({
-        certification: {
-          issued: true,
-          issuedAt: FieldValue.serverTimestamp(),
-          certificateId: `${userId}_${courseId}`,
-        },
+      await enrollmentRef.update({
+        "certification.issued": true,
+        "certification.issuedAt": FieldValue.serverTimestamp(),
+        "certification.certificateId": `${userId}_${courseId}`,
         updatedAt: FieldValue.serverTimestamp(),
       });
 

@@ -16,7 +16,7 @@ import { Enrollment } from "@/types/enrollment";
 import { Banner } from "@/types/banner";
 import { CertificateRequestStatus } from "@/types/general";
 import { formatDate } from "@/utils/date-time";
-import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award } from "lucide-react";
+import { BookOpen, CheckCircle, Clock, Eye, PlayCircle, MessageSquare, Award, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
@@ -37,9 +37,9 @@ function EnrolledCourseCard({
   const [isProgressLoading, setIsProgressLoading] = useState(true);
 
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false); // completionDate exists
-  const [isCertificateIdAvailable, setIsCertificateIdAvailable] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(!!enrollment.completionDate); // completionDate exists
   const [isCompleting, setIsCompleting] = useState(false);
+  const isCertificateIdAvailable = !!enrollment.certification?.certificateId;
 
   const totalLessons =
     course?.topics?.reduce((sum, topic) => {
@@ -98,8 +98,6 @@ function EnrolledCourseCard({
         const eligible = totalLessons > 0 && completedLessonsCount >= Math.ceil(0.9 * totalLessons);
 
         setIsEligibleForCertificate(eligible);
-        setIsCertificateIdAvailable(!!progress.certification?.certificateId);
-        setIsCompleted(!!progress.completionDate);
       }
       setIsProgressLoading(false);
     };
@@ -165,22 +163,22 @@ function EnrolledCourseCard({
                   <Clock className="h-4 w-4" />
                   <span>Enrolled {formatDate(enrollment.enrollmentDate)}</span>
                 </div>
-                <Badge variant="outline" className="text-xs">
+                {/* <Badge variant="outline" className="text-xs">
                   {enrollment.status}
-                </Badge>
+                </Badge> */}
               </div>
               <div className="flex gap-3">
                 {course?.isForumEnabled && (
                   <Link to={`/courses/${course.slug}/forum`}>
                     <Button size="sm" variant="outline">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Forum
+                      <MessageSquare className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:block">Forum</span>
                     </Button>
                   </Link>
                 )}
                 <Button size="sm" onClick={handleContinueLearning}>
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  Continue
+                  <PlayCircle className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:block">Continue</span>
                 </Button>
 
                 {/* Only show certificate-related features if enabled */}
@@ -188,8 +186,8 @@ function EnrolledCourseCard({
                   <>
                     {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
                       <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        {isCompleting ? "Completing..." : "Complete Course"}
+                        {isCompleting ? <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 sm:mr-2" />}
+                        <span className="hidden sm:inline">{isCompleting ? "Completing..." : "Complete Course"}</span>
                       </Button>
                     )}
 
@@ -199,8 +197,8 @@ function EnrolledCourseCard({
                         {isCertificateIdAvailable ? (
                           <Link to={`/certificate/${user.id}_${course.id}/`}>
                             <Button size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Certificate
+                              <Award className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">View Certificate</span>
                             </Button>
                           </Link>
                         ) : (

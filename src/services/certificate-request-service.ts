@@ -9,6 +9,7 @@ import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, query, QueryConstraint, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
+import { Enrollment } from "@/types/enrollment";
 
 class CertificateRequestService {
 
@@ -17,20 +18,17 @@ class CertificateRequestService {
         courseId: string
     ): Promise<Result<{ requestId: string }>> {
         try {
-            const progressQuery = query(
-                collection(db, COLLECTION.LEARNING_PROGRESS),
-                where("userId", "==", userId),
-                where("courseId", "==", courseId)
-            );
+            const enrollmentId = `${userId}_${courseId}`;
+            const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+            const enrollmentSnap = await getDoc(enrollmentRef);
 
-            const progressSnap = await getDocs(progressQuery);
-
-            if (progressSnap.empty) {
-                return fail("Learning progress not found");
+            if (!enrollmentSnap.exists()) {
+                return fail("Enrollment not found");
             }
 
-            const progressData = progressSnap.docs[0].data() as LearningProgress;
-            if (!progressData.completionDate) {
+            const enrollmentData = enrollmentSnap.data() as Enrollment;
+
+            if (!enrollmentData.completionDate) {
                 return fail("Course not completed yet");
             }
 

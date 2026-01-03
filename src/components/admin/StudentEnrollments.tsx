@@ -13,8 +13,9 @@ import { learningProgressService } from '@/services/learningProgressService'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle, Award } from 'lucide-react'
+import { Clock, BookOpen, Loader2, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, XCircle, Award, Edit } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { logError } from '@/utils/logger'
 
 const StudentEnrollments: React.FC = () => {
 
@@ -26,8 +27,6 @@ const StudentEnrollments: React.FC = () => {
     previousCursor: null,
     totalCount: 0
   });
-  const [enrollmentCertificateInfo, setEnrollmentCertificateInfo] = useState<{ userId: string; courseId: string; isCertificateIssued: boolean, remark: string; certificateId: string; }[]>([]);
-
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState<'courseName' | 'userName' | 'userEmail'>('courseName');
@@ -65,6 +64,13 @@ const StudentEnrollments: React.FC = () => {
     message: string;
     onConfirm: () => void;
   }>({ open: false, title: '', message: '', onConfirm: () => { } });
+
+  // Edit Certificate Modal State
+  const [showEditCertificateModal, setShowEditCertificateModal] = useState(false);
+  const [editingEnrollment, setEditingEnrollment] = useState<Enrollment | null>(null);
+  const [editPreferredName, setEditPreferredName] = useState('');
+  const [editCompletionDate, setEditCompletionDate] = useState('');
+  const [editCertificateLoading, setEditCertificateLoading] = useState(false);
 
   const fetchEnrollments = useCallback(async (
     cursor?: DocumentSnapshot | null,
@@ -124,29 +130,9 @@ const StudentEnrollments: React.FC = () => {
 
       if (response.success && response.data) {
         setEnrollments(response.data);
-
-        const progressIdentifiers = response
-          .data
-          .data
-          .map(e => ({
-            userId: e.userId,
-            courseId: e.courseId
-          }));
-
-        const certificateInfoResponse = await learningProgressService.getCertificateStatusForPairs(progressIdentifiers);
-        if (!certificateInfoResponse.success) {
-          setEnrollmentCertificateInfo([]);
-          toast({
-            title: "Certificate status info fetching failed"
-          });
-        } else {
-          setEnrollmentCertificateInfo(certificateInfoResponse.data);
-        }
-        // Clear selection when data changes
-        setSelectedEnrollments(new Set());
       }
     } catch (error) {
-      console.error('Error fetching enrollments:', error)
+      logError('Error fetching enrollments:', error)
     } finally {
       setLoading(false)
     }
@@ -246,7 +232,7 @@ const StudentEnrollments: React.FC = () => {
       setSelectedEnrollments(new Set())
 
     } catch (error) {
-      console.error(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollments:`, error)
+      logError(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollments:`, error)
     } finally {
       setBulkActionLoading(false)
     }
@@ -254,31 +240,12 @@ const StudentEnrollments: React.FC = () => {
 
   // Single enrollment status update
   const handleUpdateEnrollmentStatus = async (enrollmentId: string, newStatus: EnrollmentStatus) => {
-    const enrollment = enrollments.data.find(e => e.id === enrollmentId);
-    const action = newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activate' : 'deactivate';
-
-    setConfirmDialog({
-      open: true,
-      title: `${action.charAt(0).toUpperCase() + action.slice(1)} Enrollment`,
-      message: `Are you sure you want to ${action} enrollment for "${enrollment?.userName || 'this student'}" in "${enrollment?.courseName || 'this course'}"?`,
-      onConfirm: async () => {
-        try {
-          await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
-          await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
-          toast({
-            title: "Success",
-            description: `Enrollment ${action}d successfully`
-          });
-        } catch (error) {
-          console.error(`Error ${action}ing enrollment:`, error)
-          toast({
-            title: "Error",
-            description: `Failed to ${action} enrollment`,
-            variant: "destructive"
-          });
-        }
-      }
-    });
+    try {
+      await enrollmentService.updateEnrollmentStatus(enrollmentId, newStatus)
+      await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate)
+    } catch (error) {
+      logError(`Error ${newStatus === ENROLLMENT_STATUS.ACTIVE ? 'activating' : 'deactivating'} enrollment:`, error)
+    }
   }
 
   // Check if selected enrollments can be activated (all are DROPPED)
@@ -414,15 +381,10 @@ const StudentEnrollments: React.FC = () => {
       setBulkCertificateData(progressData);
 
       // Initialize modal selections with enrollment IDs that don't have certificates yet
-      const enrollmentsWithoutCertificates = selectedEnrollmentsList.filter(e => {
-        const certInfo = enrollmentCertificateInfo.find(
-          info => info.courseId === e.courseId && info.userId === e.userId
-        );
-        return !certInfo?.isCertificateIssued;
-      });
+      const enrollmentsWithoutCertificates = selectedEnrollmentsList.filter(e => !e.certification?.issued);
       setSelectedModalEnrollments(new Set(enrollmentsWithoutCertificates.map(e => e.id)));
     } catch (error) {
-      console.error('Error fetching progress data:', error);
+      logError('Error fetching progress data:', error);
       toast({
         title: "Failed to load progress data",
         variant: "destructive"
@@ -452,10 +414,7 @@ const StudentEnrollments: React.FC = () => {
     const progressIdentifiers = enrollments
       .data
       .filter(e => selectedModalEnrollments.has(e.id))
-      .map(e => ({
-        userId: e.userId,
-        courseId: e.courseId
-      }));
+      .map(e => e.id);
 
     try {
       const idToken = await authService.getToken();
@@ -502,10 +461,74 @@ const StudentEnrollments: React.FC = () => {
       setBulkCertificateData([]);
       setSelectedModalEnrollments(new Set());
     } catch (err) {
-      console.error('Error issuing certificates:', err);
+      logError('Error issuing certificates:', err);
     } finally {
       setBulkActionLoading(false);
       setIsIssuingCertificates(false);
+    }
+  };
+
+  // Edit Certificate Handlers
+  const handleOpenEditCertificate = (enrollment: Enrollment) => {
+    setEditingEnrollment(enrollment);
+    setEditPreferredName(enrollment.certification?.preferredName || '');
+
+    // Format completionDate for the date input
+    if (enrollment.completionDate && typeof enrollment.completionDate !== 'symbol') {
+      const date = (enrollment.completionDate as any).toDate ?
+        (enrollment.completionDate as any).toDate() :
+        new Date(enrollment.completionDate as any);
+      setEditCompletionDate(date.toISOString().split('T')[0]);
+    } else {
+      setEditCompletionDate('');
+    }
+
+    setShowEditCertificateModal(true);
+  };
+
+  const handleSaveEditCertificate = async () => {
+    if (!editingEnrollment) return;
+
+    setEditCertificateLoading(true);
+    try {
+      const completionDate = editCompletionDate ? new Date(editCompletionDate) : null;
+
+      const result = await enrollmentService.updateCertificateDetails(
+        editingEnrollment.id,
+        editPreferredName || null,
+        completionDate
+      );
+
+      if (result.success) {
+        toast({
+          title: "Certificate Updated",
+          description: "Certificate details have been updated successfully.",
+        });
+
+        // Refresh the enrollments list
+        await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate);
+
+        // Close modal and reset state
+        setShowEditCertificateModal(false);
+        setEditingEnrollment(null);
+        setEditPreferredName('');
+        setEditCompletionDate('');
+      } else {
+        toast({
+          title: "Update Failed",
+          description: typeof result.error === 'string' ? result.error : result.error?.message || "Failed to update certificate details.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      logError('Error updating certificate:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setEditCertificateLoading(false);
     }
   };
 
@@ -765,26 +788,25 @@ const StudentEnrollments: React.FC = () => {
                             {enrollment.orderId || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                            {enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.remark || 'N/A'}
+                            {enrollment.certification?.remark || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex gap-2">
-                              {enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.isCertificateIssued ? (
-                                <Link
-                                  to={`/certificate/public/view/${enrollmentCertificateInfo.find(e => e.courseId === enrollment.courseId && e.userId === enrollment.userId)?.certificateId}`}
-                                  className="inline-flex items-center justify-center p-2 text-primary rounded transition-colors"
-                                  title="View Certificate"
-                                >
-                                  <Award className="h-4 w-4" />
-                                </Link>
+                              {enrollment.certification?.issued ? (
+                                <>
+                                  <Link to={`/certificate/public/view/${enrollment.certification.certificateId}`} target="_blank" rel="noopener noreferrer" title="View Certificate">
+                                    <Award className="text-primary" />
+                                  </Link>
+                                  <button
+                                    onClick={() => handleOpenEditCertificate(enrollment)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                    title="Edit Certificate"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                </>
                               ) : (
-                                <button
-                                  className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-500 cursor-not-allowed rounded"
-                                  title="No Certificate Issued"
-                                  disabled
-                                >
-                                  <Award className="h-4 w-4" />
-                                </button>
+                                <Award className="text-gray-400" />
                               )}
                               {enrollment.status === ENROLLMENT_STATUS.ACTIVE && (
                                 <button
@@ -973,9 +995,7 @@ const StudentEnrollments: React.FC = () => {
                       </thead>
                       <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                         {getSortedData().map((data, index) => {
-                          const hasCertificate = enrollmentCertificateInfo.find(
-                            info => info.courseId === data.enrollment.courseId && info.userId === data.enrollment.userId
-                          )?.isCertificateIssued;
+                          const hasCertificate = data.enrollment.certification?.issued;
 
                           return (
                             <tr
@@ -1186,27 +1206,81 @@ const StudentEnrollments: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Confirmation Dialog */}
-        <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
-          <DialogContent>
+        {/* Edit Certificate Modal */}
+        <Dialog open={showEditCertificateModal} onOpenChange={setShowEditCertificateModal}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{confirmDialog.title}</DialogTitle>
+              <DialogTitle>Edit Certificate Details</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{confirmDialog.message}</p>
-            <DialogFooter>
+
+            <div className="space-y-4">
+              {/* Student and Course Info */}
+              {editingEnrollment && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-sm">
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {editingEnrollment.userName || editingEnrollment.userId}
+                    </div>
+                    <div className="text-gray-500 dark:text-gray-400">
+                      {editingEnrollment.courseName}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Preferred Name Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Preferred Name on Certificate
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter preferred name..."
+                  value={editPreferredName}
+                  onChange={(e) => setEditPreferredName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Completion Date Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Completion Date
+                </label>
+                <Input
+                  type="date"
+                  value={editCompletionDate}
+                  onChange={(e) => setEditCompletionDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
               <Button
                 variant="outline"
-                onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}
+                onClick={() => {
+                  setShowEditCertificateModal(false);
+                  setEditingEnrollment(null);
+                  setEditPreferredName('');
+                  setEditCompletionDate('');
+                }}
+                disabled={editCertificateLoading}
               >
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  confirmDialog.onConfirm();
-                  setConfirmDialog({ ...confirmDialog, open: false });
-                }}
+                onClick={handleSaveEditCertificate}
+                disabled={editCertificateLoading}
               >
-                Confirm
+                {editCertificateLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

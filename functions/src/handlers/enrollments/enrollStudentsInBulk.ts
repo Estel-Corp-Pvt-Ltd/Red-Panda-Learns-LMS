@@ -101,6 +101,15 @@ export const processEnrollmentTask = onTaskDispatched(
       enrollmentDate: now,
       status: USER_STATUS.ACTIVE,
       orderId: "Admin Enrollment",
+      certification: {
+        issued: false,
+        issuedAt: null,
+        certificateId: null,
+        grade: null,
+        remark: null,
+        preferredName: null,
+      },
+      completionDate: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -112,14 +121,7 @@ export const processEnrollmentTask = onTaskDispatched(
       courseId,
       currentLessonId: null,
       lastAccessed: null,
-      lessonHistory: [],
-      certification: {
-        issued: false,
-        issuedAt: null,
-        certificateId: null,
-        grade: null,
-      },
-      completionDate: null,
+      lessonHistory: {},
       updatedAt: now,
     });
 

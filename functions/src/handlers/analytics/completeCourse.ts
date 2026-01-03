@@ -37,7 +37,6 @@ async function completeCourseHandler(req: Request, res: Response) {
       res.status(400).json({ error: completeCourseResult.error.message || "Failed to complete course" });
       return;
     }
-
     // Analytics updates
     await courseAnalyticsService.updateCourseAnalytics({
       courseId,

@@ -435,6 +435,8 @@ class EnrollmentService {
           bundleId: data.bundleId || '',
           enrollmentDate: data.enrollmentDate,
           status: data.status,
+          completionDate: data.completionDate || null,
+          certification: data.certification || null,
           orderId: data.orderId || '',
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
@@ -469,6 +471,61 @@ class EnrollmentService {
     } catch (error: any) {
       console.error("EnrollmentService - Error fetching enrollments:", error);
       return fail("Error fetching enrollments", error.message);
+    }
+  }
+
+  /**
+   * Updates certificate details (preferredName and completionDate) for an enrollment.
+   *
+   * @param enrollmentId - The ID of the enrollment to update.
+   * @param preferredName - The preferred name to display on the certificate.
+   * @param completionDate - The completion date for the certificate (as Date or null).
+   * @returns A Result object containing success status.
+   */
+  async updateCertificateDetails(
+    enrollmentId: string,
+    preferredName: string | null,
+    completionDate: Date | null
+  ): Promise<Result<boolean>> {
+    try {
+      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+      const enrollmentSnap = await getDoc(enrollmentRef);
+
+      if (!enrollmentSnap.exists()) {
+        return fail("Enrollment not found");
+      }
+
+      const enrollmentData = enrollmentSnap.data() as Enrollment;
+
+      const updateData: any = {
+        updatedAt: serverTimestamp(),
+      };
+
+      // Update certification object if it exists
+      if (enrollmentData.certification) {
+        updateData.certification = {
+          ...enrollmentData.certification,
+          preferredName: preferredName || null,
+        };
+      }
+
+      // Update completionDate
+      if (completionDate) {
+        updateData.completionDate = completionDate;
+      } else {
+        updateData.completionDate = null;
+      }
+
+      await updateDoc(enrollmentRef, updateData);
+      console.log("Certificate details updated successfully.");
+      return ok(true);
+
+    } catch (error: any) {
+      logError("LearningProgressService.updateCertificateDetails", error);
+      return fail(
+        "Failed to update certificate details",
+        error.code || error.message
+      );
     }
   }
 }
