@@ -374,13 +374,16 @@ const CurriculumBuilderPage = () => {
       <Header />
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList>
-            <TabsTrigger value="basics">Basics</TabsTrigger>
-            <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
-            <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
-            {/* New tab trigger */}
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{title || course?.title || "Untitled Course"}</h1>
+            <TabsList>
+              <TabsTrigger value="basics">Basics</TabsTrigger>
+              <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+              <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+              <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
+              {/* New tab trigger */}
+            </TabsList>
+          </div>
 
           {/* ─── BASICS TAB ───────────────────────────────────────── */}
           <TabsContent value="basics">

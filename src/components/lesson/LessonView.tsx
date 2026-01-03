@@ -65,7 +65,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
   const hasShownResumeToast = useRef<boolean>(false);
 
   // Constants
-  const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
   const HEARTBEAT_INTERVAL = 60 * 1000; // Report time every 60 seconds
   const MIN_REPORT_TIME = 5; // Minimum 5 seconds to report
   const DEBOUNCE_INTERACTION = 500; // Debounce interactions to 500ms
@@ -73,7 +73,15 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
   // Listen for fullscreen changes
   useEffect(() => {
     const handleChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isNowFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(isNowFullscreen);
+
+      // Reset interaction time when entering fullscreen to prevent idle detection
+      if (isNowFullscreen) {
+        lastInteractionTimeRef.current = Date.now();
+        timeTrackingRef.current.isActiveSession = true;
+        resetInactivityTimer();
+      }
     };
 
     document.addEventListener("fullscreenchange", handleChange);
@@ -323,6 +331,14 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
 
     if (isTabActiveRef.current && isWindowVisibleRef.current && timeTrackingRef.current.isActiveSession) {
       inactivityTimerRef.current = setTimeout(() => {
+        // Skip inactivity check if in fullscreen mode (user is actively engaged)
+        if (isFullscreen) {
+          // Reset timer and continue tracking
+          lastInteractionTimeRef.current = Date.now();
+          resetInactivityTimer();
+          return;
+        }
+
         // Check inactivity
         const currentTime = Date.now();
         const timeSinceLastInteraction = currentTime - lastInteractionTimeRef.current;
@@ -336,7 +352,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
           if (!hasShownInactivityToast.current) {
             toast({
               title: "Time Tracking Paused",
-              description: "No activity detected for 5 minutes. Time tracking has been paused.",
+              description: "No activity detected for 15 minutes. Time tracking has been paused.",
               duration: 5000,
             });
             hasShownInactivityToast.current = true;
