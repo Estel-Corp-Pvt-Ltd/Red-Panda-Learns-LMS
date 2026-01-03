@@ -587,41 +587,6 @@ class EnrollmentService {
       );
     }
   }
-
-  async getFormattedCompletionDateAndCertificateId(
-    userId: string,
-    courseId: string
-  ): Promise<Result<{ completionDate: string | null; certificateId: string | null; }>> {
-    try {
-      const enrollmentId = `${userId}_${courseId}`;
-      const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
-      const enrollmentSnap = await getDoc(enrollmentRef);
-
-      if (!enrollmentSnap.exists()) {
-        return ok(null);
-      }
-
-      const enrollmentData = enrollmentSnap.data() as Enrollment;
-
-      const formattedDate = formatDate(enrollmentData.completionDate);
-
-      return ok({
-        completionDate: formattedDate === "—" ? null : formattedDate,
-        certificateId: enrollmentData.certification?.certificateId || null
-      });
-
-    } catch (error: any) {
-      logError(
-        "LearningProgressService.getFormattedCompletionDate",
-        error
-      );
-      return fail(
-        "Failed to fetch completion date.",
-        error.code || error.message
-      );
-    }
-  }
-
   /**
  * Sets or updates the certification remark for a user's course enrollment.
  *
