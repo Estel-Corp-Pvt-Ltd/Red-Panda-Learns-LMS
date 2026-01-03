@@ -65,7 +65,7 @@ const CourseSearchSelector: React.FC<CourseSearchSelectorProps> = ({
         role="combobox"
         onClick={() => setIsOpen(true)}
         disabled={isLoading}
-        className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent    text-left"
+        className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent text-muted-foreground hover:text-white text-left"
       >
         <div className="flex items-center gap-2 overflow-hidden w-full ">
           <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
@@ -73,7 +73,7 @@ const CourseSearchSelector: React.FC<CourseSearchSelectorProps> = ({
             {selectedCourse ? (
               selectedCourse.title
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="">{placeholder}</span>
             )}
           </span>
         </div>
