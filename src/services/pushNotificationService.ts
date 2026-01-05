@@ -37,11 +37,12 @@ export const pushNotificationService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Notification request failed (${response.status}):`);
+        console.error(`[PushNotification] Notification request failed (${response.status})`);
+
       }
     } catch (error) {
       console.error("[PushNotification] Error sending notification:", error);
-      throw error;
+   
     }
   },
 };
