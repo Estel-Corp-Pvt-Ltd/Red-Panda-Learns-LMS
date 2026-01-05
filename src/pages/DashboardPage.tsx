@@ -31,12 +31,7 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
-import { userService } from "@/services/userService";
-import { getToken } from "firebase/messaging";
-import { messaging } from "@/firebaseConfig";
-import { Timestamp } from "firebase/firestore";
-import { useEffect, useState } from "react";
-import { StripBannerProvider } from "@/components/StripBannerProvider";
+
 
 function EnrolledCourseCard({
   enrollment,

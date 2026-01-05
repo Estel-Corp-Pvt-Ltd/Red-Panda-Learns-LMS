@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@/types/user";
 import { authService } from "@/services/authService";
-import { db, messaging } from "@/firebaseConfig";
+import { db, getFirebaseMessaging } from "@/firebaseConfig";
 import { collection, doc, getDoc, getDocs, query, Timestamp, where } from "firebase/firestore";
 import { UserRole } from "@/types/general";
 import { UserCredential } from "firebase/auth";
@@ -13,9 +13,17 @@ import { getToken } from "firebase/messaging";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<Result<{ user: User; userCredential: UserCredential }>>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<Result<{ user: User; userCredential: UserCredential }>>;
   signup: (email: string, password: string, name: string) => Promise<Result<{ userId: string }>>;
-  loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string; role: UserRole }>;
+  loginWithGoogle: () => Promise<{
+    success: boolean;
+    userId?: string;
+    error?: string;
+    role: UserRole;
+  }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -98,7 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     success: boolean;
     userId?: string;
     error?: string;
-    role: UserRole
+    role: UserRole;
   }> => {
     const response = await authService.signInWithGoogle();
 
@@ -125,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       success: false,
       error: response.error.message || "Google login failed",
-      role: "student" as UserRole,  // ✅ required prop
+      role: "student" as UserRole, // ✅ required prop
     };
   };
 
@@ -136,31 +144,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-  const registerFcmToken = async () => {
-    if (!user?.id) return;
-    if (!messaging) return;
-    if (!("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
+    const registerFcmToken = async () => {
+      if (!user?.id) return;
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
 
-    try {
-      const token = await getToken(messaging, {
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-      });
+      try {
+        const messaging = await getFirebaseMessaging();
+        if (!messaging) return;
 
-      if (!token) return;
+        const token = await getToken(messaging, {
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+        });
 
-      await userService.upsertFcmToken(user.id, {
-        token,
-        platform: PLATFROM_TYPE.WEB,
-        updatedAt: Timestamp.now(),
-      });
-    } catch (error) {
-      console.error("FCM token registration failed:", error);
-    }
-  };
+        if (!token) return;
 
-  registerFcmToken();
-}, [user?.id]);
+        await userService.upsertFcmToken(user.id, {
+          token,
+          platform: PLATFROM_TYPE.WEB,
+          updatedAt: Timestamp.now(),
+        });
+      } catch (error) {
+        console.error("FCM token registration failed:", error);
+      }
+    };
+
+    registerFcmToken();
+  }, [user?.id]);
 
   // 🔹 Password reset
   const resetPassword = async (email: string) => {

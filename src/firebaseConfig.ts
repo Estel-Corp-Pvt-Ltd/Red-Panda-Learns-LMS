@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore,writeBatch } from "firebase/firestore";
+import { getFirestore, writeBatch } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
@@ -10,7 +10,7 @@ export const firebaseConfig = {
   projectId: import.meta.env.VITE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID
+  appId: import.meta.env.VITE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -25,9 +25,11 @@ export const batch = writeBatch(db);
  * - SSR breaks it
  * - Some browsers don’t support it
  */
-export const messaging = await (async () => {
-  if (await isSupported()) {
-    return getMessaging(app);
-  }
-  return null;
-})();
+export async function getFirebaseMessaging() {
+  if (typeof window === "undefined") return null;
+
+  const supported = await isSupported();
+  if (!supported) return null;
+
+  return getMessaging(app);
+}
