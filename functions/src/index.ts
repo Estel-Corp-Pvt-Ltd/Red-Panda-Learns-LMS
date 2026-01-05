@@ -55,6 +55,7 @@ import {
   ordersHealthCheck,
 } from "./handlers/api/ordersApiHandlers";
 import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
+import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
 
 export {
   enrollStudent,
@@ -108,4 +109,5 @@ export {
   getOrderStats,
   ordersHealthCheck,
   sendCourseWelcomeMailWorker,
+  sendCertificateMailWorker,
 };

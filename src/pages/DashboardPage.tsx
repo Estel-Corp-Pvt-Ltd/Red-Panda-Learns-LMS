@@ -81,14 +81,25 @@ function EnrolledCourseCard({
       setIsCompleting(false);
     }
   };
-
+  console.log("Enrollment:", enrollment, isEligibleForCertificate);
   useEffect(() => {
     const fetchLearningProgress = async () => {
+      if (enrollment.completionDate) {
+        setIsEligibleForCertificate(true);
+        setIsProgressLoading(false);
+        return;
+      }
+      if (!course.isCertificateEnabled) {
+        setIsEligibleForCertificate(false);
+        setIsProgressLoading(false);
+        return;
+      }
       setIsProgressLoading(true);
       const result = await learningProgressService.getUserCourseProgress(
         enrollment.userId,
         enrollment.courseId
       );
+
       if (result.success && result.data[0]) {
         const progress = result.data[0];
         const completedLessonsCount = Array.isArray(progress.lessonHistory)
@@ -97,6 +108,7 @@ function EnrolledCourseCard({
 
         const eligible = totalLessons > 0 && completedLessonsCount >= Math.ceil(0.9 * totalLessons);
 
+        console.log("Learning progress result:", result, { progress, totalLessons, completedLessonsCount, eligible });
         setIsEligibleForCertificate(eligible);
       }
       setIsProgressLoading(false);

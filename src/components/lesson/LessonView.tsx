@@ -66,7 +66,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
 
   // Constants
   const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-  const HEARTBEAT_INTERVAL = 60 * 1000; // Report time every 60 seconds
+  const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // Report time every 2 minutes
   const MIN_REPORT_TIME = 5; // Minimum 5 seconds to report
   const DEBOUNCE_INTERACTION = 500; // Debounce interactions to 500ms
 

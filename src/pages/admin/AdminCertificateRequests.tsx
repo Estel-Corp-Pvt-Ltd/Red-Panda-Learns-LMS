@@ -294,53 +294,45 @@ const AdminCertificateRequests = () => {
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-2">
-                                                                {
-                                                                    req.status === CERTIFICATE_REQUEST_STATUS.PENDING ?
-                                                                        <>
-                                                                            <Button
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() => {
-                                                                                    setIsCertificateApprovalModalOpen(true);
-                                                                                    setSelectedRequest(req);
-                                                                                }}
-                                                                            >
-                                                                                <Check className="h-4 w-4" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() => rejectRequest(req.id)}
-                                                                            >
-                                                                                <X className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </>
+                                                                {req.status === CERTIFICATE_REQUEST_STATUS.PENDING ?
+                                                                    <>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => {
+                                                                                setIsCertificateApprovalModalOpen(true);
+                                                                                setSelectedRequest(req);
+                                                                            }}
+                                                                        >
+                                                                            <Check className="h-4 w-4" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => rejectRequest(req.id)}
+                                                                        >
+                                                                            <X className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </>
+                                                                    : req.status === CERTIFICATE_REQUEST_STATUS.REJECTED ?
+                                                                        (<Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => {
+                                                                                setIsCertificateApprovalModalOpen(true);
+                                                                                setSelectedRequest(req);
+                                                                            }}
+                                                                        >
+                                                                            <Check className="h-4 w-4" />
+                                                                        </Button>)
                                                                         :
-                                                                        (
-                                                                            req.status === CERTIFICATE_REQUEST_STATUS.REJECTED ?
-                                                                                <>
-                                                                                    <Button
-                                                                                        size="sm"
-                                                                                        variant="outline"
-                                                                                        onClick={() => {
-                                                                                            setIsCertificateApprovalModalOpen(true);
-                                                                                            setSelectedRequest(req);
-                                                                                        }}
-                                                                                    >
-                                                                                        <Check className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </>
-                                                                                :
-                                                                                <>
-                                                                                    <Button
-                                                                                        size="sm"
-                                                                                        variant="outline"
-                                                                                        onClick={() => rejectRequest(req.id)}
-                                                                                    >
-                                                                                        <X className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </>
-                                                                        )
+                                                                        (<Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => rejectRequest(req.id)}
+                                                                        >
+                                                                            <X className="h-4 w-4" />
+                                                                        </Button>)
                                                                 }
                                                             </div>
                                                         </TableCell>

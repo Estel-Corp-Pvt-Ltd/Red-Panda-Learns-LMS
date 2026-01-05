@@ -9,6 +9,7 @@ export type CertificateEmail = {
     CERTIFICATE_LINK: string;
     USER_NAME: string;
     COURSE_NAME: string;
+    REMARK: string;
   }
 };
 
@@ -81,24 +82,7 @@ export const sendCertificateMail = async (
 
     <!-- Header -->
     <div style="background:linear-gradient(135deg, #0f4396 0%, #1565c0 100%); padding:32px 24px; text-align:center;">
-      <svg viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg" style="width:80px; height:80px; margin-bottom:16px;">
-        <defs>
-          <path id="tapered-petal" d="
-            M 0,0
-            L -25,-43.3
-            V -70
-            A 25,25 0 0,1 25,-70
-            V -43.3
-            Z" />
-        </defs>
-
-        <use href="#tapered-petal" fill="#FF00FF" />
-        <use href="#tapered-petal" fill="#2DB1E4" transform="rotate(60)" />
-        <use href="#tapered-petal" fill="#FFAE3D" transform="rotate(120)" />
-        <use href="#tapered-petal" fill="#FF00FF" transform="rotate(180)" />
-        <use href="#tapered-petal" fill="#2DB1E4" transform="rotate(240)" />
-        <use href="#tapered-petal" fill="#FFAE3D" transform="rotate(300)" />
-      </svg>
+      <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" style="height:40px; margin-bottom:16px;" />
       <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600; letter-spacing:0.5px;">Welcome to Vizuara!</h1>
     </div>
 

@@ -15,12 +15,13 @@ import { Clock, BookOpen, Award } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Course } from "@/types/course";
 import { courseService } from "@/services/courseService";
+import { enrollmentService } from "@/services/enrollmentService";
 
 interface CertificateApprovalModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     requestId: string;
-    approveRequest: (requestId: string) => void;
+    approveRequest: (requestId: string) => Promise<void>;
     userId: string;
     courseId: string;
 };
@@ -84,14 +85,13 @@ export default function CertificateApprovalModal({
     const handleApproval = async () => {
         setLoading(true);
 
-        approveRequest(requestId);
-
-        const response = await learningProgressService.setCertificationRemark(userId, courseId, remark);
+        const response = await enrollmentService.issueCertificate(userId, courseId, remark);
         if (!response.success) {
             toast({
                 title: "Remark not saved!"
             });
         }
+        await approveRequest(requestId);
         setRemark("");
         setLoading(false);
         onOpenChange(false);
