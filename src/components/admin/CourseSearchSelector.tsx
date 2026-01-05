@@ -65,15 +65,15 @@ const CourseSearchSelector: React.FC<CourseSearchSelectorProps> = ({
         role="combobox"
         onClick={() => setIsOpen(true)}
         disabled={isLoading}
-        className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent hover:text-accent-foreground text-left"
+        className="w-full justify-between h-11 bg-background px-3 shadow-sm hover:bg-accent text-muted-foreground hover:text-white text-left"
       >
-        <div className="flex items-center gap-2 overflow-hidden w-full">
+        <div className="flex items-center gap-2 overflow-hidden w-full ">
           <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
           <span className="truncate flex-1">
             {selectedCourse ? (
               selectedCourse.title
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="">{placeholder}</span>
             )}
           </span>
         </div>
@@ -97,7 +97,7 @@ const CourseSearchSelector: React.FC<CourseSearchSelectorProps> = ({
                   placeholder="Type to search courses..."
                   className="border-none focus:ring-0 text-base h-9 bg-transparent"
                 />
-                <div className="ml-auto text-xs text-muted-foreground border px-2 py-0.5 rounded bg-background">
+                <div className="ml-64  text-xs text-muted-foreground border px-2 py-0.5 rounded bg-background ">
                   ESC to close
                 </div>
               </div>
@@ -136,7 +136,7 @@ const CourseSearchSelector: React.FC<CourseSearchSelectorProps> = ({
                             <span className="font-medium truncate text-sm sm:text-base">
                               {course.title}
                             </span>
-                            <span className="text-xs text-muted-foreground truncate font-mono">
+                            <span className="text-xs  text-muted-foreground dark:text-slate-50 round truncate font-mono">
                               ID: {course.id}
                             </span>
                           </div>

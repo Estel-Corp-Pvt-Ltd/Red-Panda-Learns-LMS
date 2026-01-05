@@ -387,7 +387,7 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
             {announcementType === "COURSE" && (
               <div className="space-y-2">
                 <Label>
-                  Select Course <span className="text-red-500">*</span>
+                  Select Course <span className="text-red-500 ">*</span>
                 </Label>
                 <CourseSearchSelector
                   courses={courses}
@@ -398,7 +398,7 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
                   label=""
                   placeholder="Search and select a course..."
                   showClearButton={true}
-                  className="w-full"
+                  className="w-full "
                 />
                 {loadingCourses && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">

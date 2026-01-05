@@ -130,7 +130,6 @@ return `
         }
         .container {
           background-color: #171726 !important;
-          border: 1px solid #2e2e42 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
         }
         h1, h2, h3 { color: #f8fafc !important; }
@@ -407,7 +406,6 @@ return `
         }
         .container {
           background-color: #171726 !important;
-          border: 1px solid #2e2e42 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
         }
         h1, h2, h3 { color: #f8fafc !important; }
@@ -730,7 +728,6 @@ export const buildComplaintRedressalEmail = (
         }
         .container {
           background-color: #171726 !important;
-          border: 1px solid #2e2e42 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
         }
         h1, h2, h3 { color: #f8fafc !important; }
