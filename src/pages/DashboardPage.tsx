@@ -289,10 +289,44 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!("Notification" in window)) return;
+    const requestNotificationPermission = async () => {
+      if (!user?.id) return; // Only ask if user is logged in
+      if (!("Notification" in window)) return; // Browser doesn't support
 
-    setNotificationPermission(Notification.permission);
-  }, []);
+      // Only ask if permission hasn't been granted or denied yet
+      if (Notification.permission === "default") {
+        try {
+          setIsEnablingNotifications(true);
+          const permission = await Notification.requestPermission();
+          setNotificationPermission(permission);
+
+          if (permission === "granted") {
+            toast({
+              title: "Notifications enabled",
+              description: "You'll be notified when grading is completed.",
+            });
+          } else if (permission === "denied") {
+            toast({
+              title: "Notifications disabled",
+              description:
+                "You denied notification permission. You can enable it in browser settings.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Notification setup failed",
+            description: "Please try again later.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsEnablingNotifications(false);
+        }
+      }
+    };
+
+    requestNotificationPermission();
+  }, [user]);
 
   // Handle enabling notifications (button click)
 
