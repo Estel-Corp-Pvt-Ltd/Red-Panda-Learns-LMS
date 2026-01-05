@@ -92,6 +92,9 @@ class LearningProgressService {
   }
 
   async timeSpentOnLesson(courseId: string, lessonId: string, timeSpentSec: number): Promise<Result<null>> {
+    if (timeSpentSec <= 5) {
+      return fail("Time spent must be greater than five seconds.");
+    }
     try {
       const idToken = await authService.getToken();
       const response = await fetch(`${this.backendUrl}/lessonTimeSpent`, {
