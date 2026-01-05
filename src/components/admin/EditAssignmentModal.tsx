@@ -10,6 +10,10 @@ import { timestampToLocalInput } from "@/utils/date-time";
 import { Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
+import { ContentLockForm } from "./ContentLockForm";
+import { LEARNING_CONTENT } from "@/constants";
+import { ContentLock } from "@/types/content-lock";
+import { contentLockService } from "@/services/contentLockService";
 /* ------------------------------------------------------------------ */
 
 interface EditAssignmentModalProps {
@@ -29,11 +33,15 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
   onClose,
   onUpdated,
 }) => {
-  const [assignment, setAssignment] = useState<Omit<Assignment, "deadline"> & { deadline: string } | null>(null);
+  const [assignment, setAssignment] = useState<
+    (Omit<Assignment, "deadline"> & { deadline: string }) | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [lock, setLock] = useState<ContentLock | null>(null);
+  const [lockLoading, setLockLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -47,14 +55,17 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
     };
   }, [isOpen]);
 
-
   useEffect(() => {
     if (!isOpen || !assignmentId) return;
     const fetchData = async () => {
       try {
         setLoading(true);
         const res = await assignmentService.getAssignmentById(assignmentId);
-        if (res.success) setAssignment({ ...res.data, deadline: timestampToLocalInput(res.data.deadline?.toDate()) });
+        if (res.success)
+          setAssignment({
+            ...res.data,
+            deadline: timestampToLocalInput(res.data.deadline?.toDate()),
+          });
       } catch (err) {
         onClose();
       } finally {
@@ -75,8 +86,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
       setNewFiles((prev) => [...prev, ...Array.from(e.target.files)]);
     }
   };
-  const removeNewFile = (i: number) =>
-    setNewFiles((prev) => prev.filter((_, idx) => idx !== i));
+  const removeNewFile = (i: number) => setNewFiles((prev) => prev.filter((_, idx) => idx !== i));
 
   const removeExistingFile = (i: number) => {
     if (!assignment) return;
@@ -112,10 +122,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
         attachments: [...assignment.attachments, ...appended],
       };
 
-      const res = await assignmentService.updateAssignment(
-        assignment.id,
-        updated
-      );
+      const res = await assignmentService.updateAssignment(assignment.id, updated);
       if (res.success) {
         toast({
           title: "Assignment Updated Successfully",
@@ -134,9 +141,32 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
     }
   };
 
+  const refetchLocks = async () => {
+    if (!assignmentId) return;
+
+    try {
+      setLockLoading(true);
+      const res = await contentLockService.getLocksByContentId(assignmentId);
+
+      if (res.success) {
+        // Assuming only ONE lock per content
+        setLock(res.data.length > 0 ? res.data[0] : null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch content lock", err);
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !assignmentId) return;
+
+    refetchLocks();
+  }, [isOpen, assignmentId]);
+
   const colorMode =
-    typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
@@ -168,9 +198,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
 
         {/* Body */}
         {loading || !assignment ? (
-          <div className="flex items-center justify-center py-24 text-gray-600">
-            Loading...
-          </div>
+          <div className="flex items-center justify-center py-24 text-gray-600">Loading...</div>
         ) : (
           <div className="space-y-8">
             {/* Title */}
@@ -191,10 +219,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Content
               </label>
-              <div
-                data-color-mode={colorMode}
-                className="border rounded-lg dark:border-gray-700"
-              >
+              <div data-color-mode={colorMode} className="border rounded-lg dark:border-gray-700">
                 <MarkdownEditor
                   value={assignment.content}
                   onChange={(val) => handleChange("content", val || "")}
@@ -282,9 +307,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
 
               {(uploading || newFiles.length > 0) && (
                 <p className="text-xs text-blue-500 mt-2 animate-pulse">
-                  {uploading
-                    ? "Uploading attachments..."
-                    : "New files ready for upload"}
+                  {uploading ? "Uploading attachments..." : "New files ready for upload"}
                 </p>
               )}
             </div>
@@ -292,12 +315,10 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
             {/* Settings */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm dark:text-gray-300 mb-1">
-                  Deadline
-                </label>
+                <label className="block text-sm dark:text-gray-300 mb-1">Deadline</label>
                 <input
                   type="datetime-local"
-                  value={assignment.deadline || ''}
+                  value={assignment.deadline || ""}
                   onChange={(e) => handleChange("deadline", e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
@@ -312,9 +333,7 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
                 }) as [keyof Assignment, string][]
               ).map(([key, label]) => (
                 <div key={key}>
-                  <label className="block text-sm dark:text-gray-300 mb-1">
-                    {label}
-                  </label>
+                  <label className="block text-sm dark:text-gray-300 mb-1">{label}</label>
                   <input
                     type="number"
                     value={assignment[key] as number}
@@ -324,6 +343,14 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
                 </div>
               ))}
             </div>
+
+            <ContentLockForm
+              contentType={LEARNING_CONTENT.ASSIGNMENT}
+              contentId={assignmentId}
+              existingLock={lock} // optional
+              onSaved={() => refetchLocks()}
+              onDeleted={() => refetchLocks()}
+            />
 
             {/* Footer */}
             <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
