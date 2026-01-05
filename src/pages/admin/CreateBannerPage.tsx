@@ -38,7 +38,8 @@ export default function CreateBannerPage() {
     gradientColors: ["#3B82F6", "#8B5CF6"],
     courseIds: [],
     status: BANNER_STATUS.ACTIVE,
-    showToAllUsers: null,
+    showToAllUsers: false,
+    showInLandingPage: false,
   });
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
@@ -238,7 +239,7 @@ export default function CreateBannerPage() {
       }
     }
 
-    if (formData.courseIds.length === 0) {
+    if (formData.courseIds.length === 0 && !formData.showToAllUsers) {
       toast({
         title: "No Courses Selected",
         description: "Please select at least one course to target",
@@ -416,6 +417,15 @@ export default function CreateBannerPage() {
                     id="show-to-all-users"
                     checked={formData.showToAllUsers}
                     onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showToAllUsers: checked }))}
+                    className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+                  />
+                </div>
+                <div className="gap-2 flex items-center">
+                  <Label htmlFor="show-in-landing-page">Show in Landing Page</Label>
+                  <Switch
+                    id="show-in-landing-page"
+                    checked={formData.showInLandingPage}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showInLandingPage: checked }))}
                     className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
                   />
                 </div>

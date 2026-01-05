@@ -1,5 +1,5 @@
 import { Header } from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { UserSidebarMobileToggle } from "@/components/Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import {
   Award,
   Bell,
   BellOff,
+  Loader2
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -34,6 +35,8 @@ import { userService } from "@/services/userService";
 import { getToken } from "firebase/messaging";
 import { messaging } from "@/firebaseConfig";
 import { Timestamp } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { StripBannerProvider } from "@/components/StripBannerProvider";
 
 function EnrolledCourseCard({
   enrollment,
@@ -50,9 +53,9 @@ function EnrolledCourseCard({
   const [isProgressLoading, setIsProgressLoading] = useState(true);
 
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isCertificateIdAvailable, setIsCertificateIdAvailable] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(!!enrollment.completionDate); // completionDate exists
   const [isCompleting, setIsCompleting] = useState(false);
+  const isCertificateIdAvailable = !!enrollment.certification?.certificateId;
 
   const totalLessons =
     course?.topics?.reduce((sum, topic) => {
@@ -94,14 +97,24 @@ function EnrolledCourseCard({
       setIsCompleting(false);
     }
   };
-
   useEffect(() => {
     const fetchLearningProgress = async () => {
+      if (enrollment.completionDate) {
+        setIsEligibleForCertificate(true);
+        setIsProgressLoading(false);
+        return;
+      }
+      if (!course.isCertificateEnabled) {
+        setIsEligibleForCertificate(false);
+        setIsProgressLoading(false);
+        return;
+      }
       setIsProgressLoading(true);
       const result = await learningProgressService.getUserCourseProgress(
         enrollment.userId,
         enrollment.courseId
       );
+
       if (result.success && result.data[0]) {
         const progress = result.data[0];
         const completedLessonsCount = Array.isArray(progress.lessonHistory)
@@ -109,10 +122,7 @@ function EnrolledCourseCard({
           : Object.keys(progress.lessonHistory).length;
 
         const eligible = totalLessons > 0 && completedLessonsCount >= Math.ceil(0.9 * totalLessons);
-
         setIsEligibleForCertificate(eligible);
-        setIsCertificateIdAvailable(!!progress.certification?.certificateId);
-        setIsCompleted(!!progress.completionDate);
       }
       setIsProgressLoading(false);
     };
@@ -177,30 +187,30 @@ function EnrolledCourseCard({
                   <Clock className="h-4 w-4" />
                   <span>Enrolled {formatDate(enrollment.enrollmentDate)}</span>
                 </div>
-                <Badge variant="outline" className="text-xs">
+                {/* <Badge variant="outline" className="text-xs">
                   {enrollment.status}
-                </Badge>
+                </Badge> */}
               </div>
               <div className="flex gap-3">
                 {course?.isForumEnabled && (
                   <Link to={`/courses/${course.slug}/forum`}>
                     <Button size="sm" variant="outline">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Forum
+                      <MessageSquare className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:block">Forum</span>
                     </Button>
                   </Link>
                 )}
                 <Button size="sm" onClick={handleContinueLearning}>
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  Continue
+                  <PlayCircle className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:block">Continue</span>
                 </Button>
 
                 {showCertificateFeatures && (
                   <>
                     {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
                       <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        {isCompleting ? "Completing..." : "Complete Course"}
+                        {isCompleting ? <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 sm:mr-2" />}
+                        <span className="hidden sm:inline">{isCompleting ? "Completing..." : "Complete Course"}</span>
                       </Button>
                     )}
 
@@ -209,8 +219,8 @@ function EnrolledCourseCard({
                         {isCertificateIdAvailable ? (
                           <Link to={`/certificate/${user.id}_${course.id}/`}>
                             <Button size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Certificate
+                              <Award className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">View Certificate</span>
                             </Button>
                           </Link>
                         ) : (
@@ -467,7 +477,9 @@ export default function DashboardPage() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <Header />
+
       <div className="flex flex-1 overflow-hidden">
+        {/* Desktop sidebar (hidden on mobile inside Sidebar component) */}
         <Sidebar />
         <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
           {/* Banners Section */}

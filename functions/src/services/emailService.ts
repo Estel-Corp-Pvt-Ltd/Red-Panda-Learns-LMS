@@ -130,7 +130,6 @@ return `
         }
         .container {
           background-color: #171726 !important;
-          border: 1px solid #2e2e42 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
         }
         h1, h2, h3 { color: #f8fafc !important; }
@@ -218,7 +217,7 @@ return `
                   <tr>
                     <td align="center" style="padding-bottom: 32px;">
                       <p style="font-size: 16px; color: #4a4a5a; line-height: 1.6; margin: 0; max-width: 400px;">
-                        Hello, a new assignment submission has just been uploaded and is ready for your evaluation.
+                        Hello, a new assignment submission has been received and is ready for assessment.
                       </p>
                     </td>
                   </tr>
@@ -407,7 +406,6 @@ return `
         }
         .container {
           background-color: #171726 !important;
-          border: 1px solid #2e2e42 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
         }
         h1, h2, h3 { color: #f8fafc !important; }
@@ -730,7 +728,6 @@ export const buildComplaintRedressalEmail = (
         }
         .container {
           background-color: #171726 !important;
-          border: 1px solid #2e2e42 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
         }
         h1, h2, h3 { color: #f8fafc !important; }

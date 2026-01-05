@@ -18,6 +18,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string; role: UserRole }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -175,6 +176,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // 🔹 Refresh user data
+  const refreshUser = async () => {
+    if (!user) return;
+    const userData = await fetchUserFromFirestore(user.id, user.email);
+    if (userData) {
+      setUser(userData);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -183,6 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     logout,
     resetPassword,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

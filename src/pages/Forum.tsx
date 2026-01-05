@@ -134,6 +134,19 @@ const Forum: React.FC = () => {
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
+      // Validate file sizes (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      const invalidFiles = files.filter(file => file.size > maxSize);
+
+      if (invalidFiles.length > 0) {
+        toast({
+          title: 'File too large',
+          description: `${invalidFiles.length} file(s) exceed the 10MB limit. Please upload smaller files.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const newPreviews: { file: File; preview: string | null }[] = [];
 
       files.forEach((file) => {
@@ -162,6 +175,24 @@ const Forum: React.FC = () => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const newFiles = Array.from(files);
+
+      // Validate file sizes (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      const invalidFiles = newFiles.filter(file => file.size > maxSize);
+
+      if (invalidFiles.length > 0) {
+        toast({
+          title: 'File too large',
+          description: `${invalidFiles.length} file(s) exceed the 10MB limit. Please upload smaller files.`,
+          variant: 'destructive',
+        });
+        // Reset input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+
       const newPreviews: { file: File; preview: string | null }[] = [];
 
       newFiles.forEach((file) => {

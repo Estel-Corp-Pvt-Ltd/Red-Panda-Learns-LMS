@@ -18,6 +18,8 @@ export const LESSON_TYPE = {
   VIDEO_LECTURE: "VIDEO LECTURE",
   INTERACTIVE_PROJECT: "INTERACTIVE PROJECT",
   PDF: "PDF",
+  MIRO_BOARD: "MIRO BOARD",
+  TEXT: "TEXT",
 } as const;
 
 export const VIDEO_SOURCE = {
@@ -86,6 +88,11 @@ export const COURSE_DIFFICULTY_LEVEL = {
 export const PRICING_MODEL = {
   FREE: "FREE",
   PAID: "PAID",
+} as const;
+
+export const BANNER_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
 } as const;
 
 export const USER_STATUS = {
@@ -195,10 +202,6 @@ export const ANNOUNCEMENT_STATUS = {
   ARCHIVED: "ARCHIVED",
 } as const;
 
-export const BANNER_STATUS = {
-  ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE",
-} as const;
 
 
 
@@ -414,9 +417,11 @@ export const COLLECTION = {
   ASSIGNMENTS: "Assignments",
   ASSIGNMENT_SUBMISSIONS: "AssignmentSubmissions",
   COURSES: "Courses",
+  BANNERS: 'Banners',
   BUNDLES: "Bundles",
   COHORTS: "Cohorts",
   COMMENTS: 'Comments',
+  STRIP_BANNERS: 'StripBanners',
   COMMENT_VOTES: 'CommentVotes',
   USERS: "Users",
   CARTS: "Carts",
@@ -446,10 +451,10 @@ export const COLLECTION = {
   CERTIFICATE_REQUESTS: "CertificateRequests",
   LESSON_ANALYTICS: "LessonAnalytics",
   COURSE_ANALYTICS: "CourseAnalytics",
-  BANNERS: "Banners",
   FORUM_CHANNELS: "ForumChannels",
   CHANNEL_MESSAGES: "ChannelMessages",
-  FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes"
+  FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes",
+  COURSE_WELCOME_TEMPLATES: "CourseWelcomeTemplates"
 } as const;
 
 export const ATTRIBUTE_TYPE = {

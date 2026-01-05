@@ -9,6 +9,8 @@ import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, query, QueryConstraint, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
+import { Enrollment } from "@/types/enrollment";
+import { enrollmentService } from "./enrollmentService";
 
 class CertificateRequestService {
 
@@ -17,20 +19,17 @@ class CertificateRequestService {
         courseId: string
     ): Promise<Result<{ requestId: string }>> {
         try {
-            const progressQuery = query(
-                collection(db, COLLECTION.LEARNING_PROGRESS),
-                where("userId", "==", userId),
-                where("courseId", "==", courseId)
-            );
+            const enrollmentId = `${userId}_${courseId}`;
+            const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
+            const enrollmentSnap = await getDoc(enrollmentRef);
 
-            const progressSnap = await getDocs(progressQuery);
-
-            if (progressSnap.empty) {
-                return fail("Learning progress not found");
+            if (!enrollmentSnap.exists()) {
+                return fail("Enrollment not found");
             }
 
-            const progressData = progressSnap.docs[0].data() as LearningProgress;
-            if (!progressData.completionDate) {
+            const enrollmentData = enrollmentSnap.data() as Enrollment;
+
+            if (!enrollmentData.completionDate) {
                 return fail("Course not completed yet");
             }
 
@@ -185,20 +184,9 @@ class CertificateRequestService {
 
     async approveCertificateRequest(
         requestId: string,
-        adminUid: string
+        remark: string,
     ): Promise<Result<boolean>> {
         try {
-            const adminRef = doc(db, COLLECTION.USERS, adminUid);
-            const adminSnap = await getDoc(adminRef);
-
-            if (!adminSnap.exists()) {
-                return fail("Admin not found");
-            }
-
-            if (adminSnap.data().role !== USER_ROLE.ADMIN) {
-                return fail("Unauthorized");
-            }
-
             const requestRef = doc(db, COLLECTION.CERTIFICATE_REQUESTS, requestId);
             const requestSnap = await getDoc(requestRef);
 
@@ -208,10 +196,10 @@ class CertificateRequestService {
 
             const request = requestSnap.data() as CertificateRequest;
 
-            const issueResult = await learningProgressService.issueCertificate(
+            const issueResult = await enrollmentService.issueCertificate(
                 request.userId,
                 request.courseId,
-                adminUid
+                remark
             );
 
             if (!issueResult.success) {

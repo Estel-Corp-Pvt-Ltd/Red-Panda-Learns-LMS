@@ -21,16 +21,6 @@ import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
 import { learningProgressService } from "@/services/learningProgressService";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface LessonViewProps {
   lessonId: string;
@@ -68,21 +58,30 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
   // Inactivity monitoring
   const lastInteractionTimeRef = useRef<number>(Date.now());
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showInactivityPrompt, setShowInactivityPrompt] = useState(false);
   const isTabActiveRef = useRef<boolean>(true);
   const isWindowVisibleRef = useRef<boolean>(true);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasShownInactivityToast = useRef<boolean>(false);
+  const hasShownResumeToast = useRef<boolean>(false);
 
   // Constants
-  const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes
-  const HEARTBEAT_INTERVAL = 60 * 1000; // Report time every 60 seconds
+  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // Report time every 2 minutes
   const MIN_REPORT_TIME = 5; // Minimum 5 seconds to report
   const DEBOUNCE_INTERACTION = 500; // Debounce interactions to 500ms
 
   // Listen for fullscreen changes
   useEffect(() => {
     const handleChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isNowFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(isNowFullscreen);
+
+      // Reset interaction time when entering fullscreen to prevent idle detection
+      if (isNowFullscreen) {
+        lastInteractionTimeRef.current = Date.now();
+        timeTrackingRef.current.isActiveSession = true;
+        resetInactivityTimer();
+      }
     };
 
     document.addEventListener("fullscreenchange", handleChange);
@@ -237,11 +236,30 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
 
       // Set new debounce timer
       interactionDebounceTimer = setTimeout(() => {
+        const wasInactive = !timeTrackingRef.current.isActiveSession;
+
         lastInteractionTimeRef.current = Date.now();
         resetInactivityTimer();
 
-        // Ensure session is active on interaction
-        timeTrackingRef.current.isActiveSession = true;
+        // Resume session on interaction if it was paused
+        if (wasInactive) {
+          timeTrackingRef.current.isActiveSession = true;
+          timeTrackingRef.current.lastReportTime = Date.now();
+
+          // Show resume toast only once after inactivity
+          if (!hasShownResumeToast.current && hasShownInactivityToast.current) {
+            toast({
+              title: "Time Tracking Resumed",
+              description: "Activity detected. Time tracking has resumed.",
+              duration: 3000,
+            });
+            hasShownResumeToast.current = true;
+            hasShownInactivityToast.current = false; // Reset inactivity toast flag
+          }
+        } else {
+          // Ensure session is active on interaction
+          timeTrackingRef.current.isActiveSession = true;
+        }
 
         interactionDebounceTimer = null;
       }, DEBOUNCE_INTERACTION);
@@ -313,27 +331,36 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
 
     if (isTabActiveRef.current && isWindowVisibleRef.current && timeTrackingRef.current.isActiveSession) {
       inactivityTimerRef.current = setTimeout(() => {
+        // Skip inactivity check if in fullscreen mode (user is actively engaged)
+        if (isFullscreen) {
+          // Reset timer and continue tracking
+          lastInteractionTimeRef.current = Date.now();
+          resetInactivityTimer();
+          return;
+        }
+
         // Check inactivity
         const currentTime = Date.now();
         const timeSinceLastInteraction = currentTime - lastInteractionTimeRef.current;
 
         if (timeSinceLastInteraction >= INACTIVITY_TIMEOUT) {
-          setShowInactivityPrompt(true);
-          // Pause session when showing inactivity prompt
+          // Pause session due to inactivity
           timeTrackingRef.current.isActiveSession = false;
           reportTimeSpent(true, false);
+
+          // Show toast notification only once
+          if (!hasShownInactivityToast.current) {
+            toast({
+              title: "Time Tracking Paused",
+              description: "No activity detected for 15 minutes. Time tracking has been paused.",
+              duration: 5000,
+            });
+            hasShownInactivityToast.current = true;
+            hasShownResumeToast.current = false; // Reset resume toast flag
+          }
         }
       }, INACTIVITY_TIMEOUT);
     }
-  };
-
-  const handleInactivityPromptClose = () => {
-    setShowInactivityPrompt(false);
-    lastInteractionTimeRef.current = Date.now();
-    // Resume session when user acknowledges prompt
-    timeTrackingRef.current.isActiveSession = true;
-    timeTrackingRef.current.lastReportTime = Date.now();
-    resetInactivityTimer();
   };
 
   // Fetch lesson data
@@ -469,8 +496,12 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
 
   const getLessonContent = () => {
     switch (lesson.type) {
+      case LESSON_TYPE.TEXT:
+        return <></>;
+
       case LESSON_TYPE.SLIDE_DECK:
       case LESSON_TYPE.PDF:
+      case LESSON_TYPE.MIRO_BOARD:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
@@ -491,7 +522,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
           />
         );
 
-      case LESSON_TYPE.INTERACTIVE_PROJECT: {
+      case LESSON_TYPE.INTERACTIVE_PROJECT:
         const srcFromHtml = extractIframeSrc(lesson.embedUrl);
         if (srcFromHtml) {
           return (
@@ -529,7 +560,6 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
             </div>
           </div>
         );
-      }
 
       case LESSON_TYPE.VIDEO_LECTURE:
         return <VideoPlayer url={lesson.embedUrl} />;
@@ -634,7 +664,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
       {!shouldHideDetails && (
         <>
           {/* Progress Indicator */}
-          <Card className="bg-muted/30">
+          {/* <Card className="bg-muted/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Lesson Progress</span>
@@ -644,7 +674,7 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
               </div>
               <Progress value={completed ? 100 : 0} className="h-2" />
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Lesson Description */}
           <div className="flex flex-col md:flex-row gap-4">
@@ -736,25 +766,6 @@ export function LessonView({ lessonId, courseName, onComplete, completed }: Less
           <Comments lessonId={lesson.id} courseId={lesson.courseId} lessonName={lesson.title} courseName={courseName} />
         </>
       )}
-      <AlertDialog open={showInactivityPrompt} onOpenChange={setShowInactivityPrompt}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you still there?</AlertDialogTitle>
-            <AlertDialogDescription>
-              It looks like you haven't interacted with the lesson for 1 minute.
-              Your learning progress has been saved. Do you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleInactivityPromptClose}>
-              Continue Learning
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleInactivityPromptClose}>
-              Yes, I'm Back
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

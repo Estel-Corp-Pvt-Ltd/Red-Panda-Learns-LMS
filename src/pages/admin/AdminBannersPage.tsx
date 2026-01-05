@@ -144,6 +144,7 @@ const AdminBannersPage: React.FC = () => {
       gradientColors: banner.gradientColors,
       courseIds: banner.courseIds,
       status: banner.status,
+      showToAllUsers: banner.showToAllUsers || false,
     }, user.id);
 
     if (response.success) {

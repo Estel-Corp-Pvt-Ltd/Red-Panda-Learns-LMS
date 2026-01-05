@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ import { Eye, EyeOff, Mail, Lock, User, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { getRecaptchaToken, isLowEndDevice } from "@/utils/recaptcha";
+import { loadRecaptcha } from "@/utils/recaptcha"; // Ensure recaptcha is loaded
+
 import EmailSentAlert from "@/components/auth/EmailSentAlert";
 
 export default function Signup() {
@@ -34,6 +37,12 @@ export default function Signup() {
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadRecaptcha().catch((err) => {
+      console.error("reCAPTCHA failed to load", err);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,12 +87,7 @@ export default function Signup() {
         return;
       }
 
-      console.log(
-        "reCAPTCHA v3 passed — score:",
-        verifyData.score,
-        "action:",
-        verifyData.action
-      );
+      console.log("reCAPTCHA v3 passed — score:", verifyData.score, "action:", verifyData.action);
 
       // 🔹 3) Proceed with Firebase signup
       const confirmation = await signup(email, password, name);
@@ -116,8 +120,7 @@ export default function Signup() {
       await loginWithGoogle();
       toast({
         title: "Account created successfully!",
-        description:
-          "Welcome to Vizuara AI Labs. You can now access your courses.",
+        description: "Welcome to Vizuara AI Labs. You can now access your courses.",
       });
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
@@ -136,9 +139,7 @@ export default function Signup() {
               <img src="/logo.png" className="w-10" alt="" />
               <span className="text-2xl font-bold">Vizuara AI Labs</span>
             </div>
-            <CardTitle className="text-2xl font-bold">
-              Create an account
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
             <CardDescription>
               Enter your information to get started with Vizuara AI Labs
             </CardDescription>
@@ -168,12 +169,7 @@ export default function Signup() {
   "
                 aria-label="Continue with Google"
               >
-                <img
-                  src="/google-logo.svg"
-                  alt="Google"
-                  className="h-6 w-6 "
-                  loading="eager"
-                />
+                <img src="/google-logo.svg" alt="Google" className="h-6 w-6 " loading="eager" />
                 {loading ? "Signing in..." : "Continue with Google"}
               </Button>
 
@@ -182,9 +178,7 @@ export default function Signup() {
                   <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
 
@@ -289,10 +283,7 @@ export default function Signup() {
             <p className="text-sm text-muted-foreground">
               {" "}
               Already have an account?{" "}
-              <Link
-                to="/auth/login"
-                className="text-primary hover:underline font-medium"
-              >
+              <Link to="/auth/login" className="text-primary hover:underline font-medium">
                 {" "}
                 Sign in{" "}
               </Link>{" "}
@@ -324,7 +315,7 @@ export default function Signup() {
           </CardFooter>
         </Card>
       </div>
-      {showEmailSentAlert && (<EmailSentAlert email={email} setVisible={setShowEmailSentAlert} />)}
+      {showEmailSentAlert && <EmailSentAlert email={email} setVisible={setShowEmailSentAlert} />}
     </div>
   );
 }

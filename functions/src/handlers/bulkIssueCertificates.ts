@@ -7,16 +7,11 @@ import { corsMiddleware } from "../middlewares/cors";
 import { withMiddleware } from "../middlewares";
 import crypto from "crypto";
 import { logger } from "firebase-functions";
+import { PubSub } from "@google-cloud/pubsub";
+import { CertificateEmail } from "../utils/mails/certificate";
+import { Enrollment } from "../types/enrollment";
 
-function chunk<T>(arr: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) {
-        chunks.push(arr.slice(i, i + size));
-    }
-    return chunks;
-};
-
-// TODO: Make sure to add check for Admin operations
+const pubsub = new PubSub();
 
 async function bulkIssueCertificatesHandler(req: Request, res: Response) {
     try {
@@ -29,18 +24,17 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
 
         if (!Array.isArray(enrollments) || enrollments.length === 0) {
             res.status(400).json({
-                error: "enrollments must be a non-empty array",
+                error: "enrollments must be a non-empty array of enrollment IDs",
             });
             return;
         }
 
-        for (const e of enrollments) {
-            if (!e.userId || !e.courseId) {
-                res.status(400).json({
-                    error: "Each enrollment must have userId and courseId",
-                });
-                return;
-            }
+        // Validate all items are strings (enrollment IDs)
+        if (!enrollments.every(id => typeof id === "string")) {
+            res.status(400).json({
+                error: "All enrollment IDs must be strings",
+            });
+            return;
         }
 
         if (!remark || typeof remark !== "string") {
@@ -58,80 +52,58 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
         let skippedCount = 0;
         const skippedEnrollments: string[] = [];
 
-        const enrollmentChunks = chunk(enrollments, 450);
-        const READ_CONCURRENCY = 15;
+        // Process enrollments one by one
+        for (const enrollmentId of enrollments) {
+            try {
+                const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
+                const snap = await enrollmentRef.get();
 
-        for (const enrollmentChunk of enrollmentChunks) {
-            const batch = db.batch();
-
-            const readChunks = chunk(enrollmentChunk, READ_CONCURRENCY);
-
-            for (const readChunk of readChunks) {
-                const progressSnaps = await Promise.all(
-                    readChunk.map(({ userId, courseId }) => {
-                        return db
-                            .collection(COLLECTION.LEARNING_PROGRESS)
-                            .where("userId", "==", userId)
-                            .where("courseId", "==", courseId)
-                            .limit(1)
-                            .get();
-                    })
-                );
-
-                for (let i = 0; i < progressSnaps.length; i++) {
-                    const snap = progressSnaps[i];
-                    const enrollment = readChunk[i];
-
-                    if (!snap || snap.empty) {
-                        const certificateId = crypto.randomUUID();
-                        batch.create(
-                            db.collection(COLLECTION.LEARNING_PROGRESS).doc(),
-                            {
-                                userId: enrollment.userId,
-                                courseId: enrollment.courseId,
-                                currentLessonId: null,
-                                lastAccessed: now,
-                                lessonHistory: {},
-                                certification: {
-                                    issued: true,
-                                    issuedAt: now,
-                                    certificateId,
-                                    remark,
-                                },
-                                completionDate: now,
-                                updatedAt: now,
-                            }
-                        );
-                        issuedCertificates.push(`${enrollment.userId}_${enrollment.courseId}`);
-                        issuedCount++;
-                        continue;
-                    }
-
-                    const doc = snap.docs[0];
-                    const data = doc.data();
-
-                    if (data.certification?.issued === true) {
-                        skippedEnrollments.push(`${data.userId}_${data.courseId}`);
-                        skippedCount++;
-                        continue;
-                    }
-
-                    const certificateId = crypto.randomUUID();
-
-                    batch.update(doc.ref, {
-                        "certification.issued": true,
-                        "certification.issuedAt": now,
-                        "certification.certificateId": certificateId,
-                        "certification.remark": remark,
-                        completionDate: data.completionDate ?? now,
-                        updatedAt: now,
-                    });
-                    issuedCertificates.push(`${data.userId}_${data.courseId}`);
-                    issuedCount++;
+                if (!snap.exists) {
+                    logger.log(`Enrollment ${enrollmentId} does not exist, skipping.`);
+                    skippedEnrollments.push(enrollmentId);
+                    skippedCount++;
+                    continue;
                 }
-            }
 
-            await batch.commit();
+                const data = snap.data() as Enrollment;
+
+                if (data?.certification?.issued === true) {
+                    logger.log(`Certificate already issued for enrollment ${enrollmentId}, skipping.`);
+                    skippedEnrollments.push(enrollmentId);
+                    skippedCount++;
+                    continue;
+                }
+
+                const certificateId = crypto.randomUUID();
+
+                await enrollmentRef.update({
+                    "certification.issued": true,
+                    "certification.issuedAt": now,
+                    "certification.certificateId": certificateId,
+                    "certification.remark": remark,
+                    completionDate: data?.completionDate ?? now,
+                    updatedAt: now,
+                });
+                await pubsub.topic("certificate-mail").publishMessage({
+                    json: {
+                        email: data.userEmail,
+                        subject: `Certificate for {{COURSE_NAME}} is Here! - Vizuara`,
+                        body: `Dear {{USER_NAME}},\n\nCongratulations on completing the course "{{COURSE_NAME}}"! We are thrilled to inform you that your certificate is now ready.\n\nYou can download your certificate using the following link:\n\n{{CERTIFICATE_LINK}}\n\nREMARK: {{REMARK}}\n\nKeep up the great work!`,
+                        vars: {
+                            CERTIFICATE_LINK: `https://vizuara.ai/certificate/${data.id}`,
+                            USER_NAME: data.userName,
+                            COURSE_NAME: data.courseName,
+                            REMARK: remark,
+                        }
+                    } as CertificateEmail,
+                });
+                issuedCertificates.push(enrollmentId);
+                issuedCount++;
+            } catch (error: any) {
+                logger.error(`Failed to issue certificate for ${enrollmentId}:`, error);
+                skippedEnrollments.push(enrollmentId);
+                skippedCount++;
+            }
         }
 
         res.status(200).json({

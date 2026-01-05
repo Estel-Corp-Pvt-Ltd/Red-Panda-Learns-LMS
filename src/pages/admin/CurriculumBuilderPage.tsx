@@ -48,7 +48,7 @@ const CurriculumBuilderPage = () => {
   });
 
   const { user } = useAuth();
-   const location = useLocation();
+  const location = useLocation();
   // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
@@ -75,20 +75,21 @@ const CurriculumBuilderPage = () => {
   const [isMailSendingEnabled, setIsMailSendingEnabled] = useState(false);
   const [isCertificateEnabled, setIsCertificateEnabled] = useState(false);
   const [isForumEnabled, setIsForumEnabled] = useState(false);
+  const [isWelcomeMessageEnabled, setIsEnrollAnnouncementEnabled] = useState(false);
   const [customCertificateName, setCustomCertificateName] = useState("");
   const itemId = new URLSearchParams(location.search).get("itemId");
-const [activeTab, setActiveTab] = useState("basics");
+  const [activeTab, setActiveTab] = useState("basics");
 
-// Handle URL parameters to switch to curriculum tab
+  // Handle URL parameters to switch to curriculum tab
 
-useEffect(() => {
-  const params = new URLSearchParams(location.search);
-  const itemId = params.get("itemId");
-  
-  if (itemId) {
-    setActiveTab("curriculum");
-  }
-}, [location.search]);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const itemId = params.get("itemId");
+
+    if (itemId) {
+      setActiveTab("curriculum");
+    }
+  }, [location.search]);
   // ─── Curriculum Management ──────────────────────────────────
   type DraggableItem = {
     id: string;
@@ -179,6 +180,7 @@ useEffect(() => {
         setIsMailSendingEnabled(data.isMailSendingEnabled ?? false);
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
         setIsForumEnabled(data.isForumEnabled ?? false);
+        setIsEnrollAnnouncementEnabled(data.isWelcomeMessageEnabled ?? false);
         setCustomCertificateName(
           data.customCertificateName || data.title || ""
         );
@@ -295,6 +297,7 @@ useEffect(() => {
         isMailSendingEnabled,
         isCertificateEnabled,
         isForumEnabled,
+        isWelcomeMessageEnabled,
         customCertificateName,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
@@ -371,13 +374,16 @@ useEffect(() => {
       <Header />
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList>
-            <TabsTrigger value="basics">Basics</TabsTrigger>
-            <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
-            <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
-            {/* New tab trigger */}
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{title || course?.title || "Untitled Course"}</h1>
+            <TabsList>
+              <TabsTrigger value="basics">Basics</TabsTrigger>
+              <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+              <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+              <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
+              {/* New tab trigger */}
+            </TabsList>
+          </div>
 
           {/* ─── BASICS TAB ───────────────────────────────────────── */}
           <TabsContent value="basics">
@@ -431,7 +437,7 @@ useEffect(() => {
 
           {/* ─── CURRICULUM TAB ───────────────────────────────────── */}
           <TabsContent value="curriculum">
-           <CurriculumTab course={course} initialItemId={itemId} />
+            <CurriculumTab course={course} initialItemId={itemId} />
           </TabsContent>
 
           <TabsContent value="quizzes">
@@ -448,7 +454,10 @@ useEffect(() => {
               setIsMailSendingEnabled={setIsMailSendingEnabled}
               isCertificateEnabled={isCertificateEnabled}
               setIsCertificateEnabled={setIsCertificateEnabled}
+              isWelcomeMessageEnabled={isWelcomeMessageEnabled}
+              setIsEnrollAnnouncementEnabled={setIsEnrollAnnouncementEnabled}
               courseId={course?.id}
+              courseTitle={course?.title}
               customCertificateName={customCertificateName}
               setCustomCertificateName={setCustomCertificateName}
               onSave={saveAdditionalSettings}

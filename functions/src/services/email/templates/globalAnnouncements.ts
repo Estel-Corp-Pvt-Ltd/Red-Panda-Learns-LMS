@@ -72,7 +72,6 @@ return `
         margin: 0 auto;
         background-color: rgba(255, 255, 255, 0.9);
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.9);
       }
 
       .logo-text {

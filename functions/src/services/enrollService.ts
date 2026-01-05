@@ -78,6 +78,8 @@ class EnrollmentService {
             enrollmentDate: FieldValue.serverTimestamp(),
             status: ENROLLMENT_STATUS.ACTIVE,
             orderId: orderId,
+            completionDate: null,
+            certification: null,
             createdAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
           };
@@ -117,6 +119,8 @@ class EnrollmentService {
               enrollmentDate: FieldValue.serverTimestamp(),
               status: ENROLLMENT_STATUS.ACTIVE,
               orderId: orderId,
+              completionDate: null,
+              certification: null,
               createdAt: FieldValue.serverTimestamp(),
               updatedAt: FieldValue.serverTimestamp(),
             };
@@ -183,6 +187,8 @@ class EnrollmentService {
         enrollmentDate: FieldValue.serverTimestamp(),
         status: ENROLLMENT_STATUS.ACTIVE,
         orderId: "", // Empty for free courses
+        completionDate: null,
+        certification: null,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       };

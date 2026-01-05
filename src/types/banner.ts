@@ -14,7 +14,8 @@ export interface Banner {
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
   createdBy: string | null;
-  showToAllUsers?: boolean;
+  showToAllUsers: boolean;
+  showInLandingPage: boolean;
 }
 
 export interface BannerFormData {
@@ -26,5 +27,6 @@ export interface BannerFormData {
   gradientColors: string[];
   courseIds: string[];
   status: BannerStatus;
-  showToAllUsers?: boolean;
+  showToAllUsers: boolean;
+  showInLandingPage: boolean;
 }

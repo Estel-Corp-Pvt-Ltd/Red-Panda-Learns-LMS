@@ -148,7 +148,7 @@ return `
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="center" style="padding-bottom: 20px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.12) 0%, rgba(34, 174, 209, 0.12) 100%); border-radius: 50px; border: 1px solid rgba(255, 0, 255, 0.15);">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.12) 0%, rgba(34, 174, 209, 0.12) 100%); border-radius: 50px; ">
                         <tr>
                           <td style="padding: 8px 16px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0">

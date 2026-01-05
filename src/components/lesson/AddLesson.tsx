@@ -25,6 +25,7 @@ import { logError } from "@/utils/logger";
 import { Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
+import VideoPlayer from "../VideoPlayer";
 
 type CreateLessonModalProps = {
   courseId: string;
@@ -78,8 +79,118 @@ export const CreateLessonModal = ({
       setLesson(prev => ({ ...prev, duration: { hours: value, minutes: prev.duration.minutes } }));
     } else if (field === "duration-minutes") {
       setLesson(prev => ({ ...prev, duration: { hours: prev.duration.hours, minutes: value } }));
+    } else if (field === "embedUrl") {
+      setLesson({ ...lesson, [field]: value });
+
+      // Fetch video duration for VIDEO_LECTURE
+      if (lesson.type === LESSON_TYPE.VIDEO_LECTURE && value) {
+        fetchVideoDuration(value);
+      }
     } else {
       setLesson({ ...lesson, [field]: value });
+    }
+  };
+
+  const fetchVideoDuration = async (url: string) => {
+    try {
+      // YouTube video
+      if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        let videoId = "";
+
+        if (url.includes("youtube.com/watch")) {
+          const urlParams = new URLSearchParams(new URL(url).search);
+          videoId = urlParams.get("v") || "";
+        } else if (url.includes("youtube.com/embed/")) {
+          videoId = url.split("embed/")[1]?.split("?")[0] || "";
+        } else if (url.includes("youtu.be/")) {
+          videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+        }
+
+        if (videoId) {
+          // Try using YouTube Data API v3 (requires API key in environment variable)
+          const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+
+          if (apiKey) {
+            try {
+              const response = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=${apiKey}`
+              );
+
+              if (response.ok) {
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                  const duration = data.items[0].contentDetails.duration;
+                  // Parse ISO 8601 duration format (PT#H#M#S)
+                  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+                  if (match) {
+                    const hours = parseInt(match[1] || "0");
+                    const minutes = parseInt(match[2] || "0");
+                    const seconds = parseInt(match[3] || "0");
+
+                    // Round up seconds to minutes
+                    const totalMinutes = minutes + Math.ceil(seconds / 60);
+                    const finalHours = hours + Math.floor(totalMinutes / 60);
+                    const finalMinutes = totalMinutes % 60;
+
+                    setLesson(prev => ({
+                      ...prev,
+                      duration: { hours: finalHours, minutes: finalMinutes }
+                    }));
+
+                    toast({
+                      title: "Duration detected",
+                      description: `Video duration: ${finalHours}h ${finalMinutes}m`
+                    });
+                    return;
+                  }
+                }
+              }
+            } catch (apiError) {
+              console.error("YouTube API error:", apiError);
+            }
+          } else {
+            console.warn("YouTube API key not configured. Set VITE_YOUTUBE_API_KEY in .env file");
+          }
+        }
+      } else if (url.includes("vimeo.com")) { // Vimeo video
+        let videoId = "";
+
+        if (url.includes("vimeo.com/video/")) {
+          videoId = url.split("video/")[1]?.split("?")[0] || "";
+        } else if (url.includes("player.vimeo.com/video/")) {
+          videoId = url.split("video/")[1]?.split("?")[0] || "";
+        } else {
+          const matches = url.match(/vimeo\.com\/(\d+)/);
+          videoId = matches ? matches[1] : "";
+        }
+
+        if (videoId) {
+          // Use Vimeo oEmbed API (no API key required)
+          const response = await fetch(
+            `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${videoId}`
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.duration) {
+              const hours = Math.floor(data.duration / 3600);
+              const minutes = Math.floor((data.duration % 3600) / 60);
+
+              setLesson(prev => ({
+                ...prev,
+                duration: { hours, minutes }
+              }));
+
+              toast({
+                title: "Duration detected",
+                description: `Video duration: ${hours}h ${minutes}m`
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching video duration:", error);
     }
   };
 
@@ -132,6 +243,10 @@ export const CreateLessonModal = ({
       }
       if (lesson.type === LESSON_TYPE.PDF && !lesson.embedUrl.trim()) {
         toast({ title: "Please upload a PDF file.", variant: "destructive" });
+        return;
+      }
+      if (lesson.type === LESSON_TYPE.VIDEO_LECTURE && !lesson.embedUrl.trim()) {
+        toast({ title: "Please enter a video embed URL.", variant: "destructive" });
         return;
       }
 
@@ -223,7 +338,8 @@ export const CreateLessonModal = ({
                     </SelectContent>
                   </Select>
                 </div>
-                {lesson.type === LESSON_TYPE.PDF ? (
+
+                {lesson.type === LESSON_TYPE.TEXT ? (<></>) : lesson.type === LESSON_TYPE.PDF ? (
                   <div className="space-y-1">
                     <Label>PDF Resource *</Label>
                     <label
@@ -246,13 +362,29 @@ export const CreateLessonModal = ({
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <Label>Embed URL</Label>
+                    <Label>
+                      {lesson.type === LESSON_TYPE.VIDEO_LECTURE
+                        ? "Video Embed URL (YouTube/Vimeo) *"
+                        : "Embed URL"}
+                    </Label>
                     <Input
                       placeholder="Enter embed URL or resource link"
                       value={lesson.embedUrl}
                       onChange={(e) => handleFieldChange("embedUrl", e.target.value)}
                       className="dark:bg-neutral-800 dark:border-neutral-700"
                     />
+                    {lesson.type === LESSON_TYPE.VIDEO_LECTURE && lesson.embedUrl && (
+                      <div className="mt-3 border rounded-lg overflow-hidden dark:border-neutral-700">
+                        <VideoPlayer
+                          url={lesson.embedUrl}
+                        />
+                        {(lesson.duration.hours > 0 || lesson.duration.minutes > 0) && (
+                          <div className="p-2 bg-muted text-sm">
+                            <span className="font-medium">Duration:</span> {lesson.duration.hours}h {lesson.duration.minutes}m
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="space-y-1">
@@ -262,9 +394,10 @@ export const CreateLessonModal = ({
                       type="number"
                       min="0"
                       step="1"
+                      placeholder="Hours"
                       value={lesson.duration.hours}
                       onChange={(e) =>
-                        handleFieldChange("duration-hours", parseInt(e.target.value))
+                        handleFieldChange("duration-hours", parseInt(e.target.value) || 0)
                       }
                       className="dark:bg-neutral-800 dark:border-neutral-700"
                     />
@@ -272,9 +405,10 @@ export const CreateLessonModal = ({
                       type="number"
                       min="0"
                       step="1"
+                      placeholder="Minutes"
                       value={lesson.duration.minutes}
                       onChange={(e) =>
-                        handleFieldChange("duration-minutes", parseInt(e.target.value))
+                        handleFieldChange("duration-minutes", parseInt(e.target.value) || 0)
                       }
                       className="dark:bg-neutral-800 dark:border-neutral-700"
                     />
@@ -295,6 +429,6 @@ export const CreateLessonModal = ({
           </CardContent>
         </Card>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };
