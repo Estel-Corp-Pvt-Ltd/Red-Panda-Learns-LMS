@@ -155,11 +155,12 @@ function EnrolledCourseCard({
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-semibold text-lg">{enrollment.courseName || course.title}</h3>
               {showCertificateFeatures && (
-                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full">
-                  <Award className="h-5 w-5 text-amber-500" />
-                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                    Certificate
-                  </span>
+                <div className="flex items-center gap-1.5   px-2 py-1 rounded-full">
+                  <img
+                    src="/isCertificateAvailableIcon.png"
+                    alt="Certificate available"
+                    className="h-8 w-8"
+                  />
                 </div>
               )}
             </div>
@@ -287,16 +288,11 @@ export default function DashboardPage() {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!("Notification" in window)) return;
 
-
-
- 
-useEffect(() => {
-  if (!("Notification" in window)) return;
-
-  setNotificationPermission(Notification.permission);
-}, []);
-
+    setNotificationPermission(Notification.permission);
+  }, []);
 
   // Handle enabling notifications (button click)
 
@@ -324,7 +320,7 @@ useEffect(() => {
     setIsLoading(false);
   };
 
-  console.log("fcm token",user.fcmTokens)
+  console.log("fcm token", user.fcmTokens);
   const fetchBanners = async (enrolledCourseIds: string[]) => {
     if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
       const result = await bannerService.getActiveGlobalBanners();
@@ -381,60 +377,56 @@ useEffect(() => {
   };
 
   // Handle enabling notifications (button click)
-const handleEnableNotifications = async () => {
-  if (!user?.id) return;
+  const handleEnableNotifications = async () => {
+    if (!user?.id) return;
 
-  try {
-    setIsEnablingNotifications(true);
+    try {
+      setIsEnablingNotifications(true);
 
-    if (!("Notification" in window)) {
+      if (!("Notification" in window)) {
+        toast({
+          title: "Notifications not supported",
+          description: "Your browser doesn't support notifications.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (Notification.permission === "denied") {
+        toast({
+          title: "Notifications are blocked",
+          description: "Enable notifications from your browser settings, then refresh the page.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+
+      if (permission !== "granted") {
+        toast({
+          title: "Notifications disabled",
+          description: "You denied notification permission. You can enable it in browser settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Notifications not supported",
-        description: "Your browser doesn't support notifications.",
+        title: "Notifications enabled",
+        description: "You'll be notified when grading is completed.",
+      });
+    } catch (error) {
+      toast({
+        title: "Notification setup failed",
+        description: "Please try again later.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsEnablingNotifications(false);
     }
-
-    if (Notification.permission === "denied") {
-      toast({
-        title: "Notifications are blocked",
-        description:
-          "Enable notifications from your browser settings, then refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-
-    if (permission !== "granted") {
-      toast({
-        title: "Notifications disabled",
-        description:
-          "You denied notification permission. You can enable it in browser settings.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-  
-
-    toast({
-      title: "Notifications enabled",
-      description: "You'll be notified when grading is completed.",
-    });
-  } catch (error) {
-    toast({
-      title: "Notification setup failed",
-      description: "Please try again later.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsEnablingNotifications(false);
-  }
-};
+  };
 
   const notificationButton = getNotificationButtonContent();
 
