@@ -47,13 +47,16 @@ import { unpauseReminderForAssignments } from "./handlers/notifications/unpauseR
 import { showCertificatePreview } from "./handlers/showCertificatePreview";
 import { bulkIssueCertificates } from "./handlers/bulkIssueCertificates";
 import { getCourseTimeSpent } from "./handlers/analytics/getCourseTimeSpent";
-
+import { sendGradedAssignmentNotification } from "./services/sendGradedAssignmentNotification";
+import { sendUserMailOnAssignmentGradedWorker } from "./workers/sendUserMailOnAssignmentGradedWorker";
+import { sendMailtoUserOnAssignmentGraded } from "./services/email/sendMailtoUserOnAssignmentGraded";
 import {
   getOrders,
   getOrderById,
   getOrderStats,
   ordersHealthCheck,
 } from "./handlers/api/ordersApiHandlers";
+import { sendSubmissionGradedNotification } from "./handlers/pushNotificationsHandler";
 import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
 
@@ -108,6 +111,10 @@ export {
   getOrderById,
   getOrderStats,
   ordersHealthCheck,
+  sendGradedAssignmentNotification,
+  sendMailtoUserOnAssignmentGraded,
+  sendSubmissionGradedNotification,
+  sendUserMailOnAssignmentGradedWorker,
   sendCourseWelcomeMailWorker,
   sendCertificateMailWorker,
 };

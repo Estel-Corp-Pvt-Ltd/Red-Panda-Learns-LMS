@@ -21,7 +21,7 @@ import {
 import { COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { UserRole, UserStatus } from "@/types/general";
-import { User } from "@/types/user";
+import { FcmToken, User } from "@/types/user";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { Result, fail, ok } from "@/utils/response";
@@ -32,7 +32,7 @@ class UserService {
      */
     async createUser(
         uid: string,
-        data: Omit<User, "createdAt" | "updatedAt">
+        data: Omit<User, "createdAt" | "updatedAt" | "fcmTokens" | "readAt">
     ): Promise<Result<void>> {
         const userRef = doc(db, COLLECTION.USERS, uid);
         if ((await getDoc(userRef)).exists()) {
@@ -576,6 +576,44 @@ async  getStudentsByIds(ids: string[], chunkSize = 10): Promise<User[]> {
     return results;
   }
 
+async upsertFcmToken(
+  uid: string,
+  newToken: FcmToken
+): Promise<Result<void>> {
+  try {
+    const userRef = doc(db, COLLECTION.USERS, uid);
+    const snap = await getDoc(userRef);
+
+    if (!snap.exists()) {
+      return fail("User not found", "NOT_FOUND");
+    }
+
+    const user = snap.data() as User;
+    const existingTokens = user.fcmTokens ?? [];
+
+    const tokenExists = existingTokens.some(
+      t => t.token === newToken.token
+    );
+
+    const updatedTokens = tokenExists
+      ? existingTokens.map(t =>
+          t.token === newToken.token
+            ? { ...t, updatedAt: new Date() }
+            : t
+        )
+      : [...existingTokens, newToken];
+
+    await updateDoc(userRef, {
+      fcmTokens: updatedTokens,
+      updatedAt: serverTimestamp(),
+    });
+
+    return ok(null);
+  } catch (error) {
+    logError("UserService.upsertFcmToken", error);
+    return fail("Failed to save FCM token");
+  }
+}
 
   
 /**
