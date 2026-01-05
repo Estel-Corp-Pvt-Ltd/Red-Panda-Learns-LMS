@@ -81,7 +81,6 @@ function EnrolledCourseCard({
       setIsCompleting(false);
     }
   };
-  console.log("Enrollment:", enrollment, isEligibleForCertificate);
   useEffect(() => {
     const fetchLearningProgress = async () => {
       if (enrollment.completionDate) {
@@ -107,8 +106,6 @@ function EnrolledCourseCard({
           : Object.keys(progress.lessonHistory).length;
 
         const eligible = totalLessons > 0 && completedLessonsCount >= Math.ceil(0.9 * totalLessons);
-
-        console.log("Learning progress result:", result, { progress, totalLessons, completedLessonsCount, eligible });
         setIsEligibleForCertificate(eligible);
       }
       setIsProgressLoading(false);
