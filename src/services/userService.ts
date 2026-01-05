@@ -32,7 +32,7 @@ class UserService {
      */
     async createUser(
         uid: string,
-        data: Omit<User, "createdAt" | "updatedAt">
+        data: Omit<User, "createdAt" | "updatedAt" | "fcmTokens" | "readAt">
     ): Promise<Result<void>> {
         const userRef = doc(db, COLLECTION.USERS, uid);
         if ((await getDoc(userRef)).exists()) {
