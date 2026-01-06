@@ -26,12 +26,11 @@ import {
   Award,
   Bell,
   BellOff,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
-
 
 function EnrolledCourseCard({
   enrollment,
@@ -204,8 +203,14 @@ function EnrolledCourseCard({
                   <>
                     {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
                       <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
-                        {isCompleting ? <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 sm:mr-2" />}
-                        <span className="hidden sm:inline">{isCompleting ? "Completing..." : "Complete Course"}</span>
+                        {isCompleting ? (
+                          <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 sm:mr-2" />
+                        )}
+                        <span className="hidden sm:inline">
+                          {isCompleting ? "Completing..." : "Complete Course"}
+                        </span>
                       </Button>
                     )}
 
@@ -477,6 +482,12 @@ export default function DashboardPage() {
         {/* Desktop sidebar (hidden on mobile inside Sidebar component) */}
         <Sidebar />
         <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
+          {/* Mobile top bar: title + arrow toggle for sidebar */}
+          <div className="flex items-center justify-between mb-4 md:hidden">
+            <h1 className="text-lg font-semibold">Dashboard</h1>
+            <UserSidebarMobileToggle />
+          </div>
+
           {/* Banners Section */}
           {!isBannersLoading && banners.length > 0 && (
             <div className="mb-8">
