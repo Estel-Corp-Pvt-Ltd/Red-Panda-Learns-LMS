@@ -41,6 +41,8 @@ function TopicSection({
 }) {
   const [isExpanded, setIsExpanded] = useState(topic.items.some((item) => isLessonActive(item.id)));
 
+  useEffect(() => {}, [lessonLocks, lessonHistory]);
+
   return (
     <Collapsible open={isExpanded} onOpenChange={() => setIsExpanded((p) => !p)}>
       <CollapsibleTrigger asChild>
