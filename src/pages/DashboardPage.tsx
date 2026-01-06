@@ -474,54 +474,46 @@ export default function DashboardPage() {
   const notificationButton = getNotificationButtonContent();
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Desktop sidebar (hidden on mobile inside Sidebar component) */}
+        {/* Sidebar handles its own mobile visibility */}
         <Sidebar />
-        <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
-          {/* Mobile top bar: title + arrow toggle for sidebar */}
-          <div className="flex items-center justify-between mb-4 md:hidden">
-            <h1 className="text-lg font-semibold">Dashboard</h1>
-            <UserSidebarMobileToggle />
-          </div>
 
-          {/* Banners Section */}
-          {!isBannersLoading && banners.length > 0 && (
-            <div className="mb-8">
-              <BannerSlider banners={banners} autoSlideInterval={5000} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+            {/* Mobile top bar */}
+            <div className="flex items-center justify-between mb-4 md:hidden">
+              <h1 className="text-lg font-semibold">Dashboard</h1>
+              <UserSidebarMobileToggle />
             </div>
-          )}
 
+            {/* Banners */}
+            {!isBannersLoading && banners.length > 0 && (
+              <div className="mb-6 sm:mb-8">
+                <BannerSlider banners={banners} autoSlideInterval={5000} />
+              </div>
+            )}
 
-          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCourses}</div>
-                <p className="text-xs text-muted-foreground">Active enrollments</p>
-              </CardContent>
-            </Card>
-          </div> */}
+            {/* Courses header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-semibold">
+                My Courses (<strong>{stats.totalCourses}</strong>)
+              </h2>
 
-          {/* Enrolled Courses */}
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">My Courses (<strong>{stats.totalCourses}</strong>)</h2>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 {enrollments.length > 0 && (
                   <Link to="/courses">
-                    <Button>Browse Courses</Button>
+                    <Button className="w-full sm:w-auto">Browse Courses</Button>
                   </Link>
                 )}
+
                 <Button
                   variant={notificationButton.variant}
                   onClick={handleEnableNotifications}
                   disabled={notificationButton.disabled}
+                  className="w-full sm:w-auto"
                 >
                   {notificationButton.icon}
                   {notificationButton.text}
@@ -529,10 +521,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Content */}
             {isLoading ? (
               <div className="grid gap-6">
-                <LoadingSkeleton className="h-48" />
-                <LoadingSkeleton className="h-48" />
+                <LoadingSkeleton className="h-40 sm:h-48" />
+                <LoadingSkeleton className="h-40 sm:h-48" />
               </div>
             ) : enrollments.length > 0 ? (
               <div className="grid gap-6">
@@ -549,7 +542,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <Card>
-                <CardContent className="p-12 text-center">
+                <CardContent className="p-8 sm:p-12 text-center">
                   <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
                   <p className="text-muted-foreground mb-6">
@@ -562,7 +555,7 @@ export default function DashboardPage() {
               </Card>
             )}
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
