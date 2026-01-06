@@ -74,7 +74,7 @@ const WhatsNew = () => {
                           Certified
                         </span>
                       </h2>
-                      <p className="text-xl font-semibold text-white leading-relaxed border-l-4 border-primary/20 pl-6">
+                      <p className="text-xl font-semibold text-black  dark:text-white leading-relaxed border-l-4 border-primary/20 pl-6">
                         Look for the
                         <img
                           src="/isCertificateAvailableIcon.png"
