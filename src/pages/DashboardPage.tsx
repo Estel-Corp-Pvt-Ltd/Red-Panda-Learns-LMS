@@ -66,7 +66,6 @@ function EnrolledCourseCard({
         enrollment.userId,
         enrollment.courseId
       );
-
       if (result.success && result.data) {
         setIsCompleted(true);
 
@@ -495,8 +494,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
@@ -507,12 +506,12 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Active enrollments</p>
               </CardContent>
             </Card>
-          </div>
+          </div> */}
 
           {/* Enrolled Courses */}
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">My Courses</h2>
+              <h2 className="text-2xl font-semibold">My Courses (<strong>{stats.totalCourses}</strong>)</h2>
               <div className="flex gap-3">
                 {enrollments.length > 0 && (
                   <Link to="/courses">
