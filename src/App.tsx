@@ -92,6 +92,7 @@ import Forum from "./pages/Forum";
 import AdminMessageApproval from "./pages/admin/AdminMessageApproval";
 import { StripBannerProvider } from "./contexts/StripBannerOverlayContext";
 import Profile from "./pages/Profile";
+import WhatsNew from "./pages/Whats-new";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -161,6 +162,14 @@ const App = () => (
                           }
                         />
                         <Route
+                          path="/whats-new"
+                          element={
+                            <AuthGuard requireAuth requireStudent>
+                              <WhatsNew />
+                            </AuthGuard>
+                          }
+                        />
+                          <Route
                           path="/dashboard"
                           element={
                             <AuthGuard requireAuth requireStudent>

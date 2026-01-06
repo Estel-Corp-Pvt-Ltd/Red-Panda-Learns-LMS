@@ -25,16 +25,21 @@ import { fail, ok, Result } from "@/utils/response.ts";
 import { WhereFilterOp } from "firebase-admin/firestore";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination.ts";
 
-
-
 export interface DateRange {
   startDate?: Date;
   endDate?: Date;
 }
 
+export interface SearchCriteria {
+  name?: string;
+  email?: string;
+}
+
 export interface OrderFilterOptions extends PaginationOptions<Order> {
   dateRange?: DateRange;
+  search?: SearchCriteria;
 }
+
 class OrderService {
   async getOrderById(orderId: string): Promise<Order | null> {
     try {
@@ -55,7 +60,6 @@ class OrderService {
 
   async getOrdersByUser(userId: string): Promise<Order[]> {
     try {
-      // Query orders collection directly with user filter
       const ordersRef = collection(db, COLLECTION.ORDERS);
       const q = query(
         ordersRef,
@@ -69,7 +73,6 @@ class OrderService {
         return [];
       }
 
-      // Map documents to Order objects with proper typing
       const userOrders: Order[] = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -102,7 +105,6 @@ class OrderService {
     }
   }
 
-  /** Fetch all Orders */
   async getAllOrders(): Promise<Result<Order[]>> {
     try {
       const querySnapshot = await getDocs(collection(db, COLLECTION.ORDERS));
@@ -141,7 +143,6 @@ class OrderService {
 
       let q: Query = collection(db, COLLECTION.ORDERS);
 
-      // Apply filters if provided
       if (filters && filters.length > 0) {
         const whereClauses = filters.map((f) =>
           where(f.field as string, f.op, f.value)
@@ -149,10 +150,8 @@ class OrderService {
         q = query(q, ...whereClauses);
       }
 
-      // Apply ordering
       const { field, direction } = orderByOption;
 
-      // For pagination, we need to handle different scenarios
       if (pageDirection === 'previous' && cursor) {
         q = query(
           q,
@@ -222,39 +221,90 @@ class OrderService {
     }
   }
 
+  async getOrdersByStatus(
+    status: OrderStatus, 
+    options: OrderFilterOptions = {}
+  ): Promise<Result<PaginatedResult<Order>>> {
+    const filters: { field: keyof Order; op: WhereFilterOp; value: any }[] = [
+      { field: 'status', op: '==', value: status }
+    ];
 
+    if (options.dateRange?.startDate) {
+      filters.push({
+        field: 'createdAt',
+        op: '>=',
+        value: options.dateRange.startDate
+      });
+    }
 
-// Update the getOrdersByStatus method
-async getOrdersByStatus(
-  status: OrderStatus, 
-  options: OrderFilterOptions = {}
-): Promise<Result<PaginatedResult<Order>>> {
-  const filters: { field: keyof Order; op: WhereFilterOp; value: any }[] = [
-    { field: 'status', op: '==', value: status }
-  ];
+    if (options.dateRange?.endDate) {
+      const endOfDay = new Date(options.dateRange.endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      filters.push({
+        field: 'createdAt',
+        op: '<=',
+        value: endOfDay
+      });
+    }
 
-  // Add date range filters
-  if (options.dateRange?.startDate) {
-    filters.push({
-      field: 'createdAt',
-      op: '>=',
-      value: options.dateRange.startDate
-    });
+    return this.getOrders(filters, options);
   }
 
-  if (options.dateRange?.endDate) {
-    // Set end date to end of day
-    const endOfDay = new Date(options.dateRange.endDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    filters.push({
-      field: 'createdAt',
-      op: '<=',
-      value: endOfDay
-    });
-  }
+  /**
+   * Fetch all orders by status for search/export purposes
+   * This bypasses pagination for client-side filtering
+   */
+  async getAllOrdersByStatus(
+    status: OrderStatus,
+    dateRange?: DateRange
+  ): Promise<Result<Order[]>> {
+    try {
+      let q: Query = collection(db, COLLECTION.ORDERS);
+      
+      // Build filters
+      const constraints = [where('status', '==', status)];
+      
+      if (dateRange?.startDate) {
+        constraints.push(where('createdAt', '>=', dateRange.startDate));
+      }
+      
+      if (dateRange?.endDate) {
+        const endOfDay = new Date(dateRange.endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        constraints.push(where('createdAt', '<=', endOfDay));
+      }
+      
+      q = query(q, ...constraints, orderBy('createdAt', 'desc'));
+      
+      const querySnapshot = await getDocs(q);
+      
+      const orders = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          orderId: data.orderId,
+          userId: data.userId,
+          userName: data.userName,
+          userEmail: data.userEmail,
+          items: data.items || [],
+          status: data.status,
+          amount: data.amount,
+          completedAt: data.completedAt,
+          transactionId: data.transactionId,
+          currency: data.currency,
+          metadata: data.metadata || {},
+          billingAddress: data.billingAddress,
+          shippingAddress: data.shippingAddress,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Order;
+      });
 
-  return this.getOrders(filters, options);
-}
+      return ok(orders);
+    } catch (error) {
+      console.error('OrderService - Error fetching all orders by status:', error);
+      return fail("Error fetching orders");
+    }
+  }
 }
 
 export const orderService = new OrderService();

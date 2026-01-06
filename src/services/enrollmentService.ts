@@ -28,12 +28,13 @@ import {
 import { db } from "@/firebaseConfig";
 import { Enrollment } from "@/types/enrollment";
 import { EnrollmentStatus } from "@/types/general";
+import { BACKEND_URL } from "@/config";
+import { authService } from "./authService";
 import { TransactionLineItem } from "@/types/transaction";
 import { convertToDate, formatDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
-import { authService } from "./authService";
 
 class EnrollmentService {
 
@@ -522,7 +523,7 @@ class EnrollmentService {
       return ok(true);
 
     } catch (error: any) {
-      logError("LearningProgressService.updateCertificateDetails", error);
+      logError("EnrollmentService.updateCertificateDetails", error);
       return fail(
         "Failed to update certificate details",
         error.code || error.message
@@ -534,22 +535,10 @@ class EnrollmentService {
   async issueCertificate(
     userId: string,
     courseId: string,
-    issuerUid: string
+    remark: string = "Certificate issued"
   ): Promise<Result<boolean>> {
     try {
-      const issuerRef = doc(db, COLLECTION.USERS, issuerUid);
-      const issuerSnap = await getDoc(issuerRef);
-
-      if (!issuerSnap.exists()) {
-        return fail("Issuer not found");
-      }
-
-      const issuerData = issuerSnap.data();
-
-      if (issuerData.role !== USER_ROLE.ADMIN) {
-        return fail("Only ADMIN can issue certificates");
-      }
-
+      // Verify enrollment exists
       const enrollmentId = `${userId}_${courseId}`;
       const enrollmentRef = doc(db, COLLECTION.ENROLLMENTS, enrollmentId);
       const enrollmentSnap = await getDoc(enrollmentRef);
@@ -560,27 +549,46 @@ class EnrollmentService {
 
       const enrollmentData = enrollmentSnap.data() as Enrollment;
 
-      if (!enrollmentData.completionDate) {
-        return fail("Course not completed yet");
-      }
-
       if (enrollmentData.certification?.issued) {
         return ok(false);
       }
 
-      await updateDoc(enrollmentRef, {
-        certification: {
-          issued: true,
-          issuedAt: serverTimestamp(),
-          certificateId: crypto.randomUUID(),
-        },
-        updatedAt: serverTimestamp(),
-      });
+      // Use bulk certificate issuance API
+      const idToken = await authService.getToken();
 
-      return ok(true);
+      const response = await fetch(
+        `${BACKEND_URL}/bulkIssueCertificates`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            enrollments: [enrollmentId],
+            remark: remark
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        return fail("Failed to issue certificate via API");
+      }
+
+      // Check if certificate was issued successfully
+      if (data.issued > 0) {
+        return ok(true);
+      } else if (data.skipped > 0) {
+        // Certificate was skipped (already issued or requirements not met)
+        return ok(false);
+      }
+
+      return fail("Certificate issuance failed");
 
     } catch (error: any) {
-      logError("LearningProgressService.issueCertificate", error);
+      logError("EnrollmentService.issueCertificate", error);
       return fail(
         "Failed to issue certificate",
         error.code || error.message
@@ -621,7 +629,7 @@ class EnrollmentService {
       return ok(true);
 
     } catch (error: any) {
-      logError("LearningProgressService.setCertificationRemark", error);
+      logError("EnrollmentService.setCertificationRemark", error);
       return fail(
         "Failed to update certification remark",
         error.code || error.message
@@ -656,7 +664,7 @@ class EnrollmentService {
       });
     } catch (error: any) {
       logError(
-        "LearningProgressService.getCertificateByCertificateId",
+        "EnrollmentService.getCertificateByCertificateId",
         error
       );
       return fail(
@@ -702,7 +710,7 @@ class EnrollmentService {
       return ok(true);
 
     } catch (error: any) {
-      logError("LearningProgressService.updatePreferredNameOnCertificate", error);
+      logError("EnrollmentService.updatePreferredNameOnCertificate", error);
       return fail(
         "Failed to update preferred name on certificate",
         error.code || error.message
@@ -742,7 +750,7 @@ class EnrollmentService {
       return ok(null);  // Return null if the preferred name is not set
 
     } catch (error: any) {
-      logError("LearningProgressService.isPreferredNameSetForCertificate", error);
+      logError("EnrollmentService.isPreferredNameSetForCertificate", error);
       return fail(
         "Failed to check if preferred name is set for certificate",
         error.code || error.message

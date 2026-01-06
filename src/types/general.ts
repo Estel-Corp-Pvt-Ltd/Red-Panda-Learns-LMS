@@ -36,6 +36,7 @@ import {
   TRANSACTION_TYPE,
   USER_ROLE,
   USER_STATUS,
+  PLATFROM_TYPE
 } from "@/constants";
 
 // ATTRIBUTES
@@ -110,6 +111,9 @@ export type CertificateRequestStatus =
 // --- BANNER ---
 export type BannerStatus = (typeof BANNER_STATUS)[keyof typeof BANNER_STATUS];
 
+
+// -- PLATFORM TYPE ---
+export type PlatformType = (typeof PLATFROM_TYPE)[keyof typeof PLATFROM_TYPE];
 // MISCELLANEOUS
 export type Duration = {
   hours: number;

@@ -10,6 +10,7 @@ import { fail, ok, Result } from "@/utils/response";
 import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, query, QueryConstraint, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
 import { Enrollment } from "@/types/enrollment";
+import { enrollmentService } from "./enrollmentService";
 
 class CertificateRequestService {
 
@@ -183,20 +184,9 @@ class CertificateRequestService {
 
     async approveCertificateRequest(
         requestId: string,
-        adminUid: string
+        remark: string,
     ): Promise<Result<boolean>> {
         try {
-            const adminRef = doc(db, COLLECTION.USERS, adminUid);
-            const adminSnap = await getDoc(adminRef);
-
-            if (!adminSnap.exists()) {
-                return fail("Admin not found");
-            }
-
-            if (adminSnap.data().role !== USER_ROLE.ADMIN) {
-                return fail("Unauthorized");
-            }
-
             const requestRef = doc(db, COLLECTION.CERTIFICATE_REQUESTS, requestId);
             const requestSnap = await getDoc(requestRef);
 
@@ -206,10 +196,10 @@ class CertificateRequestService {
 
             const request = requestSnap.data() as CertificateRequest;
 
-            const issueResult = await learningProgressService.issueCertificate(
+            const issueResult = await enrollmentService.issueCertificate(
                 request.userId,
                 request.courseId,
-                adminUid
+                remark
             );
 
             if (!issueResult.success) {

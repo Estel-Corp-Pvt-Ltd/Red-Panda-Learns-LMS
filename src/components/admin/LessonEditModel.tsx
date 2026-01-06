@@ -1,10 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +20,10 @@ import { serverTimestamp } from "firebase/firestore";
 import { FileText, Upload, Download, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
+import { ContentLockForm } from "./ContentLockForm";
+import { LEARNING_CONTENT } from "@/constants";
+import { ContentLock } from "@/types/content-lock";
+import { contentLockService } from "@/services/contentLockService";
 
 interface EditLessonModalProps {
   courseId: string;
@@ -49,10 +48,10 @@ export const EditLessonModal = ({
   const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
   const [activeTab, setActiveTab] = useState("lesson");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+  const [lock, setLock] = useState<ContentLock | null>(null);
+  const [lockLoading, setLockLoading] = useState(false);
   const colorMode =
-    typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
@@ -75,7 +74,7 @@ export const EditLessonModal = ({
       try {
         const [lessonData, attachmentsData] = await Promise.all([
           lessonService.getLessonById(lessonId),
-          lessonService.getAttachmentsByLessonId(lessonId)
+          lessonService.getAttachmentsByLessonId(lessonId),
         ]);
 
         if (!lessonData) {
@@ -144,7 +143,10 @@ export const EditLessonModal = ({
 
     setUploading(true);
     try {
-      const fileResult = await fileService.uploadAttachment(`/courses/${courseId}/lessons/${lessonId}/attachments`, selectedFile);
+      const fileResult = await fileService.uploadAttachment(
+        `/courses/${courseId}/lessons/${lessonId}/attachments`,
+        selectedFile
+      );
       if (!fileResult.success || !fileResult.data) {
         throw new Error("File upload failed");
       }
@@ -156,12 +158,12 @@ export const EditLessonModal = ({
         size: selectedFile.size,
       });
 
-      setAttachments(prev => [...prev, attachment]);
+      setAttachments((prev) => [...prev, attachment]);
       setSelectedFile(null);
 
       // Clear file input
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
+      const fileInput = document.getElementById("file-upload") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
 
       toast({
         title: "File uploaded successfully!",
@@ -180,7 +182,7 @@ export const EditLessonModal = ({
   const handleRemoveAttachment = async (attachmentId: string) => {
     try {
       await lessonService.deleteLessonAttachment(attachmentId);
-      setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+      setAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
       toast({
         title: "Attachment removed",
       });
@@ -201,10 +203,7 @@ export const EditLessonModal = ({
       });
       return;
     }
-    if (
-      (lesson.duration?.hours || 0) < 0 ||
-      (lesson.duration?.minutes || 0) < 0
-    ) {
+    if ((lesson.duration?.hours || 0) < 0 || (lesson.duration?.minutes || 0) < 0) {
       toast({
         title: "Invalid duration",
         description: "Hours and minutes cannot be negative.",
@@ -257,7 +256,6 @@ export const EditLessonModal = ({
     if (!next) onClose();
   };
 
-
   const handlePdfUpload = async (file: File) => {
     if (!file) return;
     setUploading(true);
@@ -279,7 +277,7 @@ export const EditLessonModal = ({
     } finally {
       setUploading(false);
     }
-  }
+  };
 
   const getFileIcon = (type: string) => {
     const icons = {
@@ -298,6 +296,30 @@ export const EditLessonModal = ({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
+
+  const refetchLocks = async () => {
+    if (!lessonId) return;
+
+    try {
+      setLockLoading(true);
+      const res = await contentLockService.getLocksByContentId(lessonId);
+
+      if (res.success) {
+        // Assuming only ONE lock per content
+        setLock(res.data.length > 0 ? res.data[0] : null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch content lock", err);
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !lessonId) return;
+
+    refetchLocks();
+  }, [isOpen, lessonId]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -339,15 +361,10 @@ export const EditLessonModal = ({
 
                     <div className="space-y-2">
                       <Label>Description *</Label>
-                      <div
-                        data-color-mode={colorMode}
-                        className="border rounded-lg"
-                      >
+                      <div data-color-mode={colorMode} className="border rounded-lg">
                         <MarkdownEditor
                           value={lesson?.description || ""}
-                          onChange={(value) =>
-                            handleFieldChange("description", value || "")
-                          }
+                          onChange={(value) => handleFieldChange("description", value || "")}
                           height={300}
                           uploadPath="/courses/lessons/attachments"
                         />
@@ -382,7 +399,9 @@ export const EditLessonModal = ({
                           className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer w-full"
                         >
                           <Upload className="h-4 w-4 mr-2" />
-                          {uploading ? "Uploading..." : lesson.embedUrl
+                          {uploading
+                            ? "Uploading..."
+                            : lesson.embedUrl
                             ? `File Uploaded`
                             : "No PDF uploaded yet."}
                         </label>
@@ -402,9 +421,7 @@ export const EditLessonModal = ({
                           id="embed-url"
                           placeholder="Enter embed URL for the lesson content"
                           value={lesson?.embedUrl || ""}
-                          onChange={(e) =>
-                            handleFieldChange("embedUrl", e.target.value)
-                          }
+                          onChange={(e) => handleFieldChange("embedUrl", e.target.value)}
                         />
                       </div>
                     )}
@@ -420,9 +437,7 @@ export const EditLessonModal = ({
                             type="number"
                             min="0"
                             value={lesson?.duration?.hours || 0}
-                            onChange={(e) =>
-                              handleFieldChange("duration-hours", e.target.value)
-                            }
+                            onChange={(e) => handleFieldChange("duration-hours", e.target.value)}
                           />
                         </div>
                         <div className="space-y-1">
@@ -434,13 +449,19 @@ export const EditLessonModal = ({
                             type="number"
                             min="0"
                             value={lesson?.duration?.minutes || 0}
-                            onChange={(e) =>
-                              handleFieldChange("duration-minutes", e.target.value)
-                            }
+                            onChange={(e) => handleFieldChange("duration-minutes", e.target.value)}
                           />
                         </div>
                       </div>
                     </div>
+
+                    <ContentLockForm
+                      contentType={LEARNING_CONTENT.ASSIGNMENT}
+                      contentId={lessonId}
+                      existingLock={lock} // optional
+                      onSaved={() => refetchLocks()}
+                      onDeleted={() => refetchLocks()}
+                    />
                   </div>
                 </div>
               </TabsContent>
@@ -460,10 +481,7 @@ export const EditLessonModal = ({
                         className="mt-1"
                       />
                     </div>
-                    <Button
-                      onClick={handleUploadAttachment}
-                      disabled={!selectedFile || uploading}
-                    >
+                    <Button onClick={handleUploadAttachment} disabled={!selectedFile || uploading}>
                       <Upload className="h-4 w-4 mr-2" />
                       {uploading ? "Uploading..." : "Upload"}
                     </Button>
@@ -489,7 +507,10 @@ export const EditLessonModal = ({
                   ) : (
                     <div className="space-y-2">
                       {attachments.map((attachment) => (
-                        <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <div className="flex items-center space-x-3">
                             {getFileIcon(attachment.type)}
                             <div>
@@ -500,11 +521,7 @@ export const EditLessonModal = ({
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              asChild
-                            >
+                            <Button variant="outline" size="sm" asChild>
                               <a href={attachment.url} target="_blank" rel="noopener noreferrer">
                                 <Download className="h-4 w-4" />
                               </a>
@@ -527,17 +544,10 @@ export const EditLessonModal = ({
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                disabled={updating}
-              >
+              <Button variant="outline" onClick={handleClose} disabled={updating}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleUpdateLesson}
-                disabled={updating || !lesson?.title?.trim()}
-              >
+              <Button onClick={handleUpdateLesson} disabled={updating || !lesson?.title?.trim()}>
                 {updating ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

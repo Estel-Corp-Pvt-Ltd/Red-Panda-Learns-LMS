@@ -35,11 +35,13 @@ import { authService } from "@/services/authService";
 type AssignmentProps = {
   assignmentId: string;
   onComplete: (isCompleted: boolean) => void;
+  onNavigateToNext?: () => void;
 };
 
 const AssignmentView: React.FC<AssignmentProps> = ({
   assignmentId,
   onComplete,
+  onNavigateToNext,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -49,8 +51,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-  const [existingSubmission, setExistingSubmission] =
-    useState<AssignmentSubmission | null>(null);
+  const [existingSubmission, setExistingSubmission] = useState<AssignmentSubmission | null>(null);
 
   const [textSubmissions, setTextSubmissions] = useState<string[]>([]);
   const [currentTextSubmission, setCurrentTextSubmission] = useState("");
@@ -59,29 +60,21 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
   const [isEditorMaximized, setIsEditorMaximized] = useState(false);
   const [isResponsesMaximized, setIsResponsesMaximized] = useState(false);
-  const [editorView, setEditorView] = useState<"edit" | "preview" | "live">(
-    "live"
-  );
+  const [editorView, setEditorView] = useState<"edit" | "preview" | "live">("live");
 
   const [isAssigned, setIsAssigned] = useState<boolean | null>(null);
-
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   // Helper functions for grading display
-  const isGraded =
-    existingSubmission?.marks !== null &&
-    existingSubmission?.marks !== undefined;
+  const isGraded = existingSubmission?.marks !== null && existingSubmission?.marks !== undefined;
 
   const isPassing = () => {
     if (!isGraded || !assignment) return false;
-    return (
-      (existingSubmission?.marks || 0) >= (assignment.minimumPassPoint || 0)
-    );
+    return (existingSubmission?.marks || 0) >= (assignment.minimumPassPoint || 0);
   };
 
   const getGradePercentage = () => {
     if (!isGraded || !assignment?.totalPoints) return 0;
-    return Math.round(
-      ((existingSubmission?.marks || 0) / assignment.totalPoints) * 100
-    );
+    return Math.round(((existingSubmission?.marks || 0) / assignment.totalPoints) * 100);
   };
 
   useEffect(() => {
@@ -97,11 +90,10 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
     const fetchSubmission = async () => {
       if (!assignmentId || !user) return;
-      const submissionResult =
-        await assignmentService.getSubmissionByStudentAndAssignment(
-          user.id,
-          assignmentId
-        );
+      const submissionResult = await assignmentService.getSubmissionByStudentAndAssignment(
+        user.id,
+        assignmentId
+      );
       if (submissionResult.success && submissionResult.data) {
         setExistingSubmission(submissionResult.data);
         setTextSubmissions(submissionResult.data.textSubmissions || []);
@@ -137,8 +129,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
   useEffect(() => {
     const checkAssignment = async () => {
       if (!user || !assignment) return;
-      const assigned =
-        await adminAssignedStudentsService.isStudentAssignedToAdmin(user.id);
+      const assigned = await adminAssignedStudentsService.isStudentAssignedToAdmin(user.id);
       setIsAssigned(assigned);
     };
 
@@ -185,14 +176,8 @@ const AssignmentView: React.FC<AssignmentProps> = ({
       return;
     }
 
-    if (
-      submissionFiles.length === 0 &&
-      textSubmissions.length === 0 &&
-      links.length === 0
-    ) {
-      setMessage(
-        "Please provide at least one type of submission (files, text, or links)."
-      );
+    if (submissionFiles.length === 0 && textSubmissions.length === 0 && links.length === 0) {
+      setMessage("Please provide at least one type of submission (files, text, or links).");
       return;
     }
 
@@ -202,9 +187,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
     try {
       if (assignment.deadline && new Date() > assignment.deadline.toDate()) {
-        setMessage(
-          "Assignment deadline has passed. Submission is not allowed."
-        );
+        setMessage("Assignment deadline has passed. Submission is not allowed.");
         setIsSubmitting(false);
         setUploading(false);
         return;
@@ -212,10 +195,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
       const uploadedUrls: string[] = [];
       for (const file of submissionFiles) {
-        const result = await fileService.uploadAttachment(
-          `/submissions/${assignmentId}`,
-          file
-        );
+        const result = await fileService.uploadAttachment(`/submissions/${assignmentId}`, file);
         if (result.success) {
           uploadedUrls.push(result.data);
         }
@@ -234,9 +214,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
         links: links,
       };
 
-      const submissionResult = await assignmentService.createSubmission(
-        submission
-      );
+      const submissionResult = await assignmentService.createSubmission(submission);
 
       if (isAssigned && submissionResult.success && submissionResult.data) {
         try {
@@ -256,7 +234,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
       }
 
       await onComplete(true);
-      setMessage("Assignment submitted successfully!");
+      setShowCompletionModal(true);
       setSubmissionFiles([]);
       setTextSubmissions([]);
       setLinks([]);
@@ -302,6 +280,101 @@ const AssignmentView: React.FC<AssignmentProps> = ({
     }
   };
 
+  // Completion Modal Component
+  function AssignmentCompletionModal({
+    isOpen,
+    onClose,
+    assignmentTitle,
+    onContinue,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    assignmentTitle: string;
+    onContinue: () => void;
+  }) {
+    if (!isOpen) return null;
+
+    const handleContinue = () => {
+      onClose();
+      onContinue();
+    };
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+        {/* Backdrop with Blur */}
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+          onClick={onClose}
+        />
+
+        {/* The Modern Geometric Modal */}
+        <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+          {/* Main Background Shape with Cut Corners */}
+          <div
+            className="relative bg-white dark:bg-gray-900 p-8 sm:p-10 shadow-2xl"
+            style={{
+              clipPath: "polygon(0 0, 90% 0, 100% 10%, 100% 100%, 10% 100%, 0 90%)",
+            }}
+          >
+            {/* Top-Left Heavy Bracket */}
+            <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none">
+              <div className="absolute top-4 left-4 w-full h-full border-t-[12px] border-l-[12px] border-green-500/90" />
+            </div>
+
+            {/* Bottom-Right Heavy Bracket */}
+            <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none">
+              <div className="absolute bottom-4 right-4 w-full h-full border-b-[12px] border-r-[12px] border-green-500/90" />
+            </div>
+
+            {/* Decorative "Tech" lines */}
+            <div className="absolute top-4 right-12 w-12 h-1 bg-green-500/20" />
+            <div className="absolute bottom-4 left-12 w-12 h-1 bg-green-500/20" />
+
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-20"
+            >
+              <X className="h-5 w-5 text-gray-400" />
+            </button>
+
+            {/* Content Wrapper */}
+            <div className="relative z-10 text-center">
+              {/* Success Icon */}
+              <div className="mx-auto w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6 animate-in zoom-in duration-300">
+                <Send className="h-10 w-10 text-green-500" />
+              </div>
+
+              <h3 className="text-2xl font-bold uppercase tracking-wider mb-4 text-green-500">
+                ASSIGNMENT SUBMITTED!
+              </h3>
+
+              <p className="text-gray-500 dark:text-gray-400 mb-2">
+                Great work! You've successfully submitted:
+              </p>
+
+              <p className="font-semibold text-lg mb-6 text-gray-900 dark:text-white">
+                "{assignmentTitle}"
+              </p>
+
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span>Your submission is pending review</span>
+              </div>
+
+              <button
+                onClick={handleContinue}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Continue Learning
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-600">
@@ -328,8 +401,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
   }
 
   const colorMode =
-    typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
@@ -349,8 +421,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
             <Star className="h-4 w-4" /> {assignment.totalPoints} pts
           </div>
           <div className="flex items-center gap-1.5">
-            <Award className="h-4 w-4" /> Pass: {assignment.minimumPassPoint}{" "}
-            pts
+            <Award className="h-4 w-4" /> Pass: {assignment.minimumPassPoint} pts
           </div>
         </div>
 
@@ -380,11 +451,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                       File {idx + 1}
                     </a>
                   </div>
-                  <a
-                    href={url}
-                    download
-                    className="text-primary text-xs hover:underline"
-                  >
+                  <a href={url} download className="text-primary text-xs hover:underline">
                     Download
                   </a>
                 </li>
@@ -405,9 +472,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                   <CheckCircle2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                    Graded
-                  </h3>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Graded</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {isPassing() ? "Passed" : "Did not meet passing criteria"}
                   </p>
@@ -442,35 +507,29 @@ const AssignmentView: React.FC<AssignmentProps> = ({
           </div>
 
           {/* Feedback Card */}
-          {existingSubmission.feedback &&
-            existingSubmission.feedback.trim() && (
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-gray-400" />
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Feedback
-                    </h3>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <MarkdownViewer value={existingSubmission.feedback} />
-                  </div>
+          {existingSubmission.feedback && existingSubmission.feedback.trim() && (
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-gray-400" />
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Feedback</h3>
                 </div>
               </div>
-            )}
+              <div className="p-5">
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <MarkdownViewer value={existingSubmission.feedback} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* No Feedback */}
-          {(!existingSubmission.feedback ||
-            !existingSubmission.feedback.trim()) && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
-                <MessageSquare className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No feedback provided
-                </p>
-              </div>
-            )}
+          {(!existingSubmission.feedback || !existingSubmission.feedback.trim()) && (
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+              <MessageSquare className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No feedback provided</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -489,16 +548,13 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                 <>
                   <CheckCircle2 className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-600 dark:text-gray-400">
-                    Received {existingSubmission.marks}/{assignment.totalPoints}{" "}
-                    points
+                    Received {existingSubmission.marks}/{assignment.totalPoints} points
                   </span>
                 </>
               ) : (
                 <>
                   <Clock className="h-4 w-4 text-orange-500" />
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Pending review
-                  </span>
+                  <span className="text-gray-600 dark:text-gray-400">Pending review</span>
                 </>
               )}
             </div>
@@ -522,32 +578,31 @@ const AssignmentView: React.FC<AssignmentProps> = ({
               )}
 
             {/* Links */}
-            {existingSubmission.links &&
-              existingSubmission.links.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-                    Links
-                  </h3>
-                  <ul className="space-y-1.5">
-                    {existingSubmission.links.map((link, idx) => (
-                      <li
-                        key={idx}
-                        className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+            {existingSubmission.links && existingSubmission.links.length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                  Links
+                </h3>
+                <ul className="space-y-1.5">
+                  {existingSubmission.links.map((link, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                    >
+                      <Link className="h-3.5 w-3.5 text-gray-400" />
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 hover:underline truncate"
                       >
-                        <Link className="h-3.5 w-3.5 text-gray-400" />
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline truncate"
-                        >
-                          {link}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Files */}
             {existingSubmission.submissionFiles &&
@@ -573,11 +628,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                             File {idx + 1}
                           </a>
                         </div>
-                        <a
-                          href={url}
-                          download
-                          className="text-primary text-xs hover:underline"
-                        >
+                        <a href={url} download className="text-primary text-xs hover:underline">
                           Download
                         </a>
                       </li>
@@ -599,19 +650,16 @@ const AssignmentView: React.FC<AssignmentProps> = ({
             )}
 
             {isGraded && (
-              <p className="text-xs text-gray-400 mt-4">
-                Graded submissions cannot be deleted.
-              </p>
+              <p className="text-xs text-gray-400 mt-4">Graded submissions cannot be deleted.</p>
             )}
           </div>
         ) : (
           <div className="space-y-5">
             {/* Text Submission Editor */}
             <div
-              className={`${isEditorMaximized
-                  ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6"
-                  : ""
-                }`}
+              className={`${
+                isEditorMaximized ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 p-6" : ""
+              }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -622,30 +670,33 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                     <button
                       type="button"
                       onClick={() => setEditorView("edit")}
-                      className={`px-2.5 py-1 text-xs ${editorView === "edit"
+                      className={`px-2.5 py-1 text-xs ${
+                        editorView === "edit"
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        }`}
+                      }`}
                     >
                       <Edit3 className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditorView("preview")}
-                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${editorView === "preview"
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
+                        editorView === "preview"
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        }`}
+                      }`}
                     >
                       <Eye className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditorView("live")}
-                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${editorView === "live"
+                      className={`px-2.5 py-1 text-xs border-l border-gray-200 dark:border-gray-700 ${
+                        editorView === "live"
                           ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        }`}
+                      }`}
                     >
                       <Split className="h-3 w-3" />
                     </button>
@@ -667,8 +718,9 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
               <div
                 data-color-mode={colorMode}
-                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${isEditorMaximized ? "h-[calc(100vh-150px)]" : ""
-                  }`}
+                className={`border rounded-lg dark:border-gray-700 overflow-hidden ${
+                  isEditorMaximized ? "h-[calc(100vh-150px)]" : ""
+                }`}
               >
                 <MDEditor
                   value={currentTextSubmission}
@@ -678,15 +730,12 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                   hideToolbar={false}
                   visibleDragbar={!isEditorMaximized}
                   textareaProps={{
-                    placeholder:
-                      "Write your answer here... Supports Markdown formatting.",
+                    placeholder: "Write your answer here... Supports Markdown formatting.",
                   }}
                 />
               </div>
 
-              <div
-                className={`flex gap-2 ${isEditorMaximized ? "mt-4" : "mt-2"}`}
-              >
+              <div className={`flex gap-2 ${isEditorMaximized ? "mt-4" : "mt-2"}`}>
                 <button
                   type="button"
                   onClick={addTextSubmission}
@@ -718,10 +767,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                       <div className="flex justify-between items-start">
                         <div className="flex-1 prose prose-sm dark:prose-invert max-w-none">
                           <MarkdownViewer
-                            value={
-                              text.substring(0, 100) +
-                              (text.length > 100 ? "..." : "")
-                            }
+                            value={text.substring(0, 100) + (text.length > 100 ? "..." : "")}
                           />
                         </div>
                         <button
@@ -749,9 +795,7 @@ const AssignmentView: React.FC<AssignmentProps> = ({
                     type="url"
                     value={currentLink}
                     onChange={(e) => setCurrentLink(e.target.value)}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && (e.preventDefault(), addLink())
-                    }
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addLink())}
                     placeholder="https://example.com"
                     className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600"
                   />
@@ -859,15 +903,28 @@ const AssignmentView: React.FC<AssignmentProps> = ({
 
         {message && (
           <p
-            className={`mt-4 text-sm ${message.includes("❌") || message.includes("not allowed")
+            className={`mt-4 text-sm ${
+              message.includes("❌") || message.includes("not allowed")
                 ? "text-red-500"
                 : "text-gray-600 dark:text-gray-400"
-              }`}
+            }`}
           >
             {message}
           </p>
         )}
       </div>
+
+      {/* Completion Modal */}
+      <AssignmentCompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        assignmentTitle={assignment?.title || ""}
+        onContinue={() => {
+          if (onNavigateToNext) {
+            onNavigateToNext();
+          }
+        }}
+      />
     </div>
   );
 };

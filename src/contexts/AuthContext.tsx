@@ -1,18 +1,29 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@/types/user";
 import { authService } from "@/services/authService";
-import { db } from "@/firebaseConfig";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { db, getFirebaseMessaging } from "@/firebaseConfig";
+import { collection, doc, getDoc, getDocs, query, Timestamp, where } from "firebase/firestore";
 import { UserRole } from "@/types/general";
 import { UserCredential } from "firebase/auth";
 import { Result } from "@/utils/response";
+import { COLLECTION, PLATFROM_TYPE } from "@/constants";
+import { userService } from "@/services/userService";
+import { getToken } from "firebase/messaging";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<Result<{ user: User; userCredential: UserCredential }>>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<Result<{ user: User; userCredential: UserCredential }>>;
   signup: (email: string, password: string, name: string) => Promise<Result<{ userId: string }>>;
-  loginWithGoogle: () => Promise<{ success: boolean; userId?: string; error?: string; role: UserRole }>;
+  loginWithGoogle: () => Promise<{
+    success: boolean;
+    userId?: string;
+    error?: string;
+    role: UserRole;
+  }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -36,13 +47,13 @@ interface AuthProviderProps {
 const fetchUserFromFirestore = async (uid: string, email?: string | null): Promise<User | null> => {
   try {
     // First try UID
-    const userDocRef = doc(db, "Users", uid);
+    const userDocRef = doc(db, COLLECTION.USERS, uid);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) return userDocSnap.data() as User;
 
     // fallback: lookup by email
     if (email) {
-      const usersRef = collection(db, "Users");
+      const usersRef = collection(db, COLLECTION.USERS);
       const q = query(usersRef, where("email", "==", email));
       const querySnap = await getDocs(q);
       if (!querySnap.empty) {
@@ -95,7 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     success: boolean;
     userId?: string;
     error?: string;
-    role: UserRole
+    role: UserRole;
   }> => {
     const response = await authService.signInWithGoogle();
 
@@ -122,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       success: false,
       error: response.error.message || "Google login failed",
-      role: "student" as UserRole,  // ✅ required prop
+      role: "student" as UserRole, // ✅ required prop
     };
   };
 
@@ -131,6 +142,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await authService.signOut();
     setUser(null);
   };
+
+  useEffect(() => {
+    const registerFcmToken = async () => {
+      if (!user?.id) return;
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+
+      try {
+        const messaging = await getFirebaseMessaging();
+        if (!messaging) return;
+
+        const token = await getToken(messaging, {
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+        });
+
+        if (!token) return;
+
+        await userService.upsertFcmToken(user.id, {
+          token,
+          platform: PLATFROM_TYPE.WEB,
+          updatedAt: Timestamp.now(),
+        });
+      } catch (error) {
+        console.error("FCM token registration failed:", error);
+      }
+    };
+
+    registerFcmToken();
+  }, [user?.id]);
 
   // 🔹 Password reset
   const resetPassword = async (email: string) => {

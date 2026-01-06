@@ -1,3 +1,5 @@
+import { isiOS } from "@tiptap/core";
+
 export const USER_ROLE = {
   STUDENT: "STUDENT",
   TEACHER: "TEACHER",
@@ -56,6 +58,20 @@ export const COURSE_STATUS = {
   PUBLISHED: "PUBLISHED",
   ARCHIVED: "ARCHIVED",
 } as const;
+
+
+export const PLATFROM_TYPE = {
+  WEB: "WEB",
+  ANDROID : "ANDROID",  
+  IOS : "IOS",
+} as const;
+
+export const PUSH_NOTIFICATION_TYPE = {
+  SUCCESS: "SUCCESS",
+  WARNING: "WARNING",
+  ERROR: "ERROR",
+  GRADING: "GRADING"
+};
 
 export const BUNDLE_STATUS = {
   DRAFT: "DRAFT",
@@ -438,7 +454,8 @@ export const COLLECTION = {
   FORUM_CHANNELS: "ForumChannels",
   CHANNEL_MESSAGES: "ChannelMessages",
   FORUM_MESSAGE_UPVOTES: "ForumMessageUpvotes",
-  COURSE_WELCOME_TEMPLATES: "CourseWelcomeTemplates"
+  COURSE_WELCOME_TEMPLATES: "CourseWelcomeTemplates",
+  CONTENT_LOCKS: "ContentLocks",
 } as const;
 
 export const ATTRIBUTE_TYPE = {

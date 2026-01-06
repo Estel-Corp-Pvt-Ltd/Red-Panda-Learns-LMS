@@ -119,7 +119,7 @@ const AdminComplaints = () => {
                 filters.push({
                     field: "status",
                     op: "==",
-                    value: COMPLAINT_STATUS[statusFilter],
+                    value: statusFilter,
                 });
             }
 

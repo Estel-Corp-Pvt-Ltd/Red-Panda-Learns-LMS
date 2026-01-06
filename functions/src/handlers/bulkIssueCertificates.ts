@@ -7,6 +7,11 @@ import { corsMiddleware } from "../middlewares/cors";
 import { withMiddleware } from "../middlewares";
 import crypto from "crypto";
 import { logger } from "firebase-functions";
+import { PubSub } from "@google-cloud/pubsub";
+import { CertificateEmail } from "../utils/mails/certificate";
+import { Enrollment } from "../types/enrollment";
+
+const pubsub = new PubSub();
 
 async function bulkIssueCertificatesHandler(req: Request, res: Response) {
     try {
@@ -60,7 +65,7 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     continue;
                 }
 
-                const data = snap.data();
+                const data = snap.data() as Enrollment;
 
                 if (data?.certification?.issued === true) {
                     logger.log(`Certificate already issued for enrollment ${enrollmentId}, skipping.`);
@@ -79,7 +84,19 @@ async function bulkIssueCertificatesHandler(req: Request, res: Response) {
                     completionDate: data?.completionDate ?? now,
                     updatedAt: now,
                 });
-
+                await pubsub.topic("certificate-mail").publishMessage({
+                    json: {
+                        email: data.userEmail,
+                        subject: `Certificate for {{COURSE_NAME}} is Here! - Vizuara`,
+                        body: `Dear {{USER_NAME}},\n\nCongratulations on completing the course "{{COURSE_NAME}}"! We are thrilled to inform you that your certificate is now ready.\n\nYou can download your certificate using the following link:\n\n{{CERTIFICATE_LINK}}\n\nREMARK: {{REMARK}}\n\nKeep up the great work!`,
+                        vars: {
+                            CERTIFICATE_LINK: `https://vizuara.ai/certificate/${data.id}`,
+                            USER_NAME: data.userName,
+                            COURSE_NAME: data.courseName,
+                            REMARK: remark,
+                        }
+                    } as CertificateEmail,
+                });
                 issuedCertificates.push(enrollmentId);
                 issuedCount++;
             } catch (error: any) {

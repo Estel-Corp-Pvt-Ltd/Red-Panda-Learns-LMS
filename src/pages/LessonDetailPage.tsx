@@ -16,7 +16,7 @@ import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useNavigate } from "react-router-dom";
 import { learningProgressService } from "@/services/learningProgressService";
 import { LearningProgress } from "@/types/learning-progress";
-import { serverTimestamp } from "firebase/firestore";
+import { serverTimestamp, Timestamp } from "firebase/firestore";
 import { ChevronLeft, Edit2 } from "lucide-react";
 
 export default function LessonDetailPage() {
@@ -60,8 +60,9 @@ export default function LessonDetailPage() {
     if (!course?.title) return;
 
     const prefix = selectedItem
-      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${selectedItem.title
-      }`
+      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${
+          selectedItem.title
+        }`
       : "Course";
 
     const prev = document.title;
@@ -129,59 +130,25 @@ export default function LessonDetailPage() {
   // Make sure selectedItem might be null:
   const [lessonCompleted, setLessonCompleted] = useState(false);
 
+  // Update lessonCompleted when selectedItem or userProgress changes
   useEffect(() => {
-    if (!selectedItem || !userProgress) {
+    if (!selectedItem || !userProgress?.lessonHistory) {
       setLessonCompleted(false);
       return;
     }
+
     const lessonHistory = userProgress.lessonHistory;
-    setLessonCompleted(
-      Array.isArray(lessonHistory)
-        ? lessonHistory.includes(selectedItem.id)
-        : !!lessonHistory[selectedItem.id]?.markedAsComplete &&
-        (lessonHistory[selectedItem.id]?.type
-          ? lessonHistory[selectedItem.id].type === selectedItem.type
-          : true)
-    );
-  }, [selectedItem?.id, userProgress?.lessonHistory]);
+
+    if (Array.isArray(lessonHistory)) {
+      setLessonCompleted(lessonHistory.includes(selectedItem.id));
+    } else {
+      const entry = lessonHistory[selectedItem.id];
+      setLessonCompleted(!!entry?.markedAsComplete);
+    }
+  }, [selectedItem?.id, userProgress]); // Watch the entire userProgress object
 
   const onModalClose = async (isCompleted: boolean) => {
     if (!user || !courseId || !selectedItem) return;
-
-    if (!isCompleted) {
-      const result = await learningProgressService.completeLesson(
-        courseId,
-        selectedItem.id,
-        selectedItem.type,
-        isCompleted
-      );
-      if (result.success) {
-        setUserProgress((prev) =>
-          prev
-            ? {
-              ...prev,
-              lessonHistory: {
-                ...prev.lessonHistory,
-                [selectedItem.id]: {
-                  timeSpent: 0,
-                  markedAsComplete: false,
-                  completedAt: serverTimestamp(),
-                  type: selectedItem.type,
-                },
-              },
-            }
-            : prev
-        );
-
-        toast({
-          title: "Incomplete",
-          description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
-            } is not marked as complete.`,
-          variant: "default",
-        });
-      }
-      return;
-    }
 
     const result = await learningProgressService.completeLesson(
       courseId,
@@ -189,28 +156,38 @@ export default function LessonDetailPage() {
       selectedItem.type,
       isCompleted
     );
+
     if (result.success) {
-      setUserProgress((prev) =>
-        prev
-          ? {
-            ...prev,
-            lessonHistory: {
-              ...prev.lessonHistory,
-              [selectedItem.id]: {
-                timeSpent: 0,
-                markedAsComplete: true,
-                completedAt: serverTimestamp(),
-                type: selectedItem.type,
-              },
+      // Use a regular Date instead of serverTimestamp() for local state
+      const now = Timestamp.now();
+      setUserProgress((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          lessonHistory: {
+            ...(typeof prev.lessonHistory === "object" && !Array.isArray(prev.lessonHistory)
+              ? prev.lessonHistory
+              : {}),
+            [selectedItem.id]: {
+              timeSpent: 0,
+              markedAsComplete: isCompleted,
+              completedAt: now,
+              type: selectedItem.type,
             },
-          }
-          : prev
-      );
+          },
+        };
+      });
+
+      // Also update lessonCompleted state immediately
+      setLessonCompleted(isCompleted);
 
       toast({
-        title: "Success",
-        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"
-          } marked as completed!`,
+        title: isCompleted ? "Completed!" : "Incomplete",
+        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} ${
+          isCompleted ? "marked as complete." : "is not marked as complete."
+        }`,
+        variant: "default",
       });
     }
   };
@@ -290,6 +267,45 @@ export default function LessonDetailPage() {
     );
   }
 
+  // Add this after the handleItemSelect function
+  const getNextItem = (): TopicItem | null => {
+    if (!course || !selectedItem) return null;
+
+    const allItems: TopicItem[] = [];
+
+    // Flatten all items from all topics
+    if (course.topics && course.topics.length > 0) {
+      for (const topic of course.topics) {
+        if (topic.items) {
+          allItems.push(...topic.items);
+        }
+      }
+    }
+
+    // Find current index and return next item
+    const currentIndex = allItems.findIndex((item) => item.id === selectedItem.id);
+    if (currentIndex !== -1 && currentIndex < allItems.length - 1) {
+      return allItems[currentIndex + 1];
+    }
+
+    return null;
+  };
+
+  const handleNavigateToNext = () => {
+    const nextItem = getNextItem();
+    if (nextItem) {
+      setSelectedItem(nextItem);
+      // Update URL without full page reload
+      navigate(`/courses/${param}/lesson/${nextItem.id}`, { replace: true });
+    } else {
+      // No more items - optionally show a completion message or navigate to course page
+      toast({
+        title: "Course Complete!",
+        description: "You've reached the end of this course.",
+      });
+    }
+  };
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
@@ -361,13 +377,19 @@ export default function LessonDetailPage() {
               </div>
             </div>
           ) : selectedItem.type === "ASSIGNMENT" ? (
-            <AssignmentView assignmentId={selectedItem.id} onComplete={onModalClose} />
+            <AssignmentView
+              key={selectedItem.id}
+              assignmentId={selectedItem.id}
+              onComplete={onModalClose}
+              onNavigateToNext={handleNavigateToNext}
+            />
           ) : (
             <LessonView
               lessonId={selectedItem.id}
               courseName={course.title}
               onComplete={onModalClose}
               completed={lessonCompleted}
+              onNavigateToNext={handleNavigateToNext}
             />
           )}
         </main>
