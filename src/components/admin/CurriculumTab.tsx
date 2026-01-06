@@ -30,12 +30,13 @@ import {
   Save,
   Search,
   Trash2,
+  Lock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LEARNING_UNIT } from "@/constants";
+import { LEARNING_CONTENT, LEARNING_UNIT } from "@/constants";
 import { LessonImportModal } from "@/components/admin/LessonImportModal";
 import { EditLessonModal } from "@/components/admin/LessonEditModel";
 import AssignmentModal from "@/components/AssignmentModal";
@@ -52,6 +53,9 @@ import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { LearningContentType } from "@/types/lesson";
 import { arrayMove } from "@dnd-kit/sortable";
 import ConfirmDialog from "../ConfirmDialog";
+import { ContentLockForm } from "./ContentLockForm";
+import { contentLockService } from "@/services/contentLockService";
+import { ContentLock } from "@/types/content-lock";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItem = {
@@ -73,14 +77,9 @@ type SortableItemProps = {
 };
 
 const SortableItem = ({ id, children, type, depth, onChange }: SortableItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
   const [showChildren, setShowChildren] = useState(false);
 
   const style = {
@@ -101,7 +100,10 @@ const SortableItem = ({ id, children, type, depth, onChange }: SortableItemProps
     <div ref={setNodeRef} style={style} {...attributes}>
       <div className="flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group">
         {type === LEARNING_UNIT.TOPIC ? (
-          <ChevronRight className={`h-4 w-4 text-muted-foreground ${showChildren ? "rotate-90" : ""}`} onClick={toggleChildren} />
+          <ChevronRight
+            className={`h-4 w-4 text-muted-foreground ${showChildren ? "rotate-90" : ""}`}
+            onClick={toggleChildren}
+          />
         ) : null}
         <div {...listeners} className="cursor-grab active:cursor-grabbing">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -117,8 +119,6 @@ type CurriculumTabProps = {
   course: Course | null;
   initialItemId?: string | null;
 };
-
-
 
 // ─── Component ─────────────────────────────────────────────
 const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
@@ -137,8 +137,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
-  const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] =
-    useState(false);
+  const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] = useState(false);
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
   const [isLessonEditModelOpen, setIsLessonEditModelOpen] = useState(false);
@@ -147,7 +146,10 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   const [activeTopicIds, setActiveTopicIds] = useState<Set<string>>(new Set());
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [editingItemType, setEditingItemType] = useState<LearningUnit | null>(null);
-
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [activeContentId, setActiveContentId] = useState<string | null>(null);
+  const [loadingLocks, setLoadingLocks] = useState(false);
+  const [topicLocks, setTopicLocks] = useState<Record<string, ContentLock | null>>({});
   // ✅ Add null check for course in useEffect
   useEffect(() => {
     if (course) {
@@ -181,11 +183,9 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
       if (idxActive === -1 || idxOver === -1) return prev;
 
       // Type predicates
-      const isTopic = (item: DraggableItem) =>
-        item.type === LEARNING_UNIT.TOPIC;
+      const isTopic = (item: DraggableItem) => item.type === LEARNING_UNIT.TOPIC;
       const isChild = (item: DraggableItem) =>
-        item.type === LEARNING_UNIT.LESSON ||
-        item.type === LEARNING_UNIT.ASSIGNMENT;
+        item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT;
 
       const activeItem = list[idxActive];
       const overItem = list[idxOver];
@@ -195,9 +195,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
       // ─────────────────────────────────────────────────────────
       if (isTopic(activeItem)) {
         // Find all children of the active topic
-        const activeTopicChildren = list.filter(
-          (item) => item.parentId === activeId
-        );
+        const activeTopicChildren = list.filter((item) => item.parentId === activeId);
 
         // Calculate the new position
         let newIndex = idxOver;
@@ -212,15 +210,13 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
         // Remove the topic and its children
         const itemsToMove = [activeItem, ...activeTopicChildren];
-        const filteredList = list.filter(
-          (item) => !itemsToMove.includes(item)
-        );
+        const filteredList = list.filter((item) => !itemsToMove.includes(item));
 
         // Insert at new position
         const newList = [
           ...filteredList.slice(0, newIndex),
           ...itemsToMove,
-          ...filteredList.slice(newIndex)
+          ...filteredList.slice(newIndex),
         ];
 
         // Re-index the entire list to maintain proper order
@@ -333,8 +329,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
       const childrenMap = new Map<string, DraggableItem[]>();
       curriculum.forEach((item) => {
         if (item.parentId) {
-          if (!childrenMap.has(item.parentId))
-            childrenMap.set(item.parentId, []);
+          if (!childrenMap.has(item.parentId)) childrenMap.set(item.parentId, []);
           childrenMap.get(item.parentId)!.push(item);
         }
       });
@@ -342,11 +337,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
       for (const item of curriculum) {
         if (!item.parentId && item.type === LEARNING_UNIT.TOPIC) {
           const lessonItems = (childrenMap.get(item.id) || [])
-            .filter(
-              (l) =>
-                l.type === LEARNING_UNIT.LESSON ||
-                l.type === LEARNING_UNIT.ASSIGNMENT
-            )
+            .filter((l) => l.type === LEARNING_UNIT.LESSON || l.type === LEARNING_UNIT.ASSIGNMENT)
             .map((lessonItem) => ({
               id: lessonItem.refId ?? lessonItem.id,
               title: lessonItem.title,
@@ -386,9 +377,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
       if (existingIndex !== -1) {
         // ✅ UPDATE MODE: Just update the title
         return prev.map((item) =>
-          item.id === assignment.id
-            ? { ...item, title: assignment.title }
-            : item
+          item.id === assignment.id ? { ...item, title: assignment.title } : item
         );
       }
 
@@ -417,10 +406,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
         if (item.parentId === activeParentId) {
           insertIndex = i + 1;
-        } else if (
-          item.depth <= parentDepth ||
-          item.type === LEARNING_UNIT.TOPIC
-        ) {
+        } else if (item.depth <= parentDepth || item.type === LEARNING_UNIT.TOPIC) {
           break;
         }
       }
@@ -538,10 +524,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
       if (item.parentId === activeParentId) {
         insertIndex = i + 1;
-      } else if (
-        item.depth <= parentDepth ||
-        item.type === LEARNING_UNIT.TOPIC
-      ) {
+      } else if (item.depth <= parentDepth || item.type === LEARNING_UNIT.TOPIC) {
         break;
       }
     }
@@ -565,8 +548,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
   const firstLessonId = useMemo(() => {
     const firstLesson = curriculum.find(
-      (i) =>
-        i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
+      (i) => i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
     );
     return firstLesson ? firstLesson.refId ?? firstLesson.id : null;
   }, [curriculum]);
@@ -575,16 +557,11 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     return curriculum.find((i) => i.id === activeId);
   }, [activeId, curriculum]);
 
-
-
-
   // Handle initial itemId to open modal (from URL parameter)
   useEffect(() => {
     if (initialItemId && curriculum.length > 0) {
       // Find the item in curriculum
-      const item = curriculum.find(
-        (i) => i.id === initialItemId || i.refId === initialItemId
-      );
+      const item = curriculum.find((i) => i.id === initialItemId || i.refId === initialItemId);
 
       if (item) {
         // Check item type and open appropriate modal
@@ -603,15 +580,49 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     }
   }, [initialItemId, curriculum]);
 
+  // Add this useEffect to fetch locks on mount and when course changes
+  useEffect(() => {
+    refetchLocks();
+  }, [course?.id]);
 
+  // Fix the refetchLocks function to use curriculum instead of course.topics
+  const refetchLocks = async () => {
+    const topicIds = curriculum
+      .filter((item) => item.type === LEARNING_UNIT.TOPIC)
+      .map((item) => item.id);
+
+    if (topicIds.length === 0) return;
+
+    try {
+      setLoadingLocks(true);
+
+      const topicRes = await contentLockService.getLocksByContentIds(topicIds);
+
+      const topicMap: Record<string, ContentLock | null> = {};
+      topicIds.forEach((id) => (topicMap[id] = null));
+      if (topicRes.success) {
+        topicRes.data.forEach((lock) => (topicMap[lock.contentId] = lock));
+      }
+      setTopicLocks(topicMap);
+    } catch (err) {
+      console.error("Failed to refetch locks", err);
+    } finally {
+      setLoadingLocks(false);
+    }
+  };
+
+  // Also update the useEffect dependency to trigger when curriculum changes
+  useEffect(() => {
+    if (curriculum.length > 0) {
+      refetchLocks();
+    }
+  }, [curriculum.length]);
 
   if (!course) {
     return (
       <Card className="shadow-lg border">
         <CardContent className="py-8">
-          <div className="text-center text-muted-foreground">
-            Loading curriculum...
-          </div>
+          <div className="text-center text-muted-foreground">Loading curriculum...</div>
         </CardContent>
       </Card>
     );
@@ -628,20 +639,12 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
           <div className="flex flex-wrap gap-2">
             {/* Add Topic Button */}
-            <Button
-              size="sm"
-              onClick={addItem}
-              className="flex items-center gap-1"
-            >
+            <Button size="sm" onClick={addItem} className="flex items-center gap-1">
               <Plus className="h-4 w-4" /> Add Topic
             </Button>
 
             {/* Save */}
-            <Button
-              size="sm"
-              onClick={saveCurriculumStructure}
-              className="flex items-center gap-1"
-            >
+            <Button size="sm" onClick={saveCurriculumStructure} className="flex items-center gap-1">
               <Save className="h-4 w-4" /> Save
             </Button>
 
@@ -671,100 +674,105 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
-                {curriculum.map((item) => item.type !== "TOPIC" && (activeItem?.type === LEARNING_UNIT.TOPIC || !activeTopicIds.has(item.parentId)) ? null : (
-                  <SortableItem
-                    key={String(item.id)}
-                    id={String(item.id)}
-                    type={item.type}
-                    depth={item.depth}
-                    onChange={(id, state) => {
-                      setActiveTopicIds((prev) => {
-                        const newSet = new Set(prev);
-                        if (state) {
-                          newSet.add(id);
-                        } else {
-                          newSet.delete(id);
-                        }
-                        return newSet;
-                      });
-                    }}
-                  >
-                    <div className="flex items-center justify-between w-full group">
-                      {/* ───── Left: icon + title ───────────── */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {item.type === LEARNING_UNIT.TOPIC ? activeTopicIds.has(item.id) ? (
-                          <FolderOpen className="h-6 w-6 text-primary" />
-                        ) : <FolderClosed className="h-6 w-6 text-primary" /> : null}
-                        {item.type === LEARNING_UNIT.LESSON && (
-                          <BookOpen className="h-6 w-6 text-red-500" />
-                        )}
-                        {item.type === LEARNING_UNIT.ASSIGNMENT && (
-                          <NotepadText className="h-6 w-6 text-blue-500" />
-                        )}
+                {curriculum.map((item) =>
+                  item.type !== "TOPIC" &&
+                  (activeItem?.type === LEARNING_UNIT.TOPIC ||
+                    !activeTopicIds.has(item.parentId)) ? null : (
+                    <SortableItem
+                      key={String(item.id)}
+                      id={String(item.id)}
+                      type={item.type}
+                      depth={item.depth}
+                      onChange={(id, state) => {
+                        setActiveTopicIds((prev) => {
+                          const newSet = new Set(prev);
+                          if (state) {
+                            newSet.add(id);
+                          } else {
+                            newSet.delete(id);
+                          }
+                          return newSet;
+                        });
+                      }}
+                    >
+                      <div className="flex items-center justify-between w-full group">
+                        {/* ───── Left: icon + title ───────────── */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {item.type === LEARNING_UNIT.TOPIC ? (
+                            activeTopicIds.has(item.id) ? (
+                              <FolderOpen className="h-6 w-6 text-primary" />
+                            ) : (
+                              <FolderClosed className="h-6 w-6 text-primary" />
+                            )
+                          ) : null}
+                          {item.type === LEARNING_UNIT.LESSON && (
+                            <BookOpen className="h-6 w-6 text-red-500" />
+                          )}
+                          {item.type === LEARNING_UNIT.ASSIGNMENT && (
+                            <NotepadText className="h-6 w-6 text-blue-500" />
+                          )}
 
-                        {/* ───── Title Logic ───────────── */}
-                        {item.type === LEARNING_UNIT.TOPIC ? (
-                          editingItemId === item.id ? (
-                            <Input
-                              value={newItemName}
-                              onChange={(e) => setNewItemName(e.target.value)}
-                              onBlur={() =>
-                                updateItemName(item.id, newItemName)
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  updateItemName(item.id, newItemName);
-                                  e.currentTarget.blur();
-                                  setEditingItemId(null);
-                                }
-                              }}
-                              className="flex-1 min-w-0"
-                              autoFocus
-                            />
-                          ) : (
-                            <span
-                              className="flex-1 truncate cursor-pointer hover:underline"
-                              onDoubleClick={() => {
-                                setEditingItemId(item.id);
-                                setNewItemName(item.title);
-                              }}
+                          {/* ───── Title Logic ───────────── */}
+                          {item.type === LEARNING_UNIT.TOPIC ? (
+                            editingItemId === item.id ? (
+                              <Input
+                                value={newItemName}
+                                onChange={(e) => setNewItemName(e.target.value)}
+                                onBlur={() => updateItemName(item.id, newItemName)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    updateItemName(item.id, newItemName);
+                                    e.currentTarget.blur();
+                                    setEditingItemId(null);
+                                  }
+                                }}
+                                className="flex-1 min-w-0"
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                className="flex-1 truncate cursor-pointer hover:underline"
+                                onDoubleClick={() => {
+                                  setEditingItemId(item.id);
+                                  setNewItemName(item.title);
+                                }}
+                              >
+                                {item.title}
+                              </span>
+                            )
+                          ) : item.type === LEARNING_UNIT.LESSON ? (
+                            <Link
+                              to={`/courses/${course.slug || course.id}/lesson/${item.id}`}
+                              target="_blank"
+                              className="flex-1 truncate text-foreground hover:opacity-80"
+                              style={{ textDecoration: "none" }}
                             >
                               {item.title}
-                            </span>
-                          )
-                        ) : item.type === LEARNING_UNIT.LESSON ? (
-                          <Link
-                            to={`/courses/${course.slug || course.id}/lesson/${item.id}`}
-                            target="_blank"
-                            className="flex-1 truncate text-foreground hover:opacity-80"
-                            style={{ textDecoration: "none" }}
-                          >
-                            {item.title}
-                          </Link>
-                        ) : (
-                          <span className="flex-1 truncate">{item.title}</span>
-                        )}
-                      </div>
+                            </Link>
+                          ) : (
+                            <span className="flex-1 truncate">{item.title}</span>
+                          )}
+                        </div>
 
-                      {/* ───── Right: Action Buttons ───────────── */}
-                      <div className="flex items-center gap-1">
-                        {item.type === LEARNING_UNIT.TOPIC && (
-                          <>
-                            {/* Add Lesson */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setIsCreateLessonOpen(true);
-                                setActiveParentId(item.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100"
-                              title="Add Lesson"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            {/* Import Lesson */}
-                            {/* <Button
+                        {/* ───── Right: Action Buttons ───────────── */}
+                        <div className="flex items-center gap-1">
+                          {item.type === LEARNING_UNIT.TOPIC && (
+                            <>
+                              {/* Add Lesson */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setIsCreateLessonOpen(true);
+                                  setActiveParentId(item.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100"
+                                title="Add Lesson"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                              {/* Import Lesson */}
+                              {/* <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => addLessonToParent(item.id)}
@@ -773,52 +781,67 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                             >
                               <Search className="h-4 w-4" />
                             </Button> */}
-                            {/* Add Assignment */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setActiveParentId(item.id);
-                                setEditingItemId(null);
-                                setIsAssignmentModelOpen(true);
-                              }}
-                              className="opacity-0 group-hover:opacity-100"
-                              title="Add Assignment"
-                            >
-                              <NotebookPen className="h-4 w-4" />
-                            </Button>
-                            {/* Rename Topic */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingItemId(item.id);
-                                setNewItemName(item.title);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Rename Topic"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            {/* Delete Topic */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingItemId(item.id);
-                                setEditingItemType(LEARNING_UNIT.TOPIC);
-                                setIsConfirmDialogOpen(true)
-                              }}
-                              title="Delete Topic"
-                              className="opacity-0 group-hover:opacity-100 text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
+                              {/* Add Assignment */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setActiveParentId(item.id);
+                                  setEditingItemId(null);
+                                  setIsAssignmentModelOpen(true);
+                                }}
+                                className="opacity-0 group-hover:opacity-100"
+                                title="Add Assignment"
+                              >
+                                <NotebookPen className="h-4 w-4" />
+                              </Button>
+                              {/* Rename Topic */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingItemId(item.id);
+                                  setNewItemName(item.title);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Rename Topic"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
 
-                        {(item.type === LEARNING_UNIT.LESSON ||
-                          item.type === LEARNING_UNIT.ASSIGNMENT) && (
+                              {/* Lock Content */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setActiveContentId(item.id); // or assignmentId
+                                  setIsLockModalOpen(true);
+                                }}
+                                className="opacity-0 group-hover:opacity-100"
+                                title="Lock Content"
+                              >
+                                <Lock className="h-4 w-4 " />
+                              </Button>
+
+                              {/* Delete Topic */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingItemId(item.id);
+                                  setEditingItemType(LEARNING_UNIT.TOPIC);
+                                  setIsConfirmDialogOpen(true);
+                                }}
+                                title="Delete Topic"
+                                className="opacity-0 group-hover:opacity-100 text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+
+                          {(item.type === LEARNING_UNIT.LESSON ||
+                            item.type === LEARNING_UNIT.ASSIGNMENT) && (
                             <>
                               <Button
                                 variant="ghost"
@@ -827,9 +850,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                                   if (item.type === LEARNING_UNIT.LESSON) {
                                     setEditingItemId(item.id);
                                     setIsLessonEditModelOpen(true);
-                                  } else if (
-                                    item.type === LEARNING_UNIT.ASSIGNMENT
-                                  ) {
+                                  } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
                                     setEditingItemId(item.id);
                                     setIsAssignmentEditModalOpen(true);
                                   }
@@ -845,7 +866,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                                 onClick={() => {
                                   setEditingItemId(item.id);
                                   setEditingItemType(item.type);
-                                  setIsConfirmDialogOpen(true)
+                                  setIsConfirmDialogOpen(true);
                                 }}
                                 className="opacity-0 group-hover:opacity-100 text-destructive"
                                 title="Delete"
@@ -854,10 +875,11 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                               </Button>
                             </>
                           )}
+                        </div>
                       </div>
-                    </div>
-                  </SortableItem>
-                ))}
+                    </SortableItem>
+                  )
+                )}
               </div>
             </SortableContext>
           </DndContext>
@@ -898,7 +920,13 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
       />
       <ConfirmDialog
         title="Delete Item"
-        body={`Are you sure you want to delete this ${editingItemType === LEARNING_UNIT.TOPIC ? "topic" : editingItemType === LEARNING_UNIT.LESSON ? "lesson" : "assignment"}? This action cannot be undone.`}
+        body={`Are you sure you want to delete this ${
+          editingItemType === LEARNING_UNIT.TOPIC
+            ? "topic"
+            : editingItemType === LEARNING_UNIT.LESSON
+            ? "lesson"
+            : "assignment"
+        }? This action cannot be undone.`}
         open={isConfirmDialogOpen}
         onCancel={() => {
           setIsConfirmDialogOpen(false);
@@ -935,10 +963,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           // ✅ Update the curriculum list immediately
           setCurriculum((prev) =>
             prev.map((item) => {
-              if (
-                item.id === updatedAssignment.id &&
-                item.type === LEARNING_UNIT.ASSIGNMENT
-              ) {
+              if (item.id === updatedAssignment.id && item.type === LEARNING_UNIT.ASSIGNMENT) {
                 return {
                   ...item,
                   title: updatedAssignment.title,
@@ -964,10 +989,70 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
       />
+   {/* Add this after CreateLessonModal, inside the return's fragment */}
+{isLockModalOpen && activeContentId && (
+  <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+    {/* Backdrop with Blur */}
+    <div 
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
+      onClick={() => setIsLockModalOpen(false)} 
+    />
+    
+    {/* The Modern Geometric Modal */}
+    <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+      
+      {/* 1. Main Background Shape with Cut Corners (Clip Path) */}
+      <div 
+        className="relative bg-background p-8 sm:p-10 shadow-2xl"
+        style={{
+          // This creates the "Not a square" look by cutting the top-right and bottom-left corners
+          clipPath: 'polygon(0 0, 90% 0, 100% 10%, 100% 100%, 10% 100%, 0 90%)'
+        }}
+      >
+        
+        {/* 2. The "Bracket" Design Elements (Like the image) */}
+        {/* Top-Left Heavy Bracket */}
+        <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none">
+          <div className="absolute top-4 left-4 w-full h-full border-t-[12px] border-l-[12px] border-foreground/90" />
+        </div>
+
+        {/* Bottom-Right Heavy Bracket */}
+        <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none">
+          <div className="absolute bottom-4 right-4 w-full h-full border-b-[12px] border-r-[12px] border-foreground/90" />
+        </div>
+
+        {/* 3. Decorative "Tech" lines (Optional, adds detail) */}
+        <div className="absolute top-4 right-12 w-12 h-1 bg-foreground/20" />
+        <div className="absolute bottom-4 left-12 w-12 h-1 bg-foreground/20" />
+
+        {/* 4. Content Wrapper */}
+        <div className="relative z-10">
+          <h3 className="text-xl font-bold uppercase tracking-wider mb-6 text-center border-b pb-2 border-border">
+            LOCK TOPIC
+          </h3>
+          
+          <ContentLockForm
+            contentType="TOPIC"
+            contentId={activeContentId}
+            existingLock={topicLocks[activeContentId] ?? null}
+            onSaved={() => {
+              setIsLockModalOpen(false);
+              setActiveContentId(null);
+              refetchLocks();
+            }}
+            onDeleted={() => {
+              setIsLockModalOpen(false);
+              setActiveContentId(null);
+              refetchLocks();
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 };
-
-
 
 export default CurriculumTab;
