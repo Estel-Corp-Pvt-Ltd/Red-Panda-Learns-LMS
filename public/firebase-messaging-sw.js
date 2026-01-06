@@ -47,7 +47,7 @@ const NOTIFICATION_CONFIG = {
     warning: "#F59E0B",
     error: "#EF4444",
   },
-  badge: "/logo.png",
+  badge: "/72x72-badge.png",
   icon: "/logo.png",
   placement: "top-right",
   duration: 5000,
@@ -153,7 +153,7 @@ self.addEventListener("push", (event) => {
       self.registration.showNotification("Vizuara", {
         body: "You have a new notification",
         icon: "/logo.png",
-        badge: "/logo.png",
+        badge: "/72x72-badge.png",
         vibrate: [200, 100, 200],
       })
     );
@@ -203,7 +203,7 @@ self.addEventListener("message", (event) => {
       self.registration.showNotification("Test Notification", {
         body: "Service worker is working!",
         icon: "/logo.png",
-        badge: "/logo.png",
+        badge: "/72x72-badge.png",
         vibrate: [200, 100, 200],
         data: { url: "/", test: true },
         actions: [
