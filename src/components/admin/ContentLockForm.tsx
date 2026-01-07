@@ -48,7 +48,7 @@ export const ContentLockForm = ({
     organizationId: "",
     class: "",
     division: "",
-    isLocked: true,
+    isLocked: false,
     scheduledAt: "",
   });
 
