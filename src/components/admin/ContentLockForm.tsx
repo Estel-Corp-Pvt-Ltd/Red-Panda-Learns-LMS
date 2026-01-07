@@ -92,7 +92,6 @@ export const ContentLockForm = ({
         result = await contentLockService.updateContentLock(existingLock.id, payload);
       } else {
         result = await contentLockService.createContentLock(payload);
-        console.log("created lock ",result)
       }
 
       if (!result.success) {
