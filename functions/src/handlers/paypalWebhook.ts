@@ -52,7 +52,8 @@ const paypalWebhookHandler = async (req: Request, res: Response) => {
     const webhookPayload = req.body as PayPalWebhookPayload;
 
     if (!webhookPayload) {
-      res.status(400).json({ error: "No verified webhook payload" });
+      functions.logger.error("❌ No verified webhook payload", webhookPayload);
+      res.status(200).json({ error: "No verified webhook payload" });
       return;
     }
 
@@ -84,7 +85,7 @@ const paypalWebhookHandler = async (req: Request, res: Response) => {
       default:
         functions.logger.info(`ℹ️ Unhandled PayPal event: ${webhookPayload.event_type}`);
     }
-
+    functions.logger.info("🔔 PayPal Webhook Processed Successfully", { webhookPayload });
     res.status(200).json({ success: true, message: "PayPal webhook processed" });
 
   } catch (error: any) {

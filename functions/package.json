@@ -16,6 +16,8 @@
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
     "@google-cloud/pubsub": "^5.2.0",
+    "@types/node-fetch": "^2.6.13",
+    "buffer-crc32": "^1.0.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "date-fns": "^4.1.0",

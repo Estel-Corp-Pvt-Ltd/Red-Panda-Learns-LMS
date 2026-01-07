@@ -9,6 +9,7 @@ import { Result } from "@/utils/response";
 import { currencyService } from "./currencyService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { transactionService } from "./transactionService";
+import { paypalProvider } from "./providers/paypalProvider";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -23,7 +24,7 @@ export type PaymentProviderOption = {
 };
 
 class PaymentService {
-  
+
   private providers: PaymentProviderOption[] = [
     {
       id: PAYMENT_PROVIDER.RAZORPAY,
@@ -46,7 +47,7 @@ class PaymentService {
       name: "paypal",
       displayName: "PayPal",
       currency: "USD",
-      isAvailable: false, // Disable PayPal for now
+      isAvailable: true, // Disable PayPal for now
       description: "Pay securely with PayPal",
       currencies: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
       logos: [
@@ -156,15 +157,15 @@ class PaymentService {
           onPaymentFail,
         );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
-        // result = await paypalProvider.processPayment(
-        //   items,
-        //   userEmail,
-        //   "transactionId-placeholder",
-        //   10000, // amount,
-        //   userId,
-        //   selectedCurrency
-        // );
-        result = fail("PayPal payment not yet implemented");
+        result = await paypalProvider.processPayment(
+          items,
+          billingAddress,
+          selectedCurrency,
+          userEmail,
+          promoCode,
+          onPaymentSuccess,
+          onPaymentFail,
+        );
       } else {
         result = fail("Unsupported payment provider");
       }
