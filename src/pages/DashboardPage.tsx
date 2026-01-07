@@ -97,7 +97,7 @@ function EnrolledCourseCard({
         setIsProgressLoading(false);
         return;
       }
-      if (!course.isCertificateEnabled) {
+      if (!course?.isCertificateEnabled) {
         setIsEligibleForCertificate(false);
         setIsProgressLoading(false);
         return;
@@ -362,8 +362,6 @@ export default function DashboardPage() {
     }
     setIsLoading(false);
   };
-
-  console.log("fcm token", user.fcmTokens);
   const fetchBanners = async (enrolledCourseIds: string[]) => {
     if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
       const result = await bannerService.getActiveGlobalBanners();
