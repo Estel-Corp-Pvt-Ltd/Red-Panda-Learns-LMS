@@ -13,6 +13,7 @@ import { couponService } from "../services/couponService";
 import { currencyService } from "../services/currencyService";
 import { ORDER_STATUS, PAYMENT_PROVIDER } from "../constants";
 import { orderService } from "../services/orderService";
+import { authMiddleware } from "../middlewares/auth";
 const PAYPAL_CLIENT_ID = defineSecret("PAYPAL_CLIENT_ID");
 const PAYPAL_SECRET = defineSecret("PAYPAL_SECRET");
 
@@ -105,9 +106,11 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
       throw new Error(currencyResult.error?.message || "Currency conversion failed");
     }
 
-    const amountInPaise = Math.round((currencyResult.data.toAmount) * 100);
+    const totalAmount = Number(currencyResult.data.toAmount.toFixed(2));
+    const taxAmount = Number((totalAmount * 0.05).toFixed(2));
+    const grandTotal = Number((totalAmount + taxAmount).toFixed(2));
 
-    functions.logger.info("💰 Creating Razorpay order for amount (in paise):", amountInPaise, user);
+    functions.logger.info("💰 Creating Razorpay order for amount (in paise):", grandTotal, user);
     // Create an order in database
     const orderResult = await orderService.createOrder({
       userId: user.uid,
@@ -120,7 +123,7 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
       provider: PAYMENT_PROVIDER.PAYPAL,
       providerOrderId: "", // to be updated after Razorpay order creation
       couponDiscount: discount,
-      amount: currencyResult.data.toAmount,
+      amount: grandTotal,
       currency: selectedCurrency,
       promoCode: promoCode || "",
       metadata: {},
@@ -139,28 +142,28 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
           description: "Course Purchase",
           amount: {
             currency_code: selectedCurrency,
-            value: (amountInPaise + 0.05 * amountInPaise).toFixed(2), // Adding 5% PayPal fee
-            breakdown: {
-              tax_total: {
-                currency_code: selectedCurrency,
-                value: (0.05 * amountInPaise).toFixed(2),
-              },
-              item_total: {
-                currency_code: selectedCurrency,
-                value: amountInPaise.toFixed(2)
-              }
-            }
+            value: grandTotal.toFixed(2), // Adding 5% tax/platform fee
+            // breakdown: {
+            //   tax_total: {
+            //     currency_code: selectedCurrency,
+            //     value: taxAmount.toFixed(2),
+            //   },
+            //   item_total: {
+            //     currency_code: selectedCurrency,
+            //     value: totalAmount.toFixed(2)
+            //   }
+            // }
           },
-          items: itemsDetails.map(item => ({
-            name: item.name.substring(0, 127), // PayPal limit
-            description: `${item.itemType} - ${item.name}`.substring(0, 127),
-            quantity: "1",
-            unit_amount: {
-              currency_code: selectedCurrency,
-              value: item.amount.toFixed(2)
-            },
-            category: "DIGITAL_GOODS"
-          }))
+          // items: itemsDetails.map(item => ({
+          //   name: item.name.substring(0, 127), // PayPal limit
+          //   description: `${item.itemType} - ${item.name}`.substring(0, 127),
+          //   quantity: "1",
+          //   unit_amount: {
+          //     currency_code: selectedCurrency,
+          //     value: item.amount.toFixed(2)
+          //   },
+          //   category: "DIGITAL_GOODS"
+          // }))
         },
       ],
       application_context: {
@@ -170,12 +173,14 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
         payment_method: {
           payer_selected: 'PAYPAL',
           payee_preferred: 'IMMEDIATE_PAYMENT_REQUIRED'
-        }
+        },
+        return_url: "https://vizuara.ai/payment-success",
+        cancel_url: "https://vizuara.ai/payment-cancel"
       },
     };
 
     // console.log("🔑 Getting PayPal access token...");
-    const accessToken = await getPayPalAccessToken();
+    const accessToken = await getPayPalAccessToken(PAYPAL_CLIENT_ID.value(), PAYPAL_SECRET.value());
 
     // ✅ CREATE ORDER ON PAYPAL
     const orderResponse = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
@@ -192,10 +197,8 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
 
     if (!orderResponse.ok) {
       functions.logger.error("❌ PayPal order creation failed:", orderData);
-      const errorMessage = orderData.message ||
-        orderData.details?.[0]?.description ||
-        "Failed to create PayPal order";
-      throw new Error(errorMessage);
+      res.status(400).json(orderData);
+      return;
     }
 
     const updateResult = await orderService.updateOrderProviderOrderId(orderResult.data, orderData.id);
@@ -209,7 +212,7 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
       orderId: orderResult.data,
       paypalOrder: orderData,
       currency: selectedCurrency,
-      amount: currencyResult.data.toAmount,
+      amount: grandTotal,
       // key_id: RAZORPAY_KEY_ID.value()
     };
 
@@ -228,5 +231,5 @@ const createPaypalOrderHandler = async (req: Request, res: Response) => {
 
 export const createPaypalOrder = onRequest(
   { region: "us-central1", secrets: [PAYPAL_CLIENT_ID, PAYPAL_SECRET] },
-  withMiddleware(corsMiddleware, createPaypalOrderHandler)
+  withMiddleware(corsMiddleware, authMiddleware, createPaypalOrderHandler)
 );

@@ -322,7 +322,17 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
       title: "Processing your payment...",
       description: "Please do not refresh or close this window.",
     });
-
+    console.log({
+      provider: selectedProvider,
+      items: items.map((item) => ({
+        ...item,
+        amount: item.amount || item.originalAmount || 0,
+      })),
+      userEmail: user.email!,
+      selectedCurrency,
+      billingAddress,
+      promoCode: appliedCoupon?.code,
+    });
     try {
       await paymentService.processPayment({
         provider: selectedProvider,
@@ -777,16 +787,16 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                           key={provider.id}
                           onClick={() => setSelectedProvider(provider.id)}
                           className={`cursor-pointer p-4 rounded-xl border transition-all ${isSelected
-                              ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                              : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
+                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
                             }`}
                         >
                           <div className="flex justify-between items-start gap-4">
                             <div className="flex gap-3">
                               <div
                                 className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                    ? "bg-blue-600 border-blue-600"
-                                    : "border-gray-400"
+                                  ? "bg-blue-600 border-blue-600"
+                                  : "border-gray-400"
                                   }`}
                               />
                               <div>
