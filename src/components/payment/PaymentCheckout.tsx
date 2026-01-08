@@ -79,17 +79,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     type: ADDRESS_TYPE.BILLING,
   });
 
-  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
-    PAYMENT_PROVIDER.RAZORPAY
-  );
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(PAYMENT_PROVIDER.RAZORPAY);
   const [exchangeRate, setExchangeRate] = useState<number>(1);
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
-    CURRENCY.INR
-  );
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(CURRENCY.INR);
   const [isProcessing, setIsProcessing] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [phoneError, setPhoneError] = useState("");
-
   // Coupon-related state
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
@@ -117,6 +112,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
   );
   const savings = regularTotal - subtotal;
   const finalAmount = Math.max(0, subtotal - discountAmount);
+  const convenienceFee = selectedProvider === PAYMENT_PROVIDER.RAZORPAY ? 0 : finalAmount * 0.05;
 
   useEffect(() => {
     // Update exchange rate when currency changes
@@ -484,11 +480,16 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                         </span>
                       </div>
                     )}
-
+                    {convenienceFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Convenience Fee:</span>
+                        <span>+{formatMoney(convenienceFee, selectedCurrency)}</span>
+                      </div>
+                    )}
                     <div className="border-t pt-3 flex justify-between items-center font-bold">
                       <span>Total:</span>
                       <span className="text-xl text-blue-600 dark:text-blue-400">
-                        {formatMoney(finalAmount, selectedCurrency)}
+                        {formatMoney(finalAmount + convenienceFee, selectedCurrency)}
                       </span>
                     </div>
 
@@ -894,7 +895,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     Please complete all required fields and agree to terms.
                   </div>
                 )}
-
                 <Button
                   onClick={handlePayment}
                   disabled={!canProceed}
@@ -914,6 +914,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     </>
                   )}
                 </Button>
+                <div
+                  id="paypal-button-container"
+                  className="w-full"
+                >
+                  {/* PayPal button will be rendered here by the provider */}
+                </div>
               </div>
             </div>
           </div>

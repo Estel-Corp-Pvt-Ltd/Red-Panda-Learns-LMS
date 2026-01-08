@@ -1,9 +1,8 @@
 import { ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
 import { Currency } from "@/types/general";
 import { PaymentDetails, TransactionLineItem } from "@/types/transaction";
-import { transactionService } from "../transactionService";
 import { Address } from "@/types/order";
-import { ok, Result } from "@/utils/response";
+import { fail, ok, Result } from "@/utils/response";
 import { authService } from "../authService";
 
 export interface PaypalOrder {
@@ -271,15 +270,11 @@ class PayPalProvider {
     onPaymentFail?: (message: string) => void
   ): Promise<Result<{ orderId: string }>> {
     try {
-      console.log("Initializing PayPal payment...");
-
       // Step 1: Create order via backend
       const orderData = await this.createOrder(items, billingAddress, selectedCurrency, promoCode);
       if (!orderData.success || !orderData.data) {
         throw new Error("Order creation failed");
       }
-
-      console.log("✅ PayPal order created successfully:", orderData.data);
 
       const { orderId, paypalOrder } = orderData.data;
 
@@ -289,37 +284,35 @@ class PayPalProvider {
       } catch (popupError) {
         console.error("Failed to open PayPal popup:", popupError);
         onPaymentFail && onPaymentFail("Failed to open payment window. Please allow popups.");
-        return {
-          success: false,
-          error: new Error("Failed to open payment window. Please allow popups.")
-        };
+        return fail("Failed to open PayPal popup");
       }
 
+      onPaymentSuccess && onPaymentSuccess(orderId);
       // Step 3: Monitor popup for completion
-      if (this.paypalWindow) {
-        try {
-          const result = await this.monitorPopup(
-            this.paypalWindow,
-            orderId,
-            (successOrderId) => {
-              onPaymentSuccess && onPaymentSuccess(successOrderId);
-            },
-            (errorMessage) => {
-              onPaymentFail && onPaymentFail(errorMessage);
-            }
-          );
+      // if (this.paypalWindow) {
+      //   try {
+      //     const result = await this.monitorPopup(
+      //       this.paypalWindow,
+      //       orderId,
+      //       (successOrderId) => {
+      //         onPaymentSuccess && onPaymentSuccess(successOrderId);
+      //       },
+      //       (errorMessage) => {
+      //         onPaymentFail && onPaymentFail(errorMessage);
+      //       }
+      //     );
 
-          return ok(result);
-        } catch (error) {
-          console.error("Payment process error:", error);
-          return {
-            success: false,
-            error: error instanceof Error ? error : new Error("Payment failed")
-          };
-        }
-      }
+      //     return ok(result);
+      //   } catch (error) {
+      //     console.error("Payment process error:", error);
+      //     return {
+      //       success: false,
+      //       error: error instanceof Error ? error : new Error("Payment failed")
+      //     };
+      //   }
+      // }
 
-      return { success: false, error: new Error("Failed to open PayPal popup") };
+      return ok({ orderId });
 
     } catch (error) {
       console.error("PayPal setup failed:", error);
@@ -351,7 +344,6 @@ class PayPalProvider {
 
       return new Promise((resolve) => {
         const container = document.getElementById("paypal-button-container");
-
         if (!container) {
           resolve({ success: false, error: new Error("PayPal container not found") });
           return;
@@ -359,7 +351,7 @@ class PayPalProvider {
 
         // Clear existing buttons
         container.innerHTML = "";
-
+        let orderData: Result<CreateOrderResponse> = { success: false, error: new Error("Not initialized") };
         try {
           this.buttonInstance = paypal.Buttons({
             style: {
@@ -372,7 +364,7 @@ class PayPalProvider {
             // Create order via your backend
             createOrder: async () => {
               try {
-                const orderData = await this.createOrder(
+                orderData = await this.createOrder(
                   items,
                   billingAddress,
                   selectedCurrency,
@@ -395,7 +387,10 @@ class PayPalProvider {
               console.log("Payment approved:", data);
               try {
                 // You would typically capture the payment here via backend
-                onPaymentSuccess && onPaymentSuccess(data.orderID);
+                if (!orderData.success || !orderData.data) {
+                  throw new Error("Order data missing for capture");
+                }
+                onPaymentSuccess && onPaymentSuccess(orderData.data.orderId);
                 resolve(ok({ orderId: data.orderID }));
               } catch (error) {
                 console.error("Payment capture failed:", error);
@@ -426,7 +421,6 @@ class PayPalProvider {
               console.error("Failed to render PayPal button:", err);
               resolve({ success: false, error: new Error("Failed to render PayPal button") });
             });
-
         } catch (renderErr) {
           console.error("Error creating PayPal button:", renderErr);
           resolve({ success: false, error: new Error("Failed to initialize PayPal button") });

@@ -47,7 +47,7 @@ class PaymentService {
       name: "paypal",
       displayName: "PayPal",
       currency: "USD",
-      isAvailable: true, // Disable PayPal for now
+      isAvailable: true,
       description: "Pay securely with PayPal",
       currencies: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
       logos: [
@@ -157,7 +157,7 @@ class PaymentService {
           onPaymentFail,
         );
       } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
-        result = await paypalProvider.processPayment(
+        result = await paypalProvider.processPaymentWithButtons(
           items,
           billingAddress,
           selectedCurrency,
