@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Copy, Facebook, Mail, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certificateId }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +10,26 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
 
   const publicUrl = `${window.location.origin}/certificate/public/view/${certificateId}`;
   const encodedPublicUrl = encodeURIComponent(publicUrl);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    // Store previous state (optional, but clean)
+    const hadDarkClass = html.classList.contains("dark");
+
+    // Force light mode
+    html.classList.remove("dark");
+    body.classList.remove("dark");
+
+    return () => {
+      // Restore previous state when leaving page
+      if (hadDarkClass) {
+        html.classList.add("dark");
+        body.classList.add("dark");
+      }
+    };
+  }, []);
 
   const handleShare = (platform: "whatsapp" | "x" | "email" | "facebook" | "linkedin") => {
     let url = "";
@@ -25,9 +45,9 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
         )}`;
         break;
       case "email":
-        url = `mailto:?subject=${encodeURIComponent("My Vizuara AI Labs Certificate")}&body=${encodeURIComponent(
-          `Here’s my certificate:\n${publicUrl}`
-        )}`;
+        url = `mailto:?subject=${encodeURIComponent(
+          "My Vizuara AI Labs Certificate"
+        )}&body=${encodeURIComponent(`Here’s my certificate:\n${publicUrl}`)}`;
         break;
       case "facebook":
         url = `https://www.facebook.com/sharer/sharer.php?u=${encodedPublicUrl}`;
