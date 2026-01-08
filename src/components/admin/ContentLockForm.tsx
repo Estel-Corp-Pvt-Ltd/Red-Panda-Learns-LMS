@@ -48,7 +48,7 @@ export const ContentLockForm = ({
     organizationId: "",
     class: "",
     division: "",
-    isLocked: true,
+    isLocked: false,
     scheduledAt: "",
   });
 
@@ -92,7 +92,6 @@ export const ContentLockForm = ({
         result = await contentLockService.updateContentLock(existingLock.id, payload);
       } else {
         result = await contentLockService.createContentLock(payload);
-        console.log("created lock ",result)
       }
 
       if (!result.success) {
