@@ -1,0 +1,49 @@
+import { Request, Response } from "express";
+import { withMiddleware } from "../middlewares";
+import { corsMiddleware } from "../middlewares/cors";
+import { authMiddleware } from "../middlewares/auth";
+import { onRequest } from "firebase-functions/v2/https";
+import { addKarmaService } from "./karma/addkarmaService";
+import { KARMA_CATEGORY } from "../constants";
+
+
+async function addKarmaHandler(req: Request, res: Response) {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { category, action, courseId } = req.body;
+
+    if (!category || !action || !courseId) {
+      res.status(400).json({
+        error: "Missing required fields: category, action, courseId",
+      });
+      return;
+    }
+
+    if (!Object.values(KARMA_CATEGORY).includes(category)) {
+      res.status(400).json({ error: "Invalid karma category" });
+      return;
+    }
+
+    const result = await addKarmaService.addKarmaToUser({
+      userId: user.uid,
+      category,
+      action,
+      courseId,
+    });
+
+    res.status(200).json({ success: true, data: result });
+  } catch (error: any) {
+    console.error(" Add karma failed:", error);
+    res.status(500).json({ error: "Internal error", details: error.message });
+  }
+}
+
+export const addKarma = onRequest(
+  { region: "us-central1" },
+  withMiddleware(corsMiddleware, authMiddleware, addKarmaHandler)
+);
