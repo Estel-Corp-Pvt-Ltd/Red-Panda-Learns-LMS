@@ -23,6 +23,7 @@ import {
   UserPen,
   UserPlus,
   Users,
+  Webhook,
   X,
 } from "lucide-react";
 import React, { ReactNode, useState } from "react";
@@ -109,6 +110,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Instructors",
       path: "/admin/instructors",
       icon: <UserPen className="h-5 w-5" />,
+    },
+    {
+      name:"Karma Rule",
+      path:"/admin/karmarules",
+      icon:<Webhook className="h-5 w-5" />
     },
     {
       name: "Users",
