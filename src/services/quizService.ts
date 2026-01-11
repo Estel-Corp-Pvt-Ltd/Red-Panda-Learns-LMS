@@ -668,8 +668,9 @@ class QuizService {
             passingPercentage,
             quiz.totalMarks,
             totalScore,
-            idToken,
-            quiz.courseId
+            userId,
+            quiz.courseId,
+            idToken
           )
           .catch((err) => {
             console.error("[KarmaCalculation] Async error:", err);
