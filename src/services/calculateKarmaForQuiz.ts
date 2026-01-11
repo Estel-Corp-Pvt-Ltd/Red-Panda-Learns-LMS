@@ -7,16 +7,17 @@ export const calulateKarmaForQuizSubmission = {
     passingPercentage: number,
     totalMarks: number,
     userScore: number,
-    idToken: string,
-    courseId: string
+    userId: string,
+    courseId: string,
+    idToken: string
   ): Promise<void> {
     try {
       // Validation
       if (passingPercentage == null || totalMarks == null) {
-        console.error(
-          "[KarmaCalculation] Missing passingPercentage or totalMarks",
-          { passingPercentage, totalMarks }
-        );
+        console.error("[KarmaCalculation] Missing passingPercentage or totalMarks", {
+          passingPercentage,
+          totalMarks,
+        });
         return;
       }
 
@@ -25,8 +26,8 @@ export const calulateKarmaForQuizSubmission = {
         return;
       }
 
-      if (!idToken) {
-        console.error("[KarmaCalculation] Missing ID token");
+      if (!userId) {
+        console.error("[KarmaCalculation] Missing User ID");
         throw new Error("ID token is required");
       }
 
@@ -43,27 +44,24 @@ export const calulateKarmaForQuizSubmission = {
         action = LEARNING_ACTION.QUIZ_GRADE_FAIL;
       }
 
-      const response = await fetch(`${BACKEND_URL}/addKarma`, {
+      // Fire-and-forget
+      fetch(`${BACKEND_URL}/addKarma`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
+          userId,
           category: KARMA_CATEGORY.LEARNING,
           action,
           courseId,
         }),
+      }).catch((err) => {
+        console.error("[KarmaCalculation] Failed to add karma:", err);
       });
-
-      if (!response.ok) {
-        console.error(
-          "[KarmaCalculation] Failed to add karma",
-          response.status
-        );
-      }
     } catch (err) {
-      console.error("[KarmaCalculation] Error while assigning karma:", err);
+      console.error("[KarmaCalculation] Error assigning karma:", err);
     }
   },
 };

@@ -28,9 +28,10 @@ import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { logError } from "@/utils/logger";
 import { User } from "@/types/user";
+import { calculatekarmaForComments } from "./calculatekarmaForApprovedComment";
+import { authService } from "./authService";
 
 class CommentService {
-
   /**
    * Creates a new comment in the Firestore `comments` collection.
    *
@@ -44,20 +45,16 @@ class CommentService {
    * @returns A promise that resolves to the generated comment ID if creation is successful.
    * @throws An error if the comment could not be created in Firestore.
    */
-  async createComment(user: User,
+  async createComment(
+    user: User,
     data: Omit<
       Comment,
-      | "id"
-      | "status"
-      | "upvoteCount"
-      | "countReplies"
-      | "createdAt"
-      | "updatedAt"
+      "id" | "status" | "upvoteCount" | "countReplies" | "createdAt" | "updatedAt"
     >
   ): Promise<Result<string>> {
     try {
       const commentRef = doc(collection(db, COLLECTION.COMMENTS)); // auto-gen ID
-      const commentId = commentRef.id
+      const commentId = commentRef.id;
 
       const comment: Partial<Comment> = {
         id: commentId,
@@ -69,7 +66,8 @@ class CommentService {
         userId: data.userId,
         userName: data.userName,
         content: data.content,
-        status: (user && user.role === USER_ROLE.ADMIN) ? COMMENT_STATUS.APPROVED : COMMENT_STATUS.PENDING, // Default status
+        status:
+          user && user.role === USER_ROLE.ADMIN ? COMMENT_STATUS.APPROVED : COMMENT_STATUS.PENDING, // Default status
         upvoteCount: 0,
         countReplies: 0,
         createdAt: serverTimestamp(),
@@ -204,9 +202,7 @@ class CommentService {
 
       // Apply filters if provided
       if (filters && filters.length > 0) {
-        const whereClauses = filters.map((f) =>
-          where(f.field as string, f.op, f.value)
-        );
+        const whereClauses = filters.map((f) => where(f.field as string, f.op, f.value));
         q = query(q, ...whereClauses);
       }
 
@@ -226,12 +222,7 @@ class CommentService {
           limitToLast(itemsPerPage)
         );
       } else if (cursor) {
-        q = query(
-          q,
-          orderBy(field as string, direction),
-          startAfter(cursor),
-          limit(itemsPerPage)
-        );
+        q = query(q, orderBy(field as string, direction), startAfter(cursor), limit(itemsPerPage));
       } else {
         q = query(q, orderBy(field as string, direction), limit(itemsPerPage));
       }
@@ -266,9 +257,7 @@ class CommentService {
       const hasPreviousPage = cursor !== null;
 
       // Get cursors for next and previous pages
-      const nextCursor = hasNextPage
-        ? querySnapshot.docs[querySnapshot.docs.length - 1]
-        : null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
       return ok({
@@ -296,10 +285,13 @@ class CommentService {
     lessonId: string,
     options: PaginationOptions<Comment> = {}
   ): Promise<Result<PaginatedResult<Comment>>> {
-    return this.getComments([
-      { field: "lessonId", op: "==", value: lessonId },
-      { field: "status", op: "==", value: "APPROVED" },
-    ], options);
+    return this.getComments(
+      [
+        { field: "lessonId", op: "==", value: lessonId },
+        { field: "status", op: "==", value: "APPROVED" },
+      ],
+      options
+    );
   }
 
   /**
@@ -328,7 +320,7 @@ class CommentService {
       { field: "parentCommentId", op: "==", value: parentCommentId },
       { field: "status", op: "==", value: "APPROVED" },
     ]);
-    const data = [...userPendingReplies.data.data, ...approvedReplies.data.data]
+    const data = [...userPendingReplies.data.data, ...approvedReplies.data.data];
     approvedReplies.data.data = data;
     approvedReplies.data.totalCount = data.length;
 
@@ -388,10 +380,7 @@ class CommentService {
    * @param lessonId - The lesson ID to filter comments by.
    * @returns A promise that resolves to the user's comments for the lesson.
    */
-  async getUserCommentsForLesson(
-    userId: string,
-    lessonId: string
-  ): Promise<Result<Comment[]>> {
+  async getUserCommentsForLesson(userId: string, lessonId: string): Promise<Result<Comment[]>> {
     try {
       const commentsQuery = query(
         collection(db, COLLECTION.COMMENTS),
@@ -442,10 +431,24 @@ class CommentService {
   async approveComment(commentId: string): Promise<Result<void>> {
     try {
       const commentRef = doc(db, COLLECTION.COMMENTS, commentId);
+      const commentSnap = await getDoc(commentRef);
+
+      if (!commentSnap.exists()) {
+        return fail("Comment not found");
+      }
+
+      const commentData = commentSnap.data();
+      console.log(commentData);
       await updateDoc(commentRef, {
         status: "APPROVED",
         updatedAt: serverTimestamp(),
       });
+      const idToken = await authService.getToken();
+      calculatekarmaForComments.calculateKarmaForApprovedComment(
+        commentData.userId,
+        idToken,
+        commentData.courseId
+      );
 
       return ok(null);
     } catch (error: any) {
@@ -475,6 +478,12 @@ class CommentService {
 
         // delete the comment
         transaction.delete(commentRef);
+        const idToken = await authService.getToken();
+        calculatekarmaForComments.calculateKarmaForRejectedComment(
+          comment.userId,
+          idToken,
+          comment.courseId
+        );
 
         // If this is a reply, decrement parent's reply count
         if (comment.parentCommentId) {
@@ -515,12 +524,14 @@ class CommentService {
    * @param userId - The user ID to get statistics for.
    * @returns A promise that resolves to comment statistics.
    */
-  async getUserCommentStats(userId: string): Promise<Result<{
-    totalComments: number;
-    approvedComments: number;
-    pendingComments: number;
-    totalUpvotes: number;
-  }>> {
+  async getUserCommentStats(userId: string): Promise<
+    Result<{
+      totalComments: number;
+      approvedComments: number;
+      pendingComments: number;
+      totalUpvotes: number;
+    }>
+  > {
     try {
       const commentsQuery = query(
         collection(db, COLLECTION.COMMENTS),
@@ -533,7 +544,7 @@ class CommentService {
       let approvedComments = 0;
       let pendingComments = 0;
 
-      snapshot.docs.forEach(doc => {
+      snapshot.docs.forEach((doc) => {
         const data = doc.data();
         totalUpvotes += data.upvoteCount || 0;
 
@@ -561,11 +572,13 @@ class CommentService {
    * @param lessonId - The lesson ID to get statistics for.
    * @returns A promise that resolves to lesson comment statistics.
    */
-  async getLessonCommentStats(lessonId: string): Promise<Result<{
-    totalComments: number;
-    totalReplies: number;
-    totalUpvotes: number;
-  }>> {
+  async getLessonCommentStats(lessonId: string): Promise<
+    Result<{
+      totalComments: number;
+      totalReplies: number;
+      totalUpvotes: number;
+    }>
+  > {
     try {
       const commentsQuery = query(
         collection(db, COLLECTION.COMMENTS),
@@ -578,7 +591,7 @@ class CommentService {
       let totalUpvotes = 0;
       let totalReplies = 0;
 
-      snapshot.docs.forEach(doc => {
+      snapshot.docs.forEach((doc) => {
         const data = doc.data();
         totalUpvotes += data.upvoteCount || 0;
 
@@ -693,7 +706,10 @@ class CommentService {
    * @param userId - The user ID who is toggling the upvote.
    * @returns A promise that resolves with the new upvote state.
    */
-  async toggleUpvote(commentId: string, userId: string): Promise<Result<{ upvoted: boolean; newUpvoteCount: number }>> {
+  async toggleUpvote(
+    commentId: string,
+    userId: string
+  ): Promise<Result<{ upvoted: boolean; newUpvoteCount: number }>> {
     try {
       const voteId = `${userId}_${commentId}`;
       let upvoted = false;
@@ -895,10 +911,10 @@ class CommentService {
       }
 
       const querySnapshot = await getDocs(q);
-      const documents = pageDirection === "previous" ?
-        querySnapshot.docs.reverse() : querySnapshot.docs;
+      const documents =
+        pageDirection === "previous" ? querySnapshot.docs.reverse() : querySnapshot.docs;
 
-      const commentIds = documents.map(doc => doc.data().commentId);
+      const commentIds = documents.map((doc) => doc.data().commentId);
 
       const hasNextPage = querySnapshot.docs.length === itemsPerPage;
       const hasPreviousPage = cursor !== null;
@@ -941,26 +957,24 @@ class CommentService {
   ): Promise<Result<Array<Comment & { userUpvoted: boolean }>>> {
     try {
       if (!userId || comments.length === 0) {
-        const commentsWithStatus = comments.map(comment => ({
+        const commentsWithStatus = comments.map((comment) => ({
           ...comment,
-          userUpvoted: false
+          userUpvoted: false,
         }));
         return ok(commentsWithStatus);
       }
 
       // Get all vote IDs for these comments and user
-      const voteIds = comments.map(comment => `${userId}_${comment.id}`);
+      const voteIds = comments.map((comment) => `${userId}_${comment.id}`);
 
       // Check which votes exist
       const voteChecks = await Promise.all(
-        voteIds.map(voteId =>
-          getDoc(doc(db, COLLECTION.COMMENT_VOTES, voteId))
-        )
+        voteIds.map((voteId) => getDoc(doc(db, COLLECTION.COMMENT_VOTES, voteId)))
       );
 
       const commentsWithStatus = comments.map((comment, index) => ({
         ...comment,
-        userUpvoted: voteChecks[index].exists()
+        userUpvoted: voteChecks[index].exists(),
       }));
 
       return ok(commentsWithStatus);
@@ -985,9 +999,7 @@ class CommentService {
 
       const snapshot = await getDocs(votesQuery);
 
-      const deletePromises = snapshot.docs.map(doc =>
-        deleteDoc(doc.ref)
-      );
+      const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
 
       await Promise.all(deletePromises);
 
@@ -1013,9 +1025,7 @@ class CommentService {
 
       const snapshot = await getDocs(votesQuery);
 
-      const deletePromises = snapshot.docs.map(doc =>
-        deleteDoc(doc.ref)
-      );
+      const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
 
       await Promise.all(deletePromises);
 
