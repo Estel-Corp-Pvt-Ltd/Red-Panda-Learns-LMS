@@ -26,6 +26,8 @@ import {
 import { Result, ok, fail } from "@/utils/response";
 import { UserRole } from "@/types/general";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { calculateKarmaForUpvotes } from "./calculatekarmaForUpvote";
+import { authService } from "./authService";
 
 // ==================== FORUM CHANNELS ====================
 
@@ -140,10 +142,7 @@ export const forumChannelService = {
   /**
    * Real-time listener for channels
    */
-  subscribeToChannels(
-    courseId: string,
-    callback: (channels: ForumChannel[]) => void
-  ): () => void {
+  subscribeToChannels(courseId: string, callback: (channels: ForumChannel[]) => void): () => void {
     const q = query(
       collection(db, COLLECTION.FORUM_CHANNELS),
       where("courseId", "==", courseId),
@@ -168,7 +167,10 @@ export const channelMessageService = {
    * Send a new message
    */
   async sendMessage(
-    messageData: Omit<ChannelMessage, "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount" | "replyCount">,
+    messageData: Omit<
+      ChannelMessage,
+      "id" | "createdAt" | "updatedAt" | "isEdited" | "upvoteCount" | "replyCount"
+    >,
     isChannelModerated: boolean = false
   ): Promise<Result<ChannelMessage>> {
     try {
@@ -176,7 +178,8 @@ export const channelMessageService = {
 
       // If channel is moderated, set message status to HIDDEN by default
       // unless sender is admin or instructor
-      const shouldAutoHide = isChannelModerated &&
+      const shouldAutoHide =
+        isChannelModerated &&
         messageData.senderRole !== USER_ROLE.ADMIN &&
         messageData.senderRole !== USER_ROLE.INSTRUCTOR;
 
@@ -221,11 +224,7 @@ export const channelMessageService = {
     options: PaginationOptions<ChannelMessage> = {}
   ): Promise<Result<PaginatedResult<ChannelMessage>>> {
     try {
-      const {
-        limit: limitCount = 50,
-        orderBy: orderByOption,
-        cursor: startAfterDoc,
-      } = options;
+      const { limit: limitCount = 50, orderBy: orderByOption, cursor: startAfterDoc } = options;
 
       // Build query constraints
       const constraints: QueryConstraint[] = [];
@@ -366,8 +365,7 @@ export const channelMessageService = {
       if (userRole === USER_ROLE.STUDENT) {
         replies = replies.filter(
           (reply) =>
-            reply.status === "ACTIVE" ||
-            (reply.status === "HIDDEN" && reply.senderId === userId)
+            reply.status === "ACTIVE" || (reply.status === "HIDDEN" && reply.senderId === userId)
         );
       }
 
@@ -403,8 +401,7 @@ export const channelMessageService = {
       if (userRole === USER_ROLE.STUDENT) {
         replies = replies.filter(
           (reply) =>
-            reply.status === "ACTIVE" ||
-            (reply.status === "HIDDEN" && reply.senderId === userId)
+            reply.status === "ACTIVE" || (reply.status === "HIDDEN" && reply.senderId === userId)
         );
       }
 
@@ -417,10 +414,7 @@ export const channelMessageService = {
   /**
    * Update a message (edit)
    */
-  async updateMessage(
-    messageId: string,
-    newText: string
-  ): Promise<Result<void>> {
+  async updateMessage(messageId: string, newText: string): Promise<Result<void>> {
     try {
       const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
       await updateDoc(messageRef, {
@@ -439,10 +433,7 @@ export const channelMessageService = {
   /**
    * Change message status (hide/delete)
    */
-  async changeMessageStatus(
-    messageId: string,
-    status: MessageStatus
-  ): Promise<Result<void>> {
+  async changeMessageStatus(messageId: string, status: MessageStatus): Promise<Result<void>> {
     try {
       const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
       await updateDoc(messageRef, {
@@ -481,7 +472,10 @@ export const channelMessageService = {
   /**
    * Toggle message visibility (hide/unhide)
    */
-  async toggleMessageVisibility(messageId: string, currentStatus: MessageStatus): Promise<Result<void>> {
+  async toggleMessageVisibility(
+    messageId: string,
+    currentStatus: MessageStatus
+  ): Promise<Result<void>> {
     const newStatus = currentStatus === "HIDDEN" ? "ACTIVE" : "HIDDEN";
     return this.changeMessageStatus(messageId, newStatus);
   },
@@ -557,6 +551,14 @@ export const messageUpvoteService = {
       const upvoteSnap = await getDoc(upvoteRef);
 
       const messageRef = doc(db, COLLECTION.CHANNEL_MESSAGES, messageId);
+      const messageSnap = await getDoc(messageRef);
+
+      if (!messageSnap.exists()) {
+        return fail("Message not found");
+      }
+
+      const messageData = messageSnap.data() as { userId: string }; // author of message
+      const idToken = await authService.getToken();
 
       if (upvoteSnap.exists()) {
         // Remove upvote
@@ -565,6 +567,7 @@ export const messageUpvoteService = {
           upvoteCount: increment(-1),
         });
 
+        calculateKarmaForUpvotes.removeKarma(messageData.userId, idToken, courseId);
         return ok({ isUpvoted: false });
       } else {
         // Add upvote
@@ -581,7 +584,8 @@ export const messageUpvoteService = {
         await updateDoc(messageRef, {
           upvoteCount: increment(1),
         });
-
+        // Fire-and-forget: award karma to author
+        calculateKarmaForUpvotes.awardKarma(messageData.userId, idToken, courseId);
         return ok({ isUpvoted: true });
       }
     } catch (error: any) {
@@ -609,10 +613,7 @@ export const messageUpvoteService = {
   /**
    * Get upvotes for multiple messages (batch check)
    */
-  async getUserUpvotesForMessages(
-    userId: string,
-    messageIds: string[]
-  ): Promise<Set<string>> {
+  async getUserUpvotesForMessages(userId: string, messageIds: string[]): Promise<Set<string>> {
     try {
       const upvotedIds = new Set<string>();
 
