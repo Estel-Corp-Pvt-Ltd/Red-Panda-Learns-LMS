@@ -6,21 +6,18 @@ import { onRequest } from "firebase-functions/v2/https";
 import { addKarmaService } from "./karma/addkarmaService";
 import { KARMA_CATEGORY } from "../constants";
 
-
 async function addKarmaHandler(req: Request, res: Response) {
   try {
-    const user = (req as any).user;
-    if (!user) {
+    const authUser = (req as any).user;
+    if (!authUser) {
       res.status(401).json({ error: "Unauthorized" });
-      return;
+      return; // just return, do NOT return res
     }
 
-    const { category, action, courseId } = req.body;
+    const { userId, category, action, courseId } = req.body;
 
     if (!category || !action || !courseId) {
-      res.status(400).json({
-        error: "Missing required fields: category, action, courseId",
-      });
+      res.status(400).json({ error: "Missing required fields: category, action, courseId" });
       return;
     }
 
@@ -29,19 +26,23 @@ async function addKarmaHandler(req: Request, res: Response) {
       return;
     }
 
-    const result = await addKarmaService.addKarmaToUser({
-      userId: user.uid,
+    const targetUserId = userId ?? authUser.uid;
+
+    await addKarmaService.addKarmaToUser({
+      userId: targetUserId,
       category,
       action,
       courseId,
     });
 
-    res.status(200).json({ success: true, data: result });
+    res.status(200).json({ success: true });
+
   } catch (error: any) {
-    console.error(" Add karma failed:", error);
+    console.error("Add karma failed:", error);
     res.status(500).json({ error: "Internal error", details: error.message });
   }
 }
+
 
 export const addKarma = onRequest(
   { region: "us-central1" },
