@@ -176,9 +176,9 @@ export default function AdminKarmaRulesPage() {
         </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
           {rules.length === 0 ? (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed rounded-lg bg-slate-50/50">
+            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed rounded-lg bg-muted-background">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Trophy className="h-6 w-6 text-muted-foreground" />
               </div>
