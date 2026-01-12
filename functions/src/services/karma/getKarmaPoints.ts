@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { KarmaCategory } from "../../types/general";
 import { KarmaActionMap } from "../../types/karma";
+import { COLLECTION } from "../../constants";
 
 const db = admin.firestore();
 
@@ -9,7 +10,7 @@ export async function getKarmaPointsForAction<C extends KarmaCategory>(
   action: KarmaActionMap[C]
 ) {
   const snapshot = await db
-    .collection("karma_rules")
+    .collection(COLLECTION.KARMA_RULES)
     .where("category", "==", category)
     .where("action", "==", action)
     .where("enabled", "==", true)

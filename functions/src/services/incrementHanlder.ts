@@ -4,8 +4,10 @@ import { corsMiddleware } from "../middlewares/cors";
 import { authMiddleware } from "../middlewares/auth";
 import { onRequest } from "firebase-functions/v2/https";
 import { addKarmaService } from "./karma/addkarmaService";
-import { KARMA_CATEGORY } from "../constants";
+import { COLLECTION, KARMA_CATEGORY } from "../constants";
+import * as admin from "firebase-admin";
 
+const db = admin.firestore();
 async function addKarmaHandler(req: Request, res: Response) {
   try {
     const authUser = (req as any).user;
@@ -26,6 +28,24 @@ async function addKarmaHandler(req: Request, res: Response) {
       return;
     }
 
+    if (category === KARMA_CATEGORY.SOCIAL) {
+      try {
+        // Construct the enrollment ID
+        const enrollmentId = `${userId}_${courseId}`;
+
+        // Reference the enrollment document
+        const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
+
+        // Update hasSharedCertificate to true
+        await enrollmentRef.update({
+          "certification.hasSharedCertificate": true,
+        });
+
+        console.log(`Enrollment ${enrollmentId} marked as hasSharedCertificate=true`);
+      } catch (err) {
+        console.error("Failed to update hasSharedCertificate:", err);
+      }
+    }
     const targetUserId = userId ?? authUser.uid;
 
     await addKarmaService.addKarmaToUser({
@@ -36,13 +56,11 @@ async function addKarmaHandler(req: Request, res: Response) {
     });
 
     res.status(200).json({ success: true });
-
   } catch (error: any) {
     console.error("Add karma failed:", error);
     res.status(500).json({ error: "Internal error", details: error.message });
   }
 }
-
 
 export const addKarma = onRequest(
   { region: "us-central1" },
