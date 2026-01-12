@@ -79,17 +79,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     type: ADDRESS_TYPE.BILLING,
   });
 
-  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
-    PAYMENT_PROVIDER.RAZORPAY
-  );
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(PAYMENT_PROVIDER.RAZORPAY);
   const [exchangeRate, setExchangeRate] = useState<number>(1);
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
-    CURRENCY.INR
-  );
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(CURRENCY.INR);
   const [isProcessing, setIsProcessing] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [phoneError, setPhoneError] = useState("");
-
   // Coupon-related state
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
@@ -117,6 +112,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
   );
   const savings = regularTotal - subtotal;
   const finalAmount = Math.max(0, subtotal - discountAmount);
+  const convenienceFee = selectedProvider === PAYMENT_PROVIDER.RAZORPAY ? 0 : finalAmount * 0.05;
 
   useEffect(() => {
     // Update exchange rate when currency changes
@@ -257,74 +253,72 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     fetchCities();
   }, [billingAddress.state, billingAddress.country]);
 
-const verifyOrder = async (orderId: string) => {
-  setIsOrderVerifying(true);
+  const verifyOrder = async (orderId: string) => {
+    setIsOrderVerifying(true);
 
-  const checkOrder = async () => {
-    try {
-      const order = await orderService.getOrderById(orderId);
-      console.log("Verifying order status:", order);
+    const checkOrder = async () => {
+      try {
+        const order = await orderService.getOrderById(orderId);
+        console.log("Verifying order status:", order);
 
-      if (order && order.status === ORDER_STATUS.COMPLETED) {
-        // Order is completed, refresh enrollments and send coupon usage request
-        refreshEnrollments();
-        
-        // Only send coupon usage if a coupon was applied
-        if (appliedCoupon?.code) {
-          const idToken = await authService.getToken();
-          const couponResponse = await sendCouponUsageRequest({
-            userId: user!.id,
-            promoCode: appliedCoupon.code,
-            items,
-            idToken: idToken || ""
-          });
+        if (order && order.status === ORDER_STATUS.COMPLETED) {
+          // Order is completed, refresh enrollments and send coupon usage request
+          refreshEnrollments();
 
-          if (couponResponse.success) {
-            console.log("Coupon usage successfully processed");
-          } else {
-            console.error("Failed to process coupon usage:", couponResponse.error);
+          // Only send coupon usage if a coupon was applied
+          if (appliedCoupon?.code) {
+            const idToken = await authService.getToken();
+            const couponResponse = await sendCouponUsageRequest({
+              userId: user!.id,
+              promoCode: appliedCoupon.code,
+              items,
+              idToken: idToken || ""
+            });
+
+            if (couponResponse.success) {
+              console.log("Coupon usage successfully processed");
+            } else {
+              console.error("Failed to process coupon usage:", couponResponse.error);
+            }
           }
+
+          setIsOrderVerifying(false);
+          onPaymentSuccess?.(orderId);
+          return; // Stop recursion
         }
 
-        setIsOrderVerifying(false);
-        onPaymentSuccess?.(orderId);
-        return; // Stop recursion
+        // If order is not completed, check again after 5 seconds
+        setTimeout(checkOrder, 5000);
+      } catch (err) {
+        console.error("Error verifying order:", err);
+        // Optionally retry after 5s even on error
+        setTimeout(checkOrder, 5000);
       }
+    };
 
-      // If order is not completed, check again after 5 seconds
-      setTimeout(checkOrder, 5000);
-    } catch (err) {
-      console.error("Error verifying order:", err);
-      // Optionally retry after 5s even on error
-      setTimeout(checkOrder, 5000);
-    }
+    checkOrder(); // Start the first check
   };
 
-  checkOrder(); // Start the first check
-};
 
+  const handlePayment = async () => {
+    if (!user || !canProceed) return;
 
-const handlePayment = async () => {
-  if (!user || !canProceed) return;
+    if (finalAmount === 0) {
+      toast({
+        title: "No Payment Required",
+        description: "Please directly enroll in the from course page.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  if (finalAmount === 0) {
+    setIsProcessing(true);
+
     toast({
-      title: "No Payment Required",
-      description: "Please directly enroll in the from course page.",
-      variant: "destructive",
+      title: "Processing your payment...",
+      description: "Please do not refresh or close this window.",
     });
-    return;
-  }
-
-  setIsProcessing(true);
-
-  toast({
-    title: "Processing your payment...",
-    description: "Please do not refresh or close this window.",
-  });
-
-  try {
-    await paymentService.processPayment({
+    console.log({
       provider: selectedProvider,
       items: items.map((item) => ({
         ...item,
@@ -334,26 +328,38 @@ const handlePayment = async () => {
       selectedCurrency,
       billingAddress,
       promoCode: appliedCoupon?.code,
-     onPaymentSuccess: verifyOrder,
-      onPaymentFail: (message: string) => {
-        setIsProcessing(false);
-        toast({
-          title: "Payment Failed",
-          description: message,
-          variant: "destructive",
-        });
-      },
     });
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to process payment. Please try again.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsProcessing(false);
-  }
-};
+    try {
+      await paymentService.processPayment({
+        provider: selectedProvider,
+        items: items.map((item) => ({
+          ...item,
+          amount: item.amount || item.originalAmount || 0,
+        })),
+        userEmail: user.email!,
+        selectedCurrency,
+        billingAddress,
+        promoCode: appliedCoupon?.code,
+        onPaymentSuccess: verifyOrder,
+        onPaymentFail: (message: string) => {
+          setIsProcessing(false);
+          toast({
+            title: "Payment Failed",
+            description: message,
+            variant: "destructive",
+          });
+        },
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const updateAddressField = (field: keyof Address, value: string) => {
     setBillingAddress((prev) => ({ ...prev, [field]: value }));
@@ -474,11 +480,16 @@ const handlePayment = async () => {
                         </span>
                       </div>
                     )}
-
+                    {convenienceFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Convenience Fee:</span>
+                        <span>+{formatMoney(convenienceFee, selectedCurrency)}</span>
+                      </div>
+                    )}
                     <div className="border-t pt-3 flex justify-between items-center font-bold">
                       <span>Total:</span>
                       <span className="text-xl text-blue-600 dark:text-blue-400">
-                        {formatMoney(finalAmount, selectedCurrency)}
+                        {formatMoney(finalAmount + convenienceFee, selectedCurrency)}
                       </span>
                     </div>
 
@@ -776,20 +787,18 @@ const handlePayment = async () => {
                         <div
                           key={provider.id}
                           onClick={() => setSelectedProvider(provider.id)}
-                          className={`cursor-pointer p-4 rounded-xl border transition-all ${
-                            isSelected
-                              ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                              : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
-                          }`}
+                          className={`cursor-pointer p-4 rounded-xl border transition-all ${isSelected
+                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
+                            }`}
                         >
                           <div className="flex justify-between items-start gap-4">
                             <div className="flex gap-3">
                               <div
-                                className={`w-4 h-4 mt-1 rounded-full border-2 ${
-                                  isSelected
-                                    ? "bg-blue-600 border-blue-600"
-                                    : "border-gray-400"
-                                }`}
+                                className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
+                                  ? "bg-blue-600 border-blue-600"
+                                  : "border-gray-400"
+                                  }`}
                               />
                               <div>
                                 <div className="flex items-center gap-2 font-medium">
@@ -886,7 +895,6 @@ const handlePayment = async () => {
                     Please complete all required fields and agree to terms.
                   </div>
                 )}
-
                 <Button
                   onClick={handlePayment}
                   disabled={!canProceed}
@@ -906,6 +914,12 @@ const handlePayment = async () => {
                     </>
                   )}
                 </Button>
+                <div
+                  id="paypal-button-container"
+                  className="w-full"
+                >
+                  {/* PayPal button will be rendered here by the provider */}
+                </div>
               </div>
             </div>
           </div>

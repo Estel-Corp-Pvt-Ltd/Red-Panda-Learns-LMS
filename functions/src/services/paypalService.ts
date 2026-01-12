@@ -80,7 +80,7 @@ export class PayPalService {
           application_context: {
             return_url: 'https://yourapp.com/payment/success',
             cancel_url: 'https://yourapp.com/payment/cancel',
-            brand_name: 'Your Learning Platform',
+            brand_name: 'Vizuara AI Labs',
             user_action: 'PAY_NOW',
             shipping_preference: 'NO_SHIPPING',
             payment_method: {
