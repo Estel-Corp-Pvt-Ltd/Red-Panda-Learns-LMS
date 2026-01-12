@@ -20,6 +20,7 @@ export interface Enrollment {
     remark?: string;
     grade?: number | string | null;
     preferredName?: string | null;
+    hasSharedCertificate?:boolean;
   };
   completionDate: Timestamp | FieldValue | null;
   createdAt: Timestamp | FieldValue;
