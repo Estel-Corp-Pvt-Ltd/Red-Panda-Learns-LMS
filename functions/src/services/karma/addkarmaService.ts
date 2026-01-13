@@ -3,7 +3,7 @@ import { getKarmaPointsForAction } from "./getKarmaPoints";
 import { COLLECTION, KARMA_BREAKDOWN_TYPE } from "../../constants";
 import { KarmaCategory } from "../../types/general";
 import { KarmaActionMap } from "../../types/karma";
-import { mapActionToBreakdown } from "../mapActionToBreakdown";
+import { mapActionToBreakdown } from "./mapActionToBreakdown";
 
 const db = admin.firestore();
 

@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
-import { karmaRuleService } from "@/services/karmaRuleService";
+import { karmaRuleService } from "@/services/karmaService/karmaRuleService";
 import { authService } from "@/services/authService";
 import { KARMA_ACTIONS_BY_CATEGORY, KARMA_CATEGORY } from "@/constants";
 import { cn } from "@/lib/utils";
@@ -50,12 +50,12 @@ interface KarmaRule {
   enabled: boolean;
 }
 
-const EMPTY_RULE: KarmaRule = { 
-  id: null, 
-  category: "", 
-  action: "", 
-  points: 0, 
-  enabled: true 
+const EMPTY_RULE: KarmaRule = {
+  id: null,
+  category: "",
+  action: "",
+  points: 0,
+  enabled: true,
 };
 
 export default function AdminKarmaRulesPage() {
@@ -106,7 +106,7 @@ export default function AdminKarmaRulesPage() {
     try {
       const idToken = await authService.getToken();
       if (!idToken) throw new Error("Not authenticated");
-      
+
       const result = await karmaRuleService.addOrUpdateKarmaRule(
         {
           id: selectedRule.id,
@@ -160,7 +160,6 @@ export default function AdminKarmaRulesPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-8 max-w-7xl mx-auto">
-        
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -183,13 +182,17 @@ export default function AdminKarmaRulesPage() {
                 <Trophy className="h-6 w-6 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium">No rules configured</h3>
-              <p className="text-sm text-muted-foreground mb-4">Get started by creating your first karma rule.</p>
-              <Button variant="outline" onClick={() => openEditor()}>Create Rule</Button>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get started by creating your first karma rule.
+              </p>
+              <Button variant="outline" onClick={() => openEditor()}>
+                Create Rule
+              </Button>
             </div>
           ) : (
             rules.map((rule) => (
-              <Card 
-                key={rule.id} 
+              <Card
+                key={rule.id}
                 className={cn(
                   "group relative transition-all duration-200 hover:shadow-md cursor-pointer border-border/60",
                   !rule.enabled && "opacity-75 bg-muted/30"
@@ -197,30 +200,37 @@ export default function AdminKarmaRulesPage() {
                 onClick={() => openEditor(rule)}
               >
                 <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-                  <Badge variant={getCategoryBadgeVariant(rule.category) as any} className="font-medium">
+                  <Badge
+                    variant={getCategoryBadgeVariant(rule.category) as any}
+                    className="font-medium"
+                  >
                     {rule.category}
                   </Badge>
-                  <div className={cn(
-                    "h-2 w-2 rounded-full", 
-                    rule.enabled ? "bg-background" : "bg-muted-foreground/30"
-                  )} />
+                  <div
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      rule.enabled ? "bg-background" : "bg-muted-foreground/30"
+                    )}
+                  />
                 </CardHeader>
-                
+
                 <CardContent className="pb-3">
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="text-2xl font-bold tracking-tight">
-                      {rule.points > 0 ? "+" : ""}{rule.points}
+                      {rule.points > 0 ? "+" : ""}
+                      {rule.points}
                     </span>
                     <span className="text-xs text-muted-foreground font-medium uppercase">pts</span>
                   </div>
                   <h3 className="font-medium leading-none text-foreground/90 truncate">
-                     {rule.action.replace(/_/g, " ")}
+                    {rule.action.replace(/_/g, " ")}
                   </h3>
                 </CardContent>
-                
+
                 <CardFooter className="pt-2 pb-4 text-xs text-muted-foreground">
                   <span className="group-hover:text-primary transition-colors flex items-center gap-1">
-                    Edit Configuration <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    Edit Configuration{" "}
+                    <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </span>
                 </CardFooter>
               </Card>
@@ -233,13 +243,10 @@ export default function AdminKarmaRulesPage() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{selectedRule.id ? "Edit Rule" : "Create New Rule"}</DialogTitle>
-              <DialogDescription>
-                Configure the trigger action and point value.
-              </DialogDescription>
+              <DialogDescription>Configure the trigger action and point value.</DialogDescription>
             </DialogHeader>
-            
+
             <div className="grid gap-5 py-4">
-              
               <div className="grid gap-2">
                 <Label>Category</Label>
                 <Select
@@ -297,7 +304,7 @@ export default function AdminKarmaRulesPage() {
                     }
                   />
                 </div>
-                
+
                 <div className="grid gap-2">
                   <Label>Status</Label>
                   <div className="flex items-center justify-between border rounded-md px-3 h-10">
@@ -317,7 +324,10 @@ export default function AdminKarmaRulesPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving || !selectedRule.category || !selectedRule.action}>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !selectedRule.category || !selectedRule.action}
+              >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>

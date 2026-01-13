@@ -1,6 +1,6 @@
-import { KARMA_BREAKDOWN_TYPE, KARMA_CATEGORY, LEARNING_ACTION } from "../constants";
-import { KarmaCategory } from "../types/general";
-import { KarmaActionMap } from "../types/karma";
+import { KARMA_BREAKDOWN_TYPE, KARMA_CATEGORY, LEARNING_ACTION } from "../../constants";
+import { KarmaCategory } from "../../types/general";
+import { KarmaActionMap } from "../../types/karma";
 
 type BreakdownKey = keyof typeof KARMA_BREAKDOWN_TYPE;
 

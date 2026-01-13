@@ -18,7 +18,7 @@ import { logError } from "@/utils/logger";
 import { fail, ok, Result } from "@/utils/response";
 import { authService } from "./authService";
 import { error } from "console";
-import { calulateKarmaForQuizSubmission } from "./calculateKarmaForQuiz";
+import { calulateKarmaForQuizSubmission } from "./karmaService/calculateKarmaForQuiz";
 
 class QuizService {
   /**

@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { withMiddleware } from "../middlewares";
-import { corsMiddleware } from "../middlewares/cors";
-import { authMiddleware } from "../middlewares/auth";
+import { withMiddleware } from "../../middlewares";
+import { corsMiddleware } from "../../middlewares/cors";
+import { authMiddleware } from "../../middlewares/auth";
 import { onRequest } from "firebase-functions/v2/https";
-import { addKarmaService } from "./karma/addkarmaService";
-import { COLLECTION, KARMA_CATEGORY } from "../constants";
+import { addKarmaService } from "./addkarmaService";
+import { COLLECTION, KARMA_CATEGORY } from "../../constants";
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();

@@ -12,7 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ShareCertificate from "./ShareCertificate";
 import { formatDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
-import { calculateKarmaForShareCertificate } from "@/services/calculateKarmaForShareCertificate";
+import { calculateKarmaForShareCertificate } from "@/services/karmaService/calculateKarmaForShareCertificate";
 import { authService } from "@/services/authService";
 // Lazy load QRCode for better performance
 const QRCode = lazy(() => import("react-qr-code"));

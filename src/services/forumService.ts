@@ -26,7 +26,7 @@ import {
 import { Result, ok, fail } from "@/utils/response";
 import { UserRole } from "@/types/general";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
-import { calculateKarmaForUpvotes } from "./calculatekarmaForUpvote";
+import { calculateKarmaForUpvotes } from "./karmaService/calculatekarmaForUpvote";
 import { authService } from "./authService";
 
 // ==================== FORUM CHANNELS ====================

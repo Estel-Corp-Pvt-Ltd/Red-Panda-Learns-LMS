@@ -28,7 +28,7 @@ import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { logError } from "@/utils/logger";
 import { User } from "@/types/user";
-import { calculatekarmaForComments } from "./calculatekarmaForApprovedComment";
+import { calculatekarmaForComments } from "./karmaService/calculatekarmaForApprovedComment";
 import { authService } from "./authService";
 
 class CommentService {

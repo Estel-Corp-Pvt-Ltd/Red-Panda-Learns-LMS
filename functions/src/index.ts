@@ -60,7 +60,7 @@ import { sendSubmissionGradedNotification } from "./handlers/pushNotificationsHa
 import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
 import { addOrUpdateKarmaRule } from "./handlers/karmaRuleHandler";
-import { addKarma } from "./services/incrementHanlder";
+import { addKarma } from "./services/karma/incrementHanlder";
 
 export {
   enrollStudent,
@@ -120,5 +120,5 @@ export {
   sendCourseWelcomeMailWorker,
   sendCertificateMailWorker,
   addOrUpdateKarmaRule,
-  addKarma
+  addKarma,
 };
