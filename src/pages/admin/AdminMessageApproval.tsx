@@ -1,24 +1,50 @@
-import AdminLayout from '@/components/AdminLayout';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { channelMessageService, forumChannelService } from '@/services/forumService';
-import { courseService } from '@/services/courseService';
-import { ChannelMessage, MESSAGE_STATUS, MessageStatus } from '@/types/forum';
-import { Course } from '@/types/course';
-import { ForumChannel } from '@/types/forum';
-import { formatDistanceToNow } from 'date-fns';
-import { Timestamp, DocumentSnapshot, WhereFilterOp } from 'firebase/firestore';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Check, ChevronsUpDown, Search, Eye, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import AdminLayout from "@/components/AdminLayout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { channelMessageService, forumChannelService } from "@/services/forumService";
+import { courseService } from "@/services/courseService";
+import { ChannelMessage, MESSAGE_STATUS, MessageStatus } from "@/types/forum";
+import { Course } from "@/types/course";
+import { ForumChannel } from "@/types/forum";
+import { formatDistanceToNow } from "date-fns";
+import { Timestamp, DocumentSnapshot, WhereFilterOp } from "firebase/firestore";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Check,
+  ChevronsUpDown,
+  Search,
+  Eye,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { calculatekarmaForComments } from "@/services/karmaService/calculatekarmaForApprovedComment";
+import { calculateKarmaForUpvotes } from "@/services/karmaService/calculatekarmaForUpvote";
+import { calculatekarmaForForumComments } from "@/services/karmaService/calculatekarmaForApprovedForumComments";
+import { authService } from "@/services/authService";
 
 const AdminMessageApproval: React.FC = () => {
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
@@ -26,7 +52,7 @@ const AdminMessageApproval: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<MessageStatus>(MESSAGE_STATUS.HIDDEN);
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedMessage, setSelectedMessage] = useState<ChannelMessage | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
@@ -34,8 +60,8 @@ const AdminMessageApproval: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [channels, setChannels] = useState<ForumChannel[]>([]);
   const [allChannels, setAllChannels] = useState<ForumChannel[]>([]);
-  const [courseFilter, setCourseFilter] = useState('all');
-  const [channelFilter, setChannelFilter] = useState('all');
+  const [courseFilter, setCourseFilter] = useState("all");
+  const [channelFilter, setChannelFilter] = useState("all");
   const [courseOpen, setCourseOpen] = useState(false);
   const [channelOpen, setChannelOpen] = useState(false);
 
@@ -54,18 +80,18 @@ const AdminMessageApproval: React.FC = () => {
         setCourses(coursesData);
 
         // Load all channels from all courses
-        const channelsPromises = coursesData.map(course =>
+        const channelsPromises = coursesData.map((course) =>
           forumChannelService.getChannelsByCourse(course.id)
         );
         const channelsResults = await Promise.all(channelsPromises);
         const allChannelsData = channelsResults
-          .filter(result => result.success)
-          .flatMap(result => result.data || []);
+          .filter((result) => result.success)
+          .flatMap((result) => result.data || []);
 
         setAllChannels(allChannelsData);
         setChannels(allChannelsData);
       } catch (error) {
-        console.error('Error loading dropdown data:', error);
+        console.error("Error loading dropdown data:", error);
       }
     };
 
@@ -74,71 +100,69 @@ const AdminMessageApproval: React.FC = () => {
 
   // Filter channels based on selected course
   useEffect(() => {
-    if (courseFilter === 'all') {
+    if (courseFilter === "all") {
       setChannels(allChannels);
     } else {
-      const filteredChannels = allChannels.filter(
-        (channel) => channel.courseId === courseFilter
-      );
+      const filteredChannels = allChannels.filter((channel) => channel.courseId === courseFilter);
       setChannels(filteredChannels);
 
       // Reset channel filter if current selection is not in filtered list
-      if (channelFilter !== 'all' &&
-        !filteredChannels.some(c => c.id === channelFilter)) {
-        setChannelFilter('all');
+      if (channelFilter !== "all" && !filteredChannels.some((c) => c.id === channelFilter)) {
+        setChannelFilter("all");
       }
     }
   }, [courseFilter, allChannels, channelFilter]);
 
   // Load messages
-  const loadMessages = useCallback(async (resetPagination = true) => {
-    setLoading(true);
-    setError(null);
-    setSelectedMessages(new Set());
+  const loadMessages = useCallback(
+    async (resetPagination = true) => {
+      setLoading(true);
+      setError(null);
+      setSelectedMessages(new Set());
 
-    try {
-      const filters: {
-        field: keyof ChannelMessage;
-        op: WhereFilterOp;
-        value: any;
-      }[] = [
-          { field: 'status', op: '==', value: selectedTab }
-        ];
+      try {
+        const filters: {
+          field: keyof ChannelMessage;
+          op: WhereFilterOp;
+          value: any;
+        }[] = [{ field: "status", op: "==", value: selectedTab }];
 
-      // Add course filter
-      if (courseFilter !== 'all') {
-        filters.push({ field: 'courseId', op: '==', value: courseFilter });
-      }
-
-      // Add channel filter
-      if (channelFilter !== 'all') {
-        filters.push({ field: 'channelId', op: '==', value: channelFilter });
-      }
-
-      const result = await channelMessageService.getMessagesWithFilters(filters, {
-        limit: itemsPerPage,
-        orderBy: { field: 'createdAt', direction: 'desc' },
-        cursor: resetPagination ? undefined : nextCursor || undefined,
-      });
-
-      if (result.success && result.data) {
-        setMessages(result.data.data);
-        setTotalCount(result.data.totalCount);
-        setHasNextPage(result.data.hasNextPage);
-        setNextCursor(result.data.nextCursor);
-        if (resetPagination) {
-          setCurrentPage(1);
+        // Add course filter
+        if (courseFilter !== "all") {
+          filters.push({ field: "courseId", op: "==", value: courseFilter });
         }
-      } else {
-        setError(result.error?.message || 'Failed to load messages');
+
+        // Add channel filter
+        if (channelFilter !== "all") {
+          filters.push({ field: "channelId", op: "==", value: channelFilter });
+        }
+
+        const result = await channelMessageService.getMessagesWithFilters(filters, {
+          limit: itemsPerPage,
+          orderBy: { field: "createdAt", direction: "desc" },
+          cursor: resetPagination ? undefined : nextCursor || undefined,
+        });
+
+        if (result.success && result.data) {
+          setMessages(result.data.data);
+          setTotalCount(result.data.totalCount);
+          setHasNextPage(result.data.hasNextPage);
+          setNextCursor(result.data.nextCursor);
+          if (resetPagination) {
+            setCurrentPage(1);
+          }
+        } else {
+          setError(result.error?.message || "Failed to load messages");
+        }
+      } catch (err) {
+        setError("Failed to load messages");
+        console.error("Error loading messages:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError('Failed to load messages');
-      console.error('Error loading messages:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedTab, courseFilter, channelFilter, nextCursor]);
+    },
+    [selectedTab, courseFilter, channelFilter, nextCursor]
+  );
 
   useEffect(() => {
     loadMessages(true);
@@ -146,14 +170,14 @@ const AdminMessageApproval: React.FC = () => {
 
   const handleNextPage = () => {
     if (hasNextPage) {
-      setCurrentPage(prev => prev + 1);
+      setCurrentPage((prev) => prev + 1);
       loadMessages(false);
     }
   };
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
+      setCurrentPage((prev) => prev - 1);
       // Note: Going back requires keeping track of previous docs
       // For simplicity, we'll reload from start
       setNextCursor(null);
@@ -165,51 +189,90 @@ const AdminMessageApproval: React.FC = () => {
   const filteredMessages = useMemo(() => {
     if (!searchTerm.trim()) return messages;
     const searchLower = searchTerm.toLowerCase();
-    return messages.filter(message =>
-      message.text.toLowerCase().includes(searchLower) ||
-      message.senderName.toLowerCase().includes(searchLower)
+    return messages.filter(
+      (message) =>
+        message.text.toLowerCase().includes(searchLower) ||
+        message.senderName.toLowerCase().includes(searchLower)
     );
   }, [messages, searchTerm]);
 
   // Actions
-  const handleApproveMessage = async (messageId: string) => {
+  const handleApproveMessage = async (
+    messageId: string,
+    messageSenderId: string,
+    messageCourseId: string
+  ) => {
     try {
+      const idToken = await authService.getToken();
       const result = await channelMessageService.unhideMessage(messageId);
       if (result.success) {
-        setMessages(prev => prev.filter(message => message.id !== messageId));
+        calculatekarmaForForumComments.calculateKarmaForApprovedForumComment(
+          messageSenderId,
+          idToken,
+          messageCourseId
+        );
+        setMessages((prev) => prev.filter((message) => message.id !== messageId));
+        // calculatekarmaForForumComments()
       } else {
-        setError(result.error?.message || 'Failed to approve message');
+        setError(result.error?.message || "Failed to approve message");
       }
     } catch (err) {
-      setError('Failed to approve message');
+      setError("Failed to approve message");
     }
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
+  const handleDeleteMessage = async (
+    messageId: string,
+    messageSenderId: string,
+    messageCourseId: string
+  ) => {
     try {
       const result = await channelMessageService.deleteMessage(messageId);
+      const idToken = await authService.getToken();
       if (result.success) {
-        setMessages(prev => prev.filter(message => message.id !== messageId));
+        calculatekarmaForForumComments.calculateKarmaForRejectedForumComment(
+          messageSenderId,
+          idToken,
+          messageCourseId
+        );
+        setMessages((prev) => prev.filter((message) => message.id !== messageId));
       } else {
-        setError(result.error?.message || 'Failed to delete message');
+        setError(result.error?.message || "Failed to delete message");
       }
     } catch (err) {
-      setError('Failed to delete message');
+      setError("Failed to delete message");
     }
   };
 
   const handleBulkApprove = async () => {
     if (selectedMessages.size === 0) return;
+
     setLoading(true);
+
     try {
-      const promises = Array.from(selectedMessages).map(messageId =>
-        channelMessageService.unhideMessage(messageId)
-      );
+      const idToken = await authService.getToken();
+
+      const promises = Array.from(selectedMessages).map(async (messageId) => {
+        const result = await channelMessageService.unhideMessage(messageId);
+
+        if (result.success) {
+          const message = messages.find((m) => m.id === messageId);
+          if (!message) return;
+
+          calculatekarmaForForumComments.calculateKarmaForApprovedForumComment(
+            message.senderId,
+            idToken,
+            message.courseId
+          );
+        }
+      });
+
       await Promise.all(promises);
-      setMessages(prev => prev.filter(message => !selectedMessages.has(message.id)));
+
+      setMessages((prev) => prev.filter((message) => !selectedMessages.has(message.id)));
       setSelectedMessages(new Set());
     } catch (err) {
-      setError('Failed to approve messages');
+      setError("Failed to approve messages");
     } finally {
       setLoading(false);
     }
@@ -217,16 +280,33 @@ const AdminMessageApproval: React.FC = () => {
 
   const handleBulkDelete = async () => {
     if (selectedMessages.size === 0) return;
+
     setLoading(true);
+
     try {
-      const promises = Array.from(selectedMessages).map(messageId =>
-        channelMessageService.deleteMessage(messageId)
-      );
+      const idToken = await authService.getToken();
+
+      const promises = Array.from(selectedMessages).map(async (messageId) => {
+        const result = await channelMessageService.deleteMessage(messageId);
+
+        if (result?.success) {
+          const message = messages.find((m) => m.id === messageId);
+          if (!message) return;
+
+          calculatekarmaForForumComments.calculateKarmaForRejectedForumComment(
+            message.senderId,
+            idToken,
+            message.courseId
+          );
+        }
+      });
+
       await Promise.all(promises);
-      setMessages(prev => prev.filter(message => !selectedMessages.has(message.id)));
+
+      setMessages((prev) => prev.filter((message) => !selectedMessages.has(message.id)));
       setSelectedMessages(new Set());
     } catch (err) {
-      setError('Failed to delete messages');
+      setError("Failed to delete messages");
     } finally {
       setLoading(false);
     }
@@ -234,7 +314,7 @@ const AdminMessageApproval: React.FC = () => {
 
   // Selection
   const toggleMessageSelection = (messageId: string) => {
-    setSelectedMessages(prev => {
+    setSelectedMessages((prev) => {
       const newSet = new Set(prev);
       newSet.has(messageId) ? newSet.delete(messageId) : newSet.add(messageId);
       return newSet;
@@ -242,8 +322,8 @@ const AdminMessageApproval: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    setSelectedMessages(prev =>
-      prev.size === filteredMessages.length ? new Set() : new Set(filteredMessages.map(m => m.id))
+    setSelectedMessages((prev) =>
+      prev.size === filteredMessages.length ? new Set() : new Set(filteredMessages.map((m) => m.id))
     );
   };
 
@@ -253,19 +333,19 @@ const AdminMessageApproval: React.FC = () => {
   };
 
   const formatMessageTime = (timestamp: any) => {
-    if (!timestamp) return '';
+    if (!timestamp) return "";
     const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
   const getChannelName = (channelId: string) => {
-    const channel = allChannels.find(c => c.id === channelId);
-    return channel?.name || 'Unknown';
+    const channel = allChannels.find((c) => c.id === channelId);
+    return channel?.name || "Unknown";
   };
 
   const getCourseName = (courseId: string) => {
-    const course = courses.find(c => c.id === courseId);
-    return course?.title || 'Unknown';
+    const course = courses.find((c) => c.id === courseId);
+    return course?.title || "Unknown";
   };
 
   if (loading && messages.length === 0) {
@@ -304,8 +384,9 @@ const AdminMessageApproval: React.FC = () => {
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card
-            className={`cursor-pointer transition-colors ${selectedTab === MESSAGE_STATUS.HIDDEN ? 'border-primary bg-primary/5' : ''
-              }`}
+            className={`cursor-pointer transition-colors ${
+              selectedTab === MESSAGE_STATUS.HIDDEN ? "border-primary bg-primary/5" : ""
+            }`}
             onClick={() => setSelectedTab(MESSAGE_STATUS.HIDDEN)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -317,8 +398,9 @@ const AdminMessageApproval: React.FC = () => {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-colors ${selectedTab === MESSAGE_STATUS.ACTIVE ? 'border-green-500 bg-green-500/5' : ''
-              }`}
+            className={`cursor-pointer transition-colors ${
+              selectedTab === MESSAGE_STATUS.ACTIVE ? "border-green-500 bg-green-500/5" : ""
+            }`}
             onClick={() => setSelectedTab(MESSAGE_STATUS.ACTIVE)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -330,8 +412,9 @@ const AdminMessageApproval: React.FC = () => {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-colors ${selectedTab === MESSAGE_STATUS.DELETED ? 'border-destructive bg-destructive/5' : ''
-              }`}
+            className={`cursor-pointer transition-colors ${
+              selectedTab === MESSAGE_STATUS.DELETED ? "border-destructive bg-destructive/5" : ""
+            }`}
             onClick={() => setSelectedTab(MESSAGE_STATUS.DELETED)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -347,9 +430,7 @@ const AdminMessageApproval: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Messages</CardTitle>
-            <CardDescription>
-              Manage {selectedTab} messages
-            </CardDescription>
+            <CardDescription>Manage {selectedTab} messages</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Filters Row */}
@@ -364,9 +445,9 @@ const AdminMessageApproval: React.FC = () => {
                     className="w-full sm:w-[250px] justify-between"
                   >
                     <span className="truncate">
-                      {courseFilter === 'all'
-                        ? 'All Courses'
-                        : courses.find((c) => c.id === courseFilter)?.title || 'Select course'}
+                      {courseFilter === "all"
+                        ? "All Courses"
+                        : courses.find((c) => c.id === courseFilter)?.title || "Select course"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -380,14 +461,14 @@ const AdminMessageApproval: React.FC = () => {
                         <CommandItem
                           value="all"
                           onSelect={() => {
-                            setCourseFilter('all');
+                            setCourseFilter("all");
                             setCourseOpen(false);
                           }}
                         >
                           <Check
                             className={cn(
-                              'mr-2 h-4 w-4',
-                              courseFilter === 'all' ? 'opacity-100' : 'opacity-0'
+                              "mr-2 h-4 w-4",
+                              courseFilter === "all" ? "opacity-100" : "opacity-0"
                             )}
                           />
                           All Courses
@@ -403,8 +484,8 @@ const AdminMessageApproval: React.FC = () => {
                           >
                             <Check
                               className={cn(
-                                'mr-2 h-4 w-4',
-                                courseFilter === course.id ? 'opacity-100' : 'opacity-0'
+                                "mr-2 h-4 w-4",
+                                courseFilter === course.id ? "opacity-100" : "opacity-0"
                               )}
                             />
                             {course.title}
@@ -427,9 +508,9 @@ const AdminMessageApproval: React.FC = () => {
                     disabled={channels.length === 0}
                   >
                     <span className="truncate">
-                      {channelFilter === 'all'
-                        ? 'All Channels'
-                        : channels.find((c) => c.id === channelFilter)?.name || 'Select channel'}
+                      {channelFilter === "all"
+                        ? "All Channels"
+                        : channels.find((c) => c.id === channelFilter)?.name || "Select channel"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -443,14 +524,14 @@ const AdminMessageApproval: React.FC = () => {
                         <CommandItem
                           value="all"
                           onSelect={() => {
-                            setChannelFilter('all');
+                            setChannelFilter("all");
                             setChannelOpen(false);
                           }}
                         >
                           <Check
                             className={cn(
-                              'mr-2 h-4 w-4',
-                              channelFilter === 'all' ? 'opacity-100' : 'opacity-0'
+                              "mr-2 h-4 w-4",
+                              channelFilter === "all" ? "opacity-100" : "opacity-0"
                             )}
                           />
                           All Channels
@@ -466,8 +547,8 @@ const AdminMessageApproval: React.FC = () => {
                           >
                             <Check
                               className={cn(
-                                'mr-2 h-4 w-4',
-                                channelFilter === channel.id ? 'opacity-100' : 'opacity-0'
+                                "mr-2 h-4 w-4",
+                                channelFilter === channel.id ? "opacity-100" : "opacity-0"
                               )}
                             />
                             {channel.name}
@@ -491,12 +572,16 @@ const AdminMessageApproval: React.FC = () => {
               </div>
 
               {/* Clear Filters */}
-              {(courseFilter !== 'all' || channelFilter !== 'all' || searchTerm) && (
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setCourseFilter('all');
-                  setChannelFilter('all');
-                  setSearchTerm('');
-                }}>
+              {(courseFilter !== "all" || channelFilter !== "all" || searchTerm) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCourseFilter("all");
+                    setChannelFilter("all");
+                    setSearchTerm("");
+                  }}
+                >
                   Clear Filters
                 </Button>
               )}
@@ -603,7 +688,9 @@ const AdminMessageApproval: React.FC = () => {
                           {selectedTab === MESSAGE_STATUS.HIDDEN && (
                             <Button
                               size="sm"
-                              onClick={() => handleApproveMessage(message.id)}
+                              onClick={() =>
+                                handleApproveMessage(message.id, message.senderId, message.courseId)
+                              }
                               className="h-8 px-2"
                             >
                               Approve
@@ -612,7 +699,9 @@ const AdminMessageApproval: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDeleteMessage(message.id)}
+                            onClick={() =>
+                              handleDeleteMessage(message.id, message.senderId, message.courseId)
+                            }
                             className="h-8 px-2"
                           >
                             Delete
@@ -633,8 +722,8 @@ const AdminMessageApproval: React.FC = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing page {currentPage} of {Math.ceil(totalCount / itemsPerPage)}
-                  ({totalCount} total messages)
+                  Showing page {currentPage} of {Math.ceil(totalCount / itemsPerPage)}({totalCount}{" "}
+                  total messages)
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -692,12 +781,15 @@ const AdminMessageApproval: React.FC = () => {
                     <div className="text-sm text-muted-foreground mb-2">Attachments</div>
                     <div className="space-y-2">
                       {selectedMessage.attachments.map((attachment, idx) => (
-                        <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded"
+                        >
                           <span className="text-sm">{attachment.name}</span>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => window.open(attachment.url, '_blank')}
+                            onClick={() => window.open(attachment.url, "_blank")}
                           >
                             View
                           </Button>
@@ -712,17 +804,30 @@ const AdminMessageApproval: React.FC = () => {
                 </div>
                 <div className="flex gap-2 pt-4">
                   {selectedTab === MESSAGE_STATUS.HIDDEN && (
-                    <Button onClick={() => {
-                      handleApproveMessage(selectedMessage.id);
-                      setIsViewModalOpen(false);
-                    }}>
+                    <Button
+                      onClick={() => {
+                        handleApproveMessage(
+                          selectedMessage.id,
+                          selectedMessage.senderId,
+                          selectedMessage.courseId
+                        );
+                        setIsViewModalOpen(false);
+                      }}
+                    >
                       Approve Message
                     </Button>
                   )}
-                  <Button variant="outline" onClick={() => {
-                    handleDeleteMessage(selectedMessage.id);
-                    setIsViewModalOpen(false);
-                  }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      handleDeleteMessage(
+                        selectedMessage.id,
+                        selectedMessage.senderId,
+                        selectedMessage.courseId
+                      );
+                      setIsViewModalOpen(false);
+                    }}
+                  >
                     Delete Message
                   </Button>
                 </div>
