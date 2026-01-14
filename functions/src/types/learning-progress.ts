@@ -12,7 +12,7 @@ export interface LearningProgress {
       type: string;
       markedAsComplete: boolean;
       completedAt: Timestamp | FieldValue | null;
-      duration: number;
+      // duration: number;
       completionKarmaGranted: boolean;
     };
   };
