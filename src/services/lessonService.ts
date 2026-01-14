@@ -33,7 +33,6 @@ import { fail, ok, Result } from "@/utils/response";
 import { authService } from "./authService";
 
 class LessonService {
-
   private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   // ───────────────────────────────────────────────
@@ -43,9 +42,7 @@ class LessonService {
     const newId = await runTransaction(db, async (tx) => {
       const gap = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
       const counterDoc = await tx.get(counterRef);
-      const lastNumber = counterDoc.exists()
-        ? counterDoc.data().lastNumber
-        : 30000000;
+      const lastNumber = counterDoc.exists() ? counterDoc.data().lastNumber : 30000000;
 
       const nextNumber = lastNumber + gap;
       tx.set(counterRef, { lastNumber: nextNumber }, { merge: true });
@@ -56,9 +53,7 @@ class LessonService {
   }
 
   // ───────────────────────────────────────────────
-  async createLesson(
-    data: Omit<Lesson, "id" | "createdAt" | "updatedAt">
-  ): Promise<Lesson> {
+  async createLesson(data: Omit<Lesson, "id" | "createdAt" | "updatedAt">): Promise<Lesson> {
     try {
       const lessonId = await this.generateLessonId();
 
@@ -73,6 +68,7 @@ class LessonService {
           hours: data.duration?.hours ?? 0,
           minutes: data.duration?.minutes ?? 0,
         },
+        durationAddedtoLearningProgress: data.durationAddedtoLearningProgress || false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -109,18 +105,16 @@ class LessonService {
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.embedUrl !== undefined) updateData.embedUrl = updates.embedUrl;
       if (updates.courseId !== undefined) updateData.courseId = updates.courseId;
-
+      if (updates.durationAddedtoLearningProgress !== undefined)
+        updateData.durationAddedtoLearningProgress = updates.durationAddedtoLearningProgress;
       // ✅ Safely handle duration (always an object)
       const existingDuration = lessonData.duration || { hours: 0, minutes: 0 };
       const newDuration: Partial<Duration> = updates.duration || {};
-
 
       updateData.duration = {
         hours: newDuration.hours ?? existingDuration.hours ?? 0,
         minutes: newDuration.minutes ?? existingDuration.minutes ?? 0,
       };
-
-
 
       await updateDoc(lessonRef, updateData);
 
@@ -131,15 +125,14 @@ class LessonService {
     }
   }
 
-
   // ───────────────────────────────────────────────
   async getLessonById(lessonId: string): Promise<Lesson | null> {
     try {
       const idToken = await authService.getToken();
       const response = await fetch(`${this.backendUrl}/getLessons?id=${lessonId}&type=lesson`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
       });
       if (response.status !== 200) return null;
@@ -183,10 +176,7 @@ class LessonService {
       const chunk = 10;
       for (let i = 0; i < lessonIds.length; i += chunk) {
         const seg = lessonIds.slice(i, i + chunk);
-        const q = query(
-          collection(db, COLLECTION.LESSONS),
-          where("id", "in", seg)
-        );
+        const q = query(collection(db, COLLECTION.LESSONS), where("id", "in", seg));
         const snap = await getDocs(q);
         results.push(
           snap.docs.map((doc) => {
@@ -233,10 +223,7 @@ class LessonService {
       let q: Query = collection(db, COLLECTION.LESSONS);
 
       if (filters?.length) {
-        q = query(
-          q,
-          ...filters.map((f) => where(f.field as string, f.op, f.value))
-        );
+        q = query(q, ...filters.map((f) => where(f.field as string, f.op, f.value)));
       }
 
       const { field, direction } = orderSet;
@@ -282,26 +269,24 @@ class LessonService {
       console.error("❌ LessonService.getLessons:", err);
       return fail("Error fetching lessons");
     }
-
-
   }
 
   /**
-    * Fetches all lesson descriptions and calculates the total duration for a given course.
-    *
-    * @param courseId - The unique identifier of the course whose lesson details should be retrieved.
-    * @returns {Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>>} 
-    * A promise resolving to an object containing:
-    *  - `descriptions`: a map of lessonId → description
-    *  - `totalDuration`: the total combined duration of all lessons ({ hours, minutes })
-    *
-    * @example
-    * const result = await lessonService.getLessonDetailsByCourseId('course_123');
-    * if (result.ok) {
-    *   console.log(result.value.descriptions); // { lessonId1: "Intro to AI", lessonId2: "Neural Networks" }
-    *   console.log(result.value.totalDuration); // { hours: 3, minutes: 45 }
-    * }
-    */
+   * Fetches all lesson descriptions and calculates the total duration for a given course.
+   *
+   * @param courseId - The unique identifier of the course whose lesson details should be retrieved.
+   * @returns {Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>>}
+   * A promise resolving to an object containing:
+   *  - `descriptions`: a map of lessonId → description
+   *  - `totalDuration`: the total combined duration of all lessons ({ hours, minutes })
+   *
+   * @example
+   * const result = await lessonService.getLessonDetailsByCourseId('course_123');
+   * if (result.ok) {
+   *   console.log(result.value.descriptions); // { lessonId1: "Intro to AI", lessonId2: "Neural Networks" }
+   *   console.log(result.value.totalDuration); // { hours: 3, minutes: 45 }
+   * }
+   */
   async getLessonDetailsByCourseId(
     courseId: string
   ): Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>> {
@@ -321,7 +306,11 @@ class LessonService {
           descriptions[lessonId] = data.description;
         }
 
-        if (data.duration && typeof data.duration.hours === "number" && typeof data.duration.minutes === "number") {
+        if (
+          data.duration &&
+          typeof data.duration.hours === "number" &&
+          typeof data.duration.minutes === "number"
+        ) {
           totalMinutes += data.duration.hours * 60 + data.duration.minutes;
         }
       });
