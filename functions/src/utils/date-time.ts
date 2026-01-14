@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { parseISO, isValid } from "date-fns";
+import { Duration } from "../types/general";
 
 /**
  * Safely convert values (Date | Firestore Timestamp | ISO string | null) → JS Date | null
@@ -47,3 +48,7 @@ export const formatDateTime = (
     }
   ).format(date);
 };
+
+export function durationToSeconds(duration: Duration): number {
+  return duration.hours * 3600 + duration.minutes * 60;
+}
