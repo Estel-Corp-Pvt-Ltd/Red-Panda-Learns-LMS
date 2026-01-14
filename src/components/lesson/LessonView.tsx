@@ -244,7 +244,6 @@ export function LessonView({
           const idToken = await authService.getToken();
 
           if (idToken) {
-            console.log("[handleMarkComplete] Awarding karma for lesson completion");
             calculateKarmaForLessonCompleted.awardKarmaForLessonCompletion(
               user.id, // Make sure this is correct (not user.uid)
               idToken,

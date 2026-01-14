@@ -31,13 +31,6 @@ export const calculateKarmaForLessonCompleted = {
       courseId,
     };
 
-    console.log("[KarmaLessonCompletion] Sending request to:", `${BACKEND_URL}/addKarma`);
-    console.log("[KarmaLessonCompletion] Payload:", payload);
-    console.log(
-      "[KarmaLessonCompletion] Token (first 20 chars):",
-      idToken?.substring(0, 20) + "..."
-    );
-
     fetch(`${BACKEND_URL}/addKarma`, {
       method: "POST",
       headers: {
