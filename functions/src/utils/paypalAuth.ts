@@ -1,24 +1,19 @@
-import { defineSecret } from "firebase-functions/params";
+import * as admin from "firebase-admin";
 
-const PAYPAL_CLIENT_ID = defineSecret("PAYPAL_CLIENT_ID");
-const PAYPAL_SECRET = defineSecret("PAYPAL_SECRET");
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
+const projectId =
+  process.env.GCLOUD_PROJECT ||
+  process.env.GCP_PROJECT ||
+  admin.app().options.projectId || "";
 
-// ✅ Shared cache across all imports
-let cachedToken: string | null = null;
-let tokenExpiresAt: number = 0;
 
-export async function getPayPalAccessToken(): Promise<string> {
-  if (cachedToken && Date.now() < tokenExpiresAt - 300000) {
-    console.log("✅ Using cached PayPal token");
-    return cachedToken;
+export const PAYPAL_API_BASE = ["vizuara-ai-labs"].includes(projectId) ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+
+export async function getPayPalAccessToken(paypalClientID: string, paypalSecret: string): Promise<string> {
+  if (!paypalClientID || !paypalSecret) {
+    throw new Error("PayPal credentials are not set");
   }
-  
-  console.log("🔄 Fetching new PayPal token...");
-  const auth = Buffer.from(
-    `${PAYPAL_CLIENT_ID.value()}:${PAYPAL_SECRET.value()}`
-  ).toString("base64");
-  
+  const auth = Buffer.from(`${paypalClientID}:${paypalSecret}`).toString("base64");
+
   const res = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
@@ -29,18 +24,10 @@ export async function getPayPalAccessToken(): Promise<string> {
   });
 
   if (!res.ok) {
-    const errorText = await res.text();
-    console.error("❌ PayPal auth failed:", res.status, errorText);
     throw new Error(`PayPal auth failed: ${res.statusText}`);
   }
-  
+
   const data = await res.json();
-  
-  cachedToken = data.access_token;
-  tokenExpiresAt = Date.now() + (data.expires_in * 1000);
-  
-  console.log(`✅ New token cached (expires in ${data.expires_in / 3600} hours)`);
+
   return data.access_token;
 }
-
-export { PAYPAL_API_BASE };
