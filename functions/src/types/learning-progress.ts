@@ -1,6 +1,5 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 
-
 export interface LearningProgress {
   id: string;
   userId: string;
@@ -13,7 +12,9 @@ export interface LearningProgress {
       type: string;
       markedAsComplete: boolean;
       completedAt: Timestamp | FieldValue | null;
+      duration: number;
+      completionKarmaGranted: boolean;
     };
   };
   updatedAt: Timestamp | FieldValue;
-};
+}
