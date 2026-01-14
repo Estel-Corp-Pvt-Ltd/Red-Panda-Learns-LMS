@@ -7,7 +7,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  where
+  where,
 } from "firebase/firestore";
 
 import { db } from "@/firebaseConfig";
@@ -20,6 +20,9 @@ import { LearningProgress } from "@/types/learning-progress";
 import { formatDate } from "@/utils/date-time";
 import { lessonAnalyticsService } from "./analytics/lessonAnalyticsService";
 import { authService } from "./authService";
+import { lessonService } from "./lessonService";
+import { duration } from "html2canvas/dist/types/css/property-descriptors/duration";
+import { Duration } from "@/types/general";
 
 class LearningProgressService {
   private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
@@ -32,7 +35,7 @@ class LearningProgressService {
    */
   async createLessonProgress(
     userId: string,
-    courseId: string,
+    courseId: string
   ): Promise<Result<{ progressId: string }>> {
     try {
       const progressRef = doc(collection(db, COLLECTION.LEARNING_PROGRESS));
@@ -58,11 +61,11 @@ class LearningProgressService {
   }
 
   /**
-  * Updates the LearningProgress document when a lesson is completed.
-  *
-  * @param progressId - The ID of the LearningProgress document.
-  * @param completedLessonId - The ID of the lesson that was just completed.
-  */
+   * Updates the LearningProgress document when a lesson is completed.
+   *
+   * @param progressId - The ID of the LearningProgress document.
+   * @param completedLessonId - The ID of the lesson that was just completed.
+   */
   async completeLesson(
     courseId: string,
     itemId: string,
@@ -75,13 +78,13 @@ class LearningProgressService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           courseId,
           itemId,
           type,
-          isCompleted
+          isCompleted,
         }),
       });
       return ok(null);
@@ -91,7 +94,12 @@ class LearningProgressService {
     }
   }
 
-  async timeSpentOnLesson(courseId: string, lessonId: string, timeSpentSec: number): Promise<Result<null>> {
+  async timeSpentOnLesson(
+    courseId: string,
+    lessonId: string,
+    timeSpentSec: number,
+    duration: Duration
+  ): Promise<Result<null>> {
     if (timeSpentSec <= 5) {
       return fail("Time spent must be greater than five seconds.");
     }
@@ -101,12 +109,13 @@ class LearningProgressService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           courseId,
           lessonId,
           timeSpentSec,
+          duration,
         }),
       });
       if (!response.ok) {
@@ -119,7 +128,54 @@ class LearningProgressService {
     }
   }
 
-  async getUserCourseProgress(userId: string, courseId: string): Promise<Result<LearningProgress[]>> {
+  // async addedDurationinLearningProgress(
+  //   userId: string,
+  //   courseId: string,
+  //   lessonId: string,
+  //   duration: number
+  // ): Promise<Result<LearningProgress[]>> {
+  //   try {
+  //     const progressQuery = query(
+  //       collection(db, COLLECTION.LEARNING_PROGRESS),
+  //       where("userId", "==", userId),
+  //       where("courseId", "==", courseId)
+  //     );
+
+  //     const snapshot = await getDocs(progressQuery);
+
+  //     if (snapshot.empty) {
+  //       return ok([]);
+  //     }
+
+  //     const progressList: LearningProgress[] = snapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...(doc.data() as LearningProgress),
+  //     }));
+
+  //     // 🔹 Assuming one progress doc per user + course
+  //     const progressDoc = snapshot.docs[0];
+  //     const progressDocRef = doc(db, COLLECTION.LEARNING_PROGRESS, progressDoc.id);
+
+  //     // 🔹 Update only the lesson duration
+  //     await updateDoc(progressDocRef, {
+  //       [`lessons.${lessonId}.duration`]: duration,
+  //     });
+
+  //     await lessonService.updateLesson(lessonId, {
+  //       durationAddedtoLearningProgress: true,
+  //     });
+
+  //     return ok(progressList);
+  //   } catch (error) {
+  //     console.error("Error updating lesson duration:", error);
+  //     return error;
+  //   }
+  // }
+
+  async getUserCourseProgress(
+    userId: string,
+    courseId: string
+  ): Promise<Result<LearningProgress[]>> {
     try {
       const progressQuery = query(
         collection(db, COLLECTION.LEARNING_PROGRESS),
@@ -133,23 +189,19 @@ class LearningProgressService {
         return ok([]); // no progress found, return empty array
       }
 
-      const progressList: LearningProgress[] = snapshot.docs.map(doc => ({
+      const progressList: LearningProgress[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...(doc.data() as LearningProgress),
       }));
 
       return ok(progressList);
-
     } catch (error: any) {
       logError("LearningProgressService.getUserProgress", error);
       return fail("Failed to fetch user progress.", error.code || error.message);
     }
   }
 
-
-  async getUserProgress(
-    userId: string
-  ): Promise<Result<LearningProgress[]>> {
+  async getUserProgress(userId: string): Promise<Result<LearningProgress[]>> {
     try {
       const progressQuery = query(
         collection(db, COLLECTION.LEARNING_PROGRESS),
@@ -162,30 +214,26 @@ class LearningProgressService {
         return ok([]); // no progress found, return empty array
       }
 
-      const progressList: LearningProgress[] = snapshot.docs.map(doc => ({
+      const progressList: LearningProgress[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...(doc.data() as LearningProgress),
       }));
 
       return ok(progressList);
-
     } catch (error: any) {
       logError("LearningProgressService.getUserProgress", error);
       return fail("Failed to fetch user progress.", error.code || error.message);
     }
   }
 
-  async completeCourse(
-    userId: string,
-    courseId: string,
-  ): Promise<Result<boolean>> {
+  async completeCourse(userId: string, courseId: string): Promise<Result<boolean>> {
     try {
       const authToken = await authService.getToken();
       const response = await fetch(`${this.backendUrl}/completeCourse`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           userId,
@@ -198,24 +246,25 @@ class LearningProgressService {
       }
 
       return ok(true);
-
     } catch (error: any) {
       logError("LearningProgressService.completeCourse", error);
-      return fail(
-        "Failed to complete course",
-        error.code || error.message
-      );
+      return fail("Failed to complete course", error.code || error.message);
     }
   }
 
-  async getCourseTimeSpent(userId: string, courseId: string): Promise<Result<{ totalTimeSpentSec: number, lessonHistory: LearningProgress["lessonHistory"] }>> {
+  async getCourseTimeSpent(
+    userId: string,
+    courseId: string
+  ): Promise<
+    Result<{ totalTimeSpentSec: number; lessonHistory: LearningProgress["lessonHistory"] }>
+  > {
     try {
       const idToken = await authService.getToken();
       const response = await fetch(`${this.backendUrl}/getCourseTimeSpent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           userId,
@@ -229,7 +278,6 @@ class LearningProgressService {
 
       const data = await response.json();
       return ok(data.data);
-
     } catch (error: any) {
       logError("LearningProgressService.getCourseTimeSpent", error);
       return fail("Failed to fetch course time spent.", error.code || error.message);

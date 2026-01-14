@@ -23,6 +23,11 @@ import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
 import { learningProgressService } from "@/services/learningProgressService";
 import { useAuth } from "@/contexts/AuthContext";
+import { duration } from "html2canvas/dist/types/css/property-descriptors/duration";
+import { Duration } from "@/types/general";
+import { secondsToDuration } from "@/utils/date-time";
+import { calculateKarmaForLessonCompleted } from "@/services/karmaService/calculateKarmaForLessonCompletion";
+import { authService } from "@/services/authService";
 
 interface LessonViewProps {
   lessonId: string;
@@ -152,13 +157,26 @@ export function LessonView({
   const [isCompleting, setIsCompleting] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [localCompleted, setLocalCompleted] = useState(completed);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  const [videoWatchedTime, setVideoWatchedTime] = useState<number>(0);
 
   // Sync local state with prop
   useEffect(() => {
     setLocalCompleted(completed);
     setShowCompletionModal(false);
     setIsCompleting(false);
+    setVideoDuration(null);
+    setVideoWatchedTime(0);
   }, [completed, lessonId]);
+
+  useEffect(() => {
+    if (lesson && videoDuration && user?.id && lesson.courseId && lesson.duration) {
+      const duration: Duration = secondsToDuration(videoDuration);
+      lessonService.updateLesson(lessonId, {
+        duration: duration,
+      });
+    }
+  }, [videoDuration, lesson, user, lessonId]);
 
   // Time tracking state
   const timeTrackingRef = useRef<TimeTrackingState>({
@@ -188,6 +206,31 @@ export function LessonView({
   const handleMarkComplete = useCallback(async () => {
     if (isCompleting || localCompleted) return;
 
+    // Check if it's a video lesson and user hasn't watched enough
+    const isVideoLesson = lesson?.type === LESSON_TYPE.VIDEO_LECTURE;
+
+    if (isVideoLesson && videoDuration) {
+      // Require watching at least 90% of the video
+      const requiredWatchTime = videoDuration * 0.9;
+
+      if (videoWatchedTime < requiredWatchTime) {
+        const remainingSeconds = Math.ceil(requiredWatchTime - videoWatchedTime);
+        const remainingMinutes = Math.floor(remainingSeconds / 60);
+        const remainingSecs = remainingSeconds % 60;
+
+        const timeString =
+          remainingMinutes > 0 ? `${remainingMinutes}m ${remainingSecs}s` : `${remainingSecs}s`;
+
+        toast({
+          title: "Please watch the full video",
+          description: `You need to watch ${timeString} more to complete this lesson.`,
+          variant: "destructive",
+          duration: 4000,
+        });
+        return;
+      }
+    }
+
     setIsCompleting(true);
 
     // Optimistic update - immediately show as completed
@@ -196,7 +239,29 @@ export function LessonView({
 
     try {
       await onComplete(true);
+      if (user?.id && lesson?.courseId) {
+        try {
+          const idToken = await authService.getToken();
 
+          if (idToken) {
+            console.log("[handleMarkComplete] Awarding karma for lesson completion");
+            calculateKarmaForLessonCompleted.awardKarmaForLessonCompletion(
+              user.id, // Make sure this is correct (not user.uid)
+              idToken,
+              lesson.courseId
+            );
+          } else {
+            console.error("[handleMarkComplete] Failed to get idToken");
+          }
+        } catch (tokenError) {
+          console.error("[handleMarkComplete] Error getting token:", tokenError);
+        }
+      } else {
+        console.error("[handleMarkComplete] Missing user.id or lesson.courseId", {
+          userId: user?.id,
+          courseId: lesson?.courseId,
+        });
+      }
       toast({
         title: "Lesson Completed",
         description: "Great job! Keep up the good work.",
@@ -216,7 +281,7 @@ export function LessonView({
     } finally {
       setIsCompleting(false);
     }
-  }, [isCompleting, localCompleted, onComplete]);
+  }, [isCompleting, localCompleted, onComplete, lesson, videoDuration, videoWatchedTime]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -277,7 +342,15 @@ export function LessonView({
 
       try {
         const courseId = lesson.courseId;
-        await learningProgressService.timeSpentOnLesson(courseId, lessonId, totalTimeToReport);
+        if (!lesson.durationAddedtoLearningProgress) {
+        }
+        const duration: Duration = secondsToDuration(videoDuration);
+        await learningProgressService.timeSpentOnLesson(
+          courseId,
+          lessonId,
+          totalTimeToReport,
+          lesson.duration || duration
+        );
 
         // Reset accumulated time
         state.totalTimeSpent = 0;
@@ -697,7 +770,18 @@ export function LessonView({
         );
 
       case LESSON_TYPE.VIDEO_LECTURE:
-        return <VideoPlayer url={lesson.embedUrl} />;
+        return (
+          <VideoPlayer
+            url={lesson.embedUrl}
+            onDuration={(duration) => {
+              setVideoDuration(duration);
+            }}
+            onTimeUpdate={(currentTime) => {
+              // Track highest point watched (handles seeking back)
+              setVideoWatchedTime((prev) => Math.max(prev, currentTime));
+            }}
+          />
+        );
 
       default:
         return lesson.embedUrl ? (
@@ -712,7 +796,10 @@ export function LessonView({
   };
 
   const shouldHideDetails = isFullscreen;
-
+  const progressPercent =
+    lesson?.type === LESSON_TYPE.VIDEO_LECTURE && videoDuration && videoDuration > 0
+      ? Math.min(100, Math.round((videoWatchedTime / videoDuration) * 100))
+      : 0;
   return (
     <>
       <div
@@ -765,16 +852,115 @@ export function LessonView({
                 size="sm"
                 onClick={handleMarkComplete}
                 disabled={isCompleting}
+                className="relative overflow-hidden border-input hover:bg-accent hover:text-accent-foreground group h-10 transition-all"
               >
-                {isCompleting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Completing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" /> Mark Complete
-                  </>
+                {/* --- CSS for Wave & Bubbles --- */}
+                <style>{`
+                  @keyframes ripple-y {
+                    0% {
+                      transform: translateY(0);
+                    }
+                    100% {
+                      transform: translateY(-50%);
+                    }
+                  }
+                  @keyframes bubble-rise {
+                    0% {
+                      transform: translateY(100%) translateX(0);
+                      opacity: 0;
+                    }
+                    50% {
+                      opacity: 0.8;
+                    }
+                    100% {
+                      transform: translateY(-20px) translateX(10px);
+                      opacity: 0;
+                    }
+                  }
+                  .wave-edge {
+                    animation: ripple-y 1s linear infinite;
+                  }
+                  .bubble {
+                    position: absolute;
+                    background: rgba(255, 255, 255, 0.6);
+                    border-radius: 50%;
+                    animation: bubble-rise 2s infinite ease-in;
+                  }
+                `}</style>
+
+                {/* --- LIQUID CONTAINER --- */}
+                {lesson?.type === LESSON_TYPE.VIDEO_LECTURE && (
+                  <div
+                    className="absolute top-0 left-0 h-full bg-green-500 transition-all duration-300 ease-linear flex items-center"
+                    style={{ width: `${progressPercent}%` }}
+                  >
+                    {/* 1. The Bubbles (Decorative) */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div
+                        className="bubble w-1 h-1 left-[10%] animation-delay-0"
+                        style={{ animationDuration: "2.1s" }}
+                      />
+                      <div
+                        className="bubble w-2 h-2 left-[30%] top-[50%]"
+                        style={{ animationDuration: "1.8s", animationDelay: "0.2s" }}
+                      />
+                      <div
+                        className="bubble w-1.5 h-1.5 left-[60%] top-[80%]"
+                        style={{ animationDuration: "2.5s", animationDelay: "0.5s" }}
+                      />
+                      <div
+                        className="bubble w-1 h-1 left-[80%] top-[20%]"
+                        style={{ animationDuration: "1.5s", animationDelay: "0.8s" }}
+                      />
+                    </div>
+
+                    {/* 2. The Wavy Leading Edge */}
+                    {/* Positioned -right-3 to hang off the edge, h-[200%] to allow vertical scrolling animation */}
+                    <div className="absolute -right-[10px] top-0 h-[200%] w-[12px] -mt-2 overflow-visible">
+                      <svg
+                        viewBox="0 0 12 120"
+                        preserveAspectRatio="none"
+                        className="w-full h-full text-green-500 fill-current wave-edge"
+                      >
+                        {/* This path draws a vertical sine wave */}
+                        <path
+                          d="M0,0 
+                               C5,10 10,20 5,30 
+                               C0,40 5,50 10,60 
+                               C5,70 0,80 5,90 
+                               C10,100 5,110 0,120 
+                               L0,120 L0,0 Z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 )}
+
+                {/* --- CONTENT LAYER (Text/Icons) --- */}
+                <div
+                  className={`relative z-10 flex items-center ${
+                    progressPercent > 50 ? "text-white drop-shadow-md" : ""
+                  } transition-colors duration-300`}
+                >
+                  {isCompleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Completing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Mark Complete
+                      {/* Percentage Text */}
+                      {lesson?.type === LESSON_TYPE.VIDEO_LECTURE &&
+                        videoDuration &&
+                        videoDuration > 0 && (
+                          <span className="ml-2 text-xs font-bold tabular-nums opacity-90">
+                            {progressPercent}%
+                          </span>
+                        )}
+                    </>
+                  )}
+                </div>
               </Button>
             )}
             <Button onClick={toggleFullscreen} variant="outline" size="icon">
