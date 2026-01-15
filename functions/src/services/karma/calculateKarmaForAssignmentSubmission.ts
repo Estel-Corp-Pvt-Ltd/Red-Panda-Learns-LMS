@@ -9,25 +9,14 @@ type KarmaInput = {
   marks: number;
   maximumMarks?: number;
   minimumMarks?: number;
+  studentName: string;
 };
 
-export async function calculateKarmaForAssignmentSubmission(
-  input: KarmaInput
-) {
-  const {
-    studentId,
-    courseId,
-    marks,
-    maximumMarks,
-    minimumMarks,
-  } = input;
+export async function calculateKarmaForAssignmentSubmission(input: KarmaInput) {
+  const { studentId, courseId, marks, maximumMarks, minimumMarks, studentName } = input;
 
   // Safety checks
-  if (
-    maximumMarks == null ||
-    maximumMarks <= 0 ||
-    minimumMarks == null
-  ) {
+  if (maximumMarks == null || maximumMarks <= 0 || minimumMarks == null) {
     console.warn("Invalid marks configuration, skipping karma calculation", {
       studentId,
       courseId,
@@ -67,7 +56,6 @@ export async function calculateKarmaForAssignmentSubmission(
     action,
     userId: studentId,
     courseId,
+    userName: studentName,
   });
 }
-
-

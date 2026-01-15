@@ -84,6 +84,7 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
           category: KARMA_CATEGORY.LEARNING,
           action: LEARNING_ACTION.LESSON_WATCH_TIME,
           courseId,
+          userName: user.userName || user.firstName,
         });
       }
     }

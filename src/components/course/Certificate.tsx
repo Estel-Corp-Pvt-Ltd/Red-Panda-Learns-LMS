@@ -381,7 +381,8 @@ const Certificate: React.FC = () => {
       await calculateKarmaForShareCertificate.awardKarmaForSharing(
         user.id,
         idToken,
-        certificateData.enrollment.courseId
+        certificateData.enrollment.courseId,
+        user.username || user.firstName || certificateData.certificateName
       );
     } catch (error) {
       console.error("Error calculating karma for shared certificate:", error);

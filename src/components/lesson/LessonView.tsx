@@ -247,7 +247,8 @@ export function LessonView({
             calculateKarmaForLessonCompleted.awardKarmaForLessonCompletion(
               user.id, // Make sure this is correct (not user.uid)
               idToken,
-              lesson.courseId
+              lesson.courseId,
+              user.username || user.firstName
             );
           } else {
             console.error("[handleMarkComplete] Failed to get idToken");

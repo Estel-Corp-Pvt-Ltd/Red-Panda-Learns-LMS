@@ -16,7 +16,7 @@ async function addKarmaHandler(req: Request, res: Response) {
       return; // just return, do NOT return res
     }
 
-    const { userId, category, action, courseId } = req.body;
+    const { userId, category, action, courseId, userName } = req.body;
 
     if (!category || !action || !courseId) {
       res.status(400).json({ error: "Missing required fields: category, action, courseId" });
@@ -53,6 +53,7 @@ async function addKarmaHandler(req: Request, res: Response) {
       category,
       action,
       courseId,
+      userName,
     });
 
     res.status(200).json({ success: true });

@@ -12,7 +12,7 @@ export const calculateKarmaForUpvotes = {
   /**
    * Fire-and-forget: award karma to message author for an upvote
    */
-  awardKarma(authorUserId: string, idToken: string, courseId: string): void {
+  awardKarma(authorUserId: string, idToken: string, courseId: string, userName: string): void {
     if (!idToken) {
       console.error("[KarmaUpvote] Missing ID token");
       return;
@@ -29,6 +29,7 @@ export const calculateKarmaForUpvotes = {
         category: KARMA_CATEGORY.COMMUNITY,
         action: COMMUNITY_ACTION.USER_UPVOTE_RECEIVED,
         courseId,
+        userName,
       }),
     }).catch((err) => console.error("[KarmaUpvote] Failed to award karma for upvote:", err));
   },
@@ -36,7 +37,7 @@ export const calculateKarmaForUpvotes = {
   /**
    * Fire-and-forget: remove karma from message author when an upvote is removed
    */
-  removeKarma(authorUserId: string, idToken: string, courseId: string): void {
+  removeKarma(authorUserId: string, idToken: string, courseId: string, userName: string): void {
     if (!idToken) {
       console.error("[KarmaUpvote] Missing ID token");
       return;
@@ -52,6 +53,7 @@ export const calculateKarmaForUpvotes = {
         category: KARMA_CATEGORY.COMMUNITY,
         action: COMMUNITY_ACTION.USER_COMMENT_UNUPVOTED,
         courseId,
+        userName,
       }),
     }).catch((err) => console.error("[KarmaUpvote] Failed to remove karma for un-upvote:", err));
   },

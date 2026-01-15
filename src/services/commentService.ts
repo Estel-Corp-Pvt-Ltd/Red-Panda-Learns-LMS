@@ -447,7 +447,8 @@ class CommentService {
       calculatekarmaForComments.calculateKarmaForApprovedComment(
         commentData.userId,
         idToken,
-        commentData.courseId
+        commentData.courseId,
+        commentData.userName
       );
 
       return ok(null);
@@ -482,7 +483,8 @@ class CommentService {
         calculatekarmaForComments.calculateKarmaForRejectedComment(
           comment.userId,
           idToken,
-          comment.courseId
+          comment.courseId,
+          comment.userName
         );
 
         // If this is a reply, decrement parent's reply count

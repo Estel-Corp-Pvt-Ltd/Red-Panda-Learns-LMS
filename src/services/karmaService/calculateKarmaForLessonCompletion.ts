@@ -7,7 +7,12 @@ export const calculateKarmaForLessonCompleted = {
   /**
    * Fire-and-forget: award karma to a user for completing a lesson
    */
-  awardKarmaForLessonCompletion(userId: string, idToken: string, courseId: string): void {
+  awardKarmaForLessonCompletion(
+    userId: string,
+    idToken: string,
+    courseId: string,
+    userName: string
+  ): void {
     // Validate inputs
     if (!userId) {
       console.error("[KarmaLessonCompletion] Missing userId");
@@ -29,6 +34,7 @@ export const calculateKarmaForLessonCompleted = {
       category: KARMA_CATEGORY.LEARNING,
       action: LEARNING_ACTION.LESSON_COMPLETION,
       courseId,
+      userName,
     };
 
     fetch(`${BACKEND_URL}/addKarma`, {

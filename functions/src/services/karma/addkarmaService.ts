@@ -13,6 +13,7 @@ interface AddKarmaParams<C extends KarmaCategory = KarmaCategory> {
   category: C;
   action: KarmaActionMap[C];
   courseId: string;
+  userName: string;
 }
 
 export const addKarmaService = {
@@ -21,6 +22,7 @@ export const addKarmaService = {
     action,
     userId,
     courseId,
+    userName,
   }: AddKarmaParams<C>) {
     logger.info("[Karma] Request received", {
       userId,
@@ -59,6 +61,7 @@ export const addKarmaService = {
           id: docId,
           userId,
           courseId,
+          userName,
           dayKey,
           date: admin.firestore.Timestamp.now(),
           karmaEarned: points,
@@ -90,6 +93,6 @@ export const addKarmaService = {
       pointsAdded: points,
     });
 
-    return { userId, courseId, pointsAdded: points };
+    return { userId, courseId, userName, pointsAdded: points };
   },
 };

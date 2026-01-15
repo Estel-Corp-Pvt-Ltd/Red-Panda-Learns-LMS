@@ -9,7 +9,8 @@ export const calulateKarmaForQuizSubmission = {
     userScore: number,
     userId: string,
     courseId: string,
-    idToken: string
+    idToken: string,
+    userName: string
   ): Promise<void> {
     try {
       // Validation
@@ -56,6 +57,7 @@ export const calulateKarmaForQuizSubmission = {
           category: KARMA_CATEGORY.LEARNING,
           action,
           courseId,
+          userName,
         }),
       }).catch((err) => {
         console.error("[KarmaCalculation] Failed to add karma:", err);

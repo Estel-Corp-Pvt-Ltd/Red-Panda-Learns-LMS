@@ -670,7 +670,8 @@ class QuizService {
             totalScore,
             userId,
             quiz.courseId,
-            idToken
+            idToken,
+            userName
           )
           .catch((err) => {
             console.error("[KarmaCalculation] Async error:", err);

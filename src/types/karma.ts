@@ -1,10 +1,17 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
-import { CommunityAction, KarmaBreakdown, KarmaCategory, LearningAction, SocialAction } from "./general";
+import {
+  CommunityAction,
+  KarmaBreakdown,
+  KarmaCategory,
+  LearningAction,
+  SocialAction,
+} from "./general";
 import { KARMA_CATEGORY } from "@/constants";
 
 export interface KarmaDaily {
   id: string;
   userId: string;
+  userName: string;
   courseId: string;
   date: Timestamp | FieldValue;
   karmaEarned: number;

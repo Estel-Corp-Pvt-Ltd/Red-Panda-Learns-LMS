@@ -557,7 +557,7 @@ export const messageUpvoteService = {
         return fail("Message not found");
       }
 
-      const messageData = messageSnap.data() as { senderId: string }; // author of message
+      const messageData = messageSnap.data() as { senderId: string; senderName: string }; // author of message
 
       const idToken = await authService.getToken();
 
@@ -568,7 +568,12 @@ export const messageUpvoteService = {
           upvoteCount: increment(-1),
         });
 
-        calculateKarmaForUpvotes.removeKarma(messageData.senderId, idToken, courseId);
+        calculateKarmaForUpvotes.removeKarma(
+          messageData.senderId,
+          idToken,
+          courseId,
+          messageData.senderName
+        );
         return ok({ isUpvoted: false });
       } else {
         // Add upvote
@@ -586,7 +591,12 @@ export const messageUpvoteService = {
           upvoteCount: increment(1),
         });
         // Fire-and-forget: award karma to author
-        calculateKarmaForUpvotes.awardKarma(messageData.senderId, idToken, courseId);
+        calculateKarmaForUpvotes.awardKarma(
+          messageData.senderId,
+          idToken,
+          courseId,
+          messageData.senderName
+        );
         return ok({ isUpvoted: true });
       }
     } catch (error: any) {

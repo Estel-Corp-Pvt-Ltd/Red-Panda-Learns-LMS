@@ -9,7 +9,7 @@ export const calculateKarmaForShareCertificate = {
   /**
    * Fire-and-forget: award karma for sharing a certificate
    */
-  awardKarmaForSharing(userId: string, idToken: string, courseId: string): void {
+  awardKarmaForSharing(userId: string, idToken: string, courseId: string, userName: string): void {
     // Silently fail if no token
     if (!idToken) {
       console.warn("[Karma][ShareCertificate] Missing ID token");
@@ -29,6 +29,7 @@ export const calculateKarmaForShareCertificate = {
         category: KARMA_CATEGORY.SOCIAL,
         action: SOCIAL_ACTION.CERTIFICATE_SHARED,
         courseId,
+        userName,
       }),
     }).catch(() => {
       // Intentionally swallow errors (fire-and-forget)

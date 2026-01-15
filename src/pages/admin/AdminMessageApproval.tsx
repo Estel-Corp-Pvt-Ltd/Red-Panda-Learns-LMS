@@ -200,7 +200,8 @@ const AdminMessageApproval: React.FC = () => {
   const handleApproveMessage = async (
     messageId: string,
     messageSenderId: string,
-    messageCourseId: string
+    messageCourseId: string,
+    messageSenderName: string
   ) => {
     try {
       const idToken = await authService.getToken();
@@ -209,7 +210,8 @@ const AdminMessageApproval: React.FC = () => {
         calculatekarmaForForumComments.calculateKarmaForApprovedForumComment(
           messageSenderId,
           idToken,
-          messageCourseId
+          messageCourseId,
+          messageSenderName
         );
         setMessages((prev) => prev.filter((message) => message.id !== messageId));
         // calculatekarmaForForumComments()
@@ -224,7 +226,8 @@ const AdminMessageApproval: React.FC = () => {
   const handleDeleteMessage = async (
     messageId: string,
     messageSenderId: string,
-    messageCourseId: string
+    messageCourseId: string,
+    messageSenderName: string
   ) => {
     try {
       const result = await channelMessageService.deleteMessage(messageId);
@@ -233,7 +236,8 @@ const AdminMessageApproval: React.FC = () => {
         calculatekarmaForForumComments.calculateKarmaForRejectedForumComment(
           messageSenderId,
           idToken,
-          messageCourseId
+          messageCourseId,
+          messageSenderName
         );
         setMessages((prev) => prev.filter((message) => message.id !== messageId));
       } else {
@@ -262,7 +266,8 @@ const AdminMessageApproval: React.FC = () => {
           calculatekarmaForForumComments.calculateKarmaForApprovedForumComment(
             message.senderId,
             idToken,
-            message.courseId
+            message.courseId,
+            message.senderName
           );
         }
       });
@@ -296,7 +301,8 @@ const AdminMessageApproval: React.FC = () => {
           calculatekarmaForForumComments.calculateKarmaForRejectedForumComment(
             message.senderId,
             idToken,
-            message.courseId
+            message.courseId,
+            message.senderName
           );
         }
       });
@@ -689,7 +695,12 @@ const AdminMessageApproval: React.FC = () => {
                             <Button
                               size="sm"
                               onClick={() =>
-                                handleApproveMessage(message.id, message.senderId, message.courseId)
+                                handleApproveMessage(
+                                  message.id,
+                                  message.senderId,
+                                  message.courseId,
+                                  message.senderName
+                                )
                               }
                               className="h-8 px-2"
                             >
@@ -700,7 +711,12 @@ const AdminMessageApproval: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={() =>
-                              handleDeleteMessage(message.id, message.senderId, message.courseId)
+                              handleDeleteMessage(
+                                message.id,
+                                message.senderId,
+                                message.courseId,
+                                message.senderName
+                              )
                             }
                             className="h-8 px-2"
                           >
@@ -809,7 +825,8 @@ const AdminMessageApproval: React.FC = () => {
                         handleApproveMessage(
                           selectedMessage.id,
                           selectedMessage.senderId,
-                          selectedMessage.courseId
+                          selectedMessage.courseId,
+                          selectedMessage.senderName
                         );
                         setIsViewModalOpen(false);
                       }}
@@ -823,7 +840,8 @@ const AdminMessageApproval: React.FC = () => {
                       handleDeleteMessage(
                         selectedMessage.id,
                         selectedMessage.senderId,
-                        selectedMessage.courseId
+                        selectedMessage.courseId,
+                        selectedMessage.senderName
                       );
                       setIsViewModalOpen(false);
                     }}

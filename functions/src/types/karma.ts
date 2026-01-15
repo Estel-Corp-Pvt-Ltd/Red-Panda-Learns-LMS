@@ -11,6 +11,7 @@ import { KARMA_CATEGORY } from "../constants";
 export interface KarmaDaily {
   id: string;
   userId: string;
+  userName: string;
   courseId: string;
   date: Timestamp | FieldValue;
   karmaEarned: number;

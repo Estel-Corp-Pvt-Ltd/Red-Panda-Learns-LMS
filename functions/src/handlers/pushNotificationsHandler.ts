@@ -46,7 +46,10 @@ async function sendSubmissionGradedNotificationHandler(req: Request, res: Respon
       return;
     }
 
-    const { studentId } = submissionSnap.data() as { studentId: string };
+    const { studentId, studentName } = submissionSnap.data() as {
+      studentId: string;
+      studentName: string;
+    };
 
     if (!isReevaluated) {
       calculateKarmaForAssignmentSubmission({
@@ -56,11 +59,12 @@ async function sendSubmissionGradedNotificationHandler(req: Request, res: Respon
         marks,
         maximumMarks,
         minimumMarks,
+        studentName,
       }).catch((err) => {
         console.error("Karma calculation failed:", err);
       });
     }
-    
+
     const userSnap = await admin.firestore().collection(COLLECTION.USERS).doc(studentId).get();
 
     const { fcmTokens, email, userName, firstName } = userSnap.data() as {

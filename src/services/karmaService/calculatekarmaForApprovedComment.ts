@@ -5,7 +5,8 @@ export const calculatekarmaForComments = {
   calculateKarmaForApprovedComment(
     userId: string,
     idToken: string,
-    courseId: string
+    courseId: string,
+    userName: string
   ): void {
     if (!idToken) {
       console.error("[KarmaCalculation] Missing ID token");
@@ -24,8 +25,9 @@ export const calculatekarmaForComments = {
         category: KARMA_CATEGORY.COMMUNITY,
         action: COMMUNITY_ACTION.LESSON_COMMENT_APPROVED,
         courseId,
+        userName,
       }),
-    }).catch(err => {
+    }).catch((err) => {
       console.error("[KarmaCalculation] Failed to add karma for approved comment:", err);
     });
   },
@@ -33,7 +35,8 @@ export const calculatekarmaForComments = {
   calculateKarmaForRejectedComment(
     userId: string,
     idToken: string,
-    courseId: string
+    courseId: string,
+    userName: string
   ): void {
     if (!idToken) {
       console.error("[KarmaCalculation] Missing ID token");
@@ -52,8 +55,9 @@ export const calculatekarmaForComments = {
         category: KARMA_CATEGORY.COMMUNITY,
         action: COMMUNITY_ACTION.MESSAGE_OR_COMMENT_REJECTED,
         courseId,
+        userName,
       }),
-    }).catch(err => {
+    }).catch((err) => {
       console.error("[KarmaCalculation] Failed to deduct karma for rejected comment:", err);
     });
   },
