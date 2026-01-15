@@ -23,9 +23,9 @@ interface CreateOrderResponse {
 
 class PayPalProvider {
   private readonly environment =
-    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION
-      ? ENVIRONMENT.PRODUCTION
-      : ENVIRONMENT.DEVELOPMENT;
+    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
+      ? ENVIRONMENT.DEVELOPMENT
+      : ENVIRONMENT.PRODUCTION;
 
   private readonly clientId =
     this.environment === ENVIRONMENT.DEVELOPMENT
