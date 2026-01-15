@@ -4,6 +4,7 @@ import { verifyPayment } from "./handlers/verifyPayment";
 import { verifyRecaptcha } from "./handlers/verifyRecaptcha";
 import { createPaypalOrder } from "./handlers/createPaypalOrder";
 import { capturePaypalOrder } from "./handlers/capturePaypalOrder";
+import { paypalWebhook } from "./handlers/paypalWebhook";
 import { razorpayWebhook } from "./handlers/razorpayWebhook";
 import { sendMailWorker } from "./workers/sendMailWorker";
 import { getLessons } from "./handlers/getLessons";
@@ -67,6 +68,7 @@ export {
   verifyRecaptcha,
   createPaypalOrder,
   capturePaypalOrder,
+  paypalWebhook,
   razorpayWebhook,
   sendMailWorker,
   courseDeleteCascade,

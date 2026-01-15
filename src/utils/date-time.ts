@@ -35,11 +35,14 @@ export const formatDate = (
   const date = toDateSafe(val);
   if (!date) return "—";
 
-  return new Intl.DateTimeFormat(undefined, options ?? {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    undefined,
+    options ?? {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  ).format(date);
 };
 
 /**
@@ -52,13 +55,16 @@ export const formatDateTime = (
   const date = toDateSafe(val);
   if (!date) return "—";
 
-  return new Intl.DateTimeFormat(undefined, options ?? {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    undefined,
+    options ?? {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(date);
 };
 
 /**
@@ -71,10 +77,13 @@ export const formatTime = (
   const date = toDateSafe(val);
   if (!date) return "—";
 
-  return new Intl.DateTimeFormat(undefined, options ?? {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    undefined,
+    options ?? {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(date);
 };
 
 /**
@@ -83,7 +92,7 @@ export const formatTime = (
  * @returns An object containing the calculated hours and minutes.
  */
 export const parseDuration = (durationInSeconds: number): { hours: number; minutes: number } => {
-  if (typeof durationInSeconds !== 'number' || durationInSeconds < 0) {
+  if (typeof durationInSeconds !== "number" || durationInSeconds < 0) {
     return { hours: 0, minutes: 0 };
   }
 
@@ -97,7 +106,7 @@ export const parseDuration = (durationInSeconds: number): { hours: number; minut
 type DateInput = Date | Timestamp | FieldValue;
 
 /**
- * Compares two dates (either native Date objects or Firebase Timestamps) 
+ * Compares two dates (either native Date objects or Firebase Timestamps)
  * to determine which one is chronologically greater (more recent).
  * @param dateA The first date to compare.
  * @param dateB The second date to compare.
@@ -127,13 +136,13 @@ export function compareDates(dateA: DateInput, dateB: DateInput): 1 | -1 | 0 {
   } else {
     return 0; // The dates are equal
   }
-};
+}
 
 /**
  * Converts a Firebase Timestamp or FieldValue to a native JavaScript Date.
  * Returns null for null/undefined or FieldValue (serverTimestamp) placeholders.
  * This function helps with TS compiler errors since we can use toDate() on Timestamp only but our date fields have the type Timestamp | FieldValue
- * 
+ *
  * @param value - A Firestore Timestamp, FieldValue, or null/undefined.
  * @returns A native Date object, or null if conversion is not possible.
  */
@@ -146,8 +155,7 @@ export function convertToDate(value?: Timestamp | FieldValue | null): Date | nul
 
   // If it's FieldValue.serverTimestamp() or any other non-Timestamp, return null
   return null;
-};
-
+}
 
 export const formatTimeDuration = (totalMinutes: number): string => {
   if (totalMinutes <= 0) return "0 min";
@@ -156,11 +164,11 @@ export const formatTimeDuration = (totalMinutes: number): string => {
   const minutes = totalMinutes % 60;
 
   const parts = [];
-  if (hours > 0) parts.push(`${hours} hr${hours > 1 ? 's' : ''}`);
+  if (hours > 0) parts.push(`${hours} hr${hours > 1 ? "s" : ""}`);
   if (minutes > 0) parts.push(`${minutes} min`);
 
-  return parts.join(' ');
-}
+  return parts.join(" ");
+};
 
 export const timestampToLocalInput = (date: Date | null | undefined): string => {
   if (!date) return "";
@@ -173,4 +181,22 @@ export const timestampToLocalInput = (date: Date | null | undefined): string => 
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
   return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
+};
+
+export const formatTimeRemaining = (ms: number): string => {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d ${hours % 24}h ${minutes % 60}m`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`;
+  }
+  return `${seconds}s`;
+};

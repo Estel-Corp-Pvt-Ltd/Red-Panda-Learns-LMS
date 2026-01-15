@@ -7,14 +7,13 @@ import * as admin from "firebase-admin";
 const PAYPAL_CLIENT_ID = defineSecret("PAYPAL_CLIENT_ID");
 const PAYPAL_SECRET = defineSecret("PAYPAL_SECRET");
 import { getPayPalAccessToken, PAYPAL_API_BASE } from "../utils/paypalAuth";
+import { authMiddleware } from "../middlewares/auth";
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const db = admin.firestore();
-
-
 
 
 /**
@@ -29,7 +28,7 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
     return;
   }
 
-  try { 
+  try {
     // console.log("the frontend has successfuly hit capture ")
     const { orderId, transactionId, userId } = req.body;
 
@@ -54,7 +53,7 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
 
     const transaction = transactionDoc.data();
     // console.log("📄 Transaction data:", transaction);
-    
+
     if (!transaction) {
       console.log("❌ Transaction data is null");
       res.status(404).json({ success: false, error: "Transaction data not found" });
@@ -67,16 +66,14 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
       return;
     }
 
-  
 
-   
 
     // Capture payment
     // console.log("💰 Getting PayPal access token...");
-    const accessToken = await getPayPalAccessToken();
+    const accessToken = await getPayPalAccessToken(PAYPAL_CLIENT_ID.value(), PAYPAL_SECRET.value());
     // console.log("✅ Access token obtained");
     // console.log("order idddddd",orderId)
-  
+
     const captureResponse = await fetch(
       `${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`,
       {
@@ -101,7 +98,7 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
 
     const capture = captureData.purchase_units?.[0]?.payments?.captures?.[0];
     // console.log("💰 Capture details:", capture);
-    
+
     if (!capture) {
       console.error("❌ No capture in response");
       throw new Error("No capture data received");
@@ -138,7 +135,7 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
     }
 
     // console.log("✅ Payment captured successfully");
-    
+
     res.status(200).json({
       success: true,
       paymentId: capture.id,
@@ -148,7 +145,7 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error("❌ Capture error:", err);
     console.error("Error stack:", err.stack);
-    
+
     if (req.body?.transactionId) {
       try {
         await db.collection("Transactions").doc(req.body.transactionId).update({
@@ -161,14 +158,14 @@ const capturePaypalOrderHandler = async (req: Request, res: Response) => {
       }
     }
 
-    res.status(500).json({ 
-      success: false, 
-      error: err.message || "Capture failed" 
+    res.status(500).json({
+      success: false,
+      error: err.message || "Capture failed"
     });
   }
 };
 
 export const capturePaypalOrder = onRequest(
   { region: "us-central1", secrets: [PAYPAL_CLIENT_ID, PAYPAL_SECRET] },
-  withMiddleware(corsMiddleware, capturePaypalOrderHandler)
+  withMiddleware(corsMiddleware, authMiddleware, capturePaypalOrderHandler)
 );

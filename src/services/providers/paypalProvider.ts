@@ -1,13 +1,31 @@
 import { ENVIRONMENT, TRANSACTION_STATUS } from "@/constants";
 import { Currency } from "@/types/general";
 import { PaymentDetails, TransactionLineItem } from "@/types/transaction";
-import { transactionService } from "../transactionService";
+import { Address } from "@/types/order";
+import { fail, ok, Result } from "@/utils/response";
+import { authService } from "../authService";
+
+export interface PaypalOrder {
+  id: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+  status: string;
+}
+
+interface CreateOrderResponse {
+  orderId: string;
+  paypalOrder: any;
+  currency: Currency;
+  amount: number;
+  success: boolean;
+}
 
 class PayPalProvider {
   private readonly environment =
-    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.PRODUCTION
-      ? ENVIRONMENT.PRODUCTION
-      : ENVIRONMENT.DEVELOPMENT;
+    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
+      ? ENVIRONMENT.DEVELOPMENT
+      : ENVIRONMENT.PRODUCTION;
 
   private readonly clientId =
     this.environment === ENVIRONMENT.DEVELOPMENT
@@ -16,6 +34,55 @@ class PayPalProvider {
 
   private sdkLoaded = false;
   private buttonInstance: any = null;
+  private paypalWindow: Window | null = null;
+
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  async createOrder(
+    items: TransactionLineItem[],
+    billingAddress: Address,
+    selectedCurrency: Currency,
+    promoCode?: string
+  ): Promise<Result<CreateOrderResponse>> {
+    try {
+      const idToken = await authService.getToken();
+      const idempotencyKey = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      const response = await fetch(`${this.backendUrl}/createPaypalOrder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          provider: "PAYPAL",
+          items: items.map(item => ({
+            itemId: item.itemId,
+            itemType: item.itemType,
+          })),
+          selectedCurrency,
+          billingAddress,
+          promoCode
+        }),
+      });
+
+      if (!response.ok) {
+        return { success: false, error: new Error('Failed to create order') };
+      }
+
+      const data = await response.json();
+      console.log('PaypalProvider - Create order response:', data);
+      if (!data.success) {
+        throw new Error(data.error || "Failed to create order");
+      }
+
+      return ok(data);
+    } catch (error) {
+      console.error('PaypalProvider - Create order failed:', error);
+      return { success: false, error: new Error('Failed to create order') };
+    }
+  }
 
   /** Dynamically load PayPal SDK */
   async loadPayPalSDK(currency: Currency): Promise<void> {
@@ -48,7 +115,7 @@ class PayPalProvider {
       const script = document.createElement("script");
       script.src = `https://${host}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
       script.async = true;
-      
+
       script.onload = () => {
         this.waitForPayPalReady()
           .then(() => {
@@ -57,7 +124,7 @@ class PayPalProvider {
           })
           .catch(reject);
       };
-      
+
       script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
       document.head.appendChild(script);
     });
@@ -70,9 +137,8 @@ class PayPalProvider {
 
       const checkReady = () => {
         attempts++;
-        
+
         if ((window as any).paypal?.Buttons) {
-    
           resolve();
           return;
         }
@@ -89,54 +155,203 @@ class PayPalProvider {
     });
   }
 
-  /** Launches the PayPal payment flow */
+  /** Open PayPal popup window */
+  private openPayPalPopup(paypalOrder: any): Window | null {
+    // Find the approval link from the PayPal order response
+    const approvalLink = paypalOrder.links.find(
+      (link: any) => link.rel === "approve"
+    );
+
+    if (!approvalLink) {
+      throw new Error("No approval link found in PayPal order");
+    }
+
+    // Calculate popup dimensions and position
+    const width = 600;
+    const height = 700;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+
+    // Open the popup window with PayPal approval URL
+    const popup = window.open(
+      approvalLink.href,
+      "PayPal",
+      `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`
+    );
+
+    if (!popup) {
+      throw new Error("Popup blocked. Please allow popups for this site.");
+    }
+
+    return popup;
+  }
+
+  /** Monitor PayPal popup for completion */
+  private monitorPopup(
+    popup: Window,
+    orderId: string,
+    onPaymentSuccess: (orderId: string) => void,
+    onPaymentFail: (message: string) => void
+  ): Promise<{ orderId: string }> {
+    return new Promise((resolve, reject) => {
+      console.log("Monitoring PayPal popup for payment completion...");
+      // Check popup status periodically
+      const interval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(interval);
+          clearInterval(urlCheckInterval);
+
+          // User closed the popup without completing payment
+          onPaymentFail("Payment cancelled or popup closed");
+          reject(new Error("Payment cancelled"));
+        }
+      }, 500);
+
+      // Monitor URL changes in the popup for success/failure
+      const urlCheckInterval = setInterval(() => {
+        try {
+          const currentUrl = popup.location.href;
+          console.log("Monitoring PayPal popup URL:", currentUrl);
+          // Check for success URLs (PayPal redirects)
+          if (currentUrl.includes('/payment-success') ||
+            currentUrl.includes('status=COMPLETED') ||
+            currentUrl.includes('/capture/')) {
+
+            clearInterval(interval);
+            clearInterval(urlCheckInterval);
+
+            // Small delay to ensure PayPal has processed everything
+            setTimeout(() => {
+              onPaymentSuccess(orderId);
+              resolve({ orderId });
+              popup.close();
+            }, 1000);
+          }
+
+          // Check for failure/cancellation
+          if (currentUrl.includes('/payment-cancel') ||
+            currentUrl.includes('status=CANCELLED') ||
+            currentUrl.includes('/cancel/')) {
+
+            clearInterval(interval);
+            clearInterval(urlCheckInterval);
+
+            onPaymentFail("Payment cancelled by user");
+            reject(new Error("Payment cancelled by user"));
+            popup.close();
+          }
+        } catch (error) {
+          console.error("Error monitoring PayPal popup:", error);
+          // Cross-origin errors are expected when checking popup URL
+        }
+      }, 500);
+
+      // Auto-close monitoring after 10 minutes (PayPal timeout)
+      setTimeout(() => {
+        clearInterval(interval);
+        clearInterval(urlCheckInterval);
+        if (!popup.closed) {
+          popup.close();
+          onPaymentFail("Payment timeout");
+          reject(new Error("Payment timeout"));
+        }
+      }, 10 * 60 * 1000); // 10 minutes
+    });
+  }
+
+  /** Launches the PayPal payment flow with popup */
   async processPayment(
     items: TransactionLineItem[],
+    billingAddress: Address,
+    selectedCurrency: Currency,
     userEmail: string,
-    transactionId: string,
-    amount: number,
-    userId: string,
-    currency: Currency
-  ): Promise<{
-    success: boolean;
-    transactionId?: string;
-    paymentId?: string;
-    error?: string;
-  }> {
+    promoCode?: string,
+    onPaymentSuccess?: (orderId: string) => void,
+    onPaymentFail?: (message: string) => void
+  ): Promise<Result<{ orderId: string }>> {
     try {
-      console.log("PayPalProvider - Starting payment:", {
-        items,
-        transactionId,
-        amount,
-        currency,
-      });
+      // Step 1: Create order via backend
+      const orderData = await this.createOrder(items, billingAddress, selectedCurrency, promoCode);
+      if (!orderData.success || !orderData.data) {
+        throw new Error("Order creation failed");
+      }
 
-      await this.loadPayPalSDK(currency);
+      const { orderId, paypalOrder } = orderData.data;
+
+      // Step 2: Open PayPal popup
+      try {
+        this.paypalWindow = this.openPayPalPopup(paypalOrder);
+      } catch (popupError) {
+        console.error("Failed to open PayPal popup:", popupError);
+        onPaymentFail && onPaymentFail("Failed to open payment window. Please allow popups.");
+        return fail("Failed to open PayPal popup");
+      }
+
+      onPaymentSuccess && onPaymentSuccess(orderId);
+      // Step 3: Monitor popup for completion
+      // if (this.paypalWindow) {
+      //   try {
+      //     const result = await this.monitorPopup(
+      //       this.paypalWindow,
+      //       orderId,
+      //       (successOrderId) => {
+      //         onPaymentSuccess && onPaymentSuccess(successOrderId);
+      //       },
+      //       (errorMessage) => {
+      //         onPaymentFail && onPaymentFail(errorMessage);
+      //       }
+      //     );
+
+      //     return ok(result);
+      //   } catch (error) {
+      //     console.error("Payment process error:", error);
+      //     return {
+      //       success: false,
+      //       error: error instanceof Error ? error : new Error("Payment failed")
+      //     };
+      //   }
+      // }
+
+      return ok({ orderId });
+
+    } catch (error) {
+      console.error("PayPal setup failed:", error);
+      onPaymentFail && onPaymentFail("Payment setup failed");
+      return {
+        success: false,
+        error: new Error("PayPal payment setup failed")
+      };
+    }
+  }
+
+  /** Alternative method: Use PayPal SDK buttons (if you prefer the inline approach) */
+  async processPaymentWithButtons(
+    items: TransactionLineItem[],
+    billingAddress: Address,
+    selectedCurrency: Currency,
+    userEmail: string,
+    promoCode?: string,
+    onPaymentSuccess?: (orderId: string) => void,
+    onPaymentFail?: (message: string) => void
+  ): Promise<Result<{ orderId: string }>> {
+    try {
+      await this.loadPayPalSDK(selectedCurrency);
+      const paypal = (window as any).paypal;
+
+      if (!paypal || !paypal.Buttons) {
+        throw new Error("PayPal SDK not loaded");
+      }
 
       return new Promise((resolve) => {
-        const paypal = (window as any).paypal;
         const container = document.getElementById("paypal-button-container");
-
         if (!container) {
-          resolve({
-            success: false,
-            error: "PayPal button container not found.",
-          });
+          resolve({ success: false, error: new Error("PayPal container not found") });
           return;
         }
 
-        if (!paypal || typeof paypal.Buttons !== "function") {
-          console.error("PayPal SDK not ready:", paypal);
-          resolve({
-            success: false,
-            error: "PayPal SDK failed to initialize correctly.",
-          });
-          return;
-        }
-
-        // ✅ Clear existing buttons
+        // Clear existing buttons
         container.innerHTML = "";
-
+        let orderData: Result<CreateOrderResponse> = { success: false, error: new Error("Not initialized") };
         try {
           this.buttonInstance = paypal.Buttons({
             style: {
@@ -146,167 +361,91 @@ class PayPalProvider {
               label: "paypal",
             },
 
-            // ✅ CREATE ORDER VIA BACKEND
+            // Create order via your backend
             createOrder: async () => {
               try {
-            
-                
-                const url = `${import.meta.env.VITE_BACKEND_URL}/createPaypalOrder`;
-                
-                const response = await fetch(url, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    transactionId,
-                    userId,
-                    userEmail,
-                    items,
-                    amount,
-                    currency,
-                  }),
-                });
+                orderData = await this.createOrder(
+                  items,
+                  billingAddress,
+                  selectedCurrency,
+                  promoCode
+                );
 
-                if (!response.ok) {
-                  let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-                  
-                  try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || errorMessage;
-                    console.error("❌ Backend error:", errorData);
-                  } catch {
-                    const text = await response.text();
-                    console.error("❌ Non-JSON response:", text.substring(0, 500));
-                  }
-
-                  throw new Error(errorMessage);
+                if (!orderData.success || !orderData.data) {
+                  throw new Error("Order creation failed");
                 }
 
-                const data = await response.json();
-                
-                if (!data.success || !data.orderId) {
-                  throw new Error(data.error || "Failed to create order");
-                }
-
-             
-                return data.orderId;
+                return orderData.data.paypalOrder.id;
               } catch (error) {
                 console.error("❌ Create order failed:", error);
                 throw error;
               }
             },
 
-            // ✅ CAPTURE PAYMENT VIA BACKEND
-          onApprove: async (data: any) => {
-  try {
-
-    
-    const url = `${import.meta.env.VITE_BACKEND_URL}/capturePaypalOrder`;
-    
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orderId: data.orderID,
-        transactionId,
-        userId,
-      }),
-    });
-
-    // ✅ Read response text first (can only read once!)
-    const responseText = await response.text();
-    // console.log("Response status:", response.status);
-    // console.log("Response body:", responseText);
-
-    // ✅ Try to parse as JSON
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error("❌ Failed to parse response as JSON:", responseText);
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    // ✅ Check if successful
-    if (!response.ok) {
-      const errorMessage = result.error || `HTTP ${response.status}: ${response.statusText}`;
-      console.error("❌ Backend error:", result);
-      throw new Error(errorMessage);
-    }
-
-    if (result.success) {
-      // console.log("✅ Payment captured successfully");
-      resolve({
-        success: true,
-        transactionId,
-        paymentId: result.paymentId,
-      });
-    } else {
-      throw new Error(result.error || "Capture failed");
-    }
-  } catch (error) {
-    console.error("❌ Capture failed:", error);
-    resolve({
-      success: false,
-      error: error instanceof Error ? error.message : "Payment capture failed",
-    });
-  }
-},
-
-            onCancel: async (data: any) => {
-              console.warn("PayPal payment cancelled:", data);
-              await transactionService.updateTransactionStatus(
-                transactionId,
-                TRANSACTION_STATUS.CANCELLED,
-                {} as PaymentDetails,
-                "Payment cancelled by user"
-              );
-              resolve({ success: false, error: "Payment cancelled by user" });
+            // Approve payment
+            onApprove: async (data: any) => {
+              console.log("Payment approved:", data);
+              try {
+                // You would typically capture the payment here via backend
+                if (!orderData.success || !orderData.data) {
+                  throw new Error("Order data missing for capture");
+                }
+                onPaymentSuccess && onPaymentSuccess(orderData.data.orderId);
+                resolve(ok({ orderId: data.orderID }));
+              } catch (error) {
+                console.error("Payment capture failed:", error);
+                onPaymentFail && onPaymentFail("Payment capture failed");
+                resolve({ success: false, error: new Error("Payment capture failed") });
+              }
             },
 
-            onError: async (error: any) => {
+            onCancel: (data: any) => {
+              console.log("Payment cancelled:", data);
+              onPaymentFail && onPaymentFail("Payment cancelled");
+              resolve({ success: false, error: new Error("Payment cancelled") });
+            },
+
+            onError: (error: any) => {
               console.error("PayPal error:", error);
-              await transactionService.updateTransactionStatus(
-                transactionId,
-                TRANSACTION_STATUS.FAILED,
-                {} as PaymentDetails,
-                error?.message || "PayPal payment error"
-              );
-              resolve({
-                success: false,
-                error: "PayPal payment failed. Please try again.",
-              });
-            },
+              onPaymentFail && onPaymentFail("Payment error occurred");
+              resolve({ success: false, error: new Error("Payment error occurred") });
+            }
           });
 
-          // ✅ Render buttons
-          this.buttonInstance.render("#paypal-button-container").catch((err: Error) => {
-            console.error("Failed to render PayPal buttons:", err);
-            resolve({ success: false, error: "Failed to render PayPal buttons" });
-          });
-
+          // Render the button
+          this.buttonInstance.render("#paypal-button-container")
+            .then(() => {
+              console.log("PayPal button rendered successfully");
+            })
+            .catch((err: Error) => {
+              console.error("Failed to render PayPal button:", err);
+              resolve({ success: false, error: new Error("Failed to render PayPal button") });
+            });
         } catch (renderErr) {
-          console.error("Error creating PayPal buttons:", renderErr);
-          resolve({ success: false, error: "Failed to initialize PayPal buttons" });
+          console.error("Error creating PayPal button:", renderErr);
+          resolve({ success: false, error: new Error("Failed to initialize PayPal button") });
         }
       });
     } catch (error) {
-      console.error("PayPal setup failed:", error);
-      await transactionService.updateTransactionStatus(
-        transactionId,
-        TRANSACTION_STATUS.FAILED,
-        {} as PaymentDetails,
-        (error as Error)?.message || "PayPal SDK load failed"
-      );
-      return { success: false, error: "PayPal payment setup failed" };
+      console.error("PayPal button setup failed:", error);
+      return { success: false, error: new Error("PayPal payment setup failed") };
     }
   }
 
   /** Clean up method */
   cleanup() {
+    // Close PayPal popup if open
+    if (this.paypalWindow && !this.paypalWindow.closed) {
+      this.paypalWindow.close();
+    }
+
+    // Clean up button container
     const container = document.getElementById("paypal-button-container");
     if (container) {
       container.innerHTML = "";
     }
+
+    // Clean up button instance
     if (this.buttonInstance) {
       try {
         this.buttonInstance.close?.();

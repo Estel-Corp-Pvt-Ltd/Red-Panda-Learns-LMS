@@ -1,68 +1,72 @@
+// src/pages/LessonDetailPage.tsx
 import { useState, useEffect } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Timestamp } from "firebase/firestore";
+import { ChevronLeft, Edit2 } from "lucide-react";
+
 import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { LockBadge } from "@/components/lock-badge";
+import { LessonContent } from "@/components/LessonContent";
+
 import { useCourseQuery } from "@/hooks/useCaching";
+import { useContentLock } from "@/utils/is-content-locked";
 import { useAuth } from "@/contexts/AuthContext";
-import { LEARNING_UNIT, USER_ROLE } from "@/constants";
-import { toast } from "@/hooks/use-toast";
-import { TopicItem } from "@/types/course";
-import AssignmentView from "../components/course/AssignmentView";
-import { LessonView } from "@/components/lesson/LessonView";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
-import { useNavigate } from "react-router-dom";
+
 import { learningProgressService } from "@/services/learningProgressService";
 import { LearningProgress } from "@/types/learning-progress";
-import { serverTimestamp, Timestamp } from "firebase/firestore";
-import { ChevronLeft, Edit2 } from "lucide-react";
+import { TopicItem } from "@/types/course";
+import { LEARNING_UNIT, USER_ROLE } from "@/constants";
+import { toast } from "@/hooks/use-toast";
 
 export default function LessonDetailPage() {
-  const { param, lessonId } = useParams<{
-    param: string;
-    lessonId: string;
-  }>();
+  const { param, lessonId } = useParams<{ param: string; lessonId: string }>();
   const { user } = useAuth();
+  const { isEnrolled } = useEnrollment();
+  const navigate = useNavigate();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TopicItem | null>(null);
   const [courseId, setCourseId] = useState("");
-  const { isEnrolled } = useEnrollment();
-  const navigate = useNavigate();
-  const { data: course, isLoading: courseLoading, error: courseError } = useCourseQuery(param!);
-
   const [userProgress, setUserProgress] = useState<LearningProgress | null>(null);
+  const [lessonCompleted, setLessonCompleted] = useState(false);
+
+  const { data: course, isLoading: courseLoading, error: courseError } = useCourseQuery(param!);
+  const { lock: contentLock, isLocked: isContentLocked, isLoading: lockLoading, timeRemaining } = useContentLock(selectedItem?.id);
+
+  const isAdmin = user?.role === USER_ROLE.ADMIN;
+
+  // Set courseId when course loads
   useEffect(() => {
     if (!param || courseLoading || !course) return;
     setCourseId(course.id);
   }, [param, courseLoading, course?.id]);
 
+  // Check enrollment for non-admin users
   useEffect(() => {
-    if (!courseId || !user || courseLoading) return;
-    if (user?.role === USER_ROLE.ADMIN) return;
+    if (!courseId || !user || courseLoading || isAdmin) return;
 
-    // If not enrolled, redirect back to admin course page
     if (!isEnrolled(courseId)) {
       toast({
         title: "Access Denied",
         description: "You are not enrolled in this course.",
         variant: "destructive",
       });
-
-      // Small delay for the toast to appear before redirect
       navigate(`/courses/${param}`);
     }
-  }, [courseId, user, courseLoading, isEnrolled]);
+  }, [courseId, user, courseLoading, isEnrolled, isAdmin, navigate, param]);
 
-  // Set document title to include course and current item
+  // Set document title
   useEffect(() => {
     if (!course?.title) return;
 
     const prefix = selectedItem
-      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${
-          selectedItem.title
-        }`
+      ? `${selectedItem.type === LEARNING_UNIT.ASSIGNMENT ? "Assignment" : "Lesson"}: ${selectedItem.title}`
       : "Course";
 
     const prev = document.title;
@@ -73,81 +77,71 @@ export default function LessonDetailPage() {
     };
   }, [course?.title, selectedItem?.title, selectedItem?.type]);
 
-  // Find and set the lesson/assignment from URL params when course loads
+  // Find and set lesson from URL
   useEffect(() => {
     if (!course || !lessonId) return;
 
     let foundItem: TopicItem | null = null;
 
-    // Check direct topics
-    if (course.topics && course.topics.length > 0) {
-      for (const topic of course.topics) {
-        if (topic.items) {
-          const item = topic.items.find((it) => it.id === lessonId);
-          if (item) {
-            foundItem = item;
-            break;
-          }
-        }
+    for (const topic of course.topics ?? []) {
+      const item = topic.items?.find((it) => it.id === lessonId);
+      if (item) {
+        foundItem = item;
+        break;
       }
     }
 
     if (foundItem) {
       setSelectedItem(foundItem);
     } else {
-      console.error(`Lesson/Assignment with id ${lessonId} not found in course ${courseId}`);
+      console.error(`Lesson/Assignment with id ${lessonId} not found`);
       toast({
         title: "Content not found",
         description: "The requested lesson or assignment could not be found.",
         variant: "destructive",
       });
     }
-  }, [course, lessonId, courseId]);
+  }, [course, lessonId]);
 
-  const handleItemSelect = (item: TopicItem) => {
-    if (item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT) {
-      setSelectedItem(item);
-      setSidebarOpen(false);
-    }
-  };
-
-  const fetchUserProgress = async (userId: string, courseId: string) => {
-    const result = await learningProgressService.getUserCourseProgress(userId, courseId);
-    if (result.success) {
-      // assuming 0 or 1 doc per (user, course)
-      setUserProgress(result.data[0] ?? null);
-    } else {
-      console.error("Failed to fetch progress:", result.error);
-    }
-  };
-
+  // Fetch user progress
   useEffect(() => {
-    if (user?.id && courseId) {
-      fetchUserProgress(user.id, courseId);
-    }
+    if (!user?.id || !courseId) return;
+
+    const fetchProgress = async () => {
+      const result = await learningProgressService.getUserCourseProgress(user.id, courseId);
+      if (result.success) {
+        setUserProgress(result.data[0] ?? null);
+      }
+    };
+
+    fetchProgress();
   }, [user?.id, courseId]);
 
-  // Make sure selectedItem might be null:
-  const [lessonCompleted, setLessonCompleted] = useState(false);
-
-  // Update lessonCompleted when selectedItem or userProgress changes
+  // Update lessonCompleted state
   useEffect(() => {
     if (!selectedItem || !userProgress?.lessonHistory) {
       setLessonCompleted(false);
       return;
     }
 
-    const lessonHistory = userProgress.lessonHistory;
+    const { lessonHistory } = userProgress;
 
     if (Array.isArray(lessonHistory)) {
       setLessonCompleted(lessonHistory.includes(selectedItem.id));
     } else {
-      const entry = lessonHistory[selectedItem.id];
-      setLessonCompleted(!!entry?.markedAsComplete);
+      setLessonCompleted(!!lessonHistory[selectedItem.id]?.markedAsComplete);
     }
-  }, [selectedItem?.id, userProgress]); // Watch the entire userProgress object
+  }, [selectedItem?.id, userProgress]);
 
-  const onModalClose = async (isCompleted: boolean) => {
+  const handleItemSelect = (item: TopicItem) => {
+    if (item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT) {
+      setSelectedItem(item);
+      setSidebarOpen(false);
+      navigate(`/courses/${param}/lesson/${item.id}`, { replace: true });
+    }
+  };
+
+  const handleComplete = async (isCompleted: boolean) => {
     if (!user || !courseId || !selectedItem) return;
 
     const result = await learningProgressService.completeLesson(
@@ -158,7 +152,6 @@ export default function LessonDetailPage() {
     );
 
     if (result.success) {
-      // Use a regular Date instead of serverTimestamp() for local state
       const now = Timestamp.now();
       setUserProgress((prev) => {
         if (!prev) return prev;
@@ -179,7 +172,6 @@ export default function LessonDetailPage() {
         };
       });
 
-      // Also update lessonCompleted state immediately
       setLessonCompleted(isCompleted);
 
       toast({
@@ -187,20 +179,42 @@ export default function LessonDetailPage() {
         description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} ${
           isCompleted ? "marked as complete." : "is not marked as complete."
         }`,
-        variant: "default",
       });
     }
   };
+
+  const getNextItem = (): TopicItem | null => {
+    if (!course || !selectedItem) return null;
+
+    const allItems = course.topics?.flatMap((t) => t.items ?? []) ?? [];
+    const currentIndex = allItems.findIndex((item) => item.id === selectedItem.id);
+
+    return currentIndex !== -1 && currentIndex < allItems.length - 1
+      ? allItems[currentIndex + 1]
+      : null;
+  };
+
+  const handleNavigateToNext = () => {
+    const nextItem = getNextItem();
+    if (nextItem) {
+      setSelectedItem(nextItem);
+      navigate(`/courses/${param}/lesson/${nextItem.id}`, { replace: true });
+    } else {
+      toast({
+        title: "Course Complete!",
+        description: "You've reached the end of this course.",
+      });
+    }
+  };
+
   // Loading State
-  if (courseLoading) {
+  if (courseLoading || lockLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
         <div className="flex">
-          <div className="hidden lg:block">
-            <div className="w-80 h-screen bg-card/50 p-4">
-              <LoadingSkeleton variant="text" lines={8} />
-            </div>
+          <div className="hidden lg:block w-80 h-screen bg-card/50 p-4">
+            <LoadingSkeleton variant="text" lines={8} />
           </div>
           <main className="flex-1 p-6">
             <LoadingSkeleton variant="text" lines={1} className="w-64 mb-3" />
@@ -232,8 +246,8 @@ export default function LessonDetailPage() {
     );
   }
 
-  // Check if lessonId is provided but item not found
-  if (lessonId && !selectedItem && !courseLoading) {
+  // Content Not Found State
+  if (lessonId && !selectedItem) {
     return (
       <div className="min-h-screen bg-background">
         <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
@@ -255,9 +269,7 @@ export default function LessonDetailPage() {
                   The lesson or assignment you're looking for doesn't exist.
                 </p>
                 <Button asChild>
-                  <Link to={`/courses/${course.slug ? course.slug : course.id}`}>
-                    Back to Course
-                  </Link>
+                  <Link to={`/courses/${course.slug || course.id}`}>Back to Course</Link>
                 </Button>
               </div>
             </div>
@@ -267,71 +279,32 @@ export default function LessonDetailPage() {
     );
   }
 
-  // Add this after the handleItemSelect function
-  const getNextItem = (): TopicItem | null => {
-    if (!course || !selectedItem) return null;
-
-    const allItems: TopicItem[] = [];
-
-    // Flatten all items from all topics
-    if (course.topics && course.topics.length > 0) {
-      for (const topic of course.topics) {
-        if (topic.items) {
-          allItems.push(...topic.items);
-        }
-      }
-    }
-
-    // Find current index and return next item
-    const currentIndex = allItems.findIndex((item) => item.id === selectedItem.id);
-    if (currentIndex !== -1 && currentIndex < allItems.length - 1) {
-      return allItems[currentIndex + 1];
-    }
-
-    return null;
-  };
-
-  const handleNavigateToNext = () => {
-    const nextItem = getNextItem();
-    if (nextItem) {
-      setSelectedItem(nextItem);
-      // Update URL without full page reload
-      navigate(`/courses/${param}/lesson/${nextItem.id}`, { replace: true });
-    } else {
-      // No more items - optionally show a completion message or navigate to course page
-      toast({
-        title: "Course Complete!",
-        description: "You've reached the end of this course.",
-      });
-    }
-  };
-
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* Top info bar: Course (bigger) + Lesson (smaller) */}
+      {/* Top info bar */}
       <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex gap-3 items-center">
-            <Link to={`/${user.role === USER_ROLE.ADMIN ? "admin" : "dashboard"}`}>
+          <div className="flex gap-3 items-center ">
+            <Link to={`/${isAdmin ? "admin" : "dashboard"}`}>
               <ChevronLeft className="h-10 w-10 hover:bg-primary hover:text-white rounded-md p-1" />
             </Link>
             <div className="min-w-0">
-              {/* Course title bigger */}
               <h1 className="text-lg md:text-xl font-semibold leading-tight">{course.title}</h1>
-              {/* Lesson title smaller */}
               {selectedItem && (
-                <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
-                  {selectedItem.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
+                    {selectedItem.title}
+                  </p>
+                  {isAdmin && isContentLocked && <LockBadge />}
+                </div>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Edit button - Admin only */}
-            {user.role === USER_ROLE.ADMIN && selectedItem && (
+            {isAdmin && selectedItem && (
               <Link to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}>
                 <Button variant="outline" size="sm">
                   <Edit2 className="h-4 w-4 mr-1" />
@@ -339,13 +312,11 @@ export default function LessonDetailPage() {
                 </Button>
               </Link>
             )}
-
             <Button
               variant="ghost"
               size="sm"
               className="lg:hidden"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Open course outline"
             >
               Open Outline
             </Button>
@@ -354,9 +325,7 @@ export default function LessonDetailPage() {
       </div>
 
       <div className="flex flex-1 min-h-0">
-        {" "}
-        {/* KEY: min-h-0 allows flex child to shrink */}
-        {/* Fixed Sidebar */}
+        {/* Sidebar */}
         <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm shrink-0">
           <CourseNavigator
             course={course}
@@ -365,33 +334,20 @@ export default function LessonDetailPage() {
             onLessonClick={handleItemSelect}
           />
         </aside>
+
         {/* Main Content */}
         <main className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-6">
-          {!selectedItem ? (
-            <div className="flex items-center justify-center min-h-[80vh]">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2">Select content to start learning</h2>
-                <p className="text-muted-foreground">
-                  Choose a lesson or assignment from the sidebar to begin.
-                </p>
-              </div>
-            </div>
-          ) : selectedItem.type === "ASSIGNMENT" ? (
-            <AssignmentView
-              key={selectedItem.id}
-              assignmentId={selectedItem.id}
-              onComplete={onModalClose}
-              onNavigateToNext={handleNavigateToNext}
-            />
-          ) : (
-            <LessonView
-              lessonId={selectedItem.id}
-              courseName={course.title}
-              onComplete={onModalClose}
-              completed={lessonCompleted}
-              onNavigateToNext={handleNavigateToNext}
-            />
-          )}
+          <LessonContent
+            selectedItem={selectedItem}
+            courseName={course.title}
+            isAdmin={isAdmin}
+            isContentLocked={isContentLocked}
+            contentLock={contentLock}
+            timeRemaining={timeRemaining}
+            lessonCompleted={lessonCompleted}
+            onComplete={handleComplete}
+            onNavigateToNext={handleNavigateToNext}
+          />
         </main>
       </div>
 
@@ -399,17 +355,13 @@ export default function LessonDetailPage() {
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-80">
           <div className="h-full flex flex-col">
-            <div className="p-4 border-b flex items-center justify-between shrink-0">
-              <div className="min-w-0">
-                <h2 className="text-base md:text-lg font-semibold">{course.title}</h2>
-                {selectedItem && (
-                  <p className="text-xs text-muted-foreground">{selectedItem.title}</p>
-                )}
-              </div>
+            <div className="p-4 border-b shrink-0">
+              <h2 className="text-base md:text-lg font-semibold">{course.title}</h2>
+              {selectedItem && (
+                <p className="text-xs text-muted-foreground">{selectedItem.title}</p>
+              )}
             </div>
             <div className="flex-1 min-h-0">
-              {" "}
-              {/* KEY: min-h-0 here too */}
               <CourseNavigator
                 course={course}
                 currentLesson={selectedItem}
