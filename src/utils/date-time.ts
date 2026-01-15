@@ -206,3 +206,13 @@ export const formatTimeRemaining = (ms: number): string => {
   }
   return `${seconds}s`;
 };
+
+export function getYesterdayTimestamp(): Timestamp {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  return Timestamp.fromDate(yesterday);
+}
