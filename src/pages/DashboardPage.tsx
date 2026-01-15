@@ -27,19 +27,23 @@ import {
   Bell,
   BellOff,
   Loader2,
+  Flame,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
+import { fetchDailyKarmaService } from "@/services/karmaService/fetchkarmaDaily";
 
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
   fetchEnrollmentsAndCertificateRequestStatuses,
+  karma,
 }: {
   enrollment: Enrollment;
   certificateStatus: CertificateRequestStatus | null;
   fetchEnrollmentsAndCertificateRequestStatuses: () => void;
+  karma: number;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -155,18 +159,33 @@ function EnrolledCourseCard({
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-semibold text-lg">{enrollment.courseName || course.title}</h3>
-              {showCertificateFeatures && (
-                <div className="flex items-center gap-1.5   px-2 py-1 rounded-full">
-                  <img
-                    src="/isCertificateAvailableIcon.png"
-                    alt="Certificate available"
-                    className="h-8 w-8"
-                  />
-                </div>
-              )}
+            <div className="flex items-start justify-between gap-4 mb-3">
+              {/* Course title */}
+              <h3 className="font-semibold text-lg leading-snug text-gray-900 dark:text-gray-100">
+                {enrollment.courseName || course.title}
+              </h3>
+
+              {/* Right-side badges */}
+              <div className="flex items-center gap-2 shrink-0">
+                {karma > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                    <Flame className="h-4 w-4" />
+                    <span className="text-sm font-semibold whitespace-nowrap">{karma} Karma</span>
+                  </div>
+                )}
+
+                {showCertificateFeatures && (
+                  <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 dark:bg-gray-800">
+                    <img
+                      src="/isCertificateAvailableIcon.png"
+                      alt="Certificate available"
+                      className="h-5 w-5"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
+
             <p
               className="text-muted-foreground text-sm mb-4 line-clamp-2"
               dangerouslySetInnerHTML={{
@@ -294,7 +313,8 @@ export default function DashboardPage() {
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("default");
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
-
+  const [karmaMap, setKarmaMap] = useState<Record<string, number>>({});
+  const [isKarmaLoading, setIsKarmaLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -338,7 +358,40 @@ export default function DashboardPage() {
   }, [user]);
 
   // Handle enabling notifications (button click)
+  const fetchKarmaData = async (courseIds: string[]) => {
+    if (!user?.id || !courseIds.length) return;
 
+    setIsKarmaLoading(true);
+    try {
+      const newKarmaMap: Record<string, number> = {};
+
+      // Fetch karma for each course in parallel
+      const karmaPromises = courseIds.map(async (courseId) => {
+        const result = await fetchDailyKarmaService.getUserKarmaHistory(user.id, courseId);
+
+        if (result.success && result.data) {
+          let totalKarma = 0;
+          for (const entry of result.data) {
+            totalKarma += entry.karmaEarned;
+          }
+          return { courseId, karma: totalKarma };
+        }
+        return { courseId, karma: 0 };
+      });
+
+      const karmaResults = await Promise.all(karmaPromises);
+
+      for (const { courseId, karma } of karmaResults) {
+        newKarmaMap[courseId] = karma;
+      }
+
+      setKarmaMap(newKarmaMap);
+    } catch (error) {
+      console.error("Failed to fetch karma data:", error);
+    } finally {
+      setIsKarmaLoading(false);
+    }
+  };
   const fetchEnrollmentsAndCertificateRequestStatuses = async () => {
     if (!user || !user.email) return;
     setIsLoading(true);
@@ -357,6 +410,8 @@ export default function DashboardPage() {
       }
 
       await fetchBanners(courseIds);
+
+      await fetchKarmaData(courseIds);
     } else {
       setEnrollments([]);
     }
@@ -535,6 +590,7 @@ export default function DashboardPage() {
                     fetchEnrollmentsAndCertificateRequestStatuses={
                       fetchEnrollmentsAndCertificateRequestStatuses
                     }
+                    karma={karmaMap[enrollment.courseId] || 0}
                   />
                 ))}
               </div>
