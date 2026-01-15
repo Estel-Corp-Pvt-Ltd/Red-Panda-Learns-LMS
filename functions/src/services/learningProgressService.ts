@@ -3,7 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import { fail, ok, Result } from "../utils/response";
 
-import { COLLECTION, USER_ROLE } from "../constants";
+import { COLLECTION } from "../constants";
 import { LearningProgress } from "../types/learning-progress";
 
 class LearningProgressService {
@@ -280,60 +280,6 @@ class LearningProgressService {
     } catch (error: any) {
       return fail(
         "Failed to complete course",
-        error.code || error.message
-      );
-    }
-  }
-
-  async issueCertificate(
-    userId: string,
-    courseId: string,
-    issuerUid: string
-  ): Promise<Result<boolean>> {
-    try {
-      const issuerRef = this.db.collection(COLLECTION.USERS).doc(issuerUid);
-      const issuerSnap = await issuerRef.get();
-
-      if (!issuerSnap.exists) {
-        return fail("Issuer not found");
-      }
-
-      const issuerData = issuerSnap.data();
-
-      if (issuerData!.role !== USER_ROLE.ADMIN) {
-        return fail("Only ADMIN can issue certificates");
-      }
-
-      const enrollmentId = `${userId}_${courseId}`;
-      const enrollmentRef = this.db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
-      const enrollmentSnap = await enrollmentRef.get();
-
-      if (!enrollmentSnap.exists) {
-        return fail("Enrollment not found");
-      }
-
-      const enrollmentData = enrollmentSnap.data();
-
-      if (!enrollmentData?.completionDate) {
-        return fail("Course not completed yet");
-      }
-
-      if (enrollmentData.certification?.issued) {
-        return ok(false);
-      }
-
-      await enrollmentRef.update({
-        "certification.issued": true,
-        "certification.issuedAt": FieldValue.serverTimestamp(),
-        "certification.certificateId": `${userId}_${courseId}`,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-
-      return ok(true);
-
-    } catch (error: any) {
-      return fail(
-        "Failed to issue certificate",
         error.code || error.message
       );
     }
