@@ -326,71 +326,18 @@ export function Header({ className }: HeaderProps) {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
 
-                {/* For businesses */}
+                {/* For businesses – simple external link (desktop) */}
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="bg-transparent hover:bg-accent/10 hover:text-foreground">
-                    For businesses
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                      <li>
-                        <div className="block select-none space-y-1 rounded-md p-3 leading-none">
-                          <div className="text-sm font-medium leading-none">
-                            Corporate AI Training
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Upskill your team with enterprise AI training programs
-                          </p>
-                        </div>
-                      </li>
-                      <li>
-                        <div className="block select-none space-y-1 rounded-md p-3 leading-none">
-                          <div className="text-sm font-medium leading-none">
-                            AI Product Development
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Build custom AI solutions for your business
-                          </p>
-                        </div>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <a
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted/50"
-                            href="https://dynaroute.vizuara.ai/"
-                          >
-                            <div className="text-sm font-medium leading-none">
-                              DynaRoute API for Enterprises
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Enterprise-grade AI routing and optimization API
-                            </p>
-                          </a>
-                        </NavigationMenuLink>
-                      </li>
-                      <li className="border-t border-border pt-3">
-                        <div className="space-y-2 px-3">
-                          <div className="text-sm font-medium leading-none flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
-                            Contact for Business
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                              {email}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={copyEmail}
-                              className="shrink-0"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
-                  </NavigationMenuContent>
+                  <NavigationMenuLink asChild>
+                    <a
+                      href="https://firstprinciplelabs.ai/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bg-transparent hover:bg-accent/10 hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      For businesses
+                    </a>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
@@ -430,7 +377,7 @@ export function Header({ className }: HeaderProps) {
               </Popover>
             )}
 
-            {/* Customer Support - Desktop only (mobile version inside Sheet) */}
+            {/* Customer Support - Desktop only */}
             {user && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && (
               <div className="hidden lg:block">
                 <CreateComplaint
@@ -445,12 +392,12 @@ export function Header({ className }: HeaderProps) {
               </div>
             )}
 
-            {/* Theme toggle - consistent across sizes */}
+            {/* Theme toggle */}
             <ThemeToggle />
 
             {user ? (
               <>
-                {/* Notifications - always outside, next to cart */}
+                {/* Notifications */}
                 <button
                   onClick={() => setIsNotificationOpen(true)}
                   className="relative p-2 rounded-full hover:bg-muted transition-colors"
@@ -474,7 +421,7 @@ export function Header({ className }: HeaderProps) {
                   )}
                 </button>
 
-                {/* Cart - always outside, next to notifications (except admin) */}
+                {/* Cart (except admin) */}
                 {user?.role !== USER_ROLE.ADMIN && (
                   <Link to="/cart" className="relative">
                     <ShoppingCart className="w-5 h-5" />
@@ -486,7 +433,7 @@ export function Header({ className }: HeaderProps) {
                   </Link>
                 )}
 
-                {/* Dashboard button - Desktop only (mobile inside Sheet) */}
+                {/* Dashboard button - Desktop only */}
                 <Link to={dashboardPath} className="hidden lg:block">
                   <Button variant="default" size="sm" className="relative flex">
                     <User className="mr-2 h-4 w-4" />
@@ -495,7 +442,6 @@ export function Header({ className }: HeaderProps) {
                 </Link>
               </>
             ) : (
-              // Logged-out: Login + Signup buttons - Desktop only (mobile inside Sheet)
               <div className="hidden lg:flex items-center gap-2">
                 <Button variant="ghost" asChild>
                   <Link to="/auth/login">Login</Link>
@@ -506,7 +452,7 @@ export function Header({ className }: HeaderProps) {
               </div>
             )}
 
-            {/* Mobile Hamburger (right side) */}
+            {/* Mobile Hamburger */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button
@@ -532,11 +478,10 @@ export function Header({ className }: HeaderProps) {
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto space-y-6">
-                  {/* Top: primary actions (Dashboard + CS OR Login/Signup) */}
+                  {/* Top: primary actions */}
                   <div className="space-y-2 pb-4 border-b border-border">
                     {user ? (
                       <>
-                        {/* Dashboard (mobile) */}
                         <SheetClose asChild>
                           <Link to={dashboardPath}>
                             <Button className="w-full justify-start gap-2">
@@ -546,7 +491,6 @@ export function Header({ className }: HeaderProps) {
                           </Link>
                         </SheetClose>
 
-                        {/* Customer Support (mobile) */}
                         {user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && (
                           <CreateComplaint
                             userId={user.id}
@@ -561,7 +505,6 @@ export function Header({ className }: HeaderProps) {
                       </>
                     ) : (
                       <>
-                        {/* Login / Sign Up (mobile, at top when logged out) */}
                         <SheetClose asChild>
                           <Button variant="outline" asChild className="w-full justify-center">
                             <Link to="/auth/login">Login</Link>
@@ -576,7 +519,7 @@ export function Header({ className }: HeaderProps) {
                     )}
                   </div>
 
-                  {/* Mobile nav – accordions for main sections */}
+                  {/* Mobile nav */}
                   <nav className="space-y-2 pt-2">
                     <Accordion type="multiple" className="w-full">
                       {/* Products */}
@@ -819,57 +762,23 @@ export function Header({ className }: HeaderProps) {
                           </ul>
                         </AccordionContent>
                       </AccordionItem>
-
-                      {/* For businesses */}
-                      <AccordionItem value="business">
-                        <AccordionTrigger className="text-base font-medium">
-                          For businesses
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="space-y-3 pt-2">
-                            <li>
-                              <div className="block rounded-md px-2 py-2">
-                                <div className="text-sm font-medium leading-none">
-                                  Corporate AI Training
-                                </div>
-                                <p className="text-xs leading-snug text-muted-foreground mt-1">
-                                  Upskill your team with enterprise AI training programs
-                                </p>
-                              </div>
-                            </li>
-                            <li>
-                              <div className="block rounded-md px-2 py-2">
-                                <div className="text-sm font-medium leading-none">
-                                  AI Product Development
-                                </div>
-                                <p className="text-xs leading-snug text-muted-foreground mt-1">
-                                  Build custom AI solutions for your business
-                                </p>
-                              </div>
-                            </li>
-                            <li>
-                              <SheetClose asChild>
-                                <a
-                                  href="https://dynaroute.vizuara.ai/"
-                                  className="block rounded-md px-2 py-2 hover:bg-muted/60"
-                                >
-                                  <div className="text-sm font-medium leading-none">
-                                    DynaRoute API for Enterprises
-                                  </div>
-                                  <p className="text-xs leading-snug text-muted-foreground mt-1">
-                                    Enterprise-grade AI routing and optimization API
-                                  </p>
-                                </a>
-                              </SheetClose>
-                            </li>
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
                     </Accordion>
+
+                    {/* For businesses – simple external link (mobile) */}
+                    <SheetClose asChild>
+                      <a
+                        href="https://firstprinciplelabs.ai/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block rounded-md px-2 py-2 text-base font-medium hover:bg-muted/60"
+                      >
+                        For businesses
+                      </a>
+                    </SheetClose>
                   </nav>
 
-                  <div className=" pt-2 space-y-4">
-                    {/* Contact us (mobile, inside menu) */}
+                  <div className="pt-2 space-y-4">
+                    {/* Contact us (mobile) */}
                     <div className="space-y-2">
                       <div className="text-sm font-medium flex items-center gap-2">
                         <Mail className="h-4 w-4" />
