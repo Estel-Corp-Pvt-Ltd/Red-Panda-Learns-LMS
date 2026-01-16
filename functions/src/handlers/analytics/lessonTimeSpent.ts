@@ -54,13 +54,13 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
 
     // Calculate intervals BEFORE this update
     const intervalsBefore = Math.floor(cappedExistingTime / KARMA_INTERVAL_SECONDS);
-
+    functions.logger.info("What is new interval before", intervalsBefore);
     // Calculate intervals AFTER this update
     const intervalsAfter = Math.floor(cappedNewTime / KARMA_INTERVAL_SECONDS);
-
+    functions.logger.info("What is new interval after", intervalsAfter);
     // How many NEW 10-minute thresholds were crossed
     const newIntervalsCompleted = intervalsAfter - intervalsBefore;
-
+    functions.logger.info("What is new interval", newIntervalsCompleted);
     // Grant karma for each new interval crossed
     if (newIntervalsCompleted > 0) {
       functions.logger.info(`Granting ${newIntervalsCompleted} karma for watch time`, {
