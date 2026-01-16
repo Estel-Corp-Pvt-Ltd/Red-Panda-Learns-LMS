@@ -543,7 +543,8 @@ export const messageUpvoteService = {
     userId: string,
     messageId: string,
     courseId: string,
-    channelId: string
+    channelId: string,
+    isAdmin: boolean
   ): Promise<Result<{ isUpvoted: boolean }>> {
     try {
       const upvoteId = `${userId}_${messageId}`;
@@ -595,7 +596,8 @@ export const messageUpvoteService = {
           messageData.senderId,
           idToken,
           courseId,
-          messageData.senderName
+          messageData.senderName,
+          isAdmin
         );
         return ok({ isUpvoted: true });
       }

@@ -12,11 +12,20 @@ export const calculateKarmaForUpvotes = {
   /**
    * Fire-and-forget: award karma to message author for an upvote
    */
-  awardKarma(authorUserId: string, idToken: string, courseId: string, userName: string): void {
+  awardKarma(
+    authorUserId: string,
+    idToken: string,
+    courseId: string,
+    userName: string,
+    isAdmin: boolean
+  ): void {
     if (!idToken) {
       console.error("[KarmaUpvote] Missing ID token");
       return;
     }
+    const action = isAdmin
+      ? COMMUNITY_ACTION.ADMIN_UPVOTE_RECEIVED
+      : COMMUNITY_ACTION.USER_UPVOTE_RECEIVED;
 
     fetch(`${BACKEND_URL}/addKarma`, {
       method: "POST",
@@ -27,7 +36,7 @@ export const calculateKarmaForUpvotes = {
       body: JSON.stringify({
         userId: authorUserId,
         category: KARMA_CATEGORY.COMMUNITY,
-        action: COMMUNITY_ACTION.USER_UPVOTE_RECEIVED,
+        action,
         courseId,
         userName,
       }),
