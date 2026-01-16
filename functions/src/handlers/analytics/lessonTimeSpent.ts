@@ -10,7 +10,7 @@ import { courseAnalyticsService } from "../../services/courseAnalyticsService";
 import { learningProgressService } from "../../services/learningProgressService";
 import { durationToSeconds } from "../../utils/date-time";
 import { addKarmaService } from "../../services/karma/addkarmaService";
-import { KARMA_CATEGORY, LEARNING_ACTION } from "../../constants";
+import { COLLECTION, KARMA_CATEGORY, LEARNING_ACTION } from "../../constants";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -77,6 +77,15 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
         newIntervalsCompleted,
       });
 
+      // Fetching User Details
+      const userSnap = await admin.firestore().collection(COLLECTION.USERS).doc(user.uid).get();
+
+      const { userName, firstName, lastName } = userSnap.data() as {
+        userName?: string;
+        firstName?: string;
+        lastName?: string;
+      };
+
       // Fire-and-forget: Grant karma for each new interval
       for (let i = 0; i < newIntervalsCompleted; i++) {
         addKarmaService.addKarmaToUser({
@@ -84,7 +93,7 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
           category: KARMA_CATEGORY.LEARNING,
           action: LEARNING_ACTION.LESSON_WATCH_TIME,
           courseId,
-          userName: user.userName || user.firstName,
+          userName: userName || firstName || lastName,
         });
       }
     }
