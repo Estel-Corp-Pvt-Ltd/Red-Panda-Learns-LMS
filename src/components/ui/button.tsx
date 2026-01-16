@@ -14,7 +14,7 @@ const buttonVariants = cva(
           "rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
           "rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        leaderboard: "rounded-md border border-input bg-background",
+        nohover: "rounded-md border border-input bg-background",
         secondary: "rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "rounded-md hover:bg-accent hover:text-accent-foreground",
         link: "rounded-none text-primary underline-offset-4 hover:underline",
