@@ -1,9 +1,12 @@
+// pages/DashboardPage.tsx
+
 import { Header } from "@/components/Header";
 import Sidebar, { UserSidebarMobileToggle } from "@/components/Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT, PLATFROM_TYPE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -28,22 +31,54 @@ import {
   BellOff,
   Loader2,
   Flame,
+  Star,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
 import { fetchDailyKarmaService } from "@/services/karmaService/fetchkarmaDaily";
+import Leaderboard from "@/components/Leaderboard";
+
+// Leaderboard Modal Component
+function LeaderboardModal({
+  isOpen,
+  onClose,
+  courseId,
+  courseName,
+  currentUserId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  courseId: string;
+  courseName: string;
+  currentUserId: string;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{courseName} - Leaderboard</DialogTitle>
+        </DialogHeader>
+        <Leaderboard courseId={courseId} currentUserId={currentUserId} itemsPerPage={15} />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function EnrolledCourseCard({
   enrollment,
   certificateStatus,
   fetchEnrollmentsAndCertificateRequestStatuses,
   karma,
+  onViewLeaderboard,
+  hasLeaderboardData,
 }: {
   enrollment: Enrollment;
   certificateStatus: CertificateRequestStatus | null;
   fetchEnrollmentsAndCertificateRequestStatuses: () => void;
   karma: number;
+  onViewLeaderboard: (courseId: string, courseName: string) => void;
+  hasLeaderboardData: boolean;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -51,7 +86,7 @@ function EnrolledCourseCard({
   const [isProgressLoading, setIsProgressLoading] = useState(true);
 
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(!!enrollment.completionDate); // completionDate exists
+  const [isCompleted, setIsCompleted] = useState(!!enrollment.completionDate);
   const [isCompleting, setIsCompleting] = useState(false);
   const isCertificateIdAvailable = !!enrollment.certification?.certificateId;
 
@@ -72,7 +107,6 @@ function EnrolledCourseCard({
       );
       if (result.success && result.data) {
         setIsCompleted(true);
-
         toast({
           title: "Course completed",
           description: "You have successfully completed the course.",
@@ -94,6 +128,7 @@ function EnrolledCourseCard({
       setIsCompleting(false);
     }
   };
+
   useEffect(() => {
     const fetchLearningProgress = async () => {
       if (enrollment.completionDate) {
@@ -175,7 +210,7 @@ function EnrolledCourseCard({
                 )}
 
                 {showCertificateFeatures && (
-                  <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 dark:bg-gray-800">
+                  <div className="flex items-center justify-center h-8 w-h-8 rounded-full">
                     <img
                       src="/isCertificateAvailableIcon.png"
                       alt="Certificate available"
@@ -199,11 +234,23 @@ function EnrolledCourseCard({
                   <Clock className="h-4 w-4" />
                   <span>Enrolled {formatDate(enrollment.enrollmentDate)}</span>
                 </div>
-                {/* <Badge variant="outline" className="text-xs">
-                  {enrollment.status}
-                </Badge> */}
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 flex-wrap justify-end">
+                {/* Leaderboard Button - Only show if there's leaderboard data */}
+                {hasLeaderboardData && (
+                  <Button
+                    size="sm"
+                    variant="nohover"
+                    onClick={() => onViewLeaderboard(enrollment.courseId, course.title)}
+                    className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 hover:!border-yellow-500/50 hover:!from-yellow-500/20 hover:!to-orange-500/20"
+                  >
+                    <Star className="h-4 w-4 sm:mr-2 text-yellow-600" />
+                    <span className="hidden sm:block text-yellow-700 dark:text-yellow-400">
+                      Leaderboard
+                    </span>
+                  </Button>
+                )}
+
                 {course?.isForumEnabled && (
                   <Link to={`/courses/${course.slug}/forum`}>
                     <Button size="sm" variant="outline">
@@ -212,6 +259,7 @@ function EnrolledCourseCard({
                     </Button>
                   </Link>
                 )}
+
                 <Button size="sm" onClick={handleContinueLearning}>
                   <PlayCircle className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:block">Continue</span>
@@ -309,20 +357,52 @@ export default function DashboardPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isBannersLoading, setIsBannersLoading] = useState(false);
 
+  // Leaderboard modal state
+  const [leaderboardModal, setLeaderboardModal] = useState<{
+    isOpen: boolean;
+    courseId: string;
+    courseName: string;
+  }>({
+    isOpen: false,
+    courseId: "",
+    courseName: "",
+  });
+
   // Notification states
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("default");
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
   const [karmaMap, setKarmaMap] = useState<Record<string, number>>({});
   const [isKarmaLoading, setIsKarmaLoading] = useState(false);
+
+  // Track which courses have leaderboard data (any participant with karma > 0)
+  const [leaderboardDataMap, setLeaderboardDataMap] = useState<Record<string, boolean>>({});
+
   const navigate = useNavigate();
+
+  // Handle opening leaderboard modal
+  const handleViewLeaderboard = (courseId: string, courseName: string) => {
+    setLeaderboardModal({
+      isOpen: true,
+      courseId,
+      courseName,
+    });
+  };
+
+  // Handle closing leaderboard modal
+  const handleCloseLeaderboard = () => {
+    setLeaderboardModal({
+      isOpen: false,
+      courseId: "",
+      courseName: "",
+    });
+  };
 
   useEffect(() => {
     const requestNotificationPermission = async () => {
-      if (!user?.id) return; // Only ask if user is logged in
-      if (!("Notification" in window)) return; // Browser doesn't support
+      if (!user?.id) return;
+      if (!("Notification" in window)) return;
 
-      // Only ask if permission hasn't been granted or denied yet
       if (Notification.permission === "default") {
         try {
           setIsEnablingNotifications(true);
@@ -357,7 +437,6 @@ export default function DashboardPage() {
     requestNotificationPermission();
   }, [user]);
 
-  // Handle enabling notifications (button click)
   const fetchKarmaData = async (courseIds: string[]) => {
     if (!user?.id || !courseIds.length) return;
 
@@ -365,7 +444,6 @@ export default function DashboardPage() {
     try {
       const newKarmaMap: Record<string, number> = {};
 
-      // Fetch karma for each course in parallel
       const karmaPromises = courseIds.map(async (courseId) => {
         const result = await fetchDailyKarmaService.getUserKarmaHistory(user.id, courseId);
 
@@ -392,6 +470,44 @@ export default function DashboardPage() {
       setIsKarmaLoading(false);
     }
   };
+
+  // Fetch leaderboard data to check if any participant has karma
+  const fetchLeaderboardData = async (courseIds: string[]) => {
+    if (!courseIds.length) return;
+
+    try {
+      const newLeaderboardDataMap: Record<string, boolean> = {};
+
+      const leaderboardPromises = courseIds.map(async (courseId) => {
+        try {
+          // Fetch all karma data for the course (not just current user)
+          const result = await fetchDailyKarmaService.getCourseLeaderboard(courseId, user.id);
+
+          if (result.success && result.data && result.data.totalCount > 0) {
+            // Check if any participant has karma > 0
+            const hasAnyKarma =
+              result.data?.leaderboard.some((entry) => entry.totalKarma > 0) ?? false;
+            return { courseId, hasData: hasAnyKarma };
+          }
+          return { courseId, hasData: false };
+        } catch (error) {
+          console.error(`Failed to fetch leaderboard for course ${courseId}:`, error);
+          return { courseId, hasData: false };
+        }
+      });
+
+      const leaderboardResults = await Promise.all(leaderboardPromises);
+
+      for (const { courseId, hasData } of leaderboardResults) {
+        newLeaderboardDataMap[courseId] = hasData;
+      }
+
+      setLeaderboardDataMap(newLeaderboardDataMap);
+    } catch (error) {
+      console.error("Failed to fetch leaderboard data:", error);
+    }
+  };
+
   const fetchEnrollmentsAndCertificateRequestStatuses = async () => {
     if (!user || !user.email) return;
     setIsLoading(true);
@@ -410,13 +526,14 @@ export default function DashboardPage() {
       }
 
       await fetchBanners(courseIds);
-
       await fetchKarmaData(courseIds);
+      await fetchLeaderboardData(courseIds);
     } else {
       setEnrollments([]);
     }
     setIsLoading(false);
   };
+
   const fetchBanners = async (enrolledCourseIds: string[]) => {
     if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
       const result = await bannerService.getActiveGlobalBanners();
@@ -446,7 +563,6 @@ export default function DashboardPage() {
     totalCourses: enrollments.length,
   };
 
-  // Determine notification button state
   const getNotificationButtonContent = () => {
     if (notificationPermission === "granted") {
       return {
@@ -461,7 +577,7 @@ export default function DashboardPage() {
         icon: <BellOff className="h-4 w-4 mr-2" />,
         text: "Enable Notifications",
         variant: "outline" as const,
-        disabled: false, // Keep enabled so user can click
+        disabled: false,
       };
     }
     return {
@@ -472,7 +588,6 @@ export default function DashboardPage() {
     };
   };
 
-  // Handle enabling notifications (button click)
   const handleEnableNotifications = async () => {
     if (!user?.id) return;
 
@@ -531,11 +646,10 @@ export default function DashboardPage() {
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar handles its own mobile visibility */}
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+          <div className="mx-auto w-full max-w-8xl px-4 py-4 sm:px-6 sm:py-6">
             {/* Mobile top bar */}
             <div className="flex items-center justify-between mb-4 md:hidden">
               <h1 className="text-lg font-semibold">Dashboard</h1>
@@ -591,6 +705,8 @@ export default function DashboardPage() {
                       fetchEnrollmentsAndCertificateRequestStatuses
                     }
                     karma={karmaMap[enrollment.courseId] || 0}
+                    onViewLeaderboard={handleViewLeaderboard}
+                    hasLeaderboardData={leaderboardDataMap[enrollment.courseId] || false}
                   />
                 ))}
               </div>
@@ -611,6 +727,15 @@ export default function DashboardPage() {
           </div>
         </main>
       </div>
+
+      {/* Leaderboard Modal */}
+      <LeaderboardModal
+        isOpen={leaderboardModal.isOpen}
+        onClose={handleCloseLeaderboard}
+        courseId={leaderboardModal.courseId}
+        courseName={leaderboardModal.courseName}
+        currentUserId={user?.id || ""}
+      />
     </div>
   );
 }
