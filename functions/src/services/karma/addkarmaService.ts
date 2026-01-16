@@ -13,7 +13,7 @@ interface AddKarmaParams<C extends KarmaCategory = KarmaCategory> {
   category: C;
   action: KarmaActionMap[C];
   courseId: string;
-  userName: string;
+  userName?: string;
 }
 
 export const addKarmaService = {
