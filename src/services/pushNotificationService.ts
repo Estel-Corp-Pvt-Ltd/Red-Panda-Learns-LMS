@@ -5,7 +5,10 @@ export const pushNotificationService = {
     numericMarks: number,
     assignmentTitle: string,
     idToken: string,
-    isReevaluated: boolean
+    isReevaluated: boolean,
+    maximumMarks : number,
+    minimumMarks : number,
+    courseId:string,
   ): Promise<void> {
     try {
       if (!idToken) {
@@ -33,6 +36,9 @@ export const pushNotificationService = {
           marks: numericMarks,
           assignmentTitle: assignmentTitle,
           isReevaluated: isReevaluated,
+          maximumMarks : maximumMarks,
+          minimumMarks:minimumMarks,
+          courseId : courseId,
         }),
       });
 
@@ -42,7 +48,7 @@ export const pushNotificationService = {
       }
     } catch (error) {
       console.error("[PushNotification] Error sending notification:", error);
-   
+
     }
   },
 };

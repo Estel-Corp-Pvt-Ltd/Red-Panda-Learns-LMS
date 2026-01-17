@@ -2,7 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Copy, Facebook, Mail, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certificateId }) => {
+const ShareCertificate: React.FC<{
+  certificateId: string | null;
+  hasSharedCertificate: boolean;
+  onFirstShare: () => void;
+}> = ({ certificateId, hasSharedCertificate, onFirstShare }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -32,6 +36,11 @@ const ShareCertificate: React.FC<{ certificateId: string | null }> = ({ certific
   }, []);
 
   const handleShare = (platform: "whatsapp" | "x" | "email" | "facebook" | "linkedin") => {
+    const firstShare = !hasSharedCertificate;
+
+    if (firstShare) {
+      onFirstShare();
+    }
     let url = "";
     switch (platform) {
       case "whatsapp":

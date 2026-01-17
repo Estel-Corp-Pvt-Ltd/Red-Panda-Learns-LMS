@@ -36,7 +36,12 @@ import {
   TRANSACTION_TYPE,
   USER_ROLE,
   USER_STATUS,
-  PLATFROM_TYPE
+  PLATFROM_TYPE,
+  KARMA_BREAKDOWN_TYPE,
+  KARMA_CATEGORY,
+  LEARNING_ACTION,
+  SOCIAL_ACTION,
+  COMMUNITY_ACTION,
 } from "@/constants";
 
 // ATTRIBUTES
@@ -111,7 +116,6 @@ export type CertificateRequestStatus =
 // --- BANNER ---
 export type BannerStatus = (typeof BANNER_STATUS)[keyof typeof BANNER_STATUS];
 
-
 // -- PLATFORM TYPE ---
 export type PlatformType = (typeof PLATFROM_TYPE)[keyof typeof PLATFROM_TYPE];
 // MISCELLANEOUS
@@ -120,3 +124,14 @@ export type Duration = {
   minutes: number;
 };
 export type SortKey = (typeof SORT_KEY)[keyof typeof SORT_KEY];
+
+// -- KARMA BREAKDOWN --
+export type KarmaBreakdown = Record<keyof typeof KARMA_BREAKDOWN_TYPE, number>;
+
+export type KarmaCategory = (typeof KARMA_CATEGORY)[keyof typeof KARMA_CATEGORY];
+
+export type LearningAction = (typeof LEARNING_ACTION)[keyof typeof LEARNING_ACTION];
+
+export type CommunityAction = (typeof COMMUNITY_ACTION)[keyof typeof COMMUNITY_ACTION];
+
+export type SocialAction = (typeof SOCIAL_ACTION)[keyof typeof SOCIAL_ACTION];
