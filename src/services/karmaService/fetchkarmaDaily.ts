@@ -95,14 +95,13 @@ class fetchDailyKarma {
 
       const { limit: itemsPerPage = 15, pageDirection = "next", cursor = null } = options;
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // start of today
+      const today = getYesterdayTimestamp();
 
       // Step 1: Get all karma records for the course
       const allKarmaQuery = query(
         collection(db, COLLECTION.KARMA_DAILY),
         where("courseId", "==", courseId),
-        where("date", "<", today)
+        where("date", "<=", today)
       );
 
       const allKarmaSnapshot = await getDocs(allKarmaQuery);
