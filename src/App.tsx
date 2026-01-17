@@ -90,6 +90,7 @@ import UserComplaints from "./pages/UserComplaints";
 import PublicCertificate from "./components/course/PublicCertificate";
 import Forum from "./pages/Forum";
 import AdminMessageApproval from "./pages/admin/AdminMessageApproval";
+import AdminKarmaRulesPage from "./pages/admin/AdminEditKarmaRules";
 import { StripBannerProvider } from "./contexts/StripBannerOverlayContext";
 import Profile from "./pages/Profile";
 import WhatsNew from "./pages/Whats-new";
@@ -411,6 +412,14 @@ const App = () => (
                           element={
                             <AuthGuard requireAdmin>
                               <CreateCoursePage />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/admin/karmarules"
+                          element={
+                            <AuthGuard requireAdmin>
+                              <AdminKarmaRulesPage />
                             </AuthGuard>
                           }
                         />

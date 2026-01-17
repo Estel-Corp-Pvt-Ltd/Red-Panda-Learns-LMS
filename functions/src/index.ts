@@ -60,6 +60,8 @@ import {
 import { sendSubmissionGradedNotification } from "./handlers/pushNotificationsHandler";
 import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
+import { addOrUpdateKarmaRule } from "./handlers/karmaRuleHandler";
+import { addKarma } from "./services/karma/incrementHanlder";
 
 export {
   enrollStudent,
@@ -119,4 +121,6 @@ export {
   sendUserMailOnAssignmentGradedWorker,
   sendCourseWelcomeMailWorker,
   sendCertificateMailWorker,
+  addOrUpdateKarmaRule,
+  addKarma,
 };

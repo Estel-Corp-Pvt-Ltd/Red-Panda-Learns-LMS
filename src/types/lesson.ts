@@ -14,6 +14,7 @@ export type Lesson = {
   description: string;
   embedUrl: string;
   duration: Duration;
+  durationAddedtoLearningProgress: boolean;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

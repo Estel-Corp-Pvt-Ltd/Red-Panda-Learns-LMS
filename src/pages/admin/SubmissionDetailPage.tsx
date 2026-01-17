@@ -93,6 +93,7 @@ const AllSubmissionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<AssignmentSubmission | null>(null);
+  const [minimumMarks,setMinimumMarks] = useState<number>(60);
   const [maximumMarks, setMaximumMarks] = useState<number>(100);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -205,6 +206,7 @@ const AllSubmissionsPage = () => {
         const result = await assignmentService.getAssignmentById(assignmentId);
         if (result.success && result.data) {
           setMaximumMarks(result.data.totalPoints || 100);
+          setMinimumMarks(result.data.minimumPassPoint || 60);
         }
         setMarks(selectedSubmission.marks?.toString() || "");
         setFeedback(selectedSubmission.feedback || "");
@@ -411,7 +413,10 @@ const AllSubmissionsPage = () => {
         numericMarks,
         getAssignmentTitle(selectedSubmission),
         idToken,
-        isReevaluated
+        isReevaluated,
+        maximumMarks,
+        minimumMarks,
+        selectedSubmission.courseId,
       );
       closeGradeModal();
     } catch (error) {

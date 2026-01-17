@@ -1,5 +1,6 @@
 import { Timestamp, FieldValue } from "firebase/firestore";
 import { parseISO, isValid } from "date-fns";
+import { Duration } from "@/types/general";
 
 /**
  * Safely convert values (Date | Firestore Timestamp | ISO string | null) → JS Date | null
@@ -169,7 +170,12 @@ export const formatTimeDuration = (totalMinutes: number): string => {
 
   return parts.join(" ");
 };
+export const secondsToDuration = (videoDuration: number): Duration => {
+  const hours = Math.floor(videoDuration / 3600);
+  const minutes = Math.floor((videoDuration % 3600) / 60);
 
+  return { hours, minutes };
+};
 export const timestampToLocalInput = (date: Date | null | undefined): string => {
   if (!date) return "";
 
@@ -200,3 +206,13 @@ export const formatTimeRemaining = (ms: number): string => {
   }
   return `${seconds}s`;
 };
+
+export function getYesterdayTimestamp(): Timestamp {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  return Timestamp.fromDate(yesterday);
+}

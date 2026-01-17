@@ -1,26 +1,30 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { ForumChannel, ChannelMessage, MessageAttachment } from '@/types/forum';
-import { forumChannelService, channelMessageService, messageUpvoteService } from '@/services/forumService';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Hash, Send, MessageSquare, Loader2, Paperclip, X } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { USER_ROLE } from '@/constants';
-import { Header } from '@/components/Header';
-import { fileService } from '@/services/fileService';
-import { MessageContent } from '@/components/MessageContent';
-import { useCourseQuery } from '@/hooks/useCaching';
+import React, { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { ForumChannel, ChannelMessage, MessageAttachment } from "@/types/forum";
+import {
+  forumChannelService,
+  channelMessageService,
+  messageUpvoteService,
+} from "@/services/forumService";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Hash, Send, MessageSquare, Loader2, Paperclip, X } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Timestamp } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { USER_ROLE } from "@/constants";
+import { Header } from "@/components/Header";
+import { fileService } from "@/services/fileService";
+import { MessageContent } from "@/components/MessageContent";
+import { useCourseQuery } from "@/hooks/useCaching";
 
 const Forum: React.FC = () => {
   const { courseSlug } = useParams<{ courseSlug: string }>();
-  const { data: course, isLoading } = useCourseQuery(courseSlug || '');
-  const courseId = course?.id || '';
+  const { data: course, isLoading } = useCourseQuery(courseSlug || "");
+  const courseId = course?.id || "";
   const { user } = useAuth();
   const { toast } = useToast();
   const [channels, setChannels] = useState<ForumChannel[]>([]);
@@ -35,9 +39,11 @@ const Forum: React.FC = () => {
   const [replyingTo, setReplyingTo] = useState<{ id: string; senderName: string } | null>(null);
 
   // Message input
-  const [messageText, setMessageText] = useState('');
+  const [messageText, setMessageText] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [attachedFilePreviews, setAttachedFilePreviews] = useState<{ file: File; preview: string | null }[]>([]);
+  const [attachedFilePreviews, setAttachedFilePreviews] = useState<
+    { file: File; preview: string | null }[]
+  >([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,7 +54,7 @@ const Forum: React.FC = () => {
   // Auto-resize textarea
   const adjustTextareaHeight = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
-    textarea.style.height = 'auto';
+    textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   };
 
@@ -58,7 +64,7 @@ const Forum: React.FC = () => {
 
   // Scroll to bottom
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   // Load channels
@@ -136,13 +142,13 @@ const Forum: React.FC = () => {
     if (files.length > 0) {
       // Validate file sizes (10MB max)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-      const invalidFiles = files.filter(file => file.size > maxSize);
+      const invalidFiles = files.filter((file) => file.size > maxSize);
 
       if (invalidFiles.length > 0) {
         toast({
-          title: 'File too large',
+          title: "File too large",
           description: `${invalidFiles.length} file(s) exceed the 10MB limit. Please upload smaller files.`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         return;
       }
@@ -150,7 +156,7 @@ const Forum: React.FC = () => {
       const newPreviews: { file: File; preview: string | null }[] = [];
 
       files.forEach((file) => {
-        if (file.type.startsWith('image/')) {
+        if (file.type.startsWith("image/")) {
           const reader = new FileReader();
           reader.onloadend = () => {
             newPreviews.push({ file, preview: reader.result as string });
@@ -178,17 +184,17 @@ const Forum: React.FC = () => {
 
       // Validate file sizes (10MB max)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-      const invalidFiles = newFiles.filter(file => file.size > maxSize);
+      const invalidFiles = newFiles.filter((file) => file.size > maxSize);
 
       if (invalidFiles.length > 0) {
         toast({
-          title: 'File too large',
+          title: "File too large",
           description: `${invalidFiles.length} file(s) exceed the 10MB limit. Please upload smaller files.`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         // Reset input
         if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+          fileInputRef.current.value = "";
         }
         return;
       }
@@ -196,7 +202,7 @@ const Forum: React.FC = () => {
       const newPreviews: { file: File; preview: string | null }[] = [];
 
       newFiles.forEach((file) => {
-        if (file.type.startsWith('image/')) {
+        if (file.type.startsWith("image/")) {
           const reader = new FileReader();
           reader.onloadend = () => {
             newPreviews.push({ file, preview: reader.result as string });
@@ -233,7 +239,7 @@ const Forum: React.FC = () => {
       }
       return null;
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error("Error uploading file:", error);
       return null;
     } finally {
       setUploadingFile(false);
@@ -258,15 +264,19 @@ const Forum: React.FC = () => {
           }
 
           // Determine attachment type based on file type
-          let attachmentType: MessageAttachment['type'] = 'other';
-          if (file.type.startsWith('image/')) {
-            attachmentType = 'image';
-          } else if (file.type.startsWith('video/')) {
-            attachmentType = 'video';
-          } else if (file.type.startsWith('audio/')) {
-            attachmentType = 'audio';
-          } else if (file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text')) {
-            attachmentType = 'document';
+          let attachmentType: MessageAttachment["type"] = "other";
+          if (file.type.startsWith("image/")) {
+            attachmentType = "image";
+          } else if (file.type.startsWith("video/")) {
+            attachmentType = "video";
+          } else if (file.type.startsWith("audio/")) {
+            attachmentType = "audio";
+          } else if (
+            file.type.includes("pdf") ||
+            file.type.includes("document") ||
+            file.type.includes("text")
+          ) {
+            attachmentType = "document";
           }
 
           attachments.push({
@@ -279,34 +289,37 @@ const Forum: React.FC = () => {
       }
 
       const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
-      const result = await channelMessageService.sendMessage({
-        senderId: user.id,
-        senderName: displayName,
-        senderRole: (user.role as any) || USER_ROLE.STUDENT,
-        text: textToSend,
-        attachments,
-        status: 'ACTIVE',
-        courseId,
-        channelId: selectedChannel.id,
-        replyTo: replyingTo?.id,
-      }, selectedChannel.isModerated);
+      const result = await channelMessageService.sendMessage(
+        {
+          senderId: user.id,
+          senderName: displayName,
+          senderRole: (user.role as any) || USER_ROLE.STUDENT,
+          text: textToSend,
+          attachments,
+          status: "ACTIVE",
+          courseId,
+          channelId: selectedChannel.id,
+          replyTo: replyingTo?.id,
+        },
+        selectedChannel.isModerated
+      );
 
       if (result.success) {
-        setMessageText('');
+        setMessageText("");
         setAttachedFiles([]);
         setAttachedFilePreviews([]);
         setReplyingTo(null);
         if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+          fileInputRef.current.value = "";
         }
       } else {
-        throw new Error(result.error?.message || 'Failed to send message');
+        throw new Error(result.error?.message || "Failed to send message");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setSending(false);
@@ -315,13 +328,15 @@ const Forum: React.FC = () => {
 
   const handleToggleUpvote = async (messageId: string) => {
     if (!user || !courseId || !selectedChannel) return;
+    const isAdmin = user.role === USER_ROLE.ADMIN;
 
     try {
       const result = await messageUpvoteService.toggleUpvote(
         user.id,
         messageId,
         courseId,
-        selectedChannel.id
+        selectedChannel.id,
+        isAdmin
       );
 
       if (result.success) {
@@ -337,9 +352,9 @@ const Forum: React.FC = () => {
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: 'Failed to toggle upvote',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to toggle upvote",
+        variant: "destructive",
       });
     }
   };
@@ -348,35 +363,35 @@ const Forum: React.FC = () => {
     try {
       const result = await channelMessageService.updateMessage(messageId, text);
       if (!result.success) {
-        throw new Error(result.error?.message || 'Failed to update message');
+        throw new Error(result.error?.message || "Failed to update message");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!confirm('Delete this message?')) return;
+    if (!confirm("Delete this message?")) return;
 
     try {
       const result = await channelMessageService.deleteMessage(messageId);
 
       if (result.success) {
         toast({
-          title: 'Message deleted',
+          title: "Message deleted",
         });
       } else {
-        throw new Error(result.error?.message || 'Failed to delete message');
+        throw new Error(result.error?.message || "Failed to delete message");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -390,16 +405,16 @@ const Forum: React.FC = () => {
 
       if (result.success) {
         toast({
-          title: currentStatus === 'HIDDEN' ? 'Message unhidden' : 'Message hidden',
+          title: currentStatus === "HIDDEN" ? "Message unhidden" : "Message hidden",
         });
       } else {
-        throw new Error(result.error?.message || 'Failed to toggle message visibility');
+        throw new Error(result.error?.message || "Failed to toggle message visibility");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -414,16 +429,16 @@ const Forum: React.FC = () => {
   };
 
   const formatMessageTime = (timestamp: any) => {
-    if (!timestamp) return '';
+    if (!timestamp) return "";
     const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -450,19 +465,18 @@ const Forum: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto py-2 no-scrollbar">
             {channels.length === 0 ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                No channels
-              </div>
+              <div className="p-4 text-center text-sm text-muted-foreground">No channels</div>
             ) : (
               <div className="space-y-0.5 px-2">
                 {channels.map((channel) => (
                   <button
                     key={channel.id}
                     onClick={() => setSelectedChannel(channel)}
-                    className={`w-full text-left px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${selectedChannel?.id === channel.id
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
-                      }`}
+                    className={`w-full text-left px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${
+                      selectedChannel?.id === channel.id
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300"
+                    }`}
                   >
                     <Hash className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate text-lg font-medium">{channel.name}</span>
@@ -509,13 +523,16 @@ const Forum: React.FC = () => {
                 ) : (
                   <div className="space-y-0">
                     {messages.map((message, idx) => {
-                      const showAvatar = idx === 0 || messages[idx - 1].senderId !== message.senderId;
-                      const replyToMessage = message.replyTo ? messages.find(m => m.id === message.replyTo) : null;
+                      const showAvatar =
+                        idx === 0 || messages[idx - 1].senderId !== message.senderId;
+                      const replyToMessage = message.replyTo
+                        ? messages.find((m) => m.id === message.replyTo)
+                        : null;
 
                       return (
                         <div
                           key={message.id}
-                          className={`-mx-2 px-1 rounded ${showAvatar ? 'mt-3' : 'mt-0.5'}`}
+                          className={`-mx-2 px-1 rounded ${showAvatar ? "mt-3" : "mt-0.5"}`}
                         >
                           <div className="flex gap-2">
                             {showAvatar ? (
@@ -570,7 +587,9 @@ const Forum: React.FC = () => {
                   <div className="absolute inset-0 bg-blue-50/90 dark:bg-blue-900/20 flex items-center justify-center border-4 border-dashed border-blue-400 dark:border-blue-600 rounded-lg z-50">
                     <div className="text-center">
                       <Paperclip className="h-16 w-16 mx-auto mb-4 text-blue-500" />
-                      <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">Drop file to attach</p>
+                      <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                        Drop file to attach
+                      </p>
                     </div>
                   </div>
                 )}
@@ -666,7 +685,7 @@ const Forum: React.FC = () => {
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         handleSendMessage();
                       }
@@ -678,7 +697,11 @@ const Forum: React.FC = () => {
 
                   <Button
                     onClick={handleSendMessage}
-                    disabled={sending || uploadingFile || (!messageText.trim() && attachedFiles.length === 0)}
+                    disabled={
+                      sending ||
+                      uploadingFile ||
+                      (!messageText.trim() && attachedFiles.length === 0)
+                    }
                     size="sm"
                     className="h-9 px-3 flex-shrink-0"
                   >
@@ -704,6 +727,5 @@ const Forum: React.FC = () => {
     </div>
   );
 };
-
 
 export default Forum;

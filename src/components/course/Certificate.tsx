@@ -7,19 +7,13 @@ import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { Download, Printer } from "lucide-react";
-import React, {
-  Suspense,
-  lazy,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ShareCertificate from "./ShareCertificate";
 import { formatDate } from "@/utils/date-time";
 import { logError } from "@/utils/logger";
-
+import { calculateKarmaForShareCertificate } from "@/services/karmaService/calculateKarmaForShareCertificate";
+import { authService } from "@/services/authService";
 // Lazy load QRCode for better performance
 const QRCode = lazy(() => import("react-qr-code"));
 
@@ -33,6 +27,7 @@ interface CertificateData {
   certificateId: string | null;
   certificateName: string | null;
   nameOnCertificate: string;
+  hasSharedCertificate: boolean;
 }
 
 // =============================================================================
@@ -66,8 +61,7 @@ const Certificate: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Certificate data
-  const [certificateData, setCertificateData] =
-    useState<CertificateData | null>(null);
+  const [certificateData, setCertificateData] = useState<CertificateData | null>(null);
 
   // Modal state
   const [showPreferredNameModal, setShowPreferredNameModal] = useState(false);
@@ -146,12 +140,12 @@ const Certificate: React.FC = () => {
         const preferredNameLower = preferredName.toLowerCase();
         const userNameLower = userName.toLowerCase();
 
-        const hasValidPreferredName = preferredName.length > 0 &&
+        const hasValidPreferredName =
+          preferredName.length > 0 &&
           !preferredNameLower.includes("null") &&
           preferredName.length <= MAX_NAME_LENGTH;
 
-        const hasValidUserName = userName.length > 0 &&
-          !userNameLower.includes("null");
+        const hasValidUserName = userName.length > 0 && !userNameLower.includes("null");
 
         // 3. Determine name requirement and reason
         let requireName = false;
@@ -164,9 +158,10 @@ const Certificate: React.FC = () => {
           if (!hasValidUserName) {
             // No valid names at all
             requireName = true;
-            reason = userName.length === 0
-              ? "Your profile name is not set. Please enter a name for your certificate."
-              : "Your profile name appears to be invalid. Please enter a valid name for your certificate.";
+            reason =
+              userName.length === 0
+                ? "Your profile name is not set. Please enter a name for your certificate."
+                : "Your profile name appears to be invalid. Please enter a valid name for your certificate.";
           } else if (userName.length > MAX_NAME_LENGTH) {
             // Username too long
             requireName = true;
@@ -174,15 +169,19 @@ const Certificate: React.FC = () => {
           } else if (preferredNameLower.includes("null")) {
             // Preferred name contains "null"
             requireName = true;
-            reason = "Your preferred name appears to be invalid. Please enter a valid name for your certificate.";
+            reason =
+              "Your preferred name appears to be invalid. Please enter a valid name for your certificate.";
           }
 
           // Show toast only if name is required
           if (requireName) {
             toast({
-              title: userName.length === 0 ? "Name required" :
-                userName.length > MAX_NAME_LENGTH ? "Preferred name required" :
-                  "Valid name required",
+              title:
+                userName.length === 0
+                  ? "Name required"
+                  : userName.length > MAX_NAME_LENGTH
+                  ? "Preferred name required"
+                  : "Valid name required",
               description: reason,
               variant: "destructive",
             });
@@ -204,7 +203,9 @@ const Certificate: React.FC = () => {
         // 5. Determine the name to display on certificate
         const nameOnCertificate = hasValidPreferredName
           ? preferredName
-          : (hasValidUserName ? userName : "");
+          : hasValidUserName
+          ? userName
+          : "";
 
         // 6. Set all certificate data
         setCertificateData({
@@ -213,12 +214,11 @@ const Certificate: React.FC = () => {
           certificateId: enrollment?.certification?.certificateId ?? null,
           certificateName,
           nameOnCertificate,
+          hasSharedCertificate: enrollment?.certification?.hasSharedCertificate ?? false,
         });
       } catch (err) {
         console.error("Error fetching certificate data:", err);
-        setError(
-          err instanceof Error ? err.message : "An unexpected error occurred"
-        );
+        setError(err instanceof Error ? err.message : "An unexpected error occurred");
       } finally {
         setIsLoading(false);
       }
@@ -234,15 +234,12 @@ const Certificate: React.FC = () => {
   /**
    * Handle preferred name input change with character limit
    */
-  const handlePreferredNameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (value.length <= MAX_NAME_LENGTH) {
-        setPreferredNameInput(value);
-      }
-    },
-    []
-  );
+  const handlePreferredNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.length <= MAX_NAME_LENGTH) {
+      setPreferredNameInput(value);
+    }
+  }, []);
 
   /**
    * Save the user's preferred name for the certificate
@@ -274,21 +271,20 @@ const Certificate: React.FC = () => {
     setIsSavingName(true);
 
     try {
-      const result =
-        await enrollmentService.updatePreferredNameOnCertificate(
-          certificateData.enrollment.userId,
-          certificateData.enrollment.courseId,
-          trimmedName
-        );
+      const result = await enrollmentService.updatePreferredNameOnCertificate(
+        certificateData.enrollment.userId,
+        certificateData.enrollment.courseId,
+        trimmedName
+      );
 
       if (result.success) {
         // Update the certificate data with new name
         setCertificateData((prev) =>
           prev
             ? {
-              ...prev,
-              nameOnCertificate: trimmedName,
-            }
+                ...prev,
+                nameOnCertificate: trimmedName,
+              }
             : null
         );
 
@@ -371,6 +367,29 @@ const Certificate: React.FC = () => {
     }, 100);
   }, []);
 
+  // --- MODIFIED CODE START ---
+  const karmaCalculateOnSharedCertificate = async () => {
+    if (!user || !certificateData) return;
+
+    try {
+      const idToken = await authService.getToken();
+      if (!idToken) {
+        console.warn("Failed to get ID token for karma calculation.");
+        return;
+      }
+
+      await calculateKarmaForShareCertificate.awardKarmaForSharing(
+        user.id,
+        idToken,
+        certificateData.enrollment.courseId,
+        user.username || user.firstName || certificateData.certificateName
+      );
+    } catch (error) {
+      console.error("Error calculating karma for shared certificate:", error);
+      // Optionally, show a toast or handle the error gracefully
+    }
+  };
+
   /**
    * Download certificate as high-resolution PNG image
    */
@@ -379,9 +398,7 @@ const Certificate: React.FC = () => {
       setIsPrinting(true);
 
       const html2canvas = (await import("html2canvas")).default;
-      const element = document.querySelector(
-        ".certificate-container"
-      ) as HTMLElement;
+      const element = document.querySelector(".certificate-container") as HTMLElement;
 
       if (!element) {
         throw new Error("Certificate element not found");
@@ -396,8 +413,7 @@ const Certificate: React.FC = () => {
 
       // Create download link
       const link = document.createElement("a");
-      link.download = `vizuara-certificate-${certificateData?.certificateId || "download"
-        }.png`;
+      link.download = `vizuara-certificate-${certificateData?.certificateId || "download"}.png`;
       link.href = canvas.toDataURL("image/png", 1.0);
       link.click();
     } catch (err) {
@@ -435,9 +451,7 @@ const Certificate: React.FC = () => {
     : window.location.origin;
 
   // Calculate wrapper margin for scaled content
-  const scaledMarginBottom = isPrinting
-    ? 0
-    : `-${(1 - scale) * CERTIFICATE_HEIGHT}px`;
+  const scaledMarginBottom = isPrinting ? 0 : `-${(1 - scale) * CERTIFICATE_HEIGHT}px`;
 
   // Character count for input
   const remainingChars = MAX_NAME_LENGTH - preferredNameInput.length;
@@ -445,11 +459,9 @@ const Certificate: React.FC = () => {
   // Get modal title based on reason
   const getModalTitle = () => {
     if (!isNameRequired) return "Preferred Name for Certificate";
-    if (nameRequiredReason.includes("profile name is not set"))
-      return "Name Required";
+    if (nameRequiredReason.includes("profile name is not set")) return "Name Required";
     if (nameRequiredReason.includes("invalid")) return "Valid Name Required";
-    if (nameRequiredReason.includes("exceeds"))
-      return "Preferred Name Required";
+    if (nameRequiredReason.includes("exceeds")) return "Preferred Name Required";
     return "Name Required";
   };
 
@@ -482,9 +494,7 @@ const Certificate: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">
-            {error || "No Certificate Found."}
-          </p>
+          <p className="text-gray-600 mb-4">{error || "No Certificate Found."}</p>
           <Button onClick={() => navigate("/dashboard")} variant="outline">
             Return to Dashboard
           </Button>
@@ -502,13 +512,9 @@ const Certificate: React.FC = () => {
       {showPreferredNameModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 print-hide">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 mx-4">
-            <h2 className="text-lg font-semibold mb-2 text-black">
-              {getModalTitle()}
-            </h2>
+            <h2 className="text-lg font-semibold mb-2 text-black">{getModalTitle()}</h2>
 
-            <p className="text-sm text-gray-600 mb-4">
-              {getModalDescription()}
-            </p>
+            <p className="text-sm text-gray-600 mb-4">{getModalDescription()}</p>
 
             <div className="relative">
               <input
@@ -527,8 +533,9 @@ const Certificate: React.FC = () => {
                 autoFocus
               />
               <div
-                className={`text-xs text-right mb-4 ${remainingChars <= 5 ? "text-amber-600" : "text-gray-400"
-                  }`}
+                className={`text-xs text-right mb-4 ${
+                  remainingChars <= 5 ? "text-amber-600" : "text-gray-400"
+                }`}
               >
                 {remainingChars} characters remaining
               </div>
@@ -536,11 +543,7 @@ const Certificate: React.FC = () => {
 
             <div className="flex justify-end gap-2">
               {!isNameRequired && (
-                <Button
-                  variant="outline"
-                  onClick={handleCloseModal}
-                  disabled={isSavingName}
-                >
+                <Button variant="outline" onClick={handleCloseModal} disabled={isSavingName}>
                   Skip
                 </Button>
               )}
@@ -557,7 +560,11 @@ const Certificate: React.FC = () => {
 
       {/* ===== CONTROL BUTTONS ===== */}
       <div className="fixed top-4 right-4 z-40 flex gap-2 print-hide">
-        <ShareCertificate certificateId={certificateData.certificateId} />
+        <ShareCertificate
+          certificateId={certificateData.certificateId}
+          hasSharedCertificate={certificateData.hasSharedCertificate}
+          onFirstShare={karmaCalculateOnSharedCertificate}
+        />
 
         <Button
           onClick={handleDownloadAsImage}
@@ -601,18 +608,8 @@ const Certificate: React.FC = () => {
           {/* QR Code for Verification */}
           <div className="absolute top-8 right-8 z-10">
             <div className="bg-white p-1">
-              <Suspense
-                fallback={
-                  <div className="w-[64px] h-[64px] bg-gray-100 animate-pulse" />
-                }
-              >
-                <QRCode
-                  value={qrUrl}
-                  size={64}
-                  fgColor="#000000"
-                  bgColor="#ffffff"
-                  level="M"
-                />
+              <Suspense fallback={<div className="w-[64px] h-[64px] bg-gray-100 animate-pulse" />}>
+                <QRCode value={qrUrl} size={64} fgColor="#000000" bgColor="#ffffff" level="M" />
               </Suspense>
             </div>
           </div>
@@ -657,13 +654,11 @@ const Certificate: React.FC = () => {
 
                 {/* Course Name */}
                 <h1 className="text-[2.25rem] font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight -ml-1">
-                  {certificateData.certificateName ||
-                    certificateData.enrollment.courseName}
+                  {certificateData.certificateName || certificateData.enrollment.courseName}
                 </h1>
 
                 <p className="text-sm text-gray-600 font-medium max-w-md leading-relaxed">
-                  Successfully completed the course, assignments and received
-                  passing grade.
+                  Successfully completed the course, assignments and received passing grade.
                 </p>
               </div>
 
@@ -683,8 +678,7 @@ const Certificate: React.FC = () => {
                   </div>
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-3">
                     Course completed on{" "}
-                    {certificateData.completionDate ||
-                      new Date().toLocaleDateString()}
+                    {certificateData.completionDate || new Date().toLocaleDateString()}
                   </div>
                 </div>
 
@@ -731,18 +725,10 @@ interface SignatureBlockProps {
 /**
  * Reusable signature block component
  */
-const SignatureBlock: React.FC<SignatureBlockProps> = ({
-  name,
-  imageSrc,
-  imageHeight = "h-6",
-}) => (
+const SignatureBlock: React.FC<SignatureBlockProps> = ({ name, imageSrc, imageHeight = "h-6" }) => (
   <div className="flex flex-col items-end">
     <div className="text-[11px] font-bold text-gray-800 mb-1">{name}</div>
-    <img
-      src={imageSrc}
-      alt="Signature"
-      className={`${imageHeight} opacity-80`}
-    />
+    <img src={imageSrc} alt="Signature" className={`${imageHeight} opacity-80`} />
   </div>
 );
 

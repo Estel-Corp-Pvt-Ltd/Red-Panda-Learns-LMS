@@ -35,70 +35,71 @@ import {
   COMPLAINT_ACTION_TYPE,
   COMPLAINT_CATEGORY,
   PLATFROM_TYPE,
+  KARMA_BREAKDOWN_TYPE,
+  KARMA_CATEGORY,
+  LEARNING_ACTION,
+  SOCIAL_ACTION,
+  COMMUNITY_ACTION,
 } from "../constants";
 
-export type AttributeType =
-  (typeof ATTRIBUTE_TYPE)[keyof typeof ATTRIBUTE_TYPE];
+export type AttributeType = (typeof ATTRIBUTE_TYPE)[keyof typeof ATTRIBUTE_TYPE];
 export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 export type PricingModel = (typeof PRICING_MODEL)[keyof typeof PRICING_MODEL];
 export type CourseStatus = (typeof COURSE_STATUS)[keyof typeof COURSE_STATUS];
 export type BundleStatus = (typeof BUNDLE_STATUS)[keyof typeof BUNDLE_STATUS];
 export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
-export type EnrollmentStatus =
-  (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS];
+export type EnrollmentStatus = (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS];
 export type EnrolledProgramType =
   (typeof ENROLLED_PROGRAM_TYPE)[keyof typeof ENROLLED_PROGRAM_TYPE];
-export type PaymentStatus =
-  (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
-export type PaymentProvider =
-  (typeof PAYMENT_PROVIDER)[keyof typeof PAYMENT_PROVIDER];
+export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
+export type PaymentProvider = (typeof PAYMENT_PROVIDER)[keyof typeof PAYMENT_PROVIDER];
 export type Currency = (typeof CURRENCY)[keyof typeof CURRENCY];
 export type LearningUnit = (typeof LEARNING_UNIT)[keyof typeof LEARNING_UNIT];
-export type TransactionStatus =
-  (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
+export type TransactionStatus = (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 export type AddressType = (typeof ADDRESS_TYPE)[keyof typeof ADDRESS_TYPE];
 export type PaymentAttemptStatus =
   (typeof PAYMENT_ATTEMPT_STATUS)[keyof typeof PAYMENT_ATTEMPT_STATUS];
-export type TransactionType =
-  (typeof TRANSACTION_TYPE)[keyof typeof TRANSACTION_TYPE];
-export type RefundInitiator =
-  (typeof REFUND_INITIATOR)[keyof typeof REFUND_INITIATOR];
+export type TransactionType = (typeof TRANSACTION_TYPE)[keyof typeof TRANSACTION_TYPE];
+export type RefundInitiator = (typeof REFUND_INITIATOR)[keyof typeof REFUND_INITIATOR];
 export type RazorpayWebhookEvent =
   (typeof RAZORPAY_WEBHOOK_EVENT)[keyof typeof RAZORPAY_WEBHOOK_EVENT];
-export type PayPalWebhookEvent =
-  (typeof PAYPAL_WEBHOOK_EVENT)[keyof typeof PAYPAL_WEBHOOK_EVENT];
+export type PayPalWebhookEvent = (typeof PAYPAL_WEBHOOK_EVENT)[keyof typeof PAYPAL_WEBHOOK_EVENT];
 export type CouponStatus = (typeof COUPON_STATUS)[keyof typeof COUPON_STATUS];
 export type OrganizationType = (typeof ORGANIZATION)[keyof typeof ORGANIZATION];
-export type PopUpCourseType =
-  (typeof POPUP_COURSE_TYPE)[keyof typeof POPUP_COURSE_TYPE];
+export type PopUpCourseType = (typeof POPUP_COURSE_TYPE)[keyof typeof POPUP_COURSE_TYPE];
 export type SortKey = (typeof SORT_KEY)[keyof typeof SORT_KEY];
-export type QuizQuestionType =
-  (typeof QUIZ_QUESTION_TYPE)[keyof typeof QUIZ_QUESTION_TYPE];
+export type QuizQuestionType = (typeof QUIZ_QUESTION_TYPE)[keyof typeof QUIZ_QUESTION_TYPE];
 export type QuizSubmissionStatus =
   (typeof QUIZ_SUBMISSION_STATUS)[keyof typeof QUIZ_SUBMISSION_STATUS];
 export type QuizStatus = (typeof QUIZ_STATUS)[keyof typeof QUIZ_STATUS];
-export type NotificationStatus =
-  (typeof NOTIFICATION_STATUS)[keyof typeof NOTIFICATION_STATUS];
-export type AnnouncementScope =
-  (typeof ANNOUNCEMENT_SCOPE)[keyof typeof ANNOUNCEMENT_SCOPE];
-export type AnnouncementStatus =
-  (typeof ANNOUNCEMENT_STATUS)[keyof typeof ANNOUNCEMENT_STATUS];
+export type NotificationStatus = (typeof NOTIFICATION_STATUS)[keyof typeof NOTIFICATION_STATUS];
+export type AnnouncementScope = (typeof ANNOUNCEMENT_SCOPE)[keyof typeof ANNOUNCEMENT_SCOPE];
+export type AnnouncementStatus = (typeof ANNOUNCEMENT_STATUS)[keyof typeof ANNOUNCEMENT_STATUS];
 // -- PLATFORM TYPE ---
 export type PlatformType = (typeof PLATFROM_TYPE)[keyof typeof PLATFROM_TYPE];
 // --- COMPLAINT ---
-export type ComplaintStatus =
-  (typeof COMPLAINT_STATUS)[keyof typeof COMPLAINT_STATUS];
-export type ComplaintSeverity =
-  (typeof COMPLAINT_SEVERITY)[keyof typeof COMPLAINT_SEVERITY];
+export type ComplaintStatus = (typeof COMPLAINT_STATUS)[keyof typeof COMPLAINT_STATUS];
+export type ComplaintSeverity = (typeof COMPLAINT_SEVERITY)[keyof typeof COMPLAINT_SEVERITY];
 export type ComplaintActionType =
   (typeof COMPLAINT_ACTION_TYPE)[keyof typeof COMPLAINT_ACTION_TYPE];
-export type ComplaintCategory =
-  (typeof COMPLAINT_CATEGORY)[keyof typeof COMPLAINT_CATEGORY];
+export type ComplaintCategory = (typeof COMPLAINT_CATEGORY)[keyof typeof COMPLAINT_CATEGORY];
 
-export type EmailType =
-  (typeof EMAIL_TYPE)[keyof typeof EMAIL_TYPE]
+export type EmailType = (typeof EMAIL_TYPE)[keyof typeof EMAIL_TYPE];
 export type Duration = {
   hours: number;
   minutes: number;
 };
+
+// -- Karma System
+
+// -- KARMA BREAKDOWN --
+export type KarmaBreakdown = Record<keyof typeof KARMA_BREAKDOWN_TYPE, number>;
+
+export type KarmaCategory = (typeof KARMA_CATEGORY)[keyof typeof KARMA_CATEGORY];
+
+export type LearningAction = (typeof LEARNING_ACTION)[keyof typeof LEARNING_ACTION];
+
+export type CommunityAction = (typeof COMMUNITY_ACTION)[keyof typeof COMMUNITY_ACTION];
+
+export type SocialAction = (typeof SOCIAL_ACTION)[keyof typeof SOCIAL_ACTION];

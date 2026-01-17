@@ -84,7 +84,6 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
         )}
       >
         {/* Certificate Ribbon - Top Right Corner */}
-        {/* Certificate Ribbon - Top Right Corner */}
         {course.isCertificateEnabled && (
           <div className="absolute top-0 right-0 z-20 overflow-hidden w-28 h-28 pointer-events-none">
             {/* Ribbon */}
