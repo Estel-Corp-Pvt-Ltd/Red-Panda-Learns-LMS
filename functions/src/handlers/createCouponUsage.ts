@@ -57,7 +57,7 @@ async function createCouponUsageHandler(req: Request, res: Response) {
 
     // 3. Update coupon usage total
     batch.update(db.collection(COLLECTION.COUPONS).doc(couponId), {
-      usageTotal: admin.firestore.FieldValue.increment(items.length),
+      totalUsed: admin.firestore.FieldValue.increment(items.length),
     });
 
     await batch.commit();
