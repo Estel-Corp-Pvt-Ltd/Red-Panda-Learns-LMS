@@ -2,10 +2,10 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { ATTACHMENT_TYPE, LEARNING_CONTENT, LESSON_TYPE, VIDEO_SOURCE } from "../constants";
 import { Duration } from "./general";
 
-export type Attachment = typeof ATTACHMENT_TYPE[keyof typeof ATTACHMENT_TYPE];
-export type LessonType = typeof LESSON_TYPE[keyof typeof LESSON_TYPE];
-export type LearningContentType = typeof LEARNING_CONTENT[keyof typeof LEARNING_CONTENT]
-export type VideoSource = typeof VIDEO_SOURCE[keyof typeof VIDEO_SOURCE];
+export type Attachment = (typeof ATTACHMENT_TYPE)[keyof typeof ATTACHMENT_TYPE];
+export type LessonType = (typeof LESSON_TYPE)[keyof typeof LESSON_TYPE];
+export type LearningContentType = (typeof LEARNING_CONTENT)[keyof typeof LEARNING_CONTENT];
+export type VideoSource = (typeof VIDEO_SOURCE)[keyof typeof VIDEO_SOURCE];
 
 export type Lesson = {
   id: string;
@@ -15,6 +15,7 @@ export type Lesson = {
   description: string;
   embedUrl: string;
   duration: Duration;
+  karmaBoostExpiresAfter: Duration;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };
