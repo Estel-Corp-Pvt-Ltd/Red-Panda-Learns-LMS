@@ -53,7 +53,9 @@ class LessonService {
   }
 
   // ───────────────────────────────────────────────
-  async createLesson(data: Omit<Lesson, "id" | "createdAt" | "updatedAt">): Promise<Lesson> {
+  async createLesson(
+    data: Omit<Lesson, "id" | "createdAt" | "updatedAt" | "karmaBoostExpiresAt">
+  ): Promise<Lesson> {
     try {
       const lessonId = await this.generateLessonId();
 
@@ -67,6 +69,10 @@ class LessonService {
         duration: {
           hours: data.duration?.hours ?? 0,
           minutes: data.duration?.minutes ?? 0,
+        },
+        karmaBoostExpiresAfter: {
+          hours: data.karmaBoostExpiresAfter?.hours ?? 0,
+          minutes: data.karmaBoostExpiresAfter?.minutes ?? 0,
         },
         durationAddedtoLearningProgress: data.durationAddedtoLearningProgress || false,
         createdAt: serverTimestamp(),
@@ -110,12 +116,20 @@ class LessonService {
       // ✅ Safely handle duration (always an object)
       const existingDuration = lessonData.duration || { hours: 0, minutes: 0 };
       const newDuration: Partial<Duration> = updates.duration || {};
+      const existingkarmaBoostExpiresAfter = lessonData.karmaBoostExpiresAfter || {
+        hours: 0,
+        minutes: 0,
+      };
+      const newkarmaBoostExpiresAfter: Partial<Duration> = updates.karmaBoostExpiresAfter || {};
 
       updateData.duration = {
         hours: newDuration.hours ?? existingDuration.hours ?? 0,
         minutes: newDuration.minutes ?? existingDuration.minutes ?? 0,
       };
-
+      updateData.karmaBoostExpiresAfter = {
+        hours: newkarmaBoostExpiresAfter.hours ?? existingkarmaBoostExpiresAfter.hours ?? 0,
+        minutes: newkarmaBoostExpiresAfter.minutes ?? existingkarmaBoostExpiresAfter.minutes ?? 0,
+      };
       await updateDoc(lessonRef, updateData);
 
       return ok(null);
