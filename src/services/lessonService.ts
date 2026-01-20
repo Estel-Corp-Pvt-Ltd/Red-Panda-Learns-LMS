@@ -53,9 +53,7 @@ class LessonService {
   }
 
   // ───────────────────────────────────────────────
-  async createLesson(
-    data: Omit<Lesson, "id" | "createdAt" | "updatedAt" | "karmaBoostExpiresAt">
-  ): Promise<Lesson> {
+  async createLesson(data: Omit<Lesson, "id" | "createdAt" | "updatedAt">): Promise<Lesson> {
     try {
       const lessonId = await this.generateLessonId();
 
