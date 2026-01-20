@@ -11,6 +11,7 @@ import { learningProgressService } from "../../services/learningProgressService"
 import { durationToSeconds } from "../../utils/date-time";
 import { addKarmaService } from "../../services/karma/addkarmaService";
 import { COLLECTION, KARMA_CATEGORY, LEARNING_ACTION } from "../../constants";
+import { LearningAction } from "../../types/general";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -25,13 +26,22 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
       return;
     }
 
-    const { lessonId, courseId, timeSpentSec, duration } = req.body;
+    const { lessonId, courseId, timeSpentSec, duration, updatedAt, karmaBoostExpiresAfter } =
+      req.body;
 
     if (!lessonId || !courseId || timeSpentSec === undefined) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
 
+    // functions.logger.info("🔍 Raw request body:", {
+    //   lessonId,
+    //   courseId,
+    //   timeSpentSec,
+    //   duration,
+    //   updatedAt,
+    //   karmaBoostExpiresAfter,
+    // });
     // Get current progress to find existing time spent BEFORE update
     const progressResult = await learningProgressService.getUserCourseProgress(user.uid, courseId);
 
@@ -57,10 +67,28 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
     functions.logger.info("What is new interval before", intervalsBefore);
     // Calculate intervals AFTER this update
     const intervalsAfter = Math.floor(cappedNewTime / KARMA_INTERVAL_SECONDS);
-    functions.logger.info("What is new interval after", intervalsAfter);
+
     // How many NEW 10-minute thresholds were crossed
     const newIntervalsCompleted = intervalsAfter - intervalsBefore;
-    functions.logger.info("What is new interval", newIntervalsCompleted);
+
+    // Debug logging
+    // functions.logger.info("🔍 Debug time values:", {
+    //   existingTimeSpent,
+    //   timeSpentSec,
+    //   newTotalTimeSpent,
+    //   duration,
+    //   durationInSeconds,
+    //   cappedExistingTime,
+    //   cappedNewTime,
+    //   KARMA_INTERVAL_SECONDS,
+    //   intervalsBefore,
+    //   intervalsAfter,
+    //   newIntervalsCompleted,
+    //   // Check data types
+    //   typeOfTimeSpentSec: typeof timeSpentSec,
+    //   typeOfExistingTimeSpent: typeof existingTimeSpent,
+    // });
+
     // Grant karma for each new interval crossed
     if (newIntervalsCompleted > 0) {
       functions.logger.info(`Granting ${newIntervalsCompleted} karma for watch time`, {
@@ -86,12 +114,36 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
         lastName?: string;
       };
 
+      // ----------------------------
+      // Karma boost active check
+      // ----------------------------
+      const updatedAtMs = new Date(updatedAt).getTime();
+      const boostDurationMs = karmaBoostExpiresAfter
+        ? durationToSeconds(karmaBoostExpiresAfter) * 1000
+        : 0;
+
+      const boostExpiryTime = updatedAtMs + boostDurationMs;
+      const now = Date.now();
+
+      const isKarmaBoostActive = !!karmaBoostExpiresAfter && boostExpiryTime > now;
+
+      // ----------------------------
+      // Decide karma action
+      // ----------------------------
+      let karmaAction: LearningAction = LEARNING_ACTION.LESSON_WATCH_TIME;
+
+      if (isKarmaBoostActive) {
+        functions.logger.info("[KarmaBoost Debug] Karma boost is ACTIVE, using boosted action");
+        karmaAction = LEARNING_ACTION.KARMA_BOOST_LESSON_POINTS;
+      } else {
+        functions.logger.info("[KarmaBoost Debug] Karma boost is NOT active, using default action");
+      }
       // Fire-and-forget: Grant karma for each new interval
       for (let i = 0; i < newIntervalsCompleted; i++) {
         addKarmaService.addKarmaToUser({
           userId: user.uid,
           category: KARMA_CATEGORY.LEARNING,
-          action: LEARNING_ACTION.LESSON_WATCH_TIME,
+          action: karmaAction,
           courseId,
           userName: userName || firstName || lastName,
         });
