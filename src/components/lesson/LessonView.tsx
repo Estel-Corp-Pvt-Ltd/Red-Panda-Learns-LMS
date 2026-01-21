@@ -349,7 +349,9 @@ export function LessonView({
           courseId,
           lessonId,
           totalTimeToReport,
-          lesson.duration || duration
+          lesson.duration || duration,
+          lesson.updatedAt,
+          lesson.karmaBoostExpiresAfter
         );
 
         // Reset accumulated time

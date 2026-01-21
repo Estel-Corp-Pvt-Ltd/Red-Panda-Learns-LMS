@@ -23,6 +23,7 @@ import { authService } from "./authService";
 import { lessonService } from "./lessonService";
 import { duration } from "html2canvas/dist/types/css/property-descriptors/duration";
 import { Duration } from "@/types/general";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 class LearningProgressService {
   private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
@@ -98,7 +99,9 @@ class LearningProgressService {
     courseId: string,
     lessonId: string,
     timeSpentSec: number,
-    duration: Duration
+    duration: Duration,
+    updatedAt: Timestamp | FieldValue,
+    karmaBoostExpiresAfter: Duration
   ): Promise<Result<null>> {
     if (timeSpentSec <= 5) {
       return fail("Time spent must be greater than five seconds.");
@@ -116,6 +119,8 @@ class LearningProgressService {
           lessonId,
           timeSpentSec,
           duration,
+          updatedAt,
+          karmaBoostExpiresAfter,
         }),
       });
       if (!response.ok) {

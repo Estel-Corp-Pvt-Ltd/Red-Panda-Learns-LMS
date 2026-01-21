@@ -13,8 +13,9 @@ export type Lesson = {
   type: LessonType;
   description: string;
   embedUrl: string;
-  duration: Duration;
   durationAddedtoLearningProgress: boolean;
+  duration: Duration;
+  karmaBoostExpiresAfter: Duration;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

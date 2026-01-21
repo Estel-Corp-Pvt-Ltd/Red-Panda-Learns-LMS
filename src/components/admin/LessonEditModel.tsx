@@ -120,6 +120,22 @@ export const EditLessonModal = ({
           minutes: parseInt(value) || 0,
         },
       }));
+    } else if (field === "karmaBoost-hours") {
+      setLesson((prev) => ({
+        ...prev,
+        karmaBoostExpiresAfter: {
+          ...prev.karmaBoostExpiresAfter,
+          hours: value,
+        },
+      }));
+    } else if (field === "karmaBoost-minutes") {
+      setLesson((prev) => ({
+        ...prev,
+        karmaBoostExpiresAfter: {
+          ...prev.karmaBoostExpiresAfter,
+          minutes: value,
+        },
+      }));
     } else {
       setLesson((prev) => ({ ...prev, [field]: value }));
     }
@@ -206,6 +222,18 @@ export const EditLessonModal = ({
     if ((lesson.duration?.hours || 0) < 0 || (lesson.duration?.minutes || 0) < 0) {
       toast({
         title: "Invalid duration",
+        description: "Hours and minutes cannot be negative.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      (lesson.karmaBoostExpiresAfter?.hours || 0) < 0 ||
+      (lesson.karmaBoostExpiresAfter?.minutes || 0) < 0
+    ) {
+      toast({
+        title: "Invalid karmaBoostExpiresAfter",
         description: "Hours and minutes cannot be negative.",
         variant: "destructive",
       });
@@ -402,8 +430,8 @@ export const EditLessonModal = ({
                           {uploading
                             ? "Uploading..."
                             : lesson.embedUrl
-                            ? `File Uploaded`
-                            : "No PDF uploaded yet."}
+                              ? `File Uploaded`
+                              : "No PDF uploaded yet."}
                         </label>
                         <Input
                           id="pdf-upload"
@@ -450,6 +478,37 @@ export const EditLessonModal = ({
                             min="0"
                             value={lesson?.duration?.minutes || 0}
                             onChange={(e) => handleFieldChange("duration-minutes", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Karma Expires At *</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="karmaBoost-hours" className="text-sm font-normal">
+                            Hours
+                          </Label>
+                          <Input
+                            id="karmaBoost-hours"
+                            type="number"
+                            min="0"
+                            value={lesson?.karmaBoostExpiresAfter?.hours || 0}
+                            onChange={(e) => handleFieldChange("karmaBoost-hours", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="karmaBoost-minutes" className="text-sm font-normal">
+                            Minutes
+                          </Label>
+                          <Input
+                            id="karmaBoost-minutes"
+                            type="number"
+                            min="0"
+                            value={lesson?.karmaBoostExpiresAfter?.minutes || 0}
+                            onChange={(e) =>
+                              handleFieldChange("karmaBoost-minutes", e.target.value)
+                            }
                           />
                         </div>
                       </div>
