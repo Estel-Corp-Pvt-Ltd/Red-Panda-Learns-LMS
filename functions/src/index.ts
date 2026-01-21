@@ -55,7 +55,7 @@ import {
   getOrders,
   getOrderById,
   getOrderStats,
-  ordersHealthCheck,
+  // ordersHealthCheck,
 } from "./handlers/api/ordersApiHandlers";
 import { sendSubmissionGradedNotification } from "./handlers/pushNotificationsHandler";
 import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
@@ -114,7 +114,7 @@ export {
   getOrders,
   getOrderById,
   getOrderStats,
-  ordersHealthCheck,
+  // ordersHealthCheck,
   sendGradedAssignmentNotification,
   sendMailtoUserOnAssignmentGraded,
   sendSubmissionGradedNotification,
