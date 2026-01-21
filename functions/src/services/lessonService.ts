@@ -1,15 +1,14 @@
-import * as admin from 'firebase-admin';
-import { Lesson, LessonAttachment } from '../types/lesson';
-import { ok, fail, Result } from '../utils/response';
+import * as admin from "firebase-admin";
+import { Lesson, LessonAttachment } from "../types/lesson";
+import { ok, fail, Result } from "../utils/response";
 import { COLLECTION } from "../constants";
-import { Duration } from '../types/general';
+import { Duration } from "../types/general";
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const db = admin.firestore();
-
 
 class LessonService {
   // ───────────────────────────────────────────────
@@ -22,8 +21,7 @@ class LessonService {
       return await db.runTransaction(async (tx) => {
         const counterDoc = await tx.get(counterRef);
         const gap = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
-        const lastNumber = counterDoc.exists ?
-          counterDoc.data()!.lastNumber : 30000000;
+        const lastNumber = counterDoc.exists ? counterDoc.data()!.lastNumber : 30000000;
 
         const nextNumber = lastNumber + gap;
         tx.set(counterRef, { lastNumber: nextNumber }, { merge: true });
@@ -53,6 +51,10 @@ class LessonService {
         duration: {
           hours: data.duration?.hours ?? 0,
           minutes: data.duration?.minutes ?? 0,
+        },
+        karmaBoostExpiresAfter: {
+          hours: data.karmaBoostExpiresAfter?.hours ?? 0,
+          minutes: data.karmaBoostExpiresAfter?.minutes ?? 0,
         },
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -101,6 +103,16 @@ class LessonService {
         minutes: newDuration.minutes ?? existingDuration.minutes ?? 0,
       };
 
+      const existingkarmaBoostExpiresAfter = lessonData.karmaBoostExpiresAfter || {
+        hours: 0,
+        minutes: 0,
+      };
+      const newkarmaBoostExpiresAfter: Partial<Duration> = updates.karmaBoostExpiresAfter || {};
+
+      updateData.karmaBoostExpiresAfter = {
+        hours: newkarmaBoostExpiresAfter.hours ?? existingkarmaBoostExpiresAfter.hours ?? 0,
+        minutes: newkarmaBoostExpiresAfter.minutes ?? existingkarmaBoostExpiresAfter.minutes ?? 0,
+      };
       await lessonRef.update(updateData);
 
       return ok(undefined);
@@ -129,6 +141,7 @@ class LessonService {
         description: data.description || "",
         embedUrl: data.embedUrl || "",
         duration: data.duration || { hours: 0, minutes: 0 },
+        karmaBoostExpiresAfter: data.karmaBoostExpiresAfter || { hours: 0, minutes: 0 },
         createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
         updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null,
       };
@@ -147,7 +160,7 @@ class LessonService {
       const snapshot = await db.collection(COLLECTION.LESSONS).get();
       const lessons: Lesson[] = [];
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         lessons.push({
           id: doc.id,
@@ -180,11 +193,12 @@ class LessonService {
 
       for (let i = 0; i < lessonIds.length; i += chunkSize) {
         const chunk = lessonIds.slice(i, i + chunkSize);
-        const snapshot = await db.collection(COLLECTION.LESSONS)
-          .where(admin.firestore.FieldPath.documentId(), 'in', chunk)
+        const snapshot = await db
+          .collection(COLLECTION.LESSONS)
+          .where(admin.firestore.FieldPath.documentId(), "in", chunk)
           .get();
 
-        snapshot.forEach(doc => {
+        snapshot.forEach((doc) => {
           const data = doc.data();
           results.push({
             id: doc.id,
@@ -225,14 +239,15 @@ class LessonService {
     courseId: string
   ): Promise<Result<{ descriptions: Record<string, string>; totalDuration: Duration }>> {
     try {
-      const snapshot = await db.collection(COLLECTION.LESSONS)
+      const snapshot = await db
+        .collection(COLLECTION.LESSONS)
         .where("courseId", "==", courseId)
         .get();
 
       const descriptions: Record<string, string> = {};
       let totalMinutes = 0;
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         const lessonId = doc.id;
 
@@ -240,7 +255,11 @@ class LessonService {
           descriptions[lessonId] = data.description;
         }
 
-        if (data.duration && typeof data.duration.hours === "number" && typeof data.duration.minutes === "number") {
+        if (
+          data.duration &&
+          typeof data.duration.hours === "number" &&
+          typeof data.duration.minutes === "number"
+        ) {
           totalMinutes += data.duration.hours * 60 + data.duration.minutes;
         }
       });
@@ -262,14 +281,15 @@ class LessonService {
   // ───────────────────────────────────────────────
   async getLessonsByCourseId(courseId: string): Promise<Result<Lesson[]>> {
     try {
-      const snapshot = await db.collection(COLLECTION.LESSONS)
+      const snapshot = await db
+        .collection(COLLECTION.LESSONS)
         .where("courseId", "==", courseId)
         .orderBy("createdAt", "asc")
         .get();
 
       const lessons: Lesson[] = [];
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         lessons.push({
           id: doc.id,
@@ -290,17 +310,17 @@ class LessonService {
     }
   }
 
-
   // Lesson Attachments methods
   async getLessonAttachments(lessonId: string): Promise<Result<LessonAttachment[]>> {
     try {
-      const snapshot = await db.collection(COLLECTION.LESSON_ATTACHMENTS)
+      const snapshot = await db
+        .collection(COLLECTION.LESSON_ATTACHMENTS)
         .where("lessonId", "==", lessonId)
         .get();
 
       const attachments: LessonAttachment[] = [];
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         attachments.push({
           id: doc.id,

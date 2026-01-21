@@ -40,7 +40,6 @@ export const CreateLessonModal = ({
   onClose,
   onLessonCreated,
 }: CreateLessonModalProps) => {
-
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -50,44 +49,60 @@ export const CreateLessonModal = ({
     description: "",
     embedUrl: "",
     duration: { hours: 0, minutes: 0 },
+    karmaBoostExpiresAfter: { hours: 0, minutes: 0 },
+    durationAddedtoLearningProgress: false,
   });
 
   // Add scroll management
   useEffect(() => {
     if (isOpen) {
       // When modal opens, store the current scroll position
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
       // When modal closes, restore scrolling
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     // Cleanup on unmount
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
   const colorMode =
-    typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
       ? "dark"
       : "light";
 
   const handleFieldChange = (field: string, value: any) => {
     if (field === "duration-hours") {
-      setLesson(prev => ({ ...prev, duration: { hours: value, minutes: prev.duration.minutes } }));
+      setLesson((prev) => ({
+        ...prev,
+        duration: { ...prev.duration, hours: value },
+      }));
     } else if (field === "duration-minutes") {
-      setLesson(prev => ({ ...prev, duration: { hours: prev.duration.hours, minutes: value } }));
-    } else if (field === "embedUrl") {
-      setLesson({ ...lesson, [field]: value });
-
-      // Fetch video duration for VIDEO_LECTURE
-      if (lesson.type === LESSON_TYPE.VIDEO_LECTURE && value) {
-        fetchVideoDuration(value);
-      }
+      setLesson((prev) => ({
+        ...prev,
+        duration: { ...prev.duration, minutes: value },
+      }));
+    } else if (field === "karmaBoost-hours") {
+      setLesson((prev) => ({
+        ...prev,
+        karmaBoostExpiresAfter: {
+          ...prev.karmaBoostExpiresAfter,
+          hours: value,
+        },
+      }));
+    } else if (field === "karmaBoost-minutes") {
+      setLesson((prev) => ({
+        ...prev,
+        karmaBoostExpiresAfter: {
+          ...prev.karmaBoostExpiresAfter,
+          minutes: value,
+        },
+      }));
     } else {
-      setLesson({ ...lesson, [field]: value });
+      setLesson((prev) => ({ ...prev, [field]: value }));
     }
   };
 
@@ -132,14 +147,14 @@ export const CreateLessonModal = ({
                     const finalHours = hours + Math.floor(totalMinutes / 60);
                     const finalMinutes = totalMinutes % 60;
 
-                    setLesson(prev => ({
+                    setLesson((prev) => ({
                       ...prev,
-                      duration: { hours: finalHours, minutes: finalMinutes }
+                      duration: { hours: finalHours, minutes: finalMinutes },
                     }));
 
                     toast({
                       title: "Duration detected",
-                      description: `Video duration: ${finalHours}h ${finalMinutes}m`
+                      description: `Video duration: ${finalHours}h ${finalMinutes}m`,
                     });
                     return;
                   }
@@ -152,7 +167,8 @@ export const CreateLessonModal = ({
             console.warn("YouTube API key not configured. Set VITE_YOUTUBE_API_KEY in .env file");
           }
         }
-      } else if (url.includes("vimeo.com")) { // Vimeo video
+      } else if (url.includes("vimeo.com")) {
+        // Vimeo video
         let videoId = "";
 
         if (url.includes("vimeo.com/video/")) {
@@ -176,14 +192,14 @@ export const CreateLessonModal = ({
               const hours = Math.floor(data.duration / 3600);
               const minutes = Math.floor((data.duration % 3600) / 60);
 
-              setLesson(prev => ({
+              setLesson((prev) => ({
                 ...prev,
-                duration: { hours, minutes }
+                duration: { hours, minutes },
               }));
 
               toast({
                 title: "Duration detected",
-                description: `Video duration: ${hours}h ${minutes}m`
+                description: `Video duration: ${hours}h ${minutes}m`,
               });
             }
           }
@@ -215,7 +231,7 @@ export const CreateLessonModal = ({
     } finally {
       setUploading(false);
     }
-  }
+  };
 
   const resetForm = () => {
     setLesson({
@@ -224,6 +240,8 @@ export const CreateLessonModal = ({
       description: "",
       embedUrl: "",
       duration: { hours: 0, minutes: 0 },
+      karmaBoostExpiresAfter: { hours: 0, minutes: 0 },
+      durationAddedtoLearningProgress: false,
     });
   };
 
@@ -241,6 +259,10 @@ export const CreateLessonModal = ({
         toast({ title: "Hours and minutes cannot be negative", variant: "destructive" });
         return;
       }
+      if (lesson.karmaBoostExpiresAfter.hours < 0 || lesson.karmaBoostExpiresAfter.minutes < 0) {
+        toast({ title: "Hours and minutes cannot be negative", variant: "destructive" });
+        return;
+      }
       if (lesson.type === LESSON_TYPE.PDF && !lesson.embedUrl.trim()) {
         toast({ title: "Please upload a PDF file.", variant: "destructive" });
         return;
@@ -251,6 +273,7 @@ export const CreateLessonModal = ({
       }
 
       setSaving(true);
+      console.log("what data is being saved", { ...lesson, courseId });
       const newLesson = await lessonService.createLesson({ ...lesson, courseId }); // Pass courseId appropriately
       toast({ title: "Lesson created successfully!" });
 
@@ -284,7 +307,6 @@ export const CreateLessonModal = ({
           <CardContent className="pt-2">
             {/* Two-column layout with weighted widths */}
             <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8">
-
               {/* Left Column - Title + Description */}
               <div className="space-y-4">
                 {/* Title */}
@@ -307,9 +329,7 @@ export const CreateLessonModal = ({
                   >
                     <MarkdownEditor
                       value={lesson.description}
-                      onChange={(value) =>
-                        handleFieldChange("description", value || "")
-                      }
+                      onChange={(value) => handleFieldChange("description", value || "")}
                       height={250}
                       uploadPath="/courses/lessons/attachments"
                     />
@@ -339,7 +359,9 @@ export const CreateLessonModal = ({
                   </Select>
                 </div>
 
-                {lesson.type === LESSON_TYPE.TEXT ? (<></>) : lesson.type === LESSON_TYPE.PDF ? (
+                {lesson.type === LESSON_TYPE.TEXT ? (
+                  <></>
+                ) : lesson.type === LESSON_TYPE.PDF ? (
                   <div className="space-y-1">
                     <Label>PDF Resource *</Label>
                     <label
@@ -347,9 +369,11 @@ export const CreateLessonModal = ({
                       className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg cursor-pointer w-full"
                     >
                       <Upload className="mr-2 h-4 w-4" />
-                      {uploading ? "Uploading..." : lesson.embedUrl
-                        ? `File Uploaded`
-                        : "No PDF uploaded yet."}
+                      {uploading
+                        ? "Uploading..."
+                        : lesson.embedUrl
+                          ? `File Uploaded`
+                          : "No PDF uploaded yet."}
                     </label>
                     <Input
                       id="pdf-upload"
@@ -375,12 +399,19 @@ export const CreateLessonModal = ({
                     />
                     {lesson.type === LESSON_TYPE.VIDEO_LECTURE && lesson.embedUrl && (
                       <div className="mt-3 border rounded-lg overflow-hidden dark:border-neutral-700">
-                        <VideoPlayer
-                          url={lesson.embedUrl}
-                        />
+                        <VideoPlayer url={lesson.embedUrl} />
                         {(lesson.duration.hours > 0 || lesson.duration.minutes > 0) && (
                           <div className="p-2 bg-muted text-sm">
-                            <span className="font-medium">Duration:</span> {lesson.duration.hours}h {lesson.duration.minutes}m
+                            <span className="font-medium">Duration:</span> {lesson.duration.hours}h{" "}
+                            {lesson.duration.minutes}m
+                          </div>
+                        )}
+                        {(lesson.karmaBoostExpiresAfter.hours > 0 ||
+                          lesson.karmaBoostExpiresAfter.minutes > 0) && (
+                          <div className="p-2 bg-muted text-sm">
+                            <span className="font-medium">Karma Boost Expires After:</span>{" "}
+                            {lesson.karmaBoostExpiresAfter.hours}h{" "}
+                            {lesson.karmaBoostExpiresAfter.minutes}m
                           </div>
                         )}
                       </div>
@@ -413,6 +444,24 @@ export const CreateLessonModal = ({
                       className="dark:bg-neutral-800 dark:border-neutral-700"
                     />
                   </div>
+                  <Label>Karma Boost Expires After (Hours and Minutes)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      value={lesson.karmaBoostExpiresAfter.hours}
+                      onChange={(e) =>
+                        handleFieldChange("karmaBoost-hours", parseInt(e.target.value) || 0)
+                      }
+                    />
+
+                    <Input
+                      type="number"
+                      value={lesson.karmaBoostExpiresAfter.minutes}
+                      onChange={(e) =>
+                        handleFieldChange("karmaBoost-minutes", parseInt(e.target.value) || 0)
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -429,6 +478,6 @@ export const CreateLessonModal = ({
           </CardContent>
         </Card>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 };
