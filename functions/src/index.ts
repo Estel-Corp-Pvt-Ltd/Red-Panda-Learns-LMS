@@ -62,6 +62,7 @@ import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
 import { addOrUpdateKarmaRule } from "./handlers/karmaRuleHandler";
 import { addKarma } from "./services/karma/incrementHanlder";
+import { createZoomMeeting } from "./handlers/zoom/createZoomMeeting";
 
 export {
   enrollStudent,
@@ -123,4 +124,5 @@ export {
   sendCertificateMailWorker,
   addOrUpdateKarmaRule,
   addKarma,
+  createZoomMeeting,
 };
