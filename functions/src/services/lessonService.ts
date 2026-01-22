@@ -133,6 +133,7 @@ class LessonService {
       }
 
       const data = lessonDoc.data()!;
+      const zoomData = data.zoom;
       const lesson: Lesson = {
         id: lessonDoc.id,
         courseId: data.courseId,
@@ -142,6 +143,16 @@ class LessonService {
         embedUrl: data.embedUrl || "",
         duration: data.duration || { hours: 0, minutes: 0 },
         karmaBoostExpiresAfter: data.karmaBoostExpiresAfter || { hours: 0, minutes: 0 },
+        zoom: zoomData
+          ? {
+              meetingId: zoomData.meetingId,
+              hostUserId: zoomData.hostUserId,
+              passcode: zoomData.passcode,
+              encryptedPasscode: zoomData.encryptedPasscode,
+              startTime: zoomData.startTime,
+              duration: zoomData.duration,
+            }
+          : undefined,
         createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
         updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null,
       };
