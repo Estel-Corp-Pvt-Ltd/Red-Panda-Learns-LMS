@@ -20,6 +20,7 @@ export const LESSON_TYPE = {
   PDF: "PDF",
   MIRO_BOARD: "MIRO BOARD",
   TEXT: "TEXT",
+  ZOOM_MEETING: "ZOOM MEETING",
 } as const;
 
 export const VIDEO_SOURCE = {

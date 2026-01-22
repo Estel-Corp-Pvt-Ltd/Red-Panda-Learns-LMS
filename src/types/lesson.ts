@@ -6,6 +6,15 @@ export type Attachment = (typeof ATTACHMENT_TYPE)[keyof typeof ATTACHMENT_TYPE];
 export type LessonType = (typeof LESSON_TYPE)[keyof typeof LESSON_TYPE];
 export type LearningContentType = (typeof LEARNING_CONTENT)[keyof typeof LEARNING_CONTENT];
 
+export type ZoomInfo = {
+  meetingId: string; // Zoom meeting number
+  hostUserId?: string; // Zoom user ID / email used as host
+  passcode?: string; // meeting passcode
+  encryptedPasscode?: string; // for Website SDK (preferred)
+  startTime: Timestamp;
+  duration: number; // minutes
+};
+
 export type Lesson = {
   id: string;
   courseId: string;
@@ -16,6 +25,7 @@ export type Lesson = {
   durationAddedtoLearningProgress: boolean;
   duration: Duration;
   karmaBoostExpiresAfter: Duration;
+  zoom?: ZoomInfo;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };
