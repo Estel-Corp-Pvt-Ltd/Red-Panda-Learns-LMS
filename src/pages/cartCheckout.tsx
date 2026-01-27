@@ -47,8 +47,6 @@ import { Coupon } from "@/types/coupon";
 import { Currency, PaymentProvider } from "@/types/general";
 
 import { Timestamp } from "firebase/firestore";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
-import "react-phone-number-input/style.css";
 import { Bundle } from "@/types/bundle";
 import PaymentCheckout from "@/components/payment/PaymentCheckout";
 

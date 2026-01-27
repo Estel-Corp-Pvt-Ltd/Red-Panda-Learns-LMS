@@ -17,11 +17,7 @@ class AdminAssignedStudentsService {
 
       return !snap.empty; // true if at least one matching document exists
     } catch (error) {
-      console.error(
-        `Error checking if student ${studentId} is assigned:`,
-        error
-      );
-      return false; 
+      return false;
     }
   }
 }
