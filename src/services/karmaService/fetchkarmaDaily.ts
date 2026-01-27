@@ -74,23 +74,19 @@ class fetchDailyKarma {
     }
   }
   /**
-   * Get course leaderboard with the current user always shown first
+   * Get course leaderboard with the current user always shown first (if provided)
    * @param courseId - The course ID to filter by
-   * @param currentUserId - The current user's ID to always show
+   * @param currentUserId - (Optional) The current user's ID to always show. Can be null/empty to just view leaderboard
    * @param options - Pagination options
    */
   async getCourseLeaderboard(
     courseId: string,
-    currentUserId: string,
+    currentUserId: string | null | undefined,
     options: LeaderboardPaginationOptions = {}
   ): Promise<Result<LeaderboardResult>> {
     try {
       if (!courseId) {
         return fail("Missing courseId");
-      }
-
-      if (!currentUserId) {
-        return fail("Missing currentUserId");
       }
 
       const { limit: itemsPerPage = 15, pageDirection = "next", cursor = null } = options;
@@ -172,16 +168,22 @@ class fetchDailyKarma {
         lastActiveDate: user.lastActiveDate || undefined,
       }));
 
-      // Step 2: Find current user's rank
-      const currentUserEntry = rankedUsers.find((user) => user.userId === currentUserId);
+      // Step 2: Find current user's rank (only if currentUserId is provided)
+      let currentUserEntry: LeaderboardEntry | null = null;
 
-      // If user has no karma in this course, create a default entry
-      const currentUserWithDefault: LeaderboardEntry | null = currentUserEntry || {
-        userId: currentUserId,
-        userName: "You",
-        totalKarma: 0,
-        rank: rankedUsers.length + 1,
-      };
+      if (currentUserId && currentUserId.trim()) {
+        currentUserEntry = rankedUsers.find((user) => user.userId === currentUserId);
+
+        // If user has no karma in this course, create a default entry
+        if (!currentUserEntry) {
+          currentUserEntry = {
+            userId: currentUserId,
+            userName: "You",
+            totalKarma: 0,
+            rank: rankedUsers.length + 1,
+          };
+        }
+      }
 
       // Step 3: Handle pagination
       let paginatedUsers: LeaderboardEntry[] = [];
@@ -221,7 +223,7 @@ class fetchDailyKarma {
       }
 
       return ok({
-        currentUser: currentUserWithDefault,
+        currentUser: currentUserEntry,
         leaderboard: paginatedUsers,
         hasNextPage,
         hasPreviousPage,
