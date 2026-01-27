@@ -33,8 +33,7 @@ import { TransactionLineItem } from "@/types/transaction";
 import { ADDRESS_TYPE, CURRENCY, ORDER_STATUS, PAYMENT_PROVIDER } from "@/constants";
 import { Address } from "@/types/order";
 import { Currency, PaymentProvider } from "@/types/general";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
-import "react-phone-number-input/style.css";
+import { CustomPhoneInput as PhoneInput, isValidPhoneNumber } from "@/components/ui/custom-phone-input";
 import { orderService } from "@/services/orderService";
 import { CouponCard } from "@/components/payment/CouponCard";
 import { Coupon } from "@/types/coupon";
@@ -540,7 +539,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                         onBlur={handlePhoneBlur}
                         placeholder="Enter your phone number"
                         disabled={isProcessing}
-                        className="border rounded-md px-3 py-2 bg-background"
+                        className="w-full"
                       />
                       {phoneError && (
                         <p className="text-red-500 text-sm mt-1">
