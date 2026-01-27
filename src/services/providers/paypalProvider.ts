@@ -23,14 +23,10 @@ interface CreateOrderResponse {
 
 class PayPalProvider {
   private readonly environment =
-    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-      ? ENVIRONMENT.DEVELOPMENT
-      : ENVIRONMENT.PRODUCTION;
+    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ? ENVIRONMENT.DEVELOPMENT : ENVIRONMENT.PRODUCTION;
 
   private readonly clientId =
-    this.environment === ENVIRONMENT.DEVELOPMENT
-      ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID
-      : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
+    this.environment === ENVIRONMENT.DEVELOPMENT ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
 
   private sdkLoaded = false;
   private buttonInstance: any = null;
