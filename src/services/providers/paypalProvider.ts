@@ -105,8 +105,8 @@ class PayPalProvider {
 
       const host =
         this.environment === ENVIRONMENT.DEVELOPMENT
-          ? "sandbox.paypal.com"
-          : "paypal.com";
+          ? "www.sandbox.paypal.com"
+          : "www.paypal.com";
 
       const script = document.createElement("script");
       script.src = `https://${host}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;
