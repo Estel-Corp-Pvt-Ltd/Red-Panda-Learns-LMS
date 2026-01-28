@@ -12,7 +12,7 @@ export type ZoomInfo = {
   hostUserId?: string; // Zoom user ID / email used as host
   passcode?: string; // meeting passcode
   encryptedPasscode?: string; // for Website SDK (preferred)
-  startTime: Timestamp;
+  startTime: Timestamp | FieldValue;
   duration: number; // minutes
 };
 
