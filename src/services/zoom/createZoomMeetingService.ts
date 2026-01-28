@@ -1,4 +1,5 @@
 import { BACKEND_URL } from "@/config";
+import { boolean } from "zod";
 
 interface ZoomMeetingRequest {
   topic: string;
@@ -6,6 +7,7 @@ interface ZoomMeetingRequest {
   start_time: string;
   duration: number;
   default_password: string;
+  join_before_host: boolean;
   request_permission_to_unmute_participants: boolean;
   invitees: { email: string }[];
   host_email: string;
