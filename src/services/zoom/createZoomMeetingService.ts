@@ -1,5 +1,4 @@
 import { BACKEND_URL } from "@/config";
-import { boolean } from "zod";
 
 interface ZoomMeetingRequest {
   topic: string;
