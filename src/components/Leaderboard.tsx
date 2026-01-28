@@ -16,7 +16,7 @@ import SpotlightCard from "./spotlightCard";
 
 interface LeaderboardProps {
   courseId: string;
-  currentUserId: string;
+  currentUserId?: string;
   itemsPerPage?: number;
 }
 
@@ -61,7 +61,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           pageDirection: direction,
           cursor: cursor,
         });
-        console.log("the result from fetching", result);
         if (result.success && result.data) {
           setState((prev) => ({
             ...prev,
@@ -194,10 +193,10 @@ ${
   entry.rank === 1
     ? "text-yellow-400"
     : entry.rank === 2
-    ? "text-gray-300"
-    : entry.rank === 3
-    ? "text-amber-600"
-    : "text-zinc-400"
+      ? "text-gray-300"
+      : entry.rank === 3
+        ? "text-amber-600"
+        : "text-zinc-400"
 }
 `}
           >

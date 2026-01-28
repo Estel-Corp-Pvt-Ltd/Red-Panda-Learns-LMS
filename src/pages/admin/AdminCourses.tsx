@@ -2,13 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { courseService } from "@/services/courseService";
 import { Course } from "@/types/course";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -32,6 +26,7 @@ import {
   Filter,
   Eye,
   MessageSquare,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { COURSE_STATUS, CURRENCY } from "@/constants";
@@ -46,6 +41,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Leaderboard from "@/components/Leaderboard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Leaderboard Modal Component
+function LeaderboardModal({
+  isOpen,
+  onClose,
+  courseId,
+  courseName,
+  currentUserId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  courseId: string;
+  courseName: string;
+  currentUserId?: string;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{courseName} - Leaderboard</DialogTitle>
+        </DialogHeader>
+        <Leaderboard courseId={courseId} currentUserId={currentUserId} itemsPerPage={15} />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 interface PaginatedCourses {
   data: Course[];
@@ -75,12 +99,8 @@ const AdminCourses = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<COURSE_STATUS | "ALL">(
-    "ALL"
-  );
-  const [searchField, setSearchField] = useState<
-    "title" | "description" | "both"
-  >("both");
+  const [statusFilter, setStatusFilter] = useState<COURSE_STATUS | "ALL">("ALL");
+  const [searchField, setSearchField] = useState<"title" | "description" | "both">("both");
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [useClientSearch, setUseClientSearch] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -91,7 +111,17 @@ const AdminCourses = () => {
   });
   const [coursePriceFilterValue, setCoursePriceFilterValue] =
     useState<CoursePriceFilter>("All Prices");
-
+  const { user } = useAuth();
+  // Leaderboard modal state
+  const [leaderboardModal, setLeaderboardModal] = useState<{
+    isOpen: boolean;
+    courseId: string;
+    courseName: string;
+  }>({
+    isOpen: false,
+    courseId: "",
+    courseName: "",
+  });
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -113,9 +143,7 @@ const AdminCourses = () => {
   useEffect(() => {
     if (
       useClientSearch &&
-      (searchQuery ||
-        statusFilter !== "ALL" ||
-        coursePriceFilterValue !== "All Prices")
+      (searchQuery || statusFilter !== "ALL" || coursePriceFilterValue !== "All Prices")
     ) {
       // Guard: wait for allCourses to be loaded
       if (allCourses.length === 0 && !isLoading) {
@@ -142,7 +170,7 @@ const AdminCourses = () => {
     if (!text) return false;
     const trimmed = text.trim();
     // Simple heuristic: starts with '<' and has at least one closing tag
-    return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
+    return trimmed.startsWith("<") && /<\/[a-z][\s\S]*>/i.test(trimmed);
   };
 
   const loadAllCourses = async () => {
@@ -173,9 +201,7 @@ const AdminCourses = () => {
         const query = searchQuery.toLowerCase();
         filteredCourses = filteredCourses.filter((course) => {
           const titleMatch = course.title?.toLowerCase().includes(query);
-          const descriptionMatch = course.description
-            ?.toLowerCase()
-            .includes(query);
+          const descriptionMatch = course.description?.toLowerCase().includes(query);
 
           if (searchField === "title") return titleMatch;
           if (searchField === "description") return descriptionMatch;
@@ -185,9 +211,7 @@ const AdminCourses = () => {
 
       // Apply status filter
       if (statusFilter !== "ALL") {
-        filteredCourses = filteredCourses.filter(
-          (course) => course.status === statusFilter
-        );
+        filteredCourses = filteredCourses.filter((course) => course.status === statusFilter);
       }
 
       // Apply price filter
@@ -222,6 +246,22 @@ const AdminCourses = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleViewLeaderboard = (courseId: string, courseName: string) => {
+    setLeaderboardModal({
+      isOpen: true,
+      courseId,
+      courseName,
+    });
+  };
+
+  const handleCloseLeaderboard = () => {
+    setLeaderboardModal({
+      isOpen: false,
+      courseId: "",
+      courseName: "",
+    });
   };
 
   const loadCourses = async () => {
@@ -270,9 +310,7 @@ const AdminCourses = () => {
           const query = searchQuery.toLowerCase();
           finalCourses = finalCourses.filter((course) => {
             const titleMatch = course.title?.toLowerCase().includes(query);
-            const descriptionMatch = course.description
-              ?.toLowerCase()
-              .includes(query);
+            const descriptionMatch = course.description?.toLowerCase().includes(query);
 
             if (searchField === "title") return titleMatch;
             if (searchField === "description") return descriptionMatch;
@@ -332,9 +370,7 @@ const AdminCourses = () => {
 
     if (
       useClientSearch &&
-      (searchQuery ||
-        statusFilter !== "ALL" ||
-        coursePriceFilterValue !== "All Prices")
+      (searchQuery || statusFilter !== "ALL" || coursePriceFilterValue !== "All Prices")
     ) {
       // Client-side pagination
       setPaginationState((prev) => ({
@@ -357,9 +393,7 @@ const AdminCourses = () => {
 
     if (
       useClientSearch &&
-      (searchQuery ||
-        statusFilter !== "ALL" ||
-        coursePriceFilterValue !== "All Prices")
+      (searchQuery || statusFilter !== "ALL" || coursePriceFilterValue !== "All Prices")
     ) {
       // Client-side pagination
       setPaginationState((prev) => ({
@@ -533,9 +567,7 @@ const AdminCourses = () => {
 
   // Determine if we're in filtered state
   const isFiltered =
-    searchQuery ||
-    statusFilter !== "ALL" ||
-    coursePriceFilterValue !== "All Prices";
+    searchQuery || statusFilter !== "ALL" || coursePriceFilterValue !== "All Prices";
 
   if (isLoading && courses.data.length === 0) {
     return (
@@ -563,8 +595,7 @@ const AdminCourses = () => {
               <CardTitle>Courses</CardTitle>
               <CardDescription>
                 Manage your courses and their settings.
-                {courses.totalCount > 0 &&
-                  ` (Page ${paginationState.currentPage})`}
+                {courses.totalCount > 0 && ` (Page ${paginationState.currentPage})`}
               </CardDescription>
             </div>
             <Button
@@ -612,9 +643,7 @@ const AdminCourses = () => {
                   <select
                     value={searchField}
                     onChange={(e) =>
-                      handleSearchFieldChange(
-                        e.target.value as "title" | "description" | "both"
-                      )
+                      handleSearchFieldChange(e.target.value as "title" | "description" | "both")
                     }
                     className="border border-input rounded-md px-3 py-2 text-sm bg-background hover:bg-accent hover:text-accent-foreground"
                   >
@@ -630,9 +659,7 @@ const AdminCourses = () => {
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <select
                   value={statusFilter}
-                  onChange={(e) =>
-                    handleStatusFilter(e.target.value as COURSE_STATUS | "ALL")
-                  }
+                  onChange={(e) => handleStatusFilter(e.target.value as COURSE_STATUS | "ALL")}
                   className="border border-input rounded-md px-3 py-2 text-sm bg-background hover:bg-accent hover:text-accent-foreground"
                 >
                   <option value="ALL">All Status</option>
@@ -642,19 +669,14 @@ const AdminCourses = () => {
                 </select>
               </div>
 
-              <Select
-                value={coursePriceFilterValue}
-                onValueChange={handlePriceFilter}
-              >
+              <Select value={coursePriceFilterValue} onValueChange={handlePriceFilter}>
                 <SelectTrigger className="w-fit">
                   <SelectValue placeholder="Select Pricing" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={"All Prices"}>All Prices</SelectItem>
                   <SelectItem value={"Zero Price"}>Zero Price</SelectItem>
-                  <SelectItem value={"Non Zero Price"}>
-                    Non Zero Price
-                  </SelectItem>
+                  <SelectItem value={"Non Zero Price"}>Non Zero Price</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -674,11 +696,7 @@ const AdminCourses = () => {
                   : "Get started by creating your first course."}
               </p>
               {isFiltered && (
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={clearAllFilters}
-                >
+                <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
                   Clear all filters
                 </Button>
               )}
@@ -701,17 +719,11 @@ const AdminCourses = () => {
               {/* Items Per Page Selector and Summary */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {courses.data.length} of {courses.totalCount} total
-                  courses
+                  Showing {courses.data.length} of {courses.totalCount} total courses
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    Show:
-                  </span>
-                  <Select
-                    value={itemsPerPage.toString()}
-                    onValueChange={handleItemsPerPageChange}
-                  >
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Show:</span>
+                  <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
                     <SelectTrigger className="w-20">
                       <SelectValue />
                     </SelectTrigger>
@@ -723,9 +735,7 @@ const AdminCourses = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    per page
-                  </span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
                 </div>
               </div>
 
@@ -750,7 +760,7 @@ const AdminCourses = () => {
                             {isProbablyHtml(course.description) ? (
                               <div
                                 className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
-                                dangerouslySetInnerHTML={{ __html: course.description || '' }}
+                                dangerouslySetInnerHTML={{ __html: course.description || "" }}
                               />
                             ) : (
                               <span>{course.description}</span>
@@ -769,23 +779,30 @@ const AdminCourses = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {formatCurrency(
-                          course.salePrice || course.regularPrice
-                        )}
+                        {formatCurrency(course.salePrice || course.regularPrice)}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
                           {course.updatedAt?.toString?.() || "N/A"}
                         </div>
                       </TableCell>
+
                       <TableCell className="text-right">
                         <div className="flex justify-center gap-2">
+                          {/* ADD THIS - Leaderboard Button */}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              navigate(`/admin/edit-course/${course.id}`)
-                            }
+                            onClick={() => handleViewLeaderboard(course.id, course.title)}
+                            title="View Leaderboard"
+                          >
+                            <Star className="h-4 w-4 text-yellow-500" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/edit-course/${course.id}`)}
                             title="Edit course"
                           >
                             <Edit className="h-4 w-4" />
@@ -839,9 +856,7 @@ const AdminCourses = () => {
                     size="sm"
                     onClick={handlePreviousPage}
                     disabled={
-                      !courses.hasPreviousPage ||
-                      paginationState.currentPage === 1 ||
-                      isLoading
+                      !courses.hasPreviousPage || paginationState.currentPage === 1 || isLoading
                     }
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -877,6 +892,15 @@ const AdminCourses = () => {
         variant="danger"
         dismissible
       />
+      {leaderboardModal.isOpen && (
+        <LeaderboardModal
+          isOpen={leaderboardModal.isOpen}
+          onClose={handleCloseLeaderboard}
+          courseId={leaderboardModal.courseId}
+          courseName={leaderboardModal.courseName}
+          currentUserId={user?.id || undefined}
+        />
+      )}
     </AdminLayout>
   );
 };
