@@ -15,6 +15,7 @@ interface ZoomMeetingRequest {
   start_time: string;
   duration: number;
   default_password?: string;
+  join_before_host: boolean;
   request_permission_to_unmute_participants?: boolean;
   invitees?: { email: string }[];
   host_email: string;
@@ -123,7 +124,7 @@ async function createMeeting(
     settings: {
       host_video: true,
       participant_video: true,
-      join_before_host: false,
+      join_before_host: meetingData.join_before_host,
       mute_upon_entry: true,
       watermark: false,
       use_pmi: false,
@@ -180,6 +181,7 @@ async function CreateZoomMeetingHandler(req: Request, res: Response) {
       duration,
       default_password,
       request_permission_to_unmute_participants,
+      join_before_host,
       invitees,
       host_email,
     } = req.body as ZoomMeetingRequest;
@@ -233,6 +235,7 @@ async function CreateZoomMeetingHandler(req: Request, res: Response) {
       start_time,
       duration,
       default_password,
+      join_before_host,
       request_permission_to_unmute_participants,
       invitees,
       host_email,
@@ -253,6 +256,7 @@ async function CreateZoomMeetingHandler(req: Request, res: Response) {
         start_url: meeting.start_url,
         password: meeting.password,
         encrypted_password: meeting.encrypted_password,
+        join_before_host: meeting.join_before_host,
         host_id: meeting.host_id,
         host_email: meeting.host_email,
         timezone: meeting.timezone,
