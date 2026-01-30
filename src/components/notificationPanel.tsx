@@ -10,6 +10,8 @@ import {
   ArrowRight,
   GraduationCap,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { announcementService } from "@/services/announcementService";
@@ -37,6 +39,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [readAtTime, setReadAtTime] = useState<Date | null>(null);
   const [hasMarkedAsRead, setHasMarkedAsRead] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const initialFetchDone = useRef(false);
   const navigate = useNavigate();
 
@@ -397,14 +400,44 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                           {/* Body Content */}
                           <div className="mb-3">
                             {plainText && (
-                              <p
-                                className={cn(
-                                  "text-sm line-clamp-2 leading-relaxed",
-                                  unread ? "text-foreground/80" : "text-muted-foreground"
+                              <>
+                                <p
+                                  className={cn(
+                                    "text-sm leading-relaxed",
+                                    unread ? "text-foreground/80" : "text-muted-foreground",
+                                    !expandedIds.has(announcement.id) && "line-clamp-2"
+                                  )}
+                                >
+                                  {plainText}
+                                </p>
+                                {plainText.length > 100 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedIds((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(announcement.id)) {
+                                          next.delete(announcement.id);
+                                        } else {
+                                          next.add(announcement.id);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-accent transition-colors"
+                                  >
+                                    {expandedIds.has(announcement.id) ? (
+                                      <>
+                                        Show less <ChevronUp className="h-3 w-3" />
+                                      </>
+                                    ) : (
+                                      <>
+                                        Show more <ChevronDown className="h-3 w-3" />
+                                      </>
+                                    )}
+                                  </button>
                                 )}
-                              >
-                                {plainText}
-                              </p>
+                              </>
                             )}
 
                             {/* View Button */}
