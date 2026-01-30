@@ -1,8 +1,5 @@
-export const buildGlobalNotificationEmail = (
-  title: string,
-  body: string
-): string => {
-return `
+export const buildGlobalNotificationEmail = (title: string, body: string): string => {
+  return `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
@@ -127,17 +124,6 @@ return `
         margin: 0;
       }
 
-      .announcement-card {
-        background: linear-gradient(135deg, 
-          rgba(255, 0, 255, 0.06) 0%, 
-          rgba(34, 174, 209, 0.06) 50%,
-          rgba(242, 178, 73, 0.06) 100%
-        );
-        border-radius: 16px;
-        border: 1px solid rgba(255, 0, 255, 0.12);
-        border-left: 4px solid #d946ef;
-      }
-
       .announcement-body {
         font-size: 15px;
         color: #4a4a5a;
@@ -215,8 +201,14 @@ return `
           font-size: 22px !important;
         }
 
-        .announcement-card {
-          border-radius: 12px !important;
+        .announcement-card-outer {
+          border-radius: 16px !important;
+        }
+
+        .announcement-card-inner {
+          border-radius: 14px !important;
+          border-top-left-radius: 12px !important;
+          border-bottom-left-radius: 12px !important;
         }
 
         .card-padding {
@@ -292,14 +284,23 @@ return `
                   </tr>
                 </table>
 
-                <!-- Announcement Card -->
+                <!-- Announcement Card with Rounded Borders -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td>
-                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="announcement-card" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.06) 0%, rgba(34, 174, 209, 0.06) 50%, rgba(242, 178, 73, 0.06) 100%); border-radius: 16px; border: 1px solid rgba(255, 0, 255, 0.12); border-left: 4px solid #d946ef;">
+                      <!-- Outer wrapper for the accent border with rounded corners -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="announcement-card-outer" style="background: linear-gradient(180deg, #d946ef 0%, #c026d3 100%); border-radius: 20px; overflow: hidden;">
                         <tr>
-                          <td class="card-padding" style="padding: 24px 28px;">
-                            <p class="announcement-body" style="font-size: 15px; color: #4a4a5a; line-height: 1.75; margin: 0; white-space: pre-wrap;">${body}</p>
+                          <!-- Left accent "border" created with padding -->
+                          <td style="padding: 0 0 0 5px;">
+                            <!-- Inner content card -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="announcement-card-inner" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 250, 255, 0.98) 50%, rgba(250, 255, 255, 0.98) 100%); border-radius: 18px; border-top-left-radius: 15px; border-bottom-left-radius: 15px;">
+                              <tr>
+                                <td class="card-padding" style="padding: 24px 28px;">
+                                  <p class="announcement-body" style="font-size: 15px; color: #4a4a5a; line-height: 1.75; margin: 0; white-space: pre-wrap;">${body}</p>
+                                </td>
+                              </tr>
+                            </table>
                           </td>
                         </tr>
                       </table>

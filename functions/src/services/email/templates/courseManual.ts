@@ -1,12 +1,10 @@
 export const buildCourseManualAnnouncementEmail = (
   title: string,
   body: string,
-  urlSlug: string,
-
+  urlSlug: string
 ): string => {
-
-
-return `
+  const evalLink = `https://vizuara.ai/courses/${urlSlug}`;
+  return `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
@@ -15,7 +13,7 @@ return `
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="x-apple-disable-message-reformatting" />
     <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
-    <title>Course Announcement</title>
+    <title>Announcement</title>
     <!--[if mso]>
     <noscript>
       <xml>
@@ -26,6 +24,7 @@ return `
     </noscript>
     <![endif]-->
     <style>
+      /* Reset */
       * {
         margin: 0;
         padding: 0;
@@ -60,39 +59,178 @@ return `
         -webkit-font-smoothing: antialiased;
       }
 
+      .wrapper {
+        width: 100%;
+        background: linear-gradient(135deg, 
+          hsl(300, 100%, 95%) 0%, 
+          hsl(280, 80%, 92%) 25%,
+          hsl(198, 75%, 92%) 50%,
+          hsl(36, 95%, 92%) 100%
+        );
+      }
+
+      .container {
+        max-width: 540px;
+        margin: 0 auto;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 24px;
+      }
+
+      .logo-text {
+        font-size: 24px;
+        font-weight: 800;
+        background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.5px;
+      }
+
+      /* Fallback for email clients that don't support gradient text */
+      .logo-text-fallback {
+        color: #d946ef;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      .badge {
+        display: inline-block;
+        background: linear-gradient(135deg, 
+          rgba(255, 0, 255, 0.12) 0%, 
+          rgba(34, 174, 209, 0.12) 100%
+        );
+        color: #a21caf;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: 1px solid rgba(255, 0, 255, 0.15);
+      }
+
+      .badge-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background-color: #d946ef;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+
+      h2 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #1a1a2e;
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      .announcement-body {
+        font-size: 15px;
+        color: #4a4a5a;
+        line-height: 1.75;
+      }
+
+      .divider {
+        height: 1px;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(255, 0, 255, 0.2) 20%,
+          rgba(34, 174, 209, 0.2) 50%,
+          rgba(242, 178, 73, 0.2) 80%,
+          transparent 100%
+        );
+      }
+
+      .footer-text {
+        font-size: 14px;
+        color: #6a6a7a;
+        font-weight: 500;
+      }
+
+      .footer-heart {
+        color: #d946ef;
+      }
+
+      .footer-brand {
+        font-weight: 700;
+        color: #d946ef;
+      }
+
+      .footer-link {
+        font-size: 13px;
+        color: #8a8a9a;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .footer-link:hover {
+        color: #d946ef;
+      }
+
+      .dot-separator {
+        color: #8a8a9a;
+        font-size: 8px;
+        vertical-align: middle;
+        padding: 0 10px;
+      }
+
+      /* Mobile Styles */
       @media only screen and (max-width: 600px) {
-        .wrapper-padding {
+        .wrapper {
           padding: 24px 12px !important;
         }
-        .container-padding {
+
+        .container {
+          border-radius: 20px !important;
+        }
+
+        .content-padding {
           padding: 32px 24px !important;
         }
+
         .logo-img {
           width: 40px !important;
           height: 40px !important;
         }
-        .logo-text {
+
+        .logo-text, .logo-text-fallback {
           font-size: 20px !important;
         }
-        .main-heading {
+
+        h2 {
           font-size: 22px !important;
         }
-        .item-card {
+
+        .announcement-card-outer {
+          border-radius: 16px !important;
+        }
+
+        .announcement-card-inner {
+          border-radius: 14px !important;
+        }
+
+        .card-padding {
           padding: 18px 20px !important;
         }
-        .item-title {
-          font-size: 15px !important;
-        }
-        .description {
+
+        .announcement-body {
           font-size: 14px !important;
         }
+
         .btn {
           padding: 16px 28px !important;
           font-size: 14px !important;
         }
+
         .link-box {
-          padding: 16px 18px !important;
+          padding: 14px 16px !important;
         }
+
         .link-url {
           font-size: 11px !important;
         }
@@ -100,16 +238,16 @@ return `
     </style>
   </head>
 
-  <body style="margin: 0; padding: 0; background-color: #f5f0ff;">
+  <body style="margin: 0; padding: 0;">
     <!-- Wrapper -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, hsl(300, 100%, 95%) 0%, hsl(280, 80%, 92%) 25%, hsl(198, 75%, 92%) 50%, hsl(36, 95%, 92%) 100%); min-height: 100vh;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="wrapper" style="background: linear-gradient(135deg, hsl(300, 100%, 95%) 0%, hsl(280, 80%, 92%) 25%, hsl(198, 75%, 92%) 50%, hsl(36, 95%, 92%) 100%);">
       <tr>
-        <td align="center" class="wrapper-padding" style="padding: 48px 16px;">
+        <td align="center" style="padding: 48px 16px;">
           
           <!-- Container -->
-          <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; width: 100%; background-color: rgba(255, 255, 255, 0.95); border-radius: 24px;  box-shadow: 0 8px 32px rgba(255, 0, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);">
+          <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" class="container" style="max-width: 540px; width: 100%; background-color: rgba(255, 255, 255, 0.95); border-radius: 24px;  box-shadow: 0 8px 32px rgba(255, 0, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);">
             <tr>
-              <td class="container-padding" style="padding: 48px 44px;">
+              <td class="content-padding" style="padding: 48px 44px;">
                 
                 <!-- Logo Section -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -122,10 +260,10 @@ return `
                           </td>
                           <td valign="middle">
                             <!--[if mso]>
-                            <span style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
+                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
                             <![endif]-->
                             <!--[if !mso]><!-->
-                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">Vizuara AI Labs</span>
+                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara AI Labs</span>
                             <!--<![endif]-->
                           </td>
                         </tr>
@@ -145,16 +283,37 @@ return `
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="center" style="padding-bottom: 20px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.12) 0%, rgba(34, 174, 209, 0.12) 100%); border-radius: 50px; border: 1px solid rgba(255, 0, 255, 0.15);">
+                      <span class="badge" style="display: inline-block; background: linear-gradient(135deg, rgba(255, 0, 255, 0.12) 0%, rgba(34, 174, 209, 0.12) 100%); color: #a21caf; font-size: 11px; font-weight: 700; padding: 8px 16px; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(255, 0, 255, 0.15);">
+                        <span class="badge-dot" style="display: inline-block; width: 6px; height: 6px; background-color: #d946ef; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>
+                        Announcement
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Title -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" style="padding-bottom: 24px;">
+                      <h2 style="font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; line-height: 1.2; margin: 0;">${title}</h2>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Announcement Card with Rounded Borders -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <!-- Outer wrapper for the accent border with rounded corners -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="announcement-card-outer" style="background: linear-gradient(180deg, #d946ef 0%, #c026d3 100%); border-radius: 20px; overflow: hidden;">
                         <tr>
-                          <td style="padding: 8px 16px;">
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                          <!-- Left accent "border" created with padding -->
+                          <td style="padding: 0 0 0 5px;">
+                            <!-- Inner content card -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="announcement-card-inner" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 250, 255, 0.98) 50%, rgba(250, 255, 255, 0.98) 100%); border-radius: 18px; border-top-left-radius: 15px; border-bottom-left-radius: 15px;">
                               <tr>
-                                <td valign="middle" style="padding-right: 6px;">
-                                  <div style="width: 6px; height: 6px; background-color: #d946ef; border-radius: 50%;"></div>
-                                </td>
-                                <td valign="middle">
-                                  <span style="color: #a21caf; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Course Announcement</span>
+                                <td class="card-padding" style="padding: 24px 28px;">
+                                  <p class="announcement-body" style="font-size: 15px; color: #4a4a5a; line-height: 1.75; margin: 0; white-space: pre-wrap;">${body}</p>
                                 </td>
                               </tr>
                             </table>
@@ -165,26 +324,28 @@ return `
                   </tr>
                 </table>
 
-                <!-- Heading -->
+                <!-- Spacer -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td align="center" style="padding-bottom: 24px;">
-                      <h2 class="main-heading" style="font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; line-height: 1.2; margin: 0;">New Added!</h2>
-                    </td>
+                    <td height="36" style="font-size: 0; line-height: 0;">&nbsp;</td>
                   </tr>
                 </table>
 
-                <!-- Item Title Card -->
+                <!-- CTA Button -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td>
-                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="item-card" style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.06) 0%, rgba(34, 174, 209, 0.06) 50%, rgba(242, 178, 73, 0.06) 100%); border-radius: 16px; border: 1px solid rgba(255, 0, 255, 0.12); border-left: 4px solid #d946ef;">
-                        <tr>
-                          <td class="item-title" style="padding: 20px 24px; font-size: 17px; font-weight: 600; color: #1a1a2e;">
-                            ${title}
-                          </td>
-                        </tr>
-                      </table>
+                    <td align="center">
+                      <!--[if mso]>
+                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${evalLink}" style="height:52px;v-text-anchor:middle;width:220px;" arcsize="50%" strokecolor="#d946ef" fillcolor="#d946ef">
+                        <w:anchorlock/>
+                        <center style="color:#ffffff;font-family:'Segoe UI',Tahoma,Geneva,Verdana,Arial,sans-serif;font-size:15px;font-weight:700;">View Course →</center>
+                      </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]><!-->
+                      <a href="${evalLink}" class="btn" style="display: inline-block; padding: 18px 36px; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(280, 80%, 55%) 50%, hsl(198, 75%, 52%) 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; border-radius: 50px; box-shadow: 0 4px 16px rgba(217, 70, 239, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1); transition: all 0.3s ease;">
+                        View Course →
+                      </a>
+                      <!--<![endif]-->
                     </td>
                   </tr>
                 </table>
@@ -196,15 +357,18 @@ return `
                   </tr>
                 </table>
 
-            
-
-                <!-- Spacer -->
+                <!-- Link Box (fallback) -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td height="32" style="font-size: 0; line-height: 0;">&nbsp;</td>
-                  </tr>
-                </table>
-
+                    <td align="center">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="link-box" style="background-color: rgba(217, 70, 239, 0.06); border-radius: 16px; border: 1px solid rgba(217, 70, 239, 0.15);">
+                        <tr>
+                          <td style="padding: 14px 20px;">
+                            <p style="font-size: 11px; color: #8a8a9a; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Or copy this link:</p>
+                            <a href="${evalLink}" class="link-url" style="font-size: 12px; color: #a21caf; text-decoration: none; word-break: break-all; font-weight: 500;">${evalLink}</a>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                 </table>
@@ -212,16 +376,7 @@ return `
                 <!-- Spacer -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td height="28" style="font-size: 0; line-height: 0;">&nbsp;</td>
-                  </tr>
-                </table>
-
-                
-
-                <!-- Spacer -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td height="36" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                    <td height="24" style="font-size: 0; line-height: 0;">&nbsp;</td>
                   </tr>
                 </table>
 
@@ -243,15 +398,8 @@ return `
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="center">
-                      <p style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
-                        Made with <span style="color: #d946ef;">♥</span> by the 
-                        <!--[if mso]>
-                        <span style="font-weight: 700; color: #d946ef;">Vizuara</span>
-                        <![endif]-->
-                        <!--[if !mso]><!-->
-                        <span style="font-weight: 700; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara</span>
-                        <!--<![endif]-->
-                        Team
+                      <p class="footer-text" style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
+                        Made with <span class="footer-heart" style="color: #d946ef;">♥</span> by the <span class="footer-brand" style="font-weight: 700; color: #d946ef;">Vizuara</span> Team
                       </p>
                     </td>
                   </tr>
@@ -262,14 +410,14 @@ return `
                     <td align="center">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
-                          <td valign="middle">
-                            <a href="https://vizuara.ai" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
+                          <td>
+                            <a href="https://vizuara.ai" class="footer-link" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
                           </td>
-                          <td valign="middle" style="padding: 0 12px;">
-                            <span style="color: #8a8a9a; font-size: 10px;">•</span>
+                          <td>
+                            <span class="dot-separator" style="color: #8a8a9a; font-size: 10px; padding: 0 12px;">•</span>
                           </td>
-                          <td valign="middle">
-                            <a href="https://vizuara.ai/privacy" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
+                          <td>
+                            <a href="https://vizuara.ai/privacy" class="footer-link" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
                           </td>
                         </tr>
                       </table>
