@@ -349,6 +349,12 @@ const AdminComplaints = () => {
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">E</span>
                       </li>
                       <li className="flex justify-between">
+                        <span>Send mail</span>
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                          Ctrl/Cmd + Enter
+                        </span>
+                      </li>
+                      <li className="flex justify-between">
                         <span>Deselect</span>
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
                           Esc
