@@ -7,7 +7,7 @@ import { logError } from "@/utils/logger";
 import { getFullName } from "@/utils/name";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
-import { collection, doc, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, query, QueryConstraint, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
+import { collection, doc, documentId, endBefore, getCountFromServer, getDoc, getDocs, limit, limitToLast, orderBy, query, QueryConstraint, setDoc, startAfter, updateDoc, where } from "firebase/firestore";
 import { learningProgressService } from "./learningProgressService";
 import { Enrollment } from "@/types/enrollment";
 import { enrollmentService } from "./enrollmentService";
@@ -98,45 +98,35 @@ class CertificateRequestService {
                 cursor = null,
             } = options;
 
-            const constraints: QueryConstraint[] = [];
+            const collectionRef = collection(db, COLLECTION.CERTIFICATE_REQUESTS);
 
+            // Filter constraints only (no cursor/limit) — safe for count queries
+            const filterConstraints: QueryConstraint[] = [];
             if (status && status !== "ALL") {
-                constraints.push(where("status", "==", status));
+                filterConstraints.push(where("status", "==", status));
             }
 
-            if (cursor) {
-                constraints.push(
-                    pageDirection === "next"
-                        ? startAfter(cursor)
-                        : endBefore(cursor)
-                );
-            }
-
-            constraints.push(limit(itemsPerPage));
-
-            let q = query(collection(db, COLLECTION.CERTIFICATE_REQUESTS), ...constraints);
-
-            const countSnapshot = await getCountFromServer(q);
+            const countQuery = query(collectionRef, ...filterConstraints);
+            const countSnapshot = await getCountFromServer(countQuery);
             const totalCount = countSnapshot.data().count;
 
+            // Paginated query — built separately with orderBy for cursor support
+            const paginationConstraints: QueryConstraint[] = [
+                ...filterConstraints,
+                orderBy(documentId()),
+            ];
+
             if (pageDirection === "previous" && cursor) {
-                q = query(
-                    q,
-                    endBefore(cursor),
-                    limitToLast(itemsPerPage)
-                );
+                paginationConstraints.push(endBefore(cursor));
+                paginationConstraints.push(limitToLast(itemsPerPage));
             } else if (cursor) {
-                q = query(
-                    q,
-                    startAfter(cursor),
-                    limit(itemsPerPage)
-                );
+                paginationConstraints.push(startAfter(cursor));
+                paginationConstraints.push(limit(itemsPerPage));
             } else {
-                q = query(
-                    q,
-                    limit(itemsPerPage)
-                );
+                paginationConstraints.push(limit(itemsPerPage));
             }
+
+            const q = query(collectionRef, ...paginationConstraints);
 
             const snapshot = await getDocs(q);
             const documents = snapshot.docs;
