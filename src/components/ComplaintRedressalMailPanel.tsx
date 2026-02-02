@@ -48,6 +48,10 @@ const ComplaintRedressalMailPanel = React.forwardRef<
     if (e.key === "Escape") {
       e.currentTarget.blur();
     }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleSend = async () => {
