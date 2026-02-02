@@ -48,8 +48,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
-import "react-phone-number-input/style.css";
 import PaymentCheckout from "@/components/payment/PaymentCheckout";
 import { Bundle } from "@/types/bundle";
 import { bundleService } from "@/services/bundleService";

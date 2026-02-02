@@ -44,7 +44,8 @@ jobs:
           VITE_RAZORPAY_KEY_ID: ${{ vars.VITE_RAZORPAY_KEY_ID }}
           VITE_PAYPAL_SANDBOX_CLIENT_ID: ${{ vars.VITE_PAYPAL_SANDBOX_CLIENT_ID }}
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
-          VITE_APP_ENVIRONMENT: $ {{ vars.VITE_APP_ENVIRONMENT }}
+          VITE_APP_ENVIRONMENT: ${{ vars.VITE_APP_ENVIRONMENT }}
+
       - name: Authenticate to GCP (dev)
         uses: google-github-actions/auth@v2
         with:

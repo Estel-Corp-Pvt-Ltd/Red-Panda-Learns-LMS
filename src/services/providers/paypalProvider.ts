@@ -23,14 +23,10 @@ interface CreateOrderResponse {
 
 class PayPalProvider {
   private readonly environment =
-    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-      ? ENVIRONMENT.DEVELOPMENT
-      : ENVIRONMENT.PRODUCTION;
+    import.meta.env.VITE_APP_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ? ENVIRONMENT.DEVELOPMENT : ENVIRONMENT.PRODUCTION;
 
   private readonly clientId =
-    this.environment === ENVIRONMENT.DEVELOPMENT
-      ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID
-      : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
+    this.environment === ENVIRONMENT.DEVELOPMENT ? import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID : import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID;
 
   private sdkLoaded = false;
   private buttonInstance: any = null;
@@ -109,8 +105,8 @@ class PayPalProvider {
 
       const host =
         this.environment === ENVIRONMENT.DEVELOPMENT
-          ? "sandbox.paypal.com"
-          : "paypal.com";
+          ? "www.sandbox.paypal.com"
+          : "www.paypal.com";
 
       const script = document.createElement("script");
       script.src = `https://${host}/sdk/js?client-id=${this.clientId}&currency=${currency}&intent=capture`;

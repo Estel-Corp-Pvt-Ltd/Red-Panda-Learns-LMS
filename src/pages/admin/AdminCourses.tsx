@@ -789,7 +789,7 @@ const AdminCourses = () => {
 
                       <TableCell className="text-right">
                         <div className="flex justify-center gap-2">
-                          {/* ADD THIS - Leaderboard Button */}
+                          {/* Leaderboard – action, NOT navigation */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -799,22 +799,21 @@ const AdminCourses = () => {
                             <Star className="h-4 w-4 text-yellow-500" />
                           </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/admin/edit-course/${course.id}`)}
-                            title="Edit course"
-                          >
-                            <Edit className="h-4 w-4" />
+                          {/* Edit course */}
+                          <Button asChild variant="ghost" size="sm">
+                            <Link to={`/admin/edit-course/${course.id}`} title="Edit course">
+                              <Edit className="h-4 w-4" />
+                            </Link>
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/courses/${course.slug}`)}
-                            title="View course"
-                          >
-                            <Eye className="h-4 w-4" />
+
+                          {/* View course */}
+                          <Button asChild variant="ghost" size="sm">
+                            <Link to={`/courses/${course.slug}`} title="View course">
+                              <Eye className="h-4 w-4" />
+                            </Link>
                           </Button>
+
+                          {/* Delete – action, NOT navigation */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -826,16 +825,14 @@ const AdminCourses = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+
+                          {/* Forum */}
                           {course.isForumEnabled && (
-                            <Link
-                              to={`/courses/${course.slug}/forum`}
-                              title="View Forum"
-                              className="text-primary hover:bg-secondary"
-                            >
-                              <Button variant="ghost" size="sm">
+                            <Button asChild variant="ghost" size="sm">
+                              <Link to={`/courses/${course.slug}/forum`} title="View Forum">
                                 <MessageSquare className="h-4 w-4" />
-                              </Button>
-                            </Link>
+                              </Link>
+                            </Button>
                           )}
                         </div>
                       </TableCell>
