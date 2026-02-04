@@ -722,6 +722,7 @@ export function LessonView({
       case LESSON_TYPE.SLIDE_DECK:
       case LESSON_TYPE.PDF:
       case LESSON_TYPE.MIRO_BOARD:
+      case LESSON_TYPE.ZOOM_RECORDED_LECTURE:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
