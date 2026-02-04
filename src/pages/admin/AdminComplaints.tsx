@@ -1,5 +1,5 @@
 import AdminLayout from "@/components/AdminLayout";
-import ComplaintDetailPanel from "@/components/ComplaintDetailPanel";
+import ComplaintDetailPanel, { DetailPanelHandle } from "@/components/ComplaintDetailPanel";
 import ComplaintRedressalMailPanel, {
   MailPanelHandle,
 } from "@/components/ComplaintRedressalMailPanel";
@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { complaintService } from "@/services/complaintService";
 import { Complaint } from "@/types/complaint";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ChevronLeft, ChevronRight, Info, Keyboard, Loader2, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -72,7 +73,8 @@ const AdminComplaints = () => {
   });
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const detailPanelRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const detailPanelRef = useRef<DetailPanelHandle>(null);
   const mailPanelRef = useRef<MailPanelHandle>(null);
 
   /* Debounced search */
@@ -179,21 +181,66 @@ const AdminComplaints = () => {
     [complaints.data]
   );
 
+  const goToNextPage = useCallback(() => {
+    if (!complaints.hasNextPage) return;
+    setPaginationState((p) => ({
+      cursor: complaints.nextCursor,
+      pageDirection: "next",
+      currentPage: p.currentPage + 1,
+    }));
+  }, [complaints.hasNextPage, complaints.nextCursor]);
+
+  const goToPreviousPage = useCallback(() => {
+    if (!complaints.hasPreviousPage || paginationState.currentPage <= 1) return;
+    setPaginationState((p) => ({
+      cursor: complaints.previousCursor,
+      pageDirection: "previous",
+      currentPage: p.currentPage - 1,
+    }));
+  }, [complaints.hasPreviousPage, complaints.previousCursor, paginationState.currentPage]);
+
   /* Keyboard navigation */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
-      // Don't intercept if user is typing in an input/textarea
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
+      // Ctrl/Cmd + R to resolve selected complaint (works everywhere)
+      if ((e.ctrlKey || e.metaKey) && e.key === "r") {
+        e.preventDefault();
+        if (selectedComplaint) {
+          detailPanelRef.current?.resolve();
+        }
+        return;
+      }
+
+      // Escape blurs search input if focused, otherwise deselects
+      if (e.key === "Escape") {
+        if (isTyping) {
+          (e.target as HTMLElement).blur();
+        } else {
+          setSelectedComplaint(null);
+          setSelectedIndex(-1);
+        }
+        return;
+      }
+
+      // Don't intercept other keys if user is typing in an input/textarea
+      if (isTyping) return;
 
       switch (e.key) {
+        case "/": {
+          // Focus search
+          e.preventDefault();
+          searchInputRef.current?.focus();
+          break;
+        }
         case "ArrowDown":
         case "j": {
           e.preventDefault();
           const next =
             selectedIndex < complaints.data.length - 1 ? selectedIndex + 1 : selectedIndex;
           selectByIndex(next);
-          // Scroll the row into view
           const row = tableContainerRef.current?.querySelector(`[data-row-index="${next}"]`);
           row?.scrollIntoView({ block: "nearest" });
           break;
@@ -207,10 +254,22 @@ const AdminComplaints = () => {
           row?.scrollIntoView({ block: "nearest" });
           break;
         }
+        case "n": {
+          // Next page
+          e.preventDefault();
+          goToNextPage();
+          break;
+        }
+        case "p": {
+          // Previous page
+          e.preventDefault();
+          goToPreviousPage();
+          break;
+        }
         case "d": {
           // Focus detail panel
           e.preventDefault();
-          detailPanelRef.current?.focus();
+          detailPanelRef.current?.container?.focus();
           break;
         }
         case "m": {
@@ -231,18 +290,12 @@ const AdminComplaints = () => {
           mailPanelRef.current?.focusMessage();
           break;
         }
-        case "Escape": {
-          // Deselect
-          setSelectedComplaint(null);
-          setSelectedIndex(-1);
-          break;
-        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex, complaints.data.length, selectByIndex]);
+  }, [selectedIndex, complaints.data.length, selectByIndex, goToNextPage, goToPreviousPage]);
 
   /* Re-sync selected complaint data after reload */
   useEffect(() => {
@@ -291,13 +344,9 @@ const AdminComplaints = () => {
 
   return (
     <AdminLayout>
-      <div className="flex gap-4 h-full">
+      <ResizablePanelGroup direction="horizontal" className="h-full">
         {/* Left: Table area */}
-        <div
-          className={`flex-1 min-w-0 transition-all ${
-            selectedComplaint ? "max-w-[40%]" : "max-w-full"
-          }`}
-        >
+        <ResizablePanel defaultSize={selectedComplaint ? 40 : 100} minSize={25}>
           <Card className="h-full flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -327,10 +376,22 @@ const AdminComplaints = () => {
                     </div>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex justify-between">
+                        <span>Search</span>
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">/</span>
+                      </li>
+                      <li className="flex justify-between">
                         <span>Navigate rows</span>
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
                           ↑ / ↓ or j / k
                         </span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>Next page</span>
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">N</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>Previous page</span>
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">P</span>
                       </li>
                       <li className="flex justify-between">
                         <span>Focus detail panel</span>
@@ -349,13 +410,19 @@ const AdminComplaints = () => {
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">E</span>
                       </li>
                       <li className="flex justify-between">
+                        <span>Resolve complaint</span>
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                          Ctrl/Cmd + R
+                        </span>
+                      </li>
+                      <li className="flex justify-between">
                         <span>Send mail</span>
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
                           Ctrl/Cmd + Enter
                         </span>
                       </li>
                       <li className="flex justify-between">
-                        <span>Deselect</span>
+                        <span>Deselect / Blur</span>
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
                           Esc
                         </span>
@@ -374,7 +441,8 @@ const AdminComplaints = () => {
                 <div className="relative max-w-sm w-full">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by user or description"
+                    ref={searchInputRef}
+                    placeholder="Search by user or description ( / )"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     className="pl-9"
@@ -495,14 +563,8 @@ const AdminComplaints = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={!complaints.hasPreviousPage}
-                    onClick={() =>
-                      setPaginationState((p) => ({
-                        cursor: complaints.previousCursor,
-                        pageDirection: "previous",
-                        currentPage: p.currentPage - 1,
-                      }))
-                    }
+                    disabled={!complaints.hasPreviousPage || paginationState.currentPage <= 1}
+                    onClick={goToPreviousPage}
                   >
                     <ChevronLeft className="h-4 w-4" /> Previous
                   </Button>
@@ -510,13 +572,7 @@ const AdminComplaints = () => {
                     variant="outline"
                     size="sm"
                     disabled={!complaints.hasNextPage}
-                    onClick={() =>
-                      setPaginationState((p) => ({
-                        cursor: complaints.nextCursor,
-                        pageDirection: "next",
-                        currentPage: p.currentPage + 1,
-                      }))
-                    }
+                    onClick={goToNextPage}
                   >
                     Next <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -524,32 +580,37 @@ const AdminComplaints = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </ResizablePanel>
 
         {/* Right: Inspector panels */}
         {selectedComplaint && (
-          <div className="w-[60%] min-w-[500px] flex flex-col gap-3 h-full overflow-hidden">
-            {/* Detail panel — internal 2-col grid with meta+desc | activity log */}
-            <div className="flex-1 min-h-0">
-              <ComplaintDetailPanel
-                ref={detailPanelRef}
-                complaint={selectedComplaint}
-                onResolved={loadComplaints}
-              />
-            </div>
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={60} minSize={30}>
+              <div className="flex flex-col gap-3 h-full overflow-hidden pl-2">
+                {/* Detail panel */}
+                <div className="flex-1 min-h-0 overflow-auto">
+                  <ComplaintDetailPanel
+                    ref={detailPanelRef}
+                    complaint={selectedComplaint}
+                    onResolved={loadComplaints}
+                  />
+                </div>
 
-            {/* Mail panel (bottom) */}
-            <div className="shrink-0">
-              <ComplaintRedressalMailPanel
-                ref={mailPanelRef}
-                complaint={selectedComplaint}
-                userId={user.id}
-                onSent={loadComplaints}
-              />
-            </div>
-          </div>
+                {/* Mail panel */}
+                <div className="shrink-0">
+                  <ComplaintRedressalMailPanel
+                    ref={mailPanelRef}
+                    complaint={selectedComplaint}
+                    userId={user.id}
+                    onSent={loadComplaints}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+          </>
         )}
-      </div>
+      </ResizablePanelGroup>
     </AdminLayout>
   );
 };
