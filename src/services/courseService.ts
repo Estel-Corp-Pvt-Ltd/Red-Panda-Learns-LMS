@@ -92,7 +92,7 @@ class CourseService {
       | "isCertificateEnabled"
       | "isForumEnabled"
       | "isWelcomeMessageEnabled"
-      | "CustomCertificateName"
+      | "customCertificateName"
     >
   ): Promise<string> {
     try {
@@ -117,6 +117,7 @@ class CourseService {
         isEnrollmentPaused: true,
         isMailSendingEnabled: false,
         isCertificateEnabled: false,
+        isCourseCompletionEnabled: false,
         isForumEnabled: false,
         isWelcomeMessageEnabled: false,
         createdAt: serverTimestamp(),
@@ -158,10 +159,7 @@ class CourseService {
    * });
    */
 
-  async updateCourse(
-    courseId: string,
-    updates: Partial<Course>
-  ): Promise<void> {
+  async updateCourse(courseId: string, updates: Partial<Course>): Promise<void> {
     try {
       const courseRef = doc(db, COLLECTION.COURSES, courseId);
       const courseDoc = await getDoc(courseRef);
@@ -183,12 +181,10 @@ class CourseService {
       if (updates.regularPrice) updateData.regularPrice = updates.regularPrice;
       if (updates.salePrice) updateData.salePrice = updates.salePrice;
       if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
-      if (updates.targetAudienceIds)
-        updateData.targetAudienceIds = updates.targetAudienceIds;
+      if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.status) updateData.status = updates.status;
-      if (updates.instructorName)
-        updateData.instructorName = updates.instructorName;
+      if (updates.instructorName) updateData.instructorName = updates.instructorName;
       if (updates.instructorId) updateData.instructorId = updates.instructorId;
       if (updates.pricingModel) updateData.pricingModel = updates.pricingModel;
       if (updates.topics) updateData.topics = updates.topics;
@@ -199,10 +195,12 @@ class CourseService {
       if (updates.customCertificateName !== undefined) {
         updateData.customCertificateName = updates.customCertificateName;
       }
+      if (updates.isCourseCompletionEnabled !== undefined) {
+        updateData.isCourseCompletionEnabled = updates.isCourseCompletionEnabled;
+      }
       if (updates.isCertificateEnabled !== undefined)
         updateData.isCertificateEnabled = updates.isCertificateEnabled;
-      if (updates.isForumEnabled !== undefined)
-        updateData.isForumEnabled = updates.isForumEnabled;
+      if (updates.isForumEnabled !== undefined) updateData.isForumEnabled = updates.isForumEnabled;
       if (updates.isWelcomeMessageEnabled !== undefined)
         updateData.isWelcomeMessageEnabled = updates.isWelcomeMessageEnabled;
       if (updates.certificateTemplateId)
@@ -305,10 +303,7 @@ class CourseService {
       return ok(courseList);
     } catch (error: any) {
       logError("CourseService.getCourseByInstructor", error);
-      return fail(
-        "Failed to fetch Instructor Courses.",
-        error.code || error.message
-      );
+      return fail("Failed to fetch Instructor Courses.", error.code || error.message);
     }
   }
 
@@ -332,9 +327,7 @@ class CourseService {
 
       // Apply filters if provided
       if (filters && filters.length > 0) {
-        const whereClauses = filters.map((f) =>
-          where(f.field as string, f.op, f.value)
-        );
+        const whereClauses = filters.map((f) => where(f.field as string, f.op, f.value));
         q = query(q, ...whereClauses);
       }
 
@@ -356,12 +349,7 @@ class CourseService {
         );
       } else if (cursor) {
         // Next page - use startAfter
-        q = query(
-          q,
-          orderBy(field as string, direction),
-          startAfter(cursor),
-          limit(itemsPerPage)
-        );
+        q = query(q, orderBy(field as string, direction), startAfter(cursor), limit(itemsPerPage));
       } else {
         // First page - simple limit
         q = query(q, orderBy(field as string, direction), limit(itemsPerPage));
@@ -401,6 +389,7 @@ class CourseService {
           isEnrollmentPaused: data.isEnrollmentPaused || false,
           customCertificateName: data.customCertificateName || "",
           isCertificateEnabled: data.isCertificateEnabled || false,
+          isCourseCompletionEnabled: data.isCourseCompletionEnabled || false,
           isWelcomeMessageEnabled: data.isWelcomeMessageEnabled || false,
           isForumEnabled: data.isForumEnabled || false,
           isMailSendingEnabled: data.isMailSendingEnabled || false,
@@ -414,9 +403,7 @@ class CourseService {
       const hasPreviousPage = cursor !== null;
 
       // Get cursors for next and previous pages
-      const nextCursor = hasNextPage
-        ? querySnapshot.docs[querySnapshot.docs.length - 1]
-        : null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
       console.log("CourseService - Fetched courses with pagination:", {
@@ -435,10 +422,7 @@ class CourseService {
         totalCount,
       });
     } catch (error) {
-      console.error(
-        "CourseService - Error fetching courses with pagination:",
-        error
-      );
+      console.error("CourseService - Error fetching courses with pagination:", error);
       return fail("Error fetching courses");
     }
   }
@@ -494,10 +478,7 @@ class CourseService {
       let q = collection(db, COLLECTION.COURSES);
 
       if (filters && filters.length > 0) {
-        let queryRef = query(
-          q,
-          ...filters.map((f) => where(f.field as string, f.op, f.value))
-        );
+        let queryRef = query(q, ...filters.map((f) => where(f.field as string, f.op, f.value)));
         const querySnapshot = await getDocs(queryRef);
 
         const courses = querySnapshot.docs.map((doc) => ({
@@ -563,16 +544,10 @@ class CourseService {
     }
   }
 
-  async isCourseUrlTaken(
-    url: string,
-    currentCourseId?: string
-  ): Promise<boolean> {
+  async isCourseUrlTaken(url: string, currentCourseId?: string): Promise<boolean> {
     if (!url) return false;
 
-    const q = query(
-      collection(db, COLLECTION.COURSES),
-      where("url", "==", url)
-    );
+    const q = query(collection(db, COLLECTION.COURSES), where("url", "==", url));
     const snap = await getDocs(q);
 
     // true if another course with same URL exists
@@ -581,10 +556,7 @@ class CourseService {
 
   async getCourseBySlug(slug: string): Promise<Course | null> {
     try {
-      const q = query(
-        collection(db, COLLECTION.COURSES),
-        where("slug", "==", slug)
-      );
+      const q = query(collection(db, COLLECTION.COURSES), where("slug", "==", slug));
       const snap = await getDocs(q);
 
       if (snap.empty) {
@@ -664,10 +636,7 @@ class CourseService {
     const courses: Course[] = [];
 
     for (const chunk of chunks) {
-      const q = query(
-        collection(db, COLLECTION.COURSES),
-        where("id", "in", chunk)
-      );
+      const q = query(collection(db, COLLECTION.COURSES), where("id", "in", chunk));
       const snapshot = await getDocs(q);
 
       snapshot.docs.forEach((doc) => {
@@ -699,7 +668,6 @@ class CourseService {
       return null;
     }
   }
-
 
   async getCertificateNamebyID(courseId: string): Promise<string | null> {
     try {

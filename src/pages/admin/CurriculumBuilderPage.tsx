@@ -77,6 +77,7 @@ const CurriculumBuilderPage = () => {
   const [isForumEnabled, setIsForumEnabled] = useState(false);
   const [isWelcomeMessageEnabled, setIsEnrollAnnouncementEnabled] = useState(false);
   const [customCertificateName, setCustomCertificateName] = useState("");
+  const [isCourseCompletionEnabled, setIsCourseCompletionEnabled] = useState(false);
   const itemId = new URLSearchParams(location.search).get("itemId");
   const [activeTab, setActiveTab] = useState("basics");
 
@@ -184,6 +185,7 @@ const CurriculumBuilderPage = () => {
         setCustomCertificateName(
           data.customCertificateName || data.title || ""
         );
+        setIsCourseCompletionEnabled(data.isCourseCompletionEnabled ?? false);
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -299,6 +301,7 @@ const CurriculumBuilderPage = () => {
         isForumEnabled,
         isWelcomeMessageEnabled,
         customCertificateName,
+        isCourseCompletionEnabled,
       });
       toast({ title: "Saved", description: "Additional settings updated." });
     } catch (err) {
@@ -460,6 +463,8 @@ const CurriculumBuilderPage = () => {
               courseTitle={course?.title}
               customCertificateName={customCertificateName}
               setCustomCertificateName={setCustomCertificateName}
+              isCourseCompletionEnabled={isCourseCompletionEnabled}
+              setIsCourseCompletionEnabled={setIsCourseCompletionEnabled}
               onSave={saveAdditionalSettings}
             />
           </TabsContent>
