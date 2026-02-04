@@ -188,13 +188,14 @@ class ComplaintService {
         complaintId,
         actionBy,
         actionType: COMPLAINT_ACTION_TYPE.RESOLVED,
-        comment: comment,
+        comment: comment || null,
         isInternal: false,
       });
 
       await batch.commit();
       return ok(null);
     } catch (error: any) {
+      console.log("Error resolving complaint:", error);
       return fail("Failed to resolve complaint", error.code, error.stack);
     }
   }
@@ -257,7 +258,6 @@ class ComplaintService {
 
       const complaints: Complaint[] = documents.map((doc) => {
         const data = doc.data() as Complaint;
-        console.log("complain data", data);
         return {
           ...data,
           createdAt: (data.createdAt as Timestamp)?.toDate?.() || data.createdAt,

@@ -173,6 +173,7 @@ const CreateCoursePage = () => {
         description: formData.description.trim(),
         instructorId: formData.instructorId,
         instructorName: formData.instructorName,
+        isCourseCompletionEnabled: false,
       };
 
       const courseId = await courseService.createCourse(courseData);
@@ -197,9 +198,7 @@ const CreateCoursePage = () => {
   };
 
   const handleInstructorSelect = (instructorId: string) => {
-    const selected = instructors.find(
-      (instructor) => instructor.id === instructorId
-    );
+    const selected = instructors.find((instructor) => instructor.id === instructorId);
     setFormData((prev) => ({
       ...prev,
       instructorId: selected?.id || "",
@@ -214,11 +213,7 @@ const CreateCoursePage = () => {
       if (result.success) {
         const formattedInstructors = result.data.map((instructor) => ({
           id: instructor.id,
-          name: getFullName(
-            instructor.firstName,
-            instructor.middleName,
-            instructor.lastName
-          ),
+          name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName),
         }));
 
         setInstructors(formattedInstructors);
@@ -294,16 +289,13 @@ const CreateCoursePage = () => {
                     </div>
                   )}
                 </div>
-                {slugError && (
-                  <p className="text-sm text-destructive">{slugError}</p>
-                )}
+                {slugError && <p className="text-sm text-destructive">{slugError}</p>}
                 <p className="text-sm text-muted-foreground">
-                  This will be used in the course URL. Only lowercase letters, numbers, and hyphens are allowed.
+                  This will be used in the course URL. Only lowercase letters, numbers, and hyphens
+                  are allowed.
                 </p>
                 {formData.slug && !slugError && !isCheckingSlug && (
-                  <p className="text-sm text-green-600">
-                    ✓ URL slug is available
-                  </p>
+                  <p className="text-sm text-green-600">✓ URL slug is available</p>
                 )}
               </div>
 
@@ -315,19 +307,14 @@ const CreateCoursePage = () => {
                   placeholder="Enter a brief overview of the course"
                   rows={4}
                   value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange("description", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("description", e.target.value)}
                   className="bg-background text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Instructor *</Label>
-                <Select
-                  value={formData.instructorId}
-                  onValueChange={handleInstructorSelect}
-                >
+                <Select value={formData.instructorId} onValueChange={handleInstructorSelect}>
                   <SelectTrigger className="w-full bg-background text-foreground">
                     <SelectValue placeholder="Select an instructor" />
                   </SelectTrigger>

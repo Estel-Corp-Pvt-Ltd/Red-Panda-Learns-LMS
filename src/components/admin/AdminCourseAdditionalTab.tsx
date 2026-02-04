@@ -1,11 +1,25 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +27,16 @@ import { useToast } from "@/hooks/use-toast";
 import { forumChannelService } from "@/services/forumService";
 import { courseWelcomeTemplateService } from "@/services/courseWelcomeTemplateService";
 import { ForumChannel } from "@/types/forum";
-import { Archive, Edit2, Hash, Loader2, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Archive,
+  Edit2,
+  Hash,
+  Loader2,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { logError } from "@/utils/logger";
 
@@ -33,8 +56,10 @@ interface AdditionalTabProps {
   courseTitle?: string;
   customCertificateName: string;
   setCustomCertificateName: (value: string) => void;
+  isCourseCompletionEnabled: boolean;
+  setIsCourseCompletionEnabled: (value: boolean) => void;
   onSave: () => Promise<void> | void;
-};
+}
 
 const AdditionalTab = ({
   isMailSendingEnabled,
@@ -49,6 +74,8 @@ const AdditionalTab = ({
   courseTitle = "",
   customCertificateName,
   setCustomCertificateName,
+  isCourseCompletionEnabled,
+  setIsCourseCompletionEnabled,
   onSave,
 }: AdditionalTabProps) => {
   const { user } = useAuth();
@@ -67,8 +94,8 @@ const AdditionalTab = ({
 
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     order: 1,
     isModerated: false,
   });
@@ -91,7 +118,7 @@ const AdditionalTab = ({
         setAnnouncementBody(result.data.body);
       }
     } catch (error) {
-      logError('Error loading enrollment announcement:', error);
+      logError("Error loading enrollment announcement:", error);
     } finally {
       setLoadingAnnouncement(false);
     }
@@ -107,7 +134,7 @@ const AdditionalTab = ({
         setChannels(result.data);
       }
     } catch (error) {
-      logError('Error loading channels:', error);
+      logError("Error loading channels:", error);
     } finally {
       setLoadingChannels(false);
     }
@@ -125,8 +152,8 @@ const AdditionalTab = ({
     } else {
       setEditingChannel(null);
       setFormData({
-        name: '',
-        description: '',
+        name: "",
+        description: "",
         order: channels.length + 1,
         isModerated: false,
       });
@@ -138,8 +165,8 @@ const AdditionalTab = ({
     setShowModal(false);
     setEditingChannel(null);
     setFormData({
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       order: 1,
       isModerated: false,
     });
@@ -150,9 +177,9 @@ const AdditionalTab = ({
 
     if (!formData.name.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Channel name is required',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Channel name is required",
+        variant: "destructive",
       });
       return;
     }
@@ -163,13 +190,13 @@ const AdditionalTab = ({
         const result = await forumChannelService.updateChannel(editingChannel.id, formData);
         if (result.success) {
           toast({
-            title: 'Success',
-            description: 'Channel updated successfully',
+            title: "Success",
+            description: "Channel updated successfully",
           });
           loadChannels();
           handleCloseModal();
         } else {
-          throw new Error(result.error?.message || 'Failed to update channel');
+          throw new Error(result.error?.message || "Failed to update channel");
         }
       } else {
         // Create new channel
@@ -183,66 +210,71 @@ const AdditionalTab = ({
 
         if (result.success) {
           toast({
-            title: 'Success',
-            description: 'Channel created successfully',
+            title: "Success",
+            description: "Channel created successfully",
           });
           loadChannels();
           handleCloseModal();
         } else {
-          throw new Error(result.error?.message || 'Failed to create channel');
+          throw new Error(result.error?.message || "Failed to create channel");
         }
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
 
   const handleArchive = async (channelId: string) => {
-    if (!confirm('Are you sure you want to archive this channel?')) return;
+    if (!confirm("Are you sure you want to archive this channel?")) return;
 
     try {
       const result = await forumChannelService.archiveChannel(channelId);
       if (result.success) {
         toast({
-          title: 'Success',
-          description: 'Channel archived successfully',
+          title: "Success",
+          description: "Channel archived successfully",
         });
         loadChannels();
       } else {
-        throw new Error(result.error?.message || 'Failed to archive channel');
+        throw new Error(result.error?.message || "Failed to archive channel");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
 
   const handleDelete = async (channelId: string) => {
-    if (!confirm('Are you sure you want to permanently delete this channel? This action cannot be undone.')) return;
+    if (
+      !confirm(
+        "Are you sure you want to permanently delete this channel? This action cannot be undone."
+      )
+    )
+      return;
 
     try {
       const result = await forumChannelService.deleteChannel(channelId);
       if (result.success) {
         toast({
-          title: 'Success',
-          description: 'Channel deleted successfully',
+          title: "Success",
+          description: "Channel deleted successfully",
         });
         loadChannels();
       } else {
-        throw new Error(result.error?.message || 'Failed to delete channel');
+        throw new Error(result.error?.message || "Failed to delete channel");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -252,9 +284,9 @@ const AdditionalTab = ({
 
     if (!announcementSubject.trim() || !announcementBody.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Subject and body are required',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Subject and body are required",
+        variant: "destructive",
       });
       return;
     }
@@ -268,17 +300,17 @@ const AdditionalTab = ({
 
       if (result.success) {
         toast({
-          title: 'Success',
-          description: 'Welcome template saved successfully',
+          title: "Success",
+          description: "Welcome template saved successfully",
         });
       } else {
-        throw new Error(result.error?.message || 'Failed to save announcement');
+        throw new Error(result.error?.message || "Failed to save announcement");
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -286,9 +318,10 @@ const AdditionalTab = ({
   const handleToggleEnrollAnnouncement = async (checked: boolean) => {
     if (checked && (!announcementSubject.trim() || !announcementBody.trim())) {
       toast({
-        title: 'Configuration Required',
-        description: 'Please configure the subject and body before enabling enrollment announcements',
-        variant: 'destructive',
+        title: "Configuration Required",
+        description:
+          "Please configure the subject and body before enabling enrollment announcements",
+        variant: "destructive",
       });
       return;
     }
@@ -306,9 +339,9 @@ const AdditionalTab = ({
 
       if (effectiveName.length > MAX_CERTIFICATE_NAME_LENGTH) {
         toast({
-          title: 'Certificate name too long',
+          title: "Certificate name too long",
           description: `The course title exceeds ${MAX_CERTIFICATE_NAME_LENGTH} characters. Please set a custom certificate name that is ${MAX_CERTIFICATE_NAME_LENGTH} characters or less before enabling certificates.`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         return;
       }
@@ -329,7 +362,8 @@ const AdditionalTab = ({
 
   // Check if course title exceeds limit
   const isTitleTooLong = courseTitle.length > MAX_CERTIFICATE_NAME_LENGTH;
-  const hasValidCertificateName = customCertificateName.trim().length > 0 &&
+  const hasValidCertificateName =
+    customCertificateName.trim().length > 0 &&
     customCertificateName.trim().length <= MAX_CERTIFICATE_NAME_LENGTH;
 
   // Certificate can only be enabled if title is within limit OR a valid custom name is set
@@ -350,12 +384,11 @@ const AdditionalTab = ({
               Enable Mail Sending
             </Label>
             <p className="text-sm text-muted-foreground">
-              When enabled, email notifications will be automatically sent to
-              students enrolled in the course whenever a new assignment or lesson
-              is added.
+              When enabled, email notifications will be automatically sent to students enrolled in
+              the course whenever a new assignment or lesson is added.
               <br />
-              If not enabled, an announcement will still be created for the added
-              assignment or lesson, but no email notifications will be sent.
+              If not enabled, an announcement will still be created for the added assignment or
+              lesson, but no email notifications will be sent.
             </p>
           </div>
 
@@ -382,8 +415,8 @@ const AdditionalTab = ({
               </p>
               {isTitleTooLong && !hasValidCertificateName && (
                 <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-                  ⚠️ Course title exceeds {MAX_CERTIFICATE_NAME_LENGTH} characters.
-                  Please set a custom certificate name below to enable certificates.
+                  ⚠️ Course title exceeds {MAX_CERTIFICATE_NAME_LENGTH} characters. Please set a
+                  custom certificate name below to enable certificates.
                 </p>
               )}
             </div>
@@ -401,13 +434,13 @@ const AdditionalTab = ({
           <div className="space-y-2 pt-4 border-t">
             <div className="space-y-1">
               <Label htmlFor="certificate-name" className="text-base font-medium">
-                Custom Certificate Name {isTitleTooLong && <span className="text-destructive">*</span>}
+                Custom Certificate Name{" "}
+                {isTitleTooLong && <span className="text-destructive">*</span>}
               </Label>
               <p className="text-sm text-muted-foreground">
                 {isTitleTooLong
                   ? `Required: Course title is too long (${courseTitle.length} characters). Set a name with ${MAX_CERTIFICATE_NAME_LENGTH} characters or less.`
-                  : "Customize the name that appears on the certificate. By default, it uses the course title."
-                }
+                  : "Customize the name that appears on the certificate. By default, it uses the course title."}
               </p>
             </div>
             <div className="relative">
@@ -417,16 +450,43 @@ const AdditionalTab = ({
                 onChange={handleCertificateNameChange}
                 placeholder="Enter custom certificate name"
                 maxLength={MAX_CERTIFICATE_NAME_LENGTH}
-                className={isTitleTooLong && !hasValidCertificateName ? "border-amber-500 focus:ring-amber-500" : ""}
+                className={
+                  isTitleTooLong && !hasValidCertificateName
+                    ? "border-amber-500 focus:ring-amber-500"
+                    : ""
+                }
               />
               <div
-                className={`text-xs text-right mt-1 ${remainingCertificateChars <= 5 ? "text-amber-600" : "text-muted-foreground"
-                  }`}
+                className={`text-xs text-right mt-1 ${
+                  remainingCertificateChars <= 5 ? "text-amber-600" : "text-muted-foreground"
+                }`}
               >
                 {remainingCertificateChars} characters remaining
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Course Completion Toggle */}
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label htmlFor="course-completion" className="text-base font-medium">
+              Enable Course Completion
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              When enabled, students can mark the course as completed once they finish all the
+              required content.
+              <br />
+              Disabling this option will hide the course completion option for students.
+            </p>
+          </div>
+
+          <Switch
+            id="course-completion"
+            checked={isCourseCompletionEnabled}
+            onCheckedChange={setIsCourseCompletionEnabled}
+            className="bg-gray-200 dark:bg-gray-700 dark:data-[state=checked]:bg-primary"
+          />
         </div>
 
         {/* Forum Toggle */}
@@ -458,7 +518,8 @@ const AdditionalTab = ({
                 Enable Welcome Message
               </Label>
               <p className="text-sm text-muted-foreground">
-                When enabled, a custom announcement will be sent to students when they enroll in this course.
+                When enabled, a custom announcement will be sent to students when they enroll in
+                this course.
                 <br />
                 Configure the subject and body below.
               </p>
@@ -536,7 +597,7 @@ const AdditionalTab = ({
                 <div>
                   <CardTitle>Forum Channels</CardTitle>
                   <CardDescription>
-                    {channels.length} channel{channels.length !== 1 ? 's' : ''} configured
+                    {channels.length} channel{channels.length !== 1 ? "s" : ""} configured
                   </CardDescription>
                 </div>
                 <Button onClick={() => handleOpenModal()} size="sm" className="gap-2">
@@ -554,7 +615,11 @@ const AdditionalTab = ({
                 <div className="text-center py-12 text-muted-foreground">
                   <Hash className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No channels created yet</p>
-                  <Button onClick={() => handleOpenModal()} variant="outline" className="mt-4 gap-2">
+                  <Button
+                    onClick={() => handleOpenModal()}
+                    variant="outline"
+                    className="mt-4 gap-2"
+                  >
                     <Plus className="h-4 w-4" />
                     Create First Channel
                   </Button>
@@ -584,13 +649,13 @@ const AdditionalTab = ({
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">
-                            {channel.description || '—'}
+                            {channel.description || "—"}
                           </span>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
-                            <Badge variant={channel.isArchived ? 'secondary' : 'default'}>
-                              {channel.isArchived ? 'Archived' : 'Active'}
+                            <Badge variant={channel.isArchived ? "secondary" : "default"}>
+                              {channel.isArchived ? "Archived" : "Active"}
                             </Badge>
                             {channel.isModerated && (
                               <Badge variant="outline" className="text-xs">
@@ -640,9 +705,9 @@ const AdditionalTab = ({
         <Dialog open={showModal} onOpenChange={setShowModal}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingChannel ? 'Edit Channel' : 'Create Channel'}</DialogTitle>
+              <DialogTitle>{editingChannel ? "Edit Channel" : "Create Channel"}</DialogTitle>
               <DialogDescription>
-                {editingChannel ? 'Update channel details' : 'Add a new discussion channel'}
+                {editingChannel ? "Update channel details" : "Add a new discussion channel"}
               </DialogDescription>
             </DialogHeader>
 
@@ -676,7 +741,9 @@ const AdditionalTab = ({
                   type="number"
                   min="1"
                   value={formData.order}
-                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 1 })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, order: parseInt(e.target.value) || 1 })
+                  }
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -690,7 +757,8 @@ const AdditionalTab = ({
                     Enable Moderation
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    When enabled, all messages in this channel will be hidden by default and require approval from an admin or instructor before becoming visible to students.
+                    When enabled, all messages in this channel will be hidden by default and require
+                    approval from an admin or instructor before becoming visible to students.
                   </p>
                 </div>
                 <Switch
@@ -706,7 +774,7 @@ const AdditionalTab = ({
                 Cancel
               </Button>
               <Button onClick={handleSaveChannel}>
-                {editingChannel ? 'Update' : 'Create'} Channel
+                {editingChannel ? "Update" : "Create"} Channel
               </Button>
             </DialogFooter>
           </DialogContent>

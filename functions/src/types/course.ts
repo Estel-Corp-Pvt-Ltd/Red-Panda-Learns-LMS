@@ -2,8 +2,7 @@ import { FieldValue, Timestamp } from "firebase/firestore";
 import { CourseStatus, Duration, PricingModel } from "./general";
 import { LEARNING_CONTENT } from "../constants";
 
-export type LearningContentType =
-  (typeof LEARNING_CONTENT)[keyof typeof LEARNING_CONTENT];
+export type LearningContentType = (typeof LEARNING_CONTENT)[keyof typeof LEARNING_CONTENT];
 
 export interface TopicItem {
   id: string;
@@ -57,8 +56,9 @@ export interface Course {
   isEnrollmentPaused: boolean;
   isMailSendingEnabled: boolean;
   isCertificateEnabled: boolean;
+  isCourseCompletionEnabled: boolean;
   isWelcomeMessageEnabled: boolean;
-  customCertificateName: string;  // To Specify a custom name for the course certificate default is course title
+  customCertificateName: string; // To Specify a custom name for the course certificate default is course title
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 }

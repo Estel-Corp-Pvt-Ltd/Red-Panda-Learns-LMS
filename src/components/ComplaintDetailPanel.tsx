@@ -6,7 +6,12 @@ import { toast } from "@/hooks/use-toast";
 import { complaintService } from "@/services/complaintService";
 import { Complaint, ComplaintAction } from "@/types/complaint";
 import { ClipboardCheck, Loader2, MessageSquare } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useImperativeHandle, useState } from "react";
+
+export interface DetailPanelHandle {
+  container: HTMLDivElement | null;
+  resolve: () => Promise<void>;
+}
 
 interface ComplaintDetailPanelProps {
   complaint: Complaint;
@@ -28,11 +33,31 @@ const actionTypeColorMap: Record<string, string> = {
   RESOLVED: "default",
 };
 
-const ComplaintDetailPanel = React.forwardRef<HTMLDivElement, ComplaintDetailPanelProps>(
+const ComplaintDetailPanel = React.forwardRef<DetailPanelHandle, ComplaintDetailPanelProps>(
   ({ complaint, onResolved }, ref) => {
     const { user } = useAuth();
     const [actions, setActions] = useState<ComplaintAction[]>([]);
     const [isLoadingActions, setIsLoadingActions] = useState(false);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    const resolveComplaint = async () => {
+      if (complaint.status === COMPLAINT_STATUS.RESOLVED) return;
+      const response = await complaintService.resolveComplaint(complaint.id, user.id);
+      if (response.success) {
+        toast({ title: "Complaint Resolved" });
+        onResolved?.();
+        return;
+      }
+      toast({
+        title: "Failed to resolve complaint",
+        variant: "destructive",
+      });
+    };
+
+    useImperativeHandle(ref, () => ({
+      container: containerRef.current,
+      resolve: resolveComplaint,
+    }));
 
     useEffect(() => {
       const fetchActions = async () => {
@@ -76,7 +101,7 @@ const ComplaintDetailPanel = React.forwardRef<HTMLDivElement, ComplaintDetailPan
 
     return (
       <div
-        ref={ref}
+        ref={containerRef}
         tabIndex={-1}
         className="flex flex-col border rounded-lg bg-card focus:outline-none h-full"
       >
@@ -91,18 +116,7 @@ const ComplaintDetailPanel = React.forwardRef<HTMLDivElement, ComplaintDetailPan
               <Button
                 size="sm"
                 className="gap-1.5 h-7 text-xs"
-                onClick={async () => {
-                  const response = await complaintService.resolveComplaint(complaint.id, user.id);
-                  if (response.success) {
-                    toast({ title: "Complaint Resolved" });
-                    onResolved?.();
-                    return;
-                  }
-                  toast({
-                    title: "Failed to resolve complaint",
-                    variant: "destructive",
-                  });
-                }}
+                onClick={resolveComplaint}
               >
                 <ClipboardCheck className="h-3.5 w-3.5" />
                 Resolve
