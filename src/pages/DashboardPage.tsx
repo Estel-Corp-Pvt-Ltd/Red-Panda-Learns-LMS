@@ -136,7 +136,7 @@ function EnrolledCourseCard({
         setIsProgressLoading(false);
         return;
       }
-      if (!course?.isCertificateEnabled) {
+      if (!course?.isCertificateEnabled && !course?.isCourseCompletionEnabled) {
         setIsEligibleForCertificate(false);
         setIsProgressLoading(false);
         return;
@@ -188,7 +188,7 @@ function EnrolledCourseCard({
   };
 
   const showCertificateFeatures = course.isCertificateEnabled;
-
+  const showCourseCompletion = course.isCourseCompletionEnabled ?? true;
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -265,21 +265,24 @@ function EnrolledCourseCard({
                   <span className="hidden sm:block">Continue</span>
                 </Button>
 
+                {showCourseCompletion &&
+                  !isProgressLoading &&
+                  isEligibleForCertificate &&
+                  !isCompleted && (
+                    <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
+                      {isCompleting ? (
+                        <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 sm:mr-2" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {isCompleting ? "Completing..." : "Complete Course"}
+                      </span>
+                    </Button>
+                  )}
+
                 {showCertificateFeatures && (
                   <>
-                    {!isProgressLoading && isEligibleForCertificate && !isCompleted && (
-                      <Button size="sm" onClick={handleCompleteCourse} disabled={isCompleting}>
-                        {isCompleting ? (
-                          <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 sm:mr-2" />
-                        )}
-                        <span className="hidden sm:inline">
-                          {isCompleting ? "Completing..." : "Complete Course"}
-                        </span>
-                      </Button>
-                    )}
-
                     {!isProgressLoading && isCompleted && (
                       <>
                         {isCertificateIdAvailable ? (
