@@ -443,6 +443,7 @@ export const COLLECTION = {
   CONTENT_LOCKS: "ContentLocks",
   KARMA_DAILY: "KarmaDaily",
   KARMA_RULES: "KarmaRules",
+  ZOOM_HOSTS: "ZoomHosts",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
