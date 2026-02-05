@@ -94,6 +94,7 @@ import AdminKarmaRulesPage from "./pages/admin/AdminEditKarmaRules";
 import { StripBannerProvider } from "./contexts/StripBannerOverlayContext";
 import Profile from "./pages/Profile";
 import WhatsNew from "./pages/Whats-new";
+import ZoomMeetingPage from "./components/lesson/ZoomMeetingPage";
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -170,7 +171,7 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                          <Route
+                        <Route
                           path="/dashboard"
                           element={
                             <AuthGuard requireAuth requireStudent>
@@ -275,7 +276,6 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-
                         <Route
                           path="/admin/orders"
                           element={
@@ -284,7 +284,6 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-
                         <Route
                           path="/admin/certificate-requests"
                           element={
@@ -293,7 +292,6 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-
                         <Route
                           path="/admin/pop-ups"
                           element={
@@ -310,7 +308,6 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-
                         <Route
                           path="/admin/statistics"
                           element={
@@ -479,10 +476,7 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
-                          path="/course-bundle/:param"
-                          element={<BundleDetailPage />}
-                        />
+                        <Route path="/course-bundle/:param" element={<BundleDetailPage />} />
                         <Route
                           path="/course-bundle/:param/checkout"
                           element={
@@ -552,10 +546,7 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
-                          path="/submissions"
-                          element={<MySubmissionsPage />}
-                        />
+                        <Route path="/submissions" element={<MySubmissionsPage />} />
                         <Route
                           path="/cart"
                           element={
@@ -580,11 +571,7 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
-                          path="/invoices/:orderId"
-                          element={<InvoicePage />}
-                        />
-
+                        <Route path="/invoices/:orderId" element={<InvoicePage />} />
                         <Route
                           path="/admin/statistics"
                           element={
@@ -633,6 +620,8 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
+
+                        <Route path="/zoom-meeting" element={<ZoomMeetingPage />} />
                         <Route
                           path="/admin/forum-messages"
                           element={
@@ -817,7 +806,6 @@ const App = () => (
                           }
                         />
                         <Route path="/invoices/:orderId" element={<InvoicePage />} />
-
                         <Route
                           path="/instructor"
                           element={
@@ -828,7 +816,6 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-
                         {/* <Route
                         path="/accountant/orders"
                         element={
@@ -837,7 +824,6 @@ const App = () => (
                           </AuthGuard>
                         }
                       /> */}
-
                         <Route
                           path="/accountant"
                           element={
@@ -846,14 +832,11 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-
                         <Route path="/free-courses" element={<FreeCourses />} />
                         <Route path="/invoices" element={<MyInvoicesPage />} />
                         <Route path="/terms" element={<TermsPage />} />
-
                         <Route path="/about-us" element={<AboutUsPage />} />
                         <Route path="/contact-us" element={<ContactPage />} />
-
                         <Route path="/privacy" element={<PrivacyPage />} />
                         <Route path="/refund-policy" element={<RefundPage />} />
                         <Route path="*" element={<NotFound />} />

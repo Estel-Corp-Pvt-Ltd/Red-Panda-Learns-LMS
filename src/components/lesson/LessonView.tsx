@@ -804,10 +804,6 @@ export function LessonView({
               userId={user?.id}
               userName={user?.firstName || user?.username || "Student"}
               userEmail={user?.email || ""}
-              onMeetingEnd={() => {
-                // Handle meeting end - could trigger completion logic
-                console.log("Zoom meeting ended");
-              }}
             />
           );
         }
