@@ -46,7 +46,7 @@ import type { Lesson } from "@/types/lesson";
 import type { Assignment } from "@/types/assignment";
 import { LearningUnit } from "@/types/general";
 import { Course, Topic } from "@/types/course";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { courseService } from "@/services/courseService";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
@@ -56,6 +56,7 @@ import ConfirmDialog from "../ConfirmDialog";
 import { ContentLockForm } from "./ContentLockForm";
 import { contentLockService } from "@/services/contentLockService";
 import { ContentLock } from "@/types/content-lock";
+import { log } from "@/utils/logger";
 
 // ─── Types ─────────────────────────────────────────────
 type DraggableItem = {
@@ -150,12 +151,31 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   const [activeContentId, setActiveContentId] = useState<string | null>(null);
   const [loadingLocks, setLoadingLocks] = useState(false);
   const [topicLocks, setTopicLocks] = useState<Record<string, ContentLock | null>>({});
+
+  // Ref to track pending save after adding a lesson (for Zoom meetings)
+  const pendingSaveAfterLessonAdd = useRef(false);
+  const isInitialMount = useRef(true);
+
   // ✅ Add null check for course in useEffect
   useEffect(() => {
     if (course) {
       setCurriculum(getFlatCurriculum(course));
     }
   }, [course]);
+
+  // Auto-save curriculum after Zoom meeting lesson is added
+  useEffect(() => {
+    // Skip on initial mount and course load
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (pendingSaveAfterLessonAdd.current && curriculum.length > 0) {
+      pendingSaveAfterLessonAdd.current = false;
+      saveCurriculumStructure();
+    }
+  }, [curriculum]);
   const handleDragMove = (event: DragMoveEvent) => {
     const { active } = event;
     setIsDragging(true);
@@ -313,6 +333,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   };
 
   const saveCurriculumStructure = async () => {
+    log("Saving curriculum structure...", curriculum);
     if (!course) {
       toast({
         title: "Error",
@@ -550,7 +571,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     const firstLesson = curriculum.find(
       (i) => i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
     );
-    return firstLesson ? firstLesson.refId ?? firstLesson.id : null;
+    return firstLesson ? (firstLesson.refId ?? firstLesson.id) : null;
   }, [curriculum]);
 
   const activeItem = useMemo(() => {
@@ -924,8 +945,8 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           editingItemType === LEARNING_UNIT.TOPIC
             ? "topic"
             : editingItemType === LEARNING_UNIT.LESSON
-            ? "lesson"
-            : "assignment"
+              ? "lesson"
+              : "assignment"
         }? This action cannot be undone.`}
         open={isConfirmDialogOpen}
         onCancel={() => {
@@ -983,74 +1004,76 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setIsCreateLessonOpen(false);
           setEditingItemId(null);
         }}
-        onLessonCreated={(lesson) => {
+        onLessonCreated={(lesson, shouldAutoSave) => {
+          // Set flag before state update so useEffect can trigger save
+          if (shouldAutoSave) {
+            pendingSaveAfterLessonAdd.current = true;
+          }
           addLessonsToParent([lesson]);
           setIsCreateLessonOpen(false);
           setEditingItemId(null);
         }}
       />
-   {/* Add this after CreateLessonModal, inside the return's fragment */}
-{isLockModalOpen && activeContentId && (
-  <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-    {/* Backdrop with Blur */}
-    <div 
-      className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
-      onClick={() => setIsLockModalOpen(false)} 
-    />
-    
-    {/* The Modern Geometric Modal */}
-    <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-      
-      {/* 1. Main Background Shape with Cut Corners (Clip Path) */}
-      <div 
-        className="relative bg-background p-8 sm:p-10 shadow-2xl"
-        style={{
-          // This creates the "Not a square" look by cutting the top-right and bottom-left corners
-          clipPath: 'polygon(0 0, 90% 0, 100% 10%, 100% 100%, 10% 100%, 0 90%)'
-        }}
-      >
-        
-        {/* 2. The "Bracket" Design Elements (Like the image) */}
-        {/* Top-Left Heavy Bracket */}
-        <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none">
-          <div className="absolute top-4 left-4 w-full h-full border-t-[12px] border-l-[12px] border-foreground/90" />
-        </div>
-
-        {/* Bottom-Right Heavy Bracket */}
-        <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none">
-          <div className="absolute bottom-4 right-4 w-full h-full border-b-[12px] border-r-[12px] border-foreground/90" />
-        </div>
-
-        {/* 3. Decorative "Tech" lines (Optional, adds detail) */}
-        <div className="absolute top-4 right-12 w-12 h-1 bg-foreground/20" />
-        <div className="absolute bottom-4 left-12 w-12 h-1 bg-foreground/20" />
-
-        {/* 4. Content Wrapper */}
-        <div className="relative z-10">
-          <h3 className="text-xl font-bold uppercase tracking-wider mb-6 text-center border-b pb-2 border-border">
-            LOCK TOPIC
-          </h3>
-          
-          <ContentLockForm
-            contentType="TOPIC"
-            contentId={activeContentId}
-            existingLock={topicLocks[activeContentId] ?? null}
-            onSaved={() => {
-              setIsLockModalOpen(false);
-              setActiveContentId(null);
-              refetchLocks();
-            }}
-            onDeleted={() => {
-              setIsLockModalOpen(false);
-              setActiveContentId(null);
-              refetchLocks();
-            }}
+      {/* Add this after CreateLessonModal, inside the return's fragment */}
+      {isLockModalOpen && activeContentId && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          {/* Backdrop with Blur */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setIsLockModalOpen(false)}
           />
+
+          {/* The Modern Geometric Modal */}
+          <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            {/* 1. Main Background Shape with Cut Corners (Clip Path) */}
+            <div
+              className="relative bg-background p-8 sm:p-10 shadow-2xl"
+              style={{
+                // This creates the "Not a square" look by cutting the top-right and bottom-left corners
+                clipPath: "polygon(0 0, 90% 0, 100% 10%, 100% 100%, 10% 100%, 0 90%)",
+              }}
+            >
+              {/* 2. The "Bracket" Design Elements (Like the image) */}
+              {/* Top-Left Heavy Bracket */}
+              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none">
+                <div className="absolute top-4 left-4 w-full h-full border-t-[12px] border-l-[12px] border-foreground/90" />
+              </div>
+
+              {/* Bottom-Right Heavy Bracket */}
+              <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none">
+                <div className="absolute bottom-4 right-4 w-full h-full border-b-[12px] border-r-[12px] border-foreground/90" />
+              </div>
+
+              {/* 3. Decorative "Tech" lines (Optional, adds detail) */}
+              <div className="absolute top-4 right-12 w-12 h-1 bg-foreground/20" />
+              <div className="absolute bottom-4 left-12 w-12 h-1 bg-foreground/20" />
+
+              {/* 4. Content Wrapper */}
+              <div className="relative z-10">
+                <h3 className="text-xl font-bold uppercase tracking-wider mb-6 text-center border-b pb-2 border-border">
+                  LOCK TOPIC
+                </h3>
+
+                <ContentLockForm
+                  contentType="TOPIC"
+                  contentId={activeContentId}
+                  existingLock={topicLocks[activeContentId] ?? null}
+                  onSaved={() => {
+                    setIsLockModalOpen(false);
+                    setActiveContentId(null);
+                    refetchLocks();
+                  }}
+                  onDeleted={() => {
+                    setIsLockModalOpen(false);
+                    setActiveContentId(null);
+                    refetchLocks();
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </>
   );
 };

@@ -24,7 +24,18 @@ import { fileService } from "@/services/fileService";
 import { lessonService } from "@/services/lessonService";
 import { Lesson } from "@/types/lesson";
 import { logError } from "@/utils/logger";
-import { Upload, X, Plus, Calendar, Clock, Lock, User, Video } from "lucide-react";
+import {
+  Upload,
+  X,
+  Plus,
+  Calendar,
+  Clock,
+  Lock,
+  User,
+  Video,
+  AlertTriangle,
+  ExternalLink,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import MarkdownEditor from "../markdownEditor/MarkdownEditorComponent";
 import VideoPlayer from "../VideoPlayer";
@@ -33,12 +44,8 @@ import {
   createZoomMeetingService,
   ZoomMeetingResponseData,
 } from "@/services/zoom/createZoomMeetingService";
-
-// Predefined hosts
-const PREDEFINED_HOSTS = [
-  { id: "host1", name: "Arbaaz Khan", email: "arbukhan2016@gmail.com" },
-  { id: "host2", name: "TREX", email: "blacktrex099@gmail.com" },
-];
+import { zoomHostService } from "@/services/zoomHostService";
+import { ZoomHost } from "@/types/zoom-host";
 
 const CUSTOM_HOST_VALUE = "custom";
 
@@ -58,7 +65,7 @@ type CreateLessonModalProps = {
   courseId: string;
   isOpen: boolean;
   onClose: () => void;
-  onLessonCreated?: (lesson: Lesson) => void;
+  onLessonCreated?: (lesson: Lesson, shouldAutoSave?: boolean) => void;
 };
 
 export const CreateLessonModal = ({
@@ -73,6 +80,8 @@ export const CreateLessonModal = ({
   const [emailInput, setEmailInput] = useState("");
   const [selectedHostOption, setSelectedHostOption] = useState("");
   const [isCustomHost, setIsCustomHost] = useState(false);
+  const [predefinedHosts, setPredefinedHosts] = useState<ZoomHost[]>([]);
+  const [loadingHosts, setLoadingHosts] = useState(false);
   const [lesson, setLesson] = useState({
     title: "",
     type: LESSON_TYPE.SLIDE_DECK as Lesson["type"],
@@ -106,6 +115,29 @@ export const CreateLessonModal = ({
     return () => {
       document.body.style.overflow = "unset";
     };
+  }, [isOpen]);
+
+  // Fetch predefined Zoom hosts when modal opens
+  useEffect(() => {
+    const fetchHosts = async () => {
+      if (!isOpen) return;
+
+      setLoadingHosts(true);
+      try {
+        console.log("Fetching predefined Zoom hosts...");
+        const result = await zoomHostService.getActiveHosts();
+        console.log("Zoom hosts fetch result:", result);
+        if (result.success) {
+          setPredefinedHosts(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch Zoom hosts:", error);
+      } finally {
+        setLoadingHosts(false);
+      }
+    };
+
+    fetchHosts();
   }, [isOpen]);
 
   const colorMode =
@@ -157,7 +189,7 @@ export const CreateLessonModal = ({
       setZoomConfig((prev) => ({ ...prev, host_email: "" }));
     } else {
       setIsCustomHost(false);
-      const selectedHost = PREDEFINED_HOSTS.find((host) => host.id === value);
+      const selectedHost = predefinedHosts.find((host) => host.id === value);
       if (selectedHost) {
         setZoomConfig((prev) => ({ ...prev, host_email: selectedHost.email }));
       }
@@ -259,8 +291,10 @@ export const CreateLessonModal = ({
       return null;
     }
 
-    // Format start_time to ISO format
-    const startTime = new Date(zoomConfig.start_time).toISOString();
+    // Convert IST input to UTC
+    // Append IST timezone offset (+05:30) to treat the input as IST time
+    const startTimeIST = `${zoomConfig.start_time}:00+05:30`;
+    const startTime = new Date(startTimeIST).toISOString();
 
     let idToken: string;
     try {
@@ -363,7 +397,9 @@ export const CreateLessonModal = ({
           description: `Meeting ID: ${zoomResponse.id}`,
         });
 
-        onLessonCreated?.(newLesson);
+        // Pass true for shouldAutoSave to trigger curriculum save after state update
+        onLessonCreated?.(newLesson, true);
+
         resetForm();
         onClose();
         return;
@@ -389,9 +425,10 @@ export const CreateLessonModal = ({
   };
 
   const getMinDateTime = () => {
+    // Get current time formatted in IST timezone
     const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
+    // 'sv-SE' locale gives us "YYYY-MM-DD HH:mm:ss" format
+    return now.toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).replace(" ", "T").slice(0, 16);
   };
 
   return (
@@ -445,16 +482,62 @@ export const CreateLessonModal = ({
                   </div>
 
                   <div className="p-4 space-y-6">
+                    {/* Important Zoom Settings Note */}
+                    <div className="flex gap-3 p-4 rounded-lg border-2 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-2 text-sm">
+                        <p className="font-semibold text-amber-800 dark:text-amber-400">
+                          Important: Manual Zoom Settings Required
+                        </p>
+                        <p className="text-amber-700 dark:text-amber-300">
+                          After creating the meeting, you must update these settings manually in
+                          Zoom:
+                        </p>
+                        <ol className="list-decimal list-inside space-y-1 text-amber-700 dark:text-amber-300">
+                          <li>
+                            Go to{" "}
+                            <a
+                              href="https://us06web.zoom.us/meeting#/upcoming"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline"
+                            >
+                              Zoom Upcoming Meetings
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </li>
+                          <li>
+                            Click <strong>Edit</strong> on the newly created meeting
+                          </li>
+                          <li>
+                            Untick / disable <strong>Registration</strong>
+                          </li>
+                          <li>
+                            Scroll to <strong>Options</strong> and click <strong>Show</strong>
+                          </li>
+                          <li>
+                            Enable <strong>Cloud Recording</strong>
+                          </li>
+                        </ol>
+                      </div>
+                    </div>
+
                     {/* Host & Topic Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Host *</Label>
-                        <Select value={selectedHostOption} onValueChange={handleHostSelection}>
+                        <Select
+                          value={selectedHostOption}
+                          onValueChange={handleHostSelection}
+                          disabled={loadingHosts}
+                        >
                           <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Select Host" />
+                            <SelectValue
+                              placeholder={loadingHosts ? "Loading hosts..." : "Select Host"}
+                            />
                           </SelectTrigger>
                           <SelectContent>
-                            {PREDEFINED_HOSTS.map((host) => (
+                            {predefinedHosts.map((host) => (
                               <SelectItem key={host.id} value={host.id}>
                                 {host.name}
                               </SelectItem>
@@ -497,7 +580,7 @@ export const CreateLessonModal = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" /> Start Time
+                          <Calendar className="h-4 w-4" /> Start Time (IST)
                         </Label>
                         <Input
                           type="datetime-local"
