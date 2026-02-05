@@ -10,7 +10,7 @@ import { courseAnalyticsService } from "../../services/courseAnalyticsService";
 import { learningProgressService } from "../../services/learningProgressService";
 import { durationToSeconds } from "../../utils/date-time";
 import { addKarmaService } from "../../services/karma/addkarmaService";
-import { COLLECTION, KARMA_CATEGORY, LEARNING_ACTION } from "../../constants";
+import { COLLECTION, KARMA_CATEGORY, LEARNING_ACTION, LESSON_TYPE } from "../../constants";
 import { LearningAction } from "../../types/general";
 
 if (!admin.apps.length) admin.initializeApp();
@@ -26,8 +26,15 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
       return;
     }
 
-    const { lessonId, courseId, timeSpentSec, duration, updatedAt, karmaBoostExpiresAfter } =
-      req.body;
+    const {
+      lessonId,
+      courseId,
+      timeSpentSec,
+      duration,
+      updatedAt,
+      karmaBoostExpiresAfter,
+      lessonType,
+    } = req.body;
 
     if (!lessonId || !courseId || timeSpentSec === undefined) {
       res.status(400).json({ error: "Missing required fields" });
@@ -64,7 +71,6 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
 
     // Calculate intervals BEFORE this update
     const intervalsBefore = Math.floor(cappedExistingTime / KARMA_INTERVAL_SECONDS);
-    functions.logger.info("What is new interval before", intervalsBefore);
     // Calculate intervals AFTER this update
     const intervalsAfter = Math.floor(cappedNewTime / KARMA_INTERVAL_SECONDS);
 
@@ -130,10 +136,12 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
       // ----------------------------
       // Decide karma action
       // ----------------------------
-      let karmaAction: LearningAction = LEARNING_ACTION.LESSON_WATCH_TIME;
+      let karmaAction: LearningAction =
+        lessonType === LESSON_TYPE.ZOOM_MEETING
+          ? LEARNING_ACTION.ZOOM_MEETING_ATTENDANCE
+          : LEARNING_ACTION.LESSON_WATCH_TIME;
 
-      if (isKarmaBoostActive) {
-        functions.logger.info("[KarmaBoost Debug] Karma boost is ACTIVE, using boosted action");
+      if (isKarmaBoostActive && lessonType !== LESSON_TYPE.ZOOM_MEETING) {
         karmaAction = LEARNING_ACTION.KARMA_BOOST_LESSON_POINTS;
       } else {
         functions.logger.info("[KarmaBoost Debug] Karma boost is NOT active, using default action");

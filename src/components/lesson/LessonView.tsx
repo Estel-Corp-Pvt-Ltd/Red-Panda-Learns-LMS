@@ -28,6 +28,7 @@ import { Duration } from "@/types/general";
 import { secondsToDuration } from "@/utils/date-time";
 import { calculateKarmaForLessonCompleted } from "@/services/karmaService/calculateKarmaForLessonCompletion";
 import { authService } from "@/services/authService";
+import { ZoomMeeting } from "./ZoomMeeting";
 
 interface LessonViewProps {
   lessonId: string;
@@ -208,7 +209,6 @@ export function LessonView({
 
     // Check if it's a video lesson and user hasn't watched enough
     const isVideoLesson = lesson?.type === LESSON_TYPE.VIDEO_LECTURE;
-
     if (isVideoLesson && videoDuration) {
       // Require watching at least 90% of the video
       const requiredWatchTime = videoDuration * 0.9;
@@ -323,6 +323,7 @@ export function LessonView({
       // Only count time if session is active
       const activeSessionTime = state.isActiveSession ? sessionTime : 0;
       const totalTimeToReport = state.totalTimeSpent + activeSessionTime;
+      const isZoomLesson = lesson?.type === LESSON_TYPE.ZOOM_MEETING;
 
       // Only report if enough time has passed or we're forcing a report
       if (!forceReport && totalTimeToReport < MIN_REPORT_TIME) {
@@ -345,13 +346,20 @@ export function LessonView({
         if (!lesson.durationAddedtoLearningProgress) {
         }
         const duration: Duration = secondsToDuration(videoDuration);
+        const lessonDuration = lesson.duration || duration;
+        const zoomDuration = lesson.zoom?.duration
+          ? secondsToDuration(lesson.zoom.duration * 60)
+          : undefined;
+
+        const durationToPass = isZoomLesson ? zoomDuration : lessonDuration;
         await learningProgressService.timeSpentOnLesson(
           courseId,
           lessonId,
           totalTimeToReport,
-          lesson.duration || duration,
+          durationToPass,
           lesson.updatedAt,
-          lesson.karmaBoostExpiresAfter
+          lesson.karmaBoostExpiresAfter,
+          lesson.type
         );
 
         // Reset accumulated time
@@ -714,6 +722,7 @@ export function LessonView({
       case LESSON_TYPE.SLIDE_DECK:
       case LESSON_TYPE.PDF:
       case LESSON_TYPE.MIRO_BOARD:
+      case LESSON_TYPE.ZOOM_RECORDED_LECTURE:
         if (isValidHttpUrl(lesson.embedUrl))
           return (
             <iframe
@@ -785,6 +794,28 @@ export function LessonView({
           />
         );
 
+      case LESSON_TYPE.ZOOM_MEETING:
+        console.log("the lesson zoom is", lesson.zoom?.meetingId);
+        console.log("the lesson zoom is", lesson.zoom?.passcode);
+        if (lesson.zoom) {
+          return (
+            <ZoomMeeting
+              zoomInfo={lesson.zoom}
+              userId={user?.id}
+              userName={user?.firstName || user?.username || "Student"}
+              userEmail={user?.email || ""}
+            />
+          );
+        }
+        return (
+          <div className="flex items-center justify-center p-8 text-muted-foreground">
+            <div className="text-center">
+              <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Zoom meeting information is not available</p>
+            </div>
+          </div>
+        );
+
       default:
         return lesson.embedUrl ? (
           <div className={isFullscreen ? "w-full h-full overflow-auto" : "w-full"}>
@@ -798,6 +829,8 @@ export function LessonView({
   };
 
   const shouldHideDetails = isFullscreen;
+  const isZoomLesson = lesson?.type === LESSON_TYPE.ZOOM_MEETING;
+
   const progressPercent =
     lesson?.type === LESSON_TYPE.VIDEO_LECTURE && videoDuration && videoDuration > 0
       ? Math.min(100, Math.round((videoWatchedTime / videoDuration) * 100))
@@ -970,13 +1003,11 @@ export function LessonView({
             </Button>
           </div>
         </div>
-
         {/* Content Wrapper */}
         <div className={`w-full ${isFullscreen ? "flex-1 h-full overflow-hidden" : ""}`}>
           {getLessonContent()}
         </div>
-
-        {!shouldHideDetails && (
+        {!shouldHideDetails && !isZoomLesson && (
           <>
             {/* Lesson Description */}
             <div className="flex flex-col md:flex-row gap-4">

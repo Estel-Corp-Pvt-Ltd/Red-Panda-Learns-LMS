@@ -410,4 +410,34 @@ body {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
+} /* Zoom Meeting SDK - Client View Styles */
+/* The SDK creates its own floating window, ensure it's visible */
+
+/* Ensure Zoom SDK root containers are visible and on top */
+#zmmtg-root,
+.zmwebsdk-makeStyles-root,
+[class*="zmwebsdk"] {
+  z-index: 10000 !important;
+}
+
+/* Zoom meeting window - make it visible */
+.meeting-client,
+.meeting-client-inner,
+.zm-modal,
+.zm-dropdown-content,
+.zm-popover {
+  z-index: 10001 !important;
+}
+
+/* Video container visibility */
+.video-container,
+.gallery-video-container,
+.speaker-view-container {
+  background-color: #1a1a1a !important;
+}
+
+/* Toolbar visibility */
+.meeting-footer,
+.meeting-info-container {
+  z-index: 10002 !important;
 }

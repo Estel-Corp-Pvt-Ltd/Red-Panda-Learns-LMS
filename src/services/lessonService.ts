@@ -18,6 +18,7 @@ import {
   serverTimestamp,
   setDoc,
   startAfter,
+  Timestamp,
   updateDoc,
   where,
   WhereFilterOp,
@@ -26,7 +27,7 @@ import {
 import { COLLECTION } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Duration } from "@/types/general";
-import { Lesson, LessonAttachment } from "@/types/lesson";
+import { Lesson, LessonAttachment, ZoomInfo } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
@@ -77,12 +78,80 @@ class LessonService {
         updatedAt: serverTimestamp(),
       };
 
+      // Add zoom info if provided
+      if (data.zoom) {
+        lesson.zoom = data.zoom;
+      }
+
       await setDoc(doc(db, COLLECTION.LESSONS, lessonId), lesson);
 
       return lesson;
     } catch (err) {
       console.error("❌ LessonService.createLesson:", err);
       throw new Error("Failed to create lesson");
+    }
+  }
+
+  async createLessonWithZoom(
+    data: Omit<Lesson, "id" | "createdAt" | "updatedAt" | "zoom">,
+    zoomData: {
+      meetingId: string;
+      hostUserId?: string | null;
+      passcode?: string | null;
+      encryptedPasscode?: string | null;
+      startTime: Date;
+      duration: number;
+    }
+  ): Promise<Lesson> {
+    try {
+      const lessonId = await this.generateLessonId();
+
+      // Build zoomInfo object - only include fields with actual values
+      const zoomInfo: Record<string, any> = {
+        meetingId: zoomData.meetingId,
+        startTime: Timestamp.fromDate(zoomData.startTime),
+        duration: zoomData.duration,
+      };
+
+      // Only add optional fields if they have truthy values
+      if (zoomData.hostUserId) {
+        zoomInfo.hostUserId = zoomData.hostUserId;
+      }
+      if (zoomData.passcode) {
+        zoomInfo.passcode = zoomData.passcode;
+      }
+      if (zoomData.encryptedPasscode) {
+        zoomInfo.encryptedPasscode = zoomData.encryptedPasscode;
+      }
+
+      // Build lesson object for Firestore (without undefined values)
+      const lessonData: Record<string, any> = {
+        id: lessonId,
+        courseId: data.courseId,
+        title: data.title,
+        type: data.type,
+        description: data.description || "",
+        embedUrl: data.embedUrl || "",
+        duration: {
+          hours: data.duration?.hours ?? 0,
+          minutes: data.duration?.minutes ?? 0,
+        },
+        karmaBoostExpiresAfter: {
+          hours: data.karmaBoostExpiresAfter?.hours ?? 0,
+          minutes: data.karmaBoostExpiresAfter?.minutes ?? 0,
+        },
+        durationAddedtoLearningProgress: data.durationAddedtoLearningProgress || false,
+        zoom: zoomInfo as ZoomInfo,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(doc(db, COLLECTION.LESSONS, lessonId), lessonData);
+
+      return lessonData as Lesson;
+    } catch (err) {
+      console.error("❌ LessonService.createLessonWithZoom:", err);
+      throw new Error("Failed to create lesson with Zoom");
     }
   }
 
