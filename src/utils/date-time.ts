@@ -9,20 +9,36 @@ import { Duration } from "@/types/general";
  * Normalize Timestamp / Date / ISO string / null → safe Date
  */
 export const toDateSafe = (
-  val: Date | Timestamp | FieldValue | string | null | undefined
+  val: Date | Timestamp | FieldValue | string | null | undefined | any
 ): Date | null => {
   if (!val) return null;
 
-  if (val instanceof Timestamp) return val.toDate();
-  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  // Native Date
+  if (val instanceof Date) {
+    return isNaN(val.getTime()) ? null : val;
+  }
 
+  // Firestore Timestamp
+  if (val instanceof Timestamp) {
+    return val.toDate();
+  }
+
+  // Serialized Firestore Timestamp
+  if (
+    typeof val === "object" &&
+    (("_seconds" in val && "_nanoseconds" in val) || ("seconds" in val && "nanoseconds" in val))
+  ) {
+    const seconds = val._seconds ?? val.seconds;
+    return new Date(seconds * 1000);
+  }
+
+  // ISO string
   if (typeof val === "string") {
-    // Only accept ISO‑8601 strings, reject “02/30/2024”-like formats
     const d = parseISO(val);
     return isValid(d) ? d : null;
   }
 
-  // FieldValue or anything else → not a usable date
+  // FieldValue (serverTimestamp placeholder)
   return null;
 };
 

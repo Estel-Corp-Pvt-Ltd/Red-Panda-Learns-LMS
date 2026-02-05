@@ -62,7 +62,9 @@ import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
 import { addOrUpdateKarmaRule } from "./handlers/karmaRuleHandler";
 import { addKarma } from "./services/karma/incrementHanlder";
-
+import { createZoomMeeting } from "./handlers/zoom/createZoomMeeting";
+// import { generateZoomSignature } from "./handlers/zoom/generateZoomSignature";
+import { generateZoomMeetingSignature } from "./handlers/zoom/generateZoomSignature";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -123,4 +125,7 @@ export {
   sendCertificateMailWorker,
   addOrUpdateKarmaRule,
   addKarma,
+  createZoomMeeting,
+  // generateZoomSignature,
+  generateZoomMeetingSignature,
 };
