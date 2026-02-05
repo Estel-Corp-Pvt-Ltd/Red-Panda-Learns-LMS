@@ -52,13 +52,9 @@ const CurriculumBuilderPage = () => {
   // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
-    string[]
-  >([]);
+  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<string[]>([]);
   const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
-  const [instructors, setInstructors] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
   const [instructorId, setInstructorId] = useState("");
   const [instructorName, setInstructorName] = useState("");
 
@@ -110,14 +106,10 @@ const CurriculumBuilderPage = () => {
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const categories = await attributeService.getAttributes(
-          ATTRIBUTE_TYPE.CATEGORY
-        );
+        const categories = await attributeService.getAttributes(ATTRIBUTE_TYPE.CATEGORY);
         setAllCategories(categories.map((a) => a.name));
 
-        const audiences = await attributeService.getAttributes(
-          ATTRIBUTE_TYPE.TARGET_AUDIENCE
-        );
+        const audiences = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
         setAllTargetAudiences(audiences.map((a) => a.name));
       } catch (err) {
         toast({
@@ -145,7 +137,6 @@ const CurriculumBuilderPage = () => {
     };
     fetchInstructors();
   }, []);
-
 
   /** Load course and flatten structure into draggable list */
 
@@ -182,9 +173,7 @@ const CurriculumBuilderPage = () => {
         setIsCertificateEnabled(data.isCertificateEnabled ?? false);
         setIsForumEnabled(data.isForumEnabled ?? false);
         setIsEnrollAnnouncementEnabled(data.isWelcomeMessageEnabled ?? false);
-        setCustomCertificateName(
-          data.customCertificateName || data.title || ""
-        );
+        setCustomCertificateName(data.customCertificateName || data.title || "");
         setIsCourseCompletionEnabled(data.isCourseCompletionEnabled ?? false);
       } catch (err) {
         toast({
@@ -383,8 +372,7 @@ const CurriculumBuilderPage = () => {
               <TabsTrigger value="basics">Basics</TabsTrigger>
               <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
               <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
-              <TabsTrigger value="additional">Additional</TabsTrigger>{" "}
-              {/* New tab trigger */}
+              <TabsTrigger value="additional">Additional</TabsTrigger> {/* New tab trigger */}
             </TabsList>
           </div>
 

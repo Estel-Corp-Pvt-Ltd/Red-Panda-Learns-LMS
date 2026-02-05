@@ -130,7 +130,7 @@ async function createMeeting(
       use_pmi: false,
       approval_type: 0, // Automatically approve
       audio: "both", // Both telephony and VoIP
-      auto_recording: "none",
+      auto_recording: "cloud",
       waiting_room: true,
       request_permission_to_unmute_participants:
         meetingData.request_permission_to_unmute_participants || false,

@@ -1,10 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Video } from "lucide-react";
+import { Clock, Video, ArrowLeftRight } from "lucide-react";
 import { ZoomInfo } from "@/types/lesson";
-import { formatDateTime } from "@/utils/date-time";
+import { formatTime } from "@/utils/date-time";
 
 interface ZoomMeetingProps {
   zoomInfo: ZoomInfo;
@@ -15,6 +15,7 @@ interface ZoomMeetingProps {
 
 export function ZoomMeeting({ zoomInfo, userId, userName, userEmail = "" }: ZoomMeetingProps) {
   const navigate = useNavigate();
+  const [showUTC, setShowUTC] = useState(false);
 
   const handleJoin = useCallback(() => {
     navigate("/zoom-meeting", {
@@ -28,15 +29,28 @@ export function ZoomMeeting({ zoomInfo, userId, userName, userEmail = "" }: Zoom
     });
   }, [navigate, zoomInfo, userId, userName, userEmail]);
 
+  const formattedTime = formatTime(zoomInfo.startTime, {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: showUTC ? "UTC" : "Asia/Kolkata",
+  });
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between py-2 px-4 border-b">
         <CardTitle className="flex items-center gap-2 text-sm">
           <Video className="h-4 w-4 text-primary" />
           <span className="hidden sm:inline">Live Session</span>
-          <span className="text-xs ml-2 text-muted-foreground">
-            <Clock className="h-3 w-3 inline mr-1" />
-            {formatDateTime(zoomInfo.startTime)}
+          <span className="text-xs ml-2 text-muted-foreground flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {formattedTime} {showUTC ? "UTC" : "IST"}
+            <button
+              onClick={() => setShowUTC(!showUTC)}
+              className="ml-1 p-0.5 rounded hover:bg-muted transition-colors"
+              title={`Switch to ${showUTC ? "IST" : "UTC"}`}
+            >
+              <ArrowLeftRight className="h-3 w-3" />
+            </button>
           </span>
         </CardTitle>
       </CardHeader>
