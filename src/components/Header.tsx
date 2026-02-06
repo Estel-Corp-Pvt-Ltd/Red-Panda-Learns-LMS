@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Copy, HeartHandshake, Mail, Menu, ShoppingCart, User } from "lucide-react";
+import { Bell, Copy, HeartHandshake, Mail, ShoppingCart, User, ChevronLeft } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -69,8 +69,8 @@ export function Header({ className }: HeaderProps) {
     user?.role === USER_ROLE.ADMIN
       ? "/admin"
       : user?.role === USER_ROLE.ACCOUNTANT
-      ? "/accountant"
-      : "/dashboard";
+        ? "/accountant"
+        : "/dashboard";
 
   return (
     <>
@@ -461,7 +461,7 @@ export function Header({ className }: HeaderProps) {
                   className="lg:hidden"
                   aria-label="Open navigation menu"
                 >
-                  <Menu className="h-5 w-5" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
 
