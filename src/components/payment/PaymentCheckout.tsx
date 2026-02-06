@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   CreditCard,
+  Info,
   Loader2,
   Lock,
   Shield,
@@ -33,7 +34,10 @@ import { TransactionLineItem } from "@/types/transaction";
 import { ADDRESS_TYPE, CURRENCY, ORDER_STATUS, PAYMENT_PROVIDER } from "@/constants";
 import { Address } from "@/types/order";
 import { Currency, PaymentProvider } from "@/types/general";
-import { CustomPhoneInput as PhoneInput, isValidPhoneNumber } from "@/components/ui/custom-phone-input";
+import {
+  CustomPhoneInput as PhoneInput,
+  isValidPhoneNumber,
+} from "@/components/ui/custom-phone-input";
 import { orderService } from "@/services/orderService";
 import { CouponCard } from "@/components/payment/CouponCard";
 import { Coupon } from "@/types/coupon";
@@ -57,10 +61,7 @@ interface State {
   name: string;
 }
 
-const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
-  items,
-  onPaymentSuccess,
-}) => {
+const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSuccess }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -78,7 +79,9 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     type: ADDRESS_TYPE.BILLING,
   });
 
-  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(PAYMENT_PROVIDER.RAZORPAY);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>(
+    PAYMENT_PROVIDER.RAZORPAY
+  );
   const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(CURRENCY.INR);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -101,14 +104,8 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
   const providers = paymentService.getAvailableProviders();
 
   // Calculate pricing with coupon discount
-  const subtotal = items.reduce(
-    (sum, item) => sum + (item.amount || item.originalAmount || 0),
-    0
-  );
-  const regularTotal = items.reduce(
-    (sum, item) => sum + (item.originalAmount || 0),
-    0
-  );
+  const subtotal = items.reduce((sum, item) => sum + (item.amount || item.originalAmount || 0), 0);
+  const regularTotal = items.reduce((sum, item) => sum + (item.originalAmount || 0), 0);
   const savings = regularTotal - subtotal;
   const finalAmount = Math.max(0, subtotal - discountAmount);
   const convenienceFee = selectedProvider === PAYMENT_PROVIDER.RAZORPAY ? 0 : finalAmount * 0.05;
@@ -120,10 +117,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
         setExchangeRate(1);
         return;
       }
-      const result = await currencyService.getExchangeRate(
-        CURRENCY.INR,
-        selectedCurrency
-      );
+      const result = await currencyService.getExchangeRate(CURRENCY.INR, selectedCurrency);
       if (result) {
         setExchangeRate(result);
       }
@@ -171,14 +165,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     async function fetchCountries() {
       setLoading((l) => ({ ...l, countries: true }));
       try {
-        const res = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/"
-        );
+        const res = await fetch("https://countriesnow.space/api/v0.1/countries/");
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
         const list = data.data || [];
-        if (!Array.isArray(list) || list.length === 0)
-          throw new Error("Empty list");
+        if (!Array.isArray(list) || list.length === 0) throw new Error("Empty list");
         setCountries(list);
       } catch (error) {
         console.error("Error fetching countries:", error);
@@ -198,14 +189,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
       setCities([]);
       setLoading((l) => ({ ...l, states: true }));
       try {
-        const res = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/states",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ country: billingAddress.country }),
-          }
-        );
+        const res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ country: billingAddress.country }),
+        });
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
         const list = data.data?.states || [];
@@ -227,17 +215,14 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
       setCities([]);
       setLoading((l) => ({ ...l, cities: true }));
       try {
-        const res = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/state/cities",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              country: billingAddress.country,
-              state: billingAddress.state,
-            }),
-          }
-        );
+        const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            country: billingAddress.country,
+            state: billingAddress.state,
+          }),
+        });
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
         const list = data.data || [];
@@ -271,7 +256,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
               userId: user!.id,
               promoCode: appliedCoupon.code,
               items,
-              idToken: idToken || ""
+              idToken: idToken || "",
             });
 
             if (couponResponse.success) {
@@ -297,7 +282,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
 
     checkOrder(); // Start the first check
   };
-
 
   const handlePayment = async () => {
     if (!user || !canProceed) return;
@@ -378,11 +362,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
   };
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Redirecting...
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Redirecting...</div>;
   }
 
   return (
@@ -417,9 +397,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-sm font-medium truncate">
-                              {item.name}
-                            </h4>
+                            <h4 className="text-sm font-medium truncate">{item.name}</h4>
                             <span className="text-xs bg-gray-100 dark:bg-zinc-700 px-2 py-1 rounded whitespace-nowrap">
                               {item.itemType === "COURSE" ? "Course" : "Bundle"}
                             </span>
@@ -431,10 +409,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                             <>
                               {item.originalAmount && (
                                 <span className="line-through text-gray-400 text-xs mr-1">
-                                  {formatMoney(
-                                    item.originalAmount || 0,
-                                    selectedCurrency
-                                  )}
+                                  {formatMoney(item.originalAmount || 0, selectedCurrency)}
                                 </span>
                               )}
                               <span className="text-green-600 dark:text-green-400">
@@ -442,12 +417,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                               </span>
                             </>
                           ) : (
-                            <span>
-                              {formatMoney(
-                                item.originalAmount,
-                                selectedCurrency
-                              )}
-                            </span>
+                            <span>{formatMoney(item.originalAmount, selectedCurrency)}</span>
                           )}
                         </div>
                       </div>
@@ -456,12 +426,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>
-                        {formatMoney(
-                          regularTotal || subtotal,
-                          selectedCurrency
-                        )}
-                      </span>
+                      <span>{formatMoney(regularTotal || subtotal, selectedCurrency)}</span>
                     </div>
 
                     {savings > 0 && (
@@ -474,9 +439,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     {discountAmount > 0 && (
                       <div className="flex justify-between text-green-600 dark:text-green-400">
                         <span>Coupon Discount:</span>
-                        <span>
-                          -{formatMoney(discountAmount, selectedCurrency)}
-                        </span>
+                        <span>-{formatMoney(discountAmount, selectedCurrency)}</span>
                       </div>
                     )}
                     {convenienceFee > 0 && (
@@ -494,12 +457,8 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
 
                     {discountAmount > 0 && (
                       <div className="text-xs text-muted-foreground text-center">
-                        You saved{" "}
-                        {formatMoney(
-                          discountAmount + savings,
-                          selectedCurrency
-                        )}{" "}
-                        in total!
+                        You saved {formatMoney(discountAmount + savings, selectedCurrency)} in
+                        total!
                       </div>
                     )}
                   </div>
@@ -522,9 +481,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                       <Input
                         id="fullName"
                         value={billingAddress.fullName}
-                        onChange={(e) =>
-                          updateAddressField("fullName", e.target.value)
-                        }
+                        onChange={(e) => updateAddressField("fullName", e.target.value)}
                         placeholder="Enter your full name"
                         disabled={isProcessing}
                       />
@@ -541,11 +498,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                         disabled={isProcessing}
                         className="w-full"
                       />
-                      {phoneError && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {phoneError}
-                        </p>
-                      )}
+                      {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
                     </div>
                   </div>
 
@@ -555,24 +508,18 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     <Input
                       id="line1"
                       value={billingAddress.line1}
-                      onChange={(e) =>
-                        updateAddressField("line1", e.target.value)
-                      }
+                      onChange={(e) => updateAddressField("line1", e.target.value)}
                       placeholder="Enter your street address"
                       disabled={isProcessing}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="line2">
-                      Apartment, Suite, etc. (Optional)
-                    </Label>
+                    <Label htmlFor="line2">Apartment, Suite, etc. (Optional)</Label>
                     <Input
                       id="line2"
                       value={billingAddress.line2 || ""}
-                      onChange={(e) =>
-                        updateAddressField("line2", e.target.value)
-                      }
+                      onChange={(e) => updateAddressField("line2", e.target.value)}
                       placeholder="Apartment, suite, unit, etc."
                       disabled={isProcessing}
                     />
@@ -599,11 +546,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue
-                              placeholder={
-                                loading.countries
-                                  ? "Loading..."
-                                  : "Select country"
-                              }
+                              placeholder={loading.countries ? "Loading..." : "Select country"}
                             />
                           </SelectTrigger>
                           <SelectContent>
@@ -646,14 +589,9 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                           }}
                           disabled={!billingAddress.country || isProcessing}
                         >
-                          <SelectTrigger
-                            disabled={!billingAddress.country}
-                            className="w-full"
-                          >
+                          <SelectTrigger disabled={!billingAddress.country} className="w-full">
                             <SelectValue
-                              placeholder={
-                                loading.states ? "Loading..." : "Select state"
-                              }
+                              placeholder={loading.states ? "Loading..." : "Select state"}
                             />
                           </SelectTrigger>
                           <SelectContent>
@@ -684,19 +622,12 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                       {cities.length > 0 ? (
                         <Select
                           value={billingAddress.city}
-                          onValueChange={(val) =>
-                            updateAddressField("city", val)
-                          }
+                          onValueChange={(val) => updateAddressField("city", val)}
                           disabled={!billingAddress.state || isProcessing}
                         >
-                          <SelectTrigger
-                            disabled={!billingAddress.state}
-                            className="w-full"
-                          >
+                          <SelectTrigger disabled={!billingAddress.state} className="w-full">
                             <SelectValue
-                              placeholder={
-                                loading.cities ? "Loading..." : "Select city"
-                              }
+                              placeholder={loading.cities ? "Loading..." : "Select city"}
                             />
                           </SelectTrigger>
                           <SelectContent>
@@ -712,9 +643,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                           placeholder="Enter city"
                           value={billingAddress.city}
                           disabled={!billingAddress.state || isProcessing}
-                          onChange={(e) =>
-                            updateAddressField("city", e.target.value)
-                          }
+                          onChange={(e) => updateAddressField("city", e.target.value)}
                         />
                       )}
                     </div>
@@ -725,9 +654,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     <Input
                       id="postalCode"
                       value={billingAddress.postalCode}
-                      onChange={(e) =>
-                        updateAddressField("postalCode", e.target.value)
-                      }
+                      onChange={(e) => updateAddressField("postalCode", e.target.value)}
                       placeholder="Enter ZIP or postal code"
                       disabled={isProcessing}
                     />
@@ -764,48 +691,42 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     })
                     .map((provider) => {
                       const isSelected = selectedProvider === provider.id;
-                      const supportedCurrencies = provider.currencies.filter(
-                        (currency) => {
-                          if (!billingAddress.country) return true;
-                          if (
-                            billingAddress.country.toLowerCase() === "india" &&
-                            currency !== CURRENCY.INR
-                          ) {
-                            return false;
-                          } else if (
-                            billingAddress.country.toLowerCase() !== "india" &&
-                            currency === CURRENCY.INR
-                          ) {
-                            return false;
-                          }
-                          return true;
+                      const supportedCurrencies = provider.currencies.filter((currency) => {
+                        if (!billingAddress.country) return true;
+                        if (
+                          billingAddress.country.toLowerCase() === "india" &&
+                          currency !== CURRENCY.INR
+                        ) {
+                          return false;
+                        } else if (
+                          billingAddress.country.toLowerCase() !== "india" &&
+                          currency === CURRENCY.INR
+                        ) {
+                          return false;
                         }
-                      );
+                        return true;
+                      });
 
                       return (
                         <div
                           key={provider.id}
                           onClick={() => setSelectedProvider(provider.id)}
-                          className={`cursor-pointer p-4 rounded-xl border transition-all ${isSelected
-                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                            : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
-                            }`}
+                          className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                            isSelected
+                              ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                              : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
+                          }`}
                         >
                           <div className="flex justify-between items-start gap-4">
                             <div className="flex gap-3">
                               <div
-                                className={`w-4 h-4 mt-1 rounded-full border-2 ${isSelected
-                                  ? "bg-blue-600 border-blue-600"
-                                  : "border-gray-400"
-                                  }`}
+                                className={`w-4 h-4 mt-1 rounded-full border-2 ${
+                                  isSelected ? "bg-blue-600 border-blue-600" : "border-gray-400"
+                                }`}
                               />
                               <div>
                                 <div className="flex items-center gap-2 font-medium">
-                                  <img
-                                    src={provider.icon}
-                                    className="h-5"
-                                    alt={provider.id}
-                                  />
+                                  <img src={provider.icon} className="h-5" alt={provider.id} />
                                   {provider.name}
                                 </div>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -827,9 +748,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                             <select
                               value={selectedCurrency}
                               onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                setSelectedCurrency(e.target.value as Currency)
-                              }
+                              onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
                               className="px-2 py-1 text-sm border rounded bg-background"
                             >
                               {supportedCurrencies.map((currency) => (
@@ -845,6 +764,24 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                 </CardContent>
               </Card>
 
+              {/* EMI Notice */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                      EMI Payment Information
+                    </h4>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
+                      Vizuara does not provide EMI options. EMI facilities are offered by{" "}
+                      <span className="font-semibold">Razorpay</span> and are subject to Razorpay's
+                      terms and card eligibility. To pay via EMI, please select{" "}
+                      <span className="font-semibold">Razorpay</span> as your payment method.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Security & Payment */}
               <Card>
                 <CardContent className="pt-6">
@@ -853,8 +790,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     <div>
                       <h4 className="font-medium mb-1">Secure Payment</h4>
                       <p className="text-sm text-muted-foreground">
-                        All transactions are encrypted. Instant access after
-                        payment.
+                        All transactions are encrypted. Instant access after payment.
                       </p>
                     </div>
                   </div>
@@ -864,11 +800,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
               {/* Agreement & Payment Button */}
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="agree"
-                    checked={agreed}
-                    onCheckedChange={(v) => setAgreed(!!v)}
-                  />
+                  <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} />
                   <Label htmlFor="agree" className="text-sm leading-snug">
                     I agree to the{" "}
                     <Link to="/terms" className="underline text-blue-600">
@@ -879,10 +811,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                       Privacy
                     </Link>
                     , and{" "}
-                    <Link
-                      to="/refund-policy"
-                      className="underline text-blue-600"
-                    >
+                    <Link to="/refund-policy" className="underline text-blue-600">
                       Refund Policy
                     </Link>
                     .
@@ -894,12 +823,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     Please complete all required fields and agree to terms.
                   </div>
                 )}
-                <Button
-                  onClick={handlePayment}
-                  disabled={!canProceed}
-                  size="lg"
-                  className="w-full"
-                >
+                <Button onClick={handlePayment} disabled={!canProceed} size="lg" className="w-full">
                   {isProcessing ? (
                     <>
                       <Loader2 className="animate-spin h-5 w-5 mr-2" />
@@ -908,15 +832,11 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                   ) : (
                     <>
                       <Lock className="h-4 w-4 mr-2" />
-                      Pay {formatMoney(finalAmount, selectedCurrency)} & Enroll
-                      Now
+                      Pay {formatMoney(finalAmount, selectedCurrency)} & Enroll Now
                     </>
                   )}
                 </Button>
-                <div
-                  id="paypal-button-container"
-                  className="w-full"
-                >
+                <div id="paypal-button-container" className="w-full">
                   {/* PayPal button will be rendered here by the provider */}
                 </div>
               </div>
@@ -928,9 +848,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center">
             <Loader2 className="animate-spin h-12 w-12 mb-4" />
-            <p className="text-gray-800 dark:text-gray-200">
-              Verifying your order, please wait...
-            </p>
+            <p className="text-gray-800 dark:text-gray-200">Verifying your order, please wait...</p>
           </div>
         </div>
       )}
