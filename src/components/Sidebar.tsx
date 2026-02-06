@@ -5,6 +5,7 @@ import {
   Clipboard,
   LayoutDashboard,
   LogOut,
+  Menu,
   Upload,
   UserIcon,
   Zap, // Imported Zap for the "What's New" icon
@@ -170,8 +171,8 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 flex-col border-r bg-card overflow-y-auto hidden md:flex font-sans">
-      <nav className="flex-1 p-4">
+    <aside className="w-64 flex-col border-r bg-card hidden md:flex font-sans h-full">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const active = isActive(item.path, location.pathname);
@@ -205,13 +206,13 @@ const Sidebar: React.FC = () => {
           })}
         </ul>
       </nav>
-
+      <div className="flex-1"></div>
       {/* Logout Button */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t justify-end">
         <button
           className={cn(
             "flex items-center gap-3 w-full rounded-lg px-3 py-3 text-sm font-medium transition-all",
-            "bg-red-500 text-white hover:bg-red-600 active:scale-95"
+            "bg-red-500 text-white hover:bg-red-600 active:scale-95 "
           )}
           onClick={handleLogout}
         >
@@ -252,7 +253,7 @@ export const UserSidebarMobileToggle: React.FC = () => {
           className="md:hidden rounded-xl"
           aria-label="Open menu"
         >
-          <ChevronRight className="h-4 w-4" />
+          <Menu className="h-4 w-4" />
         </Button>
       </SheetTrigger>
 
@@ -305,7 +306,7 @@ export const UserSidebarMobileToggle: React.FC = () => {
             <button
               className={cn(
                 "flex items-center gap-3 w-full rounded-lg px-3 py-3 text-sm font-medium transition-all",
-                "bg-red-500 text-white hover:bg-red-600"
+                "bg-red-500 text-white hover:bg-red-600  "
               )}
               onClick={async () => {
                 await handleLogout();

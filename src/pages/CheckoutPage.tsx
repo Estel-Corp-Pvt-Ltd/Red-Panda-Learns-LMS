@@ -12,10 +12,10 @@ import { ENROLLED_PROGRAM_TYPE } from "@/constants";
 export default function CheckoutPage() {
   const { param } = useParams<{ param: string }>();
   const { isEnrolled, loading } = useEnrollment();
-  const { data: course, isLoading } = useCourseQuery(param!);  // Assuming useCourseQuery is providing isLoading state
+  const { data: course, isLoading } = useCourseQuery(param!); // Assuming useCourseQuery is providing isLoading state
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   // Prevent errors if course is undefined or loading
   useEffect(() => {
     if (!user || !course || isLoading || loading) return;
@@ -30,19 +30,21 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (course) {
-      setItems([{
-        itemId: course.id,
-        itemType: ENROLLED_PROGRAM_TYPE.COURSE,
-        name: course.title,
-        amount: course.salePrice,
-      }]);
+      setItems([
+        {
+          itemId: course.id,
+          itemType: ENROLLED_PROGRAM_TYPE.COURSE,
+          name: course.title,
+          amount: course.salePrice,
+        },
+      ]);
     }
   }, [course]);
 
   const handlePaymentSuccess = (orderId: string) => {
     console.log("Payment successful! Order ID:", orderId);
     navigate("/dashboard");
-  }
+  };
 
   if (isLoading || loading) {
     return <div>Loading...</div>; // Loading state handling
