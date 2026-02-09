@@ -65,6 +65,11 @@ import { addKarma } from "./services/karma/incrementHanlder";
 import { createZoomMeeting } from "./handlers/zoom/createZoomMeeting";
 // import { generateZoomSignature } from "./handlers/zoom/generateZoomSignature";
 import { generateZoomMeetingSignature } from "./handlers/zoom/generateZoomSignature";
+// Meilisearch
+import { onCourseWrittenSync } from "./events/onCourseWritten";
+import { onBundleWrittenSync } from "./events/onBundleWritten";
+import { onUserWrittenSync } from "./events/onUserWritten";
+import { onAssignmentWrittenSync } from "./events/onAssignmentWritten";
 export {
   enrollStudent,
   createRazorpayOrder,
@@ -128,4 +133,9 @@ export {
   createZoomMeeting,
   // generateZoomSignature,
   generateZoomMeetingSignature,
+  // Meilisearch
+  onCourseWrittenSync,
+  onBundleWrittenSync,
+  onUserWrittenSync,
+  onAssignmentWrittenSync,
 };
