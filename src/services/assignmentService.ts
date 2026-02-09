@@ -28,6 +28,7 @@ import { Assignment, AssignmentSubmission } from "@/types/assignment";
 import { fail, ok, Result } from "@/utils/response";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { searchService, SearchOptions } from "@/services/searchService";
 
 /**
  * Firestore-based service for managing Assignments.
@@ -1003,6 +1004,27 @@ class AssignmentService {
     } catch (error) {
       logError("AssignmentService - Error updating null author assignments:", error);
       return fail("Error updating null author assignments");
+    }
+  }
+
+  async searchAssignments(
+    queryStr: string,
+    options: SearchOptions = {}
+  ): Promise<Result<PaginatedResult<Assignment>>> {
+    try {
+      const result = await searchService.searchAssignments(queryStr, options);
+
+      return ok({
+        data: result.hits as Assignment[],
+        hasNextPage: (options.offset ?? 0) + (options.limit ?? 20) < result.totalHits,
+        hasPreviousPage: (options.offset ?? 0) > 0,
+        nextCursor: null,
+        previousCursor: null,
+        totalCount: result.totalHits,
+      });
+    } catch (error) {
+      logError("AssignmentService - searchAssignments error:", error);
+      return fail("Failed to search assignments");
     }
   }
 }

@@ -6,17 +6,17 @@ import { bundleService } from '@/services/bundleService';
 import { Course } from '@/types/course';
 import { User } from '@/types/user';
 import { Bundle } from '@/types/bundle';
-import { PaginatedResult } from '@/utils/pagination';
 import { Search, Mail, BookOpen, CheckCircle, Loader2, X, ChevronLeft, ChevronRight, Package, Trash2 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { COURSE_STATUS, BUNDLE_STATUS } from '@/constants';
-import { WhereFilterOp } from 'firebase/firestore';
+import { useDebounce } from '@/hooks/useDebounce';
 import { TransactionLineItem } from '@/types/transaction';
+
+const ITEMS_PER_PAGE = 10;
 
 const EnrollStudent: React.FC = () => {
   const [studentEmail, setStudentEmail] = useState('');
@@ -25,110 +25,105 @@ const EnrollStudent: React.FC = () => {
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
   const [selectedBundles, setSelectedBundles] = useState<Bundle[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [courseSearch, setCourseSearch] = useState('');
-  const [bundleSearch, setBundleSearch] = useState('');
-  const [pagination, setPagination] = useState({
-    hasNextPage: false,
-    hasPreviousPage: false,
-    nextCursor: null as any,
-    previousCursor: null as any,
-    currentPage: 1
-  });
 
-  // Load courses and bundles
+  // Course search
+  const [courseSearchInput, setCourseSearchInput] = useState('');
+  const courseSearch = useDebounce(courseSearchInput, 400);
+  const [courseLoading, setCourseLoading] = useState(false);
+  const [coursePage, setCoursePage] = useState(1);
+  const [courseTotalCount, setCourseTotalCount] = useState(0);
+  const [courseHasNext, setCourseHasNext] = useState(false);
+  const [courseHasPrev, setCourseHasPrev] = useState(false);
+  const prevCourseSearch = useRef(courseSearch);
+
+  // Bundle search
+  const [bundleSearchInput, setBundleSearchInput] = useState('');
+  const bundleSearch = useDebounce(bundleSearchInput, 400);
+  const [bundleLoading, setBundleLoading] = useState(false);
+  const [bundlePage, setBundlePage] = useState(1);
+  const [bundleTotalCount, setBundleTotalCount] = useState(0);
+  const [bundleHasNext, setBundleHasNext] = useState(false);
+  const [bundleHasPrev, setBundleHasPrev] = useState(false);
+  const prevBundleSearch = useRef(bundleSearch);
+
+  // Load courses via Meilisearch
   useEffect(() => {
-    loadCourses();
-    loadBundles();
-  }, [courseSearch, bundleSearch, pagination.currentPage]);
-
-  const loadCourses = async () => {
-    setLoading(true);
-    try {
-      const filters: { field: keyof Course; op: WhereFilterOp; value: any }[] = [
-        { field: 'status', op: '==', value: COURSE_STATUS.PUBLISHED }
-      ];
-
-      if (courseSearch.trim()) {
-        filters.push({ field: 'title', op: '>=', value: courseSearch });
-        filters.push({ field: 'title', op: '<=', value: courseSearch + '\uf8ff' });
+    if (prevCourseSearch.current !== courseSearch) {
+      prevCourseSearch.current = courseSearch;
+      if (coursePage !== 1) {
+        setCoursePage(1);
+        return;
       }
+    }
+    searchCourses();
+  }, [courseSearch, coursePage]);
 
-      const result = await courseService.getCourses(filters, {
-        limit: 10,
-        orderBy: { field: 'title', direction: 'asc' },
-        cursor: courseSearch.trim() ? null : pagination.nextCursor || pagination.previousCursor,
-        pageDirection: pagination.nextCursor ? 'next' : 'previous',
+  // Load bundles via Meilisearch
+  useEffect(() => {
+    if (prevBundleSearch.current !== bundleSearch) {
+      prevBundleSearch.current = bundleSearch;
+      if (bundlePage !== 1) {
+        setBundlePage(1);
+        return;
+      }
+    }
+    searchBundles();
+  }, [bundleSearch, bundlePage]);
+
+  const searchCourses = async () => {
+    setCourseLoading(true);
+    try {
+      const offset = (coursePage - 1) * ITEMS_PER_PAGE;
+      const result = await courseService.searchCourses(courseSearch, {
+        limit: ITEMS_PER_PAGE,
+        offset,
+        filter: 'status = "PUBLISHED"',
       });
 
       if (result.success && result.data) {
         setCourses(result.data.data);
-        setPagination(prev => ({
-          ...prev,
-          hasNextPage: result.data!.hasNextPage,
-          hasPreviousPage: result.data!.hasPreviousPage,
-          nextCursor: result.data!.nextCursor,
-          previousCursor: result.data!.previousCursor
-        }));
+        setCourseHasNext(result.data.hasNextPage);
+        setCourseHasPrev(result.data.hasPreviousPage);
+        setCourseTotalCount(result.data.totalCount || 0);
       }
     } catch (error) {
-      console.error('Failed to load courses:', error);
+      console.error('Failed to search courses:', error);
       toast({ title: 'Error', description: 'Failed to load courses', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      setCourseLoading(false);
     }
   };
 
-  const loadBundles = async () => {
+  const searchBundles = async () => {
+    setBundleLoading(true);
     try {
-      const filters: { field: keyof Bundle; op: WhereFilterOp; value: any }[] = [
-        { field: 'status', op: '==', value: BUNDLE_STATUS.PUBLISHED }
-      ];
-
-      if (bundleSearch.trim()) {
-        filters.push({ field: 'title', op: '>=', value: bundleSearch });
-        filters.push({ field: 'title', op: '<=', value: bundleSearch + '\uf8ff' });
-      }
-
-      const result = await bundleService.getBundles(filters, {
-        limit: 10,
-        orderBy: { field: 'title', direction: 'asc' },
-        cursor: null,
-        pageDirection: 'next',
+      const offset = (bundlePage - 1) * ITEMS_PER_PAGE;
+      const result = await bundleService.searchBundles(bundleSearch, {
+        limit: ITEMS_PER_PAGE,
+        offset,
+        filter: 'status = "PUBLISHED"',
       });
 
       if (result.success && result.data) {
         setBundles(result.data.data);
+        setBundleHasNext(result.data.hasNextPage);
+        setBundleHasPrev(result.data.hasPreviousPage);
+        setBundleTotalCount(result.data.totalCount || 0);
       }
     } catch (error) {
-      console.error('Failed to load bundles:', error);
+      console.error('Failed to search bundles:', error);
       toast({ title: 'Error', description: 'Failed to load bundles', variant: 'destructive' });
+    } finally {
+      setBundleLoading(false);
     }
   };
 
-
-    const isProbablyHtml = (text?: string | null) => {
-  if (!text) return false;
-  const trimmed = text.trim();
-  // Simple heuristic: starts with '<' and has at least one closing tag
-  return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
-};
-
-  const handleNextPage = () => {
-    if (!pagination.hasNextPage || loading) return;
-    setPagination(prev => ({
-      ...prev,
-      currentPage: prev.currentPage + 1
-    }));
-  };
-
-  const handlePreviousPage = () => {
-    if (!pagination.hasPreviousPage || loading) return;
-    setPagination(prev => ({
-      ...prev,
-      currentPage: prev.currentPage - 1
-    }));
+  const isProbablyHtml = (text?: string | null) => {
+    if (!text) return false;
+    const trimmed = text.trim();
+    return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
   };
 
   const findStudent = async () => {
@@ -169,7 +164,7 @@ const EnrollStudent: React.FC = () => {
     selectedCourses.forEach(course => items.push({ itemId: course.id, itemType: 'COURSE', amount: 0, name: course.title }));
     selectedBundles.forEach(bundle => items.push({ itemId: bundle.id, itemType: 'BUNDLE', amount: 0, name: bundle.title }));
 
-    setLoading(true);
+    setEnrolling(true);
     try {
       const result = await enrollmentService.enrollUser(
         student.email,
@@ -177,7 +172,6 @@ const EnrollStudent: React.FC = () => {
       );
       if (result.success) {
         toast({ title: 'Success', description: 'Student enrolled successfully' });
-        // Reset form
         setSelectedCourses([]);
         setSelectedBundles([]);
         setStudent(null);
@@ -189,7 +183,7 @@ const EnrollStudent: React.FC = () => {
       console.error('Enrollment failed:', error);
       toast({ title: 'Error', description: 'Enrollment failed', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      setEnrolling(false);
     }
   };
 
@@ -213,38 +207,6 @@ const EnrollStudent: React.FC = () => {
     setSelectedBundles(prev => prev.filter(b => b.id !== bundleId));
   };
 
-  const clearCourseSearch = () => {
-    setCourseSearch('');
-    setPagination({
-      hasNextPage: false,
-      hasPreviousPage: false,
-      nextCursor: null,
-      previousCursor: null,
-      currentPage: 1
-    });
-  };
-
-  const clearBundleSearch = () => {
-    setBundleSearch('');
-  };
-
-  const handleCourseSearchChange = (searchTerm: string) => {
-    setCourseSearch(searchTerm);
-    if (searchTerm !== courseSearch) {
-      setPagination({
-        hasNextPage: false,
-        hasPreviousPage: false,
-        nextCursor: null,
-        previousCursor: null,
-        currentPage: 1
-      });
-    }
-  };
-
-  const handleBundleSearchChange = (searchTerm: string) => {
-    setBundleSearch(searchTerm);
-  };
-
   const getStudentName = (user: User) => {
     return `${user.firstName} ${user.lastName}`.trim() || user.email;
   };
@@ -252,6 +214,9 @@ const EnrollStudent: React.FC = () => {
   const getTotalSelected = () => {
     return selectedCourses.length + selectedBundles.length;
   };
+
+  const courseTotalPages = Math.ceil(courseTotalCount / ITEMS_PER_PAGE);
+  const bundleTotalPages = Math.ceil(bundleTotalCount / ITEMS_PER_PAGE);
 
   return (
     <AdminLayout>
@@ -367,9 +332,9 @@ const EnrollStudent: React.FC = () => {
               <Button
                 className="w-full"
                 onClick={enrollStudent}
-                disabled={!student || getTotalSelected() === 0 || loading}
+                disabled={!student || getTotalSelected() === 0 || enrolling}
               >
-                {loading ? (
+                {enrolling ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -391,39 +356,37 @@ const EnrollStudent: React.FC = () => {
                   Available Courses
                 </CardTitle>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Search courses..."
-                      value={courseSearch}
-                      onChange={(e) => handleCourseSearchChange(e.target.value)}
-                      className="pl-10 pr-10 w-64"
-                    />
-                    {courseSearch && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearCourseSearch}
-                        className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search courses..."
+                    value={courseSearchInput}
+                    onChange={(e) => setCourseSearchInput(e.target.value)}
+                    className="pl-10 pr-9 w-64"
+                  />
+                  {courseSearchInput && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCourseSearchInput('')}
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {courseLoading ? (
                 <div className="flex justify-center items-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
                   <span className="ml-2">Loading courses...</span>
                 </div>
               ) : courses.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {courseSearch
-                    ? `No courses found matching "${courseSearch}"`
+                  {courseSearchInput
+                    ? `No courses found matching "${courseSearchInput}"`
                     : 'No published courses available'
                   }
                 </div>
@@ -439,14 +402,14 @@ const EnrollStudent: React.FC = () => {
                         <div className="flex-1">
                           <div className="font-medium">{course.title}</div>
                           <div className="text-sm text-muted-foreground line-clamp-2">
-                           {isProbablyHtml(course.description) ? (
-    <div
-      className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
-      dangerouslySetInnerHTML={{ __html: course.description || '' }}
-    />
-  ) : (
-    <span>{course.description}</span>
-  )}
+                            {isProbablyHtml(course.description) ? (
+                              <div
+                                className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
+                                dangerouslySetInnerHTML={{ __html: course.description || '' }}
+                              />
+                            ) : (
+                              <span>{course.description}</span>
+                            )}
                           </div>
                           <div className="text-sm text-green-600 font-medium mt-1">
                             ₹{course.salePrice || course.regularPrice}
@@ -456,17 +419,17 @@ const EnrollStudent: React.FC = () => {
                     ))}
                   </div>
 
-                  {!courseSearch && courses.length > 0 && (
+                  {courseTotalPages > 1 && (
                     <div className="flex items-center justify-between space-x-2 py-4">
                       <div className="flex-1 text-sm text-muted-foreground">
-                        Page {pagination.currentPage}
+                        Page {coursePage} of {courseTotalPages} ({courseTotalCount} courses)
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handlePreviousPage}
-                          disabled={!pagination.hasPreviousPage || loading}
+                          onClick={() => setCoursePage(p => p - 1)}
+                          disabled={!courseHasPrev || courseLoading}
                         >
                           <ChevronLeft className="h-4 w-4" />
                           Previous
@@ -474,8 +437,8 @@ const EnrollStudent: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handleNextPage}
-                          disabled={!pagination.hasNextPage || loading}
+                          onClick={() => setCoursePage(p => p + 1)}
+                          disabled={!courseHasNext || courseLoading}
                         >
                           Next
                           <ChevronRight className="h-4 w-4" />
@@ -497,67 +460,100 @@ const EnrollStudent: React.FC = () => {
                   Available Bundles
                 </CardTitle>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Search bundles..."
-                      value={bundleSearch}
-                      onChange={(e) => handleBundleSearchChange(e.target.value)}
-                      className="pl-10 pr-10 w-64"
-                    />
-                    {bundleSearch && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearBundleSearch}
-                        className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search bundles..."
+                    value={bundleSearchInput}
+                    onChange={(e) => setBundleSearchInput(e.target.value)}
+                    className="pl-10 pr-9 w-64"
+                  />
+                  {bundleSearchInput && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setBundleSearchInput('')}
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {bundles.length === 0 ? (
+              {bundleLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Loading bundles...</span>
+                </div>
+              ) : bundles.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {bundleSearch
-                    ? `No bundles found matching "${bundleSearch}"`
+                  {bundleSearchInput
+                    ? `No bundles found matching "${bundleSearchInput}"`
                     : 'No published bundles available'
                   }
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {bundles.map((bundle) => (
-                    <div key={bundle.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                      <Checkbox
-                        checked={selectedBundles.some(b => b.id === bundle.id)}
-                        onCheckedChange={(checked) => toggleBundle(bundle, checked as boolean)}
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium">{bundle.title}</div>
-                        <div className="text-sm text-muted-foreground line-clamp-2">
-                          {bundle.description}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="text-sm text-green-600 font-medium">
-                            ₹{bundle.salePrice}
+                <>
+                  <div className="space-y-3">
+                    {bundles.map((bundle) => (
+                      <div key={bundle.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                        <Checkbox
+                          checked={selectedBundles.some(b => b.id === bundle.id)}
+                          onCheckedChange={(checked) => toggleBundle(bundle, checked as boolean)}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{bundle.title}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-2">
+                            {bundle.description}
                           </div>
-                          {bundle.regularPrice > bundle.salePrice && (
-                            <div className="text-sm text-muted-foreground line-through">
-                              ₹{bundle.regularPrice}
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="text-sm text-green-600 font-medium">
+                              ₹{bundle.salePrice}
                             </div>
-                          )}
-                          <div className="text-xs text-muted-foreground">
-                            • {bundle.courses?.length || 0} courses
+                            {bundle.regularPrice > bundle.salePrice && (
+                              <div className="text-sm text-muted-foreground line-through">
+                                ₹{bundle.regularPrice}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              • {bundle.courses?.length || 0} courses
+                            </div>
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {bundleTotalPages > 1 && (
+                    <div className="flex items-center justify-between space-x-2 py-4">
+                      <div className="flex-1 text-sm text-muted-foreground">
+                        Page {bundlePage} of {bundleTotalPages} ({bundleTotalCount} bundles)
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBundlePage(p => p - 1)}
+                          disabled={!bundleHasPrev || bundleLoading}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBundlePage(p => p + 1)}
+                          disabled={!bundleHasNext || bundleLoading}
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

@@ -7,7 +7,8 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "reindex": "npm run build && node --env-file=.env lib/cli/meilisearch-reindex.js"
   },
   "engines": {
     "node": "22"
@@ -25,6 +26,7 @@
     "firebase-functions": "^6.0.1",
     "html-pdf-node": "^1.0.8",
     "lodash": "^4.17.21",
+    "meilisearch": "^0.55.0",
     "razorpay": "^2.9.6",
     "zod": "^4.1.12"
   },

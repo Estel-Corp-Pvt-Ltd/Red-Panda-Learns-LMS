@@ -45,6 +45,8 @@ jobs:
           VITE_PAYPAL_SANDBOX_CLIENT_ID: ${{ vars.VITE_PAYPAL_SANDBOX_CLIENT_ID }}
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
           VITE_APP_ENVIRONMENT: ${{ vars.VITE_APP_ENVIRONMENT }}
+          VITE_MEILISEARCH_URL: ${{ vars.VITE_MEILISEARCH_URL }}
+          VITE_MEILISEARCH_SEARCH_KEY: ${{ vars.VITE_MEILISEARCH_SEARCH_KEY }}
 
       - name: Authenticate to GCP (dev)
         uses: google-github-actions/auth@v2

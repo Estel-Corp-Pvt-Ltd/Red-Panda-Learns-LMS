@@ -1,13 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import AdminLayout from '@/components/AdminLayout';
-import { userService } from '@/services/userService';
-import { User } from '@/types/user';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import AdminLayout from "@/components/AdminLayout";
+import { userService } from "@/services/userService";
+import { useDebounce } from "@/hooks/useDebounce";
+import { User } from "@/types/user";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Users,
   PlusCircle,
@@ -17,20 +32,31 @@ import {
   ChevronRight,
   Loader2,
   Mail,
-  User as UserIcon,
-  Search
-} from 'lucide-react';
-import { USER_ROLE, USER_STATUS } from '@/constants';
-import ConfirmDialog from '@/components/ConfirmDialog';
+  Search,
+  X,
+  Filter,
+} from "lucide-react";
+import { USER_ROLE, USER_STATUS } from "@/constants";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PaginatedUsers {
   data: User[];
   hasNextPage: boolean;
   hasPreviousPage: boolean;
-  nextCursor?: any;
-  previousCursor?: any;
   totalCount: number;
 }
+
+type USER_ROLE = (typeof USER_ROLE)[keyof typeof USER_ROLE];
+type USER_STATUS = (typeof USER_STATUS)[keyof typeof USER_STATUS];
+
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50, 100];
 
 const AdminUsers: React.FC = () => {
   const navigate = useNavigate();
@@ -39,45 +65,81 @@ const AdminUsers: React.FC = () => {
     data: [],
     hasNextPage: false,
     hasPreviousPage: false,
-    totalCount: 0
+    totalCount: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [paginationState, setPaginationState] = useState({
-    cursor: null as any,
-    pageDirection: 'next' as 'next' | 'previous',
-    currentPage: 1
+  const [searchInput, setSearchInput] = useState("");
+  const searchQuery = useDebounce(searchInput, 500);
+  const [roleFilter, setRoleFilter] = useState<USER_ROLE | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<USER_STATUS | "ALL">("ALL");
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Track previous filter values to detect filter changes vs page changes
+  const [prevFilters, setPrevFilters] = useState({
+    searchQuery,
+    roleFilter,
+    statusFilter,
+    itemsPerPage,
   });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
+  useEffect(() => {
+    const filtersChanged =
+      prevFilters.searchQuery !== searchQuery ||
+      prevFilters.roleFilter !== roleFilter ||
+      prevFilters.statusFilter !== statusFilter ||
+      prevFilters.itemsPerPage !== itemsPerPage;
 
-  const loadUsers = async (options = {}) => {
+    if (filtersChanged) {
+      setPrevFilters({ searchQuery, roleFilter, statusFilter, itemsPerPage });
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return; // performSearch will be called when currentPage updates
+      }
+    }
+
+    performSearch();
+  }, [searchQuery, roleFilter, statusFilter, currentPage, itemsPerPage]);
+
+  const performSearch = async () => {
     setIsLoading(true);
     try {
-      const result = await userService.getUsers([], {
-        limit: 10,
-        orderBy: { field: 'createdAt', direction: 'desc' },
-        ...options
+      const filters: string[] = [];
+      if (roleFilter !== "ALL") {
+        filters.push(`role = "${roleFilter}"`);
+      }
+      if (statusFilter !== "ALL") {
+        filters.push(`status = "${statusFilter}"`);
+      }
+
+      const offset = (currentPage - 1) * itemsPerPage;
+      const result = await userService.searchUsers(searchQuery, {
+        limit: itemsPerPage,
+        offset,
+        filter: filters.length > 0 ? filters.join(" AND ") : undefined,
       });
 
-      if (result.success) {
-        setUsers(prev => ({
-          ...result.data,
-          totalCount: result.data.data.length
-        }));
+      if (result.success && result.data) {
+        setUsers({
+          data: result.data.data,
+          hasNextPage: result.data.hasNextPage,
+          hasPreviousPage: result.data.hasPreviousPage,
+          totalCount: result.data.totalCount,
+        });
       } else {
         toast({
           title: "Error",
-          description: "Failed to load users",
+          description: "Failed to search users",
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error("Error searching users:", error);
       toast({
         title: "Error",
-        description: "Failed to load users",
+        description: "An error occurred while searching users",
         variant: "destructive",
       });
     } finally {
@@ -85,105 +147,66 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleNextPage = async () => {
-    if (!users.hasNextPage) return;
-
-    setPaginationState(prev => ({
-      cursor: users.nextCursor,
-      pageDirection: 'next',
-      currentPage: prev.currentPage + 1
-    }));
-
-    await loadUsers({
-      cursor: users.nextCursor,
-      pageDirection: 'next'
-    });
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(parseInt(value, 10));
   };
 
-  const handlePreviousPage = async () => {
-    if (!users.hasPreviousPage) return;
-
-    setPaginationState(prev => ({
-      cursor: users.previousCursor,
-      pageDirection: 'previous',
-      currentPage: prev.currentPage - 1
-    }));
-
-    await loadUsers({
-      cursor: users.previousCursor,
-      pageDirection: 'previous'
-    });
+  const handleNextPage = () => {
+    if (!users.hasNextPage || isLoading) return;
+    setCurrentPage((prev) => prev + 1);
   };
 
-
-  const findUser = async () => {
-    if (!searchQuery.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Enter a user email to search',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const result = await userService.getUserByEmail(searchQuery.trim());
-      if (result.success && result.data) {
-        // show the found user only
-        setUsers({
-          data: [result.data],
-          hasNextPage: false,
-          hasPreviousPage: false,
-          totalCount: 1,
-        });
-        toast({
-          title: 'Success',
-          description: `Found ${result.data.firstName || 'user'}`,
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'User not found',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Search failed. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSearching(false);
-    }
+  const handlePreviousPage = () => {
+    if (!users.hasPreviousPage || isLoading) return;
+    setCurrentPage((prev) => prev - 1);
   };
 
+  const clearSearch = () => {
+    setSearchInput("");
+  };
 
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setRoleFilter("ALL");
+    setStatusFilter("ALL");
+    setItemsPerPage(10);
+  };
 
   const deleteUser = async () => {
     if (!selectedUser) return;
-    const result = await userService.deleteUser(selectedUser.id);
-    if (!result.success) {
+    try {
+      const result = await userService.deleteUser(selectedUser.id);
+      if (!result.success) {
+        toast({
+          title: "Error",
+          description: "Failed to delete user",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      await performSearch();
+    } catch (error) {
+      console.error("Error deleting user:", error);
       toast({
         title: "Error",
-        description: "Failed to delete user",
+        description: "An error occurred while deleting the user",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setConfirmOpen(false);
+      setSelectedUser(null);
     }
-    toast({
-      title: "Success",
-      description: "User deleted successfully",
-    });
-    await loadUsers();
-  }
+  };
 
   const getFullName = (user: User) => {
     const names = [user.firstName];
     if (user.middleName) names.push(user.middleName);
     names.push(user.lastName);
-    return names.join(' ');
+    return names.join(" ");
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -224,109 +247,172 @@ const AdminUsers: React.FC = () => {
 
     if (parts.length > 0) return parts.join("");
 
-    // fallback: first character of email
     return email?.trim()?.charAt(0)?.toUpperCase() || "?";
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  if (isLoading && users.data.length === 0) {
-    return (
-      <AdminLayout>
-        <Card>
-          <CardContent className="flex justify-center items-center py-8">
-            <div className="text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-              <p className="mt-2">Loading users...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </AdminLayout>
-    );
-  }
+  // Determine if we're in filtered state
+  const isFiltered =
+    searchQuery || roleFilter !== "ALL" || statusFilter !== "ALL";
 
   return (
     <AdminLayout>
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex justify-between items-center">
             <div>
               <CardTitle>Users</CardTitle>
               <CardDescription>
                 Manage platform users, roles, and statuses.
-                {users.totalCount > 0 &&
-                  ` (Page ${paginationState.currentPage})`}
+                {users.totalCount > 0 && ` (Page ${currentPage})`}
               </CardDescription>
             </div>
+            <Button
+              variant="pill"
+              size="sm"
+              onClick={() => navigate("/admin/create-user")}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Add User
+            </Button>
+          </div>
 
-            {/* Responsive Search Controls */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <div className="flex w-full sm:w-72 items-center gap-2">
-                <input
-                  type="email"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search user by email..."
-                  className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          {/* Search and Filter Controls */}
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search users by name or email..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-10 pr-10"
                 />
+                {searchInput && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSearch}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchQuery("");
-                    loadUsers();
-                  }}
-                  disabled={isLoading}
-                  className="w-full sm:w-auto"
-                >
-                  Reset
-                </Button>
 
-                <Button
-                  onClick={findUser}
-                  disabled={isSearching}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
+              {/* Role Filter */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <select
+                  value={roleFilter}
+                  onChange={(e) =>
+                    setRoleFilter(e.target.value as USER_ROLE | "ALL")
+                  }
+                  className="border border-input rounded-md px-3 py-2 text-sm bg-background hover:bg-accent hover:text-accent-foreground"
                 >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4" />
-                      Search
-                    </>
-                  )}
-                </Button>
+                  <option value="ALL">All Roles</option>
+                  <option value={USER_ROLE.STUDENT}>Student</option>
+                  <option value={USER_ROLE.TEACHER}>Teacher</option>
+                  <option value={USER_ROLE.INSTRUCTOR}>Instructor</option>
+                  <option value={USER_ROLE.ADMIN}>Admin</option>
+                  <option value={USER_ROLE.ACCOUNTANT}>Accountant</option>
+                </select>
               </div>
+
+              {/* Status Filter */}
+              <Select
+                value={statusFilter}
+                onValueChange={(v) =>
+                  setStatusFilter(v as USER_STATUS | "ALL")
+                }
+              >
+                <SelectTrigger className="w-fit">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Status</SelectItem>
+                  <SelectItem value={USER_STATUS.ACTIVE}>Active</SelectItem>
+                  <SelectItem value={USER_STATUS.INACTIVE}>Inactive</SelectItem>
+                  <SelectItem value={USER_STATUS.SUSPENDED}>Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="overflow-x-auto">
-          {users.data.length === 0 ? (
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                <p className="mt-2">Loading users...</p>
+              </div>
+            </div>
+          ) : users.data.length === 0 ? (
             <div className="text-center py-8">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-semibold">No users</h3>
+              <h3 className="mt-2 text-sm font-semibold">
+                {isFiltered ? "No users found" : "No users"}
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Get started by adding a new user.
+                {isFiltered
+                  ? "Try adjusting your search or filters."
+                  : "Get started by adding a new user."}
               </p>
-              <div className="mt-6">
+              {isFiltered && (
                 <Button
-                  onClick={() => navigate("/admin/create-user")}
-                  className="flex items-center gap-2"
+                  variant="outline"
+                  className="mt-4"
+                  onClick={clearAllFilters}
                 >
-                  <PlusCircle className="h-4 w-4" />
-                  Add User
+                  Clear all filters
                 </Button>
-              </div>
+              )}
+              {!isFiltered && (
+                <div className="mt-6">
+                  <Button
+                    onClick={() => navigate("/admin/create-user")}
+                    className="flex items-center gap-2"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Add User
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <>
+              {/* Items Per Page Selector and Summary */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {users.data.length} of {users.totalCount} total users
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    Show:
+                  </span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={handleItemsPerPageChange}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option.toString()}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    per page
+                  </span>
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -420,18 +506,21 @@ const AdminUsers: React.FC = () => {
               </div>
 
               {/* Pagination Controls */}
-              <div className="flex flex-col sm:flex-row items-center justify-between space-x-0 sm:space-x-2 space-y-2 sm:space-y-0 py-4">
-                <div className="flex-1 text-sm text-muted-foreground text-center sm:text-left">
-                  Showing {users.data.length} users
-                  {users.totalCount > users.data.length &&
-                    ` (page ${paginationState.currentPage})`}
+              <div className="flex items-center justify-between space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                  Page {currentPage} of{" "}
+                  {Math.ceil(users.totalCount / itemsPerPage)}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePreviousPage}
-                    disabled={!users.hasPreviousPage || isLoading}
+                    disabled={
+                      !users.hasPreviousPage ||
+                      currentPage === 1 ||
+                      isLoading
+                    }
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
@@ -454,13 +543,13 @@ const AdminUsers: React.FC = () => {
 
       <ConfirmDialog
         open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          deleteUser();
+        onCancel={() => {
           setConfirmOpen(false);
+          setSelectedUser(null);
         }}
-        title="Delete"
-        body="This action cannot be undone."
+        onConfirm={deleteUser}
+        title="Delete User"
+        body={`Are you sure you want to delete "${selectedUser ? getFullName(selectedUser) : ""}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
