@@ -59,6 +59,8 @@ const configureIndexes = async () => {
       "categoryIds",
       "targetAudienceIds",
       "instructorId",
+      "salePrice",
+      "regularPrice",
     ],
     sortableAttributes: [
       "title",
@@ -92,6 +94,8 @@ const configureIndexes = async () => {
       "categoryIds",
       "targetAudienceIds",
       "instructorId",
+      "salePrice",
+      "regularPrice",
     ],
     sortableAttributes: [
       "title",
@@ -184,7 +188,18 @@ const toCourseDocument = (id: string, data: Record<string, any>) => ({
   instructorId: data.instructorId || "",
   instructorName: data.instructorName || "",
   status: data.status || "",
+  certificateTemplateId: data.certificateTemplateId || "",
+  duration: data.duration || { hours: 0, minutes: 0 },
+  topics: data.topics || [],
+  isEnrollmentPaused: data.isEnrollmentPaused || false,
+  isMailSendingEnabled: data.isMailSendingEnabled || false,
+  isCertificateEnabled: data.isCertificateEnabled || false,
+  isCourseCompletionEnabled: data.isCourseCompletionEnabled || false,
+  isForumEnabled: data.isForumEnabled || false,
+  isWelcomeMessageEnabled: data.isWelcomeMessageEnabled || false,
+  customCertificateName: data.customCertificateName || "",
   createdAt: data.createdAt?.toMillis?.() || 0,
+  updatedAt: data.updatedAt?.toMillis?.() || 0,
 });
 
 const toBundleDocument = (id: string, data: Record<string, any>) => ({
@@ -201,9 +216,11 @@ const toBundleDocument = (id: string, data: Record<string, any>) => ({
   tags: data.tags || [],
   instructorId: data.instructorId || "",
   instructorName: data.instructorName || "",
+  courses: data.courses || [],
   courseNames: (data.courses || []).map((c: any) => c.title),
   status: data.status || "",
   createdAt: data.createdAt?.toMillis?.() || 0,
+  updatedAt: data.updatedAt?.toMillis?.() || 0,
 });
 
 const toUserDocument = (id: string, data: Record<string, any>) => ({
@@ -217,6 +234,7 @@ const toUserDocument = (id: string, data: Record<string, any>) => ({
   organizationId: data.organizationId || "",
   photoURL: data.photoURL || "",
   createdAt: data.createdAt?.toMillis?.() || 0,
+  updatedAt: data.updatedAt?.toMillis?.() || 0,
 });
 
 const toAssignmentDocument = (id: string, data: Record<string, any>) => ({
@@ -225,10 +243,14 @@ const toAssignmentDocument = (id: string, data: Record<string, any>) => ({
   content: data.content || "",
   courseId: data.courseId || "",
   authorId: data.authorId || "",
+  attachments: data.attachments || [],
   totalPoints: data.totalPoints || 0,
   minimumPassPoint: data.minimumPassPoint || 0,
+  fileUploadLimit: data.fileUploadLimit || 0,
+  maximumUploadSize: data.maximumUploadSize || 0,
   deadline: data.deadline?.toMillis?.() || 0,
   createdAt: data.createdAt?.toMillis?.() || 0,
+  updatedAt: data.updatedAt?.toMillis?.() || 0,
 });
 
 // --- Sync functions (for Firestore triggers) ---

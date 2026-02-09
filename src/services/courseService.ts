@@ -27,6 +27,7 @@ import { ok, Result, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { Enrollment } from "@/types/enrollment";
 import { logError } from "@/utils/logger";
+import { searchService, SearchOptions } from "@/services/searchService";
 
 class CourseService {
   /**
@@ -711,6 +712,32 @@ class CourseService {
     } catch (error) {
       console.error("CourseService - Error deleting course:", error);
       return fail("Failed to delete course");
+    }
+  }
+
+  async searchCourses(
+    searchQuery: string,
+    options: SearchOptions = {}
+  ): Promise<Result<PaginatedResult<Course>>> {
+    try {
+      const result = await searchService.searchCourses(searchQuery, options);
+
+      const courses = result.hits as Course[];
+
+      const currentOffset = options.offset || 0;
+      const currentLimit = options.limit || 20;
+
+      return ok({
+        data: courses,
+        hasNextPage: currentOffset + currentLimit < result.totalHits,
+        hasPreviousPage: currentOffset > 0,
+        nextCursor: null,
+        previousCursor: null,
+        totalCount: result.totalHits,
+      });
+    } catch (error) {
+      console.error("CourseService - Meilisearch search failed:", error);
+      return fail("Search failed");
     }
   }
 }
