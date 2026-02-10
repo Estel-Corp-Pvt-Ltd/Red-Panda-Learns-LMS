@@ -25,6 +25,7 @@ import { FcmToken, User } from "@/types/user";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { Result, fail, ok } from "@/utils/response";
+import { searchService, SearchOptions } from "@/services/searchService";
 
 class UserService {
     /**
@@ -647,7 +648,32 @@ async getNonStudentUsers(): Promise<Result<User[]>> {
     return fail("Error fetching staff users");
   }
 }
-  
+
+  async searchUsers(
+    searchQuery: string,
+    options: SearchOptions = {}
+  ): Promise<Result<PaginatedResult<User>>> {
+    try {
+      const result = await searchService.searchUsers(searchQuery, options);
+
+      const users = result.hits as User[];
+
+      const currentOffset = options.offset || 0;
+      const currentLimit = options.limit || 20;
+
+      return ok({
+        data: users,
+        hasNextPage: currentOffset + currentLimit < result.totalHits,
+        hasPreviousPage: currentOffset > 0,
+        nextCursor: null,
+        previousCursor: null,
+        totalCount: result.totalHits,
+      });
+    } catch (error) {
+      console.error("UserService - Meilisearch search failed:", error);
+      return fail("Search failed");
+    }
+  }
 }
 
 export const userService = new UserService();

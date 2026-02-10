@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { assignmentService } from "@/services/assignmentService";
 import { courseService } from "@/services/courseService";
+import { useDebounce } from "@/hooks/useDebounce";
 import { AssignmentSubmission, Assignment } from "@/types/assignment";
 import { Course } from "@/types/course";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +54,8 @@ import {
   Check,
   ChevronsUpDown,
   Search,
+  X,
+  Loader2,
 } from "lucide-react";
 import { formatDate } from "@/utils/date-time";
 import { DocumentSnapshot } from "firebase/firestore";
@@ -131,7 +134,8 @@ const AllSubmissionsPage = () => {
   const [activeFilters, setActiveFilters] = useState<any[]>([]);
   const [courseOpen, setCourseOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
-  const [studentSearch, setStudentSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const studentSearch = useDebounce(searchInput, 300);
   const [assignmentTitle, setAssignmentTitle] = useState<Record<string, string>>({});
   // Filter assignments based on selected course
   useEffect(() => {
@@ -346,7 +350,7 @@ const AllSubmissionsPage = () => {
       sortBy: "createdAt",
       sortOrder: "desc",
     });
-    setStudentSearch("");
+    setSearchInput("");
     setActiveFilters([]);
   };
 
@@ -614,24 +618,10 @@ const AllSubmissionsPage = () => {
     studentSearch.trim() === ""
       ? true
       : submission.studentName.toLowerCase().includes(studentSearch.toLowerCase()) ||
-        submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
+        submission.studentId.toLowerCase().includes(studentSearch.toLowerCase()) ||
+        submission.studentEmail?.toLowerCase().includes(studentSearch.toLowerCase())
   );
   const showingItems = filteredSubmissions.length;
-
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="container mx-auto py-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading submissions...</p>
-            </div>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   const colorMode =
     typeof document !== "undefined" && document.documentElement.classList.contains("dark")
@@ -810,15 +800,25 @@ const AllSubmissionsPage = () => {
                 </PopoverContent>
               </Popover>
 
-              <div className="relative w-full sm:w-[200px]">
+              <div className="relative w-full sm:w-[250px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search student..."
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  className="pl-9 w-full"
+                  placeholder="Search student name or email..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9 pr-9 w-full"
                 />
+                {searchInput && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchInput("")}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
 
               <Select
@@ -932,6 +932,14 @@ const AllSubmissionsPage = () => {
       <Card className="bg-white dark:bg-gray-800">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="text-center">
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                  <p className="mt-2 text-muted-foreground">Loading submissions...</p>
+                </div>
+              </div>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -944,22 +952,14 @@ const AllSubmissionsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {submissions.length === 0 ? (
+                {filteredSubmissions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {loading ? "Loading..." : "No submissions found"}
+                      No submissions found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  submissions
-                    .filter((submission) =>
-                      studentSearch.trim() === ""
-                        ? true
-                        : submission.studentName
-                            .toLowerCase()
-                            .includes(studentSearch.toLowerCase()) ||
-                          submission.studentId.toLowerCase().includes(studentSearch.toLowerCase())
-                    )
+                  filteredSubmissions
                     .map((submission) => (
                       <TableRow
                         key={submission.id}
@@ -1045,6 +1045,7 @@ const AllSubmissionsPage = () => {
                 )}
               </TableBody>
             </Table>
+            )}
           </div>
 
           {/* Compact Pagination */}
