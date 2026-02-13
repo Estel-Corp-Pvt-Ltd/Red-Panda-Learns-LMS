@@ -752,7 +752,7 @@ const AdminCommentApproval: React.FC = () => {
         </div>
 
         {/* Main content: Table + Detail Panel */}
-        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-22rem)] min-h-[400px]">
+        <ResizablePanelGroup direction="horizontal" className="min-h-[600px] max-h-[800px]">
           {/* Left: Comment Table */}
           <ResizablePanel defaultSize={selectedComment ? 45 : 100} minSize={30}>
             <Card className="h-full flex flex-col">
@@ -970,7 +970,9 @@ const AdminCommentApproval: React.FC = () => {
                           key={comment.id}
                           data-row-index={idx}
                           className={`cursor-pointer transition-colors ${
-                            selectedIndex === idx ? "bg-accent" : "hover:bg-muted/50"
+                            selectedIndex === idx
+                              ? "bg-accent hover:bg-accent/80"
+                              : "hover:bg-muted/50"
                           }`}
                           onClick={() => selectByIndex(idx)}
                           tabIndex={0}
