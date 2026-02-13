@@ -970,7 +970,9 @@ const AdminCommentApproval: React.FC = () => {
                           key={comment.id}
                           data-row-index={idx}
                           className={`cursor-pointer transition-colors ${
-                            selectedIndex === idx ? "bg-accent" : "hover:bg-muted/50"
+                            selectedIndex === idx
+                              ? "bg-accent hover:bg-accent/80"
+                              : "hover:bg-muted/50"
                           }`}
                           onClick={() => selectByIndex(idx)}
                           tabIndex={0}
