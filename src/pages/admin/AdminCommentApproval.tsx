@@ -752,7 +752,7 @@ const AdminCommentApproval: React.FC = () => {
         </div>
 
         {/* Main content: Table + Detail Panel */}
-        <ResizablePanelGroup direction="horizontal" className="min-h-[600px]">
+        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-22rem)] min-h-[400px]">
           {/* Left: Comment Table */}
           <ResizablePanel defaultSize={selectedComment ? 45 : 100} minSize={30}>
             <Card className="h-full flex flex-col">
