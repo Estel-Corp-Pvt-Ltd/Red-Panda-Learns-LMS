@@ -15,6 +15,7 @@ interface AuthGuardProps {
   requireAdmin?: boolean;
   requireInstructor?:boolean;
   requireAccountant?:boolean;
+  requireTeacher?:boolean;
   requireEnrollmentOrAdmin?: boolean;
   message?: string;
 };
@@ -27,6 +28,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireAdmin = false,
   requireInstructor = false,
   requireAccountant =false,
+  requireTeacher = false,
   requireEnrollmentOrAdmin = false,
   message = 'Please login to access this page',
 }) => {
@@ -39,6 +41,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isInstructor,setIsInstructor] = useState<boolean | null>(null);
   const [isAccountant, setIsAccountant] = useState<boolean | null>(null);
+  const [isTeacher, setIsTeacher] = useState<boolean | null>(null);
   const courseId = params.courseId;
 
   // Check admin role if required
@@ -98,6 +101,23 @@ useEffect(() => {
   checkAccountantRole();
 }, [requireAccountant, user]);
 
+useEffect(() => {
+  const checkTeacherRole = async () => {
+    if (requireTeacher && user) {
+      try {
+        const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
+        const data = docSnap.data();
+        setIsTeacher(data?.role === USER_ROLE.TEACHER);
+      } catch {
+        setIsTeacher(false);
+      }
+    } else {
+      setIsTeacher(false);
+    }
+  };
+
+  checkTeacherRole();
+}, [requireTeacher, user]);
 
   // Refresh enrollments if needed
   useEffect(() => {
@@ -120,7 +140,8 @@ useEffect(() => {
     (requireEnrollment && user && courseId && !enrollmentChecked) ||
     (requireAdmin && isAdmin === null) ||
     (requireInstructor && isInstructor === null) ||
-    (requireAccountant && isAccountant === null)
+    (requireAccountant && isAccountant === null) ||
+    (requireTeacher && isTeacher === null)
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -183,7 +204,16 @@ if (requireAccountant && !isAccountant) {
   );
 }
 
-
+  // Require Teacher
+  if (requireTeacher && !isTeacher) {
+    return (
+      <Navigate
+        to="/dashboard"
+        state={{ from: location, message: 'You must be a Teacher to access this page.' }}
+        replace
+      />
+    );
+  }
 
   // Require enrollment or admin
   if (requireEnrollmentOrAdmin && courseId && user && !userIsEnrolled && !isAdmin) {

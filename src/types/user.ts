@@ -16,6 +16,8 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   organizationId?: string;
+  class?: string;
+  division?: string;
   photoURL?: string;
   fcmTokens?: FcmToken[];
   readAt: Timestamp | FieldValue;

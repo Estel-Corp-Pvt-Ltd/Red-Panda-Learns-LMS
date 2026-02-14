@@ -195,6 +195,7 @@ export const SORT_KEY = {
 export const ANNOUNCEMENT_SCOPE = {
   GLOBAL: "GLOBAL",
   COURSE: "COURSE",
+  ORGANIZATION: "ORGANIZATION",
 } as const;
 
 export const ANNOUNCEMENT_STATUS = {

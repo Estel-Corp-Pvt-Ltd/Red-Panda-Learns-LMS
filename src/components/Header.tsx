@@ -70,7 +70,9 @@ export function Header({ className }: HeaderProps) {
       ? "/admin"
       : user?.role === USER_ROLE.ACCOUNTANT
         ? "/accountant"
-        : "/dashboard";
+        : user?.role === USER_ROLE.TEACHER
+          ? "/teacher"
+          : "/dashboard";
 
   return (
     <>
@@ -378,7 +380,7 @@ export function Header({ className }: HeaderProps) {
             )}
 
             {/* Customer Support - Desktop only */}
-            {user && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && (
+            {user && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && user.role !== USER_ROLE.TEACHER && (
               <div className="hidden lg:block">
                 <CreateComplaint
                   userId={user.id}

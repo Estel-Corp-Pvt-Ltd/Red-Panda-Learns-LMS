@@ -9,7 +9,7 @@ import { Result } from "@/utils/response";
 import { COLLECTION, PLATFROM_TYPE } from "@/constants";
 import { userService } from "@/services/userService";
 import { getToken } from "firebase/messaging";
-import { log, logError, logWarn } from "@/utils/logger";
+import { logError, logWarn } from "@/utils/logger";
 
 interface AuthContextType {
   user: User | null;
@@ -46,18 +46,16 @@ interface AuthProviderProps {
 
 // 🔹 Helper: Fetch Firestore user
 const fetchUserFromFirestore = async (uid: string, email?: string | null): Promise<User | null> => {
-  log("[AuthContext] fetchUserFromFirestore called", { uid, email });
   try {
     // First try UID
     const userDocRef = doc(db, COLLECTION.USERS, uid);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
       const userData = userDocSnap.data() as User;
-      log("[AuthContext] User found by UID", { userId: userData.id, role: userData.role });
+
       return userData;
     }
 
-    log("[AuthContext] User not found by UID, trying email fallback");
     // fallback: lookup by email
     if (email) {
       const usersRef = collection(db, COLLECTION.USERS);
@@ -65,7 +63,7 @@ const fetchUserFromFirestore = async (uid: string, email?: string | null): Promi
       const querySnap = await getDocs(q);
       if (!querySnap.empty) {
         const userData = querySnap.docs[0].data() as User;
-        log("[AuthContext] User found by email", { userId: userData.id, role: userData.role });
+
         return userData;
       }
     }
@@ -83,18 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // 🔹 Keep user in sync with Firebase Auth state
   useEffect(() => {
-    log("[AuthContext] Setting up onAuthStateChanged listener");
     const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
-      log("[AuthContext] onAuthStateChanged triggered", {
-        hasFirebaseUser: !!firebaseUser,
-        uid: firebaseUser?.uid,
-        email: firebaseUser?.email,
-        emailVerified: firebaseUser?.emailVerified,
-        providerId: firebaseUser?.providerData?.[0]?.providerId,
-      });
-
       if (!firebaseUser) {
-        log("[AuthContext] No firebase user, setting user to null");
         setUser(null);
         setLoading(false);
         return;
@@ -111,11 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      log("[AuthContext] Email verified, fetching user from Firestore");
       const userData = await fetchUserFromFirestore(firebaseUser.uid, firebaseUser.email);
-      log("[AuthContext] Setting user state", {
-        userData: userData ? { id: userData.id, role: userData.role } : null,
-      });
       setUser(userData);
       setLoading(false);
     });
@@ -124,18 +108,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // 🔹 Email/Password Login
   const login = async (email: string, password: string) => {
-    log("[AuthContext] login called", { email });
     const result = await authService.signInWithEmailAndPassword(email, password);
-    log("[AuthContext] login result", {
-      success: result.success,
-      hasUser: !!result.data?.user,
-      userId: result.data?.user?.id,
-      userRole: result.data?.user?.role,
-      emailVerified: result.data?.userCredential?.user?.emailVerified,
-      error: result.success ? undefined : result.error,
-    });
     if (result.success && result.data) {
-      log("[AuthContext] Setting user immediately after login", { userId: result.data.user.id });
       setUser(result.data.user); // ✅ update immediately so Header changes
     }
     return result;
@@ -154,22 +128,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error?: string;
     role: UserRole;
   }> => {
-    log("[AuthContext] loginWithGoogle called");
     const response = await authService.signInWithGoogle();
-    log("[AuthContext] loginWithGoogle response", {
-      success: response.success,
-      userId: response.success ? response.data.userId : undefined,
-      error: response.success ? undefined : response.error,
-    });
 
     if (response.success && response.data.userId) {
-      log("[AuthContext] Google login successful, fetching user from Firestore");
       const userData = await fetchUserFromFirestore(response.data.userId);
       if (userData) {
-        log("[AuthContext] Setting user after Google login", {
-          userId: userData.id,
-          role: userData.role,
-        });
         setUser(userData);
 
         return {
@@ -200,9 +163,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // 🔹 Logout
   const logout = async () => {
-    log("[AuthContext] logout called");
     await authService.signOut();
-    log("[AuthContext] User signed out, setting user to null");
+
     setUser(null);
   };
 
@@ -251,14 +213,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // 🔹 Refresh user data
   const refreshUser = async () => {
-    log("[AuthContext] refreshUser called", { currentUserId: user?.id });
     if (!user) {
-      log("[AuthContext] No user to refresh");
       return;
     }
     const userData = await fetchUserFromFirestore(user.id, user.email);
     if (userData) {
-      log("[AuthContext] User refreshed", { userId: userData.id });
       setUser(userData);
     } else {
       logWarn("[AuthContext] Failed to refresh user - not found in Firestore");

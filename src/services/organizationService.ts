@@ -60,6 +60,8 @@ class OrganizationService {
         id,
         name: data.name.trim(),
         type: data.type,
+        classes: data.classes || [],
+        divisions: data.divisions || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -201,6 +203,8 @@ class OrganizationService {
           id: doc.id,
           name: data.name,
           type: data.type,
+          classes: data.classes || [],
+          divisions: data.divisions || [],
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
           updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
         } as Organization;
