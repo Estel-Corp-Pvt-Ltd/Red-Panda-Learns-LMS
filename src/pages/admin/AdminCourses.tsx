@@ -45,6 +45,7 @@ import {
 import Leaderboard from "@/components/Leaderboard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatDate } from "@/utils/date-time";
 
 // Leaderboard Modal Component
 function LeaderboardModal({
@@ -117,7 +118,12 @@ const AdminCourses = () => {
   });
 
   // Track previous filter values to detect filter changes vs page changes
-  const [prevFilters, setPrevFilters] = useState({ searchQuery, statusFilter, coursePriceFilterValue, itemsPerPage });
+  const [prevFilters, setPrevFilters] = useState({
+    searchQuery,
+    statusFilter,
+    coursePriceFilterValue,
+    itemsPerPage,
+  });
 
   useEffect(() => {
     const filtersChanged =
@@ -474,7 +480,7 @@ const AdminCourses = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {course.updatedAt?.toString?.() || "N/A"}
+                          {course.updatedAt ? formatDate(course.updatedAt) : "N/A"}
                         </div>
                       </TableCell>
 
@@ -535,17 +541,14 @@ const AdminCourses = () => {
               {/* Pagination Controls */}
               <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  Page {currentPage} of{" "}
-                  {Math.ceil(courses.totalCount / itemsPerPage)}
+                  Page {currentPage} of {Math.ceil(courses.totalCount / itemsPerPage)}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePreviousPage}
-                    disabled={
-                      !courses.hasPreviousPage || currentPage === 1 || isLoading
-                    }
+                    disabled={!courses.hasPreviousPage || currentPage === 1 || isLoading}
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous

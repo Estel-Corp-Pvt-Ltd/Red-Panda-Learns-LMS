@@ -6,7 +6,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragStartEvent,
   DragMoveEvent,
 } from "@dnd-kit/core";
 import {
@@ -14,6 +13,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -28,7 +28,6 @@ import {
   NotepadText,
   Plus,
   Save,
-  Search,
   Trash2,
   Lock,
 } from "lucide-react";
@@ -36,7 +35,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LEARNING_CONTENT, LEARNING_UNIT } from "@/constants";
+import { LEARNING_UNIT } from "@/constants";
 import { LessonImportModal } from "@/components/admin/LessonImportModal";
 import { EditLessonModal } from "@/components/admin/LessonEditModel";
 import AssignmentModal from "@/components/AssignmentModal";
@@ -51,14 +50,14 @@ import { courseService } from "@/services/courseService";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { LearningContentType } from "@/types/lesson";
-import { arrayMove } from "@dnd-kit/sortable";
 import ConfirmDialog from "../ConfirmDialog";
 import { ContentLockForm } from "./ContentLockForm";
 import { contentLockService } from "@/services/contentLockService";
 import { ContentLock } from "@/types/content-lock";
 import { log } from "@/utils/logger";
 
-// ─── Types ─────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
+
 type DraggableItem = {
   id: string;
   title: string;
@@ -69,19 +68,235 @@ type DraggableItem = {
   refId?: string;
 };
 
+// ─── Type Predicates ────────────────────────────────────────────────────────
+
+const isTopic = (item: DraggableItem) => item.type === LEARNING_UNIT.TOPIC;
+
+const isChild = (item: DraggableItem) =>
+  item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT;
+
+// ─── Drag & Drop Helpers ────────────────────────────────────────────────────
+//
+// The curriculum is a flat array where topics sit at depth=0 (parentId=null)
+// and their lessons/assignments sit at depth=1 (parentId=topicId).
+// The array position determines the visual ordering.
+
+/**
+ * Finds the index right after the last child of a topic.
+ * Scans forward from `startIdx` until it hits another topic or the end.
+ */
+function findEndOfTopicChildren(list: DraggableItem[], topicId: string, startIdx: number): number {
+  let end = startIdx;
+  for (let i = startIdx; i < list.length; i++) {
+    if (list[i].parentId === topicId) {
+      end = i + 1;
+    } else if (isTopic(list[i])) {
+      break;
+    }
+  }
+  return end;
+}
+
+/**
+ * Moves a topic and all its children to a new position.
+ *
+ * Direction-aware:
+ *  - Dragging UP   → inserts BEFORE the target topic
+ *  - Dragging DOWN → inserts AFTER the target topic and all its children
+ *
+ * Returns the new list, or null if the move is invalid.
+ */
+function moveTopic(
+  list: DraggableItem[],
+  draggedId: string,
+  idxActive: number,
+  idxOver: number,
+  overItem: DraggableItem
+): DraggableItem[] | null {
+  const draggedItem = list[idxActive];
+  const children = list.filter((item) => item.parentId === draggedId);
+  const itemsToMove = [draggedItem, ...children];
+
+  // If dropped on a child, resolve to its parent topic
+  const targetTopicId = isChild(overItem) ? overItem.parentId : overItem.id;
+
+  // Remove dragged items, then find the target in the remaining list
+  const remaining = list.filter((item) => !itemsToMove.includes(item));
+  const targetIdx = remaining.findIndex((i) => i.id === targetTopicId);
+  if (targetIdx === -1) return null;
+
+  const isDraggingUp = idxActive > idxOver;
+  const insertIdx = isDraggingUp
+    ? targetIdx
+    : findEndOfTopicChildren(remaining, targetTopicId!, targetIdx + 1);
+
+  const result = [...remaining.slice(0, insertIdx), ...itemsToMove, ...remaining.slice(insertIdx)];
+
+  // Normalize depths for the moved items
+  return result.map((item) => {
+    if (item.id === draggedId) return { ...item, parentId: null, depth: 0 };
+    if (item.parentId === draggedId) return { ...item, depth: 1 };
+    return item;
+  });
+}
+
+/**
+ * Moves a child (lesson or assignment) to a new position.
+ * Supports reordering within a topic and cross-topic moves.
+ *
+ * When dropped on a topic header → appends as the topic's last child
+ * When dropped on another child  → uses arrayMove for precise positioning
+ *
+ * Returns the new list, or null if the move is invalid.
+ */
+function moveChild(
+  list: DraggableItem[],
+  draggedId: string,
+  idxActive: number,
+  idxOver: number,
+  overItem: DraggableItem
+): DraggableItem[] | null {
+  const activeItem = list[idxActive];
+  const newParentId = isTopic(overItem) ? overItem.id : overItem.parentId;
+
+  if (!newParentId || newParentId === draggedId) return null;
+
+  let reordered: DraggableItem[];
+
+  if (isTopic(overItem)) {
+    // Drop on a topic header: insert after the topic's last child.
+    // We don't use arrayMove here because it places the item BEFORE
+    // the topic header when dragging upward.
+    const withoutActive = list.filter((item) => item.id !== draggedId);
+    const topicIdx = withoutActive.findIndex((i) => i.id === overItem.id);
+    const insertIdx = findEndOfTopicChildren(withoutActive, overItem.id, topicIdx + 1);
+
+    reordered = [
+      ...withoutActive.slice(0, insertIdx),
+      { ...activeItem, parentId: newParentId, depth: 1 },
+      ...withoutActive.slice(insertIdx),
+    ];
+  } else {
+    // Drop on another child: arrayMove handles position correctly
+    reordered = arrayMove(list, idxActive, idxOver);
+    reordered = reordered.map((item) =>
+      item.id === draggedId ? { ...item, parentId: newParentId, depth: 1 } : item
+    );
+  }
+
+  // Safety: reject if any child ended up before the first topic
+  const firstTopicIdx = reordered.findIndex(isTopic);
+  if (firstTopicIdx === -1) return null;
+  for (let i = 0; i < firstTopicIdx; i++) {
+    if (isChild(reordered[i])) return null;
+  }
+
+  // Recalculate depths from parent relationships
+  const idMap = new Map(reordered.map((i) => [i.id, i]));
+  return reordered.map((item) => {
+    if (isTopic(item) || !item.parentId) return { ...item, depth: 0 };
+    const parent = idMap.get(item.parentId);
+    return { ...item, depth: parent ? parent.depth + 1 : 0 };
+  });
+}
+
+// ─── Serialization Helpers ──────────────────────────────────────────────────
+
+/** Converts nested course topics into the flat draggable list. */
+function flattenCurriculum(courseData: Course): DraggableItem[] {
+  const result: DraggableItem[] = [];
+
+  for (const topic of courseData.topics || []) {
+    result.push({
+      id: topic.id,
+      title: topic.title,
+      type: LEARNING_UNIT.TOPIC,
+      depth: 0,
+      parentId: null,
+      originalData: topic,
+    });
+
+    for (const item of topic.items || []) {
+      result.push({
+        id: item.id,
+        refId: item.id,
+        title: item.title,
+        type:
+          item.type === LEARNING_UNIT.ASSIGNMENT ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
+        depth: 1,
+        parentId: topic.id,
+      });
+    }
+  }
+
+  return result;
+}
+
+/** Converts the flat draggable list back into nested Topic[] for the API. */
+function buildTopicsFromFlatList(items: DraggableItem[]): Topic[] {
+  // Group children by parent topic ID
+  const childrenMap = new Map<string, DraggableItem[]>();
+  for (const item of items) {
+    if (!item.parentId) continue;
+    if (!childrenMap.has(item.parentId)) childrenMap.set(item.parentId, []);
+    childrenMap.get(item.parentId)!.push(item);
+  }
+
+  const topics: Topic[] = [];
+  for (const item of items) {
+    if (!isTopic(item) || item.parentId) continue;
+
+    topics.push({
+      id: item.id,
+      title: item.title,
+      items: (childrenMap.get(item.id) || []).filter(isChild).map((child) => ({
+        id: child.refId ?? child.id,
+        title: child.title,
+        type: child.type as LearningContentType,
+      })),
+    });
+  }
+
+  return topics;
+}
+
+/**
+ * Finds the insertion index after the last child of a parent topic.
+ * Used when adding new lessons or assignments to a topic.
+ */
+function findInsertIndexForParent(list: DraggableItem[], parentId: string): number {
+  const parentIndex = list.findIndex((i) => i.id === parentId);
+  if (parentIndex === -1) return -1;
+
+  const parentDepth = list[parentIndex].depth;
+  let insertIndex = parentIndex + 1;
+
+  for (let i = parentIndex + 1; i < list.length; i++) {
+    if (list[i].parentId === parentId) {
+      insertIndex = i + 1;
+    } else if (list[i].depth <= parentDepth || isTopic(list[i])) {
+      break;
+    }
+  }
+
+  return insertIndex;
+}
+
+// ─── SortableItem Component ─────────────────────────────────────────────────
+
 type SortableItemProps = {
   id: string;
   children: React.ReactNode;
   type: LearningUnit;
   depth: number;
-  onChange?: (id: string, state: boolean) => void;
+  onChange?: (id: string, expanded: boolean) => void;
 };
 
 const SortableItem = ({ id, children, type, depth, onChange }: SortableItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
-  const [showChildren, setShowChildren] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -90,22 +305,21 @@ const SortableItem = ({ id, children, type, depth, onChange }: SortableItemProps
     marginLeft: `${depth * 2}rem`,
   };
 
-  const toggleChildren = () => {
-    if (onChange) {
-      onChange(id, !showChildren);
-    }
-    setShowChildren(!showChildren);
+  const toggleExpanded = () => {
+    const next = !expanded;
+    setExpanded(next);
+    onChange?.(id, next);
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
       <div className="flex items-center gap-3 p-3 rounded-md border bg-card hover:shadow-sm transition-shadow group">
-        {type === LEARNING_UNIT.TOPIC ? (
+        {type === LEARNING_UNIT.TOPIC && (
           <ChevronRight
-            className={`h-4 w-4 text-muted-foreground ${showChildren ? "rotate-90" : ""}`}
-            onClick={toggleChildren}
+            className={`h-4 w-4 text-muted-foreground ${expanded ? "rotate-90" : ""}`}
+            onClick={toggleExpanded}
           />
-        ) : null}
+        )}
         <div {...listeners} className="cursor-grab active:cursor-grabbing">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
@@ -115,225 +329,175 @@ const SortableItem = ({ id, children, type, depth, onChange }: SortableItemProps
   );
 };
 
-// ─── Props ─────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────────────
+
 type CurriculumTabProps = {
   course: Course | null;
   initialItemId?: string | null;
 };
 
-// ─── Component ─────────────────────────────────────────────
 const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   const { toast } = useToast();
   const { showOverlay, hideOverlay } = useLoadingOverlay();
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
 
-  const [isTopicItemAdded, setIsTopicItemAdded] = useState(false);
+  // ── State ───────────────────────────────────────────────────────────────
+
+  const [curriculum, setCurriculum] = useState<DraggableItem[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [expandedTopicIds, setExpandedTopicIds] = useState<Set<string>>(new Set());
+
+  // Modal state
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemType, setEditingItemType] = useState<LearningUnit | null>(null);
+  const [activeParentId, setActiveParentId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
+
   const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] = useState(false);
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
+  const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
   const [isLessonEditModelOpen, setIsLessonEditModelOpen] = useState(false);
-  const [activeParentId, setActiveParentId] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeTopicIds, setActiveTopicIds] = useState<Set<string>>(new Set());
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [editingItemType, setEditingItemType] = useState<LearningUnit | null>(null);
+
+  // Lock state
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [activeContentId, setActiveContentId] = useState<string | null>(null);
-  const [loadingLocks, setLoadingLocks] = useState(false);
   const [topicLocks, setTopicLocks] = useState<Record<string, ContentLock | null>>({});
 
-  // Ref to track pending save after adding a lesson (for Zoom meetings)
+  // Ref to trigger auto-save after adding a Zoom meeting lesson
   const pendingSaveAfterLessonAdd = useRef(false);
   const isInitialMount = useRef(true);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ✅ Add null check for course in useEffect
+  // ── Derived State ───────────────────────────────────────────────────────
+
+  const firstLessonId = useMemo(() => {
+    const first = curriculum.find(isChild);
+    return first ? (first.refId ?? first.id) : null;
+  }, [curriculum]);
+
+  const draggedItem = useMemo(() => {
+    return curriculum.find((i) => i.id === activeId);
+  }, [activeId, curriculum]);
+
+  // ── Effects ─────────────────────────────────────────────────────────────
+
+  // Clean up auto-save timer on unmount
   useEffect(() => {
-    if (course) {
-      setCurriculum(getFlatCurriculum(course));
-    }
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, []);
+
+  // Sync curriculum from course data
+  useEffect(() => {
+    if (course) setCurriculum(flattenCurriculum(course));
   }, [course]);
 
-  // Auto-save curriculum after Zoom meeting lesson is added
+  // Auto-save after Zoom meeting lesson is added
   useEffect(() => {
-    // Skip on initial mount and course load
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
-
     if (pendingSaveAfterLessonAdd.current && curriculum.length > 0) {
       pendingSaveAfterLessonAdd.current = false;
-      saveCurriculumStructure();
+      saveCurriculum();
     }
   }, [curriculum]);
+
+  // Fetch content locks on mount / course change
+  useEffect(() => {
+    refetchLocks();
+  }, [course?.id]);
+
+  // Open edit modal if initialItemId is provided (from URL parameter)
+  useEffect(() => {
+    if (!initialItemId || curriculum.length === 0) return;
+
+    const item = curriculum.find((i) => i.id === initialItemId || i.refId === initialItemId);
+    if (!item) return;
+
+    if (item.type === LEARNING_UNIT.LESSON) {
+      setEditingItemId(initialItemId);
+      setIsLessonEditModelOpen(true);
+    } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
+      setEditingItemId(initialItemId);
+      setIsAssignmentEditModalOpen(true);
+    }
+
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [initialItemId, curriculum]);
+
+  // ── Drag Handlers ─────────────────────────────────────────────────────
+
   const handleDragMove = (event: DragMoveEvent) => {
-    const { active } = event;
+    // Cancel any pending auto-save while the user is actively dragging
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setIsDragging(true);
-    setActiveId(String(active.id));
+    setActiveId(String(event.active.id));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setIsDragging(false);
     setActiveId(null);
-    // Early exit: no valid drop target or dropped on self
+
     if (!over || active.id === over.id) return;
-    console.log(active.data);
-    const activeId = String(active.id);
+
+    const draggedId = String(active.id);
     const overId = String(over.id);
 
     setCurriculum((prev) => {
       const list = [...prev];
-
-      // Find item indices
-      const idxActive = list.findIndex((i) => i.id === activeId);
+      const idxActive = list.findIndex((i) => i.id === draggedId);
       const idxOver = list.findIndex((i) => i.id === overId);
 
-      // Guard: invalid indices
       if (idxActive === -1 || idxOver === -1) return prev;
-
-      // Type predicates
-      const isTopic = (item: DraggableItem) => item.type === LEARNING_UNIT.TOPIC;
-      const isChild = (item: DraggableItem) =>
-        item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT;
 
       const activeItem = list[idxActive];
       const overItem = list[idxOver];
 
-      // ─────────────────────────────────────────────────────────
-      // CASE 1: Dragging a TOPIC (move with children)
-      // ─────────────────────────────────────────────────────────
+      let result: DraggableItem[] | null = null;
+
       if (isTopic(activeItem)) {
-        // Find all children of the active topic
-        const activeTopicChildren = list.filter((item) => item.parentId === activeId);
-
-        // Calculate the new position
-        let newIndex = idxOver;
-
-        // If dropping on a child, find its parent topic position
-        if (isChild(overItem)) {
-          const overParentIndex = list.findIndex((i) => i.id === overItem.parentId);
-          if (overParentIndex !== -1) {
-            newIndex = overParentIndex;
-          }
-        }
-
-        // Remove the topic and its children
-        const itemsToMove = [activeItem, ...activeTopicChildren];
-        const filteredList = list.filter((item) => !itemsToMove.includes(item));
-
-        // Insert at new position
-        const newList = [
-          ...filteredList.slice(0, newIndex),
-          ...itemsToMove,
-          ...filteredList.slice(newIndex),
-        ];
-
-        // Re-index the entire list to maintain proper order
-        const final = newList.map((item) => {
-          // For the moved topic, ensure it stays at root level
-          if (item.id === activeId) {
-            return { ...item, parentId: null, depth: 0 };
-          }
-          // For children of the moved topic, maintain their relationship
-          if (item.parentId === activeId) {
-            return { ...item, depth: 1 };
-          }
-          return item;
-        });
-
-        if (JSON.stringify(prev) !== JSON.stringify(final)) {
-          queueMicrotask(() => saveCurriculumStructure());
-        }
-
-        return final;
+        result = moveTopic(list, draggedId, idxActive, idxOver, overItem);
+      } else if (isChild(activeItem)) {
+        result = moveChild(list, draggedId, idxActive, idxOver, overItem);
       }
 
-      // ─────────────────────────────────────────────────────────
-      // CASE 2: Dragging a CHILD (Lesson or Assignment)
-      // Can be moved between topics
-      // ─────────────────────────────────────────────────────────
-      if (isChild(activeItem)) {
-        let newParentId: string | null = null;
+      if (!result) return prev;
 
-        // Determine new parent based on drop target
-        if (isTopic(overItem)) {
-          // Dropped on a topic → becomes child of that topic
-          newParentId = overItem.id;
-        } else if (isChild(overItem)) {
-          // Dropped on another child → inherits that child's parent
-          newParentId = overItem.parentId;
-        }
-
-        // Guard: must have valid parent and cannot be own parent
-        if (!newParentId || newParentId === activeId) return prev;
-
-        // Perform array reorder
-        let reordered = arrayMove(list, idxActive, idxOver);
-
-        // Update the moved item's parent
-        reordered = reordered.map((item) =>
-          item.id === activeId ? { ...item, parentId: newParentId, depth: 1 } : item
-        );
-
-        // ─────────────────────────────────────────────────────────
-        // CRITICAL GUARD: Prevent children before first topic
-        // ─────────────────────────────────────────────────────────
-        const firstTopicIdx = reordered.findIndex(isTopic);
-        if (firstTopicIdx === -1) return prev; // No topics exist
-
-        // Check if any child appears before the first topic
-        for (let i = 0; i < firstTopicIdx; i++) {
-          if (isChild(reordered[i])) {
-            // INVALID: child positioned before first topic → snap back
-            return prev;
-          }
-        }
-
-        // ─────────────────────────────────────────────────────────
-        // Recalculate depths from parent relationships
-        // ─────────────────────────────────────────────────────────
-        const idMap = new Map(reordered.map((i) => [i.id, i]));
-
-        const computeDepth = (item: DraggableItem): number => {
-          if (isTopic(item)) return 0;
-          if (!item.parentId) return 0;
-          const parent = idMap.get(item.parentId);
-          return parent ? parent.depth + 1 : 0;
-        };
-
-        const final = reordered.map((item) => ({
-          ...item,
-          depth: computeDepth(item),
-        }));
-
-        // ─────────────────────────────────────────────────────────
-        // ✅ Persist only if structure actually changed
-        // ─────────────────────────────────────────────────────────
-        if (JSON.stringify(prev) !== JSON.stringify(final)) {
-          queueMicrotask(() => saveCurriculumStructure());
-        }
-
-        return final;
+      // Debounced auto-save: waits 3s, resets if another drag happens
+      if (JSON.stringify(prev) !== JSON.stringify(result)) {
+        const snapshot = result;
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => saveCurriculum(snapshot), 3000);
       }
 
-      // Fallback: unrecognized operation
-      return prev;
+      return result;
     });
   };
 
-  const saveCurriculumStructure = async () => {
-    log("Saving curriculum structure...", curriculum);
+  // ── Persistence ───────────────────────────────────────────────────────
+
+  /**
+   * Saves the curriculum to the backend.
+   * Accepts an optional snapshot to avoid stale closure issues
+   * (e.g. when called from queueMicrotask inside setCurriculum).
+   */
+  const saveCurriculum = async (snapshot?: DraggableItem[]) => {
+    const data = snapshot ?? curriculum;
+    log("Saving curriculum structure...", data);
+
     if (!course) {
       toast({
         title: "Error",
@@ -345,145 +509,37 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
     try {
       showOverlay("Saving Curriculum...");
-
-      const newTopics: Topic[] = [];
-      const childrenMap = new Map<string, DraggableItem[]>();
-      curriculum.forEach((item) => {
-        if (item.parentId) {
-          if (!childrenMap.has(item.parentId)) childrenMap.set(item.parentId, []);
-          childrenMap.get(item.parentId)!.push(item);
-        }
-      });
-
-      for (const item of curriculum) {
-        if (!item.parentId && item.type === LEARNING_UNIT.TOPIC) {
-          const lessonItems = (childrenMap.get(item.id) || [])
-            .filter((l) => l.type === LEARNING_UNIT.LESSON || l.type === LEARNING_UNIT.ASSIGNMENT)
-            .map((lessonItem) => ({
-              id: lessonItem.refId ?? lessonItem.id,
-              title: lessonItem.title,
-              type: lessonItem.type as LearningContentType,
-            }));
-
-          newTopics.push({
-            id: item.id,
-            title: item.title,
-            items: lessonItems,
-          });
-        }
-      }
-
-      const updates: Partial<Course> = { topics: newTopics };
-      await courseService.updateCourse(course.id, updates);
-
+      const topics = buildTopicsFromFlatList(data);
+      await courseService.updateCourse(course.id, { topics });
       toast({ title: "Success", description: "Curriculum saved!" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to save: ${error}`,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: `Failed to save: ${error}`, variant: "destructive" });
     } finally {
       hideOverlay();
     }
   };
 
-  const handleAssignment = (assignment: Assignment) => {
-    setCurriculum((prev) => {
-      // ─────────────────────────────────────────────────────────
-      // ✅ CHECK IF EDITING EXISTING ASSIGNMENT
-      // ─────────────────────────────────────────────────────────
-      const existingIndex = prev.findIndex((i) => i.id === assignment.id);
+  const refetchLocks = async () => {
+    const topicIds = curriculum.filter(isTopic).map((item) => item.id);
 
-      if (existingIndex !== -1) {
-        // ✅ UPDATE MODE: Just update the title
-        return prev.map((item) =>
-          item.id === assignment.id ? { ...item, title: assignment.title } : item
-        );
+    if (topicIds.length === 0) return;
+
+    try {
+      const topicRes = await contentLockService.getLocksByContentIds(topicIds);
+      const lockMap: Record<string, ContentLock | null> = {};
+      topicIds.forEach((id) => (lockMap[id] = null));
+      if (topicRes.success) {
+        topicRes.data.forEach((lock) => (lockMap[lock.contentId] = lock));
       }
-
-      // ─────────────────────────────────────────────────────────
-      // ✅ CREATE MODE: Insert under active parent
-      // ─────────────────────────────────────────────────────────
-      if (!activeParentId) {
-        toast({
-          title: "Error",
-          description: "No topic selected",
-          variant: "destructive",
-        });
-        return prev;
-      }
-
-      const parentIndex = prev.findIndex((i) => i.id === activeParentId);
-      if (parentIndex === -1) return prev;
-
-      const parentDepth = prev[parentIndex].depth;
-
-      // Find insert position (after last child of parent)
-      let insertIndex = parentIndex + 1;
-
-      for (let i = parentIndex + 1; i < prev.length; i++) {
-        const item = prev[i];
-
-        if (item.parentId === activeParentId) {
-          insertIndex = i + 1;
-        } else if (item.depth <= parentDepth || item.type === LEARNING_UNIT.TOPIC) {
-          break;
-        }
-      }
-
-      const newAssignment = {
-        id: assignment.id,
-        refId: assignment.id,
-        title: assignment.title,
-        type: LEARNING_UNIT.ASSIGNMENT,
-        depth: parentDepth + 1,
-        parentId: activeParentId,
-      };
-
-      const newCurriculum = [...prev];
-      newCurriculum.splice(insertIndex, 0, newAssignment);
-      return newCurriculum;
-    });
-
-    // ✅ Clean up modal state
-    setIsAssignmentModelOpen(false);
-    setEditingItemId(null);
-    setActiveParentId(null);
+      setTopicLocks(lockMap);
+    } catch (err) {
+      console.error("Failed to refetch locks", err);
+    }
   };
 
-  /** Flatten backend structure into draggable list form */
-  const getFlatCurriculum = (courseData: Course): DraggableItem[] => {
-    const flatList: DraggableItem[] = [];
+  // ── CRUD Operations ───────────────────────────────────────────────────
 
-    (courseData.topics || []).forEach((topic) => {
-      flatList.push({
-        id: topic.id,
-        title: topic.title,
-        type: LEARNING_UNIT.TOPIC,
-        depth: 0,
-        parentId: null,
-        originalData: topic,
-      });
-
-      (topic.items || []).forEach((item) => {
-        const isAssignment = item.type === LEARNING_UNIT.ASSIGNMENT;
-        flatList.push({
-          id: item.id,
-          refId: item.id,
-          title: item.title,
-          type: isAssignment ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
-          depth: 1,
-          parentId: topic.id,
-        });
-      });
-    });
-
-    return flatList;
-  };
-
-  /** Create and insert a new top-level Topic */
-  const addItem = () => {
+  const addTopic = () => {
     setCurriculum((prev) => [
       {
         id: `topic_${Date.now()}`,
@@ -496,148 +552,108 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     ]);
   };
 
-  /** Update an item's title (topic/lesson/assignment) */
-  const updateItemName = (itemId: string, name: string) => {
-    setCurriculum((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, title: name } : item))
-    );
+  const updateItemTitle = (itemId: string, title: string) => {
+    setCurriculum((prev) => prev.map((item) => (item.id === itemId ? { ...item, title } : item)));
   };
 
-  /** Delete any curriculum item */
   const deleteItem = (id: string, type: LearningUnit) => {
-    if (type === LEARNING_UNIT.TOPIC) {
-      // also remove its children
-      setCurriculum((prev) => {
+    setCurriculum((prev) => {
+      if (type === LEARNING_UNIT.TOPIC) {
+        // Remove the topic and all its children
         const topicIndex = prev.findIndex((i) => i.id === id);
         if (topicIndex === -1) return prev;
 
-        const topicDepth = prev[topicIndex].depth;
-
         let endIndex = topicIndex + 1;
         for (let i = topicIndex + 1; i < prev.length; i++) {
-          if (prev[i].depth <= topicDepth) break;
+          if (prev[i].depth <= prev[topicIndex].depth) break;
           endIndex = i + 1;
         }
-
         return [...prev.slice(0, topicIndex), ...prev.slice(endIndex)];
-      });
-    }
-    setCurriculum((prev) => prev.filter((i) => i.id !== id));
-  };
-
-  /** Pick lessons from library to attach to a topic */
-  const addLessonToParent = (parentId: string) => {
-    setActiveParentId(parentId);
-    setIsLessonSelectorModalOpen(true);
-  };
-
-  /** Add lessons to the active topic (at end of topic's children) */
-  const addLessonsToParent = (lessons: Lesson[]) => {
-    const parentIndex = curriculum.findIndex((i) => i.id === activeParentId);
-    if (parentIndex === -1) return;
-
-    const parentDepth = curriculum[parentIndex].depth;
-
-    let insertIndex = parentIndex + 1;
-
-    for (let i = parentIndex + 1; i < curriculum.length; i++) {
-      const item = curriculum[i];
-
-      if (item.parentId === activeParentId) {
-        insertIndex = i + 1;
-      } else if (item.depth <= parentDepth || item.type === LEARNING_UNIT.TOPIC) {
-        break;
       }
-    }
+      return prev.filter((i) => i.id !== id);
+    });
+  };
 
-    const newItems = lessons.map((l) => ({
+  const addLessonsToParent = (lessons: Lesson[]) => {
+    if (!activeParentId) return;
+
+    const insertIndex = findInsertIndexForParent(curriculum, activeParentId);
+    if (insertIndex === -1) return;
+
+    const newItems: DraggableItem[] = lessons.map((l) => ({
       id: l.id,
-      refId: l.id, // ✅ Add refId for consistency
+      refId: l.id,
       title: l.title,
       type: LEARNING_UNIT.LESSON,
-      depth: parentDepth + 1,
+      depth: 1,
       parentId: activeParentId,
     }));
 
-    const newCurriculum = [...curriculum];
-    newCurriculum.splice(insertIndex, 0, ...newItems);
-    setCurriculum(newCurriculum);
+    const updated = [...curriculum];
+    updated.splice(insertIndex, 0, ...newItems);
+    setCurriculum(updated);
     setIsLessonSelectorModalOpen(false);
   };
 
-  /** Save the current curriculum structure to the backend */
-
-  const firstLessonId = useMemo(() => {
-    const firstLesson = curriculum.find(
-      (i) => i.type === LEARNING_UNIT.LESSON || i.type === LEARNING_UNIT.ASSIGNMENT
-    );
-    return firstLesson ? (firstLesson.refId ?? firstLesson.id) : null;
-  }, [curriculum]);
-
-  const activeItem = useMemo(() => {
-    return curriculum.find((i) => i.id === activeId);
-  }, [activeId, curriculum]);
-
-  // Handle initial itemId to open modal (from URL parameter)
-  useEffect(() => {
-    if (initialItemId && curriculum.length > 0) {
-      // Find the item in curriculum
-      const item = curriculum.find((i) => i.id === initialItemId || i.refId === initialItemId);
-
-      if (item) {
-        // Check item type and open appropriate modal
-        if (item.type === LEARNING_UNIT.LESSON) {
-          setEditingItemId(initialItemId);
-          setIsLessonEditModelOpen(true);
-        } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
-          setEditingItemId(initialItemId);
-          setIsAssignmentEditModalOpen(true);
-        }
-
-        // Clear the URL parameter after handling
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
+  const handleAssignmentSave = (assignment: Assignment) => {
+    setCurriculum((prev) => {
+      // Update existing assignment
+      const exists = prev.some((i) => i.id === assignment.id);
+      if (exists) {
+        return prev.map((item) =>
+          item.id === assignment.id ? { ...item, title: assignment.title } : item
+        );
       }
-    }
-  }, [initialItemId, curriculum]);
 
-  // Add this useEffect to fetch locks on mount and when course changes
-  useEffect(() => {
-    refetchLocks();
-  }, [course?.id]);
-
-  // Fix the refetchLocks function to use curriculum instead of course.topics
-  const refetchLocks = async () => {
-    const topicIds = curriculum
-      .filter((item) => item.type === LEARNING_UNIT.TOPIC)
-      .map((item) => item.id);
-
-    if (topicIds.length === 0) return;
-
-    try {
-      setLoadingLocks(true);
-
-      const topicRes = await contentLockService.getLocksByContentIds(topicIds);
-
-      const topicMap: Record<string, ContentLock | null> = {};
-      topicIds.forEach((id) => (topicMap[id] = null));
-      if (topicRes.success) {
-        topicRes.data.forEach((lock) => (topicMap[lock.contentId] = lock));
+      // Insert new assignment under active parent
+      if (!activeParentId) {
+        toast({ title: "Error", description: "No topic selected", variant: "destructive" });
+        return prev;
       }
-      setTopicLocks(topicMap);
-    } catch (err) {
-      console.error("Failed to refetch locks", err);
-    } finally {
-      setLoadingLocks(false);
-    }
+
+      const insertIndex = findInsertIndexForParent(prev, activeParentId);
+      if (insertIndex === -1) return prev;
+
+      const newAssignment: DraggableItem = {
+        id: assignment.id,
+        refId: assignment.id,
+        title: assignment.title,
+        type: LEARNING_UNIT.ASSIGNMENT,
+        depth: 1,
+        parentId: activeParentId,
+      };
+
+      const updated = [...prev];
+      updated.splice(insertIndex, 0, newAssignment);
+      return updated;
+    });
+
+    setIsAssignmentModelOpen(false);
+    setEditingItemId(null);
+    setActiveParentId(null);
   };
 
-  // Also update the useEffect dependency to trigger when curriculum changes
-  useEffect(() => {
-    if (curriculum.length > 0) {
-      refetchLocks();
-    }
-  }, [curriculum.length]);
+  // ── Visibility ────────────────────────────────────────────────────────
+
+  /** Whether a curriculum item should be visible in the list. */
+  const isItemVisible = (item: DraggableItem): boolean => {
+    // Topics are always visible
+    if (isTopic(item)) return true;
+    // While dragging a topic, hide all children to reduce visual noise
+    if (draggedItem && isTopic(draggedItem)) return false;
+    // Children are only visible when their parent topic is expanded
+    return expandedTopicIds.has(item.parentId!);
+  };
+
+  const toggleTopicExpanded = (id: string, expanded: boolean) => {
+    setExpandedTopicIds((prev) => {
+      const next = new Set(prev);
+      expanded ? next.add(id) : next.delete(id);
+      return next;
+    });
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────
 
   if (!course) {
     return (
@@ -659,17 +675,12 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           </CardTitle>
 
           <div className="flex flex-wrap gap-2">
-            {/* Add Topic Button */}
-            <Button size="sm" onClick={addItem} className="flex items-center gap-1">
+            <Button size="sm" onClick={addTopic} className="flex items-center gap-1">
               <Plus className="h-4 w-4" /> Add Topic
             </Button>
-
-            {/* Save */}
-            <Button size="sm" onClick={saveCurriculumStructure} className="flex items-center gap-1">
+            <Button size="sm" onClick={() => saveCurriculum()} className="flex items-center gap-1">
               <Save className="h-4 w-4" /> Save
             </Button>
-
-            {/* Preview */}
             <Link
               to={`/courses/${course.slug || course.id}/lesson/${firstLessonId}`}
               target="_blank"
@@ -682,7 +693,6 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           </div>
         </CardHeader>
 
-        {/* ───── List Body ─────────────────────── */}
         <CardContent className="pt-0">
           <DndContext
             sensors={sensors}
@@ -696,31 +706,19 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
             >
               <div className="space-y-2">
                 {curriculum.map((item) =>
-                  item.type !== "TOPIC" &&
-                  (activeItem?.type === LEARNING_UNIT.TOPIC ||
-                    !activeTopicIds.has(item.parentId)) ? null : (
+                  !isItemVisible(item) ? null : (
                     <SortableItem
-                      key={String(item.id)}
-                      id={String(item.id)}
+                      key={item.id}
+                      id={item.id}
                       type={item.type}
                       depth={item.depth}
-                      onChange={(id, state) => {
-                        setActiveTopicIds((prev) => {
-                          const newSet = new Set(prev);
-                          if (state) {
-                            newSet.add(id);
-                          } else {
-                            newSet.delete(id);
-                          }
-                          return newSet;
-                        });
-                      }}
+                      onChange={toggleTopicExpanded}
                     >
                       <div className="flex items-center justify-between w-full group">
-                        {/* ───── Left: icon + title ───────────── */}
+                        {/* Left side: icon + title */}
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {item.type === LEARNING_UNIT.TOPIC ? (
-                            activeTopicIds.has(item.id) ? (
+                          {isTopic(item) ? (
+                            expandedTopicIds.has(item.id) ? (
                               <FolderOpen className="h-6 w-6 text-primary" />
                             ) : (
                               <FolderClosed className="h-6 w-6 text-primary" />
@@ -733,16 +731,16 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                             <NotepadText className="h-6 w-6 text-blue-500" />
                           )}
 
-                          {/* ───── Title Logic ───────────── */}
-                          {item.type === LEARNING_UNIT.TOPIC ? (
+                          {/* Title: editable for topics, link for lessons, plain for assignments */}
+                          {isTopic(item) ? (
                             editingItemId === item.id ? (
                               <Input
                                 value={newItemName}
                                 onChange={(e) => setNewItemName(e.target.value)}
-                                onBlur={() => updateItemName(item.id, newItemName)}
+                                onBlur={() => updateItemTitle(item.id, newItemName)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
-                                    updateItemName(item.id, newItemName);
+                                    updateItemTitle(item.id, newItemName);
                                     e.currentTarget.blur();
                                     setEditingItemId(null);
                                   }
@@ -775,11 +773,10 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                           )}
                         </div>
 
-                        {/* ───── Right: Action Buttons ───────────── */}
+                        {/* Right side: action buttons */}
                         <div className="flex items-center gap-1">
-                          {item.type === LEARNING_UNIT.TOPIC && (
+                          {isTopic(item) && (
                             <>
-                              {/* Add Lesson */}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -792,17 +789,6 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
-                              {/* Import Lesson */}
-                              {/* <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => addLessonToParent(item.id)}
-                              className="opacity-0 group-hover:opacity-100"
-                              title="Import Lesson"
-                            >
-                              <Search className="h-4 w-4" />
-                            </Button> */}
-                              {/* Add Assignment */}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -816,7 +802,6 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                               >
                                 <NotebookPen className="h-4 w-4" />
                               </Button>
-                              {/* Rename Topic */}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -829,22 +814,18 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
-
-                              {/* Lock Content */}
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  setActiveContentId(item.id); // or assignmentId
+                                  setActiveContentId(item.id);
                                   setIsLockModalOpen(true);
                                 }}
                                 className="opacity-0 group-hover:opacity-100"
                                 title="Lock Content"
                               >
-                                <Lock className="h-4 w-4 " />
+                                <Lock className="h-4 w-4" />
                               </Button>
-
-                              {/* Delete Topic */}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -861,18 +842,16 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                             </>
                           )}
 
-                          {(item.type === LEARNING_UNIT.LESSON ||
-                            item.type === LEARNING_UNIT.ASSIGNMENT) && (
+                          {isChild(item) && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
+                                  setEditingItemId(item.id);
                                   if (item.type === LEARNING_UNIT.LESSON) {
-                                    setEditingItemId(item.id);
                                     setIsLessonEditModelOpen(true);
-                                  } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
-                                    setEditingItemId(item.id);
+                                  } else {
                                     setIsAssignmentEditModalOpen(true);
                                   }
                                 }}
@@ -907,13 +886,15 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
         </CardContent>
       </Card>
 
-      {/* ───── Modals ───────────────────────────────────────────── */}
+      {/* ── Modals ──────────────────────────────────────────────────────── */}
+
       <LessonImportModal
         courseId={course.id}
         isOpen={isLessonSelectorModalOpen}
         onClose={() => setIsLessonSelectorModalOpen(false)}
         onConfirm={addLessonsToParent}
       />
+
       <EditLessonModal
         courseId={course.id}
         lessonId={editingItemId}
@@ -923,22 +904,18 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
         onLessonUpdated={(lesson: Lesson) => {
-          setCurriculum((prev) => {
-            return prev.map((item) => {
-              if (item.id === lesson.id && item.type === LEARNING_UNIT.LESSON) {
-                // Ensure we're only updating lesson items
-                return {
-                  ...item,
-                  title: lesson.title,
-                } as DraggableItem;
-              }
-              return item;
-            });
-          });
+          setCurriculum((prev) =>
+            prev.map((item) =>
+              item.id === lesson.id && item.type === LEARNING_UNIT.LESSON
+                ? { ...item, title: lesson.title }
+                : item
+            )
+          );
           setEditingItemId(null);
           setIsLessonEditModelOpen(false);
         }}
       />
+
       <ConfirmDialog
         title="Delete Item"
         body={`Are you sure you want to delete this ${
@@ -961,6 +938,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
       />
+
       {isAssignmentModelOpen && (
         <AssignmentModal
           courseId={course.id}
@@ -969,9 +947,10 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
             setEditingItemId(null);
             setActiveParentId(null);
           }}
-          onSave={handleAssignment}
+          onSave={handleAssignmentSave}
         />
       )}
+
       <EditAssignmentModal
         courseId={course.id}
         assignmentId={editingItemId}
@@ -981,22 +960,18 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
         onUpdated={(updatedAssignment) => {
-          // ✅ Update the curriculum list immediately
           setCurriculum((prev) =>
-            prev.map((item) => {
-              if (item.id === updatedAssignment.id && item.type === LEARNING_UNIT.ASSIGNMENT) {
-                return {
-                  ...item,
-                  title: updatedAssignment.title,
-                } as DraggableItem;
-              }
-              return item;
-            })
+            prev.map((item) =>
+              item.id === updatedAssignment.id && item.type === LEARNING_UNIT.ASSIGNMENT
+                ? { ...item, title: updatedAssignment.title }
+                : item
+            )
           );
           setIsAssignmentEditModalOpen(false);
           setEditingItemId(null);
         }}
       />
+
       <CreateLessonModal
         courseId={course.id}
         isOpen={isCreateLessonOpen}
@@ -1005,7 +980,6 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
         onLessonCreated={(lesson, shouldAutoSave) => {
-          // Set flag before state update so useEffect can trigger save
           if (shouldAutoSave) {
             pendingSaveAfterLessonAdd.current = true;
           }
@@ -1014,46 +988,32 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
       />
-      {/* Add this after CreateLessonModal, inside the return's fragment */}
+
       {isLockModalOpen && activeContentId && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          {/* Backdrop with Blur */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setIsLockModalOpen(false)}
           />
-
-          {/* The Modern Geometric Modal */}
           <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-            {/* 1. Main Background Shape with Cut Corners (Clip Path) */}
             <div
               className="relative bg-background p-8 sm:p-10 shadow-2xl"
               style={{
-                // This creates the "Not a square" look by cutting the top-right and bottom-left corners
                 clipPath: "polygon(0 0, 90% 0, 100% 10%, 100% 100%, 10% 100%, 0 90%)",
               }}
             >
-              {/* 2. The "Bracket" Design Elements (Like the image) */}
-              {/* Top-Left Heavy Bracket */}
               <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none">
                 <div className="absolute top-4 left-4 w-full h-full border-t-[12px] border-l-[12px] border-foreground/90" />
               </div>
-
-              {/* Bottom-Right Heavy Bracket */}
               <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none">
                 <div className="absolute bottom-4 right-4 w-full h-full border-b-[12px] border-r-[12px] border-foreground/90" />
               </div>
-
-              {/* 3. Decorative "Tech" lines (Optional, adds detail) */}
               <div className="absolute top-4 right-12 w-12 h-1 bg-foreground/20" />
               <div className="absolute bottom-4 left-12 w-12 h-1 bg-foreground/20" />
-
-              {/* 4. Content Wrapper */}
               <div className="relative z-10">
                 <h3 className="text-xl font-bold uppercase tracking-wider mb-6 text-center border-b pb-2 border-border">
                   LOCK TOPIC
                 </h3>
-
                 <ContentLockForm
                   contentType="TOPIC"
                   contentId={activeContentId}
