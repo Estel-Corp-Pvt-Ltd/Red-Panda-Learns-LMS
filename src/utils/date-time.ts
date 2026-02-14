@@ -32,6 +32,14 @@ export const toDateSafe = (
     return new Date(seconds * 1000);
   }
 
+  // Numeric timestamp (milliseconds or seconds)
+  if (typeof val === "number") {
+    // If the number looks like seconds (< year 2100 in ms ≈ 4.1e12), treat as seconds
+    const ms = val > 1e12 ? val : val * 1000;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   // ISO string
   if (typeof val === "string") {
     const d = parseISO(val);
