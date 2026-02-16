@@ -168,8 +168,14 @@ export default function CourseDetailPage() {
     navigate(`/checkout/${course.slug ? course.slug : course.id}`);
   };
 
+  const isCourseInstructor = user?.role === USER_ROLE.INSTRUCTOR && course?.instructorId === user?.id;
+
   const goToEditCourse = () => {
-    navigate(`/admin/edit-course/${course.id}`);
+    if (isCourseInstructor) {
+      navigate(`/instructor/edit-course/${course.id}`);
+    } else {
+      navigate(`/admin/edit-course/${course.id}`);
+    }
   };
 
   const handleContinueLearning = () => {
@@ -266,7 +272,7 @@ export default function CourseDetailPage() {
               const baseClasses =
                 "block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border cursor-pointer";
 
-              return userIsEnrolled ? (
+              return (userIsEnrolled || isCourseInstructor) ? (
                 <Link
                   key={lessonId}
                   to={`/courses/${course.slug ? course.slug : course.id}/lesson/${lessonId}`}
@@ -444,7 +450,7 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {user?.role == USER_ROLE.ADMIN ? (
+                    {user?.role == USER_ROLE.ADMIN || isCourseInstructor ? (
                       <>
                         <Button className="w-full" size="lg" onClick={goToEditCourse} >
                           <Play className="h-4 w-4 mr-2" />
@@ -452,7 +458,7 @@ export default function CourseDetailPage() {
                         </Button>
                         <Button className="w-full" size="lg" onClick={handleContinueLearning} >
                           <Play className="h-4 w-4 mr-2" />
-                          Continue as Admin
+                          {user?.role == USER_ROLE.ADMIN ? "Continue as Admin" : "View Course Content"}
                         </Button>
                       </>
                     ) : (

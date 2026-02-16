@@ -1,21 +1,29 @@
 // src/pages/instructor/InstructorDashboard.tsx
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Edit, Eye, Loader2, PlusCircle } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { BookOpen, Edit, Eye, Loader2, PlusCircle } from "lucide-react";
 
-import { useAuth } from '@/contexts/AuthContext';
-import { courseService } from '@/services/courseService';
-import { Course } from '@/types/course';
-import { COURSE_STATUS, CURRENCY } from '@/constants';
+import { useAuth } from "@/contexts/AuthContext";
+import { courseService } from "@/services/courseService";
+import { Course } from "@/types/course";
+import { COURSE_STATUS, CURRENCY } from "@/constants";
+import { formatDate } from "@/utils/date-time";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
-type COURSE_STATUS_TYPE = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
+type COURSE_STATUS_TYPE = (typeof COURSE_STATUS)[keyof typeof COURSE_STATUS];
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
@@ -24,8 +32,8 @@ const InstructorDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
       currency: CURRENCY.INR,
     }).format(amount);
   };
@@ -33,13 +41,13 @@ const InstructorDashboard = () => {
   const getStatusBadgeVariant = (status: COURSE_STATUS_TYPE) => {
     switch (status) {
       case COURSE_STATUS.PUBLISHED:
-        return 'default';
+        return "default";
       case COURSE_STATUS.DRAFT:
-        return 'secondary';
+        return "secondary";
       case COURSE_STATUS.ARCHIVED:
-        return 'outline';
+        return "outline";
       default:
-        return 'outline';
+        return "outline";
     }
   };
 
@@ -52,20 +60,20 @@ const InstructorDashboard = () => {
 
       if (!result.success) {
         toast({
-          title: 'Error',
-          description: result.error?.message || 'Failed to fetch your courses',
-          variant: 'destructive',
+          title: "Error",
+          description: result.error?.message || "Failed to fetch your courses",
+          variant: "destructive",
         });
         return;
       }
 
       setCourses(result.data || []);
     } catch (error) {
-      console.error('Error loading instructor courses:', error);
+      console.error("Error loading instructor courses:", error);
       toast({
-        title: 'Error',
-        description: 'An error occurred while loading your courses',
-        variant: 'destructive',
+        title: "Error",
+        description: "An error occurred while loading your courses",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -99,11 +107,9 @@ const InstructorDashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle>Instructor Dashboard</CardTitle>
-              <CardDescription>
-                View and manage the courses you&apos;ve created.
-              </CardDescription>
+              <CardDescription>View and manage the courses you&apos;ve created.</CardDescription>
             </div>
-            <Button
+            {/* <Button
               variant="pill"
               size="sm"
               onClick={() => navigate('/instructor/create-course')}
@@ -111,7 +117,7 @@ const InstructorDashboard = () => {
             >
               <PlusCircle className="h-4 w-4" />
               Create Course
-            </Button>
+            </Button> */}
           </div>
         </CardHeader>
 
@@ -129,7 +135,7 @@ const InstructorDashboard = () => {
                 <Button
                   variant="pill"
                   size="sm"
-                  onClick={() => navigate('/instructor/create-course')}
+                  onClick={() => navigate("/instructor/create-course")}
                   className="inline-flex items-center gap-2"
                 >
                   <PlusCircle className="h-4 w-4" />
@@ -140,7 +146,7 @@ const InstructorDashboard = () => {
           ) : (
             <>
               <div className="mb-4 text-sm text-muted-foreground">
-                You have created {courses.length} course{courses.length > 1 ? 's' : ''}.
+                You have created {courses.length} course{courses.length > 1 ? "s" : ""}.
               </div>
 
               <Table>
@@ -158,9 +164,7 @@ const InstructorDashboard = () => {
                     <TableRow key={course.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">
-                            {course.title}
-                          </div>
+                          <div className="font-medium">{course.title}</div>
                           <div className="text-sm text-muted-foreground line-clamp-2">
                             {course.description}
                           </div>
@@ -176,7 +180,7 @@ const InstructorDashboard = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {course.updatedAt?.toString?.() || 'N/A'}
+                          {formatDate(course.updatedAt)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">

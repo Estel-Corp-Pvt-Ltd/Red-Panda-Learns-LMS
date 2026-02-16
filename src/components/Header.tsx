@@ -70,9 +70,11 @@ export function Header({ className }: HeaderProps) {
       ? "/admin"
       : user?.role === USER_ROLE.ACCOUNTANT
         ? "/accountant"
-        : user?.role === USER_ROLE.TEACHER
-          ? "/teacher"
-          : "/dashboard";
+        : user?.role === USER_ROLE.INSTRUCTOR
+          ? "/instructor"
+          : user?.role === USER_ROLE.TEACHER
+            ? "/teacher"
+            : "/dashboard";
 
   return (
     <>
@@ -380,19 +382,25 @@ export function Header({ className }: HeaderProps) {
             )}
 
             {/* Customer Support - Desktop only */}
-            {user && user.role !== USER_ROLE.ADMIN && user.role !== USER_ROLE.ACCOUNTANT && user.role !== USER_ROLE.TEACHER && (
-              <div className="hidden lg:block">
-                <CreateComplaint
-                  userId={user.id}
-                  trigger={
-                    <Button variant="ghost" className="font-medium text-sm flex items-center gap-2">
-                      <HeartHandshake className="h-4 w-4" />
-                      <span className="hidden sm:block">Customer Support</span>
-                    </Button>
-                  }
-                />
-              </div>
-            )}
+            {user &&
+              user.role !== USER_ROLE.ADMIN &&
+              user.role !== USER_ROLE.ACCOUNTANT &&
+              user.role !== USER_ROLE.TEACHER && (
+                <div className="hidden lg:block">
+                  <CreateComplaint
+                    userId={user.id}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        className="font-medium text-sm flex items-center gap-2"
+                      >
+                        <HeartHandshake className="h-4 w-4" />
+                        <span className="hidden sm:block">Customer Support</span>
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
 
             {/* Theme toggle */}
             <ThemeToggle />

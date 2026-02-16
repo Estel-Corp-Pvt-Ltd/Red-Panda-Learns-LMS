@@ -66,7 +66,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 useEffect(()=>{
   const checkInstructorRole = async () =>{
     if (requireInstructor && user){
-      try{  
+      try{
          const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
           const data = docSnap.data();
           setIsInstructor(data.role === USER_ROLE.INSTRUCTOR)
@@ -75,9 +75,10 @@ useEffect(()=>{
         setIsInstructor(false)
       }
     }
-    else{
-      setIsInstructor(false)
+    else if (!requireInstructor) {
+      setIsInstructor(true); // No instructor check needed
     }
+    // When requireInstructor is true but user is null (still loading), keep as null
   }
   checkInstructorRole();
 },[requireInstructor,user]);
@@ -93,9 +94,10 @@ useEffect(() => {
       } catch {
         setIsAccountant(false);
       }
-    } else {
-      setIsAccountant(false);
+    } else if (!requireAccountant) {
+      setIsAccountant(true); // No accountant check needed
     }
+    // When requireAccountant is true but user is null (still loading), keep as null
   };
 
   checkAccountantRole();
@@ -111,9 +113,10 @@ useEffect(() => {
       } catch {
         setIsTeacher(false);
       }
-    } else {
-      setIsTeacher(false);
+    } else if (!requireTeacher) {
+      setIsTeacher(true); // No teacher check needed
     }
+    // When requireTeacher is true but user is null (still loading), keep as null
   };
 
   checkTeacherRole();

@@ -837,6 +837,26 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
+                        <Route
+                          path="/instructor/create-course"
+                          element={
+                            <AuthGuard requireInstructor>
+                              <InstructorLayout>
+                                <CreateCoursePage />
+                              </InstructorLayout>
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/instructor/edit-course/:param"
+                          element={
+                            <AuthGuard requireInstructor>
+                              <InstructorLayout>
+                                <CurriculumBuilderPage />
+                              </InstructorLayout>
+                            </AuthGuard>
+                          }
+                        />
                         {/* <Route
                         path="/accountant/orders"
                         element={
