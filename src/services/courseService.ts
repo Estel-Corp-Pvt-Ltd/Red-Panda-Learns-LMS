@@ -20,7 +20,7 @@ import {
   WhereFilterOp,
 } from "firebase/firestore";
 
-import { COLLECTION, COURSE_STATUS, PRICING_MODEL } from "@/constants";
+import { COLLECTION, COURSE_MODE, COURSE_STATUS, PRICING_MODEL } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { Course } from "@/types/course";
 import { ok, Result, fail } from "@/utils/response";
@@ -28,6 +28,8 @@ import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { Enrollment } from "@/types/enrollment";
 import { logError } from "@/utils/logger";
 import { searchService, SearchOptions } from "@/services/searchService";
+import { updateAttributes } from "@tiptap/core";
+import { CourseMode } from "@/types/general";
 
 class CourseService {
   /**
@@ -92,6 +94,8 @@ class CourseService {
       | "isMailSendingEnabled"
       | "isCertificateEnabled"
       | "isForumEnabled"
+      | "mode"
+      | "liveAt"
       | "isWelcomeMessageEnabled"
       | "customCertificateName"
     >
@@ -112,6 +116,8 @@ class CourseService {
         targetAudienceIds: [],
         instructorName: data.instructorName,
         status: COURSE_STATUS.DRAFT,
+        mode: COURSE_MODE.SELF_PACED,
+        liveAt: null,
         certificateTemplateId: data.certificateTemplateId || "",
         topics: [],
         duration: { hours: 0, minutes: 0 },
@@ -187,6 +193,13 @@ class CourseService {
       if (updates.status) updateData.status = updates.status;
       if (updates.instructorName) updateData.instructorName = updates.instructorName;
       if (updates.instructorId) updateData.instructorId = updates.instructorId;
+      if (updates.mode) {
+        updateData.mode = updates.mode;
+        if (updates.mode === COURSE_MODE.SELF_PACED) {
+          updateData.liveAt = null;
+        }
+      }
+      if (updates.liveAt !== undefined) updateData.liveAt = updates.liveAt;
       if (updates.pricingModel) updateData.pricingModel = updates.pricingModel;
       if (updates.topics) updateData.topics = updates.topics;
       if (updates.isEnrollmentPaused !== undefined)
@@ -387,6 +400,8 @@ class CourseService {
           certificateTemplateId: data.certificateTemplateId,
           cohorts: data.cohorts || [],
           topics: data.topics || [],
+          mode: data.mode,
+          liveAt: data.liveAt || null,
           isEnrollmentPaused: data.isEnrollmentPaused || false,
           customCertificateName: data.customCertificateName || "",
           isCertificateEnabled: data.isCertificateEnabled || false,

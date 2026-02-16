@@ -1,5 +1,5 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
-import { BundleStatus, PricingModel } from "./general";
+import { BundleStatus, CourseMode, CourseStatus, PricingModel } from "./general";
 
 export type BundleCourseItem = {
   id: string;
@@ -18,6 +18,8 @@ export interface Bundle {
   categoryIds: string[];
   targetAudienceIds: string[];
   tags: string[];
+  mode: CourseMode;
+  liveAt: Timestamp | FieldValue | null;
   instructorId: string;
   instructorName: string;
   thumbnail?: string;

@@ -42,6 +42,7 @@ import {
   LEARNING_ACTION,
   SOCIAL_ACTION,
   COMMUNITY_ACTION,
+  COURSE_MODE,
 } from "@/constants";
 
 // ATTRIBUTES
@@ -53,6 +54,7 @@ export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
 // COURSE & BUNDLE
 export type CourseStatus = (typeof COURSE_STATUS)[keyof typeof COURSE_STATUS];
+export type CourseMode = (typeof COURSE_MODE)[keyof typeof COURSE_MODE];
 export type PricingModel = (typeof PRICING_MODEL)[keyof typeof PRICING_MODEL];
 export type BundleStatus = (typeof BUNDLE_STATUS)[keyof typeof BUNDLE_STATUS];
 export type LearningUnit = (typeof LEARNING_UNIT)[keyof typeof LEARNING_UNIT];

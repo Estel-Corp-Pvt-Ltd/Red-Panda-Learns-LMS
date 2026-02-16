@@ -497,6 +497,11 @@ export const POPUP_COURSE_TYPE = {
   SELF_PACED: "SELF-PACED",
 } as const;
 
+export const COURSE_MODE = {
+  LIVE: "LIVE",
+  SELF_PACED: "SELF-PACED",
+} as const;
+
 export const QUIZ_QUESTION_TYPE = {
   MCQ: "MCQ",
   MULTIPLE_ANSWER: "MULTIPLE ANSWER",

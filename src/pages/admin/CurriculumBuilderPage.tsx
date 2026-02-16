@@ -5,7 +5,7 @@ import CurriculumTab from "@/components/admin/CurriculumTab";
 import QuizTab from "@/components/admin/QuizTab";
 import AdditionalTab from "@/components/admin/AdminCourseAdditionalTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ATTRIBUTE_TYPE, COURSE_STATUS, USER_ROLE } from "@/constants";
+import { ATTRIBUTE_TYPE, COURSE_MODE, COURSE_STATUS, USER_ROLE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,8 @@ import { courseService } from "@/services/courseService";
 import { fileService } from "@/services/fileService";
 import { instructorService } from "@/services/instructorService";
 import type { Course } from "@/types/course";
-import type { CourseStatus, LearningUnit } from "@/types/general";
+import type { CourseMode, CourseStatus, LearningUnit } from "@/types/general";
+import { Timestamp, FieldValue } from "firebase/firestore";
 import { logError } from "@/utils/logger";
 import { getFullName } from "@/utils/name";
 import { getDownloadURL } from "firebase/storage";
@@ -39,6 +40,8 @@ const CurriculumBuilderPage = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CourseStatus>(COURSE_STATUS.DRAFT);
+  const [mode, setMode] = useState<CourseMode>(COURSE_MODE.SELF_PACED);
+  const [liveAt, setLiveAt] = useState<Timestamp | FieldValue | null>(null);
 
   const [regularPrice, setRegularPrice] = useState<number | null>(0);
   const [salePrice, setSalePrice] = useState<number | null>(0);
@@ -184,6 +187,8 @@ const CurriculumBuilderPage = () => {
         setIsEnrollAnnouncementEnabled(data.isWelcomeMessageEnabled ?? false);
         setCustomCertificateName(data.customCertificateName || data.title || "");
         setIsCourseCompletionEnabled(data.isCourseCompletionEnabled ?? false);
+        setMode(data.mode ?? COURSE_MODE.SELF_PACED);
+        setLiveAt(data.liveAt ?? null);
       } catch (err) {
         toast({
           title: "Error loading course",
@@ -341,6 +346,8 @@ const CurriculumBuilderPage = () => {
         instructorId,
         instructorName,
         status,
+        mode,
+        liveAt: mode === COURSE_MODE.SELF_PACED ? null : liveAt,
       });
       toast({ title: "Saved", description: "Course updated." });
     } catch (err) {
@@ -432,6 +439,10 @@ const CurriculumBuilderPage = () => {
               copied={copied}
               setCopied={setCopied}
               handleCopyLink={handleCopyLink}
+              mode={mode}
+              setMode={setMode}
+              liveAt={liveAt}
+              setLiveAt={setLiveAt}
             />
           </TabsContent>
 

@@ -10,10 +10,23 @@ import {
   X,
   Layers,
   Users as UsersIcon,
-  Search, RefreshCcw, CheckCheck, XCircle, Filter, Check, ChevronDown
+  Search,
+  RefreshCcw,
+  CheckCheck,
+  XCircle,
+  Filter,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +46,12 @@ import { Header } from "@/components/Header";
 import { getDownloadURL } from "firebase/storage";
 import {
   BUNDLE_STATUS,
+  COURSE_MODE,
   COURSE_STATUS,
   CURRENCY,
-  PRICING_MODEL, SORT_KEY, ATTRIBUTE_TYPE,
+  PRICING_MODEL,
+  SORT_KEY,
+  ATTRIBUTE_TYPE,
 } from "@/constants";
 import { instructorService } from "@/services/instructorService";
 import {
@@ -49,8 +65,7 @@ import { getFullName } from "@/utils/name";
 import { Slider } from "@/components/ui/slider";
 import { attributeService } from "@/services/attributeService";
 import { Attribute } from "@/types/attribute";
-
-
+import { CourseMode } from "@/types/general";
 interface Option {
   id: string;
   label: string;
@@ -59,6 +74,7 @@ import { fileService } from "@/services/fileService";
 import { logError } from "@/utils/logger";
 import { ok, Result } from "@/utils/response";
 import { title } from "process";
+import { Timestamp, FieldValue } from "firebase/firestore";
 export default function CreateBundlePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -71,9 +87,7 @@ export default function CreateBundlePage() {
   const [newTag, setNewTag] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [instructorName, setInstructorName] = useState("");
-  const [instructors, setInstructors] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
@@ -81,32 +95,22 @@ export default function CreateBundlePage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [slugTaken, setSlugTaken] = useState(false);
-  const [slug, setSlug] = useState("")
+  const [slug, setSlug] = useState("");
   // Helper to get a course's effective price (salePrice takes precedence)
-  const getCoursePrice = (course: Course) =>
-    Number(course.salePrice ?? course.regularPrice ?? 0);
+  const getCoursePrice = (course: Course) => Number(course.salePrice ?? course.regularPrice ?? 0);
 
   // Search (debounced)
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
-    const id = setTimeout(
-      () => setDebouncedSearch(search.trim().toLowerCase()),
-      300
-    );
+    const id = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 300);
     return () => clearTimeout(id);
   }, [search]);
 
   // Price range setup from current courses
   const prices = useMemo(() => courses.map(getCoursePrice), [courses]);
-  const minCoursePrice = useMemo(
-    () => (prices.length ? Math.min(...prices) : 0),
-    [prices]
-  );
-  const maxCoursePrice = useMemo(
-    () => (prices.length ? Math.max(...prices) : 0),
-    [prices]
-  );
+  const minCoursePrice = useMemo(() => (prices.length ? Math.min(...prices) : 0), [prices]);
+  const maxCoursePrice = useMemo(() => (prices.length ? Math.max(...prices) : 0), [prices]);
 
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   useEffect(() => {
@@ -126,12 +130,8 @@ export default function CreateBundlePage() {
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<
-    string[]
-  >([]);
+  const [selectedTargetAudiences, setSelectedTargetAudiences] = useState<string[]>([]);
   const [allTargetAudiences, setAllTargetAudiences] = useState<string[]>([]);
-
-
 
   useEffect(() => {
     const fetchInstructors = async () => {
@@ -170,7 +170,9 @@ export default function CreateBundlePage() {
       }
 
       try {
-        const targetAudienceData = await attributeService.getAttributes(ATTRIBUTE_TYPE.TARGET_AUDIENCE);
+        const targetAudienceData = await attributeService.getAttributes(
+          ATTRIBUTE_TYPE.TARGET_AUDIENCE
+        );
         settargetAudienceOptions(targetAudienceData.map((a) => ({ id: a.id, label: a.name })));
         setAllTargetAudiences(targetAudienceData.map((a) => a.name));
       } catch (error) {
@@ -186,12 +188,10 @@ export default function CreateBundlePage() {
     fetchAttributes();
   }, [toast]);
 
-
   useEffect(() => {
     const fetchTags = async () => {
       try {
         const tags = await courseService.getAllTags();
-
 
         const formattedTags = tags.map((t) => ({ id: t, label: t }));
         setTagOptions(formattedTags);
@@ -207,8 +207,6 @@ export default function CreateBundlePage() {
 
     fetchTags();
   }, [toast]);
-
-
 
   // Filtered + sorted list
   const filteredCourses = useMemo(() => {
@@ -245,9 +243,7 @@ export default function CreateBundlePage() {
       });
     }
     if (selectedCategoryIds.length) {
-      list = list.filter((c) =>
-        c.categoryIds?.some((id) => selectedCategoryIds.includes(id))
-      );
+      list = list.filter((c) => c.categoryIds?.some((id) => selectedCategoryIds.includes(id)));
     }
     if (selectedCourseTags.length) {
       list = list.filter((c) => c.tags?.some((t) => selectedCourseTags.includes(t)));
@@ -312,21 +308,13 @@ export default function CreateBundlePage() {
 
   const handleSelectAllFiltered = () => {
     setSelectedCourses((prev) => {
-      const toAdd = filteredCourses
-        .map((c) => c.id!)
-        .filter((id) => !prev.includes(id));
+      const toAdd = filteredCourses.map((c) => c.id!).filter((id) => !prev.includes(id));
       return [...prev, ...toAdd];
     });
   };
 
-
-
-
-
   const handleClearSelectionFiltered = () => {
-    setSelectedCourses((prev) =>
-      prev.filter((id) => !filteredCourses.some((c) => c.id === id))
-    );
+    setSelectedCourses((prev) => prev.filter((id) => !filteredCourses.some((c) => c.id === id)));
   };
 
   const handleResetFilters = () => {
@@ -348,11 +336,7 @@ export default function CreateBundlePage() {
       if (result.success) {
         const formattedInstructors = result.data.map((instructor) => ({
           id: instructor.id,
-          name: getFullName(
-            instructor.firstName,
-            instructor.middleName,
-            instructor.lastName
-          ),
+          name: getFullName(instructor.firstName, instructor.middleName, instructor.lastName),
         }));
 
         setInstructors(formattedInstructors);
@@ -377,13 +361,14 @@ export default function CreateBundlePage() {
     targetAudience: "",
     salePrice: "",
     thumbnailUrl: "",
+    mode: "" as CourseMode,
+    liveAt: null as Timestamp | FieldValue | null,
     pricingModel: PRICING_MODEL.PAID as PricingModel,
     status: BUNDLE_STATUS.DRAFT,
   });
 
   // Fetch pricing for selected courses
-  const { data: pricingData, isLoading: pricingLoading } =
-    useBundlePricingQuery(selectedCourseIds);
+  const { data: pricingData, isLoading: pricingLoading } = useBundlePricingQuery(selectedCourseIds);
 
   useEffect(() => {
     loadCourses();
@@ -392,11 +377,7 @@ export default function CreateBundlePage() {
   const loadCourses = async () => {
     try {
       const coursesData = await courseService.getAllCourses();
-      setCourses(
-        coursesData.filter(
-          (course) => course.status === COURSE_STATUS.PUBLISHED
-        )
-      );
+      setCourses(coursesData.filter((course) => course.status === COURSE_STATUS.PUBLISHED));
     } catch (error) {
       console.error("Error loading courses:", error);
       toast({
@@ -406,8 +387,6 @@ export default function CreateBundlePage() {
       });
     }
   };
-
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -426,7 +405,6 @@ export default function CreateBundlePage() {
     uploadThumbnail(file);
   };
 
-
   const uploadThumbnail = async (selectedFile: File) => {
     if (!selectedFile) return;
 
@@ -443,7 +421,7 @@ export default function CreateBundlePage() {
     const tempId = crypto.randomUUID();
     const uploadResult = fileService.startResumableUpload(
       `/bundles/${tempId}/thumbnail.png`,
-      selectedFile,
+      selectedFile
     );
     if (!uploadResult.success) {
       toast({
@@ -491,31 +469,27 @@ export default function CreateBundlePage() {
           });
           logError("Error getting download URL:", error);
         }
-      },
+      }
     );
   };
 
-    const isProbablyHtml = (text?: string | null) => {
-  if (!text) return false;
-  const trimmed = text.trim();
-  // Simple heuristic: starts with '<' and has at least one closing tag
-  return trimmed.startsWith('<') && /<\/[a-z][\s\S]*>/i.test(trimmed);
-};
+  const isProbablyHtml = (text?: string | null) => {
+    if (!text) return false;
+    const trimmed = text.trim();
+    // Simple heuristic: starts with '<' and has at least one closing tag
+    return trimmed.startsWith("<") && /<\/[a-z][\s\S]*>/i.test(trimmed);
+  };
 
   const handleCourseToggle = (courseId: string) => {
     setSelectedCourses((prev) =>
-      prev.includes(courseId)
-        ? prev.filter((id) => id !== courseId)
-        : [...prev, courseId]
+      prev.includes(courseId) ? prev.filter((id) => id !== courseId) : [...prev, courseId]
     );
   };
 
   // Category handlers
   const handleCategoryChange = (category: string) => {
     setCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     );
   };
 
@@ -571,12 +545,8 @@ export default function CreateBundlePage() {
     try {
       setLoading(true);
 
-      const regularPrice = bundleData.regularPrice
-        ? parseFloat(bundleData.regularPrice)
-        : 0;
-      const salePrice = bundleData.salePrice
-        ? parseFloat(bundleData.salePrice)
-        : 0;
+      const regularPrice = bundleData.regularPrice ? parseFloat(bundleData.regularPrice) : 0;
+      const salePrice = bundleData.salePrice ? parseFloat(bundleData.salePrice) : 0;
 
       await bundleService.createBundle({
         title: bundleData.title,
@@ -588,6 +558,8 @@ export default function CreateBundlePage() {
         regularPrice,
         salePrice,
         pricingModel: bundleData.pricingModel,
+        mode: bundleData.mode,
+        liveAt: bundleData.liveAt || null,
         instructorId: instructorId,
         instructorName: instructorName,
         targetAudienceIds: selectedTargetAudiences,
@@ -655,12 +627,8 @@ export default function CreateBundlePage() {
     try {
       setLoading(true);
 
-      const regularPrice = bundleData.regularPrice
-        ? parseFloat(bundleData.regularPrice)
-        : 0;
-      const salePrice = bundleData.salePrice
-        ? parseFloat(bundleData.salePrice)
-        : 0;
+      const regularPrice = bundleData.regularPrice ? parseFloat(bundleData.regularPrice) : 0;
+      const salePrice = bundleData.salePrice ? parseFloat(bundleData.salePrice) : 0;
 
       await bundleService.createBundle({
         title: bundleData.title,
@@ -671,6 +639,8 @@ export default function CreateBundlePage() {
           .map((course) => ({ id: course.id, title: course.title })),
         regularPrice,
         salePrice,
+        mode: bundleData.mode,
+        liveAt: bundleData.liveAt || null,
         pricingModel: bundleData.pricingModel,
         instructorId: instructorId,
         instructorName: instructorName,
@@ -711,7 +681,6 @@ export default function CreateBundlePage() {
     return () => clearTimeout(check);
   }, [bundleData.slug]);
 
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -719,9 +688,7 @@ export default function CreateBundlePage() {
     }).format(amount);
   };
 
-  const selectedCourses = courses.filter((course) =>
-    selectedCourseIds.includes(course.id!)
-  );
+  const selectedCourses = courses.filter((course) => selectedCourseIds.includes(course.id!));
 
   return (
     <div className="min-h-screen bg-background">
@@ -807,7 +774,7 @@ export default function CreateBundlePage() {
                           .trim()
                           .replace(/[^\w\s-]/g, "") // remove special chars
                           .replace(/\s+/g, "-"); // replace spaces with hyphens
-                        setSlug(newSlug)
+                        setSlug(newSlug);
                         setBundleData((prev) => ({
                           ...prev,
                           slug: newSlug,
@@ -841,24 +808,16 @@ export default function CreateBundlePage() {
 
                   {/* Slug availability feedback */}
                   {checkingSlug && (
-                    <p className="text-xs text-muted-foreground">
-                      Checking availability...
-                    </p>
+                    <p className="text-xs text-muted-foreground">Checking availability...</p>
                   )}
 
                   {!checkingSlug && slugTaken && (
-                    <p className="text-xs text-red-500">
-                      This slug is already in use.
-                    </p>
+                    <p className="text-xs text-red-500">This slug is already in use.</p>
                   )}
 
                   {!checkingSlug && !slugTaken && bundleData.slug && (
-                    <p className="text-xs text-green-500">
-                      This slug is available.
-                    </p>
+                    <p className="text-xs text-green-500">This slug is available.</p>
                   )}
-
-
                 </div>
 
                 {/* Categories + Target Audience side-by-side */}
@@ -888,9 +847,7 @@ export default function CreateBundlePage() {
                               {cat}
                               <button
                                 onClick={() =>
-                                  setSelectedCategories((prev) =>
-                                    prev.filter((c) => c !== cat)
-                                  )
+                                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
                                 }
                                 className="ml-1 rounded-full hover:bg-muted p-0.5"
                               >
@@ -948,24 +905,15 @@ export default function CreateBundlePage() {
                                 placeholder="Add new category"
                                 onKeyDown={async (e) => {
                                   e.stopPropagation();
-                                  if (
-                                    e.key === "Enter" &&
-                                    e.currentTarget.value.trim()
-                                  ) {
+                                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
                                     const newCat = e.currentTarget.value.trim();
                                     if (!allCategories.includes(newCat)) {
                                       await attributeService.addAttribute(
                                         ATTRIBUTE_TYPE.CATEGORY,
                                         newCat
                                       );
-                                      setAllCategories((prev) => [
-                                        ...prev,
-                                        newCat,
-                                      ]);
-                                      setSelectedCategories((prev) => [
-                                        ...prev,
-                                        newCat,
-                                      ]);
+                                      setAllCategories((prev) => [...prev, newCat]);
+                                      setSelectedCategories((prev) => [...prev, newCat]);
                                     }
                                     e.currentTarget.value = "";
                                   }
@@ -985,9 +933,7 @@ export default function CreateBundlePage() {
                         <UsersIcon className="h-5 w-5 text-primary" />
                         Target Audience
                       </CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Who is this content for?
-                      </p>
+                      <p className="text-xs text-muted-foreground">Who is this content for?</p>
                     </CardHeader>
 
                     <CardContent className="space-y-3">
@@ -1046,9 +992,7 @@ export default function CreateBundlePage() {
                                     }
                                   >
                                     <Checkbox
-                                      checked={selectedTargetAudiences.includes(
-                                        aud
-                                      )}
+                                      checked={selectedTargetAudiences.includes(aud)}
                                       className="mr-2"
                                     />
                                     {aud}
@@ -1064,24 +1008,15 @@ export default function CreateBundlePage() {
                                 placeholder="Add new audience"
                                 onKeyDown={async (e) => {
                                   e.stopPropagation();
-                                  if (
-                                    e.key === "Enter" &&
-                                    e.currentTarget.value.trim()
-                                  ) {
+                                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
                                     const newAud = e.currentTarget.value.trim();
                                     if (!allTargetAudiences.includes(newAud)) {
                                       await attributeService.addAttribute(
                                         ATTRIBUTE_TYPE.TARGET_AUDIENCE,
                                         newAud
                                       );
-                                      setAllTargetAudiences((prev) => [
-                                        ...prev,
-                                        newAud,
-                                      ]);
-                                      setSelectedTargetAudiences((prev) => [
-                                        ...prev,
-                                        newAud,
-                                      ]);
+                                      setAllTargetAudiences((prev) => [...prev, newAud]);
+                                      setSelectedTargetAudiences((prev) => [...prev, newAud]);
                                     }
                                     e.currentTarget.value = "";
                                   }
@@ -1104,21 +1039,13 @@ export default function CreateBundlePage() {
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddTag}
-                    >
+                    <Button type="button" variant="outline" onClick={handleAddTag}>
                       Add
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                         {tag}
                         <button
                           onClick={() => handleRemoveTag(tag)}
@@ -1164,6 +1091,62 @@ export default function CreateBundlePage() {
                   </div>
                 </div>
 
+                {/* Mode */}
+                <div>
+                  <Label>Mode</Label>
+                  <Select
+                    value={bundleData.mode}
+                    onValueChange={(val) => {
+                      const newMode = val as CourseMode;
+                      setBundleData((prev) => ({
+                        ...prev,
+                        mode: newMode,
+                        liveAt: newMode === COURSE_MODE.SELF_PACED ? null : prev.liveAt,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-full mt-2">
+                      <SelectValue placeholder="Select Mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(COURSE_MODE).map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {bundleData.mode === COURSE_MODE.LIVE && (
+                  <div>
+                    <Label>Live At</Label>
+                    <Input
+                      type="datetime-local"
+                      className="mt-2"
+                      value={
+                        bundleData.liveAt && bundleData.liveAt instanceof Timestamp
+                          ? (bundleData.liveAt as Timestamp)
+                              .toDate()
+                              .toISOString()
+                              .slice(0, 16)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        setBundleData((prev) => ({
+                          ...prev,
+                          liveAt: e.target.value
+                            ? Timestamp.fromDate(new Date(e.target.value))
+                            : null,
+                        }));
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      When does this bundle go live?
+                    </p>
+                  </div>
+                )}
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Instructor</CardTitle>
@@ -1172,9 +1155,7 @@ export default function CreateBundlePage() {
                     <Select
                       value={instructorName}
                       onValueChange={(val) => {
-                        const selected = instructors.find(
-                          (a) => a.name === val
-                        );
+                        const selected = instructors.find((a) => a.name === val);
                         setInstructorId(selected?.id || "");
                         setInstructorName(val);
                       }}
@@ -1201,20 +1182,12 @@ export default function CreateBundlePage() {
               <CardContent>
                 {!preview && thumbnailUrl && (
                   <div className="mb-5">
-                    <img
-                      src={thumbnailUrl}
-                      alt="Preview"
-                      className="border rounded"
-                    />
+                    <img src={thumbnailUrl} alt="Preview" className="border rounded" />
                   </div>
                 )}
                 {preview && (
                   <div className="mb-5">
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="border rounded"
-                    />
+                    <img src={preview} alt="Preview" className="border rounded" />
                   </div>
                 )}
                 {uploadingThumbnail && (
@@ -1233,11 +1206,7 @@ export default function CreateBundlePage() {
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
+                  <input type="file" accept="image/*" onChange={handleFileChange} />
                 </div>
               </CardContent>
             </Card>
@@ -1245,17 +1214,13 @@ export default function CreateBundlePage() {
             {/* Course Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>
-                  Select Courses ({selectedCourseIds.length} selected)
-                </CardTitle>
+                <CardTitle>Select Courses ({selectedCourseIds.length} selected)</CardTitle>
               </CardHeader>
               <CardContent>
                 {courses.length === 0 ? (
                   <div className="text-center py-8">
                     <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">
-                      No courses available
-                    </h3>
+                    <h3 className="text-lg font-medium mb-2">No courses available</h3>
                     <p className="text-muted-foreground mb-4">
                       You need published courses to create a bundle.
                     </p>
@@ -1273,9 +1238,7 @@ export default function CreateBundlePage() {
                       <div className="flex flex-col lg:flex-row lg:items-end gap-3">
                         {/* Search */}
                         <div className="w-full lg:flex-1 space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Search
-                          </Label>
+                          <Label className="text-xs text-muted-foreground">Search</Label>
                           <div className="relative">
                             <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-muted-foreground">
                               <Search className="h-4 w-4" />
@@ -1291,58 +1254,37 @@ export default function CreateBundlePage() {
 
                         {/* Type */}
                         <div className="w-full lg:w-40 space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Type
-                          </Label>
+                          <Label className="text-xs text-muted-foreground">Type</Label>
                           <Select
                             value={priceType}
-                            onValueChange={(v) =>
-                              setPriceType(v as "all" | PricingModel)
-                            }
+                            onValueChange={(v) => setPriceType(v as "all" | PricingModel)}
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="All" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All</SelectItem>
-                              <SelectItem value={PRICING_MODEL.FREE}>
-                                Free
-                              </SelectItem>
-                              <SelectItem value={PRICING_MODEL.PAID}>
-                                Paid
-                              </SelectItem>
+                              <SelectItem value={PRICING_MODEL.FREE}>Free</SelectItem>
+                              <SelectItem value={PRICING_MODEL.PAID}>Paid</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         {/* Sort by */}
                         <div className="w-full lg:w-48 space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Sort by
-                          </Label>
-                          <Select
-                            value={sortBy}
-                            onValueChange={(v) => setSortBy(v as SortKey)}
-                          >
+                          <Label className="text-xs text-muted-foreground">Sort by</Label>
+                          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder={SORT_KEY.RELEVANCE} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value={SORT_KEY.RELEVANCE}>
-                                Relevance
-                              </SelectItem>
-                              <SelectItem value={SORT_KEY.PRICE_ASC}>
-                                Price: Low to High
-                              </SelectItem>
+                              <SelectItem value={SORT_KEY.RELEVANCE}>Relevance</SelectItem>
+                              <SelectItem value={SORT_KEY.PRICE_ASC}>Price: Low to High</SelectItem>
                               <SelectItem value={SORT_KEY.PRICE_DESC}>
                                 Price: High to Low
                               </SelectItem>
-                              <SelectItem value={SORT_KEY.TITLE_ASC}>
-                                Title: A → Z
-                              </SelectItem>
-                              <SelectItem value={SORT_KEY.TITLE_DESC}>
-                                Title: Z → A
-                              </SelectItem>
+                              <SelectItem value={SORT_KEY.TITLE_ASC}>Title: A → Z</SelectItem>
+                              <SelectItem value={SORT_KEY.TITLE_DESC}>Title: Z → A</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1350,18 +1292,14 @@ export default function CreateBundlePage() {
 
                       {/* Row 2: Price Range */}
                       <div className="w-full">
-                        <Label className="text-xs text-muted-foreground">
-                          Price range
-                        </Label>
+                        <Label className="text-xs text-muted-foreground">Price range</Label>
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-medium">
                             {formatCurrency(priceRange[0] || 0)}
                           </span>
                           <Slider
                             value={[priceRange[0], priceRange[1]]}
-                            onValueChange={(vals) =>
-                              setPriceRange([vals[0], vals[1]])
-                            }
+                            onValueChange={(vals) => setPriceRange([vals[0], vals[1]])}
                             min={minCoursePrice}
                             max={maxCoursePrice}
                             step={1}
@@ -1380,16 +1318,11 @@ export default function CreateBundlePage() {
 
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between"
-                            >
+                            <Button variant="outline" className="w-full justify-between">
                               <span>Instructor</span>
                               <div className="flex items-center gap-2">
                                 {selectedInstructorIds.length > 0 && (
-                                  <Badge variant="secondary">
-                                    {selectedInstructorIds.length}
-                                  </Badge>
+                                  <Badge variant="secondary">{selectedInstructorIds.length}</Badge>
                                 )}
                                 <ChevronDown className="h-4 w-4 opacity-50" />
                               </div>
@@ -1402,8 +1335,7 @@ export default function CreateBundlePage() {
                                 <CommandEmpty>No results.</CommandEmpty>
                                 <CommandGroup>
                                   {instructors.map((opt) => {
-                                    const selected =
-                                      selectedInstructorIds.includes(opt.name);
+                                    const selected = selectedInstructorIds.includes(opt.name);
                                     return (
                                       <CommandItem
                                         key={opt.id}
@@ -1411,23 +1343,20 @@ export default function CreateBundlePage() {
                                         onSelect={() =>
                                           setSelectedInstructorIds((prev) =>
                                             selected
-                                              ? prev.filter(
-                                                (id) => id !== opt.name
-                                              )
+                                              ? prev.filter((id) => id !== opt.name)
                                               : [...prev, opt.name]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
-                                            ? "bg-primary text-primary-foreground"
-                                            : "opacity-50"
-                                            }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
                                         >
-                                          {selected && (
-                                            <Check className="h-3 w-3" />
-                                          )}
+                                          {selected && <Check className="h-3 w-3" />}
                                         </div>
                                         <span>{opt.name}</span>
                                       </CommandItem>
@@ -1441,14 +1370,11 @@ export default function CreateBundlePage() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() =>
-                                  setSelectedInstructorIds(
-                                    instructors.map((o) => o.name)
-                                  )
+                                  setSelectedInstructorIds(instructors.map((o) => o.name))
                                 }
                                 disabled={
                                   instructors.length === 0 ||
-                                  selectedInstructorIds.length ===
-                                  instructors.length
+                                  selectedInstructorIds.length === instructors.length
                                 }
                               >
                                 Select all
@@ -1468,16 +1394,11 @@ export default function CreateBundlePage() {
                         {/* Categories */}
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between"
-                            >
+                            <Button variant="outline" className="w-full justify-between">
                               <span>Categories</span>
                               <div className="flex items-center gap-2">
                                 {selectedCategoryIds.length > 0 && (
-                                  <Badge variant="secondary">
-                                    {selectedCategoryIds.length}
-                                  </Badge>
+                                  <Badge variant="secondary">{selectedCategoryIds.length}</Badge>
                                 )}
                                 <ChevronDown className="h-4 w-4 opacity-50" />
                               </div>
@@ -1490,31 +1411,27 @@ export default function CreateBundlePage() {
                                 <CommandEmpty>No results.</CommandEmpty>
                                 <CommandGroup>
                                   {categoryOptions.map((opt) => {
-                                    const selected =
-                                      selectedCategoryIds.includes(opt.label);
+                                    const selected = selectedCategoryIds.includes(opt.label);
                                     return (
                                       <CommandItem
                                         key={opt.label}
                                         onSelect={() =>
                                           setSelectedCategoryIds((prev) =>
                                             selected
-                                              ? prev.filter(
-                                                (name) => name !== opt.label
-                                              )
+                                              ? prev.filter((name) => name !== opt.label)
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
-                                            ? "bg-primary text-primary-foreground"
-                                            : "opacity-50"
-                                            }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
                                         >
-                                          {selected && (
-                                            <Check className="h-3 w-3" />
-                                          )}
+                                          {selected && <Check className="h-3 w-3" />}
                                         </div>
                                         <span>{opt.label}</span>
                                       </CommandItem>
@@ -1528,14 +1445,11 @@ export default function CreateBundlePage() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() =>
-                                  setSelectedCategoryIds(
-                                    categoryOptions.map((o) => o.label)
-                                  )
+                                  setSelectedCategoryIds(categoryOptions.map((o) => o.label))
                                 }
                                 disabled={
                                   categoryOptions.length === 0 ||
-                                  selectedCategoryIds.length ===
-                                  categoryOptions.length
+                                  selectedCategoryIds.length === categoryOptions.length
                                 }
                               >
                                 Select all
@@ -1555,16 +1469,11 @@ export default function CreateBundlePage() {
                         {/* Tags */}
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between"
-                            >
+                            <Button variant="outline" className="w-full justify-between">
                               <span>Tags</span>
                               <div className="flex items-center gap-2">
                                 {selectedCourseTags.length > 0 && (
-                                  <Badge variant="secondary">
-                                    {selectedCourseTags.length}
-                                  </Badge>
+                                  <Badge variant="secondary">{selectedCourseTags.length}</Badge>
                                 )}
                                 <ChevronDown className="h-4 w-4 opacity-50" />
                               </div>
@@ -1577,8 +1486,7 @@ export default function CreateBundlePage() {
                                 <CommandEmpty>No results.</CommandEmpty>
                                 <CommandGroup>
                                   {tagOptions.map((opt) => {
-                                    const selected =
-                                      selectedCourseTags.includes(opt.id);
+                                    const selected = selectedCourseTags.includes(opt.id);
                                     return (
                                       <CommandItem
                                         key={opt.id}
@@ -1592,14 +1500,13 @@ export default function CreateBundlePage() {
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
-                                            ? "bg-primary text-primary-foreground"
-                                            : "opacity-50"
-                                            }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
                                         >
-                                          {selected && (
-                                            <Check className="h-3 w-3" />
-                                          )}
+                                          {selected && <Check className="h-3 w-3" />}
                                         </div>
                                         <span>{opt.label}</span>
                                       </CommandItem>
@@ -1612,15 +1519,10 @@ export default function CreateBundlePage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() =>
-                                  setSelectedCourseTags(
-                                    tagOptions.map((o) => o.id)
-                                  )
-                                }
+                                onClick={() => setSelectedCourseTags(tagOptions.map((o) => o.id))}
                                 disabled={
                                   tagOptions.length === 0 ||
-                                  selectedCourseTags.length ===
-                                  tagOptions.length
+                                  selectedCourseTags.length === tagOptions.length
                                 }
                               >
                                 Select all
@@ -1640,10 +1542,7 @@ export default function CreateBundlePage() {
                         {/* Target Audience */}
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between"
-                            >
+                            <Button variant="outline" className="w-full justify-between">
                               <span>Target Audience</span>
                               <div className="flex items-center gap-2">
                                 {selectedTargetAudienceIds.length > 0 && (
@@ -1662,33 +1561,27 @@ export default function CreateBundlePage() {
                                 <CommandEmpty>No results.</CommandEmpty>
                                 <CommandGroup>
                                   {targetAudienceOptions.map((opt) => {
-                                    const selected =
-                                      selectedTargetAudienceIds.includes(
-                                        opt.label
-                                      );
+                                    const selected = selectedTargetAudienceIds.includes(opt.label);
                                     return (
                                       <CommandItem
                                         key={opt.id}
                                         onSelect={() =>
                                           setSelectedTargetAudienceIds((prev) =>
                                             selected
-                                              ? prev.filter(
-                                                (id) => id !== opt.label
-                                              )
+                                              ? prev.filter((id) => id !== opt.label)
                                               : [...prev, opt.label]
                                           )
                                         }
                                         className="flex items-center gap-2"
                                       >
                                         <div
-                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${selected
-                                            ? "bg-primary text-primary-foreground"
-                                            : "opacity-50"
-                                            }`}
+                                          className={`mr-2 flex h-4 w-4 items-center justify-center rounded border ${
+                                            selected
+                                              ? "bg-primary text-primary-foreground"
+                                              : "opacity-50"
+                                          }`}
                                         >
-                                          {selected && (
-                                            <Check className="h-3 w-3" />
-                                          )}
+                                          {selected && <Check className="h-3 w-3" />}
                                         </div>
                                         <span>{opt.label}</span>
                                       </CommandItem>
@@ -1708,8 +1601,7 @@ export default function CreateBundlePage() {
                                 }
                                 disabled={
                                   targetAudienceOptions.length === 0 ||
-                                  selectedTargetAudienceIds.length ===
-                                  targetAudienceOptions.length
+                                  selectedTargetAudienceIds.length === targetAudienceOptions.length
                                 }
                               >
                                 Select all
@@ -1718,9 +1610,7 @@ export default function CreateBundlePage() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setSelectedTargetAudienceIds([])}
-                                disabled={
-                                  selectedTargetAudienceIds.length === 0
-                                }
+                                disabled={selectedTargetAudienceIds.length === 0}
                               >
                                 Clear
                               </Button>
@@ -1734,96 +1624,65 @@ export default function CreateBundlePage() {
                         selectedCategoryIds.length ||
                         selectedCourseTags.length ||
                         selectedTargetAudienceIds.length) > 0 && (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              Active filters:
-                            </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Active filters:</span>
 
-                            {selectedInstructorIds.map((id) => {
-                              const name =
-                                instructors.find((o) => o.id === id)?.name ?? id;
-                              return (
-                                <Badge
-                                  key={`if-${id}`}
-                                  variant="secondary"
-                                  className="flex items-center gap-1"
-                                >
-                                  {name}
-                                  <button
-                                    onClick={() =>
-                                      setSelectedInstructorIds((prev) =>
-                                        prev.filter((x) => x !== id)
-                                      )
-                                    }
-                                    className="ml-1 text-muted-foreground hover:text-foreground"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              );
-                            })}
-
-                            {selectedCategoryIds.map((id) => {
-                              const label =
-                                categoryOptions.find((o) => o.id === id)?.label ??
-                                id;
-                              return (
-                                <Badge
-                                  key={`cf-${id}`}
-                                  variant="secondary"
-                                  className="flex items-center gap-1"
-                                >
-                                  {label}
-                                  <button
-                                    onClick={() =>
-                                      setSelectedCategoryIds((prev) =>
-                                        prev.filter((x) => x !== id)
-                                      )
-                                    }
-                                    className="ml-1 text-muted-foreground hover:text-foreground"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              );
-                            })}
-
-                            {selectedTargetAudienceIds.map((id) => {
-                              const label =
-                                targetAudienceOptions.find((o) => o.id === id)
-                                  ?.label ?? id;
-                              return (
-                                <Badge
-                                  key={`af-${id}`}
-                                  variant="secondary"
-                                  className="flex items-center gap-1"
-                                >
-                                  {label}
-                                  <button
-                                    onClick={() =>
-                                      setSelectedTargetAudienceIds((prev) =>
-                                        prev.filter((x) => x !== id)
-                                      )
-                                    }
-                                    className="ml-1 text-muted-foreground hover:text-foreground"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              );
-                            })}
-
-                            {selectedCourseTags.map((t) => (
+                          {selectedInstructorIds.map((id) => {
+                            const name = instructors.find((o) => o.id === id)?.name ?? id;
+                            return (
                               <Badge
-                                key={`tf-${t}`}
+                                key={`if-${id}`}
                                 variant="secondary"
                                 className="flex items-center gap-1"
                               >
-                                {t}
+                                {name}
                                 <button
                                   onClick={() =>
-                                    setSelectedCourseTags((prev) =>
-                                      prev.filter((x) => x !== t)
+                                    setSelectedInstructorIds((prev) => prev.filter((x) => x !== id))
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedCategoryIds.map((id) => {
+                            const label = categoryOptions.find((o) => o.id === id)?.label ?? id;
+                            return (
+                              <Badge
+                                key={`cf-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {label}
+                                <button
+                                  onClick={() =>
+                                    setSelectedCategoryIds((prev) => prev.filter((x) => x !== id))
+                                  }
+                                  className="ml-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+
+                          {selectedTargetAudienceIds.map((id) => {
+                            const label =
+                              targetAudienceOptions.find((o) => o.id === id)?.label ?? id;
+                            return (
+                              <Badge
+                                key={`af-${id}`}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {label}
+                                <button
+                                  onClick={() =>
+                                    setSelectedTargetAudienceIds((prev) =>
+                                      prev.filter((x) => x !== id)
                                     )
                                   }
                                   className="ml-1 text-muted-foreground hover:text-foreground"
@@ -1831,9 +1690,28 @@ export default function CreateBundlePage() {
                                   <X className="h-3 w-3" />
                                 </button>
                               </Badge>
-                            ))}
-                          </div>
-                        )}
+                            );
+                          })}
+
+                          {selectedCourseTags.map((t) => (
+                            <Badge
+                              key={`tf-${t}`}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {t}
+                              <button
+                                onClick={() =>
+                                  setSelectedCourseTags((prev) => prev.filter((x) => x !== t))
+                                }
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Row 4: Toggles + Bulk Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1841,9 +1719,7 @@ export default function CreateBundlePage() {
                           <Checkbox
                             id="selectedOnly"
                             checked={showSelectedOnly}
-                            onCheckedChange={(checked) =>
-                              setShowSelectedOnly(Boolean(checked))
-                            }
+                            onCheckedChange={(checked) => setShowSelectedOnly(Boolean(checked))}
                           />
                           <Label htmlFor="selectedOnly" className="text-sm">
                             Show selected only
@@ -1857,9 +1733,7 @@ export default function CreateBundlePage() {
                             onClick={handleSelectAllFiltered}
                             disabled={
                               filteredCourses.length === 0 ||
-                              filteredCourses.every((c) =>
-                                selectedCourseIds.includes(c.id!)
-                              )
+                              filteredCourses.every((c) => selectedCourseIds.includes(c.id!))
                             }
                           >
                             <CheckCheck className="h-4 w-4 mr-1" />
@@ -1878,11 +1752,7 @@ export default function CreateBundlePage() {
                             Clear selection (filtered)
                           </Button>
 
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleResetFilters}
-                          >
+                          <Button size="sm" variant="ghost" onClick={handleResetFilters}>
                             <RefreshCcw className="h-4 w-4 mr-1" />
                             Reset
                           </Button>
@@ -1890,8 +1760,8 @@ export default function CreateBundlePage() {
                       </div>
 
                       <div className="text-xs text-muted-foreground">
-                        Showing {filteredCount} of {totalCount} courses •
-                        Selected {selectedCourseIds.length}
+                        Showing {filteredCount} of {totalCount} courses • Selected{" "}
+                        {selectedCourseIds.length}
                       </div>
                     </div>
 
@@ -1905,29 +1775,25 @@ export default function CreateBundlePage() {
                           <div className="flex items-start sm:items-center gap-3 flex-1">
                             <Checkbox
                               checked={selectedCourseIds.includes(course.id!)}
-                              onCheckedChange={() =>
-                                handleCourseToggle(course.id!)
-                              }
+                              onCheckedChange={() => handleCourseToggle(course.id!)}
                             />
                             <div className="flex-1">
                               <h4 className="font-medium">{course.title}</h4>
                               <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
-                              {isProbablyHtml(course.description) ? (
-    <div
-      className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
-      dangerouslySetInnerHTML={{ __html: course.description || '' }}
-    />
-  ) : (
-    <span>{course.description}</span>
-  )}
+                                {isProbablyHtml(course.description) ? (
+                                  <div
+                                    className="prose prose-sm max-w-none dark:prose-invert line-clamp-2"
+                                    dangerouslySetInnerHTML={{ __html: course.description || "" }}
+                                  />
+                                ) : (
+                                  <span>{course.description}</span>
+                                )}
                               </p>
                             </div>
                           </div>
                           <div className="text-left sm:text-right">
                             <p className="font-semibold">
-                              {formatCurrency(
-                                course.salePrice ?? course.regularPrice ?? 0
-                              )}
+                              {formatCurrency(course.salePrice ?? course.regularPrice ?? 0)}
                             </p>
                             <Badge variant="outline" className="text-xs">
                               {course.status}
@@ -1958,20 +1824,13 @@ export default function CreateBundlePage() {
                 <CardContent>
                   <div className="space-y-3">
                     {selectedCourses.map((course) => (
-                      <div
-                        key={course.id}
-                        className="flex items-center justify-between"
-                      >
+                      <div key={course.id} className="flex items-center justify-between">
                         <div className="flex-1">
-                          <p className="font-medium text-sm line-clamp-1">
-                            {course.title}
-                          </p>
+                          <p className="font-medium text-sm line-clamp-1">{course.title}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">
-                            {formatCurrency(
-                              course.salePrice || course.regularPrice
-                            )}
+                            {formatCurrency(course.salePrice || course.regularPrice)}
                           </span>
                           <Button
                             variant="ghost"
@@ -2016,10 +1875,7 @@ export default function CreateBundlePage() {
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <span>Potential Savings:</span>
                         <span>
-                          {formatCurrency(
-                            pricingData.regularPrice -
-                            pricingData.suggestedPrice
-                          )}
+                          {formatCurrency(pricingData.regularPrice - pricingData.suggestedPrice)}
                         </span>
                       </div>
                     </div>
@@ -2099,7 +1955,6 @@ export default function CreateBundlePage() {
                   selectedCourseIds.length < 2 ||
                   !bundleData.title.trim() ||
                   !bundleData.description.trim()
-
                 }
                 className="w-full"
                 variant="pill"

@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import {
   CART_ACTION,
+  COURSE_MODE,
   CURRENCY,
   ENROLLED_PROGRAM_TYPE,
   ORDER_STATUS,
@@ -28,7 +29,7 @@ import { orderService } from "@/services/orderService";
 import { Topic } from "@/types/course";
 import { Duration } from "@/types/general";
 import { getCourseStructureCounts } from "@/utils/course";
-import { formatDate } from "@/utils/date-time";
+import { formatDate, formatDateTime } from "@/utils/date-time";
 import {
   ArrowLeft,
   BookOpen,
@@ -542,6 +543,20 @@ export default function CourseDetailPage() {
                     <span className="text-muted-foreground">Lessons</span>
                     <span className="font-medium">{lessonCount as number}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Mode</span>
+                    <span className="font-medium">
+                      {course.mode || COURSE_MODE.SELF_PACED}
+                    </span>
+                  </div>
+                  {course.mode === COURSE_MODE.LIVE && course.liveAt && (
+                    <div className="flex justify-between items-center rounded-md bg-primary/10 px-3 py-2 -mx-3">
+                      <span className="text-primary font-medium">Live At</span>
+                      <span className="font-semibold text-primary">
+                        {formatDateTime(course.liveAt)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
                     <span className="font-medium">

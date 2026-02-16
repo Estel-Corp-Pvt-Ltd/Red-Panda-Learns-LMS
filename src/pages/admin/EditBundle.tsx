@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   BUNDLE_STATUS,
+  COURSE_MODE,
   COURSE_STATUS,
   CURRENCY,
   PRICING_MODEL,
@@ -34,10 +35,12 @@ import { instructorService } from "@/services/instructorService";
 import { Course } from "@/types/course";
 import {
   BundleStatus,
+  CourseMode,
   PricingModel,
   SortKey,
   AttributeType,
 } from "@/types/general";
+import { Timestamp, FieldValue } from "firebase/firestore";
 import { getFullName } from "@/utils/name";
 import {
   Loader2,
@@ -89,6 +92,8 @@ type EditBundleFormData = {
   taregetAudience: string[];
   pricingModel: PricingModel;
   status: BundleStatus;
+  mode: CourseMode;
+  liveAt: Timestamp | FieldValue | null;
 };
 import { Slider } from "@/components/ui/slider";
 import { attributeService } from "@/services/attributeService";
@@ -163,6 +168,8 @@ export default function EditBundlePage() {
     taregetAudience: [],
     pricingModel: PRICING_MODEL.PAID,
     status: BUNDLE_STATUS.DRAFT,
+    mode: COURSE_MODE.SELF_PACED as CourseMode,
+    liveAt: null,
   });
 
   // Fetch pricing for selected courses
@@ -517,6 +524,8 @@ export default function EditBundlePage() {
         salePrice: bundleData.salePrice ? bundleData.salePrice.toString() : "",
         pricingModel: bundleData.pricingModel || PRICING_MODEL.PAID,
         status: bundleData.status,
+        mode: bundleData.mode || (COURSE_MODE.SELF_PACED as CourseMode),
+        liveAt: bundleData.liveAt ?? null,
       });
 
       // Set selected courses
@@ -732,6 +741,8 @@ export default function EditBundlePage() {
             categoryIds: selectedCategories,
             tags,
             status: formData.status,
+            mode: formData.mode,
+            liveAt: formData.mode === COURSE_MODE.SELF_PACED ? null : formData.liveAt,
           },
         },
         {
@@ -830,6 +841,8 @@ export default function EditBundlePage() {
             categoryIds: selectedCategories,
             tags,
             status: formData.status,
+            mode: formData.mode,
+            liveAt: formData.mode === COURSE_MODE.SELF_PACED ? null : formData.liveAt,
           },
         },
         {
@@ -1339,6 +1352,59 @@ export default function EditBundlePage() {
                     </div> */}
                   </div>
                 </div>
+
+                {/* Mode */}
+                <div>
+                  <Label>Mode</Label>
+                  <Select
+                    value={formData.mode}
+                    onValueChange={(val) => {
+                      const newMode = val as CourseMode;
+                      setFormData((prev) => ({
+                        ...prev,
+                        mode: newMode,
+                        liveAt: newMode === COURSE_MODE.SELF_PACED ? null : prev.liveAt,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-full mt-2">
+                      <SelectValue placeholder="Select Mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(COURSE_MODE).map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.mode === COURSE_MODE.LIVE && (
+                  <div>
+                    <Label>Live At</Label>
+                    <Input
+                      type="datetime-local"
+                      className="mt-2"
+                      value={
+                        formData.liveAt && formData.liveAt instanceof Timestamp
+                          ? (formData.liveAt as Timestamp)
+                              .toDate()
+                              .toISOString()
+                              .slice(0, 16)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          liveAt: e.target.value
+                            ? Timestamp.fromDate(new Date(e.target.value))
+                            : null,
+                        }));
+                      }}
+                    />
+                  </div>
+                )}
 
                 <Card>
                   <CardHeader>
