@@ -91,31 +91,31 @@ const InstructorDashboard = () => {
     }
   };
 
-  const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
-    try {
-      const result = await courseService.deleteCourse(courseId);
-      if (result.success) {
-        setCourses((prev) => prev.filter((c) => c.id !== courseId));
-        toast({
-          title: "Course Deleted",
-          description: `"${courseTitle}" has been deleted.`,
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to delete course. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting course:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while deleting the course.",
-        variant: "destructive",
-      });
-    }
-  };
+  // const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+  //   try {
+  //     const result = await courseService.deleteCourse(courseId);
+  //     if (result.success) {
+  //       setCourses((prev) => prev.filter((c) => c.id !== courseId));
+  //       toast({
+  //         title: "Course Deleted",
+  //         description: `"${courseTitle}" has been deleted.`,
+  //       });
+  //     } else {
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to delete course. Please try again.",
+  //         variant: "destructive",
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error deleting course:", error);
+  //     toast({
+  //       title: "Error",
+  //       description: "An error occurred while deleting the course.",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   useEffect(() => {
     loadInstructorCourses();
@@ -146,7 +146,7 @@ const InstructorDashboard = () => {
               <CardTitle>Instructor Dashboard</CardTitle>
               <CardDescription>View and manage the courses you&apos;ve created.</CardDescription>
             </div>
-            <Button
+            {/* <Button
               variant="pill"
               size="sm"
               onClick={() => navigate("/instructor/create-course")}
@@ -154,7 +154,7 @@ const InstructorDashboard = () => {
             >
               <PlusCircle className="h-4 w-4" />
               Create Course
-            </Button>
+            </Button> */}
           </div>
         </CardHeader>
 
@@ -163,13 +163,10 @@ const InstructorDashboard = () => {
             <div className="text-center py-8">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                You haven&apos;t created any courses yet
+                You haven’t been assigned as an instructor for any courses yet.{" "}
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by creating your first course.
-              </p>
               <div className="mt-4">
-                <Button
+                {/* <Button
                   variant="pill"
                   size="sm"
                   onClick={() => navigate("/instructor/create-course")}
@@ -177,7 +174,7 @@ const InstructorDashboard = () => {
                 >
                   <PlusCircle className="h-4 w-4" />
                   Create Course
-                </Button>
+                </Button> */}
               </div>
             </div>
           ) : (
@@ -248,7 +245,7 @@ const InstructorDashboard = () => {
                               <MessageSquare className="h-4 w-4" />
                             </Button>
                           )}
-                          <AlertDialog>
+                          {/* <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
                                 variant="ghost"
@@ -276,7 +273,7 @@ const InstructorDashboard = () => {
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
-                          </AlertDialog>
+                          </AlertDialog> */}
                         </div>
                       </TableCell>
                     </TableRow>

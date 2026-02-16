@@ -837,7 +837,7 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
+                        {/* <Route
                           path="/instructor/create-course"
                           element={
                             <AuthGuard requireInstructor>
@@ -846,7 +846,7 @@ const App = () => (
                               </InstructorLayout>
                             </AuthGuard>
                           }
-                        />
+                        /> */}
                         <Route
                           path="/instructor/edit-course/:param"
                           element={
