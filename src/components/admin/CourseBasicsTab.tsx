@@ -44,6 +44,8 @@ import { Course } from "@/types/course";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { USER_ROLE } from "@/constants";
 import { CourseStatus } from "@/types/general";
 import { courseService } from "@/services/courseService";
 const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
@@ -146,6 +148,8 @@ const CourseBasicsTab = ({
 }: CourseBasicsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isInstructor = user?.role === USER_ROLE.INSTRUCTOR;
   const [slugTaken, setSlugTaken] = useState(true);
   const [checkingSlug, setCheckingSlug] = useState(true);
 
@@ -310,25 +314,33 @@ const CourseBasicsTab = ({
               <CardTitle>Instructor</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select
-                value={instructorName}
-                onValueChange={(val) => {
-                  const a = instructors.find((x) => x.name === val);
-                  setInstructorName(val);
-                  setInstructorId(a?.id || "");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((a) => (
-                    <SelectItem key={a.id} value={a.name}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isInstructor ? (
+                <Input
+                  value={instructorName}
+                  disabled
+                  className="bg-muted"
+                />
+              ) : (
+                <Select
+                  value={instructorName}
+                  onValueChange={(val) => {
+                    const a = instructors.find((x) => x.name === val);
+                    setInstructorName(val);
+                    setInstructorId(a?.id || "");
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instructors.map((a) => (
+                      <SelectItem key={a.id} value={a.name}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </CardContent>
           </Card>
 
@@ -586,9 +598,9 @@ const CourseBasicsTab = ({
               <Save className="mr-2 h-4 w-4" />
               Save Basics
             </Button>
-            <Button variant="outline" onClick={() => navigate("/admin")}>
+            <Button variant="outline" onClick={() => navigate(isInstructor ? "/instructor" : "/admin")}>
               <ArrowLeft className="mr-2 h-4 w-3" />
-              Back to Courses
+              {isInstructor ? "Back to Dashboard" : "Back to Courses"}
             </Button>
             <Button variant="outline" onClick={handleCopyLink}>
               <Copy className="mr-2 h-4 w-3" />

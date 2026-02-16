@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Edit, Eye, Loader2, PlusCircle } from "lucide-react";
+import { BookOpen, Edit, Eye, Loader2, MessageSquare, PlusCircle, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { courseService } from "@/services/courseService";
@@ -21,6 +21,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 
 type COURSE_STATUS_TYPE = (typeof COURSE_STATUS)[keyof typeof COURSE_STATUS];
@@ -80,6 +91,32 @@ const InstructorDashboard = () => {
     }
   };
 
+  const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+    try {
+      const result = await courseService.deleteCourse(courseId);
+      if (result.success) {
+        setCourses((prev) => prev.filter((c) => c.id !== courseId));
+        toast({
+          title: "Course Deleted",
+          description: `"${courseTitle}" has been deleted.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete course. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the course.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     loadInstructorCourses();
   }, [user?.id]);
@@ -109,15 +146,15 @@ const InstructorDashboard = () => {
               <CardTitle>Instructor Dashboard</CardTitle>
               <CardDescription>View and manage the courses you&apos;ve created.</CardDescription>
             </div>
-            {/* <Button
+            <Button
               variant="pill"
               size="sm"
-              onClick={() => navigate('/instructor/create-course')}
+              onClick={() => navigate("/instructor/create-course")}
               className="flex items-center gap-2"
             >
               <PlusCircle className="h-4 w-4" />
               Create Course
-            </Button> */}
+            </Button>
           </div>
         </CardHeader>
 
@@ -201,6 +238,45 @@ const InstructorDashboard = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          {course.isForumEnabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/courses/${course.slug}/forum`)}
+                              title="View forum"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Delete course"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete &quot;{course.title}&quot;? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteCourse(course.id, course.title)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>

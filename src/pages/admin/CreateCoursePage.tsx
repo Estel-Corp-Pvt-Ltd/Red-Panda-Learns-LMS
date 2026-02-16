@@ -19,6 +19,8 @@ import { instructorService } from "@/services/instructorService";
 import { getFullName } from "@/utils/name";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { USER_ROLE } from "@/constants";
 
 type CourseFormData = {
   title: string;
@@ -36,6 +38,8 @@ type InstructorOption = {
 const CreateCoursePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isInstructor = user?.role === USER_ROLE.INSTRUCTOR;
 
   const [formData, setFormData] = useState<CourseFormData>({
     title: "",
@@ -183,7 +187,7 @@ const CreateCoursePage = () => {
         description: "Course created successfully!",
       });
 
-      navigate(`/admin/edit-course/${courseId}`);
+      navigate(isInstructor ? `/instructor/edit-course/${courseId}` : `/admin/edit-course/${courseId}`);
     } catch (error) {
       console.error("Error creating course:", error);
       toast({
@@ -207,6 +211,18 @@ const CreateCoursePage = () => {
   };
 
   useEffect(() => {
+    // If instructor, auto-assign themselves — no need to fetch all instructors
+    if (isInstructor && user) {
+      const name = getFullName(user.firstName, user.middleName, user.lastName);
+      setFormData((prev) => ({
+        ...prev,
+        instructorId: user.id,
+        instructorName: name,
+      }));
+      setInstructors([{ id: user.id, name }]);
+      return;
+    }
+
     const fetchInstructors = async () => {
       const result = await instructorService.getAllInstructors();
 
@@ -227,11 +243,11 @@ const CreateCoursePage = () => {
       }
     };
     fetchInstructors();
-  }, [toast]);
+  }, [toast, isInstructor, user]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <Header />
+      {!isInstructor && <Header />}
 
       {/* Top bar: Back + Title */}
       <header className="border-b bg-card">
@@ -240,11 +256,11 @@ const CreateCoursePage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate(isInstructor ? "/instructor" : "/admin")}
               className="w-full sm:w-auto"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
+              {isInstructor ? "Back to Dashboard" : "Back to Admin"}
             </Button>
 
             <div className="flex items-center gap-2">
@@ -314,18 +330,26 @@ const CreateCoursePage = () => {
 
               <div className="space-y-2">
                 <Label>Instructor *</Label>
-                <Select value={formData.instructorId} onValueChange={handleInstructorSelect}>
-                  <SelectTrigger className="w-full bg-background text-foreground">
-                    <SelectValue placeholder="Select an instructor" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card text-card-foreground">
-                    {instructors.map((instructor) => (
-                      <SelectItem key={instructor.id} value={instructor.id}>
-                        {instructor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isInstructor ? (
+                  <Input
+                    value={formData.instructorName}
+                    disabled
+                    className="bg-muted text-foreground"
+                  />
+                ) : (
+                  <Select value={formData.instructorId} onValueChange={handleInstructorSelect}>
+                    <SelectTrigger className="w-full bg-background text-foreground">
+                      <SelectValue placeholder="Select an instructor" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card text-card-foreground">
+                      {instructors.map((instructor) => (
+                        <SelectItem key={instructor.id} value={instructor.id}>
+                          {instructor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Action Buttons */}

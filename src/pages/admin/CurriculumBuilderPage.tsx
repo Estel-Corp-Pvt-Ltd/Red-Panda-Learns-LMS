@@ -5,7 +5,7 @@ import CurriculumTab from "@/components/admin/CurriculumTab";
 import QuizTab from "@/components/admin/QuizTab";
 import AdditionalTab from "@/components/admin/AdminCourseAdditionalTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ATTRIBUTE_TYPE, COURSE_STATUS } from "@/constants";
+import { ATTRIBUTE_TYPE, COURSE_STATUS, USER_ROLE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLoadingOverlay } from "@/contexts/LoadingOverlayContext";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +48,7 @@ const CurriculumBuilderPage = () => {
   });
 
   const { user } = useAuth();
+  const isInstructor = user?.role === USER_ROLE.INSTRUCTOR;
   const location = useLocation();
   // ─── Attributes & Instructor ────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -122,8 +123,16 @@ const CurriculumBuilderPage = () => {
     fetchAttributes();
   }, [toast]);
 
-  /** Load instructors list */
+  /** Load instructors list (instructors are locked to themselves) */
   useEffect(() => {
+    if (isInstructor && user) {
+      const name = getFullName(user.firstName, user.middleName, user.lastName);
+      setInstructors([{ id: user.id, name }]);
+      setInstructorId(user.id);
+      setInstructorName(name);
+      return;
+    }
+
     const fetchInstructors = async () => {
       const result = await instructorService.getAllInstructors();
       if (result.success) {
@@ -136,7 +145,7 @@ const CurriculumBuilderPage = () => {
       }
     };
     fetchInstructors();
-  }, []);
+  }, [isInstructor, user]);
 
   /** Load course and flatten structure into draggable list */
 
@@ -363,7 +372,7 @@ const CurriculumBuilderPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {!isInstructor && <Header />}
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center justify-between">
