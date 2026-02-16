@@ -85,11 +85,7 @@ const isChild = (item: DraggableItem) =>
  * Finds the index right after the last child of a topic.
  * Scans forward from `startIdx` until it hits another topic or the end.
  */
-function findEndOfTopicChildren(
-  list: DraggableItem[],
-  topicId: string,
-  startIdx: number
-): number {
+function findEndOfTopicChildren(list: DraggableItem[], topicId: string, startIdx: number): number {
   let end = startIdx;
   for (let i = startIdx; i < list.length; i++) {
     if (list[i].parentId === topicId) {
@@ -134,11 +130,7 @@ function moveTopic(
     ? targetIdx
     : findEndOfTopicChildren(remaining, targetTopicId!, targetIdx + 1);
 
-  const result = [
-    ...remaining.slice(0, insertIdx),
-    ...itemsToMove,
-    ...remaining.slice(insertIdx),
-  ];
+  const result = [...remaining.slice(0, insertIdx), ...itemsToMove, ...remaining.slice(insertIdx)];
 
   // Normalize depths for the moved items
   return result.map((item) => {
@@ -229,7 +221,8 @@ function flattenCurriculum(courseData: Course): DraggableItem[] {
         id: item.id,
         refId: item.id,
         title: item.title,
-        type: item.type === LEARNING_UNIT.ASSIGNMENT ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
+        type:
+          item.type === LEARNING_UNIT.ASSIGNMENT ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
         depth: 1,
         parentId: topic.id,
       });
@@ -256,13 +249,11 @@ function buildTopicsFromFlatList(items: DraggableItem[]): Topic[] {
     topics.push({
       id: item.id,
       title: item.title,
-      items: (childrenMap.get(item.id) || [])
-        .filter(isChild)
-        .map((child) => ({
-          id: child.refId ?? child.id,
-          title: child.title,
-          type: child.type as LearningContentType,
-        })),
+      items: (childrenMap.get(item.id) || []).filter(isChild).map((child) => ({
+        id: child.refId ?? child.id,
+        title: child.title,
+        type: child.type as LearningContentType,
+      })),
     });
   }
 
@@ -273,10 +264,7 @@ function buildTopicsFromFlatList(items: DraggableItem[]): Topic[] {
  * Finds the insertion index after the last child of a parent topic.
  * Used when adding new lessons or assignments to a topic.
  */
-function findInsertIndexForParent(
-  list: DraggableItem[],
-  parentId: string
-): number {
+function findInsertIndexForParent(list: DraggableItem[], parentId: string): number {
   const parentIndex = list.findIndex((i) => i.id === parentId);
   if (parentIndex === -1) return -1;
 
@@ -528,9 +516,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   };
 
   const refetchLocks = async () => {
-    const topicIds = curriculum
-      .filter(isTopic)
-      .map((item) => item.id);
+    const topicIds = curriculum.filter(isTopic).map((item) => item.id);
 
     if (topicIds.length === 0) return;
 
@@ -563,9 +549,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   };
 
   const updateItemTitle = (itemId: string, title: string) => {
-    setCurriculum((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, title } : item))
-    );
+    setCurriculum((prev) => prev.map((item) => (item.id === itemId ? { ...item, title } : item)));
   };
 
   const deleteItem = (id: string, type: LearningUnit) => {
