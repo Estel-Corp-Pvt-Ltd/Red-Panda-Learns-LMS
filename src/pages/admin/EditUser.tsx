@@ -9,13 +9,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Header } from "@/components/Header";
 import { USER_ROLE, USER_STATUS } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
+import { organizationService } from "@/services/organizationService";
 import { userService } from "@/services/userService";
+import { Organization } from "@/types/organization";
 import { UserRole, UserStatus } from "@/types/general";
 import { User } from "@/types/user";
 import { Label } from "@radix-ui/react-dropdown-menu";
@@ -37,6 +39,24 @@ const EditUserPage = () => {
   });
 
   const navigate = useNavigate();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(true);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+
+  // Load organizations for dropdown
+  useEffect(() => {
+    const fetchOrgs = async () => {
+      try {
+        const orgs = await organizationService.getAllOrganizations();
+        setOrganizations(orgs);
+      } catch (error) {
+        console.error("Failed to fetch organizations:", error);
+      } finally {
+        setOrgsLoading(false);
+      }
+    };
+    fetchOrgs();
+  }, []);
 
   // Load user data
   useEffect(() => {
@@ -56,6 +76,28 @@ const EditUserPage = () => {
 
     fetchUser();
   }, [userId, navigate]);
+
+  // Fetch selected org details for class/division dropdowns
+  useEffect(() => {
+    const fetchSelectedOrg = async () => {
+      if (user.organizationId) {
+        const org = organizations.find((o) => o.id === user.organizationId);
+        if (org) {
+          setSelectedOrg(org);
+        } else {
+          try {
+            const fetched = await organizationService.getOrganizationById(user.organizationId);
+            setSelectedOrg(fetched);
+          } catch {
+            setSelectedOrg(null);
+          }
+        }
+      } else {
+        setSelectedOrg(null);
+      }
+    };
+    fetchSelectedOrg();
+  }, [user.organizationId, organizations]);
 
   const handleFieldChange = (field: keyof User, value: any) => {
     setUser({ ...user, [field]: value });
@@ -267,16 +309,129 @@ const EditUserPage = () => {
                   {/* Organization */}
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-muted-foreground">
-                      Organization ID
+                      Organization
+                      {(user.role === USER_ROLE.TEACHER) && (
+                        <span className="text-orange-500 ml-1">(required for Teachers)</span>
+                      )}
                     </Label>
-                    <Input
-                      placeholder="e.g. org_123"
-                      value={user.organizationId || ""}
-                      onChange={(e) =>
-                        handleFieldChange("organizationId", e.target.value)
-                      }
-                    />
+                    {orgsLoading ? (
+                      <div className="flex items-center gap-2 h-10">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm text-muted-foreground">Loading organizations...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        value={user.organizationId || "none"}
+                        onValueChange={(val) =>
+                          handleFieldChange("organizationId", val === "none" ? "" : val)
+                        }
+                      >
+                        <SelectTrigger className="w-full h-10">
+                          <SelectValue placeholder="Select organization" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover text-popover-foreground border border-border">
+                          <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground">
+                            No Organization
+                          </SelectItem>
+                          {organizations.map((org) => (
+                            <SelectItem
+                              key={org.id}
+                              value={org.id}
+                              className="focus:bg-accent focus:text-accent-foreground"
+                            >
+                              {org.name} ({org.id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
+
+                  {/* Class */}
+                  {user.organizationId && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        Class
+                      </Label>
+                      {selectedOrg?.classes && selectedOrg.classes.length > 0 ? (
+                        <Select
+                          value={user.class || "none"}
+                          onValueChange={(val) =>
+                            handleFieldChange("class", val === "none" ? "" : val)
+                          }
+                        >
+                          <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Select class" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover text-popover-foreground border border-border">
+                            <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground">
+                              No Class
+                            </SelectItem>
+                            {selectedOrg.classes.map((cls) => (
+                              <SelectItem
+                                key={cls}
+                                value={cls}
+                                className="focus:bg-accent focus:text-accent-foreground"
+                              >
+                                {cls}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          placeholder="e.g. Class 10"
+                          value={user.class || ""}
+                          onChange={(e) =>
+                            handleFieldChange("class", e.target.value)
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Division */}
+                  {user.organizationId && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        Division
+                      </Label>
+                      {selectedOrg?.divisions && selectedOrg.divisions.length > 0 ? (
+                        <Select
+                          value={user.division || "none"}
+                          onValueChange={(val) =>
+                            handleFieldChange("division", val === "none" ? "" : val)
+                          }
+                        >
+                          <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Select division" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover text-popover-foreground border border-border">
+                            <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground">
+                              No Division
+                            </SelectItem>
+                            {selectedOrg.divisions.map((div) => (
+                              <SelectItem
+                                key={div}
+                                value={div}
+                                className="focus:bg-accent focus:text-accent-foreground"
+                              >
+                                {div}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          placeholder="e.g. A"
+                          value={user.division || ""}
+                          onChange={(e) =>
+                            handleFieldChange("division", e.target.value)
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
 
                   {/* Photo URL */}
                   <div className="space-y-2">

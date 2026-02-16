@@ -6,9 +6,13 @@ export interface Announcement {
   scope: AnnouncementScope;
   // required if scope === COURSE
   courseId?: string | null;
+  // required if scope === ORGANIZATION
+  organizationId?: string | null;
   title: string;
   body: string;
   status: AnnouncementStatus;
+  targetClass?: string;
+  targetDivision?: string;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
   createdBy: string | null;

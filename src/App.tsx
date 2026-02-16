@@ -41,6 +41,19 @@ const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminManageAssignments"));
 const AdminCreateAnnouncement = lazy(() => import("@/pages/admin/AdminManageAnnouncements"));
+const AdminBulkTeacherAdd = lazy(() => import("./pages/admin/AdminBulkTeacherAdd"));
+
+// Lazy load teacher pages
+const TeacherDashboard = lazy(() => import("./pages/teacher/TeacherDashboard"));
+const TeacherStudents = lazy(() => import("./pages/teacher/TeacherStudents"));
+const TeacherAssignments = lazy(() => import("./pages/teacher/TeacherAssignments"));
+const TeacherAnnouncements = lazy(() => import("./pages/teacher/TeacherAnnouncements"));
+const TeacherCourses = lazy(() => import("./pages/teacher/TeacherCourses"));
+const TeacherComments = lazy(() => import("./pages/teacher/TeacherComments"));
+const TeacherBulkUpload = lazy(() => import("./pages/teacher/TeacherBulkUpload"));
+const TeacherStatistics = lazy(() => import("./pages/teacher/TeacherStatistics"));
+const TeacherStudentDetail = lazy(() => import("./pages/teacher/TeacherStudentDetail"));
+
 //Instructor
 
 import InstructorLayout from "./components/InstructorLayout";
@@ -417,6 +430,14 @@ const App = () => (
                           element={
                             <AuthGuard requireAdmin>
                               <AdminKarmaRulesPage />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/admin/bulk-add-teachers"
+                          element={
+                            <AuthGuard requireAdmin>
+                              <AdminBulkTeacherAdd />
                             </AuthGuard>
                           }
                         />
@@ -817,6 +838,26 @@ const App = () => (
                           }
                         />
                         {/* <Route
+                          path="/instructor/create-course"
+                          element={
+                            <AuthGuard requireInstructor>
+                              <InstructorLayout>
+                                <CreateCoursePage />
+                              </InstructorLayout>
+                            </AuthGuard>
+                          }
+                        /> */}
+                        <Route
+                          path="/instructor/edit-course/:param"
+                          element={
+                            <AuthGuard requireInstructor>
+                              <InstructorLayout>
+                                <CurriculumBuilderPage />
+                              </InstructorLayout>
+                            </AuthGuard>
+                          }
+                        />
+                        {/* <Route
                         path="/accountant/orders"
                         element={
                           <AuthGuard requireAccountant >
@@ -829,6 +870,79 @@ const App = () => (
                           element={
                             <AuthGuard requireAccountant>
                               <AccountantOrders />
+                            </AuthGuard>
+                          }
+                        />
+                        {/* Teacher Routes */}
+                        <Route
+                          path="/teacher"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherDashboard />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/students"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherStudents />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/students/:studentId"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherStudentDetail />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/assignments"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherAssignments />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/announcements"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherAnnouncements />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/courses"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherCourses />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/comments"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherComments />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/bulk-upload"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherBulkUpload />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/statistics"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherStatistics />
                             </AuthGuard>
                           }
                         />

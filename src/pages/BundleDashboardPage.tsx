@@ -10,7 +10,9 @@ import { ErrorState } from '@/components/ui/error-state';
 import { useBundleQuery, useBundleCoursesQuery, bundleQueryKeys } from '@/hooks/useBundleApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
-import { ArrowLeft, BookOpen, Clock, Trophy, PlayCircle, CheckCircle, Star } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Clock, Trophy, PlayCircle, CheckCircle, Star } from 'lucide-react';
+import { COURSE_MODE } from '@/constants';
+import { formatDateTime } from '@/utils/date-time';
 import CourseCard from '@/components/course/CourseCard';
 
 export default function BundleDashboardPage() {
@@ -128,6 +130,15 @@ return (
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold mb-3">{bundle.title}</h1>
+
+          {bundle.mode === COURSE_MODE.LIVE && bundle.liveAt && (
+            <div className="flex items-center gap-3 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 w-fit">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-primary">
+                Live At: {formatDateTime(bundle.liveAt)}
+              </span>
+            </div>
+          )}
 
           <p className="text-lg mb-8 text-muted-foreground">
             Track your progress across all courses in this bundle

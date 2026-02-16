@@ -499,11 +499,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     log("Saving curriculum structure...", data);
 
     if (!course) {
-      toast({
-        title: "Error",
-        description: "Course data is not available.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Course data is not available.", variant: "destructive" });
       return;
     }
 

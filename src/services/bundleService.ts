@@ -16,20 +16,16 @@ import {
   limitToLast,
   startAfter,
   limit,
-  getCountFromServer
-} from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import {
-  courseService,
-} from './courseService';
-import {
-  Bundle
-} from '@/types/bundle';
-import { BUNDLE_STATUS } from '@/constants';
-import { Course } from '@/types/course';
-import { WhereFilterOp } from 'firebase-admin/firestore';
-import { PaginatedResult, PaginationOptions } from '@/utils/pagination';
-import { fail, ok, Result } from '@/utils/response';
+  getCountFromServer,
+} from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import { courseService } from "./courseService";
+import { Bundle } from "@/types/bundle";
+import { BUNDLE_STATUS, COURSE_MODE } from "@/constants";
+import { Course } from "@/types/course";
+import { WhereFilterOp } from "firebase-admin/firestore";
+import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
+import { fail, ok, Result } from "@/utils/response";
 import { COLLECTION } from "@/constants";
 import { searchService, SearchOptions } from "@/services/searchService";
 
@@ -93,9 +89,7 @@ class BundleService {
    * @throws Error if bundle creation fails or course validation fails.
    */
 
-  async createBundle(
-    data: Omit<Bundle, "id" | "createdAt" | "updatedAt">
-  ): Promise<string> {
+  async createBundle(data: Omit<Bundle, "id" | "createdAt" | "updatedAt">): Promise<string> {
     try {
       const bundleId = await this.generateBundleId();
       console.log("bundle Id", bundleId);
@@ -105,9 +99,7 @@ class BundleService {
         data.courses.map((course) => courseService.getCourseById(course.id))
       );
 
-      const validCourses = courses.filter(
-        (course) => course !== null
-      ) as Course[];
+      const validCourses = courses.filter((course) => course !== null) as Course[];
       if (validCourses.length !== data.courses.length) {
         throw new Error("Some courses were not found");
       }
@@ -134,6 +126,8 @@ class BundleService {
         courses: data.courses,
         regularPrice,
         salePrice,
+        mode: data.mode,
+        liveAt: data.liveAt || null,
         pricingModel: data.pricingModel,
         instructorId: data.instructorId,
         instructorName: data.instructorName,
@@ -164,10 +158,7 @@ class BundleService {
    * @param bundleId - The ID of the bundle document to update.
    * @param updatedData - An object containing the fields to update.
    */
-  async updateBundleQuery(
-    bundleId: string,
-    updatedData: Record<string, any>
-  ): Promise<void> {
+  async updateBundleQuery(bundleId: string, updatedData: Record<string, any>): Promise<void> {
     const bundleRef = doc(db, COLLECTION.BUNDLES, bundleId);
 
     try {
@@ -198,10 +189,7 @@ class BundleService {
    * @throws Error if the bundle is not found or the update fails.
    */
 
-  async updateBundle(
-    bundleId: string,
-    updates: Partial<Bundle>
-  ): Promise<void> {
+  async updateBundle(bundleId: string, updates: Partial<Bundle>): Promise<void> {
     try {
       const bundleRef = doc(db, COLLECTION.BUNDLES, bundleId);
       const bundleDoc = await getDoc(bundleRef);
@@ -217,14 +205,10 @@ class BundleService {
       // If courseIds are being updated, recalculate pricing
       if (updates.courses) {
         const courses = await Promise.all(
-          updates.courses.map((course) =>
-            courseService.getCourseById(course.id)
-          )
+          updates.courses.map((course) => courseService.getCourseById(course.id))
         );
 
-        const validCourses = courses.filter(
-          (course) => course !== null
-        ) as Course[];
+        const validCourses = courses.filter((course) => course !== null) as Course[];
 
         let regularPrice = updates.regularPrice;
         if (!regularPrice) {
@@ -250,13 +234,19 @@ class BundleService {
       if (updates.description) updateData.description = updates.description;
       if (updates.slug) updateData.slug = updates.slug;
       if (updates.categoryIds) updateData.categoryIds = updates.categoryIds;
-      if (updates.targetAudienceIds)
-        updateData.targetAudienceIds = updates.targetAudienceIds;
+      if (updates.targetAudienceIds) updateData.targetAudienceIds = updates.targetAudienceIds;
       if (updates.thumbnail) updateData.thumbnail = updateData.thumbnail;
       if (updates.tags) updateData.tags = updates.tags;
       if (updates.pricingModel) updateData.pricingModel = updates.pricingModel;
       if (updates.instructorId) updateData.instructorId = updates.instructorId;
       if (updates.status) updateData.status = updates.status;
+      if (updates.mode) {
+        updateData.mode = updates.mode;
+        if (updates.mode === COURSE_MODE.SELF_PACED) {
+          updateData.liveAt = null;
+        }
+      }
+      if (updates.liveAt !== undefined) updateData.liveAt = updates.liveAt;
 
       await updateDoc(bundleRef, updateData);
       console.log("BundleService - Bundle updated successfully:", bundleId);
@@ -485,13 +475,9 @@ class BundleService {
     maxDiscount: number;
   }> {
     try {
-      const courses = await Promise.all(
-        courseIds.map((id) => courseService.getCourseById(id))
-      );
+      const courses = await Promise.all(courseIds.map((id) => courseService.getCourseById(id)));
 
-      const validCourses = courses.filter(
-        (course) => course !== null
-      ) as Course[];
+      const validCourses = courses.filter((course) => course !== null) as Course[];
 
       const regularPrice = validCourses.reduce((sum, course) => {
         return sum + (course.salePrice || course.regularPrice);
@@ -499,9 +485,7 @@ class BundleService {
 
       // Suggest 10-15% discount for bundles
       const suggestedDiscount = 0.1 + validCourses.length * 0.01; // More courses = more discount
-      const suggestedPrice = Math.round(
-        regularPrice * (1 - Math.min(suggestedDiscount, 0.3))
-      );
+      const suggestedPrice = Math.round(regularPrice * (1 - Math.min(suggestedDiscount, 0.3)));
       const maxDiscount = Math.round(regularPrice * 0.5); // Max 50% discount
 
       return {
@@ -518,7 +502,6 @@ class BundleService {
       };
     }
   }
-
 
   async getBundleByIds(bundleIds: string[]): Promise<Bundle[]> {
     if (!bundleIds || bundleIds.length === 0) return [];
@@ -549,7 +532,6 @@ class BundleService {
     return bundles;
   }
 
-
   async getBundles(
     filters?: {
       field: keyof Bundle;
@@ -574,9 +556,7 @@ class BundleService {
 
       // Apply filters if provided
       if (filters && filters.length > 0) {
-        const whereClauses = filters.map((f) =>
-          where(f.field as string, f.op, f.value)
-        );
+        const whereClauses = filters.map((f) => where(f.field as string, f.op, f.value));
         q = query(q, ...whereClauses);
       }
 
@@ -592,12 +572,7 @@ class BundleService {
           limitToLast(itemsPerPage)
         );
       } else if (cursor) {
-        q = query(
-          q,
-          orderBy(field as string, direction),
-          startAfter(cursor),
-          limit(itemsPerPage)
-        );
+        q = query(q, orderBy(field as string, direction), startAfter(cursor), limit(itemsPerPage));
       } else {
         q = query(q, orderBy(field as string, direction), limit(itemsPerPage));
       }
@@ -623,6 +598,8 @@ class BundleService {
           categories: data.categories || [],
           tags: data.tags || [],
           instructorId: data.instructorId,
+          mode: data.mode,
+          liveAt: data.liveAt || null,
           instructorName: data.instructorName,
           categoryIds: data.categoryIds || [],
           targetAudienceIds: data.targetAudienceIds || [],
@@ -635,9 +612,7 @@ class BundleService {
 
       const hasNextPage = querySnapshot.docs.length === itemsPerPage;
       const hasPreviousPage = cursor !== null;
-      const nextCursor = hasNextPage
-        ? querySnapshot.docs[querySnapshot.docs.length - 1]
-        : null;
+      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
       return ok({
@@ -646,7 +621,7 @@ class BundleService {
         hasPreviousPage,
         nextCursor,
         previousCursor,
-        totalCount
+        totalCount,
       });
     } catch (error) {
       console.error("BundleService - Error fetching bundles:", error);
@@ -656,10 +631,7 @@ class BundleService {
 
   async getBundleBySlug(slug: string): Promise<Bundle | null> {
     try {
-      const q = query(
-        collection(db, COLLECTION.BUNDLES),
-        where("slug", "==", slug)
-      );
+      const q = query(collection(db, COLLECTION.BUNDLES), where("slug", "==", slug));
       const snap = await getDocs(q);
 
       if (snap.empty) {

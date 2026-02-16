@@ -40,6 +40,7 @@ export default function LessonDetailPage() {
   const { lock: contentLock, isLocked: isContentLocked, isLoading: lockLoading, timeRemaining } = useContentLock(selectedItem?.id);
 
   const isAdmin = user?.role === USER_ROLE.ADMIN;
+  const isCourseInstructor = user?.role === USER_ROLE.INSTRUCTOR && course?.instructorId === user?.id;
 
   // Set courseId when course loads
   useEffect(() => {
@@ -47,9 +48,9 @@ export default function LessonDetailPage() {
     setCourseId(course.id);
   }, [param, courseLoading, course?.id]);
 
-  // Check enrollment for non-admin users
+  // Check enrollment for non-admin users (instructors can access their own courses)
   useEffect(() => {
-    if (!courseId || !user || courseLoading || isAdmin) return;
+    if (!courseId || !user || courseLoading || isAdmin || isCourseInstructor) return;
 
     if (!isEnrolled(courseId)) {
       toast({
@@ -59,7 +60,7 @@ export default function LessonDetailPage() {
       });
       navigate(`/courses/${param}`);
     }
-  }, [courseId, user, courseLoading, isEnrolled, isAdmin, navigate, param]);
+  }, [courseId, user, courseLoading, isEnrolled, isAdmin, isCourseInstructor, navigate, param]);
 
   // Set document title
   useEffect(() => {

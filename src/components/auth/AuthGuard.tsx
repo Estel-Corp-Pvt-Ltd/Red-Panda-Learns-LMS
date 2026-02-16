@@ -15,6 +15,7 @@ interface AuthGuardProps {
   requireAdmin?: boolean;
   requireInstructor?:boolean;
   requireAccountant?:boolean;
+  requireTeacher?:boolean;
   requireEnrollmentOrAdmin?: boolean;
   message?: string;
 };
@@ -27,6 +28,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   requireAdmin = false,
   requireInstructor = false,
   requireAccountant =false,
+  requireTeacher = false,
   requireEnrollmentOrAdmin = false,
   message = 'Please login to access this page',
 }) => {
@@ -39,6 +41,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isInstructor,setIsInstructor] = useState<boolean | null>(null);
   const [isAccountant, setIsAccountant] = useState<boolean | null>(null);
+  const [isTeacher, setIsTeacher] = useState<boolean | null>(null);
   const courseId = params.courseId;
 
   // Check admin role if required
@@ -63,7 +66,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 useEffect(()=>{
   const checkInstructorRole = async () =>{
     if (requireInstructor && user){
-      try{  
+      try{
          const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
           const data = docSnap.data();
           setIsInstructor(data.role === USER_ROLE.INSTRUCTOR)
@@ -72,9 +75,10 @@ useEffect(()=>{
         setIsInstructor(false)
       }
     }
-    else{
-      setIsInstructor(false)
+    else if (!requireInstructor) {
+      setIsInstructor(true); // No instructor check needed
     }
+    // When requireInstructor is true but user is null (still loading), keep as null
   }
   checkInstructorRole();
 },[requireInstructor,user]);
@@ -90,14 +94,33 @@ useEffect(() => {
       } catch {
         setIsAccountant(false);
       }
-    } else {
-      setIsAccountant(false);
+    } else if (!requireAccountant) {
+      setIsAccountant(true); // No accountant check needed
     }
+    // When requireAccountant is true but user is null (still loading), keep as null
   };
 
   checkAccountantRole();
 }, [requireAccountant, user]);
 
+useEffect(() => {
+  const checkTeacherRole = async () => {
+    if (requireTeacher && user) {
+      try {
+        const docSnap = await getDoc(doc(db, COLLECTION.USERS, user.id));
+        const data = docSnap.data();
+        setIsTeacher(data?.role === USER_ROLE.TEACHER);
+      } catch {
+        setIsTeacher(false);
+      }
+    } else if (!requireTeacher) {
+      setIsTeacher(true); // No teacher check needed
+    }
+    // When requireTeacher is true but user is null (still loading), keep as null
+  };
+
+  checkTeacherRole();
+}, [requireTeacher, user]);
 
   // Refresh enrollments if needed
   useEffect(() => {
@@ -120,7 +143,8 @@ useEffect(() => {
     (requireEnrollment && user && courseId && !enrollmentChecked) ||
     (requireAdmin && isAdmin === null) ||
     (requireInstructor && isInstructor === null) ||
-    (requireAccountant && isAccountant === null)
+    (requireAccountant && isAccountant === null) ||
+    (requireTeacher && isTeacher === null)
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -183,7 +207,16 @@ if (requireAccountant && !isAccountant) {
   );
 }
 
-
+  // Require Teacher
+  if (requireTeacher && !isTeacher) {
+    return (
+      <Navigate
+        to="/dashboard"
+        state={{ from: location, message: 'You must be a Teacher to access this page.' }}
+        replace
+      />
+    );
+  }
 
   // Require enrollment or admin
   if (requireEnrollmentOrAdmin && courseId && user && !userIsEnrolled && !isAdmin) {

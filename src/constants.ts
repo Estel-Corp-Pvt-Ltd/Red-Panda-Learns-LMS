@@ -195,6 +195,7 @@ export const SORT_KEY = {
 export const ANNOUNCEMENT_SCOPE = {
   GLOBAL: "GLOBAL",
   COURSE: "COURSE",
+  ORGANIZATION: "ORGANIZATION",
 } as const;
 
 export const ANNOUNCEMENT_STATUS = {
@@ -492,6 +493,11 @@ export const CART_ACTION = {
 } as const;
 
 export const POPUP_COURSE_TYPE = {
+  LIVE: "LIVE",
+  SELF_PACED: "SELF-PACED",
+} as const;
+
+export const COURSE_MODE = {
   LIVE: "LIVE",
   SELF_PACED: "SELF-PACED",
 } as const;

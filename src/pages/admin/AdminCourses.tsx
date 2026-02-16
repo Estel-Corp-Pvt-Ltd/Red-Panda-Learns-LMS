@@ -30,7 +30,7 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { COURSE_STATUS, CURRENCY } from "@/constants";
+import { COURSE_MODE, COURSE_STATUS, CURRENCY } from "@/constants";
 
 import AdminLayout from "@/components/AdminLayout";
 import { toast } from "@/hooks/use-toast";
