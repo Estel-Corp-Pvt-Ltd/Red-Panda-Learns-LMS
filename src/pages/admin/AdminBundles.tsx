@@ -35,7 +35,7 @@ import {
   X,
   Filter,
 } from "lucide-react";
-import { BUNDLE_STATUS, CURRENCY } from "@/constants";
+import { BUNDLE_STATUS, COURSE_MODE, CURRENCY } from "@/constants";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -407,6 +407,7 @@ const AdminBundles: React.FC = () => {
                     <TableHead>Courses</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Pricing Model</TableHead>
+                    <TableHead>Mode</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -466,6 +467,11 @@ const AdminBundles: React.FC = () => {
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
                           {bundle.pricingModel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={bundle.mode === COURSE_MODE.LIVE ? "default" : "outline"} className="text-xs">
+                          {bundle.mode || COURSE_MODE.SELF_PACED}
                         </Badge>
                       </TableCell>
                       <TableCell>

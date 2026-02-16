@@ -1,21 +1,40 @@
 // src/pages/instructor/InstructorDashboard.tsx
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Edit, Eye, Loader2, PlusCircle } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { BookOpen, Edit, Eye, Loader2, MessageSquare, PlusCircle, Trash2 } from "lucide-react";
 
-import { useAuth } from '@/contexts/AuthContext';
-import { courseService } from '@/services/courseService';
-import { Course } from '@/types/course';
-import { COURSE_STATUS, CURRENCY } from '@/constants';
+import { useAuth } from "@/contexts/AuthContext";
+import { courseService } from "@/services/courseService";
+import { Course } from "@/types/course";
+import { COURSE_STATUS, CURRENCY } from "@/constants";
+import { formatDate } from "@/utils/date-time";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
-type COURSE_STATUS_TYPE = typeof COURSE_STATUS[keyof typeof COURSE_STATUS];
+type COURSE_STATUS_TYPE = (typeof COURSE_STATUS)[keyof typeof COURSE_STATUS];
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
@@ -24,8 +43,8 @@ const InstructorDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
       currency: CURRENCY.INR,
     }).format(amount);
   };
@@ -33,13 +52,13 @@ const InstructorDashboard = () => {
   const getStatusBadgeVariant = (status: COURSE_STATUS_TYPE) => {
     switch (status) {
       case COURSE_STATUS.PUBLISHED:
-        return 'default';
+        return "default";
       case COURSE_STATUS.DRAFT:
-        return 'secondary';
+        return "secondary";
       case COURSE_STATUS.ARCHIVED:
-        return 'outline';
+        return "outline";
       default:
-        return 'outline';
+        return "outline";
     }
   };
 
@@ -52,23 +71,49 @@ const InstructorDashboard = () => {
 
       if (!result.success) {
         toast({
-          title: 'Error',
-          description: result.error?.message || 'Failed to fetch your courses',
-          variant: 'destructive',
+          title: "Error",
+          description: result.error?.message || "Failed to fetch your courses",
+          variant: "destructive",
         });
         return;
       }
 
       setCourses(result.data || []);
     } catch (error) {
-      console.error('Error loading instructor courses:', error);
+      console.error("Error loading instructor courses:", error);
       toast({
-        title: 'Error',
-        description: 'An error occurred while loading your courses',
-        variant: 'destructive',
+        title: "Error",
+        description: "An error occurred while loading your courses",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+    try {
+      const result = await courseService.deleteCourse(courseId);
+      if (result.success) {
+        setCourses((prev) => prev.filter((c) => c.id !== courseId));
+        toast({
+          title: "Course Deleted",
+          description: `"${courseTitle}" has been deleted.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete course. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the course.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -99,14 +144,12 @@ const InstructorDashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle>Instructor Dashboard</CardTitle>
-              <CardDescription>
-                View and manage the courses you&apos;ve created.
-              </CardDescription>
+              <CardDescription>View and manage the courses you&apos;ve created.</CardDescription>
             </div>
             <Button
               variant="pill"
               size="sm"
-              onClick={() => navigate('/instructor/create-course')}
+              onClick={() => navigate("/instructor/create-course")}
               className="flex items-center gap-2"
             >
               <PlusCircle className="h-4 w-4" />
@@ -129,7 +172,7 @@ const InstructorDashboard = () => {
                 <Button
                   variant="pill"
                   size="sm"
-                  onClick={() => navigate('/instructor/create-course')}
+                  onClick={() => navigate("/instructor/create-course")}
                   className="inline-flex items-center gap-2"
                 >
                   <PlusCircle className="h-4 w-4" />
@@ -140,7 +183,7 @@ const InstructorDashboard = () => {
           ) : (
             <>
               <div className="mb-4 text-sm text-muted-foreground">
-                You have created {courses.length} course{courses.length > 1 ? 's' : ''}.
+                You have created {courses.length} course{courses.length > 1 ? "s" : ""}.
               </div>
 
               <Table>
@@ -158,9 +201,7 @@ const InstructorDashboard = () => {
                     <TableRow key={course.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">
-                            {course.title}
-                          </div>
+                          <div className="font-medium">{course.title}</div>
                           <div className="text-sm text-muted-foreground line-clamp-2">
                             {course.description}
                           </div>
@@ -176,7 +217,7 @@ const InstructorDashboard = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {course.updatedAt?.toString?.() || 'N/A'}
+                          {formatDate(course.updatedAt)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -197,6 +238,45 @@ const InstructorDashboard = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          {course.isForumEnabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/courses/${course.slug}/forum`)}
+                              title="View forum"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Delete course"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete &quot;{course.title}&quot;? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteCourse(course.id, course.title)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>

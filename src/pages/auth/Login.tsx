@@ -83,6 +83,10 @@ export default function Login() {
           navigate("/admin", { replace: true });
         } else if (user?.role === USER_ROLE.ACCOUNTANT) {
           navigate("/accountant", { replace: true });
+        } else if (user?.role === USER_ROLE.TEACHER) {
+          navigate("/teacher", { replace: true });
+        } else if (user?.role === USER_ROLE.INSTRUCTOR) {
+          navigate("/instructor", { replace: true });
         } else if (userCredential.user.emailVerified == true) {
           navigate(from || "/dashboard", { replace: true });
         } else {
@@ -114,6 +118,10 @@ export default function Login() {
         navigate("/admin", { replace: true });
       } else if (user?.role === USER_ROLE.ACCOUNTANT) {
         navigate("/accountant", { replace: true });
+      } else if (user?.role === USER_ROLE.TEACHER) {
+        navigate("/teacher", { replace: true });
+      } else if (user?.role === USER_ROLE.INSTRUCTOR) {
+        navigate("/instructor", { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }

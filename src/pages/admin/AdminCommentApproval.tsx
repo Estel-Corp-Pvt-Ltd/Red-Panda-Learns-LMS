@@ -752,7 +752,7 @@ const AdminCommentApproval: React.FC = () => {
         </div>
 
         {/* Main content: Table + Detail Panel */}
-        <ResizablePanelGroup direction="horizontal" className="min-h-[600px] max-h-[800px]">
+        <ResizablePanelGroup direction="horizontal" className="min-h-[600px]">
           {/* Left: Comment Table */}
           <ResizablePanel defaultSize={selectedComment ? 45 : 100} minSize={30}>
             <Card className="h-full flex flex-col">
@@ -959,7 +959,6 @@ const AdminCommentApproval: React.FC = () => {
                         </TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Course</TableHead>
-                        <TableHead>Lesson</TableHead>
                         <TableHead>Comment</TableHead>
                         <TableHead className="w-28">Date</TableHead>
                       </TableRow>
@@ -970,9 +969,7 @@ const AdminCommentApproval: React.FC = () => {
                           key={comment.id}
                           data-row-index={idx}
                           className={`cursor-pointer transition-colors ${
-                            selectedIndex === idx
-                              ? "bg-accent hover:bg-accent/80"
-                              : "hover:bg-muted/50"
+                            selectedIndex === idx ? "bg-accent" : "hover:bg-muted/50"
                           }`}
                           onClick={() => selectByIndex(idx)}
                           tabIndex={0}
@@ -995,15 +992,11 @@ const AdminCommentApproval: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="max-w-[120px] hover:max-w-[300px] transition-all duration-300 ease-in-out overflow-hidden">
+                            <div className="max-w-[120px]">
                               <p className="text-xs truncate">
                                 {courseMap.get(comment.courseId) || "Unknown"}
                               </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="max-w-[120px] hover:max-w-[300px] transition-all duration-300 ease-in-out overflow-hidden">
-                              <p className="text-xs truncate">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {lessonMap.get(comment.lessonId) || "Unknown"}
                               </p>
                             </div>
@@ -1091,7 +1084,8 @@ const AdminCommentApproval: React.FC = () => {
                         </Link>
                         {selectedTab === "pending" && (
                           <Button size="sm" onClick={requestApproveSelected}>
-                            Approve <span className="ml-1 text-xs text-white">(A)</span>
+                            Approve{" "}
+                            <span className="ml-1 text-xs text-muted-foreground/70">(A)</span>
                           </Button>
                         )}
                         <Button size="sm" variant="destructive" onClick={requestDeleteSelected}>

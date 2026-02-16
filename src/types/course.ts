@@ -1,5 +1,5 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
-import { CourseStatus, Duration, PricingModel } from "./general";
+import { CourseMode, CourseStatus, Duration, PricingModel } from "./general";
 import { LearningContentType } from "./lesson";
 
 export interface TopicItem {
@@ -48,6 +48,8 @@ export interface Course {
   instructorId: string;
   instructorName: string;
   status: CourseStatus;
+  mode: CourseMode;
+  liveAt: Timestamp | FieldValue | null;
   certificateTemplateId?: string;
   topics: Topic[];
   isEnrollmentPaused: boolean;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { ENROLLED_PROGRAM_TYPE, PRICING_MODEL } from "@/constants";
+import { COURSE_MODE, ENROLLED_PROGRAM_TYPE, PRICING_MODEL } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 import { useBundleCoursesQuery, useBundleQuery } from "@/hooks/useBundleApi";
@@ -15,11 +15,13 @@ import { fail, ok, type Result } from "@/utils/response";
 import {
   ArrowLeft,
   BookOpen,
+  Calendar,
   CheckCircle,
   IndianRupee,
   Play,
   Star,
 } from "lucide-react";
+import { formatDateTime } from "@/utils/date-time";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -166,6 +168,9 @@ export default function BundleDetailPage() {
           {/* Categories */}
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">Bundle</Badge>
+            <Badge variant={bundle.mode === COURSE_MODE.LIVE ? "default" : "outline"}>
+              {bundle.mode || COURSE_MODE.SELF_PACED}
+            </Badge>
             {bundle.categoryIds?.map((category) => (
               <Badge key={category} variant="outline">
                 {category}
@@ -177,6 +182,16 @@ export default function BundleDetailPage() {
           <h1 className="text-3xl md:text-5xl font-bold leading-tight">
             {bundle.title}
           </h1>
+
+          {/* Live At Banner */}
+          {bundle.mode === COURSE_MODE.LIVE && bundle.liveAt && (
+            <div className="flex items-center gap-3 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-primary">
+                Live At: {formatDateTime(bundle.liveAt)}
+              </span>
+            </div>
+          )}
 
           {/* Stats Row */}
           <div className="flex flex-wrap items-center gap-4 text-muted-foreground">

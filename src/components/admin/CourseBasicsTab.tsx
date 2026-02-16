@@ -38,14 +38,17 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ATTRIBUTE_TYPE, COURSE_STATUS } from "@/constants";
+import { ATTRIBUTE_TYPE, COURSE_MODE, COURSE_STATUS } from "@/constants";
 import { attributeService } from "@/services/attributeService";
 import { Course } from "@/types/course";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { CourseStatus } from "@/types/general";
+import { useAuth } from "@/contexts/AuthContext";
+import { USER_ROLE } from "@/constants";
+import { CourseMode, CourseStatus } from "@/types/general";
 import { courseService } from "@/services/courseService";
+import { Timestamp, FieldValue } from "firebase/firestore";
 const toNumberOrNull = (val: string) => (val === "" ? null : Number(val));
 const isNum = (v: number | null): v is number => v !== null && Number.isFinite(v);
 /** Parent sends all data + callbacks here */
@@ -96,6 +99,10 @@ export type CourseBasicsTabProps = {
   canSaveBasics: boolean;
   copied: boolean;
   setCopied: (v: boolean) => void;
+  mode: CourseMode;
+  setMode: (m: CourseMode) => void;
+  liveAt: Timestamp | FieldValue | null;
+  setLiveAt: (d: Timestamp | FieldValue | null) => void;
 };
 
 const CourseBasicsTab = ({
@@ -143,9 +150,15 @@ const CourseBasicsTab = ({
   onSave,
   canSaveBasics,
   handleCopyLink,
+  mode,
+  setMode,
+  liveAt,
+  setLiveAt,
 }: CourseBasicsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isInstructor = user?.role === USER_ROLE.INSTRUCTOR;
   const [slugTaken, setSlugTaken] = useState(true);
   const [checkingSlug, setCheckingSlug] = useState(true);
 
@@ -310,25 +323,33 @@ const CourseBasicsTab = ({
               <CardTitle>Instructor</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select
-                value={instructorName}
-                onValueChange={(val) => {
-                  const a = instructors.find((x) => x.name === val);
-                  setInstructorName(val);
-                  setInstructorId(a?.id || "");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((a) => (
-                    <SelectItem key={a.id} value={a.name}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isInstructor ? (
+                <Input
+                  value={instructorName}
+                  disabled
+                  className="bg-muted"
+                />
+              ) : (
+                <Select
+                  value={instructorName}
+                  onValueChange={(val) => {
+                    const a = instructors.find((x) => x.name === val);
+                    setInstructorName(val);
+                    setInstructorId(a?.id || "");
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instructors.map((a) => (
+                      <SelectItem key={a.id} value={a.name}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </CardContent>
           </Card>
 
@@ -586,9 +607,9 @@ const CourseBasicsTab = ({
               <Save className="mr-2 h-4 w-4" />
               Save Basics
             </Button>
-            <Button variant="outline" onClick={() => navigate("/admin")}>
+            <Button variant="outline" onClick={() => navigate(isInstructor ? "/instructor" : "/admin")}>
               <ArrowLeft className="mr-2 h-4 w-3" />
-              Back to Courses
+              {isInstructor ? "Back to Dashboard" : "Back to Courses"}
             </Button>
             <Button variant="outline" onClick={handleCopyLink}>
               <Copy className="mr-2 h-4 w-3" />
@@ -690,6 +711,63 @@ const CourseBasicsTab = ({
                 ))}
               </SelectContent>
             </Select>
+          </CardContent>
+        </Card>
+
+        {/* Mode */}
+        <Card className="rounded-xl border p-4">
+          <CardHeader className="pb-2">
+            <CardTitle>Mode</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select
+              value={mode}
+              onValueChange={(val) => {
+                const newMode = val as CourseMode;
+                setMode(newMode);
+                if (newMode === COURSE_MODE.SELF_PACED) {
+                  setLiveAt(null);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Mode" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(COURSE_MODE).map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {mode === COURSE_MODE.LIVE && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Live At</label>
+                <Input
+                  type="datetime-local"
+                  value={
+                    liveAt && liveAt instanceof Timestamp
+                      ? liveAt
+                          .toDate()
+                          .toISOString()
+                          .slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setLiveAt(Timestamp.fromDate(new Date(e.target.value)));
+                    } else {
+                      setLiveAt(null);
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  When does this course go live?
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
