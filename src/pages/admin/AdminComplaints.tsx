@@ -205,8 +205,8 @@ const AdminComplaints = () => {
       const tag = (e.target as HTMLElement)?.tagName;
       const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 
-      // Ctrl/Cmd + R to resolve selected complaint (works everywhere)
-      if ((e.ctrlKey || e.metaKey) && e.key === "r") {
+      // Ctrl/Cmd + Shift + R to resolve selected complaint (works everywhere)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "R") {
         e.preventDefault();
         if (selectedComplaint) {
           detailPanelRef.current?.resolve();
@@ -412,7 +412,7 @@ const AdminComplaints = () => {
                       <li className="flex justify-between">
                         <span>Resolve complaint</span>
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
-                          Ctrl/Cmd + R
+                          Ctrl/Cmd + Shift + R
                         </span>
                       </li>
                       <li className="flex justify-between">
