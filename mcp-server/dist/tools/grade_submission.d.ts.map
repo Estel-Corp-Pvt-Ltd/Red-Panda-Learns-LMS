@@ -1,0 +1,1 @@
+{"version":3,"file":"grade_submission.d.ts","sourceRoot":"","sources":["../../src/tools/grade_submission.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAGxB,eAAO,MAAM,qBAAqB;;;;CAIjC,CAAC;AAEF,wBAAsB,eAAe,CAAC,MAAM,EAAE;IAC5C,YAAY,EAAE,MAAM,CAAC;IACrB,KAAK,EAAE,MAAM,CAAC;IACd,QAAQ,CAAC,EAAE,MAAM,CAAC;CACnB;;;;;;;;;;GAmDA"}

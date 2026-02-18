@@ -8,6 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 .env
 
+# Service account keys
+mcp-server/service-account.json
+**/service-account*.json
+
 node_modules
 dist
 dist-ssr

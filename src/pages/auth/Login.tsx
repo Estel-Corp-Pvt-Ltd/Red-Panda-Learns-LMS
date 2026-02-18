@@ -43,16 +43,23 @@ export default function Login() {
   const message = (location.state as any)?.message;
 
   useEffect(() => {
-    loadRecaptcha().catch((err) => {
-      console.error("reCAPTCHA failed to load", err);
-    });
+    if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+      loadRecaptcha().catch((err) => {
+        console.error("reCAPTCHA failed to load", err);
+      });
+    }
   }, []);
 
   // 🔹 Shared reCAPTCHA verification logic
   const verifyRecaptcha = async () => {
+    const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+    // Skip reCAPTCHA if not configured (development mode)
+    if (!verifyUrl || !siteKey) return;
+
     const token = await getRecaptchaToken("login"); // add action for clarity
 
-    const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
     const res = await fetch(verifyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "vizuara-mcp": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "cwd": "/Users/Github/Vizuara-Official",
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "mcp-server/service-account.json"
+      }
+    }
+  }
+}
