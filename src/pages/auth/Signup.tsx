@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { Header } from "@/components/Header";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -13,13 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Mail, Lock, User, Chrome } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Header } from "@/components/Header";
-import { getRecaptchaToken, isLowEndDevice } from "@/utils/recaptcha";
-import { loadRecaptcha } from "@/utils/recaptcha"; // Ensure recaptcha is loaded
+import { buildAuthLinkWithRedirect, getRedirectParam, handleAuthRedirect } from "@/utils/auth-redirect";
+import { getRecaptchaToken, isLowEndDevice, loadRecaptcha } from "@/utils/recaptcha";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 import EmailSentAlert from "@/components/auth/EmailSentAlert";
 
@@ -37,6 +37,7 @@ export default function Signup() {
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const redirectUrl = getRedirectParam();
 
   useEffect(() => {
     loadRecaptcha().catch((err) => {
@@ -118,6 +119,9 @@ export default function Signup() {
 
     try {
       await loginWithGoogle();
+
+      if (redirectUrl && await handleAuthRedirect(redirectUrl)) return;
+
       toast({
         title: "Account created successfully!",
         description: "Welcome to Vizuara AI Labs. You can now access your courses.",
@@ -283,7 +287,7 @@ export default function Signup() {
             <p className="text-sm text-muted-foreground">
               {" "}
               Already have an account?{" "}
-              <Link to="/auth/login" className="text-primary hover:underline font-medium">
+              <Link to={buildAuthLinkWithRedirect("/auth/login", redirectUrl)} className="text-primary hover:underline font-medium">
                 {" "}
                 Sign in{" "}
               </Link>{" "}

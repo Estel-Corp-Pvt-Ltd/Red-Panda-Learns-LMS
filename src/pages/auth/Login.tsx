@@ -1,10 +1,6 @@
-import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Header } from "@/components/Header";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -13,14 +9,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Mail, Lock, Chrome } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Header } from "@/components/Header";
 import { USER_ROLE } from "@/constants";
-import { getRecaptchaToken, isLowEndDevice } from "@/utils/recaptcha";
-import { loadRecaptcha } from "@/utils/recaptcha"; // Ensure recaptcha is loaded
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { buildAuthLinkWithRedirect, getRedirectParam, handleAuthRedirect } from "@/utils/auth-redirect";
+import { getRecaptchaToken, isLowEndDevice, loadRecaptcha } from "@/utils/recaptcha";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import EmailNotVerifiedPopup from "@/components/auth/EmailNotVerifiedPopup";
 import { UserCredential } from "firebase/auth";
@@ -41,18 +40,26 @@ export default function Login() {
 
   const from = (location.state as any)?.from?.pathname || "/dashboard";
   const message = (location.state as any)?.message;
+  const redirectUrl = getRedirectParam();
 
   useEffect(() => {
-    loadRecaptcha().catch((err) => {
-      console.error("reCAPTCHA failed to load", err);
-    });
+    if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+      loadRecaptcha().catch((err) => {
+        console.error("reCAPTCHA failed to load", err);
+      });
+    }
   }, []);
 
   // 🔹 Shared reCAPTCHA verification logic
   const verifyRecaptcha = async () => {
+    const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+    // Skip reCAPTCHA if not configured (development mode)
+    if (!verifyUrl || !siteKey) return;
+
     const token = await getRecaptchaToken("login"); // add action for clarity
 
-    const verifyUrl = import.meta.env.VITE_VERIFY_RECAPTCHA_URL;
     const res = await fetch(verifyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -79,6 +86,9 @@ export default function Login() {
 
       if (response.success) {
         const { user, userCredential } = response.data;
+
+        if (redirectUrl && await handleAuthRedirect(redirectUrl)) return;
+
         if (user?.role === USER_ROLE.ADMIN) {
           navigate("/admin", { replace: true });
         } else if (user?.role === USER_ROLE.ACCOUNTANT) {
@@ -112,6 +122,8 @@ export default function Login() {
       await verifyRecaptcha(); // Check human first
 
       const user = await loginWithGoogle();
+
+      if (redirectUrl && await handleAuthRedirect(redirectUrl)) return;
 
       toast({ title: "Welcome!", description: "You signed in with Google." });
       if (user?.role === USER_ROLE.ADMIN) {
@@ -284,7 +296,7 @@ export default function Login() {
             <p className="text-sm text-muted-foreground">
               {" "}
               Don&apos;t have an account?{" "}
-              <Link to="/auth/signup" className="text-primary hover:underline font-medium">
+              <Link to={buildAuthLinkWithRedirect("/auth/signup", redirectUrl)} className="text-primary hover:underline font-medium">
                 {" "}
                 Sign up{" "}
               </Link>{" "}

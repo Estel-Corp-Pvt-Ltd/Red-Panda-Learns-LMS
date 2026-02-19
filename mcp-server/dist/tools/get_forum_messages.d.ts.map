@@ -1,0 +1,1 @@
+{"version":3,"file":"get_forum_messages.d.ts","sourceRoot":"","sources":["../../src/tools/get_forum_messages.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,sBAAsB;;;;CAIlC,CAAC;AAEF,wBAAsB,gBAAgB,CAAC,MAAM,EAAE;IAC7C,SAAS,EAAE,MAAM,CAAC;IAClB,MAAM,CAAC,EAAE,MAAM,CAAC;IAChB,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB;;;;;;;;;;;;;;;GA8BA"}

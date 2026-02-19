@@ -88,7 +88,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      if (!firebaseUser.emailVerified) {
+      const isOAuthUser = firebaseUser.providerData?.some(
+        (p) => p.providerId !== "password"
+      );
+      if (!firebaseUser.emailVerified && !isOAuthUser) {
         logWarn("[AuthContext] Email not verified, setting user to null", {
           uid: firebaseUser.uid,
           email: firebaseUser.email,

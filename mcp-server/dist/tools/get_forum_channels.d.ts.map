@@ -1,0 +1,1 @@
+{"version":3,"file":"get_forum_channels.d.ts","sourceRoot":"","sources":["../../src/tools/get_forum_channels.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,sBAAsB;;;CAGlC,CAAC;AAEF,wBAAsB,gBAAgB,CAAC,MAAM,EAAE;IAC7C,QAAQ,EAAE,MAAM,CAAC;IACjB,eAAe,CAAC,EAAE,OAAO,CAAC;CAC3B;;;;;;;;;;;;;GA4BA"}
