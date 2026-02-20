@@ -151,7 +151,7 @@ const options = {
   amount: order.amount, // In paise from Razorpay
   currency: order.currency, // INR
   order_id: order.id, // Razorpay order ID
-  name: "Vizuara AI Labs",
+  name: "RedPanda Learns",
   description: `Enrollment for ${course.title}`,
   prefill: { email: userEmail },
   theme: { color: "#3b82f6" },

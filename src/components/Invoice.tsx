@@ -134,7 +134,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                       </div>
                       <div className="company-details print:block">
                         <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 print:text-lg print:font-bold print:mb-2">
-                          VIZUARA TECHNOLOGIES PRIVATE LIMITED
+                          RedPanda Learns TECHNOLOGIES PRIVATE LIMITED
                         </h1>
                         <div className="address text-xs md:text-sm text-gray-600 space-y-0.5 print:text-xs print:space-y-0.5">
                           <p className="print:mb-0">759/107/3 FLAT NO 201</p>
@@ -143,8 +143,8 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                           <p className="print:mb-0">India</p>
                           <p className="font-semibold print:font-semibold">GSTIN 27AAJCV1928J1ZY</p>
                           <p>7994206324</p>
-                          <p>sreedath@vizuara.com</p>
-                          <p>www.vizuara.ai</p>
+                          <p>sreedath@RedPanda Learns.com</p>
+                          <p>www.RedPanda Learns.ai</p>
                         </div>
                       </div>
                     </div>
@@ -492,7 +492,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
             <div className="policy-links border-t border-gray-300 pt-4 mt-36 text-center print:border-t print:pt-4 print:mt-36">
               <p className="text-xs text-gray-600 mb-1 print:text-xs print:mb-1">
                 <a
-                  href="https://vizuara.ai/terms"
+                  href="https://RedPanda Learns.ai/terms"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 print:text-black"
@@ -501,7 +501,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                 </a>{" "}
                 |
                 <a
-                  href="https://vizuara.ai/privacy"
+                  href="https://RedPanda Learns.ai/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 print:text-black"
@@ -511,7 +511,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                 </a>{" "}
                 |
                 <a
-                  href="https://vizuara.ai/refund-policy"
+                  href="https://RedPanda Learns.ai/refund-policy"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 print:text-black"
@@ -523,12 +523,12 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
               <p className="text-xs text-gray-600 print:text-xs">
                 For more information, visit:{" "}
                 <a
-                  href="https://vizuara.ai"
+                  href="https://RedPanda Learns.ai"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 print:text-black"
                 >
-                  https://vizuara.ai
+                  https://RedPanda Learns.ai
                 </a>
               </p>
             </div>

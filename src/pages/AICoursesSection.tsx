@@ -6,19 +6,14 @@ const minorCourses = [
   {
     title: "Minor in AI",
     description: "Comprehensive AI fundamentals program",
-    link: "https://minor.vizuara.ai/",
+    link: "https://minor.RedPanda Learns.ai/",
     tags: ["Foundations for ML", "ML & DL Mastery", "NLP & CV", "LLM Capstone"],
   },
   {
     title: "Minor in GenAI",
     description: "Specialized generative AI curriculum",
-    link: "http://genai-minor.vizuara.ai/",
-    tags: [
-      "GenAI Fundamentals",
-      "Build LLMs",
-      "Production Deployment",
-      "LLM Capstone",
-    ],
+    link: "http://genai-minor.RedPanda Learns.ai/",
+    tags: ["GenAI Fundamentals", "Build LLMs", "Production Deployment", "LLM Capstone"],
   },
 ];
 
@@ -26,8 +21,8 @@ const archivedCourses = [
   {
     title: "For Undergrads, Grads & Industry Professionals",
     description:
-      "Hand-picked courses by top Vizuara instructors, conducted live over the past year. Now available as self-paced online courses for everyone.",
-    link: "https://courses.vizuara.ai/",
+      "Hand-picked courses by top RedPanda Learns instructors, conducted live over the past year. Now available as self-paced online courses for everyone.",
+    link: "https://courses.RedPanda Learns.ai/",
     tags: [
       "ML-DL Mastery",
       "GenAI Fundamentals",
@@ -46,7 +41,7 @@ const archivedCourses = [
     subtitle: "Interactive AI Learning for Grades 1-10",
     description:
       "AI/ML curriculum designed by MIT, Purdue experts. Interactive modules for learning AI/ML for all ages. Truly one of its kind!",
-    link: "https://interactive-ai-courses.vizuara.ai/",
+    link: "https://interactive-ai-courses.RedPanda Learns.ai/",
     tags: ["No-Code AI/ML", "Rich Content", "Self-Paced", "PhD Designed"],
   },
 ];
@@ -106,9 +101,7 @@ const AICoursesSection = () => {
                                transition-all duration-300"
                   >
                     <div className="flex flex-col items-center text-center space-y-4">
-                      <h4 className="text-xl font-semibold text-foreground">
-                        {course.title}
-                      </h4>
+                      <h4 className="text-xl font-semibold text-foreground">{course.title}</h4>
                       <p className="text-foreground/70 dark:text-foreground/60 text-sm leading-relaxed">
                         {course.description}
                       </p>
@@ -140,11 +133,7 @@ const AICoursesSection = () => {
                                    transition-all duration-200"
                         asChild
                       >
-                        <a
-                          href={course.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
+                        <a href={course.link} target="_blank" rel="noopener noreferrer">
                           Learn More
                         </a>
                       </Button>
@@ -182,13 +171,9 @@ const AICoursesSection = () => {
                                transition-all duration-300"
                   >
                     <div className="flex flex-col items-center text-center space-y-4">
-                      <h4 className="text-lg font-semibold text-foreground">
-                        {course.title}
-                      </h4>
+                      <h4 className="text-lg font-semibold text-foreground">{course.title}</h4>
                       {course.subtitle && (
-                        <p className="text-primary font-medium text-sm">
-                          {course.subtitle}
-                        </p>
+                        <p className="text-primary font-medium text-sm">{course.subtitle}</p>
                       )}
                       <p className="text-foreground/70 dark:text-foreground/60 text-sm leading-relaxed">
                         {course.description}
@@ -221,11 +206,7 @@ const AICoursesSection = () => {
                                    transition-all duration-200"
                         asChild
                       >
-                        <a
-                          href={course.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
+                        <a href={course.link} target="_blank" rel="noopener noreferrer">
                           Visit Course
                         </a>
                       </Button>

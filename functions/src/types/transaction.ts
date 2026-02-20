@@ -1,7 +1,6 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import {
   PaymentProvider,
-  PayPalWebhookEvent,
   RazorpayWebhookEvent,
   TransactionStatus,
   TransactionType,
@@ -11,7 +10,7 @@ import {
 // TODO: Store a replica for each event
 export type WebhookEvent = {
   eventId: string;   // provider’s webhook ID
-  type: RazorpayWebhookEvent | PayPalWebhookEvent;
+  type: RazorpayWebhookEvent;
   payload: any;      // raw JSON body
   receivedAt: Date | string;
 };
@@ -33,16 +32,7 @@ export type RazorpayPaymentDetails = {
   timestamp?: ProviderTimestamp;
 };
 
-export type PayPalPaymentDetails = {
-  orderId: string;
-  payerId?: string;
-  paymentId?: string;
-  intent: string;
-  status: string;
-  timestamp?: ProviderTimestamp;
-};
-
-export type PaymentDetails = RazorpayPaymentDetails | PayPalPaymentDetails;
+export type PaymentDetails = RazorpayPaymentDetails;
 
 export interface TransactionLineItem {
   itemId: string;            // The actual courseId or bundleId

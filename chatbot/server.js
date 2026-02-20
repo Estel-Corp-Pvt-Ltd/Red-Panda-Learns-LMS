@@ -39,7 +39,7 @@ let openaiTools = []; // converted tool schemas
 const sessions = new Map(); // sessionId → { messages[], lastAccess }
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-const SYSTEM_PROMPT = `You are the Vizuara Admin Assistant – an AI that manages an online learning platform.
+const SYSTEM_PROMPT = `You are the RedPanda Learns Admin Assistant – an AI that manages an online learning platform.
 You can create and update courses, manage enrollments, search users, grade submissions, and more.
 Use the available tools to fulfill requests. When creating courses, always confirm what was created.
 Be concise and helpful. If a request is ambiguous, ask for clarification before taking action.
@@ -63,7 +63,7 @@ async function connectMCP() {
     stderr: "inherit",
   });
 
-  mcpClient = new Client({ name: "vizuara-chatbot", version: "1.0.0" });
+  mcpClient = new Client({ name: "RedPanda Learns-chatbot", version: "1.0.0" });
   await mcpClient.connect(transport);
 
   const { tools } = await mcpClient.listTools();
@@ -109,7 +109,7 @@ async function runAgentLoop(messages) {
           const result = await mcpClient.callTool({ name: tc.function.name, arguments: args });
           const text =
             result.content
-              ?.map((c) => (typeof c === "string" ? c : c.text ?? JSON.stringify(c)))
+              ?.map((c) => (typeof c === "string" ? c : (c.text ?? JSON.stringify(c))))
               .join("\n") ?? JSON.stringify(result);
           return { role: "tool", tool_call_id: tc.id, content: text };
         } catch (err) {
@@ -130,7 +130,10 @@ async function runAgentLoop(messages) {
 function getSession(id) {
   if (!id || !sessions.has(id)) {
     id = crypto.randomUUID();
-    sessions.set(id, { messages: [{ role: "system", content: SYSTEM_PROMPT }], lastAccess: Date.now() });
+    sessions.set(id, {
+      messages: [{ role: "system", content: SYSTEM_PROMPT }],
+      lastAccess: Date.now(),
+    });
   }
   const session = sessions.get(id);
   session.lastAccess = Date.now();

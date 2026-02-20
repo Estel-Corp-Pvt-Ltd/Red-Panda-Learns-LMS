@@ -203,6 +203,6 @@ When contributing to this project:
 
 ## Summary
 
-Prettier is a critical tool in our development workflow that ensures code consistency and reduces formatting-related discussions. By following these guidelines, you'll maintain the high code quality standards of the Vizuara AI Labs project.
+Prettier is a critical tool in our development workflow that ensures code consistency and reduces formatting-related discussions. By following these guidelines, you'll maintain the high code quality standards of the RedPanda Learns project.
 
 For more information, visit the [official Prettier documentation](https://prettier.io/docs/en/index.html).

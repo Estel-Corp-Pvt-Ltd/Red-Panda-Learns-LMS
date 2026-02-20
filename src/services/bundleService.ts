@@ -27,7 +27,7 @@ import { WhereFilterOp } from "firebase-admin/firestore";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 import { COLLECTION } from "@/constants";
-import { searchService, SearchOptions } from "@/services/searchService";
+
 
 class BundleService {
   /**
@@ -655,30 +655,5 @@ class BundleService {
     }
   }
 
-  async searchBundles(
-    searchQuery: string,
-    options: SearchOptions = {}
-  ): Promise<Result<PaginatedResult<Bundle>>> {
-    try {
-      const result = await searchService.searchBundles(searchQuery, options);
-
-      const bundles = result.hits as Bundle[];
-
-      const currentOffset = options.offset || 0;
-      const currentLimit = options.limit || 20;
-
-      return ok({
-        data: bundles,
-        hasNextPage: currentOffset + currentLimit < result.totalHits,
-        hasPreviousPage: currentOffset > 0,
-        nextCursor: null,
-        previousCursor: null,
-        totalCount: result.totalHits,
-      });
-    } catch (error) {
-      console.error("BundleService - Meilisearch search failed:", error);
-      return fail("Search failed");
-    }
-  }
 }
 export const bundleService = new BundleService();

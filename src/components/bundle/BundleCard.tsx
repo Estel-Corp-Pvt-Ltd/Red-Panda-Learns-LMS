@@ -1,11 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { CURRENCY, USER_ROLE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -47,15 +42,11 @@ export function BundleCard({
 
   // Slash pricing helpers
 
-
   const isFree = bundle.salePrice === 0; // keep your FREE label logic
 
-
   const totalCourses = bundle.courses?.length || 0;
-  const showPartialOwnership =
-    ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
+  const showPartialOwnership = ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
-
 
   if (variant === "compact") {
     return (
@@ -69,11 +60,11 @@ export function BundleCard({
           {bundle.thumbnail ? (
             <img
               src={
-                bundle.thumbnail.includes("https://vizuara.ai/")
+                bundle.thumbnail.includes("https://RedPanda Learns.ai/")
                   ? bundle.thumbnail.replace(
-                    "https://vizuara.ai/",
-                    "https://vizuaracoin.wpcomstaging.com/"
-                  )
+                      "https://RedPanda Learns.ai/",
+                      "https://RedPanda Learnscoin.wpcomstaging.com/"
+                    )
                   : bundle.thumbnail
               }
               alt={bundle.title}
@@ -87,10 +78,8 @@ export function BundleCard({
         <div className="flex-1 p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
-                {bundle.title}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-2 line-clamp-2" >
+              <h3 className="font-semibold text-foreground mb-1 line-clamp-1">{bundle.title}</h3>
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                 {bundle.description}
               </p>
 
@@ -105,10 +94,7 @@ export function BundleCard({
               </div> */}
 
               {showPartialOwnership && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs bg-yellow-100 text-yellow-800"
-                >
+                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
                   {ownedCoursesCount}/{totalCourses} courses owned
                 </Badge>
               )}
@@ -138,16 +124,16 @@ export function BundleCard({
                     : undefined
                 }
                 onClick={() =>
-                  !fullOwnership &&
-                  (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
+                  !fullOwnership && (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
                 }
               >
                 {fullOwnership
                   ? "All Courses Owned"
                   : isEnrolled
                     ? "Access Bundle"
-                    : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)
-                    }`}
+                    : `Buy Bundle - ${
+                        isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)
+                      }`}
               </Button>
             </div>
           </div>
@@ -158,10 +144,7 @@ export function BundleCard({
 
   return (
     <Card
-      className={cn(
-        "overflow-hidden hover:shadow-lg transition-all duration-300 group",
-        className
-      )}
+      className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group", className)}
     >
       <CardHeader className="p-0 relative">
         <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
@@ -194,13 +177,9 @@ export function BundleCard({
       </CardHeader>
 
       <CardContent className="p-6">
-        <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-1">
-          {bundle.title}
-        </h3>
+        <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-1">{bundle.title}</h3>
 
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-          {bundle.description}
-        </p>
+        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{bundle.description}</p>
 
         {/* <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
           {bundle.categoryIds && bundle.categoryIds.length &&
@@ -246,8 +225,12 @@ export function BundleCard({
       <CardFooter className="px-4">
         {user?.role === USER_ROLE.ADMIN ? (
           <div className="pt-0 flex justify-between gap-6 w-full">
-            <Link to={`/admin/edit-bundle/${bundle.slug}`}><Button>Edit Bundle</Button></Link>
-            <Link to={`/course-bundle/${bundle.slug}`}><Button>View Bundle</Button></Link>
+            <Link to={`/admin/edit-bundle/${bundle.slug}`}>
+              <Button>Edit Bundle</Button>
+            </Link>
+            <Link to={`/course-bundle/${bundle.slug}`}>
+              <Button>View Bundle</Button>
+            </Link>
           </div>
         ) : (
           <div className="pt-0 flex justify-between gap-6 w-full">
@@ -271,9 +254,7 @@ export function BundleCard({
               className="flex-grow"
               disabled={fullOwnership}
               title={
-                fullOwnership
-                  ? `You already own all courses in ${bundle.title} bundle`
-                  : undefined
+                fullOwnership ? `You already own all courses in ${bundle.title} bundle` : undefined
               }
               onClick={() => {
                 if (!fullOwnership) {

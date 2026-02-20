@@ -180,8 +180,8 @@ const Certificate: React.FC = () => {
                 userName.length === 0
                   ? "Name required"
                   : userName.length > MAX_NAME_LENGTH
-                  ? "Preferred name required"
-                  : "Valid name required",
+                    ? "Preferred name required"
+                    : "Valid name required",
               description: reason,
               variant: "destructive",
             });
@@ -204,8 +204,8 @@ const Certificate: React.FC = () => {
         const nameOnCertificate = hasValidPreferredName
           ? preferredName
           : hasValidUserName
-          ? userName
-          : "";
+            ? userName
+            : "";
 
         // 6. Set all certificate data
         setCertificateData({
@@ -413,7 +413,7 @@ const Certificate: React.FC = () => {
 
       // Create download link
       const link = document.createElement("a");
-      link.download = `vizuara-certificate-${certificateData?.certificateId || "download"}.png`;
+      link.download = `RedPanda Learns-certificate-${certificateData?.certificateId || "download"}.png`;
       link.href = canvas.toDataURL("image/png", 1.0);
       link.click();
     } catch (err) {
@@ -632,8 +632,8 @@ const Certificate: React.FC = () => {
                 {/* Company Logo */}
                 <div className="w-36 h-36 mb-2 flex items-center justify-center">
                   <img
-                    src="/Vizuara_Logo_Design.png"
-                    alt="Vizuara AI Labs"
+                    src="/RedPanda Learns_Logo_Design.png"
+                    alt="RedPanda Learns"
                     className="w-full h-full object-contain drop-shadow-sm"
                   />
                 </div>
@@ -645,7 +645,7 @@ const Certificate: React.FC = () => {
               {/* Header Section */}
               <div>
                 <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-8">
-                  Vizuara AI Labs
+                  RedPanda Learns
                 </h2>
 
                 <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-4">

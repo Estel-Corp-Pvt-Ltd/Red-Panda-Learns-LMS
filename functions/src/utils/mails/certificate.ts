@@ -48,7 +48,7 @@ export const sendCertificateMail = async (data: CertificateEmail, brevoApiKey: s
     );
 
     const sendSmtpEmail = {
-      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
+      sender: { name: "RedPanda Learns", email: "no_reply@RedPanda Learns.com" },
       to: [{ email }],
       bcc: [
         { email: "thesreedath@gmail.com" },
@@ -91,14 +91,14 @@ export const sendCertificateMail = async (data: CertificateEmail, brevoApiKey: s
                                         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td valign="middle" style="padding-right: 14px;">
-                                                    <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;">
+                                                    <img src="https://RedPanda Learns.ai/logo.png" alt="RedPanda Learns Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;">
                                                 </td>
                                                 <td valign="middle">
                                                     <!--[if mso]>
-                                                    <span style="color: #a855f7; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Vizuara AI Labs</span>
+                                                    <span style="color: #a855f7; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">RedPanda Learns</span>
                                                     <![endif]-->
                                                     <!--[if !mso]><!-->
-                                                    <span style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #a855f7 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">Vizuara AI Labs</span>
+                                                    <span style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #a855f7 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">RedPanda Learns</span>
                                                     <!--<![endif]-->
                                                 </td>
                                             </tr>
@@ -218,8 +218,8 @@ export const sendCertificateMail = async (data: CertificateEmail, brevoApiKey: s
                                                     <a href="${
                                                       vars.CERTIFICATE_LINK
                                                     }" target="_blank" style="word-break: break-all; font-size: 13px; color: #3b82f6; text-decoration: underline; font-family: monospace; line-height: 1.5;">${
-        vars.CERTIFICATE_LINK
-      }</a>
+                                                      vars.CERTIFICATE_LINK
+                                                    }</a>
                                                 </td>
                                             </tr>
                                         </table>
@@ -236,7 +236,7 @@ export const sendCertificateMail = async (data: CertificateEmail, brevoApiKey: s
                                         <p style="font-size: 14px; color: #6a6a7a; line-height: 1.6; margin: 0; max-width: 380px;">
                                             Great job on completing the course, <strong>${
                                               vars.USER_NAME
-                                            }</strong>! Keep learning and growing with Vizuara.
+                                            }</strong>! Keep learning and growing with RedPanda Learns.
                                         </p>
                                     </td>
                                 </tr>
@@ -272,7 +272,7 @@ export const sendCertificateMail = async (data: CertificateEmail, brevoApiKey: s
                                 <tr>
                                     <td align="center">
                                         <p style="font-size: 16px; font-weight: 700; color: #a855f7; margin: 0;">
-                                            Team Vizuara
+                                            Team RedPanda Learns
                                         </p>
                                     </td>
                                 </tr>
@@ -288,7 +288,7 @@ export const sendCertificateMail = async (data: CertificateEmail, brevoApiKey: s
                                 <tr>
                                     <td align="center">
                                         <p style="font-size: 12px; color: #9ca3af; margin: 0;">
-                                            &copy; ${new Date().getFullYear()} Vizuara. All rights reserved.
+                                            &copy; ${new Date().getFullYear()} RedPanda Learns. All rights reserved.
                                         </p>
                                     </td>
                                 </tr>

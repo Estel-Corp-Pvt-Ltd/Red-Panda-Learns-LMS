@@ -6,45 +6,41 @@ import { corsMiddleware } from "../middlewares/cors";
 import { logger } from "firebase-functions";
 
 if (!admin.apps.length) {
-    admin.initializeApp();
+  admin.initializeApp();
 }
 
 const db = admin.firestore();
 
-const certificatePreviewHandler = async (
-    req: Request,
-    res: Response
-): Promise<void> => {
-    if (req.method !== "GET") {
-        res.status(405).send("Method not allowed");
-        return;
+const certificatePreviewHandler = async (req: Request, res: Response): Promise<void> => {
+  if (req.method !== "GET") {
+    res.status(405).send("Method not allowed");
+    return;
+  }
+
+  try {
+    const pathParts = req.path.split("/");
+    const certificateId = pathParts[pathParts.length - 1];
+
+    if (!certificateId) {
+      res.status(400).send("Missing certificate id");
+      return;
     }
 
-    try {
-        const pathParts = req.path.split("/");
-        const certificateId = pathParts[pathParts.length - 1];
+    const certRef = db.collection("Certificates").doc(certificateId);
+    const certSnap = await certRef.get();
 
-        if (!certificateId) {
-            res.status(400).send("Missing certificate id");
-            return;
-        }
+    if (!certSnap.exists) {
+      res.status(404).send("Certificate not found");
+      return;
+    }
 
-        const certRef = db.collection("Certificates").doc(certificateId);
-        const certSnap = await certRef.get();
+    const cert = certSnap.data()!;
 
-        if (!certSnap.exists) {
-            res.status(404).send("Certificate not found");
-            return;
-        }
+    const title = `${cert.userName} completed ${cert.courseName}`;
+    const description = "Issued by RedPanda Learns · Verified Certificate";
+    const redirectUrl = `https://RedPanda Learns.com/certificate/public/view/${certificateId}`;
 
-        const cert = certSnap.data()!;
-
-        const title = `${cert.userName} completed ${cert.courseName}`;
-        const description = "Issued by Vizuara AI Labs · Verified Certificate";
-        const redirectUrl =
-            `https://vizuara.com/certificate/public/view/${certificateId}`;
-
-        const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <title>${title}</title>
@@ -64,18 +60,18 @@ const certificatePreviewHandler = async (
 <body></body>
 </html>`;
 
-        res.set("Content-Type", "text/html; charset=utf-8");
-        res.set("Cache-Control", "public, max-age=600");
-        res.status(200).send(html);
-    } catch (error: any) {
-        logger.error("❌ Certificate preview error:", error);
-        res.status(500).send("Internal server error");
-    }
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=600");
+    res.status(200).send(html);
+  } catch (error: any) {
+    logger.error("❌ Certificate preview error:", error);
+    res.status(500).send("Internal server error");
+  }
 };
 
 export const showCertificatePreview = onRequest(
-    {
-        region: "us-central1",
-    },
-    withMiddleware(corsMiddleware, certificatePreviewHandler)
+  {
+    region: "us-central1",
+  },
+  withMiddleware(corsMiddleware, certificatePreviewHandler)
 );

@@ -1,10 +1,6 @@
 import { enrollStudent } from "./handlers/enrollments/enrollStudent";
 import { createRazorpayOrder } from "./handlers/createRazorpayOrder";
 import { verifyPayment } from "./handlers/verifyPayment";
-import { verifyRecaptcha } from "./handlers/verifyRecaptcha";
-import { createPaypalOrder } from "./handlers/createPaypalOrder";
-import { capturePaypalOrder } from "./handlers/capturePaypalOrder";
-import { paypalWebhook } from "./handlers/paypalWebhook";
 import { razorpayWebhook } from "./handlers/razorpayWebhook";
 import { sendMailWorker } from "./workers/sendMailWorker";
 import { getLessons } from "./handlers/getLessons";
@@ -17,7 +13,6 @@ import {
   enrollStudentsInBulk,
   processEnrollmentTask,
 } from "./handlers/enrollments/enrollStudentsInBulk";
-// import { reminderWorker } from "./workers/scheduleReminderWorker";
 import { sendAnnouncementEmailWorker } from "./workers/sendAnnouncementsWorker";
 // Cascade delete workers
 import { courseDeleteCascade } from "./workers/courseDeleteCascade";
@@ -55,29 +50,16 @@ import {
   getOrders,
   getOrderById,
   getOrderStats,
-  // ordersHealthCheck,
 } from "./handlers/api/ordersApiHandlers";
 import { sendSubmissionGradedNotification } from "./handlers/pushNotificationsHandler";
 import { sendCourseWelcomeMailWorker } from "./workers/sendCourseWelcomeMail";
 import { sendCertificateMailWorker } from "./workers/sendCertificateMail";
 import { addOrUpdateKarmaRule } from "./handlers/karmaRuleHandler";
 import { addKarma } from "./services/karma/incrementHanlder";
-import { createZoomMeeting } from "./handlers/zoom/createZoomMeeting";
-// import { generateZoomSignature } from "./handlers/zoom/generateZoomSignature";
-import { generateZoomMeetingSignature } from "./handlers/zoom/generateZoomSignature";
-// Meilisearch
-import { onCourseWrittenSync } from "./events/onCourseWritten";
-import { onBundleWrittenSync } from "./events/onBundleWritten";
-import { onUserWrittenSync } from "./events/onUserWritten";
-import { onAssignmentWrittenSync } from "./events/onAssignmentWritten";
 export {
   enrollStudent,
   createRazorpayOrder,
   verifyPayment,
-  verifyRecaptcha,
-  createPaypalOrder,
-  capturePaypalOrder,
-  paypalWebhook,
   razorpayWebhook,
   sendMailWorker,
   courseDeleteCascade,
@@ -97,7 +79,6 @@ export {
   createNotification,
   sendInitialNotification,
   SendMailWorkerForNotif,
-  // reminderWorker,
   pauseReminderForAssignments,
   markSubmissionNotificationsEvaluated,
   createCouponUsage,
@@ -121,7 +102,6 @@ export {
   getOrders,
   getOrderById,
   getOrderStats,
-  // ordersHealthCheck,
   sendGradedAssignmentNotification,
   sendMailtoUserOnAssignmentGraded,
   sendSubmissionGradedNotification,
@@ -130,12 +110,4 @@ export {
   sendCertificateMailWorker,
   addOrUpdateKarmaRule,
   addKarma,
-  createZoomMeeting,
-  // generateZoomSignature,
-  generateZoomMeetingSignature,
-  // Meilisearch
-  onCourseWrittenSync,
-  onBundleWrittenSync,
-  onUserWrittenSync,
-  onAssignmentWrittenSync,
 };

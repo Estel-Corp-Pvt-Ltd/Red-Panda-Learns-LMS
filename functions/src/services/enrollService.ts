@@ -3,11 +3,7 @@ import * as admin from "firebase-admin";
 import { bundleService } from "./bundleService";
 import { learningProgressService } from "./learningProgressService";
 import { Result, ok, fail } from "../utils/response";
-import {
-  COLLECTION,
-  ENROLLED_PROGRAM_TYPE,
-  ENROLLMENT_STATUS,
-} from "../constants";
+import { COLLECTION, ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from "../constants";
 import { Enrollment } from "../types/enrollment";
 import { FieldValue } from "firebase-admin/firestore";
 import { TransactionLineItem } from "../types/transaction";
@@ -21,9 +17,9 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-const SKIP_DOMAIN = "vizuara.ai";
-const SKIP_TEST = "test"
-const SKIP_EMAIL = "email"
+const SKIP_DOMAIN = "RedPanda Learns.ai";
+const SKIP_TEST = "test";
+const SKIP_EMAIL = "email";
 class EnrollmentService {
   /**
    * Generates a unique enrollment ID in the format: <userId>_<courseId>
@@ -84,10 +80,7 @@ class EnrollmentService {
             updatedAt: FieldValue.serverTimestamp(),
           };
 
-          batch.set(
-            db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId),
-            enrollment
-          );
+          batch.set(db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId), enrollment);
 
           // Create learning progress for the course
           await learningProgressService.createLessonProgress(user.id, item.itemId);
@@ -102,10 +95,7 @@ class EnrollmentService {
 
           // Create individual course enrollments for each course in the bundle
           for (const course of bundleCourses) {
-            const courseEnrollmentId = this.generateEnrollmentId(
-              user.id,
-              course.id
-            );
+            const courseEnrollmentId = this.generateEnrollmentId(user.id, course.id);
             enrollmentIds.push(courseEnrollmentId);
 
             const courseEnrollment: Enrollment = {
@@ -138,9 +128,7 @@ class EnrollmentService {
 
       // Commit the batch
       await batch.commit();
-      functions.logger.info(
-        `Created enrollment intent for user ${user.id} with order ${orderId}`
-      );
+      functions.logger.info(`Created enrollment intent for user ${user.id} with order ${orderId}`);
 
       return ok(enrollmentIds);
     } catch (error: any) {
@@ -152,10 +140,7 @@ class EnrollmentService {
   /**
    * Enroll user in free course (immediately active)
    */
-  async enrollUserInFreeCourse(
-    user: User,
-    courseId: string
-  ): Promise<Result<string>> {
+  async enrollUserInFreeCourse(user: User, courseId: string): Promise<Result<string>> {
     if (!user) return fail("Invalid user");
     if (!courseId) return fail("Invalid course ID");
 
@@ -165,9 +150,7 @@ class EnrollmentService {
         return fail("Course not found");
       }
       const enrollmentId = this.generateEnrollmentId(user.id, courseId);
-      const enrollmentRef = db
-        .collection(COLLECTION.ENROLLMENTS)
-        .doc(enrollmentId);
+      const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
       const enrollmentSnap = await enrollmentRef.get();
 
       if (enrollmentSnap.exists) {
@@ -194,9 +177,7 @@ class EnrollmentService {
       };
 
       await enrollmentRef.set(enrollment);
-      functions.logger.info(
-        `Successfully enrolled user ${user.id} in free course ${courseId}`
-      );
+      functions.logger.info(`Successfully enrolled user ${user.id} in free course ${courseId}`);
 
       // Create learning progress for the free course
       await learningProgressService.createLessonProgress(user.id, courseId);
@@ -208,15 +189,10 @@ class EnrollmentService {
     }
   }
 
-  isUserEnrolledInCourse = async (
-    userId: string,
-    courseId: string
-  ): Promise<Result<boolean>> => {
+  isUserEnrolledInCourse = async (userId: string, courseId: string): Promise<Result<boolean>> => {
     try {
       const enrollmentId = this.generateEnrollmentId(userId, courseId);
-      const enrollmentRef = db
-        .collection(COLLECTION.ENROLLMENTS)
-        .doc(enrollmentId);
+      const enrollmentRef = db.collection(COLLECTION.ENROLLMENTS).doc(enrollmentId);
       const enrollmentSnap = await enrollmentRef.get();
 
       if (enrollmentSnap.exists) {
@@ -313,8 +289,6 @@ class EnrollmentService {
       logger.error("Error fetching course enrolled emails", error);
       return [];
     }
-
   }
-
 }
 export const enrollmentService = new EnrollmentService();

@@ -33,8 +33,6 @@ jobs:
       - name: Build
         run: npm run build:dev
         env:
-          VITE_VERIFY_RECAPTCHA_URL: ${{ vars.VITE_VERIFY_RECAPTCHA_URL }}
-          VITE_RECAPTCHA_SITE_KEY: ${{ vars.VITE_RECAPTCHA_SITE_KEY }}
           VITE_API_KEY_FIREBASE: ${{ vars.VITE_API_KEY_FIREBASE }}
           VITE_AUTH_DOMAIN: ${{ vars.VITE_AUTH_DOMAIN }}
           VITE_PROJECT_ID: ${{ vars.VITE_PROJECT_ID }}
@@ -42,11 +40,8 @@ jobs:
           VITE_MESSAGING_SENDER_ID: ${{ vars.VITE_MESSAGING_SENDER_ID }}
           VITE_APP_ID: ${{ vars.VITE_APP_ID }}
           VITE_RAZORPAY_KEY_ID: ${{ vars.VITE_RAZORPAY_KEY_ID }}
-          VITE_PAYPAL_SANDBOX_CLIENT_ID: ${{ vars.VITE_PAYPAL_SANDBOX_CLIENT_ID }}
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
           VITE_APP_ENVIRONMENT: ${{ vars.VITE_APP_ENVIRONMENT }}
-          VITE_MEILISEARCH_URL: ${{ vars.VITE_MEILISEARCH_URL }}
-          VITE_MEILISEARCH_SEARCH_KEY: ${{ vars.VITE_MEILISEARCH_SEARCH_KEY }}
 
       - name: Authenticate to GCP (dev)
         uses: google-github-actions/auth@v2

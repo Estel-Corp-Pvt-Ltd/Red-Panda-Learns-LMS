@@ -4,8 +4,6 @@ import { authService } from "@/services/authService";
 import { db, getFirebaseMessaging } from "@/firebaseConfig";
 import { collection, doc, getDoc, getDocs, query, Timestamp, where } from "firebase/firestore";
 import { UserRole } from "@/types/general";
-import { UserCredential } from "firebase/auth";
-import { Result } from "@/utils/response";
 import { COLLECTION, PLATFROM_TYPE } from "@/constants";
 import { userService } from "@/services/userService";
 import { getToken } from "firebase/messaging";
@@ -14,11 +12,6 @@ import { logError, logWarn } from "@/utils/logger";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (
-    email: string,
-    password: string
-  ) => Promise<Result<{ user: User; userCredential: UserCredential }>>;
-  signup: (email: string, password: string, name: string) => Promise<Result<{ userId: string }>>;
   loginWithGoogle: () => Promise<{
     success: boolean;
     userId?: string;
@@ -26,7 +19,6 @@ interface AuthContextType {
     role: UserRole;
   }>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -109,21 +101,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  // 🔹 Email/Password Login
-  const login = async (email: string, password: string) => {
-    const result = await authService.signInWithEmailAndPassword(email, password);
-    if (result.success && result.data) {
-      setUser(result.data.user); // ✅ update immediately so Header changes
-    }
-    return result;
-  };
-
-  // 🔹 Signup (Email/Password)
-  const signup = async (email: string, password: string, name: string) => {
-    const result = await authService.createUserWithEmailAndPassword(email, password, name);
-    return result;
-  };
-
   // 🔹 Google Login
   const loginWithGoogle = async (): Promise<{
     success: boolean;
@@ -200,20 +177,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     registerFcmToken();
   }, [user?.id]);
 
-  // 🔹 Password reset
-  const resetPassword = async (email: string) => {
-    try {
-      await authService.sendPasswordResetEmail(email);
-    } catch (error: any) {
-      if (error.code === "auth/user-not-found") {
-        console.warn("⚠️ No user found with email:", email);
-      } else {
-        console.error("❌ Error sending password reset email:", error);
-      }
-      throw error;
-    }
-  };
-
   // 🔹 Refresh user data
   const refreshUser = async () => {
     if (!user) {
@@ -230,11 +193,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     loading,
-    login,
-    signup,
     loginWithGoogle,
     logout,
-    resetPassword,
     refreshUser,
   };
 

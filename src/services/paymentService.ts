@@ -9,7 +9,6 @@ import { Result } from "@/utils/response";
 import { currencyService } from "./currencyService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { transactionService } from "./transactionService";
-import { paypalProvider } from "./providers/paypalProvider";
 
 export type PaymentProviderOption = {
   id: PaymentProvider;
@@ -42,33 +41,16 @@ class PaymentService {
       ],
       icon: "/razorpay-icon.svg"
     },
-    {
-      id: PAYMENT_PROVIDER.PAYPAL,
-      name: "paypal",
-      displayName: "PayPal",
-      currency: "USD",
-      isAvailable: true,
-      description: "Pay securely with PayPal",
-      currencies: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
-      logos: [
-        { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-        { name: "Mastercard", src: "/mastercard.svg", className: "h-[20px] w-[32px]" },
-        { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
-      ],
-      icon: "/paypal-icon.svg"
-    },
   ];
 
   getAvailableProviders(): PaymentProviderOption[] {
     return this.providers.filter((p) => p.isAvailable);
   }
 
-  // ✅ Only PayPal adds its service charge. No tax for either.
   async calculatePricing(
     salePrice: number,
     targetCurrency: Currency,
     baseCurrency: Currency = CURRENCY.INR,
-    provider?: PaymentProvider
   ) {
     const basePrice = salePrice || 0;
 
@@ -86,26 +68,8 @@ class PaymentService {
       exchangeRate = conversion.exchangeRate;
     }
 
-    let total = convertedAmount;
-
-    // TODO: Document this step properly
-    // For PayPal, adjust so seller receives the base price after fees
-    // Buyer pays total amount
-    // We receive convertedAmount
-    // PayPal keeps 3.49% of total + 0.49$ (fixed amount, will change based on currency)
-    // total = convertedAmount + 3.49% of total + 0.49$ (fixed amount, will change based on currency)
-    // total = convertedAmount + percent * total + fixed
-    // total - percent * total = convertedAmount + fixed
-    // total * (1 - percent) = convertedAmount + fixed
-    // total = (convertedAmount + fixed) / (1 - percent)
-    if (provider === PAYMENT_PROVIDER.PAYPAL) {
-      const percent = 0.0349;
-      const fixed = 0.49;
-      total = (convertedAmount + fixed) / (1 - percent);
-    }
-
     return {
-      amount: total,
+      amount: convertedAmount,
       baseAmount: salePrice,
       currency: targetCurrency,
       originalAmount: basePrice,
@@ -115,7 +79,7 @@ class PaymentService {
         convertedAmount,
         targetCurrency
       ),
-      formattedTotal: currencyService.formatCurrency(total, targetCurrency),
+      formattedTotal: currencyService.formatCurrency(convertedAmount, targetCurrency),
     };
   }
 
@@ -146,18 +110,7 @@ class PaymentService {
       // Call provider
       let result: Result<{ orderId: string }>;
       if (provider === PAYMENT_PROVIDER.RAZORPAY) {
-        // Suggested new provider input signature
         result = await razorpayProvider.processPayment(
-          items,
-          billingAddress,
-          selectedCurrency,
-          userEmail,
-          promoCode,
-          onPaymentSuccess,
-          onPaymentFail,
-        );
-      } else if (provider === PAYMENT_PROVIDER.PAYPAL) {
-        result = await paypalProvider.processPaymentWithButtons(
           items,
           billingAddress,
           selectedCurrency,

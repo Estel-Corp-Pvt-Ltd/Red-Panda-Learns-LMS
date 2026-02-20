@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Mail, Copy, Check, MapPin } from "lucide-react";
 
 export default function ContactPage() {
-  const email = "hello@vizuara.com";
+  const email = "hello@RedPanda Learns.com";
   const address =
     "HQ59+QWG, Pashan Hwy Side Rd, next to Royal Court Banquet, Baner, Pune, Maharashtra 411045";
 

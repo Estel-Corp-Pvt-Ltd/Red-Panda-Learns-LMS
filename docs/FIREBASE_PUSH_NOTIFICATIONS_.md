@@ -1,6 +1,7 @@
 # **Firebase Push Notifications Integration Documentation**
 
 ## **Table of Contents**
+
 1. [Overview](#overview)
 2. [Architecture](#architecture)
 3. [Service Worker Implementation](#service-worker-implementation)
@@ -9,15 +10,16 @@
 6. [Event Handling](#event-handling)
 7. [Configuration](#configuration)
 
-
 ---
 
 ## **1. Overview**
 
 ### **Purpose**
-This documentation covers the Firebase Cloud Messaging (FCM) implementation for Vizuara's web application, enabling push notifications in both foreground and background states.
+
+This documentation covers the Firebase Cloud Messaging (FCM) implementation for RedPanda Learns's web application, enabling push notifications in both foreground and background states.
 
 ### **Key Features**
+
 - ✅ Background notifications (app closed/minimized)
 - ✅ Foreground notifications
 - ✅ Custom notification formatting
@@ -31,6 +33,7 @@ This documentation covers the Firebase Cloud Messaging (FCM) implementation for 
 ## **2. Architecture**
 
 ### **System Flow**
+
 ```mermaid
 graph TD
     A[Firebase Cloud Messaging] --> B[Service Worker]
@@ -44,6 +47,7 @@ graph TD
 ```
 
 ### **Components**
+
 1. **Service Worker** (`firebase-messaging-sw.js`) - Background notification processor
 2. **Client Registration** (`main.tsx`) - Registers and configures service worker
 3. **Firebase SDK** - Messaging and configuration
@@ -65,10 +69,10 @@ let firebaseConfig = null;
 let messaging = null;
 ```
 
-| Variable | Purpose | Scope |
-|----------|---------|-------|
+| Variable         | Purpose                       | Scope        |
+| ---------------- | ----------------------------- | ------------ |
 | `firebaseConfig` | Stores Firebase configuration | Module-level |
-| `messaging` | Firebase Messaging instance | Module-level |
+| `messaging`      | Firebase Messaging instance   | Module-level |
 
 ### **3.2 Firebase Initialization**
 
@@ -77,7 +81,7 @@ const initializeFirebase = () => {
   if (firebaseConfig) {
     firebase.initializeApp(firebaseConfig);
     messaging = firebase.messaging();
-    
+
     // Handle background messages from Firebase
     messaging.onBackgroundMessage((payload) => {
       try {
@@ -92,6 +96,7 @@ const initializeFirebase = () => {
 ```
 
 **Flow:**
+
 1. Waits for Firebase config from main thread
 2. Initializes Firebase app with config
 3. Sets up background message listener
@@ -109,9 +114,10 @@ self.addEventListener("message", (event) => {
 ```
 
 **Message Contract:**
+
 ```typescript
 interface FirebaseConfigMessage {
-  type: 'SET_FIREBASE_CONFIG';
+  type: "SET_FIREBASE_CONFIG";
   payload: {
     apiKey: string;
     authDomain: string;
@@ -138,10 +144,10 @@ if ("serviceWorker" in navigator) {
     })
     .then((reg) => {
       console.log("Service Worker registered:", reg);
-      
+
       // Send Firebase config to service worker
       reg.active?.postMessage({
-        type: 'SET_FIREBASE_CONFIG',
+        type: "SET_FIREBASE_CONFIG",
         payload: firebaseConfig,
       });
     })
@@ -151,13 +157,14 @@ if ("serviceWorker" in navigator) {
 
 ### **Registration Parameters**
 
-| Parameter | Value | Purpose |
-|-----------|-------|---------|
-| File Path | `/firebase-messaging-sw.js` | Service worker script location |
-| Scope | `/` | Controls which pages the SW controls |
-| Config Passing | PostMessage | Securely transfers Firebase config |
+| Parameter      | Value                       | Purpose                              |
+| -------------- | --------------------------- | ------------------------------------ |
+| File Path      | `/firebase-messaging-sw.js` | Service worker script location       |
+| Scope          | `/`                         | Controls which pages the SW controls |
+| Config Passing | PostMessage                 | Securely transfers Firebase config   |
 
 ### **Prerequisites**
+
 1. **HTTPS Required**: Service workers only work over HTTPS (localhost exception)
 2. **Browser Support**: Check `'serviceWorker' in navigator`
 3. **Firebase Config**: Must be loaded before registration
@@ -171,20 +178,21 @@ if ("serviceWorker" in navigator) {
 ```javascript
 const NOTIFICATION_CONFIG = {
   colors: {
-    primary: "#FF6B35",    // Default/Info
-    secondary: "#C5007E",  // Secondary theme
-    accent: "#0066CC",     // Grading notifications
-    success: "#10B981",    // Success notifications
-    warning: "#F59E0B",    // Warning notifications
-    error: "#EF4444",      // Error notifications
+    primary: "#FF6B35", // Default/Info
+    secondary: "#C5007E", // Secondary theme
+    accent: "#0066CC", // Grading notifications
+    success: "#10B981", // Success notifications
+    warning: "#F59E0B", // Warning notifications
+    error: "#EF4444", // Error notifications
   },
-  badge: "/logo.png",      // Small status icon
-  icon: "/logo.png",       // Main notification icon
-  placement: "top-right",  // Browser positioning
-  duration: 5000,          // Auto-close timeout (ms)
-  sound: true,             // Audible alerts
+  badge: "/logo.png", // Small status icon
+  icon: "/logo.png", // Main notification icon
+  placement: "top-right", // Browser positioning
+  duration: 5000, // Auto-close timeout (ms)
+  sound: true, // Audible alerts
   vibrate: [200, 100, 200], // Vibration pattern
-  actions: [               // Interactive buttons
+  actions: [
+    // Interactive buttons
     { action: "open", title: "Open", icon: "/logo.png" },
     { action: "close", title: "Close", icon: "/logo.png" },
   ],
@@ -196,19 +204,17 @@ const NOTIFICATION_CONFIG = {
 ```javascript
 function formatNotification(payload) {
   // Extract title with fallbacks
-  const title = payload?.notification?.title 
-    || payload?.data?.title 
-    || "Vizuara Notification";
+  const title =
+    payload?.notification?.title || payload?.data?.title || "RedPanda Learns Notification";
 
   // Extract body
-  const body = payload?.notification?.body 
-    || payload?.data?.body 
-    || "";
+  const body = payload?.notification?.body || payload?.data?.body || "";
 
   // Generate unique tag for renotification handling
-  const tag = payload?.data?.tag 
-    || payload?.notification?.tag 
-    || "vizuara-notification-" + Date.now();
+  const tag =
+    payload?.data?.tag ||
+    payload?.notification?.tag ||
+    "RedPanda Learns-notification-" + Date.now();
 
   // Determine notification type
   const type = payload?.data?.type || "info";
@@ -248,13 +254,13 @@ function formatNotification(payload) {
 
 ### **Notification Types & Behaviors**
 
-| Type | Color | Require Interaction | Use Case |
-|------|-------|-------------------|----------|
-| `info` | Primary (#FF6B35) | No | General announcements |
-| `success` | Success (#10B981) | No | Completed actions |
-| `warning` | Warning (#F59E0B) | No | Important alerts |
-| `error` | Error (#EF4444) | **Yes** | Critical failures |
-| `grading` | Accent (#0066CC) | **Yes** | Grading results |
+| Type      | Color             | Require Interaction | Use Case              |
+| --------- | ----------------- | ------------------- | --------------------- |
+| `info`    | Primary (#FF6B35) | No                  | General announcements |
+| `success` | Success (#10B981) | No                  | Completed actions     |
+| `warning` | Warning (#F59E0B) | No                  | Important alerts      |
+| `error`   | Error (#EF4444)   | **Yes**             | Critical failures     |
+| `grading` | Accent (#0066CC)  | **Yes**             | Grading results       |
 
 ---
 
@@ -266,26 +272,24 @@ function formatNotification(payload) {
 self.addEventListener("push", (event) => {
   try {
     let payload = {};
-    
+
     // Parse different payload formats
     if (event.data) {
       try {
-        payload = event.data.json();  // JSON format
+        payload = event.data.json(); // JSON format
       } catch {
         payload = { notification: { body: event.data.text() } }; // Text format
       }
     }
-    
+
     // Format and display notification
     const { title, options } = formatNotification(payload);
-    
-    event.waitUntil(
-      self.registration.showNotification(title, options)
-    );
+
+    event.waitUntil(self.registration.showNotification(title, options));
   } catch (err) {
     // Fallback notification
     event.waitUntil(
-      self.registration.showNotification("Vizuara", {
+      self.registration.showNotification("RedPanda Learns", {
         body: "You have a new notification",
         icon: "/logo.png",
       })
@@ -300,24 +304,26 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
   const url = event.notification.data?.url || "/";
-  
+
   event.waitUntil(
-    clients.matchAll({
-      type: "window",
-      includeUncontrolled: true,
-    }).then((clientList) => {
-      // Try to focus existing window
-      for (const client of clientList) {
-        if (client.url === url && "focus" in client) {
-          return client.focus();
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        // Try to focus existing window
+        for (const client of clientList) {
+          if (client.url === url && "focus" in client) {
+            return client.focus();
+          }
         }
-      }
-      
-      // Open new window if none exists
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
-    })
+
+        // Open new window if none exists
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
   );
 });
 ```
@@ -351,6 +357,7 @@ self.addEventListener("notificationclose", function (event) {
    - Add authorized domains
 
 2. **Configure `firebaseConfig.ts`**
+
 ```typescript
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -362,6 +369,5 @@ export const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 ```
-
 
 c

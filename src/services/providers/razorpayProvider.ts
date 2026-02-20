@@ -1,8 +1,8 @@
-import type { Currency } from '@/types/general';
-import { Address } from '@/types/order';
-import { TransactionLineItem } from '@/types/transaction';
-import { fail, ok, Result } from '@/utils/response';
-import { authService } from '../authService';
+import type { Currency } from "@/types/general";
+import { Address } from "@/types/order";
+import { TransactionLineItem } from "@/types/transaction";
+import { fail, ok, Result } from "@/utils/response";
+import { authService } from "../authService";
 
 export interface RazorpayOrder {
   id: string;
@@ -21,7 +21,6 @@ interface CreateOrderResponse {
 }
 
 class RazorpayProvider {
-  
   private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   async createOrder(
@@ -35,30 +34,30 @@ class RazorpayProvider {
       const idempotencyKey = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       const response = await fetch(`${this.backendUrl}/createRazorpayOrder`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': idempotencyKey,
-          'Authorization': `Bearer ${idToken}`
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           provider: "RAZORPAY",
           items,
           selectedCurrency,
           billingAddress,
-          promoCode
+          promoCode,
         }),
       });
 
       if (!response.ok) {
-        return fail('Failed to create order');
+        return fail("Failed to create order");
       }
 
       const data = await response.json();
       return ok(data);
     } catch (error) {
-      console.error('RazorpayProvider - Create order failed:', error);
-      return fail('Failed to create order');
+      console.error("RazorpayProvider - Create order failed:", error);
+      return fail("Failed to create order");
     }
   }
 
@@ -91,12 +90,12 @@ class RazorpayProvider {
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         order_id: razorpayOrder.id,
-        name: "Vizuara AI Labs",
+        name: "RedPanda Learns",
         description: this.getOrderDescription(items),
         prefill: {
           email: userEmail,
-          name: billingAddress.fullName || '',
-          contact: billingAddress.phone || ''
+          name: billingAddress.fullName || "",
+          contact: billingAddress.phone || "",
         },
         theme: { color: "#3b82f6" },
         handler: () => {
@@ -114,9 +113,8 @@ class RazorpayProvider {
       rzp.open();
 
       return ok({
-        orderId: orderId
+        orderId: orderId,
       });
-
     } catch (error) {
       onPaymentFail?.(error instanceof Error ? error.message : "Payment processing failed");
       console.error("RazorpayProvider - Payment processing failed:", error);
@@ -125,7 +123,7 @@ class RazorpayProvider {
   }
 
   private getOrderDescription(items: TransactionLineItem[]): string {
-    const itemNames = items.map(item => item.name);
+    const itemNames = items.map((item) => item.name);
     if (itemNames.length === 1) {
       return `Purchase: ${itemNames[0]}`;
     }

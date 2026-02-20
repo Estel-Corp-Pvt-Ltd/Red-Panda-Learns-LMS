@@ -1,9 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Mail } from "lucide-react";
 import AIForAllAnimation from "./AIforAllAnimation.tsx";
@@ -23,7 +19,7 @@ export const useDiagonal = () => useContext(DiagonalContext);
 
 export const HeroSection = () => {
   const { toast } = useToast();
-  const email = "hello@vizuara.com";
+  const email = "hello@RedPanda Learns.com";
 
   const [geometry, setGeometry] = useState({
     offsetPx: 0,
@@ -40,13 +36,13 @@ export const HeroSection = () => {
       // ---------------------------------------------------------
       // 1. CONTROL THE STEEPNESS (Height difference between Left and Right)
       // Increase 0.35 to 0.5 or 0.6 to make the right side higher
-      const calculatedOffset = h * 0.5; 
+      const calculatedOffset = h * 0.5;
       const offsetPx = Math.max(150, Math.min(600, calculatedOffset));
 
       // ---------------------------------------------------------
       // 2. CONTROL THE LIFT (How high the Left side starts)
       // Increase 0.1 to 0.2 to lift the whole shape higher up
-      const liftPx = h * 0.19; 
+      const liftPx = h * 0.19;
 
       // Calculate Angle (Only offset affects angle, lift does not)
       const angleRad = Math.atan2(offsetPx, w);
@@ -69,9 +65,7 @@ export const HeroSection = () => {
   };
 
   return (
-    <DiagonalContext.Provider
-      value={{ angleRad: geometry.angleRad, angleDeg: geometry.angleDeg }}
-    >
+    <DiagonalContext.Provider value={{ angleRad: geometry.angleRad, angleDeg: geometry.angleDeg }}>
       <section className="relative min-h-screen overflow-hidden bg-background">
         {/* Gradient Background */}
         <div
@@ -105,9 +99,8 @@ export const HeroSection = () => {
                 <span className="block">for all</span>
               </h1>
               <p className="text-lg text-foreground/70 max-w-xl leading-relaxed font-light">
-                World-class AI education for learners at every level, research
-                programs driving innovation, and business solutions that make a
-                difference.
+                World-class AI education for learners at every level, research programs driving
+                innovation, and business solutions that make a difference.
               </p>
               <div className="pt-2">
                 <Popover>

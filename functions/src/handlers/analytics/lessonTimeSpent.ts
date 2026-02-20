@@ -10,7 +10,7 @@ import { courseAnalyticsService } from "../../services/courseAnalyticsService";
 import { learningProgressService } from "../../services/learningProgressService";
 import { durationToSeconds } from "../../utils/date-time";
 import { addKarmaService } from "../../services/karma/addkarmaService";
-import { COLLECTION, KARMA_CATEGORY, LEARNING_ACTION, LESSON_TYPE } from "../../constants";
+import { COLLECTION, KARMA_CATEGORY, LEARNING_ACTION } from "../../constants";
 import { LearningAction } from "../../types/general";
 
 if (!admin.apps.length) admin.initializeApp();
@@ -33,7 +33,6 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
       duration,
       updatedAt,
       karmaBoostExpiresAfter,
-      lessonType,
     } = req.body;
 
     if (!lessonId || !courseId || timeSpentSec === undefined) {
@@ -136,12 +135,9 @@ async function lessonTimeSpentHandler(req: Request, res: Response) {
       // ----------------------------
       // Decide karma action
       // ----------------------------
-      let karmaAction: LearningAction =
-        lessonType === LESSON_TYPE.ZOOM_MEETING
-          ? LEARNING_ACTION.ZOOM_MEETING_ATTENDANCE
-          : LEARNING_ACTION.LESSON_WATCH_TIME;
+      let karmaAction: LearningAction = LEARNING_ACTION.LESSON_WATCH_TIME;
 
-      if (isKarmaBoostActive && lessonType !== LESSON_TYPE.ZOOM_MEETING) {
+      if (isKarmaBoostActive) {
         karmaAction = LEARNING_ACTION.KARMA_BOOST_LESSON_POINTS;
       } else {
         functions.logger.info("[KarmaBoost Debug] Karma boost is NOT active, using default action");

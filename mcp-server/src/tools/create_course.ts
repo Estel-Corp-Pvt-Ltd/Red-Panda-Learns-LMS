@@ -11,7 +11,11 @@ export const createCourseSchema = {
     .optional()
     .describe("URL-friendly slug. Auto-generated from title if not provided"),
   instructorId: z.string().optional().default("").describe("Instructor user ID"),
-  instructorName: z.string().optional().default("Vizuara AI").describe("Instructor display name"),
+  instructorName: z
+    .string()
+    .optional()
+    .default("RedPanda Learns AI")
+    .describe("Instructor display name"),
   pricingModel: z
     .enum(["FREE", "PAID"])
     .optional()
@@ -70,11 +74,7 @@ async function generateCourseId(): Promise<string> {
  * If it does, appends a numeric suffix to make it unique.
  */
 async function ensureUniqueSlug(slug: string): Promise<string> {
-  const snapshot = await db
-    .collection(COLLECTION.COURSES)
-    .where("slug", "==", slug)
-    .limit(1)
-    .get();
+  const snapshot = await db.collection(COLLECTION.COURSES).where("slug", "==", slug).limit(1).get();
 
   if (snapshot.empty) {
     return slug;
@@ -115,7 +115,7 @@ export async function createCourse(params: {
     categoryIds: [],
     targetAudienceIds: [],
     instructorId: params.instructorId ?? "",
-    instructorName: params.instructorName ?? "Vizuara AI",
+    instructorName: params.instructorName ?? "RedPanda Learns AI",
     status: "DRAFT",
     mode: params.mode ?? "SELF-PACED",
     liveAt: null,

@@ -23,7 +23,7 @@ const impactItems = [
     title: "CSR partnership",
     number: "1",
     description:
-      "We implemented our program at 22 Kerala Govt. schools as a 3-party CSR partnership between Vizuara, UST and Kerala Scheduled Tribes Department. We won the best CSR project-23 award from IIT Madras.",
+      "We implemented our program at 22 Kerala Govt. schools as a 3-party CSR partnership between RedPanda Learns, UST and Kerala Scheduled Tribes Department. We won the best CSR project-23 award from IIT Madras.",
   },
   {
     title: "Research papers",
@@ -41,7 +41,7 @@ const impactItems = [
     title: "VSoC 2025",
     number: "12",
     description:
-      "VSoC (Vizuara Summer of Code) was our flagship program of 2025. 12 students built production level apps and worked on high-impact research papers.",
+      "VSoC (RedPanda Learns Summer of Code) was our flagship program of 2025. 12 students built production level apps and worked on high-impact research papers.",
   },
   {
     title: "Students",
@@ -53,7 +53,7 @@ const impactItems = [
     title: "Countries",
     number: "22",
     description:
-      "Vizuara is truly global. Our team hails from different parts of the world. It is amazing how people, irrespective of their physical location can collaborate as a team.",
+      "RedPanda Learns is truly global. Our team hails from different parts of the world. It is amazing how people, irrespective of their physical location can collaborate as a team.",
   },
   {
     title: "Webinars",
@@ -106,9 +106,7 @@ const CountUp = ({
     const numericPart = match ? match[0] : "0";
     const after = match ? str.slice(match.index! + match[0].length) : "";
 
-    const decimals = numericPart.includes(".")
-      ? (numericPart.split(".")[1] || "").length
-      : 0;
+    const decimals = numericPart.includes(".") ? (numericPart.split(".")[1] || "").length : 0;
 
     const endVal = parseFloat(numericPart.replace(/,/g, "")) || 0;
     const formatter = new Intl.NumberFormat(undefined, {
@@ -219,21 +217,13 @@ const OurImpactSection = () => {
               className="p-6 rounded-2xl border bg-background/70 dark:bg-background/30 border-foreground/15 dark:border-foreground/20 backdrop-blur-md hover:shadow-lg hover:shadow-foreground/10 dark:hover:shadow-black/30 transition-all duration-300 flex flex-col will-change-transform hover:-translate-y-0.5 animate-fade-in"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <h3 className="text-primary font-semibold text-lg mb-4">
-                {item.title}
-              </h3>
+              <h3 className="text-primary font-semibold text-lg mb-4">{item.title}</h3>
 
               <div className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
-                <CountUp
-                  target={item.number}
-                  duration={1200}
-                  className="tabular-nums"
-                />
+                <CountUp target={item.number} duration={1200} className="tabular-nums" />
               </div>
 
-              <p className="text-foreground/70 text-sm leading-relaxed">
-                {item.description}
-              </p>
+              <p className="text-foreground/70 text-sm leading-relaxed">{item.description}</p>
 
               {/* Optional CTA */}
               {/* <button className="mt-4 inline-flex items-center gap-2 text-sm text-primary hover:underline underline-offset-4">

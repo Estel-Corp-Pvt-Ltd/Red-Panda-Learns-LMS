@@ -7,11 +7,21 @@ export const createBundleSchema = {
   title: z.string().describe("Bundle title (required)"),
   description: z.string().optional().default("").describe("Bundle description"),
   courseIds: z.array(z.string()).describe("Array of course IDs to include in the bundle"),
-  slug: z.string().optional().describe("URL-friendly slug. Auto-generated from title if not provided"),
+  slug: z
+    .string()
+    .optional()
+    .describe("URL-friendly slug. Auto-generated from title if not provided"),
   pricingModel: z.enum(["FREE", "PAID"]).optional().default("PAID").describe("Pricing model"),
-  salePrice: z.number().optional().describe("Override sale price (in paisa/cents). Default: 90% of sum of course prices"),
+  salePrice: z
+    .number()
+    .optional()
+    .describe("Override sale price (in paisa/cents). Default: 90% of sum of course prices"),
   instructorId: z.string().optional().default("").describe("Instructor user ID"),
-  instructorName: z.string().optional().default("Vizuara AI").describe("Instructor display name"),
+  instructorName: z
+    .string()
+    .optional()
+    .default("RedPanda Learns AI")
+    .describe("Instructor display name"),
   mode: z.enum(["LIVE", "SELF-PACED"]).optional().default("SELF-PACED").describe("Bundle mode"),
   tags: z.array(z.string()).optional().default([]).describe("Tags"),
 };
@@ -88,7 +98,7 @@ export async function createBundle(params: {
     mode: params.mode ?? "SELF-PACED",
     liveAt: null,
     instructorId: params.instructorId ?? "",
-    instructorName: params.instructorName ?? "Vizuara AI",
+    instructorName: params.instructorName ?? "RedPanda Learns AI",
     thumbnail: "",
     categoryIds: [],
     targetAudienceIds: [],

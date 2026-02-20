@@ -1,6 +1,7 @@
 # **Assignment Grading & Notification System Documentation**
 
 ## **Table of Contents**
+
 1. [System Overview](#system-overview)
 2. [Architecture Flow](#architecture-flow)
 3. [Frontend Grading Process](#frontend-grading-process)
@@ -8,14 +9,17 @@
 5. [Push Notification Delivery](#push-notification-delivery)
 6. [Email Notification System](#email-notification-system)
 7. [Token Management](#token-management)
+
 ---
 
 ## **1. System Overview**
 
 ### **Purpose**
+
 This system automates notification delivery when instructors grade student assignments.
 
 ### **Key Components**
+
 - **Frontend Admin Interface**: Grading interface for instructors
 - **Firestore Database**: Stores submissions, user data, and FCM tokens
 - **Cloud Function**: Handles notification logic and delivery
@@ -23,16 +27,18 @@ This system automates notification delivery when instructors grade student assig
 - **Email Service**: Alternative notification channel
 
 ### **Notification Channels**
-| Channel | Delivery Time | Persistence | Requirements |
-|---------|--------------|-------------|--------------|
-| Web Push | Instant | Until dismissed | User online, permission granted |
-| Email | Seconds to minutes | Permanent | Valid email address |
+
+| Channel  | Delivery Time      | Persistence     | Requirements                    |
+| -------- | ------------------ | --------------- | ------------------------------- |
+| Web Push | Instant            | Until dismissed | User online, permission granted |
+| Email    | Seconds to minutes | Permanent       | Valid email address             |
 
 ---
 
 ## **2. Architecture Flow**
 
 ### **End-to-End Process Diagram**
+
 ```mermaid
 sequenceDiagram
     participant Admin as Admin/Instructor
@@ -42,7 +48,7 @@ sequenceDiagram
     participant FCM as Firebase Cloud Messaging
     participant Email as Email Service
     participant Student as Student User
-    
+
     Admin->>Frontend: Grade Assignment
     Frontend->>DB: Update submission (marks, feedback)
     Frontend->>DB: Mark as evaluated
@@ -62,6 +68,7 @@ sequenceDiagram
 ```
 
 ### **Data Flow**
+
 1. **Grade Submission** → Update Firestore
 2. **Mark Evaluated** → Prevent duplicate admin notifications
 3. **Trigger Notification** → Call Cloud Function
@@ -97,6 +104,7 @@ await pushNotificationService.sendGradedNotification(
 ### **3.2 Service Contracts**
 
 #### **`assignmentService.updateSubmission()`**
+
 ```typescript
 interface UpdateSubmissionParams {
   marks: number;
@@ -109,6 +117,7 @@ interface UpdateSubmissionParams {
 ```
 
 #### **`markSubmissionEvaluatedService.mark()`**
+
 ```typescript
 // Purpose: Marks submission as evaluated to prevent duplicate email notifications
 // Implementation: Updates evaluation tracking collection
@@ -117,6 +126,7 @@ interface UpdateSubmissionParams {
 ```
 
 #### **`pushNotificationService.sendGradedNotification()`**
+
 ```typescript
 interface GradedNotificationParams {
   submissionId: string;
@@ -135,6 +145,7 @@ interface GradedNotificationParams {
 ## **4. Cloud Function Implementation**
 
 ### **4.1 Endpoint Specification**
+
 ```
 POST /sendSubmissionGradedNotification
 Content-Type: application/json
@@ -154,45 +165,41 @@ Request Body:
 
 ```typescript
 // Main handler function
-export const sendSubmissionGradedNotification = functions.https.onRequest(
-  async (req, res) => {
-    try {
-      // 1. Validate request
-      validateRequest(req);
-      
-      // 2. Extract data
-      const { submissionId, title, body, marks, assignmentTitle } = req.body;
-      
-      // 3. Fetch submission data
-      const submission = await fetchSubmission(submissionId);
-      const studentId = submission.studentId;
-      
-      // 4. Fetch user data
-      const user = await fetchUser(studentId);
-      
-      // 5. Send email notification
-      if (user.email) {
-        await sendEmailNotification(user, marks, assignmentTitle);
-      }
-      
-      // 6. Send push notification
-      if (user.fcmTokens?.length > 0) {
-        const response = await sendPushNotification(user, title, body);
-        
-        // 7. Cleanup invalid tokens
-        await cleanupInvalidTokens(studentId, response, user.fcmTokens);
-      }
-      
-      // 8. Return success
-      res.status(200).json({ message: "Notification sent successfully" });
-      
-    } catch (error) {
-      handleError(error, res);
-    }
-  }
-);
-```
+export const sendSubmissionGradedNotification = functions.https.onRequest(async (req, res) => {
+  try {
+    // 1. Validate request
+    validateRequest(req);
 
+    // 2. Extract data
+    const { submissionId, title, body, marks, assignmentTitle } = req.body;
+
+    // 3. Fetch submission data
+    const submission = await fetchSubmission(submissionId);
+    const studentId = submission.studentId;
+
+    // 4. Fetch user data
+    const user = await fetchUser(studentId);
+
+    // 5. Send email notification
+    if (user.email) {
+      await sendEmailNotification(user, marks, assignmentTitle);
+    }
+
+    // 6. Send push notification
+    if (user.fcmTokens?.length > 0) {
+      const response = await sendPushNotification(user, title, body);
+
+      // 7. Cleanup invalid tokens
+      await cleanupInvalidTokens(studentId, response, user.fcmTokens);
+    }
+
+    // 8. Return success
+    res.status(200).json({ message: "Notification sent successfully" });
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+```
 
 ### **4.3 Data Fetching**
 
@@ -203,41 +210,37 @@ const fetchSubmission = async (submissionId: string) => {
     .collection(COLLECTION.ASSIGNMENT_SUBMISSIONS)
     .doc(submissionId)
     .get();
-    
+
   if (!submissionSnap.exists) {
     throw new Error(`Submission ${submissionId} not found`);
   }
-  
+
   const data = submissionSnap.data();
   if (!data?.studentId) {
     throw new Error(`Submission ${submissionId} missing studentId`);
   }
-  
+
   return {
     id: submissionId,
     studentId: data.studentId,
-    ...data
+    ...data,
   };
 };
 
 const fetchUser = async (studentId: string) => {
-  const userSnap = await admin
-    .firestore()
-    .collection(COLLECTION.USERS)
-    .doc(studentId)
-    .get();
-    
+  const userSnap = await admin.firestore().collection(COLLECTION.USERS).doc(studentId).get();
+
   if (!userSnap.exists) {
     throw new Error(`User ${studentId} not found`);
   }
-  
+
   const data = userSnap.data();
   return {
     id: studentId,
     email: data?.email,
     firstName: data?.firstName,
     userName: data?.userName,
-    fcmTokens: data?.fcmTokens || []
+    fcmTokens: data?.fcmTokens || [],
   };
 };
 ```
@@ -249,44 +252,49 @@ const fetchUser = async (studentId: string) => {
 ### **5.1 Why `sendEachForMulticast` vs `sendEach`**
 
 #### **`sendEachForMulticast` (Our Choice)**
+
 ```typescript
 const response = await admin.messaging().sendEachForMulticast({
-  tokens: ['token1', 'token2', 'token3'],
+  tokens: ["token1", "token2", "token3"],
   notification: { title, body },
-  data: { type: 'GRADING', url: 'https://vizuara.ai/submissions' }
+  data: { type: "GRADING", url: "https://RedPanda Learns.ai/submissions" },
 });
 ```
 
 **Advantages:**
+
 1. **Single Request**: All tokens in one API call
 2. **Efficient**: Reduced network overhead
 3. **Batch Processing**: FCM handles delivery optimization
 4. **Response Per Token**: Individual success/failure tracking
 
 #### **`sendEach` (Alternative)**
+
 ```typescript
 // Would require individual calls for each token
-const promises = tokens.map(token => 
+const promises = tokens.map((token) =>
   admin.messaging().send({
     token,
-    notification: { title, body }
+    notification: { title, body },
   })
 );
 ```
 
 **When to use `sendEach`:**
+
 - Different messages per device
 - Per-device customization needed
 - Small number of tokens (<10)
 
 #### **Performance Comparison**
-| Metric | `sendEachForMulticast` | `sendEach` |
-|--------|------------------------|------------|
-| API Calls | 1 | N (tokens count) |
-| Network Overhead | Low | High |
-| Rate Limit Impact | Minimal | High |
-| Token Limit | 500 per call | Unlimited |
-| Delivery Optimization | FCM batches | Manual handling |
+
+| Metric                | `sendEachForMulticast` | `sendEach`       |
+| --------------------- | ---------------------- | ---------------- |
+| API Calls             | 1                      | N (tokens count) |
+| Network Overhead      | Low                    | High             |
+| Rate Limit Impact     | Minimal                | High             |
+| Token Limit           | 500 per call           | Unlimited        |
+| Delivery Optimization | FCM batches            | Manual handling  |
 
 ### **5.2 Notification Payload Structure**
 
@@ -294,20 +302,19 @@ const promises = tokens.map(token =>
 const notificationPayload = {
   // Display notification (visible to user)
   notification: {
-    title: "Assignment Graded",  // Shown in notification center
-    body: "Your submission has been graded successfully.",  // Preview text
+    title: "Assignment Graded", // Shown in notification center
+    body: "Your submission has been graded successfully.", // Preview text
     // Optional: icon, image, click_action
   },
-  
+
   // Data payload (invisible, passed to app)
   data: {
-    type: PUSH_NOTIFICATION_TYPE.GRADING,  // "GRADING"
-    url: "https://vizuara.ai/submissions",  // Deep link
-    submissionId: "abc123",  // Internal reference
-    marks: "85",  // Stringified for data field
-    assignmentTitle: "Machine Learning Project"
+    type: PUSH_NOTIFICATION_TYPE.GRADING, // "GRADING"
+    url: "https://RedPanda Learns.ai/submissions", // Deep link
+    submissionId: "abc123", // Internal reference
+    marks: "85", // Stringified for data field
+    assignmentTitle: "Machine Learning Project",
   },
-  
 };
 ```
 
@@ -319,7 +326,7 @@ sequenceDiagram
     participant FCM as Firebase Cloud Messaging
     participant Browser as Student Browser
     participant SW as Service Worker
-    
+
     CF->>FCM: sendEachForMulticast(tokens)
     FCM->>Browser: HTTP/2 Push
     Browser->>SW: Push Event
@@ -343,10 +350,9 @@ const sendGradedAssignmentNotification = async (
   marks: number,
   assignmentTitle: string
 ): Promise<{ success: boolean; error?: string }> => {
-    BREVO,pusub & workers
+  (BREVO, pusub & workers);
 };
 ```
-
 
 ---
 
@@ -374,7 +380,7 @@ interface FCMToken {
       createdAt: "2024-01-15T10:30:00Z",
     },
     {
-      token: "fcm_token_def456", 
+      token: "fcm_token_def456",
       platform: "web",
       createdAt: "2024-01-20T14:45:00Z",
     }
@@ -385,12 +391,14 @@ interface FCMToken {
 ### **7.2 Token Cleanup Strategy**
 
 #### **Why Cleanup is Necessary**
+
 1. **Tokens Expire**: Devices uninstall, browsers reset
 2. **Storage Efficiency**: Avoid bloated user documents
 3. **Delivery Accuracy**: Higher success rates
 4. **Cost Optimization**: Fewer failed attempts
 
 #### **Cleanup Implementation**
+
 ```typescript
 const cleanupInvalidTokens = async (
   studentId: string,
@@ -398,67 +406,72 @@ const cleanupInvalidTokens = async (
   originalTokens: string[]
 ) => {
   const invalidTokens: string[] = [];
-  
+
   response.responses.forEach((individualResponse, index) => {
     if (!individualResponse.success) {
       const error = individualResponse.error;
-      
+
       // Check for specific unrecoverable errors
-      if (error?.code === 'messaging/registration-token-not-registered' ||
-          error?.code === 'messaging/invalid-registration-token' ||
-          error?.code === 'messaging/invalid-argument') {
-        
+      if (
+        error?.code === "messaging/registration-token-not-registered" ||
+        error?.code === "messaging/invalid-registration-token" ||
+        error?.code === "messaging/invalid-argument"
+      ) {
         invalidTokens.push(originalTokens[index]);
-        
+
         // Log for monitoring
         console.warn(`Invalid token detected: ${error.code}`, {
-          token: originalTokens[index].substring(0, 10) + '...',
+          token: originalTokens[index].substring(0, 10) + "...",
           studentId,
-          error: error.message
+          error: error.message,
         });
       }
     }
   });
-  
+
   // Remove invalid tokens from Firestore
   if (invalidTokens.length > 0) {
-    await admin.firestore()
+    await admin
+      .firestore()
       .collection(COLLECTION.USERS)
       .doc(studentId)
       .update({
         fcmTokens: admin.firestore.FieldValue.arrayRemove(
-          ...invalidTokens.map(token => ({ token }))
-        )
+          ...invalidTokens.map((token) => ({ token }))
+        ),
       });
-    
+
     console.log(`Cleaned up ${invalidTokens.length} invalid tokens for user ${studentId}`);
   }
 };
 ```
 
 #### **Error Codes Requiring Cleanup**
-| Error Code | Meaning | Action |
-|------------|---------|--------|
-| `messaging/registration-token-not-registered` | Device unsubscribed | Remove token |
-| `messaging/invalid-registration-token` | Malformed/expired token | Remove token |
-| `messaging/invalid-argument` | Invalid token format | Remove token |
-| `messaging/server-unavailable` | Temporary FCM issue | Retry later |
-| `messaging/internal-error` | FCM internal error | Retry later |
+
+| Error Code                                    | Meaning                 | Action       |
+| --------------------------------------------- | ----------------------- | ------------ |
+| `messaging/registration-token-not-registered` | Device unsubscribed     | Remove token |
+| `messaging/invalid-registration-token`        | Malformed/expired token | Remove token |
+| `messaging/invalid-argument`                  | Invalid token format    | Remove token |
+| `messaging/server-unavailable`                | Temporary FCM issue     | Retry later  |
+| `messaging/internal-error`                    | FCM internal error      | Retry later  |
 
 ### **7.3 Token Acquisition (Frontend)**
+
 ```typescript
 // How tokens are obtained and stored
 const storeFCMToken = async (userId: string, token: string) => {
-  await admin.firestore()
+  await admin
+    .firestore()
     .collection(COLLECTION.USERS)
     .doc(userId)
     .update({
       fcmTokens: admin.firestore.FieldValue.arrayUnion({
         token,
-        platform: 'web',
+        platform: "web",
         createdAt: new Date(),
-        userAgent: navigator.userAgent
-      })
+        userAgent: navigator.userAgent,
+      }),
     });
 };
 

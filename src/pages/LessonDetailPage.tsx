@@ -78,6 +78,17 @@ export default function LessonDetailPage() {
     };
   }, [course?.title, selectedItem?.title, selectedItem?.type]);
 
+  // Save recently watched course for Dynamic Island header
+  useEffect(() => {
+    if (!course?.title || !param) return;
+    try {
+      localStorage.setItem(
+        "redpanda_recent_course",
+        JSON.stringify({ name: course.title, path: `/courses/${param}` })
+      );
+    } catch {}
+  }, [course?.title, param]);
+
   // Find and set lesson from URL
   useEffect(() => {
     if (!course || !lessonId) return;

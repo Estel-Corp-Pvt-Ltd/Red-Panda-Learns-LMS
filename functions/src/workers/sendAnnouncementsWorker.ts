@@ -27,15 +27,7 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
         return;
       }
 
-      const {
-        to,
-        bcc,
-        subject,
-        html,
-        text,
-        senderName,
-        senderEmail,
-      } = payload;
+      const { to, bcc, subject, html, text, senderName, senderEmail } = payload;
 
       // ────────────────────────────────────────────
       // Validate recipients
@@ -47,10 +39,7 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
       // If 'to' is empty, use fallback emails
       if (safeTo.length === 0) {
         safeTo.push(...fallbackEmails);
-        logger.info(
-          "No 'to' recipients found, using fallback emails:",
-          fallbackEmails
-        );
+        logger.info("No 'to' recipients found, using fallback emails:", fallbackEmails);
       }
 
       if (safeTo.length === 0) {
@@ -63,8 +52,8 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
       // ────────────────────────────────────────────
 
       const sender = {
-        name: senderName || "Vizuara",
-        email: senderEmail || "no_reply@vizuara.com",
+        name: senderName || "RedPanda Learns",
+        email: senderEmail || "no_reply@RedPanda Learns.com",
       };
 
       // ────────────────────────────────────────────
@@ -115,7 +104,6 @@ export const sendAnnouncementEmailWorker = onMessagePublished(
         bccCount: safeBcc.length,
         subject,
       });
-
     } catch (err: any) {
       logger.error("❌ Worker email sending failed:", {
         message: err.message,

@@ -19,14 +19,14 @@ export default function AboutUsPage() {
             <section>
               <h2 className="font-semibold mb-2">Overview</h2>
               <p className="mb-3">
-                We are Vizuara - a fast-growing Indian startup backed by the MIT ecosystem 
-                revolutionizing AI education for students and professionals. Our mission is to
-                make world-class, hands-on AI learning accessible to everyone.
+                We are RedPanda Learns - a fast-growing Indian startup backed by the MIT ecosystem
+                revolutionizing AI education for students and professionals. Our mission is to make
+                world-class, hands-on AI learning accessible to everyone.
               </p>
               <p>
-                Vizuara is founded by alumni from IIT Madras, MIT, and Purdue University. We blend
-                academic rigor with practical, industry-aligned projects to help learners build
-                real skills, faster.
+                RedPanda Learns is founded by alumni from IIT Madras, MIT, and Purdue University. We
+                blend academic rigor with practical, industry-aligned projects to help learners
+                build real skills, faster.
               </p>
             </section>
 
@@ -44,7 +44,8 @@ export default function AboutUsPage() {
               <h2 className="font-semibold mb-2">Our Vision</h2>
               <p>
                 To become the most trusted platform for AI education in emerging markets - where
-                ambitious learners build portfolios, publish work, and land meaningful opportunities.
+                ambitious learners build portfolios, publish work, and land meaningful
+                opportunities.
               </p>
             </section>
 
@@ -74,8 +75,9 @@ export default function AboutUsPage() {
               <h2 className="font-semibold mb-2">Our Story</h2>
               <p>
                 Starting with small cohorts and research-driven bootcamps, we saw how learners
-                thrive when rigor meets relevance. Today, Vizuara brings that high-touch model
-                to a broader audience - without compromising on depth, expectations, or outcomes.
+                thrive when rigor meets relevance. Today, RedPanda Learns brings that high-touch
+                model to a broader audience - without compromising on depth, expectations, or
+                outcomes.
               </p>
             </section>
 
@@ -89,8 +91,6 @@ export default function AboutUsPage() {
                 <li>Student-first - design every experience for learner success</li>
               </ul>
             </section>
-
-           
           </CardContent>
         </Card>
       </main>

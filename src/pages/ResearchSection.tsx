@@ -51,30 +51,27 @@ const researchBootcamps = [
     title: "Reinforcement Learning Research Bootcamp",
     description:
       "Comprehensive program to write high-quality research papers in the field of Reinforcement Learning",
-    link: "https://rlresearcherbootcamp.vizuara.ai/",
+    link: "https://rlresearcherbootcamp.RedPanda Learns.ai/",
     color: "#44ff3b",
   },
   {
     icon: GraduationCap,
     title: "AI Highschool Researcher Bootcamp",
-    description:
-      "Research training program for aspiring high school AI researchers",
-    link: "https://ai-highschool-research.vizuara.ai/",
+    description: "Research training program for aspiring high school AI researchers",
+    link: "https://ai-highschool-research.RedPanda Learns.ai/",
     color: "#fbb03b",
   },
   {
     icon: Atom,
     title: "SciML Research Bootcamp",
-    description:
-      "Deep dive into Scientific Machine Learning and physics-informed neural networks",
+    description: "Deep dive into Scientific Machine Learning and physics-informed neural networks",
     link: "https://flyvidesh.online/ml-bootcamp",
     color: "#29abe2",
   },
   {
     icon: Network,
     title: "ML-DL Research Bootcamp",
-    description:
-      "Comprehensive research training in Machine Learning and Deep Learning",
+    description: "Comprehensive research training in Machine Learning and Deep Learning",
     link: "https://flyvidesh.online/ml-dl-bootcamp",
     color: "#ff00ff",
   },
@@ -83,14 +80,13 @@ const researchBootcamps = [
     title: "Computer Vision Research Bootcamp",
     description:
       "Work on research spanning CNNs, Vision Transformers, VLMs, VLPs, VLAs, and other transformers for vision",
-    link: "https://cvresearchbootcamp.vizuara.ai/",
+    link: "https://cvresearchbootcamp.RedPanda Learns.ai/",
     color: "#29abe2",
   },
   {
     icon: Sparkles,
     title: "GenAI Professional Bootcamp",
-    description:
-      "Advanced Generative AI research for professionals and researchers",
+    description: "Advanced Generative AI research for professionals and researchers",
     link: "https://flyvidesh.online/gen-ai-professional-bootcamp",
     color: "#fbb03b",
   },
@@ -103,9 +99,12 @@ const ResearchSection = () => {
 
   useEffect(() => {
     researchBootcamps.forEach((_, index) => {
-      setTimeout(() => {
-        setVisibleBootcamps((prev) => [...prev, index]);
-      }, index * 200 + 400);
+      setTimeout(
+        () => {
+          setVisibleBootcamps((prev) => [...prev, index]);
+        },
+        index * 200 + 400
+      );
     });
   }, []);
 
@@ -279,19 +278,15 @@ const ResearchSection = () => {
               Cutting-edge AI research across multiple domains
             </p>
             <p className="text-center text-foreground/70 text-base max-w-3xl mx-auto">
-              We believe in pushing the boundaries of what's possible with AI.
-              Our research spans from foundational scientific computing to
-              cutting-edge generative models, always grounded in rigorous
-              experimentation and real-world applications.
+              We believe in pushing the boundaries of what's possible with AI. Our research spans
+              from foundational scientific computing to cutting-edge generative models, always
+              grounded in rigorous experimentation and real-world applications.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Research Domains Column */}
-            <div
-              className="opacity-0 animate-fade-in-up"
-              style={{ animationDelay: "200ms" }}
-            >
+            <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
               <div className="flex flex-col items-center mb-8">
                 <h3 className="text-3xl font-semibold text-center mb-4 text-foreground">
                   Research Domains
@@ -303,7 +298,7 @@ const ResearchSection = () => {
                   asChild
                 >
                   <a
-                    href="https://research.vizuara.ai/"
+                    href="https://research.RedPanda Learns.ai/"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -330,32 +325,23 @@ const ResearchSection = () => {
                           style={{ color: domain.color }}
                         />
                       </div>
-                      <h4 className="text-2xl font-semibold text-foreground">
-                        {domain.title}
-                      </h4>
+                      <h4 className="text-2xl font-semibold text-foreground">{domain.title}</h4>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {domain.topics.map((topic, topicIndex) => {
-                        const isHovered =
-                          hoveredTopic === `${index}-${topicIndex}`;
+                        const isHovered = hoveredTopic === `${index}-${topicIndex}`;
                         return (
                           <div
                             key={topicIndex}
                             className="topic-tag px-4 py-2 rounded-lg bg-background/60 dark:bg-background/40 backdrop-blur-sm border-2 hover:shadow-lg hover:scale-110 hover:-translate-y-1 transition-all duration-300 cursor-pointer opacity-0 animate-tag-pop"
                             style={{
-                              animationDelay: `${
-                                600 + index * 150 + topicIndex * 100
-                              }ms`,
-                              borderColor: isHovered
-                                ? domain.color
-                                : `${domain.color}20`,
+                              animationDelay: `${600 + index * 150 + topicIndex * 100}ms`,
+                              borderColor: isHovered ? domain.color : `${domain.color}20`,
                               boxShadow: isHovered
                                 ? `0 8px 24px ${domain.color}40, 0 0 40px ${domain.color}20`
                                 : undefined,
                             }}
-                            onMouseEnter={() =>
-                              setHoveredTopic(`${index}-${topicIndex}`)
-                            }
+                            onMouseEnter={() => setHoveredTopic(`${index}-${topicIndex}`)}
                             onMouseLeave={() => setHoveredTopic(null)}
                           >
                             {/* Shimmer background effect */}
@@ -411,12 +397,8 @@ const ResearchSection = () => {
                                 style={{
                                   background: domain.color,
                                   opacity: isHovered ? 1 : 0.5,
-                                  transform: isHovered
-                                    ? "scale(1.3)"
-                                    : "scale(1)",
-                                  boxShadow: isHovered
-                                    ? `0 0 8px ${domain.color}`
-                                    : "none",
+                                  transform: isHovered ? "scale(1.3)" : "scale(1)",
+                                  boxShadow: isHovered ? `0 0 8px ${domain.color}` : "none",
                                 }}
                               />
                               <span
@@ -438,10 +420,7 @@ const ResearchSection = () => {
             </div>
 
             {/* Research Bootcamps Column with Progress Line */}
-            <div
-              className="opacity-0 animate-fade-in-up"
-              style={{ animationDelay: "300ms" }}
-            >
+            <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: "300ms" }}>
               <h3 className="text-3xl font-semibold text-center mb-8 text-foreground">
                 Research Bootcamps
               </h3>
@@ -463,9 +442,7 @@ const ResearchSection = () => {
                       key={index}
                       className="relative pl-16 opacity-0"
                       style={{
-                        animation: isVisible
-                          ? "fade-in-up 0.6s ease-out forwards"
-                          : "none",
+                        animation: isVisible ? "fade-in-up 0.6s ease-out forwards" : "none",
                         animationDelay: `${index * 200 + 400}ms`,
                       }}
                       onMouseEnter={() => setHoveredBootcamp(index)}
@@ -485,9 +462,7 @@ const ResearchSection = () => {
                           className="w-6 h-6 rounded-full flex items-center justify-center"
                           style={{
                             background: bootcamp.color,
-                            animation: isVisible
-                              ? "dot-pulse 2s ease-in-out infinite"
-                              : "none",
+                            animation: isVisible ? "dot-pulse 2s ease-in-out infinite" : "none",
                             animationDelay: `${index * 0.2}s`,
                           }}
                         >
@@ -502,9 +477,7 @@ const ResearchSection = () => {
                           boxShadow: isHovered
                             ? `0 12px 40px -10px ${bootcamp.color}25, 0 0 0 1px ${bootcamp.color}15`
                             : undefined,
-                          transform: isHovered
-                            ? "translateX(8px)"
-                            : "translateX(0)",
+                          transform: isHovered ? "translateX(8px)" : "translateX(0)",
                         }}
                       >
                         <div className="flex flex-col space-y-4">
@@ -527,9 +500,7 @@ const ResearchSection = () => {
                               <h4
                                 className="text-lg font-semibold mb-2 transition-colors duration-300"
                                 style={{
-                                  color: isHovered
-                                    ? bootcamp.color
-                                    : "var(--foreground)",
+                                  color: isHovered ? bootcamp.color : "var(--foreground)",
                                 }}
                               >
                                 {bootcamp.title}

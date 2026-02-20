@@ -1,7 +1,7 @@
 {
-  "name": "vizuara-mcp",
+  "name": "RedPanda Learns-mcp",
   "version": "1.0.0",
-  "description": "MCP server for Vizuara edtech platform - the central brain",
+  "description": "MCP server for RedPanda Learns edtech platform - the central brain",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

@@ -1,6 +1,6 @@
 import { getAuth } from "firebase/auth";
 
-const ALLOWED_REDIRECT_ORIGINS = ["https://pods.vizuara.ai"];
+const ALLOWED_REDIRECT_ORIGINS = ["https://pods.RedPanda Learns.ai"];
 
 export function getRedirectParam(): string | null {
   return new URLSearchParams(window.location.search).get("redirect");

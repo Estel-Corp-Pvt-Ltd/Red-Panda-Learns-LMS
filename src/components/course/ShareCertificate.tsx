@@ -45,17 +45,17 @@ const ShareCertificate: React.FC<{
     switch (platform) {
       case "whatsapp":
         url = `https://wa.me/?text=${encodeURIComponent(
-          `Check out my certificate from Vizuara AI Labs!\n${publicUrl}`
+          `Check out my certificate from RedPanda Learns!\n${publicUrl}`
         )}`;
         break;
       case "x":
         url = `https://x.com/intent/tweet?text=${encodeURIComponent(
-          `I just earned a certificate from Vizuara AI Labs 🎓\n${publicUrl}`
+          `I just earned a certificate from RedPanda Learns 🎓\n${publicUrl}`
         )}`;
         break;
       case "email":
         url = `mailto:?subject=${encodeURIComponent(
-          "My Vizuara AI Labs Certificate"
+          "My RedPanda Learns Certificate"
         )}&body=${encodeURIComponent(`Here’s my certificate:\n${publicUrl}`)}`;
         break;
       case "facebook":

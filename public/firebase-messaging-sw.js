@@ -63,12 +63,15 @@ const NOTIFICATION_CONFIG = {
 function formatNotification(payload) {
   // console.log("Service Worker: Formatting notification:", payload);
 
-  const title = payload?.notification?.title || payload?.data?.title || "Vizuara Notification";
+  const title =
+    payload?.notification?.title || payload?.data?.title || "RedPanda Learns Notification";
 
   const body = payload?.notification?.body || payload?.data?.body || "";
 
   const tag =
-    payload?.data?.tag || payload?.notification?.tag || "vizuara-notification-" + Date.now();
+    payload?.data?.tag ||
+    payload?.notification?.tag ||
+    "RedPanda Learns-notification-" + Date.now();
 
   const type = payload?.data?.type || "info";
 
@@ -118,7 +121,7 @@ self.addEventListener("push", (event) => {
         const textData = event.data.text();
         payload = {
           notification: {
-            title: "Vizuara",
+            title: "RedPanda Learns",
             body: textData || "New Notification",
           },
         };
@@ -128,7 +131,7 @@ self.addEventListener("push", (event) => {
       // console.log("Service Worker: Push event with no data");
       payload = {
         notification: {
-          title: "Vizuara",
+          title: "RedPanda Learns",
           body: "New Notification",
         },
       };
@@ -150,7 +153,7 @@ self.addEventListener("push", (event) => {
     // console.error("Service Worker: Error in push event handler:", err);
 
     event.waitUntil(
-      self.registration.showNotification("Vizuara", {
+      self.registration.showNotification("RedPanda Learns", {
         body: "You have a new notification",
         icon: "/logo.png",
         badge: "/72x72-badge.png",

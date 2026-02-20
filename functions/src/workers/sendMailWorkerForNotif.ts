@@ -24,7 +24,7 @@ export const SendMailWorkerForNotif = onMessagePublished(
           "api-key": apiKey,
         },
         body: JSON.stringify({
-          sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
+          sender: { name: "RedPanda Learns", email: "no_reply@RedPanda Learns.com" },
           to: [{ email: payload.to }],
           subject: payload.subject,
           htmlContent: payload.html,

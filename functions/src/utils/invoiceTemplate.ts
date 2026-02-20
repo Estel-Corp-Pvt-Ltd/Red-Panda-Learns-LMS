@@ -1,11 +1,10 @@
 import { Address, InvoiceData } from "../types/invoice";
 
-
 export function generateInvoiceHTML(invoiceData: InvoiceData): string {
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-IN', {
+    return new Intl.NumberFormat("en-IN", {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -373,7 +372,7 @@ body {
           <div class="company-details">
             <h1>${invoiceData.company.name}</h1>
             <div class="address">
-              ${companyAddressLines.map(line => `<p>${line}</p>`).join('')}
+              ${companyAddressLines.map((line) => `<p>${line}</p>`).join("")}
               <p>GSTIN ${invoiceData.company.gstin}</p>
               <p>${invoiceData.company.phone}</p>
               <p>${invoiceData.company.email}</p>
@@ -424,14 +423,14 @@ body {
           <h3>Bill To</h3>
           <div class="party-details">
             <p><strong>${invoiceData.billTo.name}</strong></p>
-            ${billToAddressLines.map(line => `<p>${line}</p>`).join('')}
+            ${billToAddressLines.map((line) => `<p>${line}</p>`).join("")}
           </div>
         </div>
         <div class="ship-to">
           <h3>Ship To</h3>
           <div class="party-details">
             <p><strong>${invoiceData.shipTo.name}</strong></p>
-            ${shipToAddressLines.map(line => `<p>${line}</p>`).join('')}
+            ${shipToAddressLines.map((line) => `<p>${line}</p>`).join("")}
           </div>
         </div>
       </div>
@@ -452,7 +451,9 @@ body {
             </tr>
           </thead>
           <tbody>
-            ${invoiceData.items.map((item, index) => `
+            ${invoiceData.items
+              .map(
+                (item, index) => `
             <tr>
               <td>${index + 1}</td>
               <td>${item.description}</td>
@@ -463,7 +464,9 @@ body {
               <td>${formatCurrency(item.igstAmount)}</td>
               <td>${formatCurrency(item.amount)}</td>
             </tr>
-            `).join('')}
+            `
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
@@ -519,11 +522,11 @@ body {
       <!-- Policy Links Section -->
       <div class="policy-links">
           <p>
-              <a href="https://vizuara.ai/terms" target="_blank">Payment Terms and Conditions</a> | 
-              <a href="https://vizuara.ai/privacy" target="_blank">Privacy Policy</a> | 
-              <a href="https://vizuara.ai/refund-policy" target="_blank">Refund Policy</a>
+              <a href="https://RedPanda Learns.ai/terms" target="_blank">Payment Terms and Conditions</a> | 
+              <a href="https://RedPanda Learns.ai/privacy" target="_blank">Privacy Policy</a> | 
+              <a href="https://RedPanda Learns.ai/refund-policy" target="_blank">Refund Policy</a>
           </p>
-          <p>For more information, visit: <a href="https://vizuara.ai" target="_blank">https://vizuara.ai</a></p>
+          <p>For more information, visit: <a href="https://RedPanda Learns.ai" target="_blank">https://RedPanda Learns.ai</a></p>
       </div>
     </div>
   </div>

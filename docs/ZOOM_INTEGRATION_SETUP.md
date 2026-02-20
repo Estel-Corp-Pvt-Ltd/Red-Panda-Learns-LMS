@@ -1,6 +1,6 @@
 # Zoom Meeting Integration Setup
 
-This guide explains how to set up Zoom meeting integration for lessons in the Vizuara AI Labs platform.
+This guide explains how to set up Zoom meeting integration for lessons in the RedPanda Learns platform.
 
 ## Overview
 

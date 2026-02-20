@@ -217,7 +217,7 @@ class TransactionService {
 
       const transaction = transactionResult.data;
 
-      if ([PAYMENT_PROVIDER.PAYPAL, PAYMENT_PROVIDER.RAZORPAY].includes(transaction.paymentProvider)) {
+      if (transaction.paymentProvider === PAYMENT_PROVIDER.RAZORPAY) {
         // const isValid = transaction.paymentDetails && transaction.paymentDetails?.paymentId === paymentId;
         const isValid = true;
         return ok(isValid);

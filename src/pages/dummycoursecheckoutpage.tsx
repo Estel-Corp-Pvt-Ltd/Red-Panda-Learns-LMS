@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { logError } from '@/utils/logger';
-type PaymentProvider = 'razorpay' | 'paypal';
+type PaymentProvider = 'razorpay';
 
 export default function DummyBundleCheckoutPage() {
   const { toast } = useToast();
@@ -348,20 +348,6 @@ export default function DummyBundleCheckoutPage() {
                     </Label>
                   </div>
 
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <RadioGroupItem value="paypal" id="paypal" />
-                    <Label htmlFor="paypal" className="flex-1 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <DollarSign className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">PayPal</p>
-                          <p className="text-sm text-muted-foreground">Pay with PayPal account</p>
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
                 </RadioGroup>
 
                 <Separator />
@@ -402,9 +388,6 @@ export default function DummyBundleCheckoutPage() {
                   <div id="razorpay-button-container" className="mt-4"></div>
                 )}
 
-                {selectedProvider === 'paypal' && (
-                  <div id="paypal-button-container" className="mt-4"></div>
-                )}
 
 
 

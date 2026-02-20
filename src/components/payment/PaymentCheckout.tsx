@@ -108,7 +108,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
   const regularTotal = items.reduce((sum, item) => sum + (item.originalAmount || 0), 0);
   const savings = regularTotal - subtotal;
   const finalAmount = Math.max(0, subtotal - discountAmount);
-  const convenienceFee = selectedProvider === PAYMENT_PROVIDER.RAZORPAY ? 0 : finalAmount * 0.05;
+  const convenienceFee = 0;
 
   useEffect(() => {
     // Update exchange rate when currency changes
@@ -773,7 +773,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                       EMI Payment Information
                     </h4>
                     <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
-                      Vizuara does not provide EMI options. EMI facilities are offered by{" "}
+                      RedPanda Learns does not provide EMI options. EMI facilities are offered by{" "}
                       <span className="font-semibold">Razorpay</span> and are subject to Razorpay's
                       terms and card eligibility. To pay via EMI, please select{" "}
                       <span className="font-semibold">Razorpay</span> as your payment method.
@@ -836,9 +836,6 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
                     </>
                   )}
                 </Button>
-                <div id="paypal-button-container" className="w-full">
-                  {/* PayPal button will be rendered here by the provider */}
-                </div>
               </div>
             </div>
           </div>

@@ -23,7 +23,6 @@ import {
   PAYMENT_ATTEMPT_STATUS,
   PAYMENT_PROVIDER,
   PAYMENT_STATUS,
-  PAYPAL_WEBHOOK_EVENT,
   POPUP_COURSE_TYPE,
   PRICING_MODEL,
   QUIZ_QUESTION_TYPE,
@@ -75,8 +74,6 @@ export type PaymentAttemptStatus =
 export type RefundInitiator = (typeof REFUND_INITIATOR)[keyof typeof REFUND_INITIATOR];
 export type RazorpayWebhookEvent =
   (typeof RAZORPAY_WEBHOOK_EVENT)[keyof typeof RAZORPAY_WEBHOOK_EVENT];
-export type PayPalWebhookEvent = (typeof PAYPAL_WEBHOOK_EVENT)[keyof typeof PAYPAL_WEBHOOK_EVENT];
-
 // ORDER
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 export type AddressType = (typeof ADDRESS_TYPE)[keyof typeof ADDRESS_TYPE];

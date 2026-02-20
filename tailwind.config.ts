@@ -1,6 +1,6 @@
 // tailwind.config.ts
 import type { Config } from "tailwindcss"
-import animate from "tailwindcss-animate" // FIX: use ESM import
+import animate from "tailwindcss-animate"
 
 export default {
   darkMode: ["class"],
@@ -19,6 +19,7 @@ export default {
     },
     extend: {
       colors: {
+        /* ── shadcn tokens ────────────────── */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -43,6 +44,11 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          yellow: "var(--accent-yellow)",
+          coral: "var(--accent-coral)",
+          sky: "var(--accent-sky)",
+          mint: "var(--accent-mint)",
+          lav: "var(--accent-lav)",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -52,13 +58,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        brand: {
-          orange: "hsl(var(--brand-orange))",
-          fuchsia: "hsl(var(--brand-fuchsia))",
-          blue: "hsl(var(--brand-blue))",
-          jet: "hsl(var(--brand-jet))",
-          white: "hsl(var(--brand-white))",
-          light: "hsl(var(--brand-light))",
+        ink: {
+          DEFAULT: "var(--fg)",
+          muted: "var(--ink-muted)",
+          border: "var(--ink-border)",
+        },
+        paper: {
+          DEFAULT: "var(--bg)",
+          card: "var(--paper-card)",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -71,30 +78,24 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      
       fontFamily: {
+        sans: ["Nunito", "Figtree", "sans-serif"],
+        hand: ["Caveat", "cursive"],
         figtree: ["Figtree", "sans-serif"],
-      },
-      backgroundImage: {
-        "gradient-primary": "var(--gradient-primary)",
-        "gradient-secondary": "var(--gradient-secondary)",
-        "gradient-card": "var(--gradient-card)",
-        "gradient-hero": "var(--gradient-hero)",
-      },
-      boxShadow: {
-        sm: "var(--shadow-sm)",
-        md: "var(--shadow-md)",
-        lg: "var(--shadow-lg)",
-        glow: "var(--shadow-glow)",
-      },
-      transitionTimingFunction: {
-        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
-        bounce: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        sketchy: "4px 4px 0px var(--ink-border)",
+        "sketchy-hover": "6px 6px 0px var(--ink-border)",
+        "sketchy-sm": "2px 2px 0px var(--ink-border)",
+      },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
+        bounce: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
       },
       keyframes: {
         "accordion-down": {
@@ -121,10 +122,6 @@ export default {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
         },
-        "pulse-glow": {
-          "0%, 100%": { boxShadow: "var(--shadow-glow)" },
-          "50%": { boxShadow: "0 0 30px hsl(217 91% 60% / 0.6)" },
-        },
         "slide-in-right": {
           "0%": { transform: "translateX(100%)", opacity: "0" },
           "100%": { transform: "translateX(0)", opacity: "1" },
@@ -137,10 +134,9 @@ export default {
         "fade-in-up": "fade-in-up 0.6s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
         shimmer: "shimmer 2s infinite",
-        "pulse-glow": "pulse-glow 3s ease-in-out infinite",
         "slide-in-right": "slide-in-right 0.4s ease-out",
       },
     },
   },
-  plugins: [animate], // ESM-compatible
+  plugins: [animate],
 } satisfies Config

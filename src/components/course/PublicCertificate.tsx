@@ -47,9 +47,7 @@ const PublicCertificate: React.FC = () => {
   const [scale, setScale] = useState(1);
 
   // Additional state for custom certificate name
-  const [customCertificateName, setCustomCertificateName] = useState<
-    string | null
-  >(null);
+  const [customCertificateName, setCustomCertificateName] = useState<string | null>(null);
 
   // ---------------------------------------------------------------------------
   // Mobile Scaling Handler
@@ -159,8 +157,7 @@ const PublicCertificate: React.FC = () => {
         <div className="text-center">
           <p className="text-gray-600 mb-4">No Certificate Found.</p>
           <p className="text-sm text-gray-400">
-            The certificate you're looking for doesn't exist or has been
-            removed.
+            The certificate you're looking for doesn't exist or has been removed.
           </p>
         </div>
       </div>
@@ -193,18 +190,8 @@ const PublicCertificate: React.FC = () => {
           {/* QR Code for Verification */}
           <div className="absolute top-8 right-8 z-10">
             <div className="bg-white p-1">
-              <Suspense
-                fallback={
-                  <div className="w-[64px] h-[64px] bg-gray-100 animate-pulse" />
-                }
-              >
-                <QRCode
-                  value={qrUrl}
-                  size={64}
-                  fgColor="#000000"
-                  bgColor="#ffffff"
-                  level="M"
-                />
+              <Suspense fallback={<div className="w-[64px] h-[64px] bg-gray-100 animate-pulse" />}>
+                <QRCode value={qrUrl} size={64} fgColor="#000000" bgColor="#ffffff" level="M" />
               </Suspense>
             </div>
           </div>
@@ -227,8 +214,8 @@ const PublicCertificate: React.FC = () => {
                 {/* Company Logo */}
                 <div className="w-36 h-36 mb-2 flex items-center justify-center">
                   <img
-                    src="/Vizuara_Logo_Design.png"
-                    alt="Vizuara AI Labs"
+                    src="/RedPanda Learns_Logo_Design.png"
+                    alt="RedPanda Learns"
                     className="w-full h-full object-contain drop-shadow-sm"
                   />
                 </div>
@@ -240,7 +227,7 @@ const PublicCertificate: React.FC = () => {
               {/* Header Section */}
               <div>
                 <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-8">
-                  Vizuara AI Labs
+                  RedPanda Learns
                 </h2>
 
                 <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-4">
@@ -253,8 +240,7 @@ const PublicCertificate: React.FC = () => {
                 </h1>
 
                 <p className="text-sm text-gray-600 font-medium max-w-md leading-relaxed">
-                  Successfully completed the course, assignments and received
-                  passing grade.
+                  Successfully completed the course, assignments and received passing grade.
                 </p>
               </div>
 
@@ -274,8 +260,7 @@ const PublicCertificate: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-3">
-                    Course completed on{" "}
-                    {data.completionDate || new Date().toLocaleDateString()}
+                    Course completed on {data.completionDate || new Date().toLocaleDateString()}
                   </div>
                 </div>
 
@@ -302,9 +287,7 @@ const PublicCertificate: React.FC = () => {
       </div>
 
       {/* Certificate ID */}
-      <div className="mt-6 text-xs text-gray-400 text-center">
-        Certificate ID: {certificateId}
-      </div>
+      <div className="mt-6 text-xs text-gray-400 text-center">Certificate ID: {certificateId}</div>
 
       {/* Mobile Hint */}
       <div className="mt-4 text-xs text-gray-400 md:hidden text-center">
@@ -327,18 +310,10 @@ interface SignatureBlockProps {
 /**
  * Reusable signature block component
  */
-const SignatureBlock: React.FC<SignatureBlockProps> = ({
-  name,
-  imageSrc,
-  imageHeight = "h-6",
-}) => (
+const SignatureBlock: React.FC<SignatureBlockProps> = ({ name, imageSrc, imageHeight = "h-6" }) => (
   <div className="flex flex-col items-end">
     <div className="text-[11px] font-bold text-gray-800 mb-1">{name}</div>
-    <img
-      src={imageSrc}
-      alt="Signature"
-      className={`${imageHeight} opacity-80`}
-    />
+    <img src={imageSrc} alt="Signature" className={`${imageHeight} opacity-80`} />
   </div>
 );
 

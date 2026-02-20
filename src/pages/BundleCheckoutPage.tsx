@@ -53,7 +53,6 @@ import { Bundle } from "@/types/bundle";
 import { bundleService } from "@/services/bundleService";
 const providerSupportedCurrencies: Record<PaymentProvider, Currency[]> = {
   RAZORPAY: [CURRENCY.INR, CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
-  PAYPAL: [CURRENCY.USD, CURRENCY.EUR, CURRENCY.GBP],
 };
 
 const METHOD_LOGOS: Record<
@@ -69,15 +68,6 @@ const METHOD_LOGOS: Record<
       className: "h-[20px] w-[32px]",
     },
     { name: "RuPay", src: "/rupay.png", className: "h-[30px] w-[40px]" },
-  ],
-  PAYPAL: [
-    { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-    {
-      name: "Mastercard",
-      src: "/mastercard.svg",
-      className: "h-[20px] w-[32px]",
-    },
-    { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
   ],
 };
 

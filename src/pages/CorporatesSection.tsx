@@ -9,14 +9,14 @@ import img from "/img.png";
 const CorporatesSection = () => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-  const email = "hello@vizuara.com";
+  const email = "hello@RedPanda Learns.com";
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(email);
     setCopied(true);
     toast({
       title: "Email copied!",
-      description: "hello@vizuara.com has been copied to your clipboard",
+      description: "hello@RedPanda Learns.com has been copied to your clipboard",
     });
     setTimeout(() => setCopied(false), 2000);
   };

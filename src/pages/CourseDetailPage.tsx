@@ -2,11 +2,7 @@ import { Header } from "@/components/Header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import {
@@ -30,15 +26,7 @@ import { Topic } from "@/types/course";
 import { Duration } from "@/types/general";
 import { getCourseStructureCounts } from "@/utils/course";
 import { formatDate, formatDateTime } from "@/utils/date-time";
-import {
-  ArrowLeft,
-  BookOpen,
-  ChevronRight,
-  Clock,
-  Info,
-  Lock,
-  Play,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronRight, Clock, Info, Lock, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -55,7 +43,9 @@ export default function CourseDetailPage() {
   const [lessonDescriptions, setLessonDescriptions] = useState<Record<string, string>>({});
   const [courseDuration, setCourseDuration] = useState<Duration>({ hours: 0, minutes: 0 });
 
-  const isAddedToCart = cart.some((item) => item.type === ENROLLED_PROGRAM_TYPE.COURSE && item.refId === courseId);
+  const isAddedToCart = cart.some(
+    (item) => item.type === ENROLLED_PROGRAM_TYPE.COURSE && item.refId === courseId
+  );
 
   const {
     data: course,
@@ -69,7 +59,6 @@ export default function CourseDetailPage() {
     if (!param || courseLoading || !course) return;
     setCourseId(course.id);
   }, [param, courseLoading, course?.id]);
-
 
   const isLoading = courseLoading;
   const isError = courseError;
@@ -118,7 +107,6 @@ export default function CourseDetailPage() {
     fetchLessonDescriptions();
   }, [courseId]);
 
-
   const handleAddToCart = async () => {
     if (!user) {
       navigate("/auth/login", {
@@ -133,7 +121,9 @@ export default function CourseDetailPage() {
     if (userIsEnrolled) {
       if (course.topics && course.topics.length > 0) {
         const firstTopic = course.topics[0];
-        navigate(`/courses/${course.slug ? course.slug : course.id}/lesson/${firstTopic.items[0].id}`);
+        navigate(
+          `/courses/${course.slug ? course.slug : course.id}/lesson/${firstTopic.items[0].id}`
+        );
       }
     }
 
@@ -169,7 +159,8 @@ export default function CourseDetailPage() {
     navigate(`/checkout/${course.slug ? course.slug : course.id}`);
   };
 
-  const isCourseInstructor = user?.role === USER_ROLE.INSTRUCTOR && course?.instructorId === user?.id;
+  const isCourseInstructor =
+    user?.role === USER_ROLE.INSTRUCTOR && course?.instructorId === user?.id;
 
   const goToEditCourse = () => {
     if (isCourseInstructor) {
@@ -183,8 +174,8 @@ export default function CourseDetailPage() {
     if (!course) return;
 
     const firstLessonId = course.topics
-      ?.flatMap(topic => topic.items || [])
-      .find(item => item?.id)?.id;
+      ?.flatMap((topic) => topic.items || [])
+      .find((item) => item?.id)?.id;
 
     if (firstLessonId) {
       const courseSlug = course.slug || course.id;
@@ -264,8 +255,7 @@ export default function CourseDetailPage() {
               const handleLockedClick = () => {
                 toast({
                   title: "Access Restricted",
-                  description:
-                    "Please enroll in this course to view the lessons.",
+                  description: "Please enroll in this course to view the lessons.",
                   variant: "destructive",
                 });
               };
@@ -273,7 +263,7 @@ export default function CourseDetailPage() {
               const baseClasses =
                 "block p-3 rounded-lg border border-transparent transition-colors hover:bg-muted/50 hover:border-border cursor-pointer";
 
-              return (userIsEnrolled || isCourseInstructor) ? (
+              return userIsEnrolled || isCourseInstructor ? (
                 <Link
                   key={lessonId}
                   to={`/courses/${course.slug ? course.slug : course.id}/lesson/${lessonId}`}
@@ -297,8 +287,7 @@ export default function CourseDetailPage() {
                       />
                       <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block w-64 bg-popover text-popover-foreground p-1.5 text-sm rounded-md z-10 break-words border-l-2 border-b-2 border-primary/40 shadow-[2px_-2px_8px_rgba(0,0,0,0.15)]">
                         <p className="whitespace-pre-wrap leading-snug">
-                          {lessonDescriptions[lessonId] ||
-                            "No description available."}
+                          {lessonDescriptions[lessonId] || "No description available."}
                         </p>
                       </div>
                     </div>
@@ -322,9 +311,7 @@ export default function CourseDetailPage() {
               );
             })
           ) : (
-            <p className="py-2 text-sm text-muted-foreground">
-              No lessons available.
-            </p>
+            <p className="py-2 text-sm text-muted-foreground">No lessons available.</p>
           )}
         </CollapsibleContent>
       </Collapsible>
@@ -368,9 +355,7 @@ export default function CourseDetailPage() {
                     {instructorInitial}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium">
-                  {course.instructorName}
-                </span>
+                <span className="text-sm font-medium">{course.instructorName}</span>
               </div>
             )}
 
@@ -396,12 +381,14 @@ export default function CourseDetailPage() {
                   {course.thumbnail ? (
                     <>
                       <img
-                        src={course.thumbnail.includes("https://vizuara.ai/")
-                          ? course.thumbnail.replace(
-                            "https://vizuara.ai/",
-                            "https://vizuaracoin.wpcomstaging.com/"
-                          )
-                          : course.thumbnail}
+                        src={
+                          course.thumbnail.includes("https://RedPanda Learns.ai/")
+                            ? course.thumbnail.replace(
+                                "https://RedPanda Learns.ai/",
+                                "https://RedPanda Learnscoin.wpcomstaging.com/"
+                              )
+                            : course.thumbnail
+                        }
                         alt={`${course.title} thumbnail`}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -444,7 +431,9 @@ export default function CourseDetailPage() {
                       <span className="line-through text-muted-foreground">
                         {formatINR(course.regularPrice)}
                       </span>
-                    ) : (<span></span>)}
+                    ) : (
+                      <span></span>
+                    )}
                     <span className="font-semibold text-primary">
                       {course.salePrice === 0 ? "FREE" : formatINR(course.salePrice)}
                     </span>
@@ -453,13 +442,15 @@ export default function CourseDetailPage() {
                   <div className="space-y-2">
                     {user?.role == USER_ROLE.ADMIN || isCourseInstructor ? (
                       <>
-                        <Button className="w-full" size="lg" onClick={goToEditCourse} >
+                        <Button className="w-full" size="lg" onClick={goToEditCourse}>
                           <Play className="h-4 w-4 mr-2" />
                           Edit Course
                         </Button>
-                        <Button className="w-full" size="lg" onClick={handleContinueLearning} >
+                        <Button className="w-full" size="lg" onClick={handleContinueLearning}>
                           <Play className="h-4 w-4 mr-2" />
-                          {user?.role == USER_ROLE.ADMIN ? "Continue as Admin" : "View Course Content"}
+                          {user?.role == USER_ROLE.ADMIN
+                            ? "Continue as Admin"
+                            : "View Course Content"}
                         </Button>
                       </>
                     ) : (
@@ -472,11 +463,7 @@ export default function CourseDetailPage() {
                             </div>
                           </Button>
                         ) : userIsEnrolled ? (
-                          <Button
-                            className="w-full"
-                            size="lg"
-                            onClick={handleContinueLearning}
-                          >
+                          <Button className="w-full" size="lg" onClick={handleContinueLearning}>
                             <Play className="h-4 w-4 mr-2" />
                             Continue Learning
                           </Button>
@@ -487,11 +474,7 @@ export default function CourseDetailPage() {
                                 <Button className="w-full">Go to Cart</Button>
                               </Link>
                             ) : (
-                              <Button
-                                className="w-full"
-                                size="lg"
-                                onClick={handleAddToCart}
-                              >
+                              <Button className="w-full" size="lg" onClick={handleAddToCart}>
                                 Add to Cart
                               </Button>
                             )}
@@ -502,7 +485,6 @@ export default function CourseDetailPage() {
                         )}
                       </>
                     )}
-
                   </div>
                 </div>
               </CardContent>
@@ -529,9 +511,7 @@ export default function CourseDetailPage() {
                   </span>
                 </div>
               </CardHeader>
-              <CardContent>
-                {course.topics.map((topic) => renderTopic(topic))}
-              </CardContent>
+              <CardContent>{course.topics.map((topic) => renderTopic(topic))}</CardContent>
             </Card>
 
             {/* Course Details (optional) */}
@@ -545,9 +525,7 @@ export default function CourseDetailPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Mode</span>
-                    <span className="font-medium">
-                      {course.mode || COURSE_MODE.SELF_PACED}
-                    </span>
+                    <span className="font-medium">{course.mode || COURSE_MODE.SELF_PACED}</span>
                   </div>
                   {course.mode === COURSE_MODE.LIVE && course.liveAt && (
                     <div className="flex justify-between items-center rounded-md bg-primary/10 px-3 py-2 -mx-3">
@@ -559,9 +537,7 @@ export default function CourseDetailPage() {
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
-                    <span className="font-medium">
-                      {formatDate(course.updatedAt)}
-                    </span>
+                    <span className="font-medium">{formatDate(course.updatedAt)}</span>
                   </div>
                 </div>
               </CardContent>

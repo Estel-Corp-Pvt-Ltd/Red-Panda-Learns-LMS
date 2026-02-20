@@ -110,7 +110,7 @@ async function sendSubmissionGradedNotificationHandler(req: Request, res: Respon
             },
             data: {
               type: PUSH_NOTIFICATION_TYPE.GRADING,
-              url: "https://vizuara.ai/submissions",
+              url: "https://RedPanda Learns.ai/submissions",
             },
           });
 

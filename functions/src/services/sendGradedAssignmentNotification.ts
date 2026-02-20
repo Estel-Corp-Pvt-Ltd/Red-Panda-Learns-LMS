@@ -17,7 +17,7 @@ export async function sendGradedAssignmentNotification(
     }
 
     // Step 2: Prepare the evaluation link
-    const evalLink = `https://vizuara.ai/submissions`;
+    const evalLink = `https://RedPanda Learns.ai/submissions`;
 
     // Step 3: Build email HTML (using the single template)
     // ✅ Choose email template

@@ -8,7 +8,7 @@ const products = [
     title: "DynaRoute",
     description:
       "Route your queries to the most appropriate model based on complexity, cost, and performance requirements.",
-    link: "https://dynaroute.vizuara.ai/",
+    link: "https://dynaroute.RedPanda Learns.ai/",
     color: "#fbb03b",
     gradient: "from-[#fbb03b] to-[#ff9500]",
     bgClass: "bg-black dark:bg-gray-900",
@@ -16,11 +16,12 @@ const products = [
   {
     logo: "/vizz-logo.png",
     title: "Vizz-AI",
-    description: "Your Personalized AI Tutor for Every Vizuara's Course",
-    link: "https://vizz.vizuara.ai/",
+    description: "Your Personalized AI Tutor for Every RedPanda Learns's Course",
+    link: "https://vizz.RedPanda Learns.ai/",
     color: "#ff00ff",
     gradient: "from-[#ff00ff] to-[#cc00cc]",
-    bgClass: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-blue-900/30",
+    bgClass:
+      "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-blue-900/30",
   },
 ];
 
@@ -45,17 +46,15 @@ const ProductsSection = () => {
             <span className="text-sm font-medium text-foreground/70">Our AI Products</span>
           </div>
 
-          <h2 className="text-5xl md:text-6xl font-semibold text-foreground">
-            AI Products
-          </h2>
+          <h2 className="text-5xl md:text-6xl font-semibold text-foreground">AI Products</h2>
 
           <p className="text-center text-foreground/60 text-lg max-w-2xl mx-auto">
             Accessible AI tools and platforms for all users
           </p>
 
           <p className="text-center text-foreground/70 text-base max-w-3xl mx-auto">
-            Our AI tools are built from real research and hands-on experience, designed to solve actual problems you face
-            in learning and development.
+            Our AI tools are built from real research and hands-on experience, designed to solve
+            actual problems you face in learning and development.
           </p>
         </div>
 
@@ -76,8 +75,8 @@ const ProductsSection = () => {
                   style={{
                     boxShadow: isHovered
                       ? `0 12px 40px -10px ${product.color}25, 0 0 0 1px ${product.color}15`
-                      : '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+                      : "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    transform: isHovered ? "translateY(-4px)" : "translateY(0)",
                   }}
                 >
                   <div className="relative flex flex-col items-center text-center space-y-6 h-full">
@@ -87,8 +86,8 @@ const ProductsSection = () => {
                       style={{
                         boxShadow: isHovered
                           ? `0 8px 24px ${product.color}40`
-                          : '0 4px 12px rgba(0, 0, 0, 0.1)',
-                        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                          : "0 4px 12px rgba(0, 0, 0, 0.1)",
+                        transform: isHovered ? "scale(1.05)" : "scale(1)",
                       }}
                     >
                       <img
@@ -103,7 +102,7 @@ const ProductsSection = () => {
                       <h3
                         className="text-2xl font-semibold mb-3 transition-colors duration-300"
                         style={{
-                          color: isHovered ? product.color : 'var(--foreground)',
+                          color: isHovered ? product.color : "var(--foreground)",
                         }}
                       >
                         {product.title}

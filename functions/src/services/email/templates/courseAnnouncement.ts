@@ -7,9 +7,9 @@ export const buildCourseAnnouncementEmail = (
   const isLesson = itemId.toLowerCase().startsWith("lesson");
   const itemType = isLesson ? "Lesson" : "Assignment";
 
-  const link = `https://vizuara.ai/courses/${urlSlug}/lesson/${itemId}`;
+  const link = `https://RedPanda Learns.ai/courses/${urlSlug}/lesson/${itemId}`;
 
-return `
+  return `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
@@ -121,14 +121,14 @@ return `
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td valign="middle" style="padding-right: 14px;">
-                            <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" width="48" height="48" class="logo-img" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
+                            <img src="https://RedPanda Learns.ai/logo.png" alt="RedPanda Learns Logo" width="48" height="48" class="logo-img" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
                           </td>
                           <td valign="middle">
                             <!--[if mso]>
-                            <span style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
+                            <span style="color: #d946ef; font-size: 24px; font-weight: 800;">RedPanda Learns</span>
                             <![endif]-->
                             <!--[if !mso]><!-->
-                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">Vizuara AI Labs</span>
+                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">RedPanda Learns</span>
                             <!--<![endif]-->
                           </td>
                         </tr>
@@ -290,10 +290,10 @@ return `
                       <p style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
                         Made with <span style="color: #d946ef;">♥</span> by the 
                         <!--[if mso]>
-                        <span style="font-weight: 700; color: #d946ef;">Vizuara</span>
+                        <span style="font-weight: 700; color: #d946ef;">RedPanda Learns</span>
                         <![endif]-->
                         <!--[if !mso]><!-->
-                        <span style="font-weight: 700; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara</span>
+                        <span style="font-weight: 700; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">RedPanda Learns</span>
                         <!--<![endif]-->
                         Team
                       </p>
@@ -307,13 +307,13 @@ return `
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td valign="middle">
-                            <a href="https://vizuara.ai" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
+                            <a href="https://RedPanda Learns.ai" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
                           </td>
                           <td valign="middle" style="padding: 0 12px;">
                             <span style="color: #8a8a9a; font-size: 10px;">•</span>
                           </td>
                           <td valign="middle">
-                            <a href="https://vizuara.ai/privacy" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
+                            <a href="https://RedPanda Learns.ai/privacy" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
                           </td>
                         </tr>
                       </table>

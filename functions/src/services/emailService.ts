@@ -25,7 +25,7 @@ export async function sendMail(payload: MailPayload) {
   }
 }
 export function buildEvaluationEmail(evalLink: string) {
-return `
+  return `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
@@ -176,14 +176,14 @@ return `
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td valign="middle" style="padding-right: 14px;">
-                            <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
+                            <img src="https://RedPanda Learns.ai/logo.png" alt="RedPanda Learns Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
                           </td>
                           <td valign="middle">
                             <!--[if mso]>
-                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
+                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">RedPanda Learns</span>
                             <![endif]-->
                             <!--[if !mso]><!-->
-                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara AI Labs</span>
+                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">RedPanda Learns</span>
                             <!--<![endif]-->
                           </td>
                         </tr>
@@ -271,7 +271,7 @@ return `
                   <tr>
                     <td align="center">
                       <p class="footer-text" style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
-                        Made with <span style="color: #d946ef;">♥</span> by the <span style="font-weight: 700; color: #d946ef;">Vizuara</span> Team
+                        Made with <span style="color: #d946ef;">♥</span> by the <span style="font-weight: 700; color: #d946ef;">RedPanda Learns</span> Team
                       </p>
                     </td>
                   </tr>
@@ -299,9 +299,8 @@ return `
 `;
 }
 
-
 export function buildReminderEmail(evalLink: string) {
-return `
+  return `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
@@ -452,14 +451,14 @@ return `
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td valign="middle" style="padding-right: 14px;">
-                            <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
+                            <img src="https://RedPanda Learns.ai/logo.png" alt="RedPanda Learns Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
                           </td>
                           <td valign="middle">
                             <!--[if mso]>
-                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
+                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">RedPanda Learns</span>
                             <![endif]-->
                             <!--[if !mso]><!-->
-                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara AI Labs</span>
+                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">RedPanda Learns</span>
                             <!--<![endif]-->
                           </td>
                         </tr>
@@ -548,7 +547,7 @@ return `
                     <td align="center">
                       <p class="footer-text" style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
                         Thank you,<br />
-                        — The <span style="font-weight: 700; color: #d946ef;">Vizuara</span> Team
+                        — The <span style="font-weight: 700; color: #d946ef;">RedPanda Learns</span> Team
                       </p>
                     </td>
                   </tr>
@@ -567,23 +566,20 @@ return `
   </body>
 </html>
 `;
-};
+}
 
-export const buildComplaintRedressalEmail = (
-  params: {
-    complaintId: string;
-    userName: string;
-    category: ComplaintCategory;
-    status: ComplaintStatus;
-    description: string;
-    imageUrls?: string[];
-    actionTitle: string;
-    messageBody: string;
-    resolutionSummary?: string;
-    actionDate: string;
-  }
-): string => {
-
+export const buildComplaintRedressalEmail = (params: {
+  complaintId: string;
+  userName: string;
+  category: ComplaintCategory;
+  status: ComplaintStatus;
+  description: string;
+  imageUrls?: string[];
+  actionTitle: string;
+  messageBody: string;
+  resolutionSummary?: string;
+  actionDate: string;
+}): string => {
   const {
     complaintId,
     userName,
@@ -600,15 +596,14 @@ export const buildComplaintRedressalEmail = (
   const linkify = (text: string): string => {
     if (!text) return text;
 
-    const urlRegex =
-      /((https?:\/\/)([\w.-]+)(:[0-9]+)?(\/[\w./?%&=+#-]*)?)/gi;
+    const urlRegex = /((https?:\/\/)([\w.-]+)(:[0-9]+)?(\/[\w./?%&=+#-]*)?)/gi;
 
     return text.replace(urlRegex, (url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
   };
 
-   const renderImages = (imageURLs?: string[]): string => {
+  const renderImages = (imageURLs?: string[]): string => {
     if (!imageURLs || imageURLs.length === 0) return "";
     return `
       <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed rgba(120, 120, 120, 0.2);">
@@ -779,14 +774,14 @@ export const buildComplaintRedressalEmail = (
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td valign="middle" style="padding-right: 14px;">
-                            <img src="https://vizuara.ai/logo.png" alt="Vizuara Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
+                            <img src="https://RedPanda Learns.ai/logo.png" alt="RedPanda Learns Logo" width="48" height="48" style="display: block; width: 48px; height: 48px; object-fit: contain;" />
                           </td>
                           <td valign="middle">
                             <!--[if mso]>
-                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">Vizuara AI Labs</span>
+                            <span class="logo-text-fallback" style="color: #d946ef; font-size: 24px; font-weight: 800;">RedPanda Learns</span>
                             <![endif]-->
                             <!--[if !mso]><!-->
-                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Vizuara AI Labs</span>
+                            <span class="logo-text" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, hsl(300, 100%, 50%) 0%, hsl(198, 75%, 52%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">RedPanda Learns</span>
                             <!--<![endif]-->
                           </td>
                         </tr>
@@ -856,7 +851,7 @@ export const buildComplaintRedressalEmail = (
                         <tr>
                           <td colspan="2" valign="top">
                             <span class="meta-label">Handled By</span>
-                            <span class="meta-value">Vizuara Support Team</span>
+                            <span class="meta-value">RedPanda Learns Support Team</span>
                           </td>
                         </tr>
                          <tr>
@@ -910,7 +905,7 @@ export const buildComplaintRedressalEmail = (
                   <tr>
                     <td align="center">
                       <p class="footer-text" style="font-size: 14px; color: #6a6a7a; font-weight: 500; margin: 0;">
-                        Made with <span style="color: #d946ef;">♥</span> by the <span style="font-weight: 700; color: #d946ef;">Vizuara</span> Team
+                        Made with <span style="color: #d946ef;">♥</span> by the <span style="font-weight: 700; color: #d946ef;">RedPanda Learns</span> Team
                       </p>
                     </td>
                   </tr>
@@ -922,11 +917,11 @@ export const buildComplaintRedressalEmail = (
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td>
-                            <a href="https://vizuara.ai" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
+                            <a href="https://RedPanda Learns.ai" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Website</a>
                           </td>
                           <td style="padding: 0 12px; color: #8a8a9a; font-size: 10px;">•</td>
                           <td>
-                            <a href="https://vizuara.ai/privacy" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
+                            <a href="https://RedPanda Learns.ai/privacy" style="font-size: 13px; color: #8a8a9a; text-decoration: none; font-weight: 500;">Privacy</a>
                           </td>
                         </tr>
                       </table>

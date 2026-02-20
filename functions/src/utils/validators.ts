@@ -48,7 +48,7 @@ export const ItemSchema = z.object({
 export type OrderItem = z.infer<typeof ItemSchema>;
 
 export const PaymentRequestSchema = z.object({
-  provider: z.enum(["RAZORPAY", "PAYPAL"]),
+  provider: z.enum(["RAZORPAY"]),
   items: z.array(ItemSchema).min(1, "At least one item is required").max(10),
   selectedCurrency: z.enum(["USD", "INR", "EUR", "GBP"]),
   billingAddress: AddressSchema,

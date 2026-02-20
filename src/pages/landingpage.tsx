@@ -1,15 +1,14 @@
 import { Header } from "@/components/Header";
-import { HeroSection } from "@/components/HeroSection";
-import { NewsletterSection } from "@/components/NewsletterSection";
-import { TeamSection } from "@/components/Team";
-import AICoursesSection from "./AICoursesSection";
-import CorporatesSection from "./CorporatesSection";
-import Footer from "./Footer";
-import OurImpactSection from "./OurImpactSection";
-import PhilosophySection from "./PhilosophySection";
-import ProductsSection from "./ProductsSection";
-import ResearchSection from "./ResearchSection";
-import TestimonialsSection from "./TestimonialsSection";
+import { HeroSection } from "@/components/landing/components/HeroSection";
+import { CourseCategories } from "@/components/landing/components/CourseCategories";
+import { HowItWorks } from "@/components/landing/components/HowItWorks";
+import { ForParents } from "@/components/landing/components/ForParents";
+import { ProgressRewards } from "@/components/landing/components/ProgressRewards";
+import { TestimonialsCarousel } from "@/components/landing/components/TestimonialsCarousel";
+import { PricingSection } from "@/components/landing/components/PricingSection";
+import { ImpactStats } from "@/components/landing/components/ImpactStats";
+import { NewsletterSignup } from "@/components/landing/components/NewsletterSignup";
+import { LandingFooter } from "@/components/landing/components/LandingFooter";
 import { BannerSlider } from "@/components/BannerSlider";
 import { Banner } from "@/types/banner";
 import { useEffect, useState } from "react";
@@ -19,7 +18,6 @@ const LandingPage = () => {
   const [banners, setBanners] = useState<Array<Banner>>([]);
 
   useEffect(() => {
-    // Fetch banners from your API or data source
     const fetchBanners = async () => {
       try {
         const result = await bannerService.getAllBanners();
@@ -35,23 +33,23 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background no-scrollbar .no-scrollbar::-webkit-scrollbar">
+    <div className="min-h-screen bg-background no-scrollbar">
       <Header />
       <HeroSection />
-      <div className="px-2" >
-        <BannerSlider banners={banners} className="max-w-7xl mx-auto" />
-      </div>
-      <PhilosophySection />
-      <ProductsSection />
-      <ResearchSection />
-      <AICoursesSection />
-      <CorporatesSection />
-      <TeamSection />
-      <OurImpactSection />
-      <TestimonialsSection />
-      <NewsletterSection />
-      <Footer />
-      {/* </StripBannerProvider> */}
+      {banners.length > 0 && (
+        <div className="px-2">
+          <BannerSlider banners={banners} className="max-w-7xl mx-auto" />
+        </div>
+      )}
+      <CourseCategories />
+      <HowItWorks />
+      <ForParents />
+      <ProgressRewards />
+      <TestimonialsCarousel />
+      <PricingSection />
+      <ImpactStats />
+      <NewsletterSignup />
+      <LandingFooter />
     </div>
   );
 };

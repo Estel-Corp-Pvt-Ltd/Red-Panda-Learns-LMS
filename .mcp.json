@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "vizuara-mcp": {
+    "RedPanda Learns-mcp": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
-      "cwd": "/Users/Github/Vizuara-Official",
+      "cwd": "/Users/Github/RedPanda Learns-Official",
       "env": {
         "GOOGLE_APPLICATION_CREDENTIALS": "mcp-server/service-account.json"
       }

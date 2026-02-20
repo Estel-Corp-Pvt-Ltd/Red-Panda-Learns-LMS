@@ -26,9 +26,7 @@ const toMillis = (value: any): number | null => {
   return Number.isNaN(ms) ? null : ms;
 };
 
-export const getQuizTimeLeftHandler = async (
-  req: functions.https.CallableRequest
-) => {
+export const getQuizTimeLeftHandler = async (req: functions.https.CallableRequest) => {
   try {
     functions.logger.info("[getQuizTimeLeft] Request received", {
       auth: req.auth,
@@ -79,9 +77,7 @@ export const getQuizTimeLeftHandler = async (
 
     functions.logger.info("[getQuizTimeLeft] Quiz data fetched", {
       quizId,
-      scheduledAt: scheduledAtMillis
-        ? new Date(scheduledAtMillis).toISOString()
-        : null,
+      scheduledAt: scheduledAtMillis ? new Date(scheduledAtMillis).toISOString() : null,
       endAt: endAtMillis ? new Date(endAtMillis).toISOString() : null,
       durationMinutes: quiz.durationMinutes,
       serverNow: new Date(nowMillis).toISOString(),
@@ -96,59 +92,54 @@ export const getQuizTimeLeftHandler = async (
       .limit(1)
       .get();
 
-let startedAtMillis: number | null;
+    let startedAtMillis: number | null;
 
-// 1. Ensure startedAt exists (persist once)
-if (!submissionSnap.empty) {
-  const submission = submissionSnap.docs[0].data();
-  startedAtMillis = toMillis(submission.startedAt);
+    // 1. Ensure startedAt exists (persist once)
+    if (!submissionSnap.empty) {
+      const submission = submissionSnap.docs[0].data();
+      startedAtMillis = toMillis(submission.startedAt);
 
-  if (!startedAtMillis) {
-    functions.logger.error("[getQuizTimeLeft] Invalid startedAt", {
-      quizId,
-      userId: req.auth.uid,
-      startedAt: submission.startedAt,
+      if (!startedAtMillis) {
+        functions.logger.error("[getQuizTimeLeft] Invalid startedAt", {
+          quizId,
+          userId: req.auth.uid,
+          startedAt: submission.startedAt,
+        });
+        return { success: false, message: "Invalid submission start time." };
+      }
+    } else {
+      const startedAt = admin.firestore.Timestamp.now();
+
+      await db.collection(COLLECTION.QUIZ_SUBMISSIONS).add({
+        quizId,
+        userId: req.auth.uid,
+        startedAt,
+        status: QUIZ_SUBMISSION_STATUS.IN_PROGRESS,
+      });
+
+      startedAtMillis = startedAt.toMillis();
+
+      functions.logger.info("[getQuizTimeLeft] Created submission", {
+        startedAt: new Date(startedAtMillis).toISOString(),
+      });
+    }
+
+    // 2. Calculate duration-based end
+    const durationEndMillis = startedAtMillis + durationMs;
+
+    // 3. Apply absolute quiz expiry (endAt)
+    const effectiveEndMillis =
+      endAtMillis != null ? Math.min(durationEndMillis, endAtMillis) : durationEndMillis;
+
+    functions.logger.info("[getQuizTimeLeft] Effective end calculated", {
+      startedAt: new Date(startedAtMillis).toISOString(),
+      durationEnd: new Date(durationEndMillis).toISOString(),
+      quizEndAt: endAtMillis ? new Date(endAtMillis).toISOString() : null,
+      effectiveEnd: new Date(effectiveEndMillis).toISOString(),
     });
-    return { success: false, message: "Invalid submission start time." };
-  }
-} else {
-  const startedAt = admin.firestore.Timestamp.now();
-
-  await db.collection(COLLECTION.QUIZ_SUBMISSIONS).add({
-    quizId,
-    userId: req.auth.uid,
-    startedAt,
-    status: QUIZ_SUBMISSION_STATUS.IN_PROGRESS,
-  });
-
-  startedAtMillis = startedAt.toMillis();
-
-  functions.logger.info("[getQuizTimeLeft] Created submission", {
-    startedAt: new Date(startedAtMillis).toISOString(),
-  });
-}
-
-// 2. Calculate duration-based end
-const durationEndMillis = startedAtMillis + durationMs;
-
-// 3. Apply absolute quiz expiry (endAt)
-const effectiveEndMillis =
-  endAtMillis != null
-    ? Math.min(durationEndMillis, endAtMillis)
-    : durationEndMillis;
-
-functions.logger.info("[getQuizTimeLeft] Effective end calculated", {
-  startedAt: new Date(startedAtMillis).toISOString(),
-  durationEnd: new Date(durationEndMillis).toISOString(),
-  quizEndAt: endAtMillis ? new Date(endAtMillis).toISOString() : null,
-  effectiveEnd: new Date(effectiveEndMillis).toISOString(),
-});
 
     // 5. Compute remaining time in whole seconds, never less than 0
-    const timeLeftSeconds = Math.max(
-      0,
-      Math.floor((effectiveEndMillis - nowMillis) / 1000)
-    );
+    const timeLeftSeconds = Math.max(0, Math.floor((effectiveEndMillis - nowMillis) / 1000));
 
     functions.logger.info("[getQuizTimeLeft] Computed timeLeftSeconds", {
       timeLeftSeconds,
@@ -164,9 +155,9 @@ functions.logger.info("[getQuizTimeLeft] Effective end calculated", {
 export const getQuizTimeLeft = functions.https.onCall(
   {
     cors: [
-      "https://vizuara.ai",
+      "https://RedPanda Learns.ai",
       "http://localhost:8080",
-      "https://vizuara-ai-labs-dev.web.app",
+      "https://RedPanda Learns-ai-labs-dev.web.app",
     ],
   },
   getQuizTimeLeftHandler

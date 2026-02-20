@@ -1,8 +1,8 @@
 {
   "projects": {
-    "default": "vizuara-ai-labs-dev",
-    "dev": "vizuara-ai-labs-dev",
-    "prod": "vizuara-ai-labs"
+    "default": "RedPanda Learns-ai-labs-dev",
+    "dev": "RedPanda Learns-ai-labs-dev",
+    "prod": "RedPanda Learns-ai-labs"
   },
   "targets": {},
   "etags": {}

@@ -4,9 +4,7 @@ import { COLLECTION, QUIZ_STATUS } from "../constants";
 
 if (!admin.apps.length) admin.initializeApp();
 
-export const canStartQuizHandler = async (
-  req: functions.https.CallableRequest
-) => {
+export const canStartQuizHandler = async (req: functions.https.CallableRequest) => {
   try {
     if (!req.auth) {
       return {
@@ -24,11 +22,7 @@ export const canStartQuizHandler = async (
       };
     }
 
-    const quizSnap = await admin
-      .firestore()
-      .collection(COLLECTION.QUIZZES)
-      .doc(quizId)
-      .get();
+    const quizSnap = await admin.firestore().collection(COLLECTION.QUIZZES).doc(quizId).get();
 
     if (!quizSnap.exists) {
       return {
@@ -58,10 +52,7 @@ export const canStartQuizHandler = async (
 
     // 🔒 Normalize endAt
     const rawEndAt = quiz.endAt;
-    const endAt =
-      rawEndAt instanceof admin.firestore.Timestamp
-        ? rawEndAt
-        : null;
+    const endAt = rawEndAt instanceof admin.firestore.Timestamp ? rawEndAt : null;
 
     const now = serverTime.toMillis();
     const start = scheduledAt.toMillis();
@@ -100,13 +91,12 @@ export const canStartQuizHandler = async (
   }
 };
 
-
 export const canStartQuiz = functions.https.onCall(
   {
     cors: [
-      "https://vizuara.ai",
+      "https://RedPanda Learns.ai",
       "http://localhost:8080",
-      "https://vizuara-ai-labs-dev.web.app",
+      "https://RedPanda Learns-ai-labs-dev.web.app",
     ],
   },
   canStartQuizHandler

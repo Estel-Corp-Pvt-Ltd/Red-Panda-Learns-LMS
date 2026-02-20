@@ -13,14 +13,7 @@ import {
   getAuth,
 } from "firebase/auth";
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
 import { auth, db } from "@/firebaseConfig";
 import { COLLECTION, USER_ROLE, USER_STATUS } from "@/constants";
@@ -33,15 +26,14 @@ import { User } from "@/types/user";
 import { UserRole } from "@/types/general";
 
 class AuthService {
-
   /**
- * Signs in a user using Firebase email and password authentication.
- * Fetches the corresponding user profile from Firestore by UID or email.
- *
- * @param email - The user's email address.
- * @param password - The user's password.
- * @returns A Result object containing the User and Firebase UserCredential on success, or an error on failure.
- */
+   * Signs in a user using Firebase email and password authentication.
+   * Fetches the corresponding user profile from Firestore by UID or email.
+   *
+   * @param email - The user's email address.
+   * @param password - The user's password.
+   * @returns A Result object containing the User and Firebase UserCredential on success, or an error on failure.
+   */
   async signInWithEmailAndPassword(
     email: string,
     password: string
@@ -79,15 +71,15 @@ class AuthService {
   }
 
   /**
- * Signs in a user using their username and password.
- * Resolves the username to a Firebase email pattern (`username@vizuara.ai`),
- * authenticates the user with Firebase, and fetches the corresponding
- * Firestore user profile by UID or email.
- *
- * @param username - The user's unique username.
- * @param password - The user's password.
- * @returns A Result object containing the User and Firebase UserCredential on success, or an error on failure.
- */
+   * Signs in a user using their username and password.
+   * Resolves the username to a Firebase email pattern (`username@RedPanda Learns.ai`),
+   * authenticates the user with Firebase, and fetches the corresponding
+   * Firestore user profile by UID or email.
+   *
+   * @param username - The user's unique username.
+   * @param password - The user's password.
+   * @returns A Result object containing the User and Firebase UserCredential on success, or an error on failure.
+   */
   async signInWithUsernameAndPassword(
     username: string,
     password: string
@@ -100,7 +92,7 @@ class AuthService {
       }
 
       // Authenticate with Firebase using pseudo-email
-      const email = `${username}@vizuara.ai`;
+      const email = `${username}@RedPanda Learns.ai`;
       const userCredential = await firebaseSignIn(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -134,17 +126,17 @@ class AuthService {
   }
 
   /**
- * Creates a new user with email and password using Firebase Authentication,
- * updates the user's profile with their full name, and creates a corresponding
- * Firestore user document with default role and status.
- *
- * Also sends an email verification to the newly created user.
- *
- * @param email - The user's email address.
- * @param password - The user's password.
- * @param name - The user's full name (used to derive first, middle, and last names).
- * @returns A Result object containing the created user's UID on success, or an error on failure.
- */
+   * Creates a new user with email and password using Firebase Authentication,
+   * updates the user's profile with their full name, and creates a corresponding
+   * Firestore user document with default role and status.
+   *
+   * Also sends an email verification to the newly created user.
+   *
+   * @param email - The user's email address.
+   * @param password - The user's password.
+   * @param name - The user's full name (used to derive first, middle, and last names).
+   * @returns A Result object containing the created user's UID on success, or an error on failure.
+   */
   async createUserWithEmailAndPassword(
     email: string,
     password: string,
@@ -187,16 +179,16 @@ class AuthService {
   }
 
   /**
- * Creates a new user account using a username and password.
- * A corresponding Firebase Auth user is created with a generated email
- * (`<username>@vizuara.ai`) and a Firestore user document is initialized
- * with default role and status.
- *
- * @param username - The unique username chosen by the user.
- * @param password - The user's password for authentication.
- * @param name - The user's full name (used to extract first, middle, and last names).
- * @returns A Result object containing the created user's UID on success, or an error on failure.
- */
+   * Creates a new user account using a username and password.
+   * A corresponding Firebase Auth user is created with a generated email
+   * (`<username>@RedPanda Learns.ai`) and a Firestore user document is initialized
+   * with default role and status.
+   *
+   * @param username - The unique username chosen by the user.
+   * @param password - The user's password for authentication.
+   * @param name - The user's full name (used to extract first, middle, and last names).
+   * @returns A Result object containing the created user's UID on success, or an error on failure.
+   */
   async createUserWithUsernameAndPassword(
     username: string,
     password: string,
@@ -204,10 +196,9 @@ class AuthService {
   ): Promise<Result<{ userId: string }>> {
     try {
       const existing = await userService.getUserByUsername(username);
-      if (existing.success && existing.data)
-        return fail("Username already exists.");
+      if (existing.success && existing.data) return fail("Username already exists.");
 
-      const email = username + "@vizuara.ai";
+      const email = username + "@RedPanda Learns.ai";
       const userCredential = await firebaseCreateUser(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -242,16 +233,16 @@ class AuthService {
   }
 
   /**
- * Signs in a user using Google Sign-In (Popup) via Firebase Auth.
- * If the user does not already exist in Firestore, a new user document
- * is created with default role and status.
- *
- * @param email - The user's email address.
- * @param password - The user's password.
- *
- * @returns A Result object containing the user's UID and role on success,
- *          or an error on failure.
- */
+   * Signs in a user using Google Sign-In (Popup) via Firebase Auth.
+   * If the user does not already exist in Firestore, a new user document
+   * is created with default role and status.
+   *
+   * @param email - The user's email address.
+   * @param password - The user's password.
+   *
+   * @returns A Result object containing the user's UID and role on success,
+   *          or an error on failure.
+   */
   async signInWithGoogle(): Promise<Result<{ userId: string; role: UserRole }>> {
     try {
       const provider = new GoogleAuthProvider();
@@ -291,9 +282,7 @@ class AuthService {
         });
       }
 
-      const role = existingDoc.exists()
-        ? (existingDoc.data().role as UserRole)
-        : USER_ROLE.STUDENT;
+      const role = existingDoc.exists() ? (existingDoc.data().role as UserRole) : USER_ROLE.STUDENT;
 
       return ok({ userId: uid, role });
     } catch (error: any) {
@@ -303,10 +292,10 @@ class AuthService {
   }
 
   /**
- * Signs out the currently authenticated Firebase user.
- *
- * @returns A Result object indicating success or containing an error if the sign-out fails.
- */
+   * Signs out the currently authenticated Firebase user.
+   *
+   * @returns A Result object indicating success or containing an error if the sign-out fails.
+   */
   async signOut(): Promise<Result<void>> {
     try {
       await firebaseSignOut(auth);
@@ -319,11 +308,11 @@ class AuthService {
   }
 
   /**
- * Sends a password reset email to the specified user using Firebase Authentication.
- *
- * @param email - The email address of the user requesting the password reset.
- * @returns A Result object indicating success or containing an error if sending fails.
- */
+   * Sends a password reset email to the specified user using Firebase Authentication.
+   *
+   * @param email - The email address of the user requesting the password reset.
+   * @returns A Result object indicating success or containing an error if sending fails.
+   */
   async sendPasswordResetEmail(email: string): Promise<Result<void>> {
     try {
       await firebaseSendPasswordReset(auth, email);
@@ -337,12 +326,12 @@ class AuthService {
   }
 
   /**
- * Registers a callback function that is triggered whenever the Firebase
- * Authentication state changes (e.g., user signs in or out).
- *
- * @param callback - Function to be called with the current FirebaseUser or null.
- * @returns An unsubscribe function to stop listening to auth state changes.
- */
+   * Registers a callback function that is triggered whenever the Firebase
+   * Authentication state changes (e.g., user signs in or out).
+   *
+   * @param callback - Function to be called with the current FirebaseUser or null.
+   * @returns An unsubscribe function to stop listening to auth state changes.
+   */
   onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
     return firebaseOnAuthStateChanged(auth, callback);
   }

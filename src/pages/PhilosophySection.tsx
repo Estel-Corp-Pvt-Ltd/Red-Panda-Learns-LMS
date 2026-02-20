@@ -98,8 +98,7 @@ const philosophyItems: PhilosophyItem[] = [
   {
     icon: Brain,
     title: "Research",
-    description:
-      "We are trying to push the boundaries of AI through research and innovation.",
+    description: "We are trying to push the boundaries of AI through research and innovation.",
     color: "#ff00ff",
     gradient: "from-[#ff00ff] to-[#cc00cc]",
   },
@@ -149,10 +148,7 @@ const DecryptedLine: React.FC<DecryptedLineProps> = ({
   }, [onComplete]);
 
   useEffect(() => {
-    const t = window.setTimeout(
-      () => setHasStarted(true),
-      initialDelayRef.current
-    );
+    const t = window.setTimeout(() => setHasStarted(true), initialDelayRef.current);
     return () => window.clearTimeout(t);
   }, []);
 
@@ -224,10 +220,7 @@ const DecryptedMathLine: React.FC<DecryptedMathLineProps> = ({
   }, [onComplete]);
 
   useEffect(() => {
-    const t = window.setTimeout(
-      () => setHasStarted(true),
-      initialDelayRef.current
-    );
+    const t = window.setTimeout(() => setHasStarted(true), initialDelayRef.current);
     return () => window.clearTimeout(t);
   }, []);
 
@@ -309,10 +302,7 @@ const DecryptedCodeLineByLine: React.FC<DecryptedCodeLineByLineProps> = ({
 
   const handleLineComplete = (index: number) => {
     if (index < lines.length - 1) {
-      window.setTimeout(
-        () => setVisibleLines(index + 2),
-        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
-      );
+      window.setTimeout(() => setVisibleLines(index + 2), DECRYPTION_CONFIG.LINE_TRANSITION_DELAY);
     }
   };
 
@@ -350,10 +340,7 @@ const DecryptedMathLineByLine: React.FC<DecryptedMathLineByLineProps> = ({
 
   const handleLineComplete = (index: number) => {
     if (index < lines.length - 1) {
-      window.setTimeout(
-        () => setVisibleLines(index + 2),
-        DECRYPTION_CONFIG.LINE_TRANSITION_DELAY
-      );
+      window.setTimeout(() => setVisibleLines(index + 2), DECRYPTION_CONFIG.LINE_TRANSITION_DELAY);
     }
   };
 
@@ -405,9 +392,7 @@ const DecryptedResearchPaper: React.FC<{
         fixedDuration={DECRYPTION_CONFIG.TIME_PER_LINE}
         bold
       />
-      <div
-        className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}
-      >
+      <div className={`${CONTENT_FONT_CLASS} text-xs mt-0.5 text-foreground/60`}>
         <DecryptedLine
           text={`${paper.authors}${paper.venue ? ` — ${paper.venue}` : ""}${
             paper.year ? ` ${paper.year}` : ""
@@ -548,10 +533,7 @@ const PhilosophySection: React.FC = () => {
   const createPulse = (cardIndex: number) => {
     const id = Date.now() + cardIndex + Math.floor(Math.random() * 1000);
     setPulses((prev) => [...prev, { id, cardIndex }]);
-    const t = window.setTimeout(
-      () => setPulses((prev) => prev.filter((p) => p.id !== id)),
-      1500
-    );
+    const t = window.setTimeout(() => setPulses((prev) => prev.filter((p) => p.id !== id)), 1500);
     timeoutsRef.current.push(t);
   };
 
@@ -611,17 +593,14 @@ const PhilosophySection: React.FC = () => {
         }
       `}</style>
 
-      <section
-        ref={sectionRef}
-        className="relative py-24 px-4 sm:px-6 overflow-hidden"
-      >
+      <section ref={sectionRef} className="relative py-24 px-4 sm:px-6 overflow-hidden">
         <div className="container relative mx-auto max-w-6xl px-0">
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-6xl font-semibold tracking-tight text-foreground mb-4">
               Our Philosophy
             </h2>
             <p className="text-lg text-foreground/70 max-w-2xl mx-auto font-light">
-              At Vizuara, internally we call this the F-P-R approach
+              At RedPanda Learns, internally we call this the F-P-R approach
             </p>
           </div>
 
@@ -645,10 +624,7 @@ const PhilosophySection: React.FC = () => {
                     className={`flex flex-col w-full h-full ${entranceClass} transition-all duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)]`}
                     style={{ transitionDelay: `${index * 120}ms` }}
                   >
-                    <TiltedCard
-                      highlightColor={`${item.color}99`}
-                      className="h-full"
-                    >
+                    <TiltedCard highlightColor={`${item.color}99`} className="h-full">
                       {/* Header */}
                       <div className="flex flex-col items-center text-center">
                         <div className="relative mb-6">
@@ -662,10 +638,7 @@ const PhilosophySection: React.FC = () => {
                             }}
                           >
                             {isHovered && (
-                              <span
-                                className="rotating-ring"
-                                style={{ color: item.color }}
-                              />
+                              <span className="rotating-ring" style={{ color: item.color }} />
                             )}
 
                             <Icon className="w-10 h-10 text-white relative z-10" />
@@ -676,9 +649,7 @@ const PhilosophySection: React.FC = () => {
                           className="text-2xl font-semibold mb-3"
                           style={{
                             color: isHovered ? item.color : "var(--foreground)",
-                            textShadow: isHovered
-                              ? `0 2px 8px ${item.color}40`
-                              : "none",
+                            textShadow: isHovered ? `0 2px 8px ${item.color}40` : "none",
                           }}
                         >
                           {item.title}
@@ -707,23 +678,19 @@ const PhilosophySection: React.FC = () => {
                             {index === 2 ? (
                               // Research
                               <div className="text-left h-full flex flex-col">
-                                <div
-                                  className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}
-                                >
-                                  {researchPapers
-                                    .slice(0, MAX_PAPERS)
-                                    .map((p, i) => (
-                                      <DecryptedResearchPaper
-                                        key={p.link + i}
-                                        paper={p}
-                                        index={i}
-                                        startTrigger={decryptionTrigger}
-                                      />
-                                    ))}
+                                <div className={`${CONTENT_FONT_CLASS} flex-1 pr-0 space-y-2.5`}>
+                                  {researchPapers.slice(0, MAX_PAPERS).map((p, i) => (
+                                    <DecryptedResearchPaper
+                                      key={p.link + i}
+                                      paper={p}
+                                      index={i}
+                                      startTrigger={decryptionTrigger}
+                                    />
+                                  ))}
                                 </div>
 
                                 <a
-                                  href="https://research.vizuara.ai/"
+                                  href="https://research.RedPanda Learns.ai/"
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-2 mt-2 text-xs underline underline-offset-4 decoration-dotted self-start"
@@ -731,9 +698,7 @@ const PhilosophySection: React.FC = () => {
                                 >
                                   <DecryptedLine
                                     text="Research Hub ↗"
-                                    delay={
-                                      decryptionTrigger > 0 ? 500 : undefined
-                                    }
+                                    delay={decryptionTrigger > 0 ? 500 : undefined}
                                     fixedDuration={400}
                                   />
                                 </a>

@@ -9,7 +9,7 @@
 ### Error 1 — `getCountFromServer` returns 400 Bad Request
 
 ```
-POST https://firestore.googleapis.com/v1/projects/vizuara-ai-labs/databases/(default)/documents:runAggregationQuery 400 (Bad Request)
+POST https://firestore.googleapis.com/v1/projects/RedPanda Learns-ai-labs/databases/(default)/documents:runAggregationQuery 400 (Bad Request)
 
 RestConnection RPC 'RunAggregationQuery' failed with error: {"code":"invalid-argument","name":"FirebaseError"}
 ```
@@ -27,7 +27,7 @@ RestConnection RPC 'RunAggregationQuery' failed with error: {"code":"invalid-arg
         "before": false,
         "values": [
           {
-            "referenceValue": "projects/vizuara-ai-labs/databases/(default)/documents/CertificateRequests/TCNLE9Qtb7dCye5QSkbI"
+            "referenceValue": "projects/RedPanda Learns-ai-labs/databases/(default)/documents/CertificateRequests/TCNLE9Qtb7dCye5QSkbI"
           }
         ]
       }
@@ -61,14 +61,12 @@ RestConnection RPC 'RunAggregationQuery' failed with error: {"code":"invalid-arg
 const constraints: QueryConstraint[] = [];
 
 if (status && status !== "ALL") {
-    constraints.push(where("status", "==", status));
+  constraints.push(where("status", "==", status));
 }
 
 // Cursor added here...
 if (cursor) {
-    constraints.push(
-        pageDirection === "next" ? startAfter(cursor) : endBefore(cursor)
-    );
+  constraints.push(pageDirection === "next" ? startAfter(cursor) : endBefore(cursor));
 }
 
 constraints.push(limit(itemsPerPage));
@@ -81,7 +79,7 @@ const countSnapshot = await getCountFromServer(q);
 // BUG 2: Cursor + limit added AGAIN on top of q (which already has them)
 // BUG 3: limitToLast() used without any orderBy()
 if (pageDirection === "previous" && cursor) {
-    q = query(q, endBefore(cursor), limitToLast(itemsPerPage));
+  q = query(q, endBefore(cursor), limitToLast(itemsPerPage));
 }
 ```
 
@@ -98,7 +96,7 @@ const collectionRef = collection(db, COLLECTION.CERTIFICATE_REQUESTS);
 // 1. Count query — filter constraints only (safe for aggregation API)
 const filterConstraints: QueryConstraint[] = [];
 if (status && status !== "ALL") {
-    filterConstraints.push(where("status", "==", status));
+  filterConstraints.push(where("status", "==", status));
 }
 
 const countQuery = query(collectionRef, ...filterConstraints);
@@ -106,19 +104,16 @@ const countSnapshot = await getCountFromServer(countQuery);
 const totalCount = countSnapshot.data().count;
 
 // 2. Paginated query — orderBy required for cursors and limitToLast
-const paginationConstraints: QueryConstraint[] = [
-    ...filterConstraints,
-    orderBy(documentId()),
-];
+const paginationConstraints: QueryConstraint[] = [...filterConstraints, orderBy(documentId())];
 
 if (pageDirection === "previous" && cursor) {
-    paginationConstraints.push(endBefore(cursor));
-    paginationConstraints.push(limitToLast(itemsPerPage));
+  paginationConstraints.push(endBefore(cursor));
+  paginationConstraints.push(limitToLast(itemsPerPage));
 } else if (cursor) {
-    paginationConstraints.push(startAfter(cursor));
-    paginationConstraints.push(limit(itemsPerPage));
+  paginationConstraints.push(startAfter(cursor));
+  paginationConstraints.push(limit(itemsPerPage));
 } else {
-    paginationConstraints.push(limit(itemsPerPage));
+  paginationConstraints.push(limit(itemsPerPage));
 }
 
 const q = query(collectionRef, ...paginationConstraints);
@@ -135,8 +130,21 @@ const q = query(collectionRef, ...paginationConstraints);
 ```ts
 // Added: documentId, orderBy
 import {
-    collection, doc, documentId, endBefore, getCountFromServer,
-    getDoc, getDocs, limit, limitToLast, orderBy, query,
-    QueryConstraint, setDoc, startAfter, updateDoc, where
+  collection,
+  doc,
+  documentId,
+  endBefore,
+  getCountFromServer,
+  getDoc,
+  getDocs,
+  limit,
+  limitToLast,
+  orderBy,
+  query,
+  QueryConstraint,
+  setDoc,
+  startAfter,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 ```

@@ -4,10 +4,10 @@ import { formatDateTime } from "./date-time";
 
 export type PaymentDetails = {
   name: string;
-  email: string,
-  amount: number,
-  currency: string,
-  items: { itemType: "COURSE" | "BUNDLE", itemId: string, name: string, slug: string }[],
+  email: string;
+  amount: number;
+  currency: string;
+  items: { itemType: "COURSE" | "BUNDLE"; itemId: string; name: string; slug: string }[];
   orderId: string;
   purchaseDate: string;
 };
@@ -16,19 +16,20 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
   const { name, email, amount, currency, items, orderId, purchaseDate } = data;
   try {
     const brevoApi = new brevo.TransactionalEmailsApi();
-    brevoApi.setApiKey(
-      brevo.TransactionalEmailsApiApiKeys.apiKey,
-      brevoApiKey
-    );
+    brevoApi.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
 
     const formattedPurchaseDate = formatDateTime(new Date(purchaseDate));
 
     // --- Prepare and send email via Brevo ---
     const sendSmtpEmail = {
-      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
+      sender: { name: "RedPanda Learns", email: "no_reply@RedPanda Learns.com" },
       to: [{ email }],
-      bcc: [{ email: "thesreedath@gmail.com" }, { email: "raj.dandekar8@gmail.com" }, { email: "rajatdandekar@gmail.com" }],
-      subject: `[Team Vizuara] Payment Confirmation - Order #${orderId}`,
+      bcc: [
+        { email: "thesreedath@gmail.com" },
+        { email: "raj.dandekar8@gmail.com" },
+        { email: "rajatdandekar@gmail.com" },
+      ],
+      subject: `[Team RedPanda Learns] Payment Confirmation - Order #${orderId}`,
       htmlContent: `
     <div style="font-family: Arial, sans-serif; background:#f2f2f2; padding:16px;">
 
@@ -37,7 +38,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
       <!-- Header -->
       <div style="padding:18px 10px; text-align:center;">
-        <img src="https://vizuara.ai/logo.png" alt="Team Vizuara" style="max-width:150px; width:100 percent; height:auto; display:block; margin:auto;">
+        <img src="https://RedPanda Learns.ai/logo.png" alt="Team RedPanda Learns" style="max-width:150px; width:100 percent; height:auto; display:block; margin:auto;">
       </div>
 
       <!-- Body -->
@@ -74,7 +75,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
               <td style="padding:6px 3px; font-weight:bold; vertical-align:top;">Items</td>
               <td style="padding:6px 3px;">
                 <ul style="margin:0; padding-left:18px;">
-                  ${items.map(item => `<li style="margin:0; padding:0;">${item.name}</li>`).join('')}
+                  ${items.map((item) => `<li style="margin:0; padding:0;">${item.name}</li>`).join("")}
                 </ul>
               </td>
             </tr>
@@ -86,9 +87,10 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
         <h3 style="margin:22px 0 12px 0; font-size:17px; color:#0f4396; font-weight:600;">
           Access Your Learning
         </h3>
-        ${items.map(item => {
-        const itemLink = `https://vizuara.ai/${item.itemType.toLowerCase()}s/${item.slug}`;
-        return `
+        ${items
+          .map((item) => {
+            const itemLink = `https://RedPanda Learns.ai/${item.itemType.toLowerCase()}s/${item.slug}`;
+            return `
             <p style="margin:6px 0; font-size:15px;">
               <strong>${item.name}:</strong><br>
               <a href="${itemLink}" style="color:#d32f2f; text-decoration:none; word-break:break-all;">
@@ -96,19 +98,20 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
               </a>
             </p>
           `;
-      }).join('')}
+          })
+          .join("")}
 
         <p style="margin:6px 0; font-size:15px;">
           <strong>Dashboard:</strong><br>
-          <a href="https://vizuara.ai/dashboard" style="color:#0f4396; text-decoration:none; word-break:break-all;">
-            https://vizuara.ai/dashboard
+          <a href="https://RedPanda Learns.ai/dashboard" style="color:#0f4396; text-decoration:none; word-break:break-all;">
+            https://RedPanda Learns.ai/dashboard
           </a>
         </p>
 
         <p style="margin:6px 0 20px 0; font-size:15px;">
           <strong>Your Invoice:</strong><br>
-          <a href="https://vizuara.ai/invoices/${orderId}" style="color:#0f4396; text-decoration:none; word-break:break-all;">
-            https://vizuara.ai/invoices/${orderId}
+          <a href="https://RedPanda Learns.ai/invoices/${orderId}" style="color:#0f4396; text-decoration:none; word-break:break-all;">
+            https://RedPanda Learns.ai/invoices/${orderId}
           </a>
         </p>
 
@@ -120,7 +123,7 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
 
         <p style="margin-top:16px; font-size:15px;">
           Best regards<br>
-          <strong style="color:#0f4396;">Team Vizuara</strong>
+          <strong style="color:#0f4396;">Team RedPanda Learns</strong>
         </p>
 
       </div>
@@ -138,24 +141,28 @@ export const sendPaymentConfirmation = async (data: PaymentDetails, brevoApiKey:
   }
 };
 
-export async function sendPaymentFailedEmail({ email, name, }: { email: string, name: string }, brevoApiKey: string) {
+export async function sendPaymentFailedEmail(
+  { email, name }: { email: string; name: string },
+  brevoApiKey: string
+) {
   try {
     const brevoApi = new brevo.TransactionalEmailsApi();
-    brevoApi.setApiKey(
-      brevo.TransactionalEmailsApiApiKeys.apiKey,
-      brevoApiKey
-    );
+    brevoApi.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
 
     const sendSmtpEmail = {
-      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
+      sender: { name: "RedPanda Learns", email: "no_reply@RedPanda Learns.com" },
       to: [{ email }],
-      bcc: [{ email: "thesreedath@gmail.com" }, { email: "raj.dandekar8@gmail.com" }, { email: "rajatdandekar@gmail.com" }], // internal monitoring copy
-      subject: `[Team Vizuara] Payment Failed`,
+      bcc: [
+        { email: "thesreedath@gmail.com" },
+        { email: "raj.dandekar8@gmail.com" },
+        { email: "rajatdandekar@gmail.com" },
+      ], // internal monitoring copy
+      subject: `[Team RedPanda Learns] Payment Failed`,
       htmlContent: `
         <p>Dear ${name},</p>
         <p>We're sorry, but your recent payment, could not be processed.</p>
         <p>Please check your payment details or try again later.</p>
-        <p>Best regards,<br/>Team Vizuara</p>
+        <p>Best regards,<br/>Team RedPanda Learns</p>
       `,
     };
 
@@ -164,4 +171,4 @@ export async function sendPaymentFailedEmail({ email, name, }: { email: string, 
   } catch (error) {
     console.error("🚨 Error sending payment failed email:", error);
   }
-};
+}

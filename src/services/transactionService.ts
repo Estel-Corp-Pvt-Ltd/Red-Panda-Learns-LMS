@@ -244,7 +244,7 @@ class TransactionService {
         return false;
       }
 
-      if (transaction.paymentProvider === PAYMENT_PROVIDER.PAYPAL || PAYMENT_PROVIDER.RAZORPAY)
+      if (transaction.paymentProvider === PAYMENT_PROVIDER.RAZORPAY)
         return transaction.paymentDetails.paymentId === paymentId;
 
       return false;

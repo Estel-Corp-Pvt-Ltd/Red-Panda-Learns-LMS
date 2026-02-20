@@ -12,15 +12,7 @@ import { useBundleCoursesQuery, useBundleQuery } from "@/hooks/useBundleApi";
 import { cn } from "@/lib/utils";
 import { logError } from "@/utils/logger";
 import { fail, ok, type Result } from "@/utils/response";
-import {
-  ArrowLeft,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  IndianRupee,
-  Play,
-  Star,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, CheckCircle, IndianRupee, Play, Star } from "lucide-react";
 import { formatDateTime } from "@/utils/date-time";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -30,13 +22,9 @@ export default function BundleDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { enrollments, isEnrolledInBundle, loading } = useEnrollment();
-  const [bundleId, setBundleId] = useState("")
+  const [bundleId, setBundleId] = useState("");
 
-  const {
-    data: bundle,
-    isLoading: bundleLoading,
-    error: bundleError,
-  } = useBundleQuery(param!);
+  const { data: bundle, isLoading: bundleLoading, error: bundleError } = useBundleQuery(param!);
 
   useEffect(() => {
     if (!param || bundleLoading || !bundle) return;
@@ -53,8 +41,6 @@ export default function BundleDetailPage() {
   const [ownedCoursesCount, setOwnedCoursesCount] = useState(0);
   const [enrollmentChecked, setEnrollmentChecked] = useState(false);
   const [ownsAllCourses, setOwnsAllCourses] = useState(false);
-
-
 
   useEffect(() => {
     let cancelled = false;
@@ -80,18 +66,18 @@ export default function BundleDetailPage() {
 
         // 2) Owned courses from new schema: Enrollment.courseId
         // If enrollments already belong to the current user, you can skip the userId filter
-        const userEnrollments = (enrollments ?? []).filter(e => e.userId === user.id);
+        const userEnrollments = (enrollments ?? []).filter((e) => e.userId === user.id);
 
         // Optional: filter by status if you need (uncomment and adjust)
         // const ACTIVE_STATUSES = new Set<EnrollmentStatus>(["ACTIVE", "COMPLETED"]);
         // const userEnrollments = (enrollments ?? [])
         //   .filter(e => e.userId === user.id && ACTIVE_STATUSES.has(e.status));
 
-        const ownedCourseIds = new Set(userEnrollments.map(e => e.courseId));
+        const ownedCourseIds = new Set(userEnrollments.map((e) => e.courseId));
 
         // 3) Compare to current bundle courses
         const totalCourses = bundle.courses?.length ?? 0;
-        const ownedCount = (bundle.courses ?? []).filter(c => ownedCourseIds.has(c.id)).length;
+        const ownedCount = (bundle.courses ?? []).filter((c) => ownedCourseIds.has(c.id)).length;
         const ownsAll = totalCourses > 0 && ownedCount === totalCourses;
 
         // 4) Update state
@@ -110,9 +96,10 @@ export default function BundleDetailPage() {
     };
 
     checkEnrollment();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, bundle?.id, bundle?.courses, enrollments, isEnrolledInBundle]);
-
 
   const handleEnrollment = () => {
     if (isEnrolled) {
@@ -154,11 +141,7 @@ export default function BundleDetailPage() {
 
       <main className="container px-4 py-8">
         {/* Back Navigation */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/courses")}
-          className="mb-6"
-        >
+        <Button variant="ghost" onClick={() => navigate("/courses")} className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Courses
         </Button>
@@ -179,9 +162,7 @@ export default function BundleDetailPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight">
-            {bundle.title}
-          </h1>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight">{bundle.title}</h1>
 
           {/* Live At Banner */}
           {bundle.mode === COURSE_MODE.LIVE && bundle.liveAt && (
@@ -201,9 +182,7 @@ export default function BundleDetailPage() {
             </div>
             <div className="flex items-center gap-2">
               <IndianRupee className="h-5 w-5" />
-              <span>
-                Save {(bundle.regularPrice - bundle.salePrice).toFixed(2)}
-              </span>
+              <span>Save {(bundle.regularPrice - bundle.salePrice).toFixed(2)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5" />
@@ -223,12 +202,14 @@ export default function BundleDetailPage() {
                   {bundle.thumbnail ? (
                     <>
                       <img
-                        src={bundle.thumbnail.includes("https://vizuara.ai/")
-                          ? bundle.thumbnail.replace(
-                            "https://vizuara.ai/",
-                            "https://vizuaracoin.wpcomstaging.com/"
-                          )
-                          : bundle.thumbnail}
+                        src={
+                          bundle.thumbnail.includes("https://RedPanda Learns.ai/")
+                            ? bundle.thumbnail.replace(
+                                "https://RedPanda Learns.ai/",
+                                "https://RedPanda Learnscoin.wpcomstaging.com/"
+                              )
+                            : bundle.thumbnail
+                        }
                         alt={`${bundle.title} thumbnail`}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -267,22 +248,15 @@ export default function BundleDetailPage() {
                 <div className="space-y-4">
                   {/* Pricing */}
                   <div className="flex items-baseline gap-3">
-                    <div className="text-3xl font-bold">
-                      ₹{bundle.salePrice.toFixed(2)}
-                    </div>
+                    <div className="text-3xl font-bold">₹{bundle.salePrice.toFixed(2)}</div>
                     <div className="text-lg line-through text-gray-500">
                       ₹{bundle.regularPrice.toFixed(2)}
                     </div>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className="self-start text-green-600 border-green-600"
-                  >
+                  <Badge variant="outline" className="self-start text-green-600 border-green-600">
                     Save{" "}
                     {Math.round(
-                      ((bundle.regularPrice - bundle.salePrice) /
-                        bundle.regularPrice) *
-                      100
+                      ((bundle.regularPrice - bundle.salePrice) / bundle.regularPrice) * 100
                     )}
                     %
                   </Badge>
@@ -340,8 +314,8 @@ export default function BundleDetailPage() {
             <div>
               <h2 className="text-2xl font-bold mb-4">Bundle Contents</h2>
               <p className="text-muted-foreground mb-6">
-                This bundle includes {bundle.courses.length} comprehensive
-                courses designed to give you a complete learning experience.
+                This bundle includes {bundle.courses.length} comprehensive courses designed to give
+                you a complete learning experience.
               </p>
             </div>
 
@@ -382,8 +356,8 @@ export default function BundleDetailPage() {
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-success" />
                     <span>
-                      Save ₹{bundle.regularPrice - bundle.salePrice} compared to
-                      individual purchases
+                      Save ₹{bundle.regularPrice - bundle.salePrice} compared to individual
+                      purchases
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -406,15 +380,13 @@ export default function BundleDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Course bundles are designed to provide a comprehensive
-                    learning path at a significant discount.
+                    Course bundles are designed to provide a comprehensive learning path at a
+                    significant discount.
                   </p>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Individual Course Prices:</span>
-                      <span className="font-medium">
-                        ₹{bundle.regularPrice.toFixed(2)}
-                      </span>
+                      <span className="font-medium">₹{bundle.regularPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Bundle Price:</span>
@@ -435,8 +407,6 @@ export default function BundleDetailPage() {
                   </div>
                 </CardContent>
               </Card>
-
-
             </div>
           </div>
         </div>

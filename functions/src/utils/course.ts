@@ -28,10 +28,10 @@ const linkifyText = (text: string): string => {
  */
 const textToHtml = (text: string): string => {
   // Split by line breaks
-  const lines = text.split('\n');
+  const lines = text.split("\n");
 
   // Process each line
-  const htmlLines = lines.map(line => {
+  const htmlLines = lines.map((line) => {
     // Convert URLs to links
     const linkedLine = linkifyText(line);
 
@@ -39,35 +39,29 @@ const textToHtml = (text: string): string => {
     if (linkedLine.trim()) {
       return `<p style="margin:8px 0; font-size:15px; line-height:1.6;">${linkedLine}</p>`;
     }
-    return '<br>';
+    return "<br>";
   });
 
-  return htmlLines.join('');
+  return htmlLines.join("");
 };
 
-export const sendCourseWelcomeMessage = async (
-  data: CourseWelcomeEmail,
-  brevoApiKey: string
-) => {
+export const sendCourseWelcomeMessage = async (data: CourseWelcomeEmail, brevoApiKey: string) => {
   const { email, subject, body } = data;
 
   try {
     const brevoApi = new brevo.TransactionalEmailsApi();
-    brevoApi.setApiKey(
-      brevo.TransactionalEmailsApiApiKeys.apiKey,
-      brevoApiKey
-    );
+    brevoApi.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
 
     const formattedBody = textToHtml(body);
 
     // --- Prepare and send email via Brevo ---
     const sendSmtpEmail = {
-      sender: { name: "Vizuara", email: "no_reply@vizuara.com" },
+      sender: { name: "RedPanda Learns", email: "no_reply@RedPanda Learns.com" },
       to: [{ email }],
       bcc: [
         { email: "thesreedath@gmail.com" },
         { email: "raj.dandekar8@gmail.com" },
-        { email: "rajatdandekar@gmail.com" }
+        { email: "rajatdandekar@gmail.com" },
       ],
       subject: subject,
       htmlContent: `
@@ -84,8 +78,8 @@ export const sendCourseWelcomeMessage = async (
 
     <!-- Header -->
     <div style="background:linear-gradient(135deg, #0f4396 0%, #1565c0 100%); padding:32px 24px; text-align:center;">
-      <img src="https://vizuara.ai/logo.png" alt="Vizuara" style="max-width:140px; height:auto; display:block; margin:0 auto 16px auto;">
-      <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600; letter-spacing:0.5px;">Welcome to Vizuara!</h1>
+      <img src="https://RedPanda Learns.ai/logo.png" alt="RedPanda Learns" style="max-width:140px; height:auto; display:block; margin:0 auto 16px auto;">
+      <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600; letter-spacing:0.5px;">Welcome to RedPanda Learns!</h1>
     </div>
 
     <!-- Body Content -->
@@ -101,7 +95,7 @@ export const sendCourseWelcomeMessage = async (
           Happy Learning!
         </p>
         <p style="margin:0; font-size:16px; font-weight:600; color:#0f4396;">
-          Team Vizuara
+          Team RedPanda Learns
         </p>
       </div>
 
@@ -111,7 +105,7 @@ export const sendCourseWelcomeMessage = async (
     <div style="padding:20px 24px; background:#f8f9fa; text-align:center; border-top:1px solid #e0e0e0;">
       <p style="margin:0; font-size:12px; color:#999; line-height:1.5;">
         This is an automated message. Please do not reply to this email.<br>
-        © ${new Date().getFullYear()} Vizuara. All rights reserved.
+        © ${new Date().getFullYear()} RedPanda Learns. All rights reserved.
       </p>
     </div>
 

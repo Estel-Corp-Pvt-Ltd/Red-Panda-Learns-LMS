@@ -14,13 +14,4 @@ export const METHOD_LOGOS: Record<
         },
         { name: "RuPay", src: "/rupay.png", className: "h-[30px] w-[40px]" },
     ],
-    PAYPAL: [
-        { name: "Visa", src: "/visa.png", className: "h-[20px] w-[32px]" },
-        {
-            name: "Mastercard",
-            src: "/mastercard.svg",
-            className: "h-[20px] w-[32px]",
-        },
-        { name: "Venmo (US)", src: "/venmo.png", className: "h-[20px] w-[28px]" },
-    ],
 };

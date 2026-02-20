@@ -75,11 +75,8 @@ import CoursesPage from "./pages/CoursesPage";
 import DashboardPage from "./pages/DashboardPage";
 import LessonDetailPage from "./pages/LessonDetailPage";
 import NotFound from "./pages/NotFound";
-import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
-import SetNewPassword from "./pages/auth/PasswordReset";
 import Signup from "./pages/auth/Signup";
-import VerifyEmail from "./pages/auth/VerifyEmail";
 import DummyBundleCheckoutPage from "./pages/dummycoursecheckoutpage";
 import LandingPage from "./pages/landingpage";
 import CartCheckoutPage from "./pages/cartCheckout";
@@ -107,7 +104,7 @@ import AdminKarmaRulesPage from "./pages/admin/AdminEditKarmaRules";
 import { StripBannerProvider } from "./contexts/StripBannerOverlayContext";
 import Profile from "./pages/Profile";
 import WhatsNew from "./pages/Whats-new";
-import ZoomMeetingPage from "./components/lesson/ZoomMeetingPage";
+
 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const ContactPage = lazy(() => import("./pages/Contact"));
@@ -165,9 +162,9 @@ const App = () => (
                         <Route path="/auth" element={<AuthRedirection />} />
                         <Route path="/auth/login" element={<Login />} />
                         <Route path="/auth/signup" element={<Signup />} />
-                        <Route path="/auth/verify-email" element={<VerifyEmail />} />
-                        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                        <Route path="/auth/reset-password" element={<SetNewPassword />} />
+
+
+
                         <Route
                           path="/checkout/:param"
                           element={
@@ -642,7 +639,7 @@ const App = () => (
                           }
                         />
 
-                        <Route path="/zoom-meeting" element={<ZoomMeetingPage />} />
+
                         <Route
                           path="/admin/forum-messages"
                           element={
