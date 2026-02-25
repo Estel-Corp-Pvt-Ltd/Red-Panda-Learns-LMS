@@ -553,39 +553,39 @@ class EnrollmentService {
         return ok(false);
       }
 
-      // Use bulk certificate issuance API
-      const idToken = await authService.getToken();
+      // // Use bulk certificate issuance API
+      // const idToken = await authService.getToken();
+      //
+      // const response = await fetch(
+      //   `${BACKEND_URL}/bulkIssueCertificates`,
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       Authorization: `Bearer ${idToken}`,
+      //     },
+      //     body: JSON.stringify({
+      //       enrollments: [enrollmentId],
+      //       remark: remark
+      //     }),
+      //   }
+      // );
+      //
+      // const data = await response.json();
+      //
+      // if (!response.ok || !data.success) {
+      //   return fail("Failed to issue certificate via API");
+      // }
+      //
+      // // Check if certificate was issued successfully
+      // if (data.issued > 0) {
+      //   return ok(true);
+      // } else if (data.skipped > 0) {
+      //   // Certificate was skipped (already issued or requirements not met)
+      //   return ok(false);
+      // }
 
-      const response = await fetch(
-        `${BACKEND_URL}/bulkIssueCertificates`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            enrollments: [enrollmentId],
-            remark: remark
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        return fail("Failed to issue certificate via API");
-      }
-
-      // Check if certificate was issued successfully
-      if (data.issued > 0) {
-        return ok(true);
-      } else if (data.skipped > 0) {
-        // Certificate was skipped (already issued or requirements not met)
-        return ok(false);
-      }
-
-      return fail("Certificate issuance failed");
+      return fail("bulkIssueCertificates cloud function is currently disabled");
 
     } catch (error: any) {
       logError("EnrollmentService.issueCertificate", error);

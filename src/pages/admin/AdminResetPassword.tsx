@@ -43,25 +43,31 @@ const AdminResetPassword: React.FC = () => {
 
         try {
             setLoading(true);
-            const resetUserPassword = httpsCallable(functions, "resetUserPassword");
-
-            const result = await resetUserPassword({ email, newPassword });
-            const data = result.data as { success: boolean; message: string };
-
-            if (data.success) {
-                toast({
-                    title: "✅ Success",
-                    description: data.message,
-                });
-                setEmail("");
-                setNewPassword("");
-            } else {
-                toast({
-                    title: "⚠️ Failed",
-                    description: data.message,
-                    variant: "destructive",
-                });
-            }
+            // const resetUserPassword = httpsCallable(functions, "resetUserPassword");
+            //
+            // const result = await resetUserPassword({ email, newPassword });
+            // const data = result.data as { success: boolean; message: string };
+            //
+            // if (data.success) {
+            //     toast({
+            //         title: "✅ Success",
+            //         description: data.message,
+            //     });
+            //     setEmail("");
+            //     setNewPassword("");
+            // } else {
+            //     toast({
+            //         title: "⚠️ Failed",
+            //         description: data.message,
+            //         variant: "destructive",
+            //     });
+            // }
+            console.warn("resetUserPassword cloud function call is disabled");
+            toast({
+                title: "Temporarily Disabled",
+                description: "Password reset is temporarily disabled.",
+                variant: "destructive",
+            });
         } catch (error: any) {
             toast({
                 title: "Error",

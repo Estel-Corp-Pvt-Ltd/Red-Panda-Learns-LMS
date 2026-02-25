@@ -3,7 +3,7 @@ import { ContentLock } from "@/types/content-lock";
 import { ContentLockedView } from "@/components/ContentLockedView";
 import AssignmentView from "@/components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 interface LessonContentProps {
   selectedItem: TopicItem | null;

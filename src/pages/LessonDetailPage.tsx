@@ -156,14 +156,15 @@ export default function LessonDetailPage() {
   const handleComplete = async (isCompleted: boolean) => {
     if (!user || !courseId || !selectedItem) return;
 
-    const result = await learningProgressService.completeLesson(
-      courseId,
-      selectedItem.id,
-      selectedItem.type,
-      isCompleted
-    );
+    // const result = await learningProgressService.completeLesson(
+    //   courseId,
+    //   selectedItem.id,
+    //   selectedItem.type,
+    //   isCompleted
+    // );
+    console.warn("completeLesson cloud function is disabled");
 
-    if (result.success) {
+    if (true) {
       const now = Timestamp.now();
       setUserProgress((prev) => {
         if (!prev) return prev;

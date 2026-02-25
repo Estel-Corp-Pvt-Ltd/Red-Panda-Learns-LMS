@@ -207,19 +207,13 @@ class LessonService {
   }
 
   // ───────────────────────────────────────────────
+  // Original getLessonById used the /getLessons cloud function (now disabled).
+  // Replaced with a direct Firestore read.
   async getLessonById(lessonId: string): Promise<Lesson | null> {
     try {
-      const idToken = await authService.getToken();
-      const response = await fetch(`${this.backendUrl}/getLessons?id=${lessonId}&type=lesson`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      if (response.status !== 200) return null;
-
-      const result = await response.json();
-      const data = result?.data;
+      const lessonDoc = await getDoc(doc(db, COLLECTION.LESSONS, lessonId));
+      if (!lessonDoc.exists()) return null;
+      const data = lessonDoc.data();
       return {
         ...data,
         createdAt: data?.createdAt?.toDate?.() ?? data?.createdAt ?? null,

@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 import { OrderStatus, Currency } from "./general";
 import { AddressType } from "./general";
 import { TransactionLineItem } from "./transaction";

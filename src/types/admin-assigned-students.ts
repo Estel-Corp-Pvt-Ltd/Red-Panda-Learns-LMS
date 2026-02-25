@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 export interface AdminAssignedStudents {
   id: string;

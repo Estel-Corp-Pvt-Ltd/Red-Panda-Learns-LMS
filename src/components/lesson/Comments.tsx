@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PaginatedResult } from '@/utils/pagination';
 import { COMMENT_STATUS, USER_ROLE } from '@/constants';
 import { formatDateTime } from '@/utils/date-time';
-import { WhereFilterOp } from 'firebase-admin/firestore';
+import { WhereFilterOp } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { ChevronUp, Loader2, MessageCircle, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 

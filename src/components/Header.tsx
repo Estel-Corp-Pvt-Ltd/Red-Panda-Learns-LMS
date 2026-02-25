@@ -273,7 +273,7 @@ function DynamicIsland() {
 
   return (
     <div
-      className="dynamic-island relative flex items-center justify-center rounded-full bg-neutral-950 dark:bg-neutral-900 h-9 px-4 cursor-default overflow-hidden transition-all duration-500"
+      className="dynamic-island relative flex items-center justify-center rounded-full bg-neutral-950 dark:bg-neutral-900 h-9 min-w-[280px] px-6 cursor-default overflow-hidden transition-all duration-500"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

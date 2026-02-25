@@ -69,11 +69,12 @@ export default function CertificateApprovalModal({
     useEffect(() => {
         const fetchTotalTimeSpent = async () => {
             setIsLoadingData(true);
-            const response = await learningProgressService.getCourseTimeSpent(userId, courseId);
-            if (response.success && response.data) {
-                setTotalTimeSpent(response.data.totalTimeSpentSec);
-                setCompletedLessons(Object.keys(response.data.lessonHistory).length);
-            }
+            // const response = await learningProgressService.getCourseTimeSpent(userId, courseId);
+            // if (response.success && response.data) {
+            //     setTotalTimeSpent(response.data.totalTimeSpentSec);
+            //     setCompletedLessons(Object.keys(response.data.lessonHistory).length);
+            // }
+            console.warn("getCourseTimeSpent call is disabled");
             setIsLoadingData(false);
         };
 

@@ -39,29 +39,29 @@ export const karmaRuleService = {
     }
   },
 
-  async addOrUpdateKarmaRule(data: AddOrUpdateKarmaRulePayload, idToken: string) {
-    try {
-      const response = await fetch(`${BACKEND_URL}/addOrUpdateKarmaRule`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response from server:", errorData);
-        throw new Error(errorData.error || "Failed to add or update karma rule");
-      }
-
-      const result = await response.json();
-
-      return result;
-    } catch (error) {
-      console.error("Error adding or updating karma rule:", error);
-      throw error;
-    }
-  },
+  // async addOrUpdateKarmaRule(data: AddOrUpdateKarmaRulePayload, idToken: string) {
+  //   try {
+  //     const response = await fetch(`${BACKEND_URL}/addOrUpdateKarmaRule`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${idToken}`,
+  //       },
+  //       body: JSON.stringify(data),
+  //     });
+  //
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       console.error("Error response from server:", errorData);
+  //       throw new Error(errorData.error || "Failed to add or update karma rule");
+  //     }
+  //
+  //     const result = await response.json();
+  //
+  //     return result;
+  //   } catch (error) {
+  //     console.error("Error adding or updating karma rule:", error);
+  //     throw error;
+  //   }
+  // },
 };

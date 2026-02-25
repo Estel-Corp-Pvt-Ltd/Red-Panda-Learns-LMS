@@ -16,11 +16,11 @@ import {
   limitToLast,
   startAfter,
   limit,
+  WhereFilterOp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { COLLECTION } from "@/constants";
 import { Organization } from "@/types/organization";
-import { WhereFilterOp } from "firebase-admin/firestore";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 

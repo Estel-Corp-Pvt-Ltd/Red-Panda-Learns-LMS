@@ -162,20 +162,27 @@ const AdminAnnouncements: React.FC = () => {
 
     setDeleting(true);
     try {
-      const idToken = await authService.getToken();
-      await createAnnouncementApi.deleteAnnouncement(
-        selectedAnnouncement.id,
-        idToken
-      );
-
+      // const idToken = await authService.getToken();
+      // await createAnnouncementApi.deleteAnnouncement(
+      //   selectedAnnouncement.id,
+      //   idToken
+      // );
+      //
+      // toast({
+      //   title: "Success",
+      //   description: "Announcement deleted successfully!",
+      // });
+      //
+      // setIsDeleteDialogOpen(false);
+      // setSelectedAnnouncement(null);
+      // fetchAnnouncements();
+      console.warn("deleteAnnouncement call is disabled");
       toast({
-        title: "Success",
-        description: "Announcement deleted successfully!",
+        title: "Temporarily Disabled",
+        description: "Deleting announcements is temporarily disabled.",
+        variant: "destructive",
       });
-
       setIsDeleteDialogOpen(false);
-      setSelectedAnnouncement(null);
-      fetchAnnouncements();
     } catch (error) {
       console.error("Failed to delete announcement:", error);
       toast({

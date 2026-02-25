@@ -50,43 +50,49 @@ export function ComplaintRedressalMailSenderModal({
         setLoading(true);
 
         try {
-            const idToken = await authService.getToken();
-            const response = await fetch(`${BACKEND_URL}/sendComplaintRedressalMail`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({
-                    to: complaint.userEmail,
-                    subject,
-                    message,
-                    complaintId: complaint.id,
-                    status: complaint.status,
-                    isInternal: false
-                }),
+            // const idToken = await authService.getToken();
+            // const response = await fetch(`${BACKEND_URL}/sendComplaintRedressalMail`, {
+            //     method: "POST",
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //         Authorization: `Bearer ${idToken}`,
+            //     },
+            //     body: JSON.stringify({
+            //         to: complaint.userEmail,
+            //         subject,
+            //         message,
+            //         complaintId: complaint.id,
+            //         status: complaint.status,
+            //         isInternal: false
+            //     }),
+            // });
+            //
+            // const jsonResponse = await response.json();
+            //
+            // if (jsonResponse.success) {
+            //     setSubject("");
+            //     setMessage("");
+            //     onOpenChange(false);
+            //     const response = await complaintService.resolveComplaint(complaint.id, userId);
+            //     if (response.success) {
+            //         toast({
+            //             title: "Complaint redressal email sent ✅ & complaint Resolved"
+            //         });
+            //     } else {
+            //         toast({
+            //             title: "Failed to resolve complaint",
+            //             variant: "destructive"
+            //         });
+            //     }
+            // } else {
+            //     throw new Error(jsonResponse.error);
+            // }
+            console.warn("sendComplaintRedressalMail fetch call is disabled");
+            toast({
+                title: "Temporarily Disabled",
+                description: "Sending complaint redressal mail is temporarily disabled.",
+                variant: "destructive",
             });
-
-            const jsonResponse = await response.json();
-
-            if (jsonResponse.success) {
-                setSubject("");
-                setMessage("");
-                onOpenChange(false);
-                const response = await complaintService.resolveComplaint(complaint.id, userId);
-                if (response.success) {
-                    toast({
-                        title: "Complaint redressal email sent ✅ & complaint Resolved"
-                    });
-                } else {
-                    toast({
-                        title: "Failed to resolve complaint",
-                        variant: "destructive"
-                    });
-                }
-            } else {
-                throw new Error(jsonResponse.error);
-            }
         } catch (err: any) {
             toast({
                 title: "Failed to send complaint redressal mail",

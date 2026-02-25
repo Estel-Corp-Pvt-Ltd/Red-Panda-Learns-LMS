@@ -31,7 +31,7 @@ class RazorpayProvider {
   ): Promise<Result<CreateOrderResponse>> {
     try {
       const idToken = await authService.getToken();
-      const idempotencyKey = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const idempotencyKey = `order_${Date.now()}_${crypto.randomUUID()}`;
 
       const response = await fetch(`${this.backendUrl}/createRazorpayOrder`, {
         method: "POST",

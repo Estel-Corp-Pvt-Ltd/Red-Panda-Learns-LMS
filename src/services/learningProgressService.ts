@@ -21,10 +21,7 @@ import { formatDate } from "@/utils/date-time";
 import { lessonAnalyticsService } from "./analytics/lessonAnalyticsService";
 import { authService } from "./authService";
 import { lessonService } from "./lessonService";
-import { duration } from "html2canvas/dist/types/css/property-descriptors/duration";
 import { Duration } from "@/types/general";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { LessonType } from "@/types/lesson";
 
 class LearningProgressService {
   private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
@@ -68,73 +65,73 @@ class LearningProgressService {
    * @param progressId - The ID of the LearningProgress document.
    * @param completedLessonId - The ID of the lesson that was just completed.
    */
-  async completeLesson(
-    courseId: string,
-    itemId: string,
-    type: string,
-    isCompleted: boolean
-  ): Promise<Result<null>> {
-    try {
-      const idToken = await authService.getToken();
-      await fetch(`${this.backendUrl}/completeLesson`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          courseId,
-          itemId,
-          type,
-          isCompleted,
-        }),
-      });
-      return ok(null);
-    } catch {
-      console.error("spendTimeOnLesson error");
-      return fail("Failed to update time spent.");
-    }
-  }
+  // async completeLesson(
+  //   courseId: string,
+  //   itemId: string,
+  //   type: string,
+  //   isCompleted: boolean
+  // ): Promise<Result<null>> {
+  //   try {
+  //     const idToken = await authService.getToken();
+  //     await fetch(`${this.backendUrl}/completeLesson`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${idToken}`,
+  //       },
+  //       body: JSON.stringify({
+  //         courseId,
+  //         itemId,
+  //         type,
+  //         isCompleted,
+  //       }),
+  //     });
+  //     return ok(null);
+  //   } catch {
+  //     console.error("spendTimeOnLesson error");
+  //     return fail("Failed to update time spent.");
+  //   }
+  // }
 
-  async timeSpentOnLesson(
-    courseId: string,
-    lessonId: string,
-    timeSpentSec: number,
-    duration: Duration,
-    updatedAt: Timestamp | FieldValue,
-    karmaBoostExpiresAfter: Duration,
-    lessonType: LessonType
-  ): Promise<Result<null>> {
-    if (timeSpentSec <= 5) {
-      return fail("Time spent must be greater than five seconds.");
-    }
-    try {
-      const idToken = await authService.getToken();
-      const response = await fetch(`${this.backendUrl}/lessonTimeSpent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          courseId,
-          lessonId,
-          timeSpentSec,
-          duration,
-          updatedAt,
-          karmaBoostExpiresAfter,
-          lessonType,
-        }),
-      });
-      if (!response.ok) {
-        return fail("Failed to update time spent.");
-      }
-      return ok(null);
-    } catch {
-      console.error("spendTimeOnLesson error");
-      return fail("Failed to update time spent.");
-    }
-  }
+  // async timeSpentOnLesson(
+  //   courseId: string,
+  //   lessonId: string,
+  //   timeSpentSec: number,
+  //   duration: Duration,
+  //   updatedAt: Timestamp | FieldValue,
+  //   karmaBoostExpiresAfter: Duration,
+  //   lessonType: LessonType
+  // ): Promise<Result<null>> {
+  //   if (timeSpentSec <= 5) {
+  //     return fail("Time spent must be greater than five seconds.");
+  //   }
+  //   try {
+  //     const idToken = await authService.getToken();
+  //     const response = await fetch(`${this.backendUrl}/lessonTimeSpent`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${idToken}`,
+  //       },
+  //       body: JSON.stringify({
+  //         courseId,
+  //         lessonId,
+  //         timeSpentSec,
+  //         duration,
+  //         updatedAt,
+  //         karmaBoostExpiresAfter,
+  //         lessonType,
+  //       }),
+  //     });
+  //     if (!response.ok) {
+  //       return fail("Failed to update time spent.");
+  //     }
+  //     return ok(null);
+  //   } catch {
+  //     console.error("spendTimeOnLesson error");
+  //     return fail("Failed to update time spent.");
+  //   }
+  // }
 
   // async addedDurationinLearningProgress(
   //   userId: string,
@@ -234,63 +231,63 @@ class LearningProgressService {
     }
   }
 
-  async completeCourse(userId: string, courseId: string): Promise<Result<boolean>> {
-    try {
-      const authToken = await authService.getToken();
-      const response = await fetch(`${this.backendUrl}/completeCourse`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          userId,
-          courseId,
-        }),
-      });
+  // async completeCourse(userId: string, courseId: string): Promise<Result<boolean>> {
+  //   try {
+  //     const authToken = await authService.getToken();
+  //     const response = await fetch(`${this.backendUrl}/completeCourse`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${authToken}`,
+  //       },
+  //       body: JSON.stringify({
+  //         userId,
+  //         courseId,
+  //       }),
+  //     });
+  //
+  //     if (!response.ok) {
+  //       return ok(false);
+  //     }
+  //
+  //     return ok(true);
+  //   } catch (error: any) {
+  //     logError("LearningProgressService.completeCourse", error);
+  //     return fail("Failed to complete course", error.code || error.message);
+  //   }
+  // }
 
-      if (!response.ok) {
-        return ok(false);
-      }
-
-      return ok(true);
-    } catch (error: any) {
-      logError("LearningProgressService.completeCourse", error);
-      return fail("Failed to complete course", error.code || error.message);
-    }
-  }
-
-  async getCourseTimeSpent(
-    userId: string,
-    courseId: string
-  ): Promise<
-    Result<{ totalTimeSpentSec: number; lessonHistory: LearningProgress["lessonHistory"] }>
-  > {
-    try {
-      const idToken = await authService.getToken();
-      const response = await fetch(`${this.backendUrl}/getCourseTimeSpent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          userId,
-          courseId,
-        }),
-      });
-
-      if (!response.ok) {
-        return fail("Failed to fetch course time spent.");
-      }
-
-      const data = await response.json();
-      return ok(data.data);
-    } catch (error: any) {
-      logError("LearningProgressService.getCourseTimeSpent", error);
-      return fail("Failed to fetch course time spent.", error.code || error.message);
-    }
-  }
+  // async getCourseTimeSpent(
+  //   userId: string,
+  //   courseId: string
+  // ): Promise<
+  //   Result<{ totalTimeSpentSec: number; lessonHistory: LearningProgress["lessonHistory"] }>
+  // > {
+  //   try {
+  //     const idToken = await authService.getToken();
+  //     const response = await fetch(`${this.backendUrl}/getCourseTimeSpent`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${idToken}`,
+  //       },
+  //       body: JSON.stringify({
+  //         userId,
+  //         courseId,
+  //       }),
+  //     });
+  //
+  //     if (!response.ok) {
+  //       return fail("Failed to fetch course time spent.");
+  //     }
+  //
+  //     const data = await response.json();
+  //     return ok(data.data);
+  //   } catch (error: any) {
+  //     logError("LearningProgressService.getCourseTimeSpent", error);
+  //     return fail("Failed to fetch course time spent.", error.code || error.message);
+  //   }
+  // }
 }
 
 export const learningProgressService = new LearningProgressService();

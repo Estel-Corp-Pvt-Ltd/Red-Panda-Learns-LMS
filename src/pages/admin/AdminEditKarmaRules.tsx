@@ -104,29 +104,35 @@ export default function AdminKarmaRulesPage() {
     setSaving(true);
 
     try {
-      const idToken = await authService.getToken();
-      if (!idToken) throw new Error("Not authenticated");
-
-      const result = await karmaRuleService.addOrUpdateKarmaRule(
-        {
-          id: selectedRule.id,
-          category: selectedRule.category,
-          action: selectedRule.action,
-          points: selectedRule.points,
-          enabled: selectedRule.enabled,
-        },
-        idToken
-      );
-
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: selectedRule.id ? "Rule updated successfully" : "Rule created successfully",
-        });
-        setSelectedRule(EMPTY_RULE);
-        setIsDialogOpen(false);
-        await loadRules();
-      }
+      // const idToken = await authService.getToken();
+      // if (!idToken) throw new Error("Not authenticated");
+      //
+      // const result = await karmaRuleService.addOrUpdateKarmaRule(
+      //   {
+      //     id: selectedRule.id,
+      //     category: selectedRule.category,
+      //     action: selectedRule.action,
+      //     points: selectedRule.points,
+      //     enabled: selectedRule.enabled,
+      //   },
+      //   idToken
+      // );
+      //
+      // if (result.success) {
+      //   toast({
+      //     title: "Success",
+      //     description: selectedRule.id ? "Rule updated successfully" : "Rule created successfully",
+      //   });
+      //   setSelectedRule(EMPTY_RULE);
+      //   setIsDialogOpen(false);
+      //   await loadRules();
+      // }
+      console.warn("addOrUpdateKarmaRule call is disabled");
+      toast({
+        title: "Temporarily Disabled",
+        description: "Saving karma rules is temporarily disabled.",
+        variant: "destructive",
+      });
     } catch (error: any) {
       console.error(error);
       toast({

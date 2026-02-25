@@ -82,21 +82,27 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const idToken = await authService.getToken();
-
-      await createAnnouncementApi.updateAnnouncement(
-        announcement.id,
-        { title: title.trim(), body: body.trim() },
-        idToken
-      );
-
+      // const idToken = await authService.getToken();
+      //
+      // await createAnnouncementApi.updateAnnouncement(
+      //   announcement.id,
+      //   { title: title.trim(), body: body.trim() },
+      //   idToken
+      // );
+      //
+      // toast({
+      //   title: "Success",
+      //   description: "Announcement updated successfully!",
+      // });
+      //
+      // onOpenChange(false);
+      // onSuccess?.();
+      console.warn("updateAnnouncement call is disabled");
       toast({
-        title: "Success",
-        description: "Announcement updated successfully!",
+        title: "Temporarily Disabled",
+        description: "Updating announcements is temporarily disabled.",
+        variant: "destructive",
       });
-
-      onOpenChange(false);
-      onSuccess?.();
     } catch (error) {
       console.error("Failed to update announcement:", error);
       toast({

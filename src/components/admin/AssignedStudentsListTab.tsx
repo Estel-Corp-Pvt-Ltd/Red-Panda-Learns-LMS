@@ -233,38 +233,44 @@ const ViewAssignedStudentsTab: React.FC<ViewAssignedStudentsTabProps> = ({
 
     setBulkActionLoading(true);
     try {
-      const idToken = await authService.getToken();
-      const res = await fetch(`${BACKEND_URL}/bulkUnassignStudentsFromAdmin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          adminId,
-          studentIds: selectedIds,
-        }),
-      }).then((r) => r.json());
-
-      if (res.success) {
-        toast({
-          title: "Success",
-          description: `${selectedIds.length} student(s) unassigned successfully`,
-        });
-
-        onStudentsUnassigned(selectedIds);
-
-        setAllAssignedStudents((prev) =>
-          prev.filter((s) => !selectedIds.includes(s.id))
-        );
-        setSelectedIds([]);
-      } else {
-        toast({
-          title: "Error",
-          description: res.message || "Failed to unassign students",
-          variant: "destructive",
-        });
-      }
+      // const idToken = await authService.getToken();
+      // const res = await fetch(`${BACKEND_URL}/bulkUnassignStudentsFromAdmin`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${idToken}`,
+      //   },
+      //   body: JSON.stringify({
+      //     adminId,
+      //     studentIds: selectedIds,
+      //   }),
+      // }).then((r) => r.json());
+      //
+      // if (res.success) {
+      //   toast({
+      //     title: "Success",
+      //     description: `${selectedIds.length} student(s) unassigned successfully`,
+      //   });
+      //
+      //   onStudentsUnassigned(selectedIds);
+      //
+      //   setAllAssignedStudents((prev) =>
+      //     prev.filter((s) => !selectedIds.includes(s.id))
+      //   );
+      //   setSelectedIds([]);
+      // } else {
+      //   toast({
+      //     title: "Error",
+      //     description: res.message || "Failed to unassign students",
+      //     variant: "destructive",
+      //   });
+      // }
+      console.warn("bulkUnassignStudentsFromAdmin fetch call is disabled");
+      toast({
+        title: "Temporarily Disabled",
+        description: "Bulk unassign students is temporarily disabled.",
+        variant: "destructive",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -283,32 +289,38 @@ const ViewAssignedStudentsTab: React.FC<ViewAssignedStudentsTabProps> = ({
 
     setBulkActionLoading(true);
     try {
-      const idToken = await authService.getToken();
-      const res = await fetch(`${BACKEND_URL}/pauseStudentNotifications`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          adminId,
-          studentIds: selectedIds,
-        }),
-      }).then((r) => r.json());
-
-      if (res.success) {
-        toast({
-          title: "Success",
-          description: `Notifications paused for ${selectedIds.length} student(s)`,
-        });
-        setSelectedIds([]);
-      } else {
-        toast({
-          title: "Error",
-          description: res.message || "Failed to pause notifications",
-          variant: "destructive",
-        });
-      }
+      // const idToken = await authService.getToken();
+      // const res = await fetch(`${BACKEND_URL}/pauseStudentNotifications`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${idToken}`,
+      //   },
+      //   body: JSON.stringify({
+      //     adminId,
+      //     studentIds: selectedIds,
+      //   }),
+      // }).then((r) => r.json());
+      //
+      // if (res.success) {
+      //   toast({
+      //     title: "Success",
+      //     description: `Notifications paused for ${selectedIds.length} student(s)`,
+      //   });
+      //   setSelectedIds([]);
+      // } else {
+      //   toast({
+      //     title: "Error",
+      //     description: res.message || "Failed to pause notifications",
+      //     variant: "destructive",
+      //   });
+      // }
+      console.warn("pauseStudentNotifications fetch call is disabled");
+      toast({
+        title: "Temporarily Disabled",
+        description: "Pausing student notifications is temporarily disabled.",
+        variant: "destructive",
+      });
     } catch (error) {
       toast({
         title: "Error",

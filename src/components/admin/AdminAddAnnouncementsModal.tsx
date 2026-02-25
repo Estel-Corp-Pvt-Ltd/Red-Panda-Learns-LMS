@@ -240,39 +240,51 @@ const AddAnnouncementModal: React.FC<AddAnnouncementModalProps> = ({
 
       // Create announcement (GLOBAL or COURSE)
       if (announcementType === "GLOBAL") {
-        const result = await createAnnouncementApi.createGlobalAnnouncement(
-          {
-            title: form.title,
-            body: form.body,
-          },
-          idToken
-        );
-
-        announcementId = extractAnnouncementId(result);
-
+        // const result = await createAnnouncementApi.createGlobalAnnouncement(
+        //   {
+        //     title: form.title,
+        //     body: form.body,
+        //   },
+        //   idToken
+        // );
+        //
+        // announcementId = extractAnnouncementId(result);
+        //
+        // toast({
+        //   title: "Success",
+        //   description: "Global announcement created successfully!",
+        // });
+        console.warn("createGlobalAnnouncement call is disabled");
         toast({
-          title: "Success",
-          description: "Global announcement created successfully!",
+          title: "Temporarily Disabled",
+          description: "Creating global announcements is temporarily disabled.",
+          variant: "destructive",
         });
       } else {
-        const result =
-          await createAnnouncementApi.createCourseManualAnnouncement(
-            {
-              title: form.title,
-              body: form.body,
-              courseId: selectedCourseId,
-            },
-            idToken
-          );
-
-        announcementId = extractAnnouncementId(result);
-
-        const selectedCourse = courses.find((c) => c.id === selectedCourseId);
+        // const result =
+        //   await createAnnouncementApi.createCourseManualAnnouncement(
+        //     {
+        //       title: form.title,
+        //       body: form.body,
+        //       courseId: selectedCourseId,
+        //     },
+        //     idToken
+        //   );
+        //
+        // announcementId = extractAnnouncementId(result);
+        //
+        // const selectedCourse = courses.find((c) => c.id === selectedCourseId);
+        // toast({
+        //   title: "Success",
+        //   description: `Announcement created for "${
+        //     selectedCourse?.title || "course"
+        //   }" successfully!`,
+        // });
+        console.warn("createCourseManualAnnouncement call is disabled");
         toast({
-          title: "Success",
-          description: `Announcement created for "${
-            selectedCourse?.title || "course"
-          }" successfully!`,
+          title: "Temporarily Disabled",
+          description: "Creating course announcements is temporarily disabled.",
+          variant: "destructive",
         });
       }
 

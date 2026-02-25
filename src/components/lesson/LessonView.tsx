@@ -23,7 +23,6 @@ import MarkdownViewer from "../MarkdownViewer";
 import Comments from "./Comments";
 import { learningProgressService } from "@/services/learningProgressService";
 import { useAuth } from "@/contexts/AuthContext";
-import { duration } from "html2canvas/dist/types/css/property-descriptors/duration";
 import { Duration } from "@/types/general";
 import { secondsToDuration } from "@/utils/date-time";
 import { calculateKarmaForLessonCompleted } from "@/services/karmaService/calculateKarmaForLessonCompletion";
@@ -346,15 +345,15 @@ export function LessonView({
         const duration: Duration = secondsToDuration(videoDuration);
         const lessonDuration = lesson.duration || duration;
         const durationToPass = lessonDuration;
-        await learningProgressService.timeSpentOnLesson(
-          courseId,
-          lessonId,
-          totalTimeToReport,
-          durationToPass,
-          lesson.updatedAt,
-          lesson.karmaBoostExpiresAfter,
-          lesson.type
-        );
+        // await learningProgressService.timeSpentOnLesson(
+        //   courseId,
+        //   lessonId,
+        //   totalTimeToReport,
+        //   durationToPass,
+        //   lesson.updatedAt,
+        //   lesson.karmaBoostExpiresAfter,
+        //   lesson.type
+        // );
 
         // Reset accumulated time
         state.totalTimeSpent = 0;

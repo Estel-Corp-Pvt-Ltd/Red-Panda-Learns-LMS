@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
+import rehypeSanitize from 'rehype-sanitize'
 
 type MarkdownViewerProps = {
   value: string;
@@ -10,7 +11,7 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ value }) => {
 
   return (
     <ReactMarkdown
-      rehypePlugins={[rehypeRaw]} // For HTML support
+      rehypePlugins={[rehypeRaw, rehypeSanitize]} // HTML support with XSS sanitization
       components={{
         // Headers
         h1: ({ children }) => (

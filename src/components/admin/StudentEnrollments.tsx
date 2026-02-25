@@ -399,25 +399,26 @@ const StudentEnrollments: React.FC = () => {
       const selectedEnrollmentsList = enrollments.data.filter(e => selectedEnrollments.has(e.id));
 
       const progressDataPromises = selectedEnrollmentsList.map(async (enrollment) => {
-        const timeSpentResponse = await learningProgressService.getCourseTimeSpent(
-          enrollment.userId,
-          enrollment.courseId
-        );
-
-        if (timeSpentResponse.success && timeSpentResponse.data) {
-          const lessonHistory = timeSpentResponse.data.lessonHistory || {};
-          const completedLessons = Object.values(lessonHistory).filter(
-            (lesson: any) => lesson.completed
-          ).length;
-          const totalLessons = Object.keys(lessonHistory).length;
-
-          return {
-            enrollment,
-            timeSpent: timeSpentResponse.data.totalTimeSpentSec || 0,
-            completedLessons,
-            totalLessons,
-          };
-        }
+        // const timeSpentResponse = await learningProgressService.getCourseTimeSpent(
+        //   enrollment.userId,
+        //   enrollment.courseId
+        // );
+        //
+        // if (timeSpentResponse.success && timeSpentResponse.data) {
+        //   const lessonHistory = timeSpentResponse.data.lessonHistory || {};
+        //   const completedLessons = Object.values(lessonHistory).filter(
+        //     (lesson: any) => lesson.completed
+        //   ).length;
+        //   const totalLessons = Object.keys(lessonHistory).length;
+        //
+        //   return {
+        //     enrollment,
+        //     timeSpent: timeSpentResponse.data.totalTimeSpentSec || 0,
+        //     completedLessons,
+        //     totalLessons,
+        //   };
+        // }
+        console.warn("getCourseTimeSpent call is disabled");
 
         return {
           enrollment,
@@ -467,49 +468,55 @@ const StudentEnrollments: React.FC = () => {
       .map(e => e.id);
 
     try {
-      const idToken = await authService.getToken();
-
-      const response = await fetch(
-        `${BACKEND_URL}/bulkIssueCertificates`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            enrollments: progressIdentifiers,
-            remark: certificateRemark
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!data.success) {
-        toast({
-          title: "Failed Bulk Certificate Issue",
-          variant: "destructive"
-        });
-      } else {
-        setBulkResults({
-          issued: data.issued || 0,
-          skipped: data.skipped || 0,
-          issuedCertificates: data.issuedCertificates || [],
-          skippedEnrollments: data.skippedEnrollments || []
-        });
-        setShowResultsModal(true);
-        toast({
-          title: "Certificates Issued",
-        });
-      }
-
-      await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate);
-      setSelectedEnrollments(new Set());
-      setCertificateRemark('');
-      setShowBulkCertificateModal(false);
-      setBulkCertificateData([]);
-      setSelectedModalEnrollments(new Set());
+      // const idToken = await authService.getToken();
+      //
+      // const response = await fetch(
+      //   `${BACKEND_URL}/bulkIssueCertificates`,
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       Authorization: `Bearer ${idToken}`,
+      //     },
+      //     body: JSON.stringify({
+      //       enrollments: progressIdentifiers,
+      //       remark: certificateRemark
+      //     }),
+      //   }
+      // );
+      //
+      // const data = await response.json();
+      //
+      // if (!data.success) {
+      //   toast({
+      //     title: "Failed Bulk Certificate Issue",
+      //     variant: "destructive"
+      //   });
+      // } else {
+      //   setBulkResults({
+      //     issued: data.issued || 0,
+      //     skipped: data.skipped || 0,
+      //     issuedCertificates: data.issuedCertificates || [],
+      //     skippedEnrollments: data.skippedEnrollments || []
+      //   });
+      //   setShowResultsModal(true);
+      //   toast({
+      //     title: "Certificates Issued",
+      //   });
+      // }
+      //
+      // await fetchEnrollments(undefined, undefined, searchTerm, searchField, startDate, endDate);
+      // setSelectedEnrollments(new Set());
+      // setCertificateRemark('');
+      // setShowBulkCertificateModal(false);
+      // setBulkCertificateData([]);
+      // setSelectedModalEnrollments(new Set());
+      console.warn("bulkIssueCertificates fetch call is disabled");
+      toast({
+        title: "Temporarily Disabled",
+        description: "Bulk certificate issuance is temporarily disabled.",
+        variant: "destructive",
+      });
     } catch (err) {
       logError('Error issuing certificates:', err);
     } finally {

@@ -133,13 +133,15 @@ const AttemptQuiz = () => {
 
     const getServerTimeLeft = async (): Promise<number | null> => {
         try {
-            const getQuizTimeLeft = httpsCallable(getFunctions(), "getQuizTimeLeft");
-            const result = await getQuizTimeLeft({ quizId });
-            const data = result.data as { success: boolean; timeLeftSeconds?: number };
-
-            if (data.success && data.timeLeftSeconds !== undefined) {
-                return data.timeLeftSeconds;
-            }
+            // const getQuizTimeLeft = httpsCallable(getFunctions(), "getQuizTimeLeft");
+            // const result = await getQuizTimeLeft({ quizId });
+            // const data = result.data as { success: boolean; timeLeftSeconds?: number };
+            //
+            // if (data.success && data.timeLeftSeconds !== undefined) {
+            //     return data.timeLeftSeconds;
+            // }
+            // return null;
+            console.warn("getQuizTimeLeft cloud function call is disabled");
             return null;
         } catch {
             return null;
@@ -155,19 +157,20 @@ const AttemptQuiz = () => {
                 return false;
             }
 
-            const canStartQuizFn = httpsCallable(functions, "canStartQuiz");
-            const result = await canStartQuizFn({ quizId });
-            const data = result.data as { success: boolean; message: string };
-
-            if (!data.success) {
-                toast({
-                    title: "Cannot start quiz now",
-                    description: data.message,
-                    variant: "destructive",
-                });
-                navigate("/quizzes");
-                return false;
-            }
+            // const canStartQuizFn = httpsCallable(functions, "canStartQuiz");
+            // const result = await canStartQuizFn({ quizId });
+            // const data = result.data as { success: boolean; message: string };
+            //
+            // if (!data.success) {
+            //     toast({
+            //         title: "Cannot start quiz now",
+            //         description: data.message,
+            //         variant: "destructive",
+            //     });
+            //     navigate("/quizzes");
+            //     return false;
+            // }
+            console.warn("canStartQuiz cloud function call is disabled");
 
             return true;
         } catch {

@@ -194,25 +194,25 @@ class LessonAnalyticsService {
     }
   }
 
-  async spendTimeOnLesson(courseId: string, lessonId: string, timeSpentSec: number): Promise<void> {
-    try {
-      const idToken = await authService.getToken();
-      await fetch(`${this.backendUrl}/lessonTimeSpent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          courseId,
-          lessonId,
-          timeSpentSec,
-        }),
-      });
-    } catch {
-      console.error("spendTimeOnLesson error");
-    }
-  }
+  // async spendTimeOnLesson(courseId: string, lessonId: string, timeSpentSec: number): Promise<void> {
+  //   try {
+  //     const idToken = await authService.getToken();
+  //     await fetch(`${this.backendUrl}/lessonTimeSpent`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": `Bearer ${idToken}`,
+  //       },
+  //       body: JSON.stringify({
+  //         courseId,
+  //         lessonId,
+  //         timeSpentSec,
+  //       }),
+  //     });
+  //   } catch {
+  //     console.error("spendTimeOnLesson error");
+  //   }
+  // }
 }
 
 export const lessonAnalyticsService = new LessonAnalyticsService();

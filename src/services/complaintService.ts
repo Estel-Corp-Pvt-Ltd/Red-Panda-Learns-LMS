@@ -29,7 +29,7 @@ import { db } from "@/firebaseConfig";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 
-import { getFunctions, httpsCallable } from "firebase/functions";
+// import { getFunctions, httpsCallable } from "firebase/functions";
 
 class ComplaintService {
   async createComplaint(
@@ -39,14 +39,15 @@ class ComplaintService {
     >
   ): Promise<Result<string>> {
     try {
-      const res = await this.generateComplaintIdFn();
-      const idData = res.data as { success: boolean; message: string };
-
-      if (!idData?.success) {
-        return fail("Failed to generate complaint ID");
-      }
-
-      const complaintId = idData.message;
+      // const res = await this.generateComplaintIdFn();
+      // const idData = res.data as { success: boolean; message: string };
+      //
+      // if (!idData?.success) {
+      //   return fail("Failed to generate complaint ID");
+      // }
+      //
+      // const complaintId = idData.message;
+      const complaintId = `COMPLAINT_${Date.now()}`;
 
       const complaintRef = doc(db, COLLECTION.COMPLAINTS, complaintId);
 
@@ -310,8 +311,8 @@ class ComplaintService {
     }
   }
 
-  private functions = getFunctions();
-  private generateComplaintIdFn = httpsCallable(this.functions, "generateComplaintId");
+  // private functions = getFunctions();
+  // private generateComplaintIdFn = httpsCallable(this.functions, "generateComplaintId");
 
   private addAction(
     batch: ReturnType<typeof writeBatch>,

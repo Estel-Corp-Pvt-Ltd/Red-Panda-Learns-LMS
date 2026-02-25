@@ -416,41 +416,47 @@ const AssignStudentsTab: React.FC<AssignStudentsTabProps> = ({
     setLoadingAssign(true);
 
     try {
-      const idToken = await authService.getToken();
-      const res = await fetch(`${BACKEND_URL}/assignStudentsToAdmin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          adminId,
-          studentIds: selectedIds,
-          notificationEmail: notificationEmail.trim(),
-        }),
-      }).then((r) => r.json());
-
-      if (res.success) {
-        toast({
-          title: "Success",
-          description: `${selectedIds.length} student(s) assigned successfully. Notification will be sent to ${notificationEmail}`,
-        });
-
-        onStudentsAssigned(selectedIds);
-
-        // Remove assigned students from current list
-        setStudents((prev) =>
-          prev.filter((student) => !selectedIds.includes(student.id))
-        );
-
-        setSelectedIds([]);
-      } else {
-        toast({
-          title: "Error",
-          description: res.message || "Assignment failed",
-          variant: "destructive",
-        });
-      }
+      // const idToken = await authService.getToken();
+      // const res = await fetch(`${BACKEND_URL}/assignStudentsToAdmin`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${idToken}`,
+      //   },
+      //   body: JSON.stringify({
+      //     adminId,
+      //     studentIds: selectedIds,
+      //     notificationEmail: notificationEmail.trim(),
+      //   }),
+      // }).then((r) => r.json());
+      //
+      // if (res.success) {
+      //   toast({
+      //     title: "Success",
+      //     description: `${selectedIds.length} student(s) assigned successfully. Notification will be sent to ${notificationEmail}`,
+      //   });
+      //
+      //   onStudentsAssigned(selectedIds);
+      //
+      //   // Remove assigned students from current list
+      //   setStudents((prev) =>
+      //     prev.filter((student) => !selectedIds.includes(student.id))
+      //   );
+      //
+      //   setSelectedIds([]);
+      // } else {
+      //   toast({
+      //     title: "Error",
+      //     description: res.message || "Assignment failed",
+      //     variant: "destructive",
+      //   });
+      // }
+      console.warn("assignStudentsToAdmin fetch call is disabled");
+      toast({
+        title: "Temporarily Disabled",
+        description: "Assigning students to admin is temporarily disabled.",
+        variant: "destructive",
+      });
     } catch (err) {
       toast({
         title: "Error",

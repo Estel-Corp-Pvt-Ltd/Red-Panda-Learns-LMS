@@ -101,11 +101,12 @@ function EnrolledCourseCard({
   const handleCompleteCourse = async () => {
     try {
       setIsCompleting(true);
-      const result = await learningProgressService.completeCourse(
-        enrollment.userId,
-        enrollment.courseId
-      );
-      if (result.success && result.data) {
+      // const result = await learningProgressService.completeCourse(
+      //   enrollment.userId,
+      //   enrollment.courseId
+      // );
+      console.warn("completeCourse cloud function is disabled");
+      if (false) {
         setIsCompleted(true);
         toast({
           title: "Course completed",

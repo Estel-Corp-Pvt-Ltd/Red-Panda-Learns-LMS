@@ -164,7 +164,7 @@ useEffect(() => {
     );
   }
 
-  if (requireStudent && user && user.role != USER_ROLE.STUDENT) {
+  if (requireStudent && user && user.role !== USER_ROLE.STUDENT) {
     return (
       <Navigate
         to="/auth/login"

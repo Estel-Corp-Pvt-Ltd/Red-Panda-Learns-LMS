@@ -217,20 +217,21 @@ const AssignmentView: React.FC<AssignmentProps> = ({
       const submissionResult = await assignmentService.createSubmission(submission);
 
       if (isAssigned && submissionResult.success && submissionResult.data) {
-        try {
-          const idToken = await authService.getToken();
-          const submissionId = submissionResult.data;
-          await notificationApiService.createNotification(
-            {
-              submissionId: submissionId,
-              assignmentId: assignmentId,
-              studentId: user.id,
-            },
-            idToken
-          );
-        } catch (notifError) {
-          console.error("Failed to create notification:", notifError);
-        }
+        // try {
+        //   const idToken = await authService.getToken();
+        //   const submissionId = submissionResult.data;
+        //   await notificationApiService.createNotification(
+        //     {
+        //       submissionId: submissionId,
+        //       assignmentId: assignmentId,
+        //       studentId: user.id,
+        //     },
+        //     idToken
+        //   );
+        // } catch (notifError) {
+        //   console.error("Failed to create notification:", notifError);
+        // }
+        console.warn("createNotification call is disabled");
       }
 
       await onComplete(true);

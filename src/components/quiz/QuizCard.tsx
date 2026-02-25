@@ -72,13 +72,16 @@ const QuizCard: React.FC<QuizCardProps> = ({ submissionsData, quiz }) => {
   const canStartQuiz = async (quizId: string) => {
     try {
       setCheckingIfQuizCanBeStarted(true);
-      const canStartQuiz = httpsCallable(functions, "canStartQuiz");
-
-      const result = await canStartQuiz({ quizId });
-      const data = result.data as { success: boolean; message: string };
-
+      // const canStartQuiz = httpsCallable(functions, "canStartQuiz");
+      //
+      // const result = await canStartQuiz({ quizId });
+      // const data = result.data as { success: boolean; message: string };
+      //
+      // setCheckingIfQuizCanBeStarted(false);
+      // return { canStart: data.success, message: data.message };
+      console.warn("canStartQuiz cloud function call is disabled");
       setCheckingIfQuizCanBeStarted(false);
-      return { canStart: data.success, message: data.message };
+      return { canStart: true, message: "Cloud function disabled" };
 
     } catch (error: any) {
       setCheckingIfQuizCanBeStarted(false);

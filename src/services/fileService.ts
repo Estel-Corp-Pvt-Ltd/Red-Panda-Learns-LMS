@@ -18,7 +18,8 @@ class FileService {
 
   async uploadAttachment(uploadPath: string, file: File,): Promise<Result<string>> {
     try {
-      const fileRef = ref(storage, `${uploadPath}/${Date.now()}_${Math.random() * 1000}_${file.name}`);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileRef = ref(storage, `${uploadPath}/${Date.now()}_${safeName}`);
       await uploadBytes(fileRef, file);
       const downloadUrl = await getDownloadURL(fileRef);
       return ok(downloadUrl);

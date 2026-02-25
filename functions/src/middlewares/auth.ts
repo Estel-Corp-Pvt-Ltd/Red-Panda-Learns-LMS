@@ -61,13 +61,8 @@ export const apiKeyAuthMiddleware = async (
     }
 
     const token = authHeader.split("Bearer ")[1];
-    console.log("Received API token:", token);
-    // ✅ CORRECT
     const secretToken = API_SECRET_TOKEN.value();
-    console.log("Configured secret token:", secretToken);
 
-    console.log("Comparing tokens:", { token, secretToken });
-    console.log("Token match:", token === secretToken);
     if (!secretToken) {
       functions.logger.error("API_SECRET_TOKEN not configured");
       res.status(500).json({

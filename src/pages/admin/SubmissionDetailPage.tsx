@@ -58,7 +58,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { formatDate } from "@/utils/date-time";
-import { DocumentSnapshot } from "firebase/firestore";
+import { DocumentSnapshot, WhereFilterOp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import MDEditor from "@uiw/react-md-editor";
@@ -66,7 +66,6 @@ import AdminLayout from "@/components/AdminLayout";
 import ViewSubmissionModal from "@/components/admin/ViewSubmissionModal";
 import { markSubmissionEvaluatedService } from "@/services/markSubmissionEvaluatedService";
 import { authService } from "@/services/authService";
-import { WhereFilterOp } from "firebase-admin/firestore";
 import { pushNotificationService } from "@/services/pushNotificationService";
 
 interface FilterState {

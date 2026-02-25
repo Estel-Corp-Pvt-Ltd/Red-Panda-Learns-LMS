@@ -17,13 +17,13 @@ import {
   startAfter,
   limit,
   getCountFromServer,
+  WhereFilterOp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { courseService } from "./courseService";
 import { Bundle } from "@/types/bundle";
 import { BUNDLE_STATUS, COURSE_MODE } from "@/constants";
 import { Course } from "@/types/course";
-import { WhereFilterOp } from "firebase-admin/firestore";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
 import { COLLECTION } from "@/constants";
