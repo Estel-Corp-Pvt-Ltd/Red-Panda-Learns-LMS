@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, BookOpen, Clock, HeartHandshake, Play, ShoppingCart, User } from "lucide-react";
+import { Bell, BookOpen, Clock, HeartHandshake, Play, Search, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -328,6 +328,19 @@ export function Header({ className }: HeaderProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        navigate("/search");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
+
   const dashboardPath =
     user?.role === USER_ROLE.ADMIN
       ? "/admin"
@@ -388,6 +401,18 @@ export function Header({ className }: HeaderProps) {
 
             <ThemeToggle />
 
+            {/* Search */}
+            <Link
+              to="/search"
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-muted transition-colors"
+              aria-label="Search courses"
+            >
+              <Search className="h-4 w-4" />
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <span className="text-xs">&#8984;</span>K
+              </kbd>
+            </Link>
+
             {user ? (
               <>
                 {/* Notifications */}
@@ -417,6 +442,7 @@ export function Header({ className }: HeaderProps) {
                   <Link
                     to="/cart"
                     className="relative p-2 rounded-full hover:bg-muted transition-colors"
+                    aria-label="Shopping cart"
                   >
                     <ShoppingCart className="h-4 w-4" />
                     {cart.length > 0 && (

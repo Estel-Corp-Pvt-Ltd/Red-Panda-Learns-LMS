@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { assignmentService } from "@/services/assignmentService";
 import { AssignmentSubmission, Assignment } from "@/types/assignment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -204,11 +205,10 @@ const MySubmissionsPage = () => {
         <Header />
         <div className="flex flex-1">
           <Sidebar />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your submissions...</p>
-            </div>
+          <div className="flex-1 p-6 space-y-4">
+            <LoadingSkeleton className="h-10 w-64" />
+            <LoadingSkeleton className="h-48" />
+            <LoadingSkeleton className="h-48" />
           </div>
         </div>
       </div>

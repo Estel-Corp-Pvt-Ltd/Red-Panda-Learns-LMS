@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -255,11 +256,10 @@ const MyInvoicesPage = () => {
         <Header />
         <div className="flex flex-1">
           <Sidebar />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your invoices...</p>
-            </div>
+          <div className="flex-1 p-6 space-y-4">
+            <LoadingSkeleton className="h-10 w-64" />
+            <LoadingSkeleton className="h-48" />
+            <LoadingSkeleton className="h-48" />
           </div>
         </div>
       </div>
@@ -302,7 +302,7 @@ const MyInvoicesPage = () => {
                 {/* Search */}
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search by invoice ID, course name, or course ID..."
                       className="pl-9"
@@ -443,7 +443,7 @@ const MyInvoicesPage = () => {
                                       <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                         {formatCurrency(item.amount, invoice.currency)}
                                         {hasDiscount(item) && (
-                                          <span className="line-through text-gray-400 ml-2">
+                                          <span className="line-through text-muted-foreground ml-2">
                                             {formatCurrency(item.originalAmount!, invoice.currency)}
                                           </span>
                                         )}

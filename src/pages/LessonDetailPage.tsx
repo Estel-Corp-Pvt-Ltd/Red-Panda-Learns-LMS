@@ -3,7 +3,15 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Timestamp } from "firebase/firestore";
-import { ChevronLeft, Edit2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
 
 import { Header } from "@/components/Header";
 import { CourseNavigator } from "@/components/layout/CourseNavigator";
@@ -105,6 +113,9 @@ export default function LessonDetailPage() {
 
     if (foundItem) {
       setSelectedItem(foundItem);
+      if (user?.id && courseId) {
+        learningProgressService.updateCurrentLesson(user.id, courseId, foundItem.id);
+      }
     } else {
       console.error(`Lesson/Assignment with id ${lessonId} not found`);
       toast({
@@ -296,27 +307,39 @@ export default function LessonDetailPage() {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* Top info bar */}
+      {/* Top info bar with breadcrumbs */}
       <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex gap-3 items-center ">
-            <Link to={`/${isAdmin ? "admin" : "dashboard"}`}>
-              <ChevronLeft className="h-10 w-10 hover:bg-primary hover:text-white rounded-md p-1" />
-            </Link>
-            <div className="min-w-0">
-              <h1 className="text-lg md:text-xl font-semibold leading-tight">{course.title}</h1>
+          <Breadcrumb className="min-w-0">
+            <BreadcrumbList className="flex-nowrap">
+              <BreadcrumbItem className="hidden sm:inline-flex">
+                <BreadcrumbLink asChild>
+                  <Link to={isAdmin ? "/admin" : "/dashboard"}>Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden sm:inline-flex" />
+              <BreadcrumbItem className="max-w-[200px]">
+                <BreadcrumbLink asChild>
+                  <Link to={`/courses/${param}`} className="truncate block">
+                    {course.title}
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
               {selectedItem && (
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-xs md:text-sm text-muted-foreground leading-tight">
-                    {selectedItem.title}
-                  </p>
-                  {isAdmin && isContentLocked && <LockBadge />}
-                </div>
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem className="max-w-[250px]">
+                    <BreadcrumbPage className="truncate flex items-center gap-1.5">
+                      {selectedItem.title}
+                      {isAdmin && isContentLocked && <LockBadge />}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
               )}
-            </div>
-          </div>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {isAdmin && selectedItem && (
               <Link to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}>
                 <Button variant="outline" size="sm">

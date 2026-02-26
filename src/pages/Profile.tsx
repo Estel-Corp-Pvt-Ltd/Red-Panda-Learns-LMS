@@ -10,7 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/userService";
-import { Mail, User as UserIcon, Calendar, Shield, Loader2, Save, X } from "lucide-react";
+import { Mail, User as UserIcon, Calendar, Shield, Save, X } from "lucide-react";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { User } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
 import { logError } from "@/utils/logger";
@@ -146,8 +147,9 @@ const Profile = () => {
         <Header />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex-1 p-6 max-w-2xl mx-auto w-full space-y-4">
+            <LoadingSkeleton className="h-32" />
+            <LoadingSkeleton className="h-48" />
           </div>
         </div>
       </div>

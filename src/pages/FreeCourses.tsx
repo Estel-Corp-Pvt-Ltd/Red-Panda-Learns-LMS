@@ -1,9 +1,10 @@
 import CourseCard from '@/components/course/CourseCard';
 import { Header } from '@/components/Header';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { courseService } from '@/services/courseService';
 import { Course } from '@/types/course';
 import React, { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 const FreeCourses: React.FC = () => {
   const freeCourseIds = [
@@ -50,51 +51,55 @@ const FreeCourses: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             Free Courses
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Explore our specially selected free courses to start your learning journey.
           </p>
         </div>
 
         {loading && (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-            <span className="text-lg text-gray-600">Loading free courses...</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <LoadingSkeleton className="h-64" />
+            <LoadingSkeleton className="h-64" />
+            <LoadingSkeleton className="h-64" />
+            <LoadingSkeleton className="h-64" />
           </div>
         )}
 
         {error && !loading && (
           <div className="text-center py-12">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-              <h3 className="text-lg font-semibold text-red-800 mb-2">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
+              <h3 className="text-lg font-semibold text-destructive mb-2">
                 Unable to load courses
               </h3>
-              <p className="text-red-600">{error}</p>
+              <p className="text-destructive/80">{error}</p>
             </div>
           </div>
         )}
 
         {!loading && !error && courses.length === 0 && (
           <div className="text-center py-12">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                No Free Courses Available
-              </h3>
-            </div>
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              No Free Courses Available
+            </h3>
+            <p className="text-muted-foreground">
+              Check back later for new free courses.
+            </p>
           </div>
         )}
 
         {!loading && !error && courses.length > 0 && (
           <>
             <div className="mb-6 text-center">
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {courses.length} free course{courses.length !== 1 ? 's' : ''} available
               </p>
             </div>

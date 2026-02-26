@@ -11,6 +11,10 @@ import { CartProvider } from "./contexts/CartContext";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
 import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
 import PopUpContainer from "./components/PopUpContainer";
+import ScrollToTop from "./components/ScrollToTop";
+import ErrorBoundary from "./components/ErrorBoundary";
+import AnimatedPage from "./components/AnimatedPage";
+import NetworkStatus from "./components/NetworkStatus";
 import { StripBannerProvider } from "./contexts/StripBannerOverlayContext";
 
 // Lazy load admin pages
@@ -96,6 +100,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const WhatsNew = lazy(() => import("./pages/Whats-new"));
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ModalDemo = lazy(() => import("./pages/ModalDemo"));
 const DummyBundleCheckoutPage = lazy(() => import("./pages/dummycoursecheckoutpage"));
@@ -113,6 +118,7 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const queryClient = new QueryClient();
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <EnrollmentProvider>
@@ -123,12 +129,16 @@ const App = () => (
                 <StripBannerProvider>
                   <Toaster />
                   <BrowserRouter>
+                    <ScrollToTop />
+                    <NetworkStatus />
                     <PopUpContainer />
                     <Suspense fallback={<LoadingSpinnerOverlay message="Loading..." />}>
+                      <AnimatedPage>
                       <Routes>
                         {/* Public pages */}
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/courses" element={<CoursesPage />} />
+                        <Route path="/search" element={<SearchPage />} />
                         <Route path="/courses/:param" element={<CourseDetailPage />} />
                         <Route
                           path="/certificate/:enrollmentId"
@@ -698,6 +708,7 @@ const App = () => (
                         {/* 404 */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
+                      </AnimatedPage>
                     </Suspense>
                   </BrowserRouter>
                 </StripBannerProvider>
@@ -708,6 +719,7 @@ const App = () => (
       </EnrollmentProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

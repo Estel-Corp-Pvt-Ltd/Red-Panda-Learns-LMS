@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CERTIFICATE_REQUEST_STATUS, LEARNING_UNIT, PLATFROM_TYPE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,6 +89,8 @@ function EnrolledCourseCard({
   const [isEligibleForCertificate, setIsEligibleForCertificate] = useState(false);
   const [isCompleted, setIsCompleted] = useState(!!enrollment.completionDate);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
+  const [completedLessons, setCompletedLessons] = useState(0);
   const isCertificateIdAvailable = !!enrollment.certification?.certificateId;
 
   const totalLessons =
@@ -152,7 +155,12 @@ function EnrolledCourseCard({
         const progress = result.data[0];
         const completedLessonsCount = Array.isArray(progress.lessonHistory)
           ? progress.lessonHistory.length
-          : Object.keys(progress.lessonHistory).length;
+          : Object.values(progress.lessonHistory).filter(
+              (entry) => entry.type === LEARNING_UNIT.LESSON
+            ).length;
+
+        setCompletedLessons(completedLessonsCount);
+        setCurrentLessonId(progress.currentLessonId ?? null);
 
         const eligible = totalLessons > 0 && completedLessonsCount >= Math.ceil(0.9 * totalLessons);
         setIsEligibleForCertificate(eligible);
@@ -176,9 +184,11 @@ function EnrolledCourseCard({
       ?.flatMap((topic) => topic.items || [])
       .find((item) => item?.id)?.id;
 
-    if (firstLessonId) {
+    const targetLessonId = currentLessonId || firstLessonId;
+
+    if (targetLessonId) {
       const courseSlug = course.slug || course.id;
-      navigate(`/courses/${courseSlug}/lesson/${firstLessonId}`);
+      navigate(`/courses/${courseSlug}/lesson/${targetLessonId}`);
     } else {
       toast({
         title: "No content available",
@@ -197,7 +207,7 @@ function EnrolledCourseCard({
           <div className="flex-1">
             <div className="flex items-start justify-between gap-4 mb-3">
               {/* Course title */}
-              <h3 className="font-semibold text-lg leading-snug text-gray-900 dark:text-gray-100">
+              <h3 className="font-semibold text-lg leading-snug text-foreground">
                 {enrollment.courseName || course.title}
               </h3>
 
@@ -228,6 +238,16 @@ function EnrolledCourseCard({
                 __html: course.description.replace(/<[^>]+>/g, ""),
               }}
             ></p>
+
+            {totalLessons > 0 && (
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>{completedLessons} of {totalLessons} lessons</span>
+                  <span>{Math.round((completedLessons / totalLessons) * 100)}%</span>
+                </div>
+                <Progress value={(completedLessons / totalLessons) * 100} className="h-2" />
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-muted-foreground">

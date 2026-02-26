@@ -493,7 +493,7 @@ const Forum: React.FC = () => {
             <>
               {/* Channel Header */}
               <div className="h-14 px-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-                <Hash className="h-5 w-5 text-gray-500" />
+                <Hash className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 <div>
                   <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {selectedChannel.name}
@@ -551,11 +551,11 @@ const Forum: React.FC = () => {
                                   <span className="font-semibold text-lg text-gray-900 dark:text-white">
                                     {message.senderName}
                                   </span>
-                                  <span className="text-base text-gray-500">
+                                  <span className="text-base text-gray-500 dark:text-gray-400">
                                     {formatMessageTime(message.createdAt)}
                                   </span>
                                   {message.isEdited && (
-                                    <span className="text-base text-gray-400">(edited)</span>
+                                    <span className="text-base text-gray-400 dark:text-gray-500">(edited)</span>
                                   )}
                                 </div>
                               )}

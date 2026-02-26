@@ -177,6 +177,30 @@ class LearningProgressService {
   //   }
   // }
 
+  async updateCurrentLesson(
+    userId: string,
+    courseId: string,
+    lessonId: string
+  ): Promise<void> {
+    try {
+      const progressQuery = query(
+        collection(db, COLLECTION.LEARNING_PROGRESS),
+        where("userId", "==", userId),
+        where("courseId", "==", courseId)
+      );
+      const snapshot = await getDocs(progressQuery);
+      if (!snapshot.empty) {
+        const progressDoc = snapshot.docs[0];
+        await updateDoc(doc(db, COLLECTION.LEARNING_PROGRESS, progressDoc.id), {
+          currentLessonId: lessonId,
+          lastAccessed: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      logError("LearningProgressService.updateCurrentLesson", error);
+    }
+  }
+
   async getUserCourseProgress(
     userId: string,
     courseId: string

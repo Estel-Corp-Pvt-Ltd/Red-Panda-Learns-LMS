@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CART_ACTION } from "@/constants";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 const CartPage: React.FC = () => {
   const { cartCourses, cartBundles, cartDispatch, loading } = useCart();
@@ -76,12 +77,12 @@ const CartPage: React.FC = () => {
 
         {/* Content */}
         {loading ? (
-          <div className="flex justify-center items-center min-h-[20rem]">
-            {/* Theme-aware spinner */}
-            <div
-              className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin"
-              aria-label="Loading"
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <LoadingSkeleton className="h-32" />
+              <LoadingSkeleton className="h-32" />
+            </div>
+            <LoadingSkeleton className="h-48" />
           </div>
         ) : itemCount === 0 ? (
           <div className="flex justify-center items-center min-h-[20rem]">

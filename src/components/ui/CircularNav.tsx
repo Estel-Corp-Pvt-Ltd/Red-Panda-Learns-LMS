@@ -542,9 +542,7 @@ export function CircularNav({
                         isLogout
                           ? "bg-red-500 text-white border-red-400"
                           : "bg-popover text-popover-foreground border-border",
-                        isHovered
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 -translate-y-1"
+                        "opacity-100 translate-y-0"
                       )}
                     >
                       {item.name}
