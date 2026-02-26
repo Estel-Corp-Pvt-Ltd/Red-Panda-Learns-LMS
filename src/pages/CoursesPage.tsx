@@ -39,6 +39,11 @@ interface ArrangedContent {
 const CoursesPage = () => {
   const { enrollments, isEnrolledInBundle } = useEnrollment();
   const { user } = useAuth();
+
+  useEffect(() => {
+    document.title = "Courses | RedPanda Learns";
+    return () => { document.title = "RedPanda Learns"; };
+  }, []);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [courseArrangement, setCourseArrangement] = useState<CoursePageHeading[]>([]);
@@ -402,7 +407,7 @@ const CoursesPage = () => {
                         {content.heading.title}
                       </h2>
                     </div>
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                    <Badge variant="outline" className="text-xs bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                       {content.bundles.length + content.courses.length} items
                     </Badge>
                   </div>
@@ -454,7 +459,7 @@ const CoursesPage = () => {
                               <div className="absolute top-2 left-2.5 z-10">
                                 <Badge
                                   variant="secondary"
-                                  className="text-xs bg-blue-500 text-white"
+                                  className="text-xs bg-red-600 text-white"
                                 >
                                   Featured
                                 </Badge>

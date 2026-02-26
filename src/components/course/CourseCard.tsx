@@ -69,14 +69,23 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
       maximumFractionDigits: 2,
     }).format(amount);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navigate(`/courses/${course.slug}`);
+    }
+  };
+
   return (
     <div
+      role="link"
+      tabIndex={0}
       onClick={() => navigate(`/courses/${course.slug}`)}
-      className="cursor-pointer hover:shadow-lg transition-all"
+      onKeyDown={handleKeyDown}
+      className="cursor-pointer hover:shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+      aria-label={`View course: ${course.title}`}
     >
       <Card
-        role="link"
-        tabIndex={0}
         className={cn(
           "group overflow-hidden cursor-pointer border-0 bg-gradient-card transition-shadow duration-300 hover:shadow-lg        hover:bg-secondary hover:scale-[1.01] relative",
           isFeatured && "ring-2 ring-primary/20 shadow-glow",

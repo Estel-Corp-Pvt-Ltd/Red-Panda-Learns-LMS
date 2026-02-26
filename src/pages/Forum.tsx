@@ -474,7 +474,7 @@ const Forum: React.FC = () => {
                     onClick={() => setSelectedChannel(channel)}
                     className={`w-full text-left px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${
                       selectedChannel?.id === channel.id
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                         : "hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300"
                     }`}
                   >
@@ -586,8 +586,8 @@ const Forum: React.FC = () => {
                 {isDragging && (
                   <div className="absolute inset-0 bg-blue-50/90 dark:bg-blue-900/20 flex items-center justify-center border-4 border-dashed border-blue-400 dark:border-blue-600 rounded-lg z-50">
                     <div className="text-center">
-                      <Paperclip className="h-16 w-16 mx-auto mb-4 text-blue-500" />
-                      <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                      <Paperclip className="h-16 w-16 mx-auto mb-4 text-red-500" />
+                      <p className="text-lg font-semibold text-red-600 dark:text-red-400">
                         Drop file to attach
                       </p>
                     </div>
@@ -600,8 +600,8 @@ const Forum: React.FC = () => {
                 {/* Reply indicator */}
                 {replyingTo && (
                   <div className="mb-2 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm text-blue-600 dark:text-blue-400">
+                    <MessageSquare className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    <span className="text-sm text-red-600 dark:text-red-400">
                       Replying to <span className="font-semibold">{replyingTo.senderName}</span>
                     </span>
                     <Button

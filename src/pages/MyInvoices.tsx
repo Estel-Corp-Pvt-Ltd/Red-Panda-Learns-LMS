@@ -169,7 +169,7 @@ const MyInvoicesPage = () => {
 
   const getItemTypeIcon = (itemType: EnrolledProgramType) => {
     const iconConfig = {
-      course: { icon: BookOpen, className: 'text-blue-600 dark:text-blue-400' },
+      course: { icon: BookOpen, className: 'text-red-600 dark:text-red-400' },
       bundle: { icon: Package, className: 'text-purple-600 dark:text-purple-400' },
       program: { icon: BookOpen, className: 'text-green-600 dark:text-green-400' }
     };
@@ -289,7 +289,7 @@ const MyInvoicesPage = () => {
             </div>
             <Button
               onClick={() => navigate('/courses')}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Browse Courses
             </Button>
@@ -425,7 +425,7 @@ const MyInvoicesPage = () => {
                                     <div className="flex items-center gap-2">
                                       <Button
                                         variant="link"
-                                        className="h-auto p-0 text-sm font-medium text-left text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400"
+                                        className="h-auto p-0 text-sm font-medium text-left text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400"
                                         onClick={() => handleViewItem(item)}
                                       >
                                         {item.name}

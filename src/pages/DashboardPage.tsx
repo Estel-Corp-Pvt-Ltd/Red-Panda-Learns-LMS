@@ -373,6 +373,12 @@ function EnrolledCourseCard({
 
 export default function DashboardPage() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    document.title = "Dashboard | RedPanda Learns";
+    return () => { document.title = "RedPanda Learns"; };
+  }, []);
+
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [certificateStatusMap, setCertificateStatusMap] = useState<

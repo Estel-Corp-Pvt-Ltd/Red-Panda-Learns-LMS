@@ -12,7 +12,8 @@
       "Bash(grep:*)",
       "Bash(wc:*)",
       "Bash(node -e:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }

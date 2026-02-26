@@ -224,6 +224,7 @@ function DynamicIsland() {
           <button
             onClick={() => navigate("/courses")}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+            aria-label="Discover new courses"
           >
             <BookOpen className="h-3.5 w-3.5 text-accent-sky" />
             <span className="text-xs font-medium">Discover new courses</span>
@@ -258,6 +259,7 @@ function DynamicIsland() {
           <button
             onClick={() => navigate(scene.path)}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+            aria-label={`Continue watching ${scene.name}`}
           >
             <Play className="h-3 w-3 text-accent-mint fill-accent-mint" />
             <span className="text-xs font-medium truncate max-w-[140px]">

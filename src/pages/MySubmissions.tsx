@@ -440,7 +440,7 @@ const MySubmissionsPage = () => {
                                     <MessageSquare
                                       className={`h-4 w-4 ${
                                         hasFeedback(submission)
-                                          ? "text-blue-600 dark:text-blue-400"
+                                          ? "text-red-600 dark:text-red-400"
                                           : "text-gray-400 dark:text-gray-500"
                                       }`}
                                     />

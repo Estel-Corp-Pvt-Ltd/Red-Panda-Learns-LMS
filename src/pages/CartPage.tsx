@@ -17,6 +17,12 @@ const CartPage: React.FC = () => {
   const [regularTotal, setRegularTotal] = useState(0);
   const [savings, setSavings] = useState(0);
   const navigate = useNavigate();
+  const itemCount = cartCourses.length + cartBundles.length;
+
+  useEffect(() => {
+    document.title = itemCount > 0 ? `Cart (${itemCount}) | RedPanda Learns` : "Cart | RedPanda Learns";
+    return () => { document.title = "RedPanda Learns"; };
+  }, [itemCount]);
 
   // Calculate totals and savings
   useEffect(() => {
@@ -46,7 +52,6 @@ const CartPage: React.FC = () => {
     navigate("checkout");
   };
 
-  const itemCount = cartCourses?.length + cartBundles?.length;
   const hasDiscount = regularTotal > totalAmount;
 
   return (
