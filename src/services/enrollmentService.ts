@@ -108,11 +108,8 @@ class EnrollmentService {
       if (!response.ok) {
         throw new Error("Failed to enroll student");
       }
-      if (response.status === 400) {
-        const data = await response.json();
-        return ok(data?.items);
-      }
-      return fail("Enrollment in free course failed");
+      const data = await response.json();
+      return ok(data?.items);
     } catch (error) {
       logError("EnrollmentService.enrollUser", error);
       return fail("Enrollment failed", error.message);

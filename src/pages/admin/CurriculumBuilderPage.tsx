@@ -452,7 +452,7 @@ const CurriculumBuilderPage = () => {
           </TabsContent>
 
           <TabsContent value="quizzes">
-            <QuizTab courseId={courseId} userId={user.id} />
+            <QuizTab courseId={courseId} userId={user?.id ?? ""} />
           </TabsContent>
 
           {/* ─── ADDITIONAL TAB ────────────────────────────────────── */}

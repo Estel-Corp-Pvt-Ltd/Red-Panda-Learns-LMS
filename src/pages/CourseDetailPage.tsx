@@ -35,7 +35,7 @@ export default function CourseDetailPage() {
   const { cart, cartDispatch } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isEnrolled } = useEnrollment();
+  const { isEnrolled, refreshEnrollments } = useEnrollment();
   const { toast } = useToast();
   const [userIsEnrolled, setUserIsEnrolled] = useState(false);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
@@ -148,7 +148,9 @@ export default function CourseDetailPage() {
           description: `Could not enroll in ${course.title}. Please try again.`,
           variant: "destructive",
         });
+        return;
       }
+      await refreshEnrollments();
       toast({
         title: "Enrolled Successfully",
         description: `You have been enrolled in ${course.title}.`,

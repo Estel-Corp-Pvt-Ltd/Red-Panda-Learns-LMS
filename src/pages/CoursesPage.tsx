@@ -64,7 +64,6 @@ const CoursesPage = () => {
       try {
         setIsLoadingArrangement(true);
         const result = await courseArrangementService.loadCourseArrangement("default_arrangement");
-        console.log("Loaded course arrangement:", result);
         if (result.success) {
           setCourseArrangement(result.data.headings);
         }

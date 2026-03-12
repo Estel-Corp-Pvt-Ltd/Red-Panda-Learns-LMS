@@ -226,18 +226,16 @@ function EnrolledCourseCard({
                       src="/isCertificateAvailableIcon.png"
                       alt="Certificate available"
                       className="h-5 w-5"
+                      loading="lazy"
                     />
                   </div>
                 )}
               </div>
             </div>
 
-            <p
-              className="text-muted-foreground text-sm mb-4 line-clamp-2"
-              dangerouslySetInnerHTML={{
-                __html: course.description.replace(/<[^>]+>/g, ""),
-              }}
-            ></p>
+            <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+              {course.description.replace(/<[^>]+>/g, "")}
+            </p>
 
             {totalLessons > 0 && (
               <div className="mb-4">

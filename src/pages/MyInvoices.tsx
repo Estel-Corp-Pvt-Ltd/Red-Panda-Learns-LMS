@@ -215,9 +215,7 @@ const MyInvoicesPage = () => {
   };
 
   const handleDownloadInvoice = (invoice: Order) => {
-    // Implement invoice download logic
-    console.log('Downloading invoice:', invoice.orderId);
-    // This would typically generate and download a PDF
+    // TODO: implement invoice PDF generation and download
   };
 
   const handleViewInvoice = (invoice: Order) => {

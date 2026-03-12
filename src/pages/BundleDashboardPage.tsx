@@ -44,7 +44,6 @@ export default function BundleDashboardPage() {
       if (user && bundle) {
         const enrolled = await isEnrolledInBundle(bundle.id);
         setIsEnrolled(enrolled);
-        console.log('BundleDashboard - Enrollment check:', { bundleId: bundle.id, enrolled });
       }
     };
 
@@ -58,7 +57,6 @@ export default function BundleDashboardPage() {
 
   // Only redirect if we have checked enrollment and user is not enrolled
   if (bundle && !isEnrolled && !bundleLoading) {
-    console.log('BundleDashboard - User not enrolled, redirecting to bundle page');
     navigate(`/bundle/${bundleId}`);
     return null;
   }

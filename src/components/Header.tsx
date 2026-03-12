@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 
 import { CreateComplaint } from "./CreateComplaint";
 import { NotificationPanel } from "./notificationPanel";
-import { StripBanner } from "./StripBanner";
-import { useStripBanner } from "@/contexts/StripBannerOverlayContext";
+// import { StripBanner } from "./StripBanner";
+// import { useStripBanner } from "@/contexts/StripBannerOverlayContext";
 
 /* ══════════════════════════════════════════════════════
    Mini Panda Faces (for Dynamic Island scenes)
@@ -323,7 +323,7 @@ type HeaderProps = {
 };
 
 export function Header({ className }: HeaderProps) {
-  const { banners } = useStripBanner();
+  // const { banners } = useStripBanner();
   const { user } = useAuth();
   const { cart } = useCart();
   const location = useLocation();
@@ -477,6 +477,7 @@ export function Header({ className }: HeaderProps) {
         </div>
 
         {/* Strip Banner (conditional) */}
+        {/* StripBanner disabled
         {(["/", "/dashboard", "/courses"].includes(location.pathname) ||
           /^\/courses\/[^/]+\/lesson(\/[^/]+)?$/.test(location.pathname) ||
           /^\/course\/[^/]+\/lesson(\/[^/]+)?$/.test(location.pathname)) &&
@@ -488,6 +489,7 @@ export function Header({ className }: HeaderProps) {
               className="z-0"
             />
           )}
+        */}
       </header>
 
       {/* Notification side panel */}

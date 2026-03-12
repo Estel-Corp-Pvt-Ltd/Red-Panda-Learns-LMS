@@ -42,7 +42,6 @@ export default function CheckoutPage() {
   }, [course]);
 
   const handlePaymentSuccess = (orderId: string) => {
-    console.log("Payment successful! Order ID:", orderId);
     navigate("/dashboard");
   };
 

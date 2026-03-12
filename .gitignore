@@ -53,3 +53,4 @@ node_modules/
 bash.exe.stackdump
 # Jest coverage
 coverage/
+.dev.vars

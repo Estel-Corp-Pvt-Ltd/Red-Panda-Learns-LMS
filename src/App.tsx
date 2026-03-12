@@ -10,12 +10,11 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { CartProvider } from "./contexts/CartContext";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
 import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
-import PopUpContainer from "./components/PopUpContainer";
 import ScrollToTop from "./components/ScrollToTop";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AnimatedPage from "./components/AnimatedPage";
 import NetworkStatus from "./components/NetworkStatus";
-import { StripBannerProvider } from "./contexts/StripBannerOverlayContext";
+
 
 // Lazy load admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -43,11 +42,11 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminAssignStudents = lazy(() => import("./pages/admin/AdminAssignStudents"));
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
-const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
+// const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
 const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminManageAssignments"));
 const AdminCreateAnnouncement = lazy(() => import("@/pages/admin/AdminManageAnnouncements"));
 const AdminBulkTeacherAdd = lazy(() => import("./pages/admin/AdminBulkTeacherAdd"));
-const AdminStripBanners = lazy(() => import("./pages/admin/AdminStripBanner"));
+// const AdminStripBanners = lazy(() => import("./pages/admin/AdminStripBanner"));
 const EnrollStudent = lazy(() => import("./pages/admin/EnrollStudent"));
 const AdminBulkStudentEnroll = lazy(() => import("./pages/admin/AdminBulkStudentEnroll"));
 const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
@@ -126,12 +125,10 @@ const App = () => (
           <CartProvider>
             <TooltipProvider>
               <LoadingOverlayProvider>
-                <StripBannerProvider>
                   <Toaster />
                   <BrowserRouter>
                     <ScrollToTop />
                     <NetworkStatus />
-                    <PopUpContainer />
                     <Suspense fallback={<LoadingSpinnerOverlay message="Loading..." />}>
                       <AnimatedPage>
                       <Routes>
@@ -343,14 +340,14 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
+                        {/* <Route
                           path="/admin/strip-banners"
                           element={
                             <AuthGuard requireAdmin>
                               <AdminStripBanners />
                             </AuthGuard>
                           }
-                        />
+                        /> */}
                         <Route
                           path="/admin/orders"
                           element={
@@ -367,14 +364,14 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
+                        {/* <Route
                           path="/admin/pop-ups"
                           element={
                             <AuthGuard requireAdmin>
                               <AdminPopUps />
                             </AuthGuard>
                           }
-                        />
+                        /> */}
                         <Route
                           path="/admin/enroll-student"
                           element={
@@ -711,7 +708,6 @@ const App = () => (
                       </AnimatedPage>
                     </Suspense>
                   </BrowserRouter>
-                </StripBannerProvider>
               </LoadingOverlayProvider>
             </TooltipProvider>
           </CartProvider>

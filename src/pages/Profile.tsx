@@ -20,6 +20,11 @@ const Profile = () => {
   const { user: authUser, refreshUser } = useAuth();
   const { toast } = useToast();
 
+  useEffect(() => {
+    document.title = "Profile | RedPanda Learns";
+    return () => { document.title = "RedPanda Learns"; };
+  }, []);
+
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);

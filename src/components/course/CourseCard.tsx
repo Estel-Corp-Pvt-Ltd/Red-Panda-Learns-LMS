@@ -176,12 +176,9 @@ const CourseCard = ({ course, className, variant = "default" }: CourseCardProps)
           </h3>
 
           {!isCompact && (
-            <div
-              className="text-sm text-muted-foreground line-clamp-2 h-10"
-              dangerouslySetInnerHTML={{
-                __html: course.description.replace(/<[^>]+>/g, ""),
-              }}
-            ></div>
+            <div className="text-sm text-muted-foreground line-clamp-2 h-10">
+              {course.description.replace(/<[^>]+>/g, "")}
+            </div>
           )}
         </CardContent>
         <CardFooter className={cn("pb-4 pt-0 px-2", isCompact && "px-3 pb-3")}>

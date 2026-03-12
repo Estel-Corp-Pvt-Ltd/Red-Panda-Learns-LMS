@@ -12,7 +12,7 @@
     "test": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:runInBand": "jest --runInBand",
-    "deploy": "npm run build && firebase deploy --only hosting"
+    "deploy": "bun run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -132,5 +132,11 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"
-  }
+  },
+  "trustedDependencies": [
+    "@firebase/util",
+    "@swc/core",
+    "protobufjs",
+    "unrs-resolver"
+  ]
 }

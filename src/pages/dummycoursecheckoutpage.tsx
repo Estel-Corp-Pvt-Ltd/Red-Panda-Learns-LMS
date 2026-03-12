@@ -78,12 +78,6 @@ export default function DummyBundleCheckoutPage() {
     setIsProcessing(true);
 
     try {
-      console.log('Processing bundle payment:', {
-        bundleId: bundle.id,
-        provider: selectedProvider,
-        amount: bundle.regularPrice,
-        userEmail: user?.email
-      });
 
       const result = await paymentService.processBundlePayment(
         selectedProvider,
@@ -132,15 +126,10 @@ export default function DummyBundleCheckoutPage() {
       // console.log(couponcode)
       const coupon = await couponService.getCouponByCode(couponcode);
       const CouponKiId = setCouponKiId(coupon.id)
-      console.log(CouponKiId)
       const applydiscount = async () => {
         try {
-
           const afterDiscount = (bundle.regularPrice - ((bundle.regularPrice * coupon.discountPercentage) / 100))
           setDiscountAmount(afterDiscount)
-          console.log("The regular ", bundle.regularPrice)
-          console.log("The discount  percent ", coupon.discountPercentage)
-          console.log("The discount  is ", afterDiscount)
         } catch (error) {
           logError('The Error is ', error)
         }
@@ -197,10 +186,9 @@ export default function DummyBundleCheckoutPage() {
         usedAt: Timestamp.now()
       }
       await couponUsageService.recordCouponUsage(usageDate)
-      console.log("Recorded Coupon uses", usageDate)
     }
     catch (error) {
-      console.log("The Error ", error)
+      logError("Coupon recording error", error)
     }
   }
 
