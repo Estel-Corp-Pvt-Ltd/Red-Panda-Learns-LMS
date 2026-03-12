@@ -19,6 +19,7 @@ import { Timestamp, FieldValue } from "firebase/firestore";
 import { logError } from "@/utils/logger";
 import { getFullName } from "@/utils/name";
 import { getDownloadURL } from "firebase/storage";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -36,6 +37,7 @@ const CurriculumBuilderPage = () => {
   const { showOverlay, hideOverlay } = useLoadingOverlay();
 
   // ─── Basic Info States ─────────────────────────────────────────
+  const [courseLoading, setCourseLoading] = useState(true);
   const [course, setCourse] = useState<Course | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -155,6 +157,7 @@ const CurriculumBuilderPage = () => {
   useEffect(() => {
     if (!param) return;
     const loadCourse = async () => {
+      setCourseLoading(true);
       try {
         let data = await courseService.getCourseById(param);
 
@@ -196,6 +199,7 @@ const CurriculumBuilderPage = () => {
           variant: "destructive",
         });
       } finally {
+        setCourseLoading(false);
         hideOverlay();
       }
     };
@@ -376,6 +380,17 @@ const CurriculumBuilderPage = () => {
   // ───────────────────────────────────────────────────────────────
   // ─── RENDER ────────────────────────────────────────────────────
   // ───────────────────────────────────────────────────────────────
+
+  if (courseLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        {!isInstructor && <Header />}
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin h-8 w-8 text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

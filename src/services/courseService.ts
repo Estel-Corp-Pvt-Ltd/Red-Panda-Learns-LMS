@@ -422,13 +422,6 @@ class CourseService {
       const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
-      console.log("CourseService - Fetched courses with pagination:", {
-        count: courses.length,
-        hasNextPage,
-        hasPreviousPage,
-        pageDirection,
-      });
-
       return ok({
         data: courses,
         hasNextPage,
