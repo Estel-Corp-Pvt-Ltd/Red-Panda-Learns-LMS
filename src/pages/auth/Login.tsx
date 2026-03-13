@@ -65,7 +65,7 @@ export default function Login() {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="space-y-1 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <img src="/logo.png" className="w-10" alt="Logo" />
+              <img src="/RedPandaDraftLogo.png" className="w-10" alt="Logo" />
               <span className="text-2xl font-bold">RedPanda Learns</span>
             </div>
             <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
