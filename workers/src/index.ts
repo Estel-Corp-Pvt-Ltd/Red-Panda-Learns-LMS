@@ -68,7 +68,7 @@ app.use("*", async (c, next) => {
     ? c.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
     : [];
   const corsMiddleware = cors({
-    origin: (origin) => (origins.includes(origin) ? origin : origins[0] ?? ""),
+    origin: (origin) => (origins.includes(origin) ? origin : null),
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
   });
