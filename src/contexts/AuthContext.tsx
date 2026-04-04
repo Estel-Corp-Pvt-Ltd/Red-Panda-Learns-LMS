@@ -4,7 +4,7 @@ import { authService } from "@/services/authService";
 import { db, getFirebaseMessaging } from "@/firebaseConfig";
 import { collection, doc, getDoc, getDocs, query, Timestamp, where } from "firebase/firestore";
 import { UserRole } from "@/types/general";
-import { COLLECTION, PLATFROM_TYPE } from "@/constants";
+import { COLLECTION, PLATFROM_TYPE, USER_ROLE } from "@/constants";
 import { userService } from "@/services/userService";
 import { getToken } from "firebase/messaging";
 import { logError, logWarn } from "@/utils/logger";
@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return {
         success: true,
         userId: response.data.userId,
-        role: "student" as UserRole, // ✅ default role
+        role: USER_ROLE.STUDENT as UserRole, // ✅ default role
       };
     }
 
@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       success: false,
       error: response.error.message || "Google login failed",
-      role: "student" as UserRole, // ✅ required prop
+      role: USER_ROLE.STUDENT as UserRole, // ✅ required prop
     };
   };
 

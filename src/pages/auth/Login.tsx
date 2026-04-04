@@ -34,18 +34,25 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const user = await loginWithGoogle();
+      const result = await loginWithGoogle();
+
+      if (!result.success) {
+        setError(result.error || "Google login failed");
+        return;
+      }
 
       if (redirectUrl && (await handleAuthRedirect(redirectUrl))) return;
 
       toast({ title: "Welcome!", description: "You signed in with Google." });
-      if (user?.role === USER_ROLE.ADMIN) {
+
+      const role = result.role;
+      if (role === USER_ROLE.ADMIN) {
         navigate("/admin", { replace: true });
-      } else if (user?.role === USER_ROLE.ACCOUNTANT) {
+      } else if (role === USER_ROLE.ACCOUNTANT) {
         navigate("/accountant", { replace: true });
-      } else if (user?.role === USER_ROLE.TEACHER) {
+      } else if (role === USER_ROLE.TEACHER) {
         navigate("/teacher", { replace: true });
-      } else if (user?.role === USER_ROLE.INSTRUCTOR) {
+      } else if (role === USER_ROLE.INSTRUCTOR) {
         navigate("/instructor", { replace: true });
       } else {
         navigate(from || "/dashboard", { replace: true });

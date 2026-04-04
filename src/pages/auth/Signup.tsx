@@ -30,7 +30,12 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await loginWithGoogle();
+      const result = await loginWithGoogle();
+
+      if (!result.success) {
+        setError(result.error || "Google signup failed");
+        return;
+      }
 
       if (redirectUrl && (await handleAuthRedirect(redirectUrl))) return;
 
