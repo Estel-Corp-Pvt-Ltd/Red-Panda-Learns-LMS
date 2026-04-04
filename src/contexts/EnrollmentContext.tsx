@@ -1,4 +1,4 @@
-import { ENROLLED_PROGRAM_TYPE, ENROLLMENT_STATUS } from '@/constants';
+import { ENROLLMENT_STATUS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { enrollmentService } from '@/services/enrollmentService';
 import { Enrollment } from '@/types/enrollment';
@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState
 } from 'react';
 
@@ -58,30 +59,20 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
 
   const isEnrolled = useCallback(
     (courseId: string): boolean => {
-      const direct = enrollments.some(
+      return enrollments.some(
         e => e.courseId === courseId && e.status === ENROLLMENT_STATUS.ACTIVE
       );
-
-      if (direct) return true;
-
-      // check if part of an active bundle
-    
     },
     [enrollments]
   );
 
   const isEnrolledInBundle = useCallback(
     (bundleId: string): boolean => {
-      const result = enrollments.some(
-        (enrollment) => {
-          const match = String(enrollment.bundleId) === String(bundleId);
-          const statusOk = enrollment.status === ENROLLMENT_STATUS.ACTIVE;
-
-          return match && statusOk;
-        }
+      return enrollments.some(
+        (enrollment) =>
+          String(enrollment.bundleId) === String(bundleId) &&
+          enrollment.status === ENROLLMENT_STATUS.ACTIVE
       );
-
-      return result;
     },
     [enrollments]
   );
@@ -90,13 +81,13 @@ export const EnrollmentProvider: React.FC<EnrollmentProviderProps> = ({ children
     refreshEnrollments();
   }, [user]);
 
-  const value = {
+  const value = useMemo<EnrollmentContextType>(() => ({
     enrollments,
     isEnrolled,
     isEnrolledInBundle,
     refreshEnrollments,
     loading,
-  };
+  }), [enrollments, isEnrolled, isEnrolledInBundle, refreshEnrollments, loading]);
 
   return <EnrollmentContext.Provider value={value}>{children}</EnrollmentContext.Provider>;
 };

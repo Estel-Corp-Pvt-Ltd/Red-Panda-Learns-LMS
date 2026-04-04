@@ -60,7 +60,6 @@ class UserService {
       };
 
       await setDoc(doc(db, COLLECTION.USERS, uid), user);
-      console.log("UserService - User created successfully:", uid);
       return ok(null);
     } catch (error) {
       logError("UserService.createUser", error);
@@ -86,7 +85,6 @@ class UserService {
       };
 
       await updateDoc(userRef, updateData);
-      console.log("UserService - User updated successfully:", uid);
       return ok(null);
     } catch (error) {
       logError("UserService.updateUser", error);
@@ -277,7 +275,6 @@ class UserService {
   async deleteUser(uid: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.USERS, uid));
-      console.log("UserService - User deleted successfully:", uid);
       return ok(null);
     } catch (error) {
       logError("UserService.deleteUser", error);
@@ -664,7 +661,6 @@ class UserService {
         } as User;
       });
 
-      console.log("UserService - Fetched staff users:", users.length);
       return ok(users);
     } catch (error) {
       logError("UserService - Error fetching staff users:", error);

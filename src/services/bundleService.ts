@@ -92,7 +92,6 @@ class BundleService {
   async createBundle(data: Omit<Bundle, "id" | "createdAt" | "updatedAt">): Promise<string> {
     try {
       const bundleId = await this.generateBundleId();
-      console.log("bundle Id", bundleId);
 
       // Get course details to calculate original price
       const courses = await Promise.all(
@@ -140,10 +139,8 @@ class BundleService {
         updatedAt: serverTimestamp(),
       };
 
-      console.log("bundle", bundle);
 
       await setDoc(doc(db, COLLECTION.BUNDLES, bundleId), bundle);
-      console.log("BundleService - Bundle created successfully:", bundleId);
 
       return bundleId;
     } catch (error) {
@@ -249,7 +246,6 @@ class BundleService {
       if (updates.liveAt !== undefined) updateData.liveAt = updates.liveAt;
 
       await updateDoc(bundleRef, updateData);
-      console.log("BundleService - Bundle updated successfully:", bundleId);
     } catch (error) {
       console.error("BundleService - Error updating bundle:", error);
       throw new Error("Failed to update bundle");
@@ -274,7 +270,6 @@ class BundleService {
         status: BUNDLE_STATUS.PUBLISHED,
         updatedAt: serverTimestamp(),
       });
-      console.log("BundleService - Bundle published successfully:", bundleId);
     } catch (error) {
       console.error("BundleService - Error publishing bundle:", error);
       throw new Error("Failed to publish bundle");
@@ -308,7 +303,6 @@ class BundleService {
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Bundle[];
 
-      console.log("BundleService - Fetched bundles:", bundles.length);
       return bundles;
     } catch (error) {
       console.error("BundleService - Error fetching bundles:", error);
@@ -342,7 +336,6 @@ class BundleService {
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Bundle[];
 
-      console.log("BundleService - Fetched published bundles:", bundles.length);
       return bundles;
     } catch (error) {
       console.error("BundleService - Error fetching published bundles:", error);
@@ -368,7 +361,6 @@ class BundleService {
       const bundleDoc = await getDoc(doc(db, COLLECTION.BUNDLES, bundleId));
 
       if (!bundleDoc.exists()) {
-        console.log("BundleService - Bundle not found:", bundleId);
         return null;
       }
 
@@ -378,7 +370,6 @@ class BundleService {
         updatedAt: bundleDoc.data()?.updatedAt.toDate(),
       } as Bundle;
 
-      console.log("BundleService - Bundle fetched:", bundleId);
       return bundle;
     } catch (error) {
       console.error("BundleService - Error fetching bundle:", error);
@@ -402,7 +393,6 @@ class BundleService {
   async deleteBundle(bundleId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.BUNDLES, bundleId));
-      console.log("BundleService - Bundle deleted successfully:", bundleId);
       return ok(null);
     } catch (error) {
       console.error("BundleService - Error deleting bundle:", error);
@@ -427,7 +417,6 @@ class BundleService {
    */
 
   async getBundleCourses(bundleId: string): Promise<Course[]> {
-    console.log("bundleId", bundleId);
     try {
       const bundle = await this.getBundleById(bundleId);
       if (!bundle) {
@@ -635,7 +624,6 @@ class BundleService {
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        console.log("BundleService - Bundle not found for slug:", slug);
         return null;
       }
 

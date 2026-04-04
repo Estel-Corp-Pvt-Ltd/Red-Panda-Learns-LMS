@@ -438,7 +438,6 @@ class CommentService {
       }
 
       const commentData = commentSnap.data();
-      console.log(commentData);
       await updateDoc(commentRef, {
         status: "APPROVED",
         updatedAt: serverTimestamp(),

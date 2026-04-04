@@ -5,6 +5,8 @@ import {
   useEffect,
   ReactNode,
   useState,
+  useMemo,
+  useCallback,
 } from "react";
 import { courseService } from "@/services/courseService";
 import { Course } from "@/types/course";
@@ -78,32 +80,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartCourses, setCartCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const cartItems = cart.map((item) => {
-    if (item.type === "COURSE") {
-      const course = cartCourses.find((c) => c.id === item.refId);
-      return course
-        ? {
-          id: course.id,
-          type: "COURSE",
-          title: course.title,
-          regularPrice: course.regularPrice,
-          salePrice: course.salePrice,
-        }
-        : null;
-    } else if (item.type === "BUNDLE") {
-      const bundle = cartBundles.find((b) => b.id === item.refId);
-      return bundle
-        ? {
-          id: bundle.id,
-          type: "BUNDLE",
-          title: bundle.title,
-          regularPrice: bundle.regularPrice,
-          salePrice: bundle.salePrice,
-        }
-        : null;
-    }
-    return null;
-  }).filter((item): item is CartCourseItem => item !== null);
+  const cartItems = useMemo<CartCourseItem[]>(() =>
+    cart.map((item) => {
+      if (item.type === "COURSE") {
+        const course = cartCourses.find((c) => c.id === item.refId);
+        return course
+          ? {
+            id: course.id,
+            type: "COURSE" as const,
+            refId: item.refId,
+            title: course.title,
+            regularPrice: course.regularPrice,
+            salePrice: course.salePrice,
+          }
+          : null;
+      } else if (item.type === "BUNDLE") {
+        const bundle = cartBundles.find((b) => b.id === item.refId);
+        return bundle
+          ? {
+            id: bundle.id,
+            type: "BUNDLE" as const,
+            refId: item.refId,
+            title: bundle.title,
+            regularPrice: bundle.regularPrice,
+            salePrice: bundle.salePrice,
+          }
+          : null;
+      }
+      return null;
+    }).filter((item): item is CartCourseItem => item !== null),
+    [cart, cartCourses, cartBundles]
+  );
 
   // Persist cart to localStorage whenever it changes
   useEffect(() => {
@@ -133,7 +140,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             cartDispatch({ type: CART_ACTION.CLEAR }); // clear initial local cart
             data.courses.forEach((item: CartItem) => {
               if (item.type === "COURSE" && !isEnrolled(item.refId)) {
-                console.log("Adding to cart from Firebase:", item);
                 cartDispatch({ type: CART_ACTION.ADD, item });
               }
             });
@@ -148,9 +154,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   // Fetch all course details whenever cart changes
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     if (cart.length === 0) {
       setCartCourses([]);
+      setCartBundles([]);
       return;
     }
 
@@ -158,9 +165,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       const courseIds = cart.filter(item => item.type === "COURSE").map((item) => item.refId);
       const bundleIds = cart.filter(item => item.type === "BUNDLE").map((item) => item.refId);
-      const fetchedBundles = await bundleService.getBundleByIds(bundleIds);
-      const fetchedCourses = await courseService.getCoursesByIds(courseIds);
-      console.log(fetchedCourses);
+      const [fetchedCourses, fetchedBundles] = await Promise.all([
+        courseService.getCoursesByIds(courseIds),
+        bundleService.getBundleByIds(bundleIds),
+      ]);
       setCartCourses(fetchedCourses);
       setCartBundles(fetchedBundles);
     } catch (error) {
@@ -170,15 +178,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cart]);
 
   // Refetch courses whenever cart changes
   useEffect(() => {
     fetchCourses();
-  }, [cart]);
+  }, [fetchCourses]);
+
+  const value = useMemo<CartContextType>(() => ({
+    cartItems, cart, cartCourses, cartBundles, loading, cartDispatch, fetchCourses,
+  }), [cartItems, cart, cartCourses, cartBundles, loading, cartDispatch, fetchCourses]);
 
   return (
-    <CartContext.Provider value={{ cartItems, cart, cartCourses, cartBundles, loading, cartDispatch, fetchCourses }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

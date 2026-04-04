@@ -69,7 +69,6 @@ class OrderService {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        console.log(`No orders found for user: ${userId}`);
         return [];
       }
 
@@ -96,7 +95,6 @@ class OrderService {
         } as Order;
       });
 
-      console.log(`Found ${userOrders.length} orders for user: ${userId}`);
       return userOrders;
 
     } catch (error) {
@@ -117,7 +115,6 @@ class OrderService {
         } as Order;
       });
 
-      console.log("OrderService - Fetched:", orders.length);
       return ok(orders);
     } catch (error) {
       logError("OrderService.getAllOrders", error);

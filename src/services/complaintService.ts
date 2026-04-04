@@ -196,7 +196,6 @@ class ComplaintService {
       await batch.commit();
       return ok(null);
     } catch (error: any) {
-      console.log("Error resolving complaint:", error);
       return fail("Failed to resolve complaint", error.code, error.stack);
     }
   }

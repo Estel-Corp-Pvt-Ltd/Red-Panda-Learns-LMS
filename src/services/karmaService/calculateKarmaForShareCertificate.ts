@@ -16,7 +16,6 @@ export const calculateKarmaForShareCertificate = {
       return;
     }
 
-    console.log("[Karma][ShareCertificate] Awarding karma", { userId, courseId });
 
     fetch(`${BACKEND_URL}/addKarma`, {
       method: "POST",

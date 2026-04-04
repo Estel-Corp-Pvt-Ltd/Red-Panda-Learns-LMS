@@ -55,7 +55,6 @@ export const calculateKarmaForLessonCompleted = {
             data,
           });
         } else {
-          console.log("[KarmaLessonCompletion] Karma awarded successfully:", data);
         }
       })
       .catch((err) => {

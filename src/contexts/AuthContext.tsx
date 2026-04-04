@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { User } from "@/types/user";
 import { authService } from "@/services/authService";
 import { db, getFirebaseMessaging } from "@/firebaseConfig";
@@ -102,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // 🔹 Google Login
-  const loginWithGoogle = async (): Promise<{
+  const loginWithGoogle = useCallback(async (): Promise<{
     success: boolean;
     userId?: string;
     error?: string;
@@ -139,14 +139,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       error: response.error.message || "Google login failed",
       role: USER_ROLE.STUDENT as UserRole, // ✅ required prop
     };
-  };
+  }, []);
 
   // 🔹 Logout
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.signOut();
-
     setUser(null);
-  };
+  }, []);
 
   useEffect(() => {
     const registerFcmToken = async () => {
@@ -178,7 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [user?.id]);
 
   // 🔹 Refresh user data
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!user) {
       return;
     }
@@ -188,15 +187,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       logWarn("[AuthContext] Failed to refresh user - not found in Firestore");
     }
-  };
+  }, [user]);
 
-  const value: AuthContextType = {
+  const value = useMemo<AuthContextType>(() => ({
     user,
     loading,
     loginWithGoogle,
     logout,
     refreshUser,
-  };
+  }), [user, loading, loginWithGoogle, logout, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -452,12 +452,6 @@ class EnrollmentService {
         : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
-      console.log("EnrollmentService - Fetched enrollments:", {
-        count: enrollments.length,
-        hasNextPage,
-        hasPreviousPage,
-        filters: filters?.length || 0
-      });
 
       return ok({
         data: enrollments,
@@ -516,7 +510,6 @@ class EnrollmentService {
       }
 
       await updateDoc(enrollmentRef, updateData);
-      console.log("Certificate details updated successfully.");
       return ok(true);
 
     } catch (error: any) {
@@ -703,7 +696,6 @@ class EnrollmentService {
         },
         updatedAt: serverTimestamp(),
       });
-      console.log("Preferred name on certificate updated successfully.");
       return ok(true);
 
     } catch (error: any) {

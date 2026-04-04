@@ -66,7 +66,6 @@ class StripBannerService {
       };
 
       await setDoc(doc(db, COLLECTION.STRIP_BANNERS, bannerId), stripBanner);
-      console.log("StripBannerService - Banner created:", bannerId);
       return ok(stripBanner);
     } catch (error) {
       logError("StripBannerService.createStripBanner", error);
@@ -104,7 +103,6 @@ class StripBannerService {
         updatedAt: serverTimestamp(),
       });
 
-      console.log("StripBannerService - Updated banner:", id);
       return ok(null);
     } catch (error) {
       logError("StripBannerService.updateStripBanner", error);
@@ -271,7 +269,6 @@ class StripBannerService {
   async deleteStripBanner(id: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.STRIP_BANNERS, id));
-      console.log("StripBannerService - Deleted banner:", id);
       return ok(null);
     } catch (error) {
       logError("StripBannerService.deleteStripBanner", error);

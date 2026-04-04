@@ -4,8 +4,10 @@ import { Enrollment } from '@/types/course'; // Contains Enrollment interface
 import React, {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -35,8 +37,7 @@ export const CohortProvider: React.FC<CohortProviderProps> = ({ children }) => {
   const [cohortEnrollments, setCohortEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Load user's cohort enrollments
-  const refreshCohortEnrollments = async () => {
+  const refreshCohortEnrollments = useCallback(async () => {
     if (!user) {
       setCohortEnrollments([]);
       return;
@@ -52,27 +53,28 @@ export const CohortProvider: React.FC<CohortProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // Check if user is actively enrolled in a specific cohort
-  const isEnrolledInCohort = (cohortId: string): boolean => {
-    return cohortEnrollments.some(
-      (enrollment) =>
-        enrollment.cohortId === cohortId && enrollment.status === 'active'
-    );
-  };
+  const isEnrolledInCohort = useCallback(
+    (cohortId: string): boolean => {
+      return cohortEnrollments.some(
+        (enrollment) =>
+          enrollment.cohortId === cohortId && enrollment.status === 'active'
+      );
+    },
+    [cohortEnrollments]
+  );
 
-  // Load enrollments whenever the user changes
   useEffect(() => {
     refreshCohortEnrollments();
   }, [user]);
 
-  const value: CohortContextType = {
+  const value = useMemo<CohortContextType>(() => ({
     cohortEnrollments,
     isEnrolledInCohort,
     refreshCohortEnrollments,
     loading,
-  };
+  }), [cohortEnrollments, isEnrolledInCohort, refreshCohortEnrollments, loading]);
 
   return (
     <CohortContext.Provider value={value}>

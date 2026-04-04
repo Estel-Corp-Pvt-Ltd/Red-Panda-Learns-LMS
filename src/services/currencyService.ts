@@ -161,7 +161,6 @@ class CurrencyService {
       // ❗ No cached rate found
       return null;
     } catch (error) {
-      console.log("CurrencyService - Error getting cached rate:", error);
       return null;
     }
   }

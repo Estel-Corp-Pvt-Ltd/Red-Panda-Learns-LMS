@@ -64,7 +64,6 @@ class PopUpService {
             };
 
             await setDoc(doc(db, COLLECTION.POPUPS, popUpId), popUp);
-            console.log("PopUpService - Pop-up created:", popUpId);
             return ok(popUp);
         } catch (error) {
             logError("PopUpService.createPopUp", error);
@@ -102,7 +101,6 @@ class PopUpService {
             };
 
             await updateDoc(popUpRef, updateData);
-            console.log("PopUpService - Updated pop-up:", id);
             return ok(null);
         } catch (error) {
             logError("PopUpService.updatePopUp", error);
@@ -189,7 +187,6 @@ class PopUpService {
     async deletePopUp(id: string): Promise<Result<void>> {
         try {
             await deleteDoc(doc(db, COLLECTION.POPUPS, id));
-            console.log("PopUpService - Deleted pop-up:", id);
             return ok(null);
         } catch (error) {
             logError("PopUpService.deletePopUp", error);
@@ -227,7 +224,6 @@ class PopUpService {
     async deactivatePopUp(id: string): Promise<Result<void>> {
         try {
             await this.updatePopUp(id, { active: false });
-            console.log("PopUpService - Deactivated pop-up:", id);
             return ok(null);
         } catch (error) {
             logError("PopUpService.deactivatePopUp", error);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, BookOpen, Clock, HeartHandshake, Play, Search, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -131,18 +131,40 @@ type IslandScene =
   | { type: "panda"; mood: PandaMood; text: string }
   | { type: "recent"; name: string; path: string };
 
-function DynamicIsland() {
-  const navigate = useNavigate();
-  const [sceneIndex, setSceneIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
-  const [paused, setPaused] = useState(false);
+/* Isolated clock — only this tiny component re-renders every second */
+function LiveClock() {
   const [now, setNow] = useState(new Date());
 
-  /* Live clock */
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  const dateStr = now.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const timeStr = now.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="flex items-center gap-2 text-white/90">
+      <Clock className="h-3.5 w-3.5 text-white/60" />
+      <span className="text-xs font-medium">{dateStr}</span>
+      <span className="text-white/30">|</span>
+      <span className="text-xs font-semibold tabular-nums">{timeStr}</span>
+    </div>
+  );
+}
+
+const DynamicIsland = memo(function DynamicIsland() {
+  const navigate = useNavigate();
+  const [sceneIndex, setSceneIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const [paused, setPaused] = useState(false);
 
   /* Check for recently watched course */
   const recentCourse = useMemo<RecentCourse | null>(() => {
@@ -190,39 +212,21 @@ function DynamicIsland() {
     return () => clearInterval(timer);
   }, [paused, scenes.length]);
 
-  /* Format date/time */
-  const dateStr = now.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const timeStr = now.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
   const scene = scenes[sceneIndex];
+
+  const handleNavigate = useCallback((path: string) => navigate(path), [navigate]);
+  const handlePause = useCallback(() => setPaused(true), []);
+  const handleResume = useCallback(() => setPaused(false), []);
 
   const renderScene = () => {
     switch (scene.type) {
       case "datetime":
-        return (
-          <div className="flex items-center gap-2 text-white/90">
-            <Clock className="h-3.5 w-3.5 text-white/60" />
-            <span className="text-xs font-medium">
-              {dateStr}
-            </span>
-            <span className="text-white/30">|</span>
-            <span className="text-xs font-semibold tabular-nums">
-              {timeStr}
-            </span>
-          </div>
-        );
+        return <LiveClock />;
 
       case "browse":
         return (
           <button
-            onClick={() => navigate("/courses")}
+            onClick={() => handleNavigate("/courses")}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
             aria-label="Discover new courses"
           >
@@ -257,7 +261,7 @@ function DynamicIsland() {
       case "recent":
         return (
           <button
-            onClick={() => navigate(scene.path)}
+            onClick={() => handleNavigate(scene.path)}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
             aria-label={`Continue watching ${scene.name}`}
           >
@@ -276,8 +280,8 @@ function DynamicIsland() {
   return (
     <div
       className="dynamic-island relative flex items-center justify-center rounded-full bg-neutral-950 dark:bg-neutral-900 h-9 min-w-[280px] px-6 cursor-default overflow-hidden transition-all duration-500"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={handlePause}
+      onMouseLeave={handleResume}
     >
       {/* Subtle inner glow */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
@@ -310,7 +314,7 @@ function DynamicIsland() {
       </div>
     </div>
   );
-}
+});
 
 /* ══════════════════════════════════════════════════════
    Header

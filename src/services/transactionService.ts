@@ -54,7 +54,6 @@ class TransactionService {
         // 🔎 If caller gave us one, check DB first
         const existing = await this.getTransaction(transactionId);
         if (existing) {
-          console.log("♻️ Returning existing transaction:", transactionId);
           return transactionId; // idempotent return
         }
 
@@ -88,7 +87,6 @@ class TransactionService {
       };
 
       await setDoc(doc(db, COLLECTION.TRANSACTIONS, transactionId), transaction);
-      console.log('Transaction created:', transaction);
       return transactionId;
     } catch (error) {
       console.error('Error creating transaction:', error);
@@ -135,7 +133,6 @@ class TransactionService {
       }
 
       await updateDoc(transactionRef, updateData);
-      console.log("Transaction updated:", transactionId, status);
     } catch (error) {
       console.error("Error updating transaction:", error);
       throw new Error("Failed to update transaction");

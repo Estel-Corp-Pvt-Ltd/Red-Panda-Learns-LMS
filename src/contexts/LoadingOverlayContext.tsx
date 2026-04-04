@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
 
 import LoadingSpinnerOverlay from "@/components/LogoSpinnerOverlay";
 
@@ -21,17 +21,19 @@ export const LoadingOverlayProvider = ({ children }: { children: ReactNode }) =>
     const [isVisible, setIsVisible] = useState(false);
     const [message, setMessage] = useState("Loading...");
 
-    const showOverlay = (msg?: string) => {
+    const showOverlay = useCallback((msg?: string) => {
         setMessage(msg || "Loading...");
         setIsVisible(true);
-    };
+    }, []);
 
-    const hideOverlay = () => {
+    const hideOverlay = useCallback(() => {
         setIsVisible(false);
-    };
+    }, []);
+
+    const value = useMemo(() => ({ showOverlay, hideOverlay }), [showOverlay, hideOverlay]);
 
     return (
-        <LoadingOverlayContext.Provider value={{ showOverlay, hideOverlay }}>
+        <LoadingOverlayContext.Provider value={value}>
             {children}
             {isVisible && <LoadingSpinnerOverlay message={message} />}
         </LoadingOverlayContext.Provider>

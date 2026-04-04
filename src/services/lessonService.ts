@@ -275,7 +275,6 @@ class LessonService {
   async deleteLesson(lessonId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, COLLECTION.LESSONS, lessonId));
-      console.log("🗑️ Deleted lesson:", lessonId);
     } catch (err) {
       console.error("❌ LessonService.deleteLesson:", err);
       throw new Error("Failed to delete lesson");

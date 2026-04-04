@@ -61,7 +61,6 @@ class CourseArrangementService {
         updatedAt: serverTimestamp(),
       });
 
-      console.log("CourseArrangementService - Arrangement created:", arrangementId);
       return ok(arrangementId);
     } catch (error) {
       console.error("CourseArrangementService - Error creating arrangement:", error);
@@ -89,7 +88,6 @@ class CourseArrangementService {
       if (arrangementDoc.exists()) {
         // Update existing
         await updateDoc(arrangementRef, arrangementData);
-        console.log("CourseArrangementService - Arrangement updated:", arrangementId);
       } else {
         // Create new
         await setDoc(arrangementRef, {
@@ -97,7 +95,6 @@ class CourseArrangementService {
           id: arrangementId,
           createdAt: serverTimestamp(),
         });
-        console.log("CourseArrangementService - Arrangement created:", arrangementId);
       }
 
       return ok(null);
@@ -126,7 +123,6 @@ class CourseArrangementService {
         updatedAt: data.updatedAt?.toDate() || new Date(),
       };
 
-      console.log("CourseArrangementService - Arrangement loaded:", arrangementId);
       return ok(arrangement);
     } catch (error) {
       console.error("CourseArrangementService - Error loading arrangement:", error);
@@ -140,7 +136,6 @@ class CourseArrangementService {
   async deleteCourseArrangement(arrangementId: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.COURSE_ARRANGEMENTS, arrangementId));
-      console.log("CourseArrangementService - Arrangement deleted:", arrangementId);
       return ok(null);
     } catch (error) {
       console.error("CourseArrangementService - Error deleting arrangement:", error);
@@ -166,7 +161,6 @@ class CourseArrangementService {
         } as CourseArrangement;
       });
 
-      console.log("CourseArrangementService - Fetched all arrangements:", arrangements.length);
       return ok(arrangements);
     } catch (error) {
       console.error("CourseArrangementService - Error fetching arrangements:", error);

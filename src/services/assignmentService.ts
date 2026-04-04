@@ -89,7 +89,6 @@ class AssignmentService {
       };
 
       await setDoc(doc(db, COLLECTION.ASSIGNMENTS, assignmentId), assignment);
-      console.log("AssignmentService - Assignment created successfully:", assignmentId);
 
       return ok(assignmentId);
     } catch (error) {
@@ -137,7 +136,6 @@ class AssignmentService {
     try {
       const assignmentDoc = await getDoc(doc(db, COLLECTION.ASSIGNMENTS, assignmentId));
       if (!assignmentDoc.exists()) {
-        console.log("AssignmentService - Assignment not found:", assignmentId);
         return null;
       }
 
@@ -168,7 +166,6 @@ class AssignmentService {
         updatedAt: doc.data().updatedAt?.toDate(),
       })) as Assignment[];
 
-      console.log("AssignmentService - Fetched assignments:", assignments.length);
       return assignments;
     } catch (error) {
       console.error("AssignmentService - Error fetching assignments:", error);
@@ -197,7 +194,6 @@ class AssignmentService {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as Assignment[];
 
-        console.log("AssignmentService - Fetched filtered assignments:", assignments.length);
         return assignments;
       } else {
         const querySnapshot = await getDocs(q);
@@ -207,7 +203,6 @@ class AssignmentService {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as Assignment[];
 
-        console.log("AssignmentService - Fetched all assignments:", assignments.length);
         return assignments;
       }
     } catch (error) {
@@ -280,7 +275,6 @@ class AssignmentService {
         createdAt: serverTimestamp(),
       });
 
-      console.log("AssignmentService - Assignment submitted successfully:", docRef.id);
       return ok(docRef.id);
     } catch (error) {
       console.error("AssignmentService - Error submitting assignment:", error);
@@ -301,7 +295,6 @@ class AssignmentService {
     >
   ): Promise<Result<null>> {
     try {
-      console.log("AssignmentService - Updating submission:", submissionId, updates);
 
       const submissionRef = doc(db, COLLECTION.ASSIGNMENT_SUBMISSIONS, submissionId);
       const submissionDoc = await getDoc(submissionRef);
@@ -511,7 +504,6 @@ class AssignmentService {
         } as AssignmentSubmission;
       });
 
-      console.log("AssignmentService - Fetched submissions by student:", submissions.length);
       return ok(submissions);
     } catch (error) {
       console.error("AssignmentService - Error fetching submissions by student:", error);
@@ -605,12 +597,6 @@ class AssignmentService {
       const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
-      console.log("AssignmentService - Fetched submissions with pagination:", {
-        count: submissions.length,
-        hasNextPage,
-        hasPreviousPage,
-        pageDirection,
-      });
 
       return ok({
         data: submissions,
@@ -702,11 +688,6 @@ class AssignmentService {
     studentId: string,
     options: PaginationOptions<AssignmentSubmission> = {}
   ): Promise<Result<PaginatedResult<AssignmentSubmission>>> {
-    console.log(
-      "AssignmentService - Fetching submissions by student with pagination:",
-      studentId,
-      options
-    );
     return this.getSubmissions([{ field: "studentId", op: "==", value: studentId }], options);
   }
 
@@ -816,12 +797,6 @@ class AssignmentService {
       const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
       const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
 
-      console.log("AssignmentService - Fetched assignments with pagination:", {
-        count: assignments.length,
-        hasNextPage,
-        hasPreviousPage,
-        pageDirection,
-      });
 
       return ok({
         data: assignments,
@@ -926,7 +901,6 @@ class AssignmentService {
         updatedAt: serverTimestamp(),
       });
 
-      console.log("AssignmentService - Updated authorId for assignment:", assignmentId);
       return ok(null);
     } catch (error) {
       logError("AssignmentService - Error updating assignment author:", error);
@@ -957,10 +931,6 @@ class AssignmentService {
         }
       }
 
-      console.log("AssignmentService - Bulk update completed:", {
-        success: successCount,
-        failed: failedCount,
-      });
       return ok({ success: successCount, failed: failedCount });
     } catch (error) {
       logError("AssignmentService - Error in bulk update:", error);
@@ -992,14 +962,9 @@ class AssignmentService {
             updatedAt: serverTimestamp(),
           });
           updatedCount++;
-          console.log("AssignmentService - Updated assignment:", docSnapshot.id);
         }
       }
 
-      console.log("AssignmentService - Updated null author assignments:", {
-        updated: updatedCount,
-        total: totalCount,
-      });
       return ok({ updated: updatedCount, total: totalCount });
     } catch (error) {
       logError("AssignmentService - Error updating null author assignments:", error);

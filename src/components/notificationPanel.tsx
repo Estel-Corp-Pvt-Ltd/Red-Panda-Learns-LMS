@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   X,
   Bell,
@@ -21,6 +21,46 @@ import { cn } from "@/lib/utils";
 import { ANNOUNCEMENT_SCOPE } from "@/constants";
 import { convertToDate, formatDateTime } from "@/utils/date-time";
 import { useNavigate } from "react-router-dom";
+
+/* Pure helpers — defined outside component to avoid recreation */
+function extractLinkFromHtml(html: string): string | null {
+  if (!html) return null;
+  const anchorRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>/i;
+  const match = html.match(anchorRegex);
+  return match ? match[1] : null;
+}
+
+function stripHtmlTags(html: string): string {
+  if (!html) return "";
+  return html.replace(/<[^>]+>/g, "").trim();
+}
+
+function isExternalLink(url: string): boolean {
+  if (!url) return false;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("//")) {
+    try {
+      const linkUrl = new URL(url, window.location.origin);
+      return linkUrl.origin !== window.location.origin;
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getTimeAgo(date: Date | null): string {
+  if (!date) return "";
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDateTime(date);
+}
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -100,17 +140,20 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     }
   }, [user, fetchAnnouncements]);
 
-  // Calculate and report unread count whenever announcements or readAtTime changes
+  // Calculate unread count with memoization
+  const unreadCount = useMemo(() => {
+    if (readAtTime === null) return 0;
+    return announcements.filter((a) => {
+      const announcementDate = convertToDate(a.updatedAt);
+      if (!announcementDate) return false;
+      return announcementDate.getTime() > readAtTime.getTime();
+    }).length;
+  }, [announcements, readAtTime]);
+
+  // Report unread count changes
   useEffect(() => {
-    if (readAtTime !== null) {
-      const unreadCount = announcements.filter((a) => {
-        const announcementDate = convertToDate(a.updatedAt);
-        if (!announcementDate) return false;
-        return announcementDate.getTime() > readAtTime.getTime();
-      }).length;
-      onUnreadChange?.(unreadCount);
-    }
-  }, [announcements, readAtTime, onUnreadChange]);
+    onUnreadChange?.(unreadCount);
+  }, [unreadCount, onUnreadChange]);
 
   // Fetch when panel opens
   useEffect(() => {
@@ -138,39 +181,6 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     }
   }, [isOpen, user, announcements.length, hasMarkedAsRead, onUnreadChange]);
 
-  const extractLinkFromHtml = (html: string): string | null => {
-    if (!html) return null;
-
-    // Match anchor tag and extract href
-    const anchorRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>/i;
-    const match = html.match(anchorRegex);
-
-    return match ? match[1] : null;
-  };
-
-  const stripHtmlTags = (html: string): string => {
-    if (!html) return "";
-    return html.replace(/<[^>]+>/g, "").trim();
-  };
-
-  const isExternalLink = (url: string): boolean => {
-    if (!url) return false;
-
-    // Check if it starts with http://, https://, or //
-    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("//")) {
-      // Check if it's pointing to the same domain
-      try {
-        const linkUrl = new URL(url, window.location.origin);
-        return linkUrl.origin !== window.location.origin;
-      } catch {
-        return true;
-      }
-    }
-
-    // If it starts with /, it's internal
-    return false;
-  };
-
   const handleLinkClick = (e: React.MouseEvent, link: string) => {
     e.stopPropagation();
 
@@ -190,24 +200,6 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     }
   };
 
-  // Get time ago string
-  const getTimeAgo = (date: Date | null): string => {
-    if (!date) return "";
-
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return formatDateTime(date);
-  };
-
-  const unreadCount = announcements.filter(isUnread).length;
 
   if (!isOpen) return null;
 

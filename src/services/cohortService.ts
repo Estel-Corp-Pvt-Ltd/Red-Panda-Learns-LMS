@@ -61,7 +61,6 @@ class CohortService {
       };
 
       await setDoc(doc(db, 'Cohorts', cohortId), cohort);
-      console.log('CohortService - Cohort created with full curriculum:', cohortId);
       return cohortId;
 
     } catch (error) {
@@ -83,7 +82,6 @@ class CohortService {
       };
 
       await updateDoc(cohortRef, updateData);
-      console.log('CohortService - Cohort updated with full curriculum:', cohortId);
     } catch (error) {
       console.error(`CohortService - Error updating cohort ${cohortId}:`, error);
       throw new Error('Failed to update cohort');
@@ -114,7 +112,6 @@ class CohortService {
         enrollmentOpen: true,
         updatedAt: serverTimestamp(),
       });
-      console.log('CohortService - Cohort published (enrollment open):', cohortId);
     } catch (error) {
       console.error('CohortService - Error publishing cohort:', error);
       throw error;
@@ -131,7 +128,6 @@ class CohortService {
         updatedAt: doc.data().updatedAt.toDate(),
       })) as Cohort[];
 
-      console.log('CohortService - Fetched cohorts:', cohorts.length);
 
       return cohorts;
     } catch (error) {
@@ -160,7 +156,6 @@ class CohortService {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as Cohort[];
 
-        console.log('CohortService - Fetched filtered cohorts:', cohorts.length);
         return cohorts;
       } else {
         // No filters: fetch all cohorts
@@ -172,7 +167,6 @@ class CohortService {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as Cohort[];
 
-        console.log('CohortService - Fetched all cohorts:', cohorts.length);
         return cohorts;
       }
     } catch (error) {
@@ -184,7 +178,6 @@ class CohortService {
   async deleteCohort(cohortId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'Cohorts', cohortId));
-      console.log('CohortService - Cohort deleted successfully:', cohortId);
     } catch (error) {
       console.error('CohortService - Error deleting cohort:', error);
       throw new Error('Failed to delete cohort');

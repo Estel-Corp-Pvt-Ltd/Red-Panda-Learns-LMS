@@ -67,7 +67,6 @@ class OrganizationService {
       };
 
       await setDoc(doc(db, COLLECTION.ORGANIZATIONS, id), org);  // 👈 use constant
-      console.log("OrganizationService - created:", id);
       return id;
     } catch (error) {
       console.error("OrganizationService - Error creating organization:", error);
@@ -87,7 +86,6 @@ class OrganizationService {
           updatedAt: data.updatedAt?.toDate?.() ?? null,
         } as Organization;
       });
-      console.log("OrganizationService - Fetched:", orgs.length);
       return orgs;
     } catch (error) {
       console.error("OrganizationService - Error fetching organizations:", error);
@@ -117,7 +115,6 @@ class OrganizationService {
     try {
       const ref = doc(db, COLLECTION.ORGANIZATIONS, id);  // 👈 use constant
       await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
-      console.log("OrganizationService - updated:", id);
     } catch (error) {
       console.error("OrganizationService - Error updating organization:", error);
       throw new Error("Failed to update organization");
@@ -128,7 +125,6 @@ class OrganizationService {
   async deleteOrganization(id: string): Promise<Result<void>> {
     try {
       await deleteDoc(doc(db, COLLECTION.ORGANIZATIONS, id));  // 👈 use constant
-      console.log("OrganizationService - deleted:", id);
       return ok(null);
     } catch (error) {
       console.error("OrganizationService - Error deleting organization:", error);
@@ -191,7 +187,6 @@ class OrganizationService {
       const querySnapshot = await getDocs(q);
       const documents = querySnapshot.docs;
 
-      console.log(`OrganizationService - Fetched ${documents.length} organizations`);
 
       if (pageDirection === 'previous') {
         documents.reverse();

@@ -31,19 +31,12 @@ const CourseListView = ({
           >
             <div className="flex flex-col lg:flex-row gap-6">
               <div className="lg:w-48 lg:h-32 w-full h-48 flex-shrink-0">
-                {course.thumbnail ? (
-                  <img
-                    src={course.thumbnail}
+                <img
+                    src={course.thumbnail || "/placeholder.svg"}
                     alt={course.title}
+                    loading="lazy"
                     className="w-full h-full object-cover rounded-lg"
                   />
-                ) : (
-                  <img
-                    src={"/placeholder.svg"}
-                    alt={course.title}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                )}
               </div>
 
               <div className="flex-1 space-y-3">
