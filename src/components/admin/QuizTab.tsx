@@ -1,0 +1,927 @@
+import { QUIZ_QUESTION_TYPE } from "@/constants";
+import { toast } from "@/hooks/use-toast";
+import { quizService } from "@/services/quizService";
+import { Question, Quiz } from "@/types/quiz";
+import {
+  closestCenter,
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy
+} from "@dnd-kit/sortable";
+import { ChevronDown, ChevronRight, CloudUpload, Folder, GripVertical, ImagePlus, ListChecks, Pencil, Plus, PlusCircle, Trash2, UploadCloud, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import ConfirmDialog from "../ConfirmDialog";
+import CreateQuizModal from "./CreateQuizModal";
+import EditQuizModal from "./EditQuizModal";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { QuizQuestionType } from "@/types/general";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Input } from "../ui/input";
+import { Checkbox } from "../ui/checkbox";
+import { Switch } from "../ui/switch";
+import { parseQuizQuestionsFromExcel } from "@/utils/parse-quiz-questions-from-excel";
+import QuizSubmissionModal from "../quiz/QuizSubmissionModal";
+import { fileService } from "@/services/fileService";
+
+type SortableQuestionCardProps = {
+  id: number;
+  question: Question;
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+  updateQuestion: (questionNo: number, patch: Partial<Question>) => void;
+  deleteQuestion: (questionNo: number) => void;
+  addOption: (questionNo: number) => void;
+  updateOption: (questionNo: number, optionIndex: number, value: string) => void;
+  deleteOption: (questionNo: number, optionIndex: number) => void;
+  updateCorrectAnswer: (questionNo: number, answer: string | string[]) => void;
+};
+
+type QuestionsProps = {
+  questions: Question[];
+  setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
+  addQuestion: () => void;
+  updateQuestion: (questionNo: number, patch: Partial<Question>) => void;
+  deleteQuestion: (questionNo: number) => void;
+  addOption: (questionNo: number) => void;
+  updateOption: (questionNo: number, optionIndex: number, value: string) => void;
+  deleteOption: (questionNo: number, optionIndex: number) => void;
+  updateCorrectAnswer: (questionNo: number, answer: string | string[]) => void;
+  handleSaveQuestions: () => Promise<void>;
+};
+
+const SortableQuestionCard = ({
+  id,
+  question,
+  collapsed,
+  setCollapsed,
+  updateQuestion,
+  deleteQuestion,
+  addOption,
+  updateOption,
+  deleteOption,
+  updateCorrectAnswer
+}: SortableQuestionCardProps) => {
+
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
+
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const addAttachment = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const fileResponse = await fileService.uploadAttachment(`/courses/quizzes/`, file);
+      if (!fileResponse.success || !fileResponse.data) {
+        toast({ title: "Failed to upload attachment", variant: "destructive" });
+        return;
+      }
+
+      const updatedAttachments = [...(question.attachments || []), fileResponse.data];
+      updateQuestion(id, { attachments: updatedAttachments });
+
+      toast({ title: "Attachment uploaded successfully" });
+    } catch (error: any) {
+      toast({ title: "Failed to upload attachment", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  const deleteAttachment = (index: number) => {
+    const updatedAttachments = question.attachments?.filter((_, i) => i !== index) || [];
+    updateQuestion(id, { attachments: updatedAttachments });
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 mb-3 rounded-lg border shadow-sm
+      bg-gray-50 border-gray-200
+      dark:bg-gray-800 dark:border-gray-700"
+    >
+      <div className="flex gap-2 items-center mb-2">
+        <div {...listeners} {...attributes}>
+          <GripVertical className="cursor-grab text-gray-500 dark:text-gray-400" />
+        </div>
+
+        <div className="flex-1 flex gap-3 items-center">
+          <Input
+            className="flex-1 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
+            placeholder="Question description"
+            value={question.description}
+            onChange={(e) => updateQuestion(id, { description: e.target.value })}
+          />
+        </div>
+
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
+        >
+          <ChevronDown
+            className={`transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`}
+          />
+        </button>
+
+        <button
+          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+          onClick={() => deleteQuestion(id)}
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+
+      {!collapsed && (
+        <div className="flex gap-3">
+
+          {/* Question Content */}
+          <div className="relative flex-1 p-4 rounded-lg
+          bg-white dark:bg-gray-900 border border-transparent dark:border-gray-700">
+
+            <div className="mb-3">
+              <label className="text-sm font-medium">Type</label>
+              <Select
+                value={question.type}
+                onValueChange={(val) =>
+                  updateQuestion(id, { type: val as QuizQuestionType })
+                }
+              >
+                <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
+                  <SelectValue placeholder="Select Question Type" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  {Object.values(QUIZ_QUESTION_TYPE).map(t => (
+                    <SelectItem key={t} value={t}>
+                      {t === QUIZ_QUESTION_TYPE.MCQ && "MCQ"}
+                      {t === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && "Multiple Answer"}
+                      {t === QUIZ_QUESTION_TYPE.FILL_BLANK && "Fill in the Blank"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {[QUIZ_QUESTION_TYPE.MCQ, QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER].includes(question.type as any) && (
+              <div className="mb-3">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-medium">Options</h4>
+                  <button
+                    className="flex items-center gap-1
+                    text-pink-600 hover:text-pink-700
+                    dark:text-pink-400 dark:hover:text-pink-300"
+                    onClick={() => addOption(id)}
+                  >
+                    <PlusCircle size={18} />
+                    Add Option
+                  </button>
+                </div>
+
+                {question.options.map((opt, idx) => (
+                  <div key={idx} className="flex gap-2 items-center mb-2">
+                    <Input
+                      className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+                      placeholder={`Option ${idx + 1}`}
+                      value={opt}
+                      onChange={(e) => updateOption(id, idx, e.target.value)}
+                    />
+                    <button
+                      className="text-red-400 hover:text-red-600 dark:hover:text-red-300"
+                      onClick={() => deleteOption(id, idx)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+              <div>
+                <h3 className="mb-2 font-medium">Rules</h3>
+                <div className="mb-3 flex gap-4">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Switch
+                      checked={question.rules?.caseInSensitive ?? false}
+                      onCheckedChange={(val) =>
+                        updateQuestion(id, {
+                          rules: { ...question.rules, caseInSensitive: val }
+                        })
+                      }
+                    />
+                    Case Insensitive
+                  </label>
+
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Switch
+                      checked={question.rules?.spaceRemoval ?? false}
+                      onCheckedChange={(val) =>
+                        updateQuestion(id, {
+                          rules: { ...question.rules, spaceRemoval: val }
+                        })
+                      }
+                    />
+                    Ignore Spaces
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium">Correct Answer</label>
+
+              {question.type === QUIZ_QUESTION_TYPE.MCQ && (
+                <Select
+                  value={typeof question.correctAnswer === "string" ? question.correctAnswer : ""}
+                  onValueChange={(val) => updateCorrectAnswer(id, val)}
+                >
+                  <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
+                    <SelectValue placeholder="Select Correct Option" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                    {question.options.filter(o => o.trim()).map((o, idx) => (
+                      <SelectItem key={idx} value={o}>
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {question.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER && (
+                <div className="flex flex-col gap-1 mt-2">
+                  {question.options.map((o, idx) => {
+                    const arr = Array.isArray(question.correctAnswer)
+                      ? question.correctAnswer
+                      : []
+                    const checked = arr.includes(o)
+
+                    return (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => {
+                            const next = checked
+                              ? arr.filter(x => x !== o)
+                              : [...arr, o]
+                            updateCorrectAnswer(id, next)
+                          }}
+                        />
+                        <span>{o}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {question.type === QUIZ_QUESTION_TYPE.FILL_BLANK && (
+                <input
+                  type="text"
+                  className="mt-2 w-full px-3 py-2 rounded-md
+                  bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+                  value={question.correctAnswer as string}
+                  onChange={(e) => updateCorrectAnswer(id, e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="mt-3">
+              <label className="text-sm font-medium">Marks</label>
+              <input
+                type="number"
+                min={1}
+                className="mt-1 w-24 px-3 py-2 rounded-md
+                bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+                value={question.marks ?? 1}
+                onChange={(e) =>
+                  updateQuestion(id, { marks: parseInt(e.target.value) || 1 })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Attachments Sidebar */}
+          <div className="w-48 p-3 rounded-lg border
+          bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-sm">Attachments</h4>
+              <label
+                htmlFor={`attachment-upload-${id}`}
+                className="w-8 h-8 flex items-center justify-center rounded cursor-pointer
+                text-primary hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <input
+                  type="file"
+                  id={`attachment-upload-${id}`}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={addAttachment}
+                />
+                <ImagePlus size={16} />
+              </label>
+            </div>
+
+            {isUploading && (
+              <div className="bg-blue-500/20 p-2 rounded mb-3 flex items-center justify-center">
+                <UploadCloud className="w-4 h-4 text-blue-400 mr-2" />
+                <span className="text-sm">Uploading…</span>
+              </div>
+            )}
+
+            {!question.attachments?.length ? (
+              <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+                No attachments
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {question.attachments.map((att, idx) => (
+                  <div
+                    key={idx}
+                    className="relative group border rounded-md overflow-hidden
+                    border-gray-200 dark:border-gray-700"
+                  >
+                    <img
+                      src={att}
+                      className="w-full h-20 object-cover cursor-pointer hover:opacity-90"
+                      onClick={() => setSelectedImageSrc(att)}
+                    />
+                    <button
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full
+                      bg-red-500 text-white opacity-0 group-hover:opacity-100 transition"
+                      onClick={() => deleteAttachment(idx)}
+                    >
+                      <X size={12} />
+                    </button>
+                    <div className="p-1 text-xs text-gray-600 dark:text-gray-400 truncate">
+                      Attachment {idx + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview */}
+      {selectedImageSrc && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="relative bg-white dark:bg-gray-900 p-4 rounded-lg max-w-4xl">
+            <img
+              src={selectedImageSrc}
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+            <button
+              className="absolute top-2 right-2 w-8 h-8 rounded-full
+              bg-pink-600 hover:bg-pink-700 text-white"
+              onClick={() => setSelectedImageSrc(null)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+};
+
+const Questions = ({
+  questions,
+  addQuestion,
+  updateQuestion,
+  deleteQuestion,
+  addOption,
+  updateOption,
+  deleteOption,
+  updateCorrectAnswer,
+  setQuestions,
+  handleSaveQuestions
+}: QuestionsProps) => {
+
+  const [collapsedMap, setCollapsedMap] = useState<Record<number, boolean>>({});
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragStart = (event: any) => {
+    const id = event.active.id;
+    setCollapsedMap(prev => ({ ...prev, [id]: true }));
+  };
+
+  // When drag ends
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = questions.findIndex(q => q.questionNo === active.id);
+    const newIndex = questions.findIndex(q => q.questionNo === over.id);
+
+    const newList = arrayMove(questions, oldIndex, newIndex)
+      .map((q, idx) => ({ ...q, questionNo: idx + 1 }));
+
+    setQuestions(newList);
+  };
+
+
+  const isSaveDisabled = questions.some(q => {
+    if (q.type === QUIZ_QUESTION_TYPE.MCQ) {
+      return typeof q.correctAnswer !== "string" || q.correctAnswer.trim() === "";
+    } else if (q.type === QUIZ_QUESTION_TYPE.MULTIPLE_ANSWER) {
+      return !Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0;
+    } else if (q.type === QUIZ_QUESTION_TYPE.FILL_BLANK) {
+      return typeof q.correctAnswer !== "string" || q.correctAnswer.trim() === "";
+    }
+    return !Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0;
+  });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+
+      const questionsFromExcel = await parseQuizQuestionsFromExcel(buffer);
+
+      setQuestions(prev => {
+        const startNo = prev.length + 1;
+        const adjustedQuestions = questionsFromExcel.map((q, idx) => ({
+          ...q,
+          questionNo: startNo + idx
+        }));
+        console.log([...prev, ...adjustedQuestions])
+        return [...prev, ...adjustedQuestions];
+      });
+
+      toast({ title: `Imported ${questionsFromExcel.length} questions successfully` });
+    } catch (error: any) {
+      toast({ title: "Failed to import questions", description: error, variant: "destructive" });
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-semibold">Questions</h3>
+
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          id="excelUpload"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+
+        <button
+          onClick={() => document.getElementById("excelUpload")?.click()}
+          className="px-4 py-2 text-white rounded-full bg-primary hover:bg-accent"
+        >
+          Import Questions from Excel
+        </button>
+
+        <button
+          className="px-4 py-2 text-white rounded-full bg-primary hover:bg-accent"
+          onClick={addQuestion}
+        >
+          + Add Question
+        </button>
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={questions.map((q: Question) => q.questionNo)}
+          strategy={verticalListSortingStrategy}
+        >
+          {questions.map((q: Question) => (
+            <SortableQuestionCard
+              key={q.questionNo}
+              id={q.questionNo}
+              question={q}
+              collapsed={collapsedMap[q.questionNo] ?? false}
+              setCollapsed={(val: boolean) =>
+                setCollapsedMap(prev => ({ ...prev, [q.questionNo]: val }))
+              }
+              updateQuestion={updateQuestion}
+              deleteQuestion={deleteQuestion}
+              addOption={addOption}
+              updateOption={updateOption}
+              deleteOption={deleteOption}
+              updateCorrectAnswer={updateCorrectAnswer}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+
+      {
+        questions.length > 0 ?
+          <button
+            className={`px-4 py-2 text-white rounded-full ${isSaveDisabled ? "bg-pink-700" : "bg-[#ff00ff] hover:bg-accent cursor-pointer"}`}
+            onClick={handleSaveQuestions}
+            disabled={isSaveDisabled}
+          >
+            Save Questions
+          </button>
+          : <></>
+      }
+    </div>
+  );
+};
+
+const QuizTab = ({ courseId, userId }: { courseId: string; userId: string }) => {
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [selectedQuizId, setSelectedQuizId] = useState("");
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null)
+  const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [openSubmissionsModal, setOpenSubmissionsModal] = useState(false);
+
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      const quizListResponse = await quizService.getQuizzesByCourse(courseId);
+      if (quizListResponse.success) {
+        setQuizzes(quizListResponse.data);
+      } else {
+        toast({
+          title: "Failed to fetch quizzes"
+        });
+      }
+      setLoading(false);
+    };
+
+    if (!openCreateModal && !openEditModal && !openDeleteModal) {
+      fetchQuizzes();
+    }
+  }, [courseId, openCreateModal, openEditModal, openDeleteModal]);
+
+  useEffect(() => {
+    const matchedQuiz = quizzes.find(quiz => quiz.id === selectedQuizId);
+    if (matchedQuiz) {
+      setSelectedQuiz(matchedQuiz);
+    } else {
+      setSelectedQuiz(null);
+    }
+  }, [selectedQuizId]);
+
+  const handleExpandQuiz = async (quizId: string) => {
+    if (expandedQuizId === quizId) {
+      setExpandedQuizId(null);
+      setQuestions([]);
+      return;
+    }
+
+    const matchedQuiz = quizzes.find(quiz => quiz.id === quizId);
+    if (matchedQuiz) {
+      setExpandedQuizId(quizId);
+      setQuestions(matchedQuiz.questions);
+    } else {
+      setExpandedQuizId(null);
+    }
+  };
+
+  const addQuestion = () => {
+    setQuestions((prev) => {
+      const nextNo = prev.length > 0 ? prev[prev.length - 1].questionNo + 1 : 1;
+
+      return [
+        ...prev,
+        {
+          questionNo: nextNo,
+          description: "",
+          type: QUIZ_QUESTION_TYPE.MCQ,
+          options: [],
+          correctAnswer: "",
+          marks: 1,
+          attachments: []
+        }
+      ];
+    });
+  };
+
+  const updateQuestion = (questionNo: number, patch: Partial<Question>) => {
+    setQuestions(prev =>
+      prev.map(q =>
+        q.questionNo === questionNo ? { ...q, ...patch } : q
+      )
+    );
+  };
+
+  const deleteQuestion = (questionNo: number) => {
+    setQuestions(prev =>
+      prev
+        .filter(q => q.questionNo !== questionNo)
+        .map((q, i) => ({ ...q, questionNo: i + 1 }))
+    );
+  };
+
+  const addOption = (questionNo: number) => {
+    setQuestions(prev =>
+      prev.map(q => {
+        if (q.questionNo !== questionNo) return q;
+        return { ...q, options: [...q.options, "New Option"] };
+      })
+    );
+  };
+
+  const updateOption = (
+    questionNo: number,
+    optionIndex: number,
+    value: string
+  ) => {
+    setQuestions(prev =>
+      prev.map(q => {
+        if (q.questionNo !== questionNo) return q;
+
+        const updatedOptions = [...q.options];
+        updatedOptions[optionIndex] = value;
+
+        return { ...q, options: updatedOptions };
+      })
+    );
+  };
+
+  const deleteOption = (questionNo: number, optionIndex: number) => {
+    setQuestions(prev =>
+      prev.map(q => {
+        if (q.questionNo !== questionNo) return q;
+
+        const deleted = q.options[optionIndex];
+
+        const newOptions = q.options.filter((_, i) => i !== optionIndex);
+
+        let newCorrect = q.correctAnswer;
+
+        if (Array.isArray(newCorrect)) {
+          newCorrect = newCorrect.filter(ans => ans !== deleted);
+        } else if (newCorrect === deleted) {
+          newCorrect = "";
+        }
+
+        return {
+          ...q,
+          options: newOptions,
+          correctAnswer: newCorrect
+        };
+      })
+    );
+  };
+
+  const updateCorrectAnswer = (
+    questionNo: number,
+    answer: string | string[]
+  ) => {
+    setQuestions(prev =>
+      prev.map(q =>
+        q.questionNo === questionNo
+          ? { ...q, correctAnswer: answer }
+          : q
+      )
+    );
+  };
+
+  const handleSaveQuestions = async () => {
+    if (!expandedQuizId) return;
+    const response = await quizService.setQuestions(expandedQuizId, questions);
+
+    if (!response.success) {
+      toast({ title: "Failed to save questions", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Questions saved successfully" });
+  };
+
+  const deleteQuiz = async () => {
+    if (!selectedQuiz) return;
+
+    try {
+      const result = await quizService.deleteQuiz(selectedQuizId);
+      if (!result.success) {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete quiz',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Quiz deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while deleting the quiz',
+        variant: 'destructive'
+      });
+    } finally {
+      setOpenDeleteModal(false);
+      setSelectedQuizId("");
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <ListChecks className="w-6 h-6 text-primary dark:text-pink-300" />
+          Quizzes
+        </h2>
+
+        <button
+          onClick={() => setOpenCreateModal(true)}
+          className="bg-primary hover:bg-accent  text-white px-5 py-2 rounded-full flex items-center gap-2 transition dark:bg-[#ff00ff] dark:hover:bg-accent"
+        >
+          <Plus size={16} />
+          Add Quiz
+        </button>
+      </div>
+
+      <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm p-4">
+        {loading ? (
+          <div className="text-gray-500 dark:text-gray-400 text-center py-10">
+            Loading quizzes…
+          </div>
+        ) : quizzes.length === 0 ? (
+          <div className="text-gray-400 dark:text-gray-500 text-center py-10">
+            No quizzes added yet.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {quizzes.map((quiz, idx) => (
+              <div
+                key={quiz.id}
+                className="p-4 border rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+              >
+                {/* Header Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {/* Expand/Collapse Button */}
+                    <button
+                      onClick={() => handleExpandQuiz(quiz.id)}
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                    >
+                      <ChevronRight
+                        size={18}
+                        className={`transition-transform duration-200 ${expandedQuizId === quiz.id ? "rotate-90" : ""}`}
+                      />
+                    </button>
+                    <Folder className="w-5 h-5 text-primary dark:text-pink-300" />
+                    <span className="font-medium text-gray-800 dark:text-gray-100">
+                      {quiz.title || `Quiz ${idx + 1}`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-900 transition flex items-center gap-2"
+                      onClick={() => {
+                        setSelectedQuizId(quiz.id);
+                        setOpenSubmissionsModal(true);
+                      }}
+                    >
+                      <ListChecks size={14} />
+                      Submissions
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedQuizId(quiz.id);
+                        setOpenEditModal(true);
+                      }}
+                      className="px-4 py-1.5 text-sm rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-900 transition flex items-center gap-2"
+                    >
+                      <Pencil size={14} />
+                      Update
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedQuizId(quiz.id);
+                        setOpenDeleteModal(true);
+                      }}
+                      className="px-4 py-1.5 text-sm rounded-full border border-red-300 text-red-500 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white transition flex items-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      Delete
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <span>Release Scores</span>
+                        <Switch
+                          checked={quiz.releaseScores ?? false}
+                          onCheckedChange={async (val) => {
+                            const res = await quizService.setReleaseScores(quiz.id, val);
+                            if (!res.success) {
+                              toast({
+                                title: "Failed to update release scores",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+
+                            setQuizzes(prev =>
+                              prev.map(q => q.id === quiz.id ? { ...q, releaseScores: val } : q)
+                            );
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Questions Section */}
+                {expandedQuizId === quiz.id && (
+                  <div className="mt-4 border-t pt-4 border-gray-300 dark:border-gray-600">
+                    <Questions
+                      questions={questions}
+                      setQuestions={setQuestions}
+                      addQuestion={addQuestion}
+                      updateQuestion={updateQuestion}
+                      deleteQuestion={deleteQuestion}
+                      addOption={addOption}
+                      updateOption={updateOption}
+                      deleteOption={deleteOption}
+                      updateCorrectAnswer={updateCorrectAnswer}
+                      handleSaveQuestions={handleSaveQuestions}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <EditQuizModal
+        open={openEditModal}
+        onClose={() => { setSelectedQuizId(""); setOpenEditModal(false); }}
+        quiz={selectedQuiz}
+      />
+
+      <CreateQuizModal
+        open={openCreateModal}
+        onClose={() => setOpenCreateModal(false)}
+        createdBy={userId}
+        courseId={courseId}
+      />
+
+      <ConfirmDialog
+        open={openDeleteModal}
+        onCancel={() => {
+          setSelectedQuizId("");
+          setOpenDeleteModal(false);
+        }}
+        onConfirm={deleteQuiz}
+        title="Delete Quiz"
+        body={`Are you sure you want to delete the quiz titled "${selectedQuiz?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        dismissible
+      />
+      {selectedQuizId && (
+        <QuizSubmissionModal
+          open={openSubmissionsModal}
+          onClose={() => setOpenSubmissionsModal(false)}
+          quiz={quizzes.find(q => q.id === selectedQuizId) || null}
+        />
+      )}
+    </div>
+  );
+
+};
+
+export default QuizTab;
