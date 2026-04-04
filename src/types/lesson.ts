@@ -1,0 +1,42 @@
+import { ATTACHMENT_TYPE, LEARNING_CONTENT, LESSON_TYPE } from "@/constants";
+import { FieldValue, Timestamp } from "firebase/firestore";
+import { Duration } from "./general";
+
+export type Attachment = (typeof ATTACHMENT_TYPE)[keyof typeof ATTACHMENT_TYPE];
+export type LessonType = (typeof LESSON_TYPE)[keyof typeof LESSON_TYPE];
+export type LearningContentType = (typeof LEARNING_CONTENT)[keyof typeof LEARNING_CONTENT];
+
+export type ZoomInfo = {
+  meetingId: string; // Zoom meeting number
+  hostUserId?: string; // Zoom user ID / email used as host
+  passcode?: string; // meeting passcode
+  encryptedPasscode?: string; // for Website SDK (preferred)
+  startTime: Timestamp | FieldValue;
+  duration: number; // minutes
+};
+
+export type Lesson = {
+  id: string;
+  courseId: string;
+  title: string;
+  type: LessonType;
+  description: string;
+  embedUrl: string;
+  durationAddedtoLearningProgress: boolean;
+  duration: Duration;
+  karmaBoostExpiresAfter: Duration;
+  zoom?: ZoomInfo;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+};
+
+export type LessonAttachment = {
+  id: string;
+  lessonId: string;
+  name: string;
+  url: string;
+  type: Attachment;
+  size: number;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+};

@@ -1,0 +1,595 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════
+   RedPandaLearns — Dark + Red Design System
+   Palette: #e43636 · #f6efd2 · #e2ddb4 · #000000
+   ═══════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* ── Paper & Ink ─────────────────────────── */
+    --bg: #f6efd2;
+    --fg: #141414;
+    --ink-muted: #6B6B6B;
+    --ink-border: #1F1F1F;
+    --paper-card: #FFFDF5;
+    --paper-shadow: rgba(20,20,20,0.12);
+
+    /* ── Accent markers (red-dominant palette) ── */
+    --accent-yellow: #e43636;
+    --accent-coral:  #FF5252;
+    --accent-sky:    #C4A35A;
+    --accent-mint:   #4ECDC4;
+    --accent-lav:    #D4727A;
+
+    /* ── shadcn/ui tokens (warm cream) ────── */
+    --background: 48 69% 89%;
+    --foreground: 0 0% 5%;
+
+    --card: 48 50% 95%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 48 50% 95%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 0 77% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 48 30% 84%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 48 20% 85%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 77% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 85% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 48 20% 78%;
+    --input: 48 20% 78%;
+    --ring: 0 77% 55%;
+
+    --radius: 0.75rem;
+
+    /* ── Sidebar ────────── */
+    --sidebar-background: 48 40% 92%;
+    --sidebar-foreground: 0 0% 5%;
+    --sidebar-primary: 0 77% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 48 20% 87%;
+    --sidebar-accent-foreground: 0 0% 5%;
+    --sidebar-border: 48 15% 82%;
+    --sidebar-ring: 0 77% 55%;
+  }
+
+  .dark {
+    --bg: #000000;
+    --fg: #f6efd2;
+    --ink-muted: #e2ddb4;
+    --ink-border: #f6efd2;
+    --paper-card: #0a0a0a;
+    --paper-shadow: rgba(228,54,54,0.15);
+
+    --accent-yellow: #e43636;
+    --accent-coral:  #FF5252;
+    --accent-sky:    #e2ddb4;
+    --accent-mint:   #5FE1D8;
+    --accent-lav:    #D4727A;
+
+    --background: 0 0% 0%;
+    --foreground: 48 69% 89%;
+
+    --card: 0 0% 5%;
+    --card-foreground: 48 69% 89%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 48 69% 89%;
+
+    --primary: 0 77% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 48 69% 89%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 54 43% 80%;
+
+    --accent: 0 77% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 85% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 0 77% 55%;
+
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 48 69% 89%;
+    --sidebar-primary: 0 77% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 48 69% 89%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 0 77% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: "Nunito", "Figtree", sans-serif;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   PAPER / NOTEBOOK BACKGROUNDS
+   ═══════════════════════════════════════════════════ */
+
+.paper-bg {
+  background-color: var(--bg);
+}
+
+.notebook-grid {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .notebook-grid {
+  background-image:
+    linear-gradient(rgba(228,54,54,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(228,54,54,0.06) 1px, transparent 1px);
+}
+
+.notebook-dots {
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .notebook-dots {
+  background-image: radial-gradient(circle, rgba(228,54,54,0.08) 1px, transparent 1px);
+}
+
+/* ═══════════════════════════════════════════════════
+   HAND-DRAWN COMPONENT CLASSES
+   ═══════════════════════════════════════════════════ */
+
+/* Sketch card – wobbly border, paper feel */
+.sketch-card {
+  background: var(--paper-card);
+  border: 2.5px solid var(--ink-border);
+  border-radius: 12px 8px 14px 6px;
+  box-shadow: 4px 4px 0px var(--ink-border);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sketch-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px var(--ink-border);
+}
+
+.dark .sketch-card {
+  background: var(--paper-card);
+  border-color: rgba(228,54,54,0.3);
+  box-shadow: 4px 4px 0px rgba(228,54,54,0.15);
+}
+
+.dark .sketch-card:hover {
+  box-shadow: 6px 6px 0px rgba(228,54,54,0.25);
+}
+
+/* Primary sketchy button */
+.btn-sketchy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  font-family: "Nunito", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-yellow);
+  border: 2.5px solid var(--ink-border);
+  border-radius: 10px 6px 12px 8px;
+  box-shadow: 3px 3px 0px var(--ink-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-sketchy:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--ink-border);
+  background: #c62828;
+}
+
+.btn-sketchy:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--ink-border);
+}
+
+/* Yellow variant → now Red variant */
+.btn-sketchy-yellow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  font-family: "Nunito", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-yellow);
+  border: 2.5px solid var(--ink-border);
+  border-radius: 10px 6px 12px 8px;
+  box-shadow: 3px 3px 0px var(--ink-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-sketchy-yellow:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--ink-border);
+  background: #c62828;
+}
+
+/* Sky variant → now Cream/Gold variant */
+.btn-sketchy-sky {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  font-family: "Nunito", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--ink-border);
+  background: var(--accent-sky);
+  border: 2.5px solid var(--ink-border);
+  border-radius: 10px 6px 12px 8px;
+  box-shadow: 3px 3px 0px var(--ink-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-sketchy-sky:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--ink-border);
+}
+
+/* Ghost/outline sketchy button */
+.btn-sketchy-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fg);
+  background: transparent;
+  border: 2.5px dashed var(--ink-border);
+  border-radius: 10px 6px 12px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-sketchy-outline:hover {
+  background: rgba(228,54,54,0.08);
+  border-style: solid;
+}
+
+.dark .btn-sketchy-outline:hover {
+  background: rgba(228,54,54,0.12);
+}
+
+/* ── Sticky notes ──────────────────────────── */
+.sticky-note {
+  border-radius: 4px 4px 24px 4px;
+  position: relative;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.08);
+}
+
+.sticky-note-yellow { background: #FFE0E0; }
+.sticky-note-cyan { background: #D5F5F0; }
+.sticky-note-coral { background: #FFD5D5; }
+.sticky-note-lav { background: #F5E0E4; }
+
+.dark .sticky-note-yellow { background: #2D1010; }
+.dark .sticky-note-cyan { background: #1A2520; }
+.dark .sticky-note-coral { background: #3D1515; }
+.dark .sticky-note-lav { background: #2D1520; }
+
+/* ── Chalkboard ──────────────────────────── */
+.chalkboard {
+  background: #0a0a0a;
+  border-radius: 16px;
+  border: 6px solid #e43636;
+  position: relative;
+}
+
+.chalk-text {
+  color: #f6efd2;
+  text-shadow: 0 0 4px rgba(246,239,210,0.3);
+}
+
+/* ── Best Value stamp ──────────────────── */
+.best-value-stamp {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: var(--accent-coral);
+  color: #fff;
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 4px 12px;
+  border: 2px solid var(--ink-border);
+  border-radius: 6px 4px 8px 2px;
+  transform: rotate(6deg);
+  box-shadow: 2px 2px 0px var(--ink-border);
+  z-index: 10;
+}
+
+/* ── Marker highlight behind text ────────── */
+.marker-highlight-yellow {
+  background: linear-gradient(180deg, transparent 55%, rgba(228,54,54,0.25) 55%);
+}
+
+.marker-highlight-coral {
+  background: linear-gradient(180deg, transparent 55%, rgba(255,82,82,0.25) 55%);
+}
+
+.marker-highlight-sky {
+  background: linear-gradient(180deg, transparent 55%, rgba(226,221,180,0.3) 55%);
+}
+
+.marker-highlight-mint {
+  background: linear-gradient(180deg, transparent 55%, rgba(78,205,196,0.3) 55%);
+}
+
+.marker-highlight-lav {
+  background: linear-gradient(180deg, transparent 55%, rgba(212,114,122,0.25) 55%);
+}
+
+/* ── Handwritten label tag ───────────────── */
+.hand-tag {
+  display: inline-block;
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 2px 10px;
+  border: 2px solid var(--ink-border);
+  border-radius: 6px 2px 8px 4px;
+  transform: rotate(-2deg);
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  75% { transform: rotate(-3deg); }
+}
+
+@keyframes rock {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-wiggle { animation: wiggle 3s ease-in-out infinite; }
+.animate-rock { animation: rock 4s ease-in-out infinite; }
+
+.float-delay-1 { animation-delay: 0.5s; }
+.float-delay-2 { animation-delay: 1s; }
+.float-delay-3 { animation-delay: 1.5s; }
+.float-delay-4 { animation-delay: 2s; }
+
+/* ═══════════════════════════════════════════════════
+   PASTEL BACKGROUND COLORS
+   ═══════════════════════════════════════════════════ */
+.bg-pastel-yellow { background: #FFE0E0; }
+.bg-pastel-blue { background: #F5E8DC; }
+.bg-pastel-mint { background: #D5F5F0; }
+.bg-pastel-peach { background: #FFD5D5; }
+.bg-pastel-lav { background: #F5E0E4; }
+
+.dark .bg-pastel-yellow { background: #2D1010; }
+.dark .bg-pastel-blue { background: #1A1510; }
+.dark .bg-pastel-mint { background: #102820; }
+.dark .bg-pastel-peach { background: #2D1515; }
+.dark .bg-pastel-lav { background: #2D1520; }
+
+/* ═══════════════════════════════════════════════════
+   GRADIENT TEXT
+   ═══════════════════════════════════════════════════ */
+.gradient-text {
+  background: linear-gradient(135deg, #e43636, #f6efd2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR HIDING
+   ═══════════════════════════════════════════════════ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ═══════════════════════════════════════════════════
+   EDITOR STYLES (preserved)
+   ═══════════════════════════════════════════════════ */
+.markdown-editor-wrapper .ProseMirror {
+  min-height: 100%;
+  outline: none;
+}
+
+.markdown-editor-wrapper .ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.markdown-editor-wrapper .editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.markdown-editor-wrapper .editor-image:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.markdown-editor-wrapper .editor-image.ProseMirror-selectednode {
+  outline: 2px solid var(--accent-yellow);
+  outline-offset: 2px;
+}
+
+.markdown-editor-wrapper .editor-link {
+  color: var(--accent-yellow);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.markdown-editor-wrapper .editor-link:hover {
+  opacity: 0.8;
+}
+
+.markdown-editor-wrapper pre {
+  background: #0a0a0a;
+  border-radius: 0.5rem;
+  color: #f6efd2;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.markdown-editor-wrapper pre code {
+  background: transparent;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.markdown-editor-wrapper code {
+  background-color: #f3e8e8;
+  border-radius: 0.25rem;
+  color: #e43636;
+  font-size: 0.875em;
+  padding: 0.2em 0.4em;
+}
+
+.dark .markdown-editor-wrapper code {
+  background-color: #1a1010;
+}
+
+.markdown-editor-wrapper blockquote {
+  border-left: 4px solid var(--accent-yellow);
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: #6b7280;
+}
+
+.markdown-editor-wrapper ul,
+.markdown-editor-wrapper ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-editor-wrapper li {
+  margin: 0.25rem 0;
+}
+
+.markdown-editor-wrapper ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-editor-wrapper ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.markdown-editor-wrapper ul[data-type="taskList"] li input[type="checkbox"] {
+  margin-top: 0.25rem;
+}
+
+.markdown-editor-wrapper h1 { font-size: 2rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+.markdown-editor-wrapper h2 { font-size: 1.5rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+.markdown-editor-wrapper h3 { font-size: 1.25rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }
+
+.markdown-editor-wrapper mark {
+  background-color: rgba(228,54,54,0.2);
+  border-radius: 0.125rem;
+  padding: 0 0.125rem;
+}
+
+.bubble-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.section-with-iframe iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+  overflow: hidden;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}

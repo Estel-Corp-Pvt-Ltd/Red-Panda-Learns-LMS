@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "RedPanda Learns-ai-labs-dev",
+    "dev": "RedPanda Learns-ai-labs-dev",
+    "prod": "RedPanda Learns-ai-labs"
+  },
+  "targets": {},
+  "etags": {}
+}
