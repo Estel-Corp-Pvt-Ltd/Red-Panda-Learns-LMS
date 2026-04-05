@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { CartProvider } from "./contexts/CartContext";
 import { LoadingOverlayProvider } from "./contexts/LoadingOverlayContext";
-import LoadingSpinnerOverlay from "./components/LogoSpinnerOverlay";
 import ScrollToTop from "./components/ScrollToTop";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AnimatedPage from "./components/AnimatedPage";
@@ -129,7 +128,14 @@ const App = () => (
                   <BrowserRouter>
                     <ScrollToTop />
                     <NetworkStatus />
-                    <Suspense fallback={<LoadingSpinnerOverlay message="Loading..." />}>
+                    <Suspense fallback={
+                      <div className="min-h-screen flex items-center justify-center bg-background">
+                        <div className="flex flex-col items-center gap-3">
+                          <span className="text-5xl animate-bounce" style={{ animationDuration: "0.8s" }}>🐼</span>
+                          <p className="text-sm text-muted-foreground">Loading...</p>
+                        </div>
+                      </div>
+                    }>
                       <AnimatedPage>
                       <Routes>
                         {/* Public pages */}

@@ -1,4 +1,3 @@
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { COLLECTION, USER_ROLE } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnrollment } from '@/contexts/EnrollmentContext';
@@ -147,8 +146,11 @@ useEffect(() => {
     (requireTeacher && isTeacher === null)
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSkeleton className="w-full max-w-4xl h-96" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }

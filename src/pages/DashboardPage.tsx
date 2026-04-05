@@ -537,29 +537,39 @@ export default function DashboardPage() {
   };
 
   const fetchEnrollmentsAndCertificateRequestStatuses = async () => {
-    if (!user || !user.email) return;
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
 
-    const result = await enrollmentService.getUserEnrollments(user.id);
-    if (result.success) {
-      setEnrollments(result.data);
+    try {
+      const result = await enrollmentService.getUserEnrollments(user.id);
+      if (result.success) {
+        setEnrollments(result.data);
 
-      const courseIds = result.data.map((e) => e.courseId);
+        const courseIds = result.data.map((e) => e.courseId);
 
-      const certificateStatusResult =
-        await certificateRequestService.getCertificateRequestStatusForCourses(user.id, courseIds);
+        // Fetch these in parallel instead of sequentially
+        const [certificateStatusResult] = await Promise.all([
+          certificateRequestService.getCertificateRequestStatusForCourses(user.id, courseIds),
+          fetchBanners(courseIds),
+          fetchKarmaData(courseIds),
+          fetchLeaderboardData(courseIds),
+        ]);
 
-      if (certificateStatusResult.success) {
-        setCertificateStatusMap(certificateStatusResult.data);
+        if (certificateStatusResult.success) {
+          setCertificateStatusMap(certificateStatusResult.data);
+        }
+      } else {
+        setEnrollments([]);
       }
-
-      await fetchBanners(courseIds);
-      await fetchKarmaData(courseIds);
-      await fetchLeaderboardData(courseIds);
-    } else {
+    } catch (err) {
+      console.error("Dashboard fetch failed:", err);
       setEnrollments([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const fetchBanners = async (enrolledCourseIds: string[]) => {

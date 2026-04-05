@@ -20,6 +20,22 @@ interface CreateOrderResponse {
   amount: number;
 }
 
+/** Lazily load the Razorpay checkout script only when needed */
+let razorpayLoaded: Promise<void> | null = null;
+function loadRazorpayScript(): Promise<void> {
+  if ((window as any).Razorpay) return Promise.resolve();
+  if (razorpayLoaded) return razorpayLoaded;
+  razorpayLoaded = new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
+    document.head.appendChild(script);
+  });
+  return razorpayLoaded;
+}
+
 class RazorpayProvider {
   private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -80,8 +96,9 @@ class RazorpayProvider {
 
       const { orderId, razorpayOrder, key_id } = orderData.data;
 
-      // Validate Razorpay availability
-      if (typeof window === "undefined" || !(window as any).Razorpay) {
+      // Load Razorpay script on demand
+      await loadRazorpayScript();
+      if (!(window as any).Razorpay) {
         throw new Error("Razorpay payment gateway not available");
       }
 

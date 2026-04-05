@@ -1,13 +1,3 @@
-import { motion } from "framer-motion";
-
 export default function AnimatedPage({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.15 }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <>{children}</>;
 }

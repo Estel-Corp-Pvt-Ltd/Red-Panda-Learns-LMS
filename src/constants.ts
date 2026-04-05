@@ -1,5 +1,3 @@
-import { isiOS } from "@tiptap/core";
-
 export const USER_ROLE = {
   STUDENT: "STUDENT",
   TEACHER: "TEACHER",

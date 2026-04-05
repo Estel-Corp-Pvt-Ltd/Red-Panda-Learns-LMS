@@ -11,9 +11,9 @@ export function LoadingSkeleton({
   variant = 'default',
   lines = 1 
 }: LoadingSkeletonProps) {
-  const baseClasses = "relative overflow-hidden bg-muted rounded animate-pulse";
-  
-  const shimmerClasses = "absolute inset-0 bg-gradient-to-r from-transparent via-background/80 to-transparent animate-shimmer";
+  const baseClasses = "relative overflow-hidden bg-muted/50 dark:bg-muted rounded border border-border/30 animate-pulse";
+
+  const shimmerClasses = "absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent animate-shimmer";
 
   if (variant === 'card') {
     return (
