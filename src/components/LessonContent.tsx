@@ -32,7 +32,7 @@ export function LessonContent({
   if (!selectedItem) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center">
+        <div className="text-center rounded-2xl bg-card/60 border border-border/30 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25)] p-10 max-w-md">
           <h2 className="text-2xl font-bold mb-2">Select content to start learning</h2>
           <p className="text-muted-foreground">
             Choose a lesson or assignment from the sidebar to begin.

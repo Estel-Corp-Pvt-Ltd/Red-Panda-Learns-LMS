@@ -307,9 +307,9 @@ export default function LessonDetailPage() {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* Top info bar with breadcrumbs */}
-      <div className="border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
-        <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
+      {/* Top info bar — claymorphic breadcrumb strip */}
+      <div className="shrink-0 border-b border-border/40">
+        <div className="mx-4 lg:mx-6 my-2 rounded-2xl bg-card/60 backdrop-blur-md border border-border/30 shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)] px-4 py-2.5 flex items-center justify-between gap-3">
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="flex-nowrap">
               <BreadcrumbItem className="hidden sm:inline-flex">
@@ -329,7 +329,7 @@ export default function LessonDetailPage() {
                 <>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem className="max-w-[250px]">
-                    <BreadcrumbPage className="truncate flex items-center gap-1.5">
+                    <BreadcrumbPage className="truncate flex items-center gap-1.5 font-medium">
                       {selectedItem.title}
                       {isAdmin && isContentLocked && <LockBadge />}
                     </BreadcrumbPage>
@@ -342,7 +342,7 @@ export default function LessonDetailPage() {
           <div className="flex items-center gap-2 shrink-0">
             {isAdmin && selectedItem && (
               <Link to={`/admin/edit-course/${course.id}?itemId=${selectedItem.id}`}>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="rounded-xl shadow-sm">
                   <Edit2 className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
@@ -351,7 +351,7 @@ export default function LessonDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
+              className="lg:hidden rounded-xl"
               onClick={() => setSidebarOpen(true)}
             >
               Open Outline
@@ -361,8 +361,8 @@ export default function LessonDetailPage() {
       </div>
 
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex w-80 flex-col border-r bg-card/50 backdrop-blur-sm shrink-0">
+        {/* Sidebar — claymorphic panel */}
+        <aside className="hidden lg:flex w-80 flex-col shrink-0 border-r border-border/30 bg-gradient-to-b from-card/70 to-card/40 backdrop-blur-md">
           <CourseNavigator
             course={course}
             currentLesson={selectedItem}
@@ -371,30 +371,34 @@ export default function LessonDetailPage() {
           />
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-6">
-          <LessonContent
-            selectedItem={selectedItem}
-            courseName={course.title}
-            isAdmin={isAdmin}
-            isContentLocked={isContentLocked}
-            contentLock={contentLock}
-            timeRemaining={timeRemaining}
-            lessonCompleted={lessonCompleted}
-            onComplete={handleComplete}
-            onNavigateToNext={handleNavigateToNext}
-          />
+        {/* Main Content — claymorphic card container */}
+        <main className="flex-1 min-w-0 overflow-y-auto bg-muted/20 dark:bg-muted/10">
+          <div className="p-4 lg:p-6">
+            <div className="rounded-3xl bg-card/80 backdrop-blur-sm border border-border/30 shadow-[0_4px_24px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3),0_1px_4px_rgba(0,0,0,0.15)] p-4 lg:p-6">
+              <LessonContent
+                selectedItem={selectedItem}
+                courseName={course.title}
+                isAdmin={isAdmin}
+                isContentLocked={isContentLocked}
+                contentLock={contentLock}
+                timeRemaining={timeRemaining}
+                lessonCompleted={lessonCompleted}
+                onComplete={handleComplete}
+                onNavigateToNext={handleNavigateToNext}
+              />
+            </div>
+          </div>
         </main>
       </div>
 
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-80">
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b shrink-0">
+        <SheetContent side="left" className="p-0 w-80 border-r-0">
+          <div className="h-full flex flex-col bg-gradient-to-b from-card/90 to-card/60 backdrop-blur-xl">
+            <div className="p-4 border-b border-border/30 shrink-0">
               <h2 className="text-base md:text-lg font-semibold">{course.title}</h2>
               {selectedItem && (
-                <p className="text-xs text-muted-foreground">{selectedItem.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{selectedItem.title}</p>
               )}
             </div>
             <div className="flex-1 min-h-0">
