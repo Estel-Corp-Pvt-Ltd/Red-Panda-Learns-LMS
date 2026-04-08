@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/landing/components/HeroSection";
 import { CourseCategories } from "@/components/landing/components/CourseCategories";
 import { HowItWorks } from "@/components/landing/components/HowItWorks";
+import { HorizontalTicker } from "@/components/landing/components/HorizontalTicker";
 import { ForParents } from "@/components/landing/components/ForParents";
 import { ProgressRewards } from "@/components/landing/components/ProgressRewards";
 import { TestimonialsCarousel } from "@/components/landing/components/TestimonialsCarousel";
@@ -43,6 +44,7 @@ const LandingPage = () => {
       )}
       <CourseCategories />
       <HowItWorks />
+      <HorizontalTicker />
       <ForParents />
       <ProgressRewards />
       <TestimonialsCarousel />
