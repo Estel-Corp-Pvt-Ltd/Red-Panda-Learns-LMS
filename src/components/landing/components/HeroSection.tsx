@@ -29,12 +29,8 @@ export function HeroSection() {
 
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <ScrollReveal>
-          {/* Animated Panda with power-on effect */}
-          <div className="mb-8 flex justify-center">
-            <AnimatedPanda />
-          </div>
+          <div className="mb-6 text-6xl sm:text-7xl">🐼</div>
 
-          {/* Main headline with word rotator */}
           <h1 className="font-hand text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-8xl leading-tight">
             Make it <WordRotator />
           </h1>
