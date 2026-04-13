@@ -10,6 +10,7 @@ import {
   DoodleSpiral,
   DoodleArrow,
 } from "./Doodles";
+import { WordRotator } from "./WordRotator";
 
 export function HeroSection() {
   return (
@@ -28,15 +29,24 @@ export function HeroSection() {
 
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <ScrollReveal>
-          <div className="mb-6 text-6xl sm:text-7xl">🐼</div>
+          {/* Animated Panda with power-on effect */}
+          <div className="mb-8 flex justify-center">
+            <AnimatedPanda />
+          </div>
+
+          {/* Main headline with word rotator */}
           <h1 className="font-hand text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-8xl leading-tight">
-            {heroContent.headline}
-            <br />
-            <span className="relative inline-block marker-highlight-yellow">
+            Make it <WordRotator />
+          </h1>
+
+          {/* Sub-headline */}
+          <p className="relative mt-4 inline-block font-hand text-2xl sm:text-3xl text-foreground/70">
+            <span className="relative">
               {heroContent.headlineAccent}
               <WavyUnderline className="absolute -bottom-2 left-0 w-full h-4 text-accent-coral" />
             </span>
-          </h1>
+          </p>
+
           <p className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed font-sans">
             {heroContent.subheadline}
           </p>
