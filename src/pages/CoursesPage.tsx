@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Header } from "@/components/Header";
 import { BundleWrapper } from "@/components/bundle/BundleWrapper";
@@ -39,6 +39,11 @@ interface ArrangedContent {
 const CoursesPage = () => {
   const { enrollments, isEnrolledInBundle } = useEnrollment();
   const { user } = useAuth();
+
+  const isEnrolledInBundleAsync = useCallback(
+    async (id: string) => isEnrolledInBundle(id),
+    [isEnrolledInBundle]
+  );
 
   useEffect(() => {
     document.title = "Courses | RedPanda Learns";
@@ -332,7 +337,7 @@ const CoursesPage = () => {
                       bundle={bundle}
                       index={index}
                       user={user}
-                      isEnrolledInBundle={async (id) => Promise.resolve(isEnrolledInBundle(id))}
+                      isEnrolledInBundle={isEnrolledInBundleAsync}
                       viewMode={viewMode}
                       handleBundlePurchase={(id) => {
                         handleBundlePurchase(id);
@@ -429,7 +434,7 @@ const CoursesPage = () => {
                           bundle={bundle}
                           index={index}
                           user={user}
-                          isEnrolledInBundle={async (id) => Promise.resolve(isEnrolledInBundle(id))}
+                          isEnrolledInBundle={isEnrolledInBundleAsync}
                           viewMode={viewMode}
                           handleBundlePurchase={(id) => {
                             handleBundlePurchase(id);
