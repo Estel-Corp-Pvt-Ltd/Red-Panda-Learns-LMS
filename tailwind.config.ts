@@ -44,10 +44,16 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          // new palette
+          pink: "var(--accent-pink)",
+          orange: "var(--accent-orange)",
+          lime: "var(--accent-lime)",
+          mint: "var(--accent-mint)",
+          blue: "var(--accent-blue)",
+          // legacy aliases
           yellow: "var(--accent-yellow)",
           coral: "var(--accent-coral)",
           sky: "var(--accent-sky)",
-          mint: "var(--accent-mint)",
           lav: "var(--accent-lav)",
         },
         popover: {
