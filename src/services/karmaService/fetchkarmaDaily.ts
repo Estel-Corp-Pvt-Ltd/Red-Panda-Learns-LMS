@@ -39,6 +39,30 @@ interface LeaderboardResult {
   totalCount: number;
 }
 class fetchDailyKarma {
+  async getUserTodayKarma(userId: string, courseId?: string): Promise<Result<KarmaDaily[]>> {
+    try {
+      if (!userId) return fail("Missing userId");
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const tomorrowStart = new Date(todayStart);
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+      const constraints: any[] = [
+        where("userId", "==", userId),
+        where("date", ">=", Timestamp.fromDate(todayStart)),
+        where("date", "<", Timestamp.fromDate(tomorrowStart)),
+        orderBy("date", "desc"),
+      ];
+      if (courseId) constraints.splice(1, 0, where("courseId", "==", courseId));
+
+      const snapshot = await getDocs(query(collection(db, COLLECTION.KARMA_DAILY), ...constraints));
+      return ok(snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as KarmaDaily) })));
+    } catch (error: any) {
+      logError("KarmaDailyService.getUserTodayKarma", error);
+      return fail("Failed to fetch today's karma.", error.code || error.message);
+    }
+  }
+
   async getUserKarmaHistory(userId: string, courseId?: string): Promise<Result<KarmaDaily[]>> {
     try {
       if (!userId) {
