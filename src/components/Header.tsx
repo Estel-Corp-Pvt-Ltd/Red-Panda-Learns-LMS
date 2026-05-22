@@ -23,96 +23,13 @@ import { NotificationPanel } from "./notificationPanel";
 type PandaMood = "happy" | "sleepy" | "excited" | "sad" | "cool";
 
 function MiniPanda({ mood, className }: { mood: PandaMood; className?: string }) {
-  /* Shared base: face, ears, eye patches, nose */
-  const base = (
-    <>
-      <circle cx="50" cy="54" r="32" fill="white" />
-      <circle cx="24" cy="26" r="12" fill="#222" />
-      <circle cx="76" cy="26" r="12" fill="#222" />
-      <ellipse cx="37" cy="48" rx="9" ry="8" fill="#222" />
-      <ellipse cx="63" cy="48" rx="9" ry="8" fill="#222" />
-      <ellipse cx="50" cy="58" rx="4" ry="2.5" fill="#222" />
-    </>
-  );
-
-  const features: Record<PandaMood, React.ReactNode> = {
-    happy: (
-      <>
-        {/* Squinted happy eyes */}
-        <path d="M 32 46 Q 37 40 42 46" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M 58 46 Q 63 40 68 46" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        {/* Big smile */}
-        <path d="M 40 63 Q 50 74 60 63" stroke="#222" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-        {/* Blush */}
-        <circle cx="30" cy="60" r="4" fill="#FFB6C1" opacity="0.5" />
-        <circle cx="70" cy="60" r="4" fill="#FFB6C1" opacity="0.5" />
-      </>
-    ),
-    sleepy: (
-      <>
-        {/* Closed eyes (lines) */}
-        <line x1="32" y1="46" x2="42" y2="46" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="58" y1="46" x2="68" y2="46" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Small O mouth */}
-        <circle cx="50" cy="65" r="3" fill="#222" />
-        {/* Zzz */}
-        <text x="72" y="34" fill="#9B7EDE" fontSize="12" fontWeight="bold" fontFamily="sans-serif">z</text>
-        <text x="80" y="26" fill="#9B7EDE" fontSize="10" fontWeight="bold" fontFamily="sans-serif" opacity="0.7">z</text>
-      </>
-    ),
-    excited: (
-      <>
-        {/* Big sparkly eyes */}
-        <circle cx="37" cy="46" r="4.5" fill="white" />
-        <circle cx="63" cy="46" r="4.5" fill="white" />
-        <circle cx="38" cy="45" r="2" fill="#222" />
-        <circle cx="64" cy="45" r="2" fill="#222" />
-        {/* Sparkle dots in eyes */}
-        <circle cx="36" cy="43" r="1" fill="white" />
-        <circle cx="62" cy="43" r="1" fill="white" />
-        {/* Open mouth smile */}
-        <path d="M 40 63 Q 50 76 60 63" stroke="#222" strokeWidth="2" fill="#FF6B6B" strokeLinecap="round" />
-        {/* Blush */}
-        <circle cx="30" cy="60" r="4.5" fill="#FFB6C1" opacity="0.6" />
-        <circle cx="70" cy="60" r="4.5" fill="#FFB6C1" opacity="0.6" />
-      </>
-    ),
-    sad: (
-      <>
-        {/* Big sad eyes */}
-        <circle cx="37" cy="46" r="4" fill="white" />
-        <circle cx="63" cy="46" r="4" fill="white" />
-        <circle cx="38" cy="47" r="2" fill="#222" />
-        <circle cx="64" cy="47" r="2" fill="#222" />
-        {/* Sad eyebrows */}
-        <line x1="29" y1="38" x2="40" y2="40" stroke="#222" strokeWidth="2" strokeLinecap="round" />
-        <line x1="71" y1="38" x2="60" y2="40" stroke="#222" strokeWidth="2" strokeLinecap="round" />
-        {/* Tear */}
-        <circle cx="32" cy="56" r="2" fill="#4D9DE0" opacity="0.6" />
-        {/* Frown */}
-        <path d="M 40 68 Q 50 60 60 68" stroke="#222" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-      </>
-    ),
-    cool: (
-      <>
-        {/* Sunglasses */}
-        <rect x="28" y="41" width="16" height="10" rx="3" fill="#333" />
-        <rect x="56" y="41" width="16" height="10" rx="3" fill="#333" />
-        <line x1="44" y1="46" x2="56" y2="46" stroke="#333" strokeWidth="2" />
-        {/* Glare on glasses */}
-        <line x1="30" y1="43" x2="34" y2="43" stroke="white" strokeWidth="1" opacity="0.4" strokeLinecap="round" />
-        <line x1="58" y1="43" x2="62" y2="43" stroke="white" strokeWidth="1" opacity="0.4" strokeLinecap="round" />
-        {/* Smirk */}
-        <path d="M 42 64 Q 50 70 58 62" stroke="#222" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-      </>
-    ),
-  };
-
   return (
-    <svg viewBox="0 0 100 100" className={cn("shrink-0", className)} fill="none">
-      {base}
-      {features[mood]}
-    </svg>
+    <img
+      src="/logo.png"
+      alt=""
+      aria-hidden="true"
+      className={cn("shrink-0 object-contain", className)}
+    />
   );
 }
 
