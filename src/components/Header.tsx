@@ -372,8 +372,8 @@ export function Header({ className }: HeaderProps) {
             to="/"
             className="flex items-center gap-2 font-semibold text-lg shrink-0"
           >
-            <img src="/RedPandaDraftLogo.png" className="w-8" alt="Logo" />
-            <span className="hidden sm:block">RedPanda Learns</span>
+            <img src="/logo.png" className="w-8" alt="Logo" />
+            <span className="hidden sm:block">RedPandaLearns</span>
           </Link>
 
           {/* ── Centre: Dynamic Island ──────────────── */}
