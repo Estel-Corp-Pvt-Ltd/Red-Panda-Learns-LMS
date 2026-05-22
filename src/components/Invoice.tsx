@@ -127,7 +127,7 @@ export function InvoiceComponent({ invoiceData }: InvoiceComponentProps) {
                     <div className="flex items-start space-x-4 print:flex print:items-start print:space-x-4">
                       <div className="logo print:block">
                         <img
-                          src="/RedPandaDraftLogo.png"
+                          src="/logo.png"
                           alt="Company Logo"
                           className="w-48 h-48 object-contain"
                         />

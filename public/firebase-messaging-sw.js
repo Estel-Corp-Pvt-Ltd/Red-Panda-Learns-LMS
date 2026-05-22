@@ -2,7 +2,7 @@
 const CACHE_NAME = "redpanda-v1";
 const PRECACHE_URLS = [
   "/",
-  "/RedPandaDraftLogo.png",
+  "/logo.png",
   "/site.webmanifest",
 ];
 
@@ -103,14 +103,14 @@ const NOTIFICATION_CONFIG = {
     error: "#EF4444",
   },
   badge: "/72x72-badge.png",
-  icon: "/RedPandaDraftLogo.png",
+  icon: "/logo.png",
   placement: "top-right",
   duration: 5000,
   sound: true,
   vibrate: [200, 100, 200],
   actions: [
-    { action: "open", title: "Open", icon: "/RedPandaDraftLogo.png" },
-    { action: "close", title: "Close", icon: "/RedPandaDraftLogo.png" },
+    { action: "open", title: "Open", icon: "/logo.png" },
+    { action: "close", title: "Close", icon: "/logo.png" },
   ],
 };
 
@@ -210,7 +210,7 @@ self.addEventListener("push", (event) => {
     event.waitUntil(
       self.registration.showNotification("RedPanda Learns", {
         body: "You have a new notification",
-        icon: "/RedPandaDraftLogo.png",
+        icon: "/logo.png",
         badge: "/72x72-badge.png",
         vibrate: [200, 100, 200],
       })
@@ -260,13 +260,13 @@ self.addEventListener("message", (event) => {
     event.waitUntil(
       self.registration.showNotification("Test Notification", {
         body: "Service worker is working!",
-        icon: "/RedPandaDraftLogo.png",
+        icon: "/logo.png",
         badge: "/72x72-badge.png",
         vibrate: [200, 100, 200],
         data: { url: "/", test: true },
         actions: [
-          { action: "open", title: "Open", icon: "/RedPandaDraftLogo.png" },
-          { action: "close", title: "Close", icon: "/RedPandaDraftLogo.png" },
+          { action: "open", title: "Open", icon: "/logo.png" },
+          { action: "close", title: "Close", icon: "/logo.png" },
         ],
       })
     );
