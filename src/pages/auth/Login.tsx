@@ -1,26 +1,27 @@
 import { Header } from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { StandardModal } from "@/components/ui/standard-modal";
 import { USER_ROLE } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getRedirectParam, handleAuthRedirect } from "@/utils/auth-redirect";
-import { Brain, Flame, Sparkles, Trophy, Users, Zap } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Sparkles } from "lucide-react";
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Login.css";
 
-const featureCards = [
-  { icon: Flame, title: "7-Day Streaks", text: "Keep learning every day", tone: "orange" },
-  { icon: Brain, title: "AI Projects", text: "Build real-world AI applications", tone: "pink" },
-  { icon: Trophy, title: "XP & Leaderboards", text: "Earn XP and climb the ranks", tone: "gold" },
-  { icon: Users, title: "Community Pods", text: "Learn together and grow", tone: "blue" },
-];
-
 export default function Login() {
   const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, loginWithEmail } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -29,15 +30,64 @@ export default function Login() {
   const message = (location.state as any)?.message;
   const redirectUrl = getRedirectParam();
 
-  const handleGoogleLogin = async () => {
+  const showError = (message: string) => {
+    setError(message);
+    setErrorModalOpen(true);
+  };
+
+  const clearError = () => {
     setError("");
+    setErrorModalOpen(false);
+  };
+
+  const routeAfterLogin = (role: string) => {
+    if (role === USER_ROLE.ADMIN) {
+      navigate("/admin", { replace: true });
+    } else if (role === USER_ROLE.ACCOUNTANT) {
+      navigate("/accountant", { replace: true });
+    } else if (role === USER_ROLE.TEACHER) {
+      navigate("/teacher", { replace: true });
+    } else if (role === USER_ROLE.INSTRUCTOR) {
+      navigate("/instructor", { replace: true });
+    } else {
+      navigate(from || "/dashboard", { replace: true });
+    }
+  };
+
+  const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearError();
+    setEmailLoading(true);
+
+    try {
+      const result = await loginWithEmail(email, password);
+
+      if (!result.success) {
+        showError(result.error || "Email login failed");
+        return;
+      }
+
+      if (redirectUrl && (await handleAuthRedirect(redirectUrl))) return;
+
+      toast({ title: "Welcome!", description: "You signed in successfully." });
+      routeAfterLogin(result.role);
+    } catch (err: any) {
+      console.log("Login error:", err);
+      showError(err.message || "Something went wrong");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    clearError();
     setLoading(true);
 
     try {
       const result = await loginWithGoogle();
 
       if (!result.success) {
-        setError(result.error || "Google login failed");
+        showError(result.error || "Google login failed");
         return;
       }
 
@@ -45,21 +95,10 @@ export default function Login() {
 
       toast({ title: "Welcome!", description: "You signed in with Google." });
 
-      const role = result.role;
-      if (role === USER_ROLE.ADMIN) {
-        navigate("/admin", { replace: true });
-      } else if (role === USER_ROLE.ACCOUNTANT) {
-        navigate("/accountant", { replace: true });
-      } else if (role === USER_ROLE.TEACHER) {
-        navigate("/teacher", { replace: true });
-      } else if (role === USER_ROLE.INSTRUCTOR) {
-        navigate("/instructor", { replace: true });
-      } else {
-        navigate(from || "/dashboard", { replace: true });
-      }
+      routeAfterLogin(result.role);
     } catch (err: any) {
       console.log("Login error:", err);
-      setError(err.message || "Something went wrong");
+      showError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -67,6 +106,17 @@ export default function Login() {
 
   return (
     <div className="auth-login-page">
+      <StandardModal
+        open={errorModalOpen && Boolean(error)}
+        onOpenChange={(open) => {
+          setErrorModalOpen(open);
+          if (!open) setError("");
+        }}
+        tone="failure"
+        title="Sign in failed"
+        description={error}
+      />
+
       <Header className="auth-login-header" />
 
       <main className="auth-login-main">
@@ -101,33 +151,6 @@ export default function Login() {
               />
             </div>
 
-            <div className="auth-login-features">
-              {featureCards.map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={feature.title} className="auth-login-feature">
-                    <Icon className={`auth-login-icon-${feature.tone}`} size={29} />
-                    <h2>{feature.title}</h2>
-                    <p>{feature.text}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="auth-login-stats">
-              <div className="auth-login-stat">
-                <span>
-                  <Users size={22} />
-                </span>
-                <p><strong>12,000+</strong>Active Learners</p>
-              </div>
-              <div className="auth-login-stat">
-                <span className="auth-login-stat-hot">
-                  <Zap size={22} fill="currentColor" />
-                </span>
-                <p><strong>1.2M+</strong>XP Earned This Week</p>
-              </div>
-            </div>
           </section>
 
           <section className="auth-login-right" aria-label="Sign in">
@@ -144,28 +167,73 @@ export default function Login() {
                     <AlertDescription>{message}</AlertDescription>
                   </Alert>
                 )}
-                {error && (
-                  <Alert variant="destructive" className="auth-login-alert auth-login-alert-error">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+
+                <form className="auth-login-form" onSubmit={handleEmailLogin}>
+                  <div className="auth-login-field">
+                    <Label htmlFor="email" className="sr-only">Email</Label>
+                    <div className="auth-login-input-wrap">
+                      <Mail size={17} />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="auth-login-field">
+                    <Label htmlFor="password" className="sr-only">Password</Label>
+                    <div className="auth-login-input-wrap">
+                      <Lock size={17} />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="auth-login-password-toggle"
+                        onClick={() => setShowPassword((value) => !value)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={emailLoading || loading}
+                    className="auth-login-provider auth-login-provider-primary"
+                  >
+                    {emailLoading ? "Signing in..." : "Sign in"}
+                  </button>
+                </form>
+
+                <div className="auth-login-divider">
+                  <span />
+                  <span>or</span>
+                  <span />
+                </div>
 
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  disabled={loading}
+                  disabled={loading || emailLoading}
                   aria-label="Continue with Google"
-                  className="auth-login-provider auth-login-provider-primary"
+                  className="auth-login-provider"
                 >
                   <img src="/google-logo.svg" alt="Google" loading="eager" />
                   {loading ? "Signing in..." : "Continue with Google"}
                 </button>
-              </div>
-
-              <div className="auth-login-divider">
-                <span />
-                <span>or</span>
-                <span />
               </div>
 
               <p className="auth-login-signup">
@@ -173,19 +241,6 @@ export default function Login() {
               </p>
             </div>
 
-            <div className="auth-login-loved">
-              <div className="auth-login-avatars">
-                {["AM", "RK", "NS", "SP"].map((name, index) => (
-                  <span key={name} style={{ zIndex: 4 - index }}>
-                    {name}
-                  </span>
-                ))}
-              </div>
-              <div>
-                <div className="auth-login-stars" aria-label="Five stars">*****</div>
-                <p>Loved by learners worldwide</p>
-              </div>
-            </div>
           </section>
         </div>
       </main>
