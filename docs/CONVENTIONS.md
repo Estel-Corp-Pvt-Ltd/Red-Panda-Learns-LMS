@@ -1,0 +1,7 @@
+# Project Conventions
+
+## Typography
+
+- The entire website should use the Figtree font.
+- Use Tailwind's `font-sans` utility for normal website text; it maps to Figtree in `tailwind.config.ts`.
+- Do not introduce another primary UI font unless a specific branded or decorative exception is approved.
