@@ -270,7 +270,6 @@ export const COLLECTION = {
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
   COMPLAINT_ACTIONS: "ComplaintActions",
-  USER_EMAILS: "UserEmails",
   ANNOUNCEMENTS: "Announcements",
   CERTIFICATE_REQUESTS: "CertificateRequests",
   LESSON_ANALYTICS: "LessonAnalytics",

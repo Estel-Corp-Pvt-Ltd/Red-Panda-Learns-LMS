@@ -16,6 +16,7 @@ export default function Signup() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [error, setError] = useState("");
   const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +37,11 @@ export default function Signup() {
   const clearError = () => {
     setError("");
     setErrorModalOpen(false);
+  };
+
+  const closeVerificationModal = () => {
+    setVerificationModalOpen(false);
+    navigate("/auth/login", { replace: true });
   };
 
   const getEmailVerificationContinueUrl = () => {
@@ -63,11 +69,7 @@ export default function Signup() {
         return;
       }
 
-      toast({
-        title: "Check your email",
-        description: "We sent you a verification link. Verify your email before signing in.",
-      });
-      navigate("/auth/login", { replace: true });
+      setVerificationModalOpen(true);
     } catch (err: any) {
       showError(err.message || "Something went wrong");
     } finally {
@@ -112,6 +114,17 @@ export default function Signup() {
         tone="failure"
         title="Could not create account"
         description={error}
+      />
+
+      <StandardModal
+        open={verificationModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeVerificationModal();
+          else setVerificationModalOpen(true);
+        }}
+        tone="success"
+        title="Check your email"
+        description="We sent you a verification link. Verify your email before signing in."
       />
 
       <Header className="auth-login-header" />

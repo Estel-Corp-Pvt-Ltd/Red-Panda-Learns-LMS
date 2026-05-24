@@ -13,9 +13,9 @@ import {
   query,
   serverTimestamp,
   startAfter,
+  setDoc,
   updateDoc,
   where,
-  writeBatch,
 } from "firebase/firestore";
 
 import { COLLECTION, USER_ROLE } from "@/constants";
@@ -59,17 +59,7 @@ class UserService {
         updatedAt: serverTimestamp(),
       };
 
-      const batch = writeBatch(db);
-      const emailReservationRef = doc(db, COLLECTION.USER_EMAILS, user.email);
-
-      batch.create(emailReservationRef, {
-        uid,
-        email: user.email,
-        createdAt: serverTimestamp(),
-      });
-      batch.set(userRef, user);
-
-      await batch.commit();
+      await setDoc(userRef, user);
       return ok(null);
     } catch (error) {
       logError("UserService.createUser", error);
