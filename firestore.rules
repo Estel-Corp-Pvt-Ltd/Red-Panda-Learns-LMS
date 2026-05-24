@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.role == "ADMIN";
+    }
+
+    function hasOnlyKeys(keys) {
+      return request.resource.data.keys().hasOnly(keys);
+    }
+
+    function hasRequiredKeys(keys) {
+      return request.resource.data.keys().hasAll(keys);
+    }
+
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function authEmail() {
+      return request.auth.token.email;
+    }
+
+    function userEmailIndexPath(email) {
+      return /databases/$(database)/documents/UserEmails/$(email);
+    }
+
+    function hasMatchingEmailIndex(userId) {
+      return signedIn()
+        && authEmail() is string
+        && existsAfter(userEmailIndexPath(authEmail()))
+        && getAfter(userEmailIndexPath(authEmail())).data.uid == userId
+        && getAfter(userEmailIndexPath(authEmail())).data.email == authEmail();
+    }
+
+    function validSelfUserCreate(userId) {
+      return isSelf(userId)
+        && hasRequiredKeys([
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ])
+        && hasOnlyKeys([
+          "id",
+          "username",
+          "email",
+          "firstName",
+          "middleName",
+          "lastName",
+          "role",
+          "status",
+          "organizationId",
+          "class",
+          "division",
+          "photoURL",
+          "fcmTokens",
+          "readAt",
+          "createdAt",
+          "updatedAt"
+        ])
+        && request.resource.data.id == userId
+        && request.resource.data.email == authEmail()
+        && request.resource.data.role == "STUDENT"
+        && request.resource.data.status == "ACTIVE"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && hasMatchingEmailIndex(userId);
+    }
+
+    match /UserEmails/{email} {
+      allow read: if isAdmin() || (signedIn() && email == authEmail());
+
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && authEmail() is string
+          && email == authEmail()
+          && hasRequiredKeys(["uid", "email", "createdAt"])
+          && hasOnlyKeys(["uid", "email", "createdAt"])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.email == authEmail()
+          && request.resource.data.createdAt == request.time
+        );
+
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /Users/{userId} {
+      allow create: if isAdmin() || validSelfUserCreate(userId);
+
+      allow get: if isAdmin() || isSelf(userId);
+      allow list: if isAdmin();
+
+      allow update: if isAdmin()
+        || (
+          isSelf(userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.organizationId == resource.data.organizationId
+          && changedOnly([
+            "firstName",
+            "middleName",
+            "lastName",
+            "photoURL",
+            "fcmTokens",
+            "readAt",
+            "updatedAt"
+          ])
+          && request.resource.data.updatedAt == request.time
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

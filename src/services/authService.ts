@@ -11,24 +11,47 @@ import {
   User as FirebaseUser,
   UserCredential,
   getAuth,
+  deleteUser,
 } from "firebase/auth";
 
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/firebaseConfig";
 import { COLLECTION, USER_ROLE, USER_STATUS } from "@/constants";
 import { fail, ok, Result } from "@/utils/response";
-import { logError } from "@/utils/logger";
+import { logError, logWarn } from "@/utils/logger";
 
 import { userService } from "./userService";
 
 import { User } from "@/types/user";
 import { UserRole } from "@/types/general";
 
+const USERNAME_EMAIL_DOMAIN = "redpandalearns.com";
+
 class AuthService {
+  private clearClientAuthStorage() {
+    if (typeof window === "undefined") return;
+
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+
+        if (key === "cart" || key === "vizuara_roadmap_redirected" || key.startsWith("firebase:")) {
+          keysToRemove.push(key);
+        }
+      }
+
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+    } catch (error) {
+      logError("AuthService.clearClientAuthStorage", error);
+    }
+  }
+
   /**
    * Signs in a user using Firebase email and password authentication.
-   * Fetches the corresponding user profile from Firestore by UID or email.
+   * Fetches the corresponding user profile from Firestore by UID.
    *
    * @param email - The user's email address.
    * @param password - The user's password.
@@ -38,11 +61,19 @@ class AuthService {
     email: string,
     password: string
   ): Promise<Result<{ user: User; userCredential: UserCredential }>> {
+    let firebaseSignInSucceeded = false;
     try {
-      const userCredential = await firebaseSignIn(auth, email, password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const userCredential = await firebaseSignIn(auth, normalizedEmail, password);
+      firebaseSignInSucceeded = true;
       const firebaseUser = userCredential.user;
 
-      // Try to fetch user by Firebase UID
+      if (!firebaseUser.emailVerified) {
+        await firebaseSignOut(auth);
+        this.clearClientAuthStorage();
+        return fail("Please verify your email address before signing in.");
+      }
+
       const userDocRef = doc(db, COLLECTION.USERS, firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -50,77 +81,23 @@ class AuthService {
 
       if (userDocSnap.exists()) {
         userData = userDocSnap.data() as User;
-      } else {
-        // Fallback: query by email
-        const usersRef = collection(db, COLLECTION.USERS);
-        const q = query(usersRef, where("email", "==", email));
-        const querySnap = await getDocs(q);
-
-        if (!querySnap.empty) {
-          userData = querySnap.docs[0].data() as User;
-        }
-      }
-
-      if (!userData) return fail("User profile not found in Firestore.");
-
-      return ok({ user: userData, userCredential });
-    } catch (error: any) {
-      logError("AuthService.signInWithEmailAndPassword", error);
-      return fail(this.handleAuthError(error).message, error.code);
-    }
-  }
-
-  /**
-   * Signs in a user using their username and password.
-   * Resolves the username to a Firebase email pattern (`username@RedPanda Learns.ai`),
-   * authenticates the user with Firebase, and fetches the corresponding
-   * Firestore user profile by UID or email.
-   *
-   * @param username - The user's unique username.
-   * @param password - The user's password.
-   * @returns A Result object containing the User and Firebase UserCredential on success, or an error on failure.
-   */
-  async signInWithUsernameAndPassword(
-    username: string,
-    password: string
-  ): Promise<Result<{ user: User; userCredential: UserCredential }>> {
-    try {
-      // Resolve username
-      const response = await userService.getUserByUsername(username);
-      if (!response.success || !response.data) {
-        return fail("Username does not exist.");
-      }
-
-      // Authenticate with Firebase using pseudo-email
-      const email = `${username}@RedPanda Learns.ai`;
-      const userCredential = await firebaseSignIn(auth, email, password);
-      const firebaseUser = userCredential.user;
-
-      // Fetch user profile from Firestore
-      const userDocRef = doc(db, COLLECTION.USERS, firebaseUser.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      let userData: User | null = null;
-
-      if (userDocSnap.exists()) {
-        userData = userDocSnap.data() as User;
-      } else {
-        // Fallback: query Firestore by email if UID document not found
-        const usersRef = collection(db, COLLECTION.USERS);
-        const q = query(usersRef, where("email", "==", email));
-        const querySnap = await getDocs(q);
-        if (!querySnap.empty) {
-          userData = querySnap.docs[0].data() as User;
-        }
       }
 
       if (!userData) {
-        return fail("User profile not found in Firestore.");
+        await firebaseSignOut(auth);
+        this.clearClientAuthStorage();
+        return fail("User profile not found. Please contact support.");
       }
 
       return ok({ user: userData, userCredential });
     } catch (error: any) {
-      logError("AuthService.signInWithUsernameAndPassword", error);
+      if (firebaseSignInSucceeded) {
+        await firebaseSignOut(auth).catch((signOutError) => {
+          logError("AuthService.signInWithEmailAndPassword.signOutAfterPartialLogin", signOutError);
+        });
+        this.clearClientAuthStorage();
+      }
+      logError("AuthService.signInWithEmailAndPassword", error);
       return fail(this.handleAuthError(error).message, error.code);
     }
   }
@@ -140,10 +117,12 @@ class AuthService {
   async createUserWithEmailAndPassword(
     email: string,
     password: string,
-    name: string
+    name: string,
+    continueUrl?: string
   ): Promise<Result<{ userId: string }>> {
     try {
-      const userCredential = await firebaseCreateUser(auth, email, password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const userCredential = await firebaseCreateUser(auth, normalizedEmail, password);
       const firebaseUser = userCredential.user;
 
       // Break down full name
@@ -156,9 +135,9 @@ class AuthService {
       await updateProfile(firebaseUser, { displayName: name });
 
       // Create Firestore user document
-      await userService.createUser(firebaseUser.uid, {
+      const createUserResult = await userService.createUser(firebaseUser.uid, {
         id: firebaseUser.uid,
-        email,
+        email: normalizedEmail,
         firstName,
         middleName,
         lastName,
@@ -168,8 +147,22 @@ class AuthService {
         photoURL: firebaseUser.photoURL || null,
       });
 
+      if (!createUserResult.success) {
+        await deleteUser(firebaseUser).catch((deleteError) => {
+          logError("AuthService.createUserWithEmailAndPassword.deleteOrphanedAuthUser", deleteError);
+        });
+        await firebaseSignOut(auth).catch((signOutError) => {
+          logError("AuthService.createUserWithEmailAndPassword.signOutAfterProfileFailure", signOutError);
+        });
+        this.clearClientAuthStorage();
+
+        return fail(
+          createUserResult.error?.message || "Failed to create user profile. Please try again."
+        );
+      }
+
       // Send email verification
-      await sendEmailVerification(firebaseUser);
+      await sendEmailVerification(firebaseUser, continueUrl ? { url: continueUrl } : undefined);
 
       return ok({ userId: firebaseUser.uid });
     } catch (error: any) {
@@ -178,67 +171,11 @@ class AuthService {
     }
   }
 
-  /**
-   * Creates a new user account using a username and password.
-   * A corresponding Firebase Auth user is created with a generated email
-   * (`<username>@RedPanda Learns.ai`) and a Firestore user document is initialized
-   * with default role and status.
-   *
-   * @param username - The unique username chosen by the user.
-   * @param password - The user's password for authentication.
-   * @param name - The user's full name (used to extract first, middle, and last names).
-   * @returns A Result object containing the created user's UID on success, or an error on failure.
-   */
-  async createUserWithUsernameAndPassword(
-    username: string,
-    password: string,
-    name: string
-  ): Promise<Result<{ userId: string }>> {
-    try {
-      const existing = await userService.getUserByUsername(username);
-      if (existing.success && existing.data) return fail("Username already exists.");
-
-      const email = username + "@RedPanda Learns.ai";
-      const userCredential = await firebaseCreateUser(auth, email, password);
-      const firebaseUser = userCredential.user;
-
-      // Break down full name
-      const parts = name.trim().split(/\s+/);
-      const firstName = parts[0] || "";
-      const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
-      const middleName = parts.length > 2 ? parts.slice(1, -1).join(" ") : null;
-
-      // Update Firebase Auth profile
-      await updateProfile(firebaseUser, { displayName: name });
-
-      // Create Firestore user document
-      await userService.createUser(firebaseUser.uid, {
-        id: firebaseUser.uid,
-        username,
-        email,
-        firstName,
-        middleName,
-        lastName,
-        role: USER_ROLE.STUDENT,
-        status: USER_STATUS.ACTIVE,
-        organizationId: null,
-        photoURL: firebaseUser.photoURL || null,
-      });
-
-      return ok({ userId: firebaseUser.uid });
-    } catch (error: any) {
-      logError("AuthService.createUserWithUsernameAndPassword", error);
-      return fail(this.handleAuthError(error).message, error.code);
-    }
-  }
 
   /**
    * Signs in a user using Google Sign-In (Popup) via Firebase Auth.
    * If the user does not already exist in Firestore, a new user document
    * is created with default role and status.
-   *
-   * @param email - The user's email address.
-   * @param password - The user's password.
    *
    * @returns A Result object containing the user's UID and role on success,
    *          or an error on failure.
@@ -299,6 +236,7 @@ class AuthService {
   async signOut(): Promise<Result<void>> {
     try {
       await firebaseSignOut(auth);
+      this.clearClientAuthStorage();
 
       return ok(null);
     } catch (error: any) {
@@ -341,15 +279,15 @@ class AuthService {
     const user = auth.currentUser;
 
     if (!user) {
-      console.warn("⚠️ No user is logged in, cannot get token");
+      logWarn("AuthService.getToken", "No user is logged in");
       return null;
     }
 
     try {
-      const token = await user.getIdToken(true);
+      const token = await user.getIdToken(false);
       return token;
     } catch (error) {
-      console.error("❌ Failed to get Firebase ID token:", error);
+      logError("AuthService.getToken", error);
       return null;
     }
   }
@@ -364,6 +302,10 @@ class AuthService {
         break;
       case "auth/wrong-password":
         message = "Incorrect password.";
+        break;
+      case "auth/invalid-credential":
+      case "auth/invalid-login-credentials":
+        message = "Invalid credentials.";
         break;
       case "auth/email-already-in-use":
         message = "An account with this email already exists.";
@@ -380,11 +322,27 @@ class AuthService {
       case "auth/network-request-failed":
         message = "Network error. Please check your connection.";
         break;
+      case "auth/unauthorized-domain":
+        message =
+          "This sign-in domain is not authorized. Please use an approved app URL or contact support.";
+        break;
+      case "auth/app-not-authorized":
+        message = "This app is not authorized for sign-in. Please contact support.";
+        break;
+      case "auth/operation-not-allowed":
+        message = "This sign-in method is not enabled. Please contact support.";
+        break;
       case "auth/popup-closed-by-user":
         message = "Sign-in popup was closed before completion.";
         break;
+      case "auth/popup-blocked":
+        message = "The sign-in popup was blocked by your browser. Please allow popups and try again.";
+        break;
       default:
-        message = error.message || message;
+        message =
+          typeof error.code === "string" && error.code.startsWith("auth/")
+            ? "Authentication failed. Please try again."
+            : error.message || message;
     }
 
     return { message };

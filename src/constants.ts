@@ -68,7 +68,7 @@ export const PUSH_NOTIFICATION_TYPE = {
   WARNING: "WARNING",
   ERROR: "ERROR",
   GRADING: "GRADING",
-};
+} as const;
 
 export const BUNDLE_STATUS = {
   DRAFT: "DRAFT",
@@ -349,7 +349,7 @@ export const QUIZ_SUBMISSION_STATUS = {
 export const QUIZ_STATUS = {
   DRAFT: "DRAFT",
   PUBLISHED: "PUBLISHED",
-};
+} as const;
 
 // --- COMPLAINT ---
 
@@ -361,14 +361,14 @@ export const COMPLAINT_STATUS = {
   REJECTED: "REJECTED",
   ESCALATED: "ESCALATED",
   CLOSED: "CLOSED",
-};
+} as const;
 
 export const COMPLAINT_SEVERITY = {
   LOW: "LOW",
   MEDIUM: "MEDIUM",
   HIGH: "HIGH",
   CRITICAL: "CRITICAL",
-};
+} as const;
 
 export const COMPLAINT_ACTION_TYPE = {
   CREATED: "CREATED",
@@ -377,14 +377,14 @@ export const COMPLAINT_ACTION_TYPE = {
   STATUS_CHANGED: "STATUS CHANGED",
   RESOLVED: "RESOLVED",
   REJECTED: "REJECTED",
-};
+} as const;
 
 export const COMPLAINT_CATEGORY = {
   CONTENT: "CONTENT",
   PAYMENT: "PAYMENT",
   TECHNICAL: "TECHNICAL",
   INSTRUCTOR: "INSTRUCTOR",
-};
+} as const;
 
 export const COMMENT_STATUS = {
   PENDING: "PENDING",

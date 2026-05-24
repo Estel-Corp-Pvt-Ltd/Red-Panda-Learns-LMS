@@ -68,10 +68,10 @@ function LiveClock() {
   });
 
   return (
-    <div className="flex items-center gap-2 text-white/90">
-      <Clock className="h-3.5 w-3.5 text-white/60" />
+    <div className="flex items-center gap-2 text-orange-500">
+      <Clock className="h-3.5 w-3.5 text-orange-500" />
       <span className="text-xs font-medium">{dateStr}</span>
-      <span className="text-white/30">|</span>
+      <span className="text-orange-500/45">|</span>
       <span className="text-xs font-semibold tabular-nums">{timeStr}</span>
     </div>
   );
@@ -144,12 +144,12 @@ const DynamicIsland = memo(function DynamicIsland() {
         return (
           <button
             onClick={() => handleNavigate("/courses")}
-            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-orange-500 transition-colors hover:text-orange-600 dark:hover:text-orange-400"
             aria-label="Discover new courses"
           >
-            <BookOpen className="h-3.5 w-3.5 text-accent-sky" />
+            <BookOpen className="h-3.5 w-3.5 text-current" />
             <span className="text-xs font-medium">Discover new courses</span>
-            <span className="text-[10px] bg-white/15 rounded-full px-1.5 py-0.5 font-semibold">
+            <span className="rounded-full bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-semibold">
               Browse
             </span>
           </button>
@@ -169,7 +169,7 @@ const DynamicIsland = memo(function DynamicIsland() {
                 scene.mood === "cool" && "island-panda-bounce"
               )}
             />
-            <span className="text-xs font-medium text-white/80">
+            <span className="text-xs font-medium text-orange-500">
               {scene.text}
             </span>
           </div>
@@ -179,14 +179,14 @@ const DynamicIsland = memo(function DynamicIsland() {
         return (
           <button
             onClick={() => handleNavigate(scene.path)}
-            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-orange-500 transition-colors hover:text-orange-600 dark:hover:text-orange-400"
             aria-label={`Continue watching ${scene.name}`}
           >
-            <Play className="h-3 w-3 text-accent-mint fill-accent-mint" />
+            <Play className="h-3 w-3 fill-current text-current" />
             <span className="text-xs font-medium truncate max-w-[140px]">
               {scene.name}
             </span>
-            <span className="text-[10px] bg-accent-mint/20 text-accent-mint rounded-full px-1.5 py-0.5 font-semibold shrink-0">
+            <span className="shrink-0 rounded-full bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-current">
               Continue
             </span>
           </button>
@@ -196,12 +196,12 @@ const DynamicIsland = memo(function DynamicIsland() {
 
   return (
     <div
-      className="dynamic-island relative flex items-center justify-center rounded-full bg-neutral-950 dark:bg-neutral-900 h-9 min-w-[280px] px-6 cursor-default overflow-hidden transition-all duration-500"
+      className="dynamic-island relative flex h-9 min-w-[280px] cursor-default items-center justify-center overflow-hidden rounded-full border border-orange-500/70 bg-transparent px-6 text-orange-500 transition-all duration-500"
       onMouseEnter={handlePause}
       onMouseLeave={handleResume}
     >
       {/* Subtle inner glow */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
+      <div className="pointer-events-none absolute inset-0 rounded-full bg-orange-500/[0.03]" />
 
       {/* Scene content with crossfade */}
       <div
@@ -223,8 +223,8 @@ const DynamicIsland = memo(function DynamicIsland() {
             className={cn(
               "block h-[2px] rounded-full transition-all duration-300",
               i === sceneIndex
-                ? "w-2 bg-white/50"
-                : "w-[2px] bg-white/15"
+                ? "w-2 bg-orange-500/65"
+                : "w-[2px] bg-orange-500/25"
             )}
           />
         ))}
