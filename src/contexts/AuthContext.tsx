@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { User } from "@/types/user";
 import { authService } from "@/services/authService";
 import { db, getFirebaseMessaging } from "@/firebaseConfig";
-import { collection, doc, getDoc, getDocs, query, Timestamp, where } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { UserRole } from "@/types/general";
 import { COLLECTION, PLATFROM_TYPE, USER_ROLE } from "@/constants";
 import { userService } from "@/services/userService";
@@ -17,6 +17,24 @@ interface AuthContextType {
     userId?: string;
     error?: string;
     role: UserRole;
+  }>;
+  loginWithEmail: (
+    email: string,
+    password: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    role: UserRole;
+  }>;
+  signupWithEmail: (
+    email: string,
+    password: string,
+    name: string,
+    continueUrl?: string
+  ) => Promise<{
+    success: boolean;
+    userId?: string;
+    error?: string;
   }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -37,9 +55,8 @@ interface AuthProviderProps {
 }
 
 // 🔹 Helper: Fetch Firestore user
-const fetchUserFromFirestore = async (uid: string, email?: string | null): Promise<User | null> => {
+const fetchUserFromFirestore = async (uid: string): Promise<User | null> => {
   try {
-    // First try UID
     const userDocRef = doc(db, COLLECTION.USERS, uid);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
@@ -48,18 +65,7 @@ const fetchUserFromFirestore = async (uid: string, email?: string | null): Promi
       return userData;
     }
 
-    // fallback: lookup by email
-    if (email) {
-      const usersRef = collection(db, COLLECTION.USERS);
-      const q = query(usersRef, where("email", "==", email));
-      const querySnap = await getDocs(q);
-      if (!querySnap.empty) {
-        const userData = querySnap.docs[0].data() as User;
-
-        return userData;
-      }
-    }
-    logWarn("[AuthContext] User not found in Firestore", { uid, email });
+    logWarn("[AuthContext] User not found in Firestore", { uid });
     return null;
   } catch (err) {
     logError("[AuthContext] fetchUserFromFirestore", err);
@@ -94,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      const userData = await fetchUserFromFirestore(firebaseUser.uid, firebaseUser.email);
+      const userData = await fetchUserFromFirestore(firebaseUser.uid);
       setUser(userData);
       setLoading(false);
     });
@@ -113,12 +119,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (response.success && response.data.userId) {
       const userData = await fetchUserFromFirestore(response.data.userId);
       if (userData) {
-        setUser(userData);
-
         return {
           success: true,
           userId: response.data.userId,
-          role: userData.role as UserRole, // ✅ guarantee role exists
+          role: userData.role as UserRole,
         };
       }
       // fallback if user doc missing
@@ -141,7 +145,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // 🔹 Logout
+  // Email auth
+  const loginWithEmail = useCallback(
+    async (
+      email: string,
+      password: string
+    ): Promise<{
+      success: boolean;
+      error?: string;
+      role: UserRole;
+    }> => {
+      const response = await authService.signInWithEmailAndPassword(email, password);
+
+      if (!response.success) {
+        logError("[AuthContext] loginWithEmail failed", response.error);
+        return {
+          success: false,
+          error: response.error.message || "Email login failed",
+          role: USER_ROLE.STUDENT as UserRole,
+        };
+      }
+
+      return {
+        success: true,
+        role: response.data.user.role as UserRole,
+      };
+    },
+    []
+  );
+
+  const signupWithEmail = useCallback(
+    async (
+      email: string,
+      password: string,
+      name: string,
+      continueUrl?: string
+    ): Promise<{
+      success: boolean;
+      userId?: string;
+      error?: string;
+    }> => {
+      const response = await authService.createUserWithEmailAndPassword(
+        email,
+        password,
+        name,
+        continueUrl
+      );
+
+      if (!response.success) {
+        logError("[AuthContext] signupWithEmail failed", response.error);
+        return {
+          success: false,
+          error: response.error.message || "Email signup failed",
+        };
+      }
+
+      await authService.signOut();
+      setUser(null);
+      return {
+        success: true,
+        userId: response.data.userId,
+      };
+    },
+    []
+  );
+
+  // Logout
   const logout = useCallback(async () => {
     await authService.signOut();
     setUser(null);
@@ -181,7 +250,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) {
       return;
     }
-    const userData = await fetchUserFromFirestore(user.id, user.email);
+    const userData = await fetchUserFromFirestore(user.id);
     if (userData) {
       setUser(userData);
     } else {
@@ -193,9 +262,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     loginWithGoogle,
+    loginWithEmail,
+    signupWithEmail,
     logout,
     refreshUser,
-  }), [user, loading, loginWithGoogle, logout, refreshUser]);
+  }), [user, loading, loginWithGoogle, loginWithEmail, signupWithEmail, logout, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

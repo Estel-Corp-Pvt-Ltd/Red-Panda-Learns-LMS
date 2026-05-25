@@ -85,7 +85,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Nunito", "Figtree", "sans-serif"],
+        sans: ["Figtree", "sans-serif"],
         hand: ["Caveat", "cursive"],
         figtree: ["Figtree", "sans-serif"],
       },

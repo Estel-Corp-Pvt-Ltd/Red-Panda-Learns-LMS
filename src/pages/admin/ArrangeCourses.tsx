@@ -1,5 +1,5 @@
 import AdminLayout from "@/components/AdminLayout";
-import { ImportBundleModal } from "@/components/bundle/ImportBundleModel";
+import { ImportBundleModal } from "@/components/bundle/ImportBundleModal";
 import { ImportCourseModal } from "@/components/course/ImportCourseModel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

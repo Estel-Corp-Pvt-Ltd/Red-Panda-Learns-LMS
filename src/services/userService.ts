@@ -12,8 +12,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
   startAfter,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -35,12 +35,12 @@ class UserService {
     uid: string,
     data: Omit<User, "createdAt" | "updatedAt" | "fcmTokens" | "readAt">
   ): Promise<Result<void>> {
-    const userRef = doc(db, COLLECTION.USERS, uid);
-    if ((await getDoc(userRef)).exists()) {
-      console.warn("UserService - User already exists:", uid);
-      return fail("User already exists", "ALREADY_EXISTS");
-    }
     try {
+      const userRef = doc(db, COLLECTION.USERS, uid);
+      if ((await getDoc(userRef)).exists()) {
+        console.warn("UserService - User already exists:", uid);
+        return fail("User already exists", "ALREADY_EXISTS");
+      }
       const user: User = {
         id: uid,
         username: data.username || "",
@@ -59,7 +59,7 @@ class UserService {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, COLLECTION.USERS, uid), user);
+      await setDoc(userRef, user);
       return ok(null);
     } catch (error) {
       logError("UserService.createUser", error);
@@ -80,8 +80,8 @@ class UserService {
       }
 
       const updateData: Partial<User> = {
-        updatedAt: serverTimestamp(),
         ...updates,
+        updatedAt: serverTimestamp(),
       };
 
       await updateDoc(userRef, updateData);
@@ -343,28 +343,38 @@ class UserService {
       // Apply ordering
       const { field, direction } = orderByOption;
 
+      const limitPlusOne = itemsPerPage + 1;
+
       // For pagination, we need to handle different scenarios
       if (pageDirection === "previous" && cursor) {
         q = query(
           q,
           orderBy(field as string, direction),
           endBefore(cursor),
-          limitToLast(itemsPerPage)
+          limitToLast(limitPlusOne)
         );
       } else if (cursor) {
-        q = query(q, orderBy(field as string, direction), startAfter(cursor), limit(itemsPerPage));
+        q = query(q, orderBy(field as string, direction), startAfter(cursor), limit(limitPlusOne));
       } else {
-        q = query(q, orderBy(field as string, direction), limit(itemsPerPage));
+        q = query(q, orderBy(field as string, direction), limit(limitPlusOne));
       }
 
       const querySnapshot = await getDocs(q);
-      const documents = querySnapshot.docs;
+      const rawDocs = querySnapshot.docs;
+      const hasExtra = rawDocs.length > itemsPerPage;
+
+      // Trim the probe doc; for limitToLast the extra is at the front, otherwise at the back
+      let pageDocs = hasExtra
+        ? pageDirection === "previous"
+          ? rawDocs.slice(1)
+          : rawDocs.slice(0, itemsPerPage)
+        : rawDocs;
 
       if (pageDirection === "previous") {
-        documents.reverse();
+        pageDocs = [...pageDocs].reverse();
       }
 
-      const users = documents.map((doc) => {
+      const users = pageDocs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -386,10 +396,10 @@ class UserService {
         } as User;
       });
 
-      const hasNextPage = querySnapshot.docs.length === itemsPerPage;
-      const hasPreviousPage = cursor !== null;
-      const nextCursor = hasNextPage ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
-      const previousCursor = hasPreviousPage ? querySnapshot.docs[0] : null;
+      const hasNextPage = pageDirection === "previous" ? cursor !== null : hasExtra;
+      const hasPreviousPage = pageDirection === "previous" ? hasExtra : cursor !== null;
+      const nextCursor = pageDocs.length > 0 ? pageDocs[pageDocs.length - 1] : null;
+      const previousCursor = pageDocs.length > 0 ? pageDocs[0] : null;
 
       return ok({
         data: users,
@@ -397,7 +407,7 @@ class UserService {
         hasPreviousPage,
         nextCursor,
         previousCursor,
-        totalCount: querySnapshot.size,
+        totalCount: pageDocs.length,
       });
     } catch (error) {
       console.error("UserService - Error fetching users:", error);

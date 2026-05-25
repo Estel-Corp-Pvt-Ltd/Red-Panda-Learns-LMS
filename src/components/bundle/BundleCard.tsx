@@ -6,8 +6,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { Bundle } from "@/types/bundle";
-import { BookOpen, Tag } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: CURRENCY.INR,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 
 interface BundleCardProps {
   bundle: Bundle;
@@ -17,6 +25,67 @@ interface BundleCardProps {
   isEnrolled?: boolean;
   onAccess?: () => void;
   ownedCoursesCount?: number;
+};
+
+interface PriceBlockProps {
+  bundle: Bundle;
+  isFree: boolean;
+  priceClassName?: string;
+};
+
+function PriceBlock({ bundle, isFree, priceClassName }: PriceBlockProps) {
+  const displayPrice = bundle.salePrice ?? bundle.regularPrice;
+  const showStrikethrough = bundle.regularPrice > bundle.salePrice;
+  return (
+    <div className="flex items-baseline gap-2">
+      {showStrikethrough && (
+        <span className="line-through text-muted-foreground">
+          {formatCurrency(bundle.regularPrice)}
+        </span>
+      )}
+      <span className={cn("font-bold text-foreground", priceClassName)}>
+        {isFree ? "FREE" : formatCurrency(displayPrice)}
+      </span>
+    </div>
+  );
+}
+
+interface PrimaryCTAProps {
+  bundle: Bundle;
+  isFree: boolean;
+  fullOwnership: boolean;
+  isEnrolled?: boolean;
+  onClick: () => void;
+  className?: string;
+  size?: "default" | "sm" | "lg";
+}
+
+function PrimaryCTA({
+  bundle,
+  isFree,
+  fullOwnership,
+  isEnrolled,
+  onClick,
+  className,
+  size,
+}: PrimaryCTAProps) {
+  const priceLabel = isFree ? "FREE" : formatCurrency(bundle.salePrice ?? bundle.regularPrice);
+  const label = fullOwnership
+    ? "All Courses Owned"
+    : isEnrolled
+      ? "Access Bundle"
+      : `Buy Bundle - ${priceLabel}`;
+  return (
+    <Button
+      className={className}
+      size={size}
+      disabled={fullOwnership}
+      title={fullOwnership ? `You already own all courses in ${bundle.title} bundle` : undefined}
+      onClick={onClick}
+    >
+      {label}
+    </Button>
+  );
 }
 
 export function BundleCard({
@@ -29,21 +98,11 @@ export function BundleCard({
   ownedCoursesCount = 0,
 }: BundleCardProps) {
   const { user } = useAuth();
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: CURRENCY.INR,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
   const { cartDispatch, cart } = useCart();
   const navigate = useNavigate();
-  const isAddedToCart = cart.some((item) => item.refId == bundle.id);
+  const isAddedToCart = cart.some((item) => item.refId === bundle.id);
 
-  // Slash pricing helpers
-
-  const isFree = bundle.salePrice === 0; // keep your FREE label logic
-
+  const isFree = bundle.salePrice === 0;
   const totalCourses = bundle.courses?.length || 0;
   const showPartialOwnership = ownedCoursesCount > 0 && ownedCoursesCount < totalCourses;
   const fullOwnership = ownedCoursesCount === totalCourses;
@@ -52,21 +111,14 @@ export function BundleCard({
     return (
       <Card
         className={cn(
-          "flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300",
+          "flex flex-row overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer",
           className
         )}
       >
         <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
           {bundle.thumbnail ? (
             <img
-              src={
-                bundle.thumbnail.includes("https://RedPanda Learns.ai/")
-                  ? bundle.thumbnail.replace(
-                      "https://RedPanda Learns.ai/",
-                      "https://RedPanda Learnscoin.wpcomstaging.com/"
-                    )
-                  : bundle.thumbnail
-              }
+              src={bundle.thumbnail}
               alt={bundle.title}
               className="w-full h-full object-cover"
             />
@@ -83,16 +135,6 @@ export function BundleCard({
                 {bundle.description}
               </p>
 
-              {/* <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {bundle.categoryIds.length &&
-                  bundle.categoryIds.map((category) => (
-                    <div className="flex items-center gap-1" key={category}>
-                      <Tag className="h-4 w-4" />
-                      <span>{category}</span>
-                    </div>
-                  ))}
-              </div> */}
-
               {showPartialOwnership && (
                 <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
                   {ownedCoursesCount}/{totalCourses} courses owned
@@ -101,40 +143,17 @@ export function BundleCard({
             </div>
 
             <div className="flex flex-col items-end gap-2 ml-4">
-              <div className="text-right">
-                <div className="flex items-baseline gap-2">
-                  {bundle.regularPrice && (
-                    <span className="line-through text-muted-foreground">
-                      {formatCurrency(bundle.regularPrice)}
-                    </span>
-                  )}
-                  <span className="text-lg font-bold text-foreground">
-                    {isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)}
-                  </span>
-                </div>
-              </div>
+              <PriceBlock bundle={bundle} isFree={isFree} priceClassName="text-lg" />
 
-              <Button
+              <PrimaryCTA
+                bundle={bundle}
+                isFree={isFree}
+                fullOwnership={fullOwnership}
+                isEnrolled={isEnrolled}
                 className="w-full"
                 size="lg"
-                disabled={fullOwnership}
-                title={
-                  fullOwnership
-                    ? `You already own all courses in ${bundle.title} bundle`
-                    : undefined
-                }
-                onClick={() =>
-                  !fullOwnership && (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))
-                }
-              >
-                {fullOwnership
-                  ? "All Courses Owned"
-                  : isEnrolled
-                    ? "Access Bundle"
-                    : `Buy Bundle - ${
-                        isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)
-                      }`}
-              </Button>
+                onClick={() => (isEnrolled ? onAccess?.() : onPurchase?.(bundle.id))}
+              />
             </div>
           </div>
         </div>
@@ -144,7 +163,10 @@ export function BundleCard({
 
   return (
     <Card
-      className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group", className)}
+      className={cn(
+        "overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer",
+        className
+      )}
     >
       <CardHeader className="p-0 relative">
         <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
@@ -181,20 +203,10 @@ export function BundleCard({
 
         <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{bundle.description}</p>
 
-        {/* <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {bundle.categoryIds && bundle.categoryIds.length &&
-            bundle.categoryIds.map((category) => (
-              <div className="flex items-center gap-1" key={category}>
-                <Tag className="h-4 w-4" />
-                <span>{category}</span>
-              </div>
-            ))}
-        </div> */}
-
         {bundle.tags && bundle.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
-            {bundle.tags.slice(0, 3).map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
+            {bundle.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
                 {tag}
               </Badge>
             ))}
@@ -208,16 +220,7 @@ export function BundleCard({
 
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-2">
-              {bundle.regularPrice && (
-                <span className="line-through text-muted-foreground">
-                  {formatCurrency(bundle.regularPrice)}
-                </span>
-              )}
-              <span className="text-2xl font-bold text-foreground">
-                {isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)}
-              </span>
-            </div>
+            <PriceBlock bundle={bundle} isFree={isFree} priceClassName="text-2xl" />
           </div>
         </div>
       </CardContent>
@@ -250,24 +253,14 @@ export function BundleCard({
             >
               {isAddedToCart ? "Remove from Cart" : "Add to Cart"}
             </Button>
-            <Button
+            <PrimaryCTA
+              bundle={bundle}
+              isFree={isFree}
+              fullOwnership={fullOwnership}
+              isEnrolled={isEnrolled}
               className="flex-grow"
-              disabled={fullOwnership}
-              title={
-                fullOwnership ? `You already own all courses in ${bundle.title} bundle` : undefined
-              }
-              onClick={() => {
-                if (!fullOwnership) {
-                  navigate(`/course-bundle/${bundle.slug}`);
-                }
-              }}
-            >
-              {fullOwnership
-                ? "All Courses Owned"
-                : isEnrolled
-                  ? "Access Bundle"
-                  : `Buy Bundle - ${isFree ? "FREE" : formatCurrency(bundle.salePrice || bundle.regularPrice)}`}
-            </Button>
+              onClick={() => navigate(`/course-bundle/${bundle.slug}`)}
+            />
           </div>
         )}
       </CardFooter>
