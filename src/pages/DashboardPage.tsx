@@ -6,7 +6,7 @@ import { StatCards } from "@/components/dashboard/StatCards";
 import { HeroContinueLearning, HeroContinueLearningEmpty } from "@/components/dashboard/HeroContinueLearning";
 import { DailyQuests } from "@/components/dashboard/DailyQuests";
 import { RecentAchievements } from "@/components/dashboard/RecentAchievements";
-import { UpcomingAssignments } from "@/components/dashboard/UpcomingAssignments";
+// import { UpcomingAssignments } from "@/components/dashboard/UpcomingAssignments";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -546,8 +546,9 @@ export default function DashboardPage() {
 
                 {/* Bottom row — show only if data exists */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Assignments: only show if there are any */}
+                  {/* Assignments: temporarily disabled
                   <UpcomingAssignments assignments={[]} />
+                  */}
                   {/* Activity: only show if there are entries */}
                   {gameState.recentActivity.length > 0 && (
                     <RecentActivity activities={gameState.recentActivity} />

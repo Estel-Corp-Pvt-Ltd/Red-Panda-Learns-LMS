@@ -32,11 +32,11 @@ const circularItems: CircularNavItem[] = [
     path: "/teacher/students",
     icon: <Users className="h-5 w-5" />,
   },
-  {
-    name: "Assignments",
-    path: "/teacher/assignments",
-    icon: <NotepadText className="h-5 w-5" />,
-  },
+  // {
+  //   name: "Assignments",
+  //   path: "/teacher/assignments",
+  //   icon: <NotepadText className="h-5 w-5" />,
+  // },
   {
     name: "Announcements",
     path: "/teacher/announcements",

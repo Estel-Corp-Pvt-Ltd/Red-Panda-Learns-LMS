@@ -11,7 +11,7 @@ import {
 import { COLLECTION, USER_ROLE } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { User } from "@/types/user";
-import { AssignmentSubmission } from "@/types/assignment";
+// import { AssignmentSubmission } from "@/types/assignment";
 import { Comment } from "@/types/comment";
 import { Enrollment } from "@/types/enrollment";
 import { LearningProgress } from "@/types/learning-progress";
@@ -48,71 +48,9 @@ class TeacherService {
     );
   }
 
-  /**
-   * Get assignment submissions from organization students.
-   * Batches queries due to Firestore "in" limit of 30 items.
-   */
-  async getOrganizationSubmissions(
-    organizationId: string
-  ): Promise<Result<AssignmentSubmission[]>> {
-    try {
-      const idsResult = await this.getOrganizationStudentIds(organizationId);
-      if (!idsResult.success || !idsResult.data) {
-        return fail("Failed to fetch organization student IDs");
-      }
-
-      const studentIds = idsResult.data;
-      if (studentIds.length === 0) {
-        return ok([]);
-      }
-
-      const BATCH_SIZE = 30;
-      const allSubmissions: AssignmentSubmission[] = [];
-
-      for (let i = 0; i < studentIds.length; i += BATCH_SIZE) {
-        const batch = studentIds.slice(i, i + BATCH_SIZE);
-        const q = query(
-          collection(db, COLLECTION.ASSIGNMENT_SUBMISSIONS),
-          where("studentId", "in", batch),
-          orderBy("createdAt", "desc")
-        );
-
-        const snapshot = await getDocs(q);
-        const submissions = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            assignmentId: data.assignmentId,
-            assignmentTitle: data.assignmentTitle || "",
-            courseId: data.courseId,
-            studentId: data.studentId,
-            studentName: data.studentName,
-            studentEmail: data.studentEmail,
-            submissionFiles: data.submissionFiles || [],
-            textSubmissions: data.textSubmissions || [],
-            links: data.links || [],
-            marks: data.marks,
-            feedback: data.feedback,
-            createdAt: data.createdAt?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
-          } as AssignmentSubmission;
-        });
-
-        allSubmissions.push(...submissions);
-      }
-
-      // Sort all by createdAt descending
-      allSubmissions.sort((a: any, b: any) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
-
-      return ok(allSubmissions);
-    } catch (error) {
-      logError("TeacherService.getOrganizationSubmissions", error);
-      return fail("Failed to fetch organization submissions");
-    }
+  // getOrganizationSubmissions — disabled (assignment feature removed)
+  async getOrganizationSubmissions(_organizationId: string): Promise<Result<never[]>> {
+    return ok([]);
   }
 
   /**
@@ -339,10 +277,9 @@ class TeacherService {
     }>
   > {
     try {
-      const [studentsResult, submissionsResult, commentsResult] =
+      const [studentsResult, commentsResult] =
         await Promise.all([
           this.getOrganizationStudentIds(organizationId),
-          this.getOrganizationSubmissions(organizationId),
           this.getOrganizationComments(organizationId, "PENDING"),
         ]);
 
@@ -350,11 +287,7 @@ class TeacherService {
         ? studentsResult.data?.length || 0
         : 0;
 
-      const pendingSubmissions = submissionsResult.success
-        ? (submissionsResult.data?.filter(
-            (s) => s.marks === undefined || s.marks === null
-          ).length || 0)
-        : 0;
+      const pendingSubmissions = 0; // assignment feature disabled
 
       const pendingComments = commentsResult.success
         ? commentsResult.data?.length || 0
