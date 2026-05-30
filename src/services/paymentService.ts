@@ -5,7 +5,7 @@ import {
 import { Currency, PaymentProvider } from "@/types/general";
 import { Address } from "@/types/order";
 import { TransactionLineItem } from "@/types/transaction";
-import { Result } from "@/utils/response";
+import { Result, fail } from "@/utils/response";
 import { currencyService } from "./currencyService";
 import { razorpayProvider } from "./providers/razorpayProvider";
 import { transactionService } from "./transactionService";
