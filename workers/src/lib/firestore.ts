@@ -152,10 +152,14 @@ function extractTransforms(
 
 export class Firestore {
   private baseUrl: string;
+  // Relative path used in write `name` fields — Firestore commit API requires
+  // "projects/.../documents/..." WITHOUT the https://...googleapis.com/v1 prefix.
+  private docBasePath: string;
   private tokenFn: () => Promise<string>;
 
   constructor(projectId: string, serviceAccountJson: string) {
     this.baseUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+    this.docBasePath = `projects/${projectId}/databases/(default)/documents`;
     this.tokenFn = () => getAccessToken(serviceAccountJson);
   }
 
@@ -205,7 +209,7 @@ export class Firestore {
 
     const write: any = {
       update: {
-        name: `${this.baseUrl}/${collection}/${encodeURIComponent(docId)}`,
+        name: `${this.docBasePath}/${collection}/${encodeURIComponent(docId)}`,
         fields,
       },
     };
@@ -251,7 +255,7 @@ export class Firestore {
 
     const write: any = {
       update: {
-        name: `${this.baseUrl}/${collection}/${encodeURIComponent(docId)}`,
+        name: `${this.docBasePath}/${collection}/${encodeURIComponent(docId)}`,
         fields,
       },
       updateMask: { fieldPaths: updatePaths },
@@ -376,8 +380,8 @@ export class Firestore {
       "Content-Type": "application/json",
     };
 
-    // Begin transaction
-    const beginUrl = `${this.baseUrl.replace("/documents", "")}:beginTransaction`;
+    // Begin transaction — correct Firestore REST API path is /documents:beginTransaction
+    const beginUrl = `${this.baseUrl}:beginTransaction`;
     const beginResp = await fetch(beginUrl, {
       method: "POST",
       headers,
@@ -391,7 +395,7 @@ export class Firestore {
 
     const { transaction: txId } = await beginResp.json() as any;
 
-    const tx = new FirestoreTransaction(this.baseUrl, txId, headers);
+    const tx = new FirestoreTransaction(this.baseUrl, this.docBasePath, txId, headers);
 
     const result = await fn(tx);
 
@@ -432,7 +436,8 @@ export class FirestoreTransaction {
   pendingWrites: object[] = [];
 
   constructor(
-    private baseUrl: string,
+    private baseUrl: string,        // full URL — used for getDoc fetch
+    private docBasePath: string,    // relative path — used in write name fields
     private txId: string,
     private headers: Record<string, string>
   ) {}
@@ -468,7 +473,7 @@ export class FirestoreTransaction {
     const transforms = extractTransforms(data);
     const write: any = {
       update: {
-        name: `${this.baseUrl}/${collection}/${encodeURIComponent(docId)}`,
+        name: `${this.docBasePath}/${collection}/${encodeURIComponent(docId)}`,
         fields,
       },
     };
@@ -493,7 +498,7 @@ export class FirestoreTransaction {
     const transforms = extractTransforms(data);
     const write: any = {
       update: {
-        name: `${this.baseUrl}/${collection}/${encodeURIComponent(docId)}`,
+        name: `${this.docBasePath}/${collection}/${encodeURIComponent(docId)}`,
         fields,
       },
       updateMask: { fieldPaths: Object.keys(fields) },

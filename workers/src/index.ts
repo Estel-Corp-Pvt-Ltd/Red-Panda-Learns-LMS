@@ -323,8 +323,7 @@ function buildEnrollmentWrite(
   enrollmentId: string,
   data: Record<string, unknown>
 ): object {
-  const baseUrl = (firestore as any).baseUrl as string;
-  const docPath = baseUrl.replace("https://firestore.googleapis.com/v1/", "");
+  const docPath = (firestore as any).docBasePath as string;
   const fields: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) {
     if (typeof v !== "object" || v === null || !("__type" in v)) {
@@ -350,8 +349,7 @@ function buildLPWrite(
   userId: string,
   courseId: string
 ): object {
-  const baseUrl = (firestore as any).baseUrl as string;
-  const docPath = baseUrl.replace("https://firestore.googleapis.com/v1/", "");
+  const docPath = (firestore as any).docBasePath as string;
   return {
     update: {
       name: `${docPath}/${COLLECTION.LEARNING_PROGRESS}/${lpId}`,
@@ -574,8 +572,12 @@ app.post("/createRazorpayOrder", async (c) => {
   // Track whether the Firestore order was created so we can clean up on error
   let orderId: string | null = null;
 
+  console.log("[createRazorpayOrder] step:start user:", user.uid, "items:", JSON.stringify(items), "currency:", selectedCurrency);
+  console.log("[createRazorpayOrder] env check — RAZORPAY_KEY_ID present:", !!c.env.RAZORPAY_KEY_ID, "SECRET present:", !!c.env.RAZORPAY_KEY_SECRET, "PROJECT_ID:", c.env.FIREBASE_PROJECT_ID);
+
   try {
     const { itemsDetails, originalAmount } = await getItemsDetails(firestore, items);
+    console.log("[createRazorpayOrder] step:itemsDetails", JSON.stringify(itemsDetails), "originalAmount:", originalAmount);
 
     if (itemsDetails.length === 0) {
       throw new Error("None of the requested items could be found");
@@ -628,12 +630,16 @@ app.post("/createRazorpayOrder", async (c) => {
     }
 
     const amountInPaise = Math.round(convertedAmount * 100);
+    console.log("[createRazorpayOrder] step:pricing discount:", discount, "convertedAmount:", convertedAmount, "amountInPaise:", amountInPaise);
+
     if (amountInPaise <= 0) {
       throw new Error("Order amount must be greater than zero");
     }
 
     // Create internal order
     orderId = await generateOrderId(firestore);
+    console.log("[createRazorpayOrder] step:orderId generated:", orderId);
+
     await firestore.setDoc(COLLECTION.ORDERS, orderId, {
       orderId,
       userId: user.uid,
@@ -655,14 +661,17 @@ app.post("/createRazorpayOrder", async (c) => {
       createdAt: SERVER_TIMESTAMP,
       updatedAt: SERVER_TIMESTAMP,
     });
+    console.log("[createRazorpayOrder] step:order saved to Firestore");
 
     // Create Razorpay order — this is the external call most likely to fail
+    console.log("[createRazorpayOrder] step:calling Razorpay API amount:", amountInPaise, "currency:", selectedCurrency);
     const rp = new RazorpayClient(c.env.RAZORPAY_KEY_ID, c.env.RAZORPAY_KEY_SECRET);
     const razorpayOrder = await rp.createOrder({
       amount: amountInPaise,
       currency: selectedCurrency,
       receipt: orderId,
     });
+    console.log("[createRazorpayOrder] step:razorpay order created:", razorpayOrder.id);
 
     // Update internal order with the Razorpay order ID
     await firestore.updateDoc(COLLECTION.ORDERS, orderId, {
@@ -683,10 +692,11 @@ app.post("/createRazorpayOrder", async (c) => {
       response,
     });
 
+    console.log("[createRazorpayOrder] step:done — success");
     return c.json(response);
 
   } catch (err: any) {
-    console.error("[createRazorpayOrder] error:", err?.message ?? err);
+    console.error("[createRazorpayOrder] FAILED at step above — error:", err?.message ?? err, err?.stack ?? "");
 
     // Mark the internal order as FAILED so it doesn't stay PENDING indefinitely
     if (orderId) {
@@ -749,6 +759,71 @@ app.post("/razorpayWebhook", async (c) => {
   }
 
   return c.json({ success: true });
+});
+
+// ── POST /verifyRazorpayPayment (Firebase auth) ───────────────────────────────
+//
+// Synchronous payment confirmation called from Razorpay checkout's `handler`
+// callback. Verifies the payment signature and fulfills the order immediately,
+// so the client isn't dependent on the (async, server-to-server) webhook.
+// The order.paid webhook remains as a reliability backup — both paths are
+// guarded by the already-completed check so fulfillment runs at most once.
+
+app.post("/verifyRazorpayPayment", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+
+  let body: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return c.json({ error: "Missing payment verification fields" }, 400);
+  }
+
+  // Razorpay payment signature = HMAC-SHA256("order_id|payment_id", KEY_SECRET)
+  const valid = await verifyRazorpaySignature(
+    `${razorpay_order_id}|${razorpay_payment_id}`,
+    razorpay_signature,
+    c.env.RAZORPAY_KEY_SECRET
+  );
+  if (!valid) {
+    return c.json({ error: "Invalid payment signature" }, 400);
+  }
+
+  const firestore = db(c.env);
+  const order = await getOrderByProviderId(firestore, razorpay_order_id);
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  // Ensure the order belongs to the authenticated user
+  if (order.data.userId !== user.uid) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  // Idempotent: if the webhook already fulfilled it, just report success
+  if (order.data.status === ORDER_STATUS.COMPLETED) {
+    return c.json({ success: true, status: "COMPLETED", alreadyCompleted: true });
+  }
+
+  try {
+    await fulfillOrder(firestore, order, c.env);
+    return c.json({ success: true, status: "COMPLETED" });
+  } catch (err: any) {
+    console.error("[verifyRazorpayPayment] fulfillment error:", err?.message ?? err);
+    return c.json({ error: "Failed to finalize order" }, 500);
+  }
 });
 
 async function getOrderByProviderId(
@@ -834,7 +909,20 @@ async function handleOrderPaid(firestore: Firestore, entity: any, env: Env) {
   const order = await getOrderByProviderId(firestore, entity.id);
   if (!order) return;
   if (order.data.status === ORDER_STATUS.COMPLETED) return;
+  await fulfillOrder(firestore, order, env);
+}
 
+/**
+ * Fulfill a paid order: mark it COMPLETED, enroll the user, and send the
+ * confirmation email. Shared by the order.paid webhook and the synchronous
+ * /verifyRazorpayPayment endpoint. Caller is responsible for the
+ * already-completed guard (so this stays idempotent at the call site).
+ */
+async function fulfillOrder(
+  firestore: Firestore,
+  order: { id: string; data: Record<string, unknown> },
+  env: Env
+): Promise<void> {
   const orderId = (order.data.orderId as string) ?? order.id;
 
   // Update order status
@@ -1131,13 +1219,13 @@ app.post("/createCouponUsage", async (c) => {
   const couponId = coupons[0].id;
 
   const writes: object[] = [];
-  const baseUrl = (firestore as any).baseUrl as string;
+  const docBasePath = (firestore as any).docBasePath as string;
 
   for (const item of items) {
     const docId = firestore.newDocId();
     writes.push({
       update: {
-        name: `${baseUrl}/${COLLECTION.COUPON_USAGES}/${docId}`,
+        name: `${docBasePath}/${COLLECTION.COUPON_USAGES}/${docId}`,
         fields: {
           userId: { stringValue: user.uid },
           couponId: { stringValue: couponId },
@@ -1154,7 +1242,7 @@ app.post("/createCouponUsage", async (c) => {
   // Increment totalUsed
   writes.push({
     update: {
-      name: `${baseUrl}/${COLLECTION.COUPONS}/${couponId}`,
+      name: `${docBasePath}/${COLLECTION.COUPONS}/${couponId}`,
       fields: {},
     },
     updateMask: { fieldPaths: [] },
