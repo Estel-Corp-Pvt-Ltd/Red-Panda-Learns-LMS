@@ -6,7 +6,7 @@ workers_dev = true
 
 [vars]
 FIREBASE_PROJECT_ID = "red-panda-learns-lms-dev"
-ALLOWED_ORIGINS = "https://red-panda-learns-lms-dev.web.app,https://red-panda-learns-lms-dev.firebaseapp.com,http://localhost:8080"
+ALLOWED_ORIGINS = "https://red-panda-learns-lms.vercel.app,https://red-panda-learns-lms-dev.web.app,https://red-panda-learns-lms-dev.firebaseapp.com,http://localhost:8080"
 
 # ─── Secrets — set each one via: wrangler secret put <NAME> ───────────────────
 #
