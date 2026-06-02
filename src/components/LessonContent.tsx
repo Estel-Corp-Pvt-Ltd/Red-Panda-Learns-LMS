@@ -1,7 +1,7 @@
 import { TopicItem } from "@/types/course";
 import { ContentLock } from "@/types/content-lock";
 import { ContentLockedView } from "@/components/ContentLockedView";
-import AssignmentView from "@/components/course/AssignmentView";
+// import AssignmentView from "@/components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
 import { FieldValue, Timestamp } from "firebase/firestore";
 
@@ -35,7 +35,7 @@ export function LessonContent({
         <div className="text-center rounded-2xl bg-card/60 border border-border/30 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25)] p-10 max-w-md">
           <h2 className="text-2xl font-bold mb-2">Select content to start learning</h2>
           <p className="text-muted-foreground">
-            Choose a lesson or assignment from the sidebar to begin.
+            Choose a lesson from the sidebar to begin.
           </p>
         </div>
       </div>
@@ -53,6 +53,7 @@ export function LessonContent({
   return (
     <div className={showAdminLockPanel ? "flex flex-col lg:flex-row gap-4" : ""}>
       <div className={showAdminLockPanel ? "flex-1" : "w-full"}>
+        {/* Assignment branch temporarily disabled
         {selectedItem.type === "ASSIGNMENT" ? (
           <AssignmentView
             key={selectedItem.id}
@@ -60,7 +61,7 @@ export function LessonContent({
             onComplete={onComplete}
             onNavigateToNext={onNavigateToNext}
           />
-        ) : (
+        ) : ( */}
           <LessonView
             lessonId={selectedItem.id}
             courseName={courseName}
@@ -68,7 +69,7 @@ export function LessonContent({
             completed={lessonCompleted}
             onNavigateToNext={onNavigateToNext}
           />
-        )}
+        {/* )} */}
       </div>
 
       {showAdminLockPanel && (

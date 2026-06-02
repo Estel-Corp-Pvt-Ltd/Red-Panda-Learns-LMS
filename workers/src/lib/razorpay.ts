@@ -56,7 +56,10 @@ export class RazorpayClient {
 
 /**
  * Verify a Razorpay webhook signature using Web Crypto HMAC-SHA256.
- * Replaces the Node.js crypto.createHmac() call.
+ *
+ * Razorpay sets X-Razorpay-Signature to a raw lowercase hex HMAC-SHA256
+ * of the raw request body, keyed with the webhook secret. There is no
+ * "sha256=" prefix (that is GitHub's convention, not Razorpay's).
  */
 export async function verifyRazorpaySignature(
   rawBody: string,
@@ -64,8 +67,6 @@ export async function verifyRazorpaySignature(
   secret: string
 ): Promise<boolean> {
   try {
-    const received = signature.replace("sha256=", "");
-
     const keyData = new TextEncoder().encode(secret);
     const bodyData = new TextEncoder().encode(rawBody);
 
@@ -82,11 +83,11 @@ export async function verifyRazorpaySignature(
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    // Timing-safe comparison
-    if (expected.length !== received.length) return false;
+    // Timing-safe comparison — prevents timing oracle attacks
+    if (expected.length !== signature.length) return false;
     let diff = 0;
     for (let i = 0; i < expected.length; i++) {
-      diff |= expected.charCodeAt(i) ^ received.charCodeAt(i);
+      diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
     }
     return diff === 0;
   } catch {

@@ -31,7 +31,7 @@ import { Course } from "@/types/course";
 import { Enrollment } from "@/types/enrollment";
 import { LearningProgress } from "@/types/learning-progress";
 import { User } from "@/types/user";
-import { AssignmentSubmission } from "@/types/assignment";
+// import { AssignmentSubmission } from "@/types/assignment";
 import {
   Activity,
   AlertTriangle,
@@ -171,7 +171,7 @@ const TeacherStudentDetail = () => {
     pendingComments: number;
     totalUpvotes: number;
   } | null>(null);
-  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [submissions, setSubmissions] = useState<never[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("courses");
 
@@ -185,21 +185,18 @@ const TeacherStudentDetail = () => {
 
     setLoading(true);
     try {
-      // Fetch student info, enrollments, courses, comments, submissions in parallel
       const [
         studentResult,
         enrollmentsResult,
         coursesResult,
         commentsResult,
         commentStatsResult,
-        submissionsResult,
       ] = await Promise.all([
         userService.getUserById(studentId),
         enrollmentService.getUserEnrollments(studentId, "ALL"),
         courseService.getPublishedCourses(),
         commentService.getCommentsByUser(studentId),
         commentService.getUserCommentStats(studentId),
-        teacherService.getOrganizationSubmissions(user!.organizationId!),
       ]);
 
       if (studentResult.success && studentResult.data) {
@@ -230,11 +227,7 @@ const TeacherStudentDetail = () => {
         setCommentStats(commentStatsResult.data);
       }
 
-      if (submissionsResult.success && submissionsResult.data) {
-        setSubmissions(
-          submissionsResult.data.filter((s) => s.studentId === studentId)
-        );
-      }
+      // submissions disabled
 
       // Fetch progress for each enrollment
       const progressEntries = await Promise.all(

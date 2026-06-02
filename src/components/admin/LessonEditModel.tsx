@@ -14,7 +14,7 @@ import { ATTACHMENT_TYPE, LESSON_TYPE } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
 import { fileService } from "@/services/fileService";
 import { lessonService } from "@/services/lessonService";
-import { Lesson, LessonAttachment } from "@/types/lesson";
+import { Lesson /* , LessonAttachment */ } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import { serverTimestamp } from "firebase/firestore";
 import { FileText, Upload, Download, Trash2 } from "lucide-react";
@@ -45,7 +45,7 @@ export const EditLessonModal = ({
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
+  // const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
   const [activeTab, setActiveTab] = useState("lesson");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [lock, setLock] = useState<ContentLock | null>(null);
@@ -72,10 +72,12 @@ export const EditLessonModal = ({
 
       setLoading(true);
       try {
-        const [lessonData, attachmentsData] = await Promise.all([
-          lessonService.getLessonById(lessonId),
-          lessonService.getAttachmentsByLessonId(lessonId),
-        ]);
+        // const [lessonData, attachmentsData] = await Promise.all([
+        //   lessonService.getLessonById(lessonId),
+        //   lessonService.getAttachmentsByLessonId(lessonId),
+        // ]);
+        // setAttachments(attachmentsData || []);
+        const lessonData = await lessonService.getLessonById(lessonId);
 
         if (!lessonData) {
           toast({
@@ -86,7 +88,6 @@ export const EditLessonModal = ({
           return;
         }
         setLesson(lessonData);
-        setAttachments(attachmentsData || []);
       } catch (error) {
         logError("Error loading lesson:", error);
         toast({
@@ -148,68 +149,8 @@ export const EditLessonModal = ({
     }
   };
 
-  const handleUploadAttachment = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "No file selected",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const fileResult = await fileService.uploadAttachment(
-        `/courses/${courseId}/lessons/${lessonId}/attachments`,
-        selectedFile
-      );
-      if (!fileResult.success || !fileResult.data) {
-        throw new Error("File upload failed");
-      }
-      const attachment = await lessonService.createLessonAttachment({
-        lessonId,
-        name: selectedFile.name,
-        url: fileResult.data,
-        type: ATTACHMENT_TYPE.DOCUMENT,
-        size: selectedFile.size,
-      });
-
-      setAttachments((prev) => [...prev, attachment]);
-      setSelectedFile(null);
-
-      // Clear file input
-      const fileInput = document.getElementById("file-upload") as HTMLInputElement;
-      if (fileInput) fileInput.value = "";
-
-      toast({
-        title: "File uploaded successfully!",
-      });
-    } catch (error) {
-      logError("Error uploading file:", error);
-      toast({
-        title: "Upload failed",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleRemoveAttachment = async (attachmentId: string) => {
-    try {
-      await lessonService.deleteLessonAttachment(attachmentId);
-      setAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
-      toast({
-        title: "Attachment removed",
-      });
-    } catch (error) {
-      logError("Error removing attachment:", error);
-      toast({
-        title: "Failed to remove attachment",
-        variant: "destructive",
-      });
-    }
-  };
+  // const handleUploadAttachment = async () => { /* attachment upload — disabled */ };
+  // const handleRemoveAttachment = async (attachmentId: string) => { /* attachment remove — disabled */ };
 
   const handleUpdateLesson = async () => {
     if (!lesson?.title?.trim()) {
@@ -366,11 +307,13 @@ export const EditLessonModal = ({
         ) : (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-1">
                 <TabsTrigger value="lesson">Lesson Details</TabsTrigger>
+                {/* Attachments tab — disabled
                 <TabsTrigger value="attachments">
-                  Attachments {attachments.length > 0 && `(${attachments.length})`}
+                  Attachments
                 </TabsTrigger>
+                */}
               </TabsList>
 
               {/* Lesson Details Tab */}
@@ -525,80 +468,10 @@ export const EditLessonModal = ({
                 </div>
               </TabsContent>
 
-              {/* Attachments Tab */}
+              {/* Attachments Tab — disabled
               <TabsContent value="attachments" className="space-y-6 mt-4">
-                {/* File Upload */}
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="text-lg font-medium">Upload File</h3>
-                  <div className="flex gap-4 items-end">
-                    <div className="flex-1">
-                      <Label htmlFor="file-upload">Select File</Label>
-                      <Input
-                        id="file-upload"
-                        type="file"
-                        onChange={handleFileSelect}
-                        className="mt-1"
-                      />
-                    </div>
-                    <Button onClick={handleUploadAttachment} disabled={!selectedFile || uploading}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      {uploading ? "Uploading..." : "Upload"}
-                    </Button>
-                  </div>
-                  {selectedFile && (
-                    <p className="text-sm text-muted-foreground">
-                      Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                    </p>
-                  )}
-                </div>
-
-                {/* Attachments List */}
-                <div>
-                  <h3 className="text-lg font-medium mb-4">
-                    Lesson Attachments ({attachments.length})
-                  </h3>
-
-                  {attachments.length === 0 ? (
-                    <div className="text-center py-8 border rounded-lg">
-                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-muted-foreground">No attachments</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            {getFileIcon(attachment.type)}
-                            <div>
-                              <h4 className="font-medium text-sm">{attachment.name}</h4>
-                              <p className="text-xs text-muted-foreground">
-                                {attachment.type} • {formatFileSize(attachment.size)}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm" asChild>
-                              <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4" />
-                              </a>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveAttachment(attachment.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </TabsContent>
+              */}
             </Tabs>
 
             {/* Action Buttons */}

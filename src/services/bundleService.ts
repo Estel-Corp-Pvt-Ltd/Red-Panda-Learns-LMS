@@ -618,6 +618,64 @@ class BundleService {
     }
   }
 
+  async searchBundles(
+    searchQuery: string,
+    options: { limit: number; offset: number; filter?: string }
+  ): Promise<Result<{ data: Bundle[]; hasNextPage: boolean; hasPreviousPage: boolean; totalCount: number }>> {
+    try {
+      const { limit: pageSize, offset, filter } = options;
+
+      const firestoreFilters: { field: string; value: string }[] = [];
+      if (filter) {
+        const filterRegex = /(\w+)\s*=\s*"([^"]+)"/g;
+        let match;
+        while ((match = filterRegex.exec(filter)) !== null) {
+          firestoreFilters.push({ field: match[1], value: match[2] });
+        }
+      }
+
+      let q: Query = collection(db, COLLECTION.BUNDLES);
+      if (firestoreFilters.length > 0) {
+        q = query(q, ...firestoreFilters.map((f) => where(f.field, "==", f.value)));
+      }
+      q = query(q, orderBy("createdAt", "desc"));
+
+      const querySnapshot = await getDocs(q);
+      let bundles = querySnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Bundle;
+      });
+
+      if (searchQuery.trim()) {
+        const term = searchQuery.toLowerCase().trim();
+        bundles = bundles.filter(
+          (b) =>
+            b.title?.toLowerCase().includes(term) ||
+            b.slug?.toLowerCase().includes(term) ||
+            b.instructorName?.toLowerCase().includes(term)
+        );
+      }
+
+      const totalCount = bundles.length;
+      const paginated = bundles.slice(offset, offset + pageSize);
+
+      return ok({
+        data: paginated,
+        hasNextPage: offset + pageSize < totalCount,
+        hasPreviousPage: offset > 0,
+        totalCount,
+      });
+    } catch (error) {
+      console.error("BundleService.searchBundles", error);
+      return fail("Failed to search bundles");
+    }
+  }
+
   async getBundleBySlug(slug: string): Promise<Bundle | null> {
     try {
       const q = query(collection(db, COLLECTION.BUNDLES), where("slug", "==", slug));

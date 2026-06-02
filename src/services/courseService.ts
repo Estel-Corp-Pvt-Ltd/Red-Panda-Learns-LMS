@@ -723,6 +723,64 @@ class CourseService {
     }
   }
 
+  async searchCourses(
+    searchQuery: string,
+    options: { limit: number; offset: number; filter?: string }
+  ): Promise<Result<{ data: Course[]; hasNextPage: boolean; hasPreviousPage: boolean; totalCount: number }>> {
+    try {
+      const { limit: pageSize, offset, filter } = options;
+
+      const firestoreFilters: { field: string; value: string }[] = [];
+      if (filter) {
+        const filterRegex = /(\w+)\s*=\s*"([^"]+)"/g;
+        let match;
+        while ((match = filterRegex.exec(filter)) !== null) {
+          firestoreFilters.push({ field: match[1], value: match[2] });
+        }
+      }
+
+      let q: Query = collection(db, COLLECTION.COURSES);
+      if (firestoreFilters.length > 0) {
+        q = query(q, ...firestoreFilters.map((f) => where(f.field, "==", f.value)));
+      }
+      q = query(q, orderBy("createdAt", "desc"));
+
+      const querySnapshot = await getDocs(q);
+      let courses = querySnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as Course;
+      });
+
+      if (searchQuery.trim()) {
+        const term = searchQuery.toLowerCase().trim();
+        courses = courses.filter(
+          (c) =>
+            c.title?.toLowerCase().includes(term) ||
+            c.slug?.toLowerCase().includes(term) ||
+            c.instructorName?.toLowerCase().includes(term)
+        );
+      }
+
+      const totalCount = courses.length;
+      const paginated = courses.slice(offset, offset + pageSize);
+
+      return ok({
+        data: paginated,
+        hasNextPage: offset + pageSize < totalCount,
+        hasPreviousPage: offset > 0,
+        totalCount,
+      });
+    } catch (error) {
+      logError("CourseService.searchCourses", error);
+      return fail("Failed to search courses");
+    }
+  }
+
 }
 
 export const courseService = new CourseService();
