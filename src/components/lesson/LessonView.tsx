@@ -4,7 +4,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import { LESSON_TYPE } from "@/constants";
 import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
-import { Lesson, LessonAttachment } from "@/types/lesson";
+import { Lesson /* , LessonAttachment */ } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import {
   CheckCircle,
@@ -151,7 +151,7 @@ export function LessonView({
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
+  // const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
 
   // New states for completion
   const [isCompleting, setIsCompleting] = useState(false);
@@ -601,13 +601,14 @@ export function LessonView({
         setIsLoading(true);
         setError(null);
 
-        const [lessonData, attachmentsData] = await Promise.all([
-          lessonService.getLessonById(lessonId),
-          lessonService.getAttachmentsByLessonId(lessonId),
-        ]);
+        // const [lessonData, attachmentsData] = await Promise.all([
+        //   lessonService.getLessonById(lessonId),
+        //   lessonService.getAttachmentsByLessonId(lessonId),
+        // ]);
+        // setAttachments(attachmentsData);
+        const lessonData = await lessonService.getLessonById(lessonId);
 
         setLesson(lessonData);
-        setAttachments(attachmentsData);
 
         // Reset time tracking for new lesson
         timeTrackingRef.current = {
@@ -996,6 +997,7 @@ export function LessonView({
                 </CardContent>
               </Card>
 
+              {/* Attachments card — temporarily disabled
               <Card className="w-full md:w-1/3">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -1052,6 +1054,7 @@ export function LessonView({
                   )}
                 </CardContent>
               </Card>
+              */}
             </div>
             <Comments
               lessonId={lesson.id}

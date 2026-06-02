@@ -27,7 +27,7 @@ const EditBundlePage = lazy(() => import("./pages/admin/EditBundle"));
 const EditCouponPage = lazy(() => import("./pages/admin/EditCouponPage"));
 const EditLessonPage = lazy(() => import("./pages/admin/EditLesson"));
 const EditUserPage = lazy(() => import("./pages/admin/EditUser"));
-const SubmissionDetailPage = lazy(() => import("./pages/admin/SubmissionDetailPage"));
+// const SubmissionDetailPage = lazy(() => import("./pages/admin/SubmissionDetailPage"));
 const DummyCurriculumBuilderPage = lazy(() => import("./pages/admin/dummycurriculum"));
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminBundles = lazy(() => import("./pages/admin/AdminBundles"));
@@ -42,7 +42,7 @@ const AdminAssignStudents = lazy(() => import("./pages/admin/AdminAssignStudents
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
 // const AdminPopUps = lazy(() => import("./pages/admin/PopUps"));
-const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminManageAssignments"));
+// const AdminManageAssignments = lazy(() => import("@/pages/admin/AdminManageAssignments"));
 const AdminCreateAnnouncement = lazy(() => import("@/pages/admin/AdminManageAnnouncements"));
 const AdminBulkTeacherAdd = lazy(() => import("./pages/admin/AdminBulkTeacherAdd"));
 // const AdminStripBanners = lazy(() => import("./pages/admin/AdminStripBanner"));
@@ -59,7 +59,7 @@ const StudentEnrollments = lazy(() => import("./components/admin/StudentEnrollme
 // Lazy load teacher pages
 const TeacherDashboard = lazy(() => import("./pages/teacher/TeacherDashboard"));
 const TeacherStudents = lazy(() => import("./pages/teacher/TeacherStudents"));
-const TeacherAssignments = lazy(() => import("./pages/teacher/TeacherAssignments"));
+// const TeacherAssignments = lazy(() => import("./pages/teacher/TeacherAssignments"));
 const TeacherAnnouncements = lazy(() => import("./pages/teacher/TeacherAnnouncements"));
 const TeacherCourses = lazy(() => import("./pages/teacher/TeacherCourses"));
 const TeacherComments = lazy(() => import("./pages/teacher/TeacherComments"));
@@ -86,7 +86,7 @@ const CartCheckoutPage = lazy(() => import("./pages/cartCheckout"));
 const BundleDetailPage = lazy(() => import("./pages/BundleDetailPage"));
 const BundleCheckoutPage = lazy(() => import("./pages/BundleCheckoutPage"));
 const BundleDashboardPage = lazy(() => import("./pages/BundleDashboardPage"));
-const MySubmissionsPage = lazy(() => import("./pages/MySubmissions"));
+// const MySubmissionsPage = lazy(() => import("./pages/MySubmissions"));
 const InvoicePage = lazy(() => import("./pages/InvoicePage"));
 const MyInvoicesPage = lazy(() => import("./pages/MyInvoices"));
 const Quizzes = lazy(() => import("./pages/Quizzes"));
@@ -250,7 +250,7 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route path="/submissions" element={<MySubmissionsPage />} />
+                        {/* <Route path="/submissions" element={<MySubmissionsPage />} /> */}
                         <Route path="/invoices/:orderId" element={<InvoicePage />} />
                         <Route path="/invoices" element={<MyInvoicesPage />} />
                         <Route path="/free-courses" element={<FreeCourses />} />
@@ -466,14 +466,14 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
+                        {/* <Route
                           path="/admin/submissions"
                           element={
                             <AuthGuard requireAdmin>
                               <SubmissionDetailPage />
                             </AuthGuard>
                           }
-                        />
+                        /> */}
                         <Route
                           path="/admin/edit-user/:userId"
                           element={
@@ -570,14 +570,14 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
+                        {/* <Route
                           path="/admin/manage-assignment-authors"
                           element={
                             <AuthGuard requireAdmin>
                               <AdminManageAssignments />
                             </AuthGuard>
                           }
-                        />
+                        /> */}
                         <Route
                           path="/admin/announcements"
                           element={
@@ -652,14 +652,14 @@ const App = () => (
                             </AuthGuard>
                           }
                         />
-                        <Route
+                        {/* <Route
                           path="/teacher/assignments"
                           element={
                             <AuthGuard requireAuth requireTeacher>
                               <TeacherAssignments />
                             </AuthGuard>
                           }
-                        />
+                        /> */}
                         <Route
                           path="/teacher/announcements"
                           element={

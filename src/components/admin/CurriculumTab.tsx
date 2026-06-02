@@ -38,11 +38,11 @@ import { Input } from "@/components/ui/input";
 import { LEARNING_UNIT } from "@/constants";
 import { LessonImportModal } from "@/components/admin/LessonImportModal";
 import { EditLessonModal } from "@/components/admin/LessonEditModel";
-import AssignmentModal from "@/components/AssignmentModal";
-import EditAssignmentModal from "./EditAssignmentModal";
+// import AssignmentModal from "@/components/AssignmentModal";
+// import EditAssignmentModal from "./EditAssignmentModal";
 import { CreateLessonModal } from "@/components/lesson/AddLesson";
 import type { Lesson } from "@/types/lesson";
-import type { Assignment } from "@/types/assignment";
+// import type { Assignment } from "@/types/assignment";
 import { LearningUnit } from "@/types/general";
 import { Course, Topic } from "@/types/course";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -362,8 +362,8 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
 
   const [isLessonSelectorModalOpen, setIsLessonSelectorModalOpen] = useState(false);
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
-  const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
-  const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
+  // const [isAssignmentModelOpen, setIsAssignmentModelOpen] = useState(false);
+  // const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
   const [isLessonEditModelOpen, setIsLessonEditModelOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
@@ -429,9 +429,9 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     if (item.type === LEARNING_UNIT.LESSON) {
       setEditingItemId(initialItemId);
       setIsLessonEditModelOpen(true);
-    } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
-      setEditingItemId(initialItemId);
-      setIsAssignmentEditModalOpen(true);
+    // } else if (item.type === LEARNING_UNIT.ASSIGNMENT) {
+    //   setEditingItemId(initialItemId);
+    //   setIsAssignmentEditModalOpen(true);
     }
 
     window.history.replaceState({}, "", window.location.pathname);
@@ -591,43 +591,36 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     setIsLessonSelectorModalOpen(false);
   };
 
-  const handleAssignmentSave = (assignment: Assignment) => {
-    setCurriculum((prev) => {
-      // Update existing assignment
-      const exists = prev.some((i) => i.id === assignment.id);
-      if (exists) {
-        return prev.map((item) =>
-          item.id === assignment.id ? { ...item, title: assignment.title } : item
-        );
-      }
-
-      // Insert new assignment under active parent
-      if (!activeParentId) {
-        toast({ title: "Error", description: "No topic selected", variant: "destructive" });
-        return prev;
-      }
-
-      const insertIndex = findInsertIndexForParent(prev, activeParentId);
-      if (insertIndex === -1) return prev;
-
-      const newAssignment: DraggableItem = {
-        id: assignment.id,
-        refId: assignment.id,
-        title: assignment.title,
-        type: LEARNING_UNIT.ASSIGNMENT,
-        depth: 1,
-        parentId: activeParentId,
-      };
-
-      const updated = [...prev];
-      updated.splice(insertIndex, 0, newAssignment);
-      return updated;
-    });
-
-    setIsAssignmentModelOpen(false);
-    setEditingItemId(null);
-    setActiveParentId(null);
-  };
+  // const handleAssignmentSave = (assignment: Assignment) => {
+  //   setCurriculum((prev) => {
+  //     const exists = prev.some((i) => i.id === assignment.id);
+  //     if (exists) {
+  //       return prev.map((item) =>
+  //         item.id === assignment.id ? { ...item, title: assignment.title } : item
+  //       );
+  //     }
+  //     if (!activeParentId) {
+  //       toast({ title: "Error", description: "No topic selected", variant: "destructive" });
+  //       return prev;
+  //     }
+  //     const insertIndex = findInsertIndexForParent(prev, activeParentId);
+  //     if (insertIndex === -1) return prev;
+  //     const newAssignment: DraggableItem = {
+  //       id: assignment.id,
+  //       refId: assignment.id,
+  //       title: assignment.title,
+  //       type: LEARNING_UNIT.ASSIGNMENT,
+  //       depth: 1,
+  //       parentId: activeParentId,
+  //     };
+  //     const updated = [...prev];
+  //     updated.splice(insertIndex, 0, newAssignment);
+  //     return updated;
+  //   });
+  //   setIsAssignmentModelOpen(false);
+  //   setEditingItemId(null);
+  //   setActiveParentId(null);
+  // };
 
   // ── Visibility ────────────────────────────────────────────────────────
 
@@ -785,6 +778,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
+                              {/* Add Assignment button — disabled
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -798,6 +792,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                               >
                                 <NotebookPen className="h-4 w-4" />
                               </Button>
+                              */}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -847,9 +842,8 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                                   setEditingItemId(item.id);
                                   if (item.type === LEARNING_UNIT.LESSON) {
                                     setIsLessonEditModelOpen(true);
-                                  } else {
-                                    setIsAssignmentEditModalOpen(true);
                                   }
+                                  // else { setIsAssignmentEditModalOpen(true); }
                                 }}
                                 className="opacity-0 group-hover:opacity-100"
                                 title="Edit"
@@ -919,7 +913,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
             ? "topic"
             : editingItemType === LEARNING_UNIT.LESSON
               ? "lesson"
-              : "assignment"
+              : "item"
         }? This action cannot be undone.`}
         open={isConfirmDialogOpen}
         onCancel={() => {
@@ -935,6 +929,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
         }}
       />
 
+      {/* AssignmentModal — disabled
       {isAssignmentModelOpen && (
         <AssignmentModal
           courseId={course.id}
@@ -967,6 +962,7 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           setEditingItemId(null);
         }}
       />
+      */}
 
       <CreateLessonModal
         courseId={course.id}

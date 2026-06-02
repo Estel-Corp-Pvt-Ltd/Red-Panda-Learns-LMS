@@ -647,6 +647,67 @@ class UserService {
     }
   }
 
+  async searchUsers(
+    searchQuery: string,
+    options: { limit: number; offset: number; filter?: string }
+  ): Promise<Result<{ data: User[]; hasNextPage: boolean; hasPreviousPage: boolean; totalCount: number }>> {
+    try {
+      const { limit: pageSize, offset, filter } = options;
+
+      // Parse filter string like 'role = "student" AND status = "active"'
+      const firestoreFilters: { field: string; value: string }[] = [];
+      if (filter) {
+        const filterRegex = /(\w+)\s*=\s*"([^"]+)"/g;
+        let match;
+        while ((match = filterRegex.exec(filter)) !== null) {
+          firestoreFilters.push({ field: match[1], value: match[2] });
+        }
+      }
+
+      let q: Query = collection(db, COLLECTION.USERS);
+      if (firestoreFilters.length > 0) {
+        q = query(q, ...firestoreFilters.map((f) => where(f.field, "==", f.value)));
+      }
+      q = query(q, orderBy("createdAt", "desc"));
+
+      const querySnapshot = await getDocs(q);
+      let users = querySnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        } as User;
+      });
+
+      if (searchQuery.trim()) {
+        const term = searchQuery.toLowerCase().trim();
+        users = users.filter((user) => {
+          const fullName = `${user.firstName ?? ""} ${user.middleName ?? ""} ${user.lastName ?? ""}`.toLowerCase();
+          return (
+            fullName.includes(term) ||
+            user.email?.toLowerCase().includes(term) ||
+            user.username?.toLowerCase().includes(term)
+          );
+        });
+      }
+
+      const totalCount = users.length;
+      const paginated = users.slice(offset, offset + pageSize);
+
+      return ok({
+        data: paginated,
+        hasNextPage: offset + pageSize < totalCount,
+        hasPreviousPage: offset > 0,
+        totalCount,
+      });
+    } catch (error) {
+      logError("UserService.searchUsers", error);
+      return fail("Failed to search users");
+    }
+  }
+
   /**
    * Gets all staff users (Admin, Teacher, Instructor) without pagination
    * Useful for dropdowns or selection lists
