@@ -92,10 +92,15 @@ function TopicSection({
               const active = isLessonActive(lessonItem.id);
               const done = isCompleted(lessonItem.id);
 
+              const isQuiz = lessonItem.type === "QUIZ";
+              const itemHref = isQuiz
+                ? `/courses/${course.slug ?? course.id}/topic-quiz/${lessonItem.id}`
+                : `/courses/${course.slug ?? course.id}/lesson/${lessonItem.id}`;
+
               return (
                 <Link
                   key={lessonItem.id}
-                  to={`/courses/${course.slug ?? course.id}/lesson/${lessonItem.id}`}
+                  to={itemHref}
                   onClick={() =>
                     onLessonClick({
                       id: lessonItem.id,
