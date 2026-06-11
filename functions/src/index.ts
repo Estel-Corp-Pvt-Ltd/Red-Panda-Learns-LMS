@@ -25,7 +25,7 @@ import {
 // import { SendMailWorkerForNotif } from "./workers/sendMailWorkerForNotif";
 // import { lessonTimeSpent } from "./handlers/analytics/lessonTimeSpent";
 // import { onEnrollmentCreated } from "./events/onEnrollmentCreated";
-// import { completeLesson } from "./handlers/analytics/completeLesson";
+import { completeLesson } from "./handlers/analytics/completeLesson";
 // import { completeCourse } from "./handlers/analytics/completeCourse";
 // import { userDeleteCascade } from "./workers/userDeleteCascade";
 // import { pauseReminderForAssignments } from "./handlers/notifications/pauseReminderForAssignments";
@@ -84,7 +84,7 @@ export {
   createCouponUsage,
   // onEnrollmentCreated,
   // lessonTimeSpent,
-  // completeLesson,
+  completeLesson,
   // completeCourse,
   // onCourseUpdated,
   // sendAnnouncementEmailWorker,
