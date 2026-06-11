@@ -91,6 +91,7 @@ const InvoicePage = lazy(() => import("./pages/InvoicePage"));
 const MyInvoicesPage = lazy(() => import("./pages/MyInvoices"));
 const Quizzes = lazy(() => import("./pages/Quizzes"));
 const AttemptQuiz = lazy(() => import("./pages/AttemptQuiz"));
+const AttemptTopicQuiz = lazy(() => import("./pages/AttemptTopicQuiz"));
 const FreeCourses = lazy(() => import("./pages/FreeCourses"));
 const UserComplaints = lazy(() => import("./pages/UserComplaints"));
 const Forum = lazy(() => import("./pages/Forum"));
@@ -223,6 +224,14 @@ const App = () => (
                           element={
                             <AuthGuard requireAuth requireStudent>
                               <AttemptQuiz />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/courses/:param/topic-quiz/:quizId"
+                          element={
+                            <AuthGuard requireAuth requireEnrollmentOrAdmin={true}>
+                              <AttemptTopicQuiz />
                             </AuthGuard>
                           }
                         />
