@@ -18,6 +18,7 @@ import { COLLECTION } from '@/constants';
 import { ContentLock } from '@/types/content-lock';
 import { fail, ok, Result } from '@/utils/response';
 import { logError } from '@/utils/logger';
+import { authService } from './authService';
 
 /**
  * Firestore-based service for managing Content Locks
@@ -211,6 +212,88 @@ class ContentLockService {
     } catch (error) {
       logError('ContentLockService - Error fetching locks by contentIds:', error);
       return fail('Error fetching content locks');
+    }
+  }
+
+  // ───────────────────────────────────────────────
+  // Teacher-facing lock management (routed through the Worker, which enforces
+  // the org-scope + course-enrollment gate server-side). Admins may also use
+  // these, but the existing admin form continues to use the direct methods above.
+  // ───────────────────────────────────────────────
+
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  private async authedFetch(path: string, init: RequestInit): Promise<any> {
+    const idToken = await authService.getToken();
+    const res = await fetch(`${this.backendUrl}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+        ...(init.headers || {}),
+      },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error((json as any)?.error || `Request failed: ${res.status}`);
+    }
+    return json;
+  }
+
+  /**
+   * Teacher: create a content lock for a lesson/topic in a course they teach.
+   */
+  async teacherCreateLock(input: {
+    courseId: string;
+    contentType: ContentLock['contentType'];
+    contentId: string;
+    isLocked: boolean;
+    class?: string | null;
+    division?: string | null;
+  }): Promise<Result<string>> {
+    try {
+      const json = await this.authedFetch('/teacher/content-locks', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+      return ok(json.id as string);
+    } catch (error) {
+      logError('ContentLockService - teacherCreateLock', error);
+      return fail(error instanceof Error ? error.message : 'Error creating content lock');
+    }
+  }
+
+  /**
+   * Teacher: update an existing lock (toggle locked state / retarget class/division).
+   */
+  async teacherUpdateLock(
+    lockId: string,
+    updates: { isLocked?: boolean; class?: string | null; division?: string | null }
+  ): Promise<Result<null>> {
+    try {
+      await this.authedFetch(`/teacher/content-locks/${encodeURIComponent(lockId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      return ok(null);
+    } catch (error) {
+      logError('ContentLockService - teacherUpdateLock', error);
+      return fail(error instanceof Error ? error.message : 'Error updating content lock');
+    }
+  }
+
+  /**
+   * Teacher: delete a lock in their organization.
+   */
+  async teacherDeleteLock(lockId: string): Promise<Result<null>> {
+    try {
+      await this.authedFetch(`/teacher/content-locks/${encodeURIComponent(lockId)}`, {
+        method: 'DELETE',
+      });
+      return ok(null);
+    } catch (error) {
+      logError('ContentLockService - teacherDeleteLock', error);
+      return fail(error instanceof Error ? error.message : 'Error deleting content lock');
     }
   }
 }

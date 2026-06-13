@@ -17,6 +17,8 @@ export const COLLECTION = {
   KARMA_DAILY: "KarmaDaily",
   KARMA_RULES: "KarmaRules",
   IDEMPOTENCY: "Idempotency",
+  ORGANIZATIONS: "Organizations",
+  CONTENT_LOCKS: "ContentLocks",
 } as const;
 
 export const ORDER_STATUS = {

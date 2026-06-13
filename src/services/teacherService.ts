@@ -4,11 +4,9 @@ import {
   where,
   getDocs,
   orderBy,
-  limit,
-  WhereFilterOp,
 } from "firebase/firestore";
 
-import { COLLECTION, USER_ROLE } from "@/constants";
+import { COLLECTION } from "@/constants";
 import { db } from "@/firebaseConfig";
 import { User } from "@/types/user";
 // import { AssignmentSubmission } from "@/types/assignment";
@@ -18,39 +16,117 @@ import { LearningProgress } from "@/types/learning-progress";
 import { Result, ok, fail } from "@/utils/response";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { logError } from "@/utils/logger";
-import { userService } from "./userService";
+import { authService } from "./authService";
+
+/** Teacher's own enrolled course (from /teacher/my-courses). */
+export interface TeacherCourseRef {
+  courseId: string;
+  courseName: string;
+  slug: string;
+}
 
 class TeacherService {
+  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  /**
+   * Authenticated GET against the Worker teacher endpoints.
+   * Returns the parsed `data` array/object; throws on non-2xx.
+   */
+  private async authedGet<T>(path: string): Promise<T> {
+    const idToken = await authService.getToken();
+    const res = await fetch(`${this.backendUrl}${path}`, {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as any)?.error || `Request failed: ${res.status}`);
+    }
+    const json = await res.json();
+    return (json as any).data as T;
+  }
+
+  /** Coerce an ISO string / Firestore value to a Date (or null). */
+  private toDate(v: unknown): Date | null {
+    if (!v) return null;
+    if (v instanceof Date) return v;
+    if (typeof v === "object" && typeof (v as any).toDate === "function") {
+      return (v as any).toDate();
+    }
+    const d = new Date(v as string);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  /**
+   * Get the teacher's OWN enrolled courses. This set defines which student
+   * course data the teacher is allowed to access. Server-enforced.
+   */
+  async getMyCourses(): Promise<Result<TeacherCourseRef[]>> {
+    try {
+      const data = await this.authedGet<TeacherCourseRef[]>("/teacher/my-courses");
+      return ok(data ?? []);
+    } catch (error) {
+      logError("TeacherService.getMyCourses", error);
+      return fail("Failed to fetch your courses");
+    }
+  }
+
   /**
    * Get all students belonging to the teacher's organization.
+   * Routed through the Worker (org-scope enforced server-side). Pagination is
+   * applied client-side over the full org list.
    */
   async getOrganizationStudents(
     organizationId: string,
     options: PaginationOptions<User> = {}
   ): Promise<Result<PaginatedResult<User>>> {
-    return userService.getUsersByOrganization(
-      organizationId,
-      USER_ROLE.STUDENT,
-      options
-    );
+    void organizationId; // org is derived server-side from the auth token
+    try {
+      const all = await this.fetchOrgStudents();
+      const perPage = options.limit ?? all.length;
+      const page = all.slice(0, perPage);
+      return ok({
+        data: page,
+        hasNextPage: all.length > perPage,
+        hasPreviousPage: false,
+        nextCursor: null,
+        previousCursor: null,
+        totalCount: all.length,
+      });
+    } catch (error) {
+      logError("TeacherService.getOrganizationStudents", error);
+      return fail("Failed to fetch organization students");
+    }
   }
 
   /**
    * Get all student IDs in the organization (non-paginated).
-   * Used for filtering submissions, comments, enrollments.
+   * Used for filtering comments. Org-scope enforced server-side.
    */
   async getOrganizationStudentIds(
     organizationId: string
   ): Promise<Result<string[]>> {
-    return userService.getOrganizationUserIds(
-      organizationId,
-      USER_ROLE.STUDENT
-    );
+    void organizationId;
+    try {
+      const all = await this.fetchOrgStudents();
+      return ok(all.map((s) => s.id));
+    } catch (error) {
+      logError("TeacherService.getOrganizationStudentIds", error);
+      return fail("Failed to fetch organization student IDs");
+    }
+  }
+
+  /** Internal: fetch the full org student list from the Worker, dates normalized. */
+  private async fetchOrgStudents(): Promise<User[]> {
+    const raw = await this.authedGet<any[]>("/teacher/students");
+    return (raw ?? []).map((s) => ({
+      ...s,
+      createdAt: this.toDate(s.createdAt),
+      updatedAt: this.toDate(s.updatedAt),
+    })) as User[];
   }
 
   // getOrganizationSubmissions — disabled (assignment feature removed)
   async getOrganizationSubmissions(_organizationId: string): Promise<Result<never[]>> {
-    return ok([]);
+    return ok([] as never[]);
   }
 
   /**
@@ -121,148 +197,82 @@ class TeacherService {
   }
 
   /**
-   * Get enrollments for organization students.
-   * Optionally filter by courseId.
+   * Get enrollments for organization students (optionally for one course).
+   * Routed through the Worker: org-scope + course-enrollment gate enforced
+   * server-side. Returns [] (not an error) when the teacher is not enrolled in
+   * the requested course is handled by the caller via the 403 path.
    */
   async getOrganizationEnrollments(
     organizationId: string,
     courseId?: string
   ): Promise<Result<Enrollment[]>> {
+    void organizationId;
     try {
-      const idsResult = await this.getOrganizationStudentIds(organizationId);
-      if (!idsResult.success || !idsResult.data) {
-        return fail("Failed to fetch organization student IDs");
-      }
-
-      const studentIds = idsResult.data;
-      if (studentIds.length === 0) {
-        return ok([]);
-      }
-
-      const BATCH_SIZE = 30;
-      const allEnrollments: Enrollment[] = [];
-
-      for (let i = 0; i < studentIds.length; i += BATCH_SIZE) {
-        const batch = studentIds.slice(i, i + BATCH_SIZE);
-        const constraints: any[] = [
-          where("userId", "in", batch),
-        ];
-
-        if (courseId) {
-          constraints.push(where("courseId", "==", courseId));
-        }
-
-        const q = query(
-          collection(db, COLLECTION.ENROLLMENTS),
-          ...constraints
-        );
-
-        const snapshot = await getDocs(q);
-        const enrollments = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            enrollmentDate: data.enrollmentDate?.toDate(),
-            completionDate: data.completionDate?.toDate(),
-            createdAt: data.createdAt?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
-          } as Enrollment;
-        });
-
-        allEnrollments.push(...enrollments);
-      }
-
-      return ok(allEnrollments);
+      const path = courseId
+        ? `/teacher/enrollments?courseId=${encodeURIComponent(courseId)}`
+        : "/teacher/enrollments";
+      const raw = await this.authedGet<any[]>(path);
+      const enrollments = (raw ?? []).map((e) => ({
+        ...e,
+        enrollmentDate: this.toDate(e.enrollmentDate),
+        completionDate: this.toDate(e.completionDate),
+        createdAt: this.toDate(e.createdAt),
+        updatedAt: this.toDate(e.updatedAt),
+      })) as Enrollment[];
+      return ok(enrollments);
     } catch (error) {
       logError("TeacherService.getOrganizationEnrollments", error);
-      return fail("Failed to fetch organization enrollments");
+      return fail(error instanceof Error ? error.message : "Failed to fetch organization enrollments");
     }
   }
 
   /**
    * Get learning progress for a specific student in a specific course.
+   * Uses the gated course-progress endpoint and selects the student.
    */
   async getStudentCourseProgress(
     userId: string,
     courseId: string
   ): Promise<Result<LearningProgress | null>> {
     try {
-      const q = query(
-        collection(db, COLLECTION.LEARNING_PROGRESS),
-        where("userId", "==", userId),
-        where("courseId", "==", courseId),
-        limit(1)
+      const raw = await this.authedGet<any[]>(
+        `/teacher/course-progress?courseId=${encodeURIComponent(courseId)}`
       );
-
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
-        return ok(null);
-      }
-
-      const doc = snapshot.docs[0];
-      const data = doc.data();
+      const match = (raw ?? []).find((p) => p.userId === userId);
+      if (!match) return ok(null);
       return ok({
-        id: doc.id,
-        ...data,
-        lastAccessed: data.lastAccessed?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
+        ...match,
+        lastAccessed: this.toDate(match.lastAccessed),
+        updatedAt: this.toDate(match.updatedAt),
       } as LearningProgress);
     } catch (error) {
       logError("TeacherService.getStudentCourseProgress", error);
-      return fail("Failed to fetch student course progress");
+      return fail(error instanceof Error ? error.message : "Failed to fetch student course progress");
     }
   }
 
   /**
    * Get learning progress for all organization students in a specific course.
-   * Batches queries due to Firestore "in" limit of 30 items.
+   * Routed through the Worker (course-enrollment gate enforced server-side).
    */
   async getOrganizationCourseProgress(
     organizationId: string,
     courseId: string
   ): Promise<Result<LearningProgress[]>> {
+    void organizationId;
     try {
-      const idsResult = await this.getOrganizationStudentIds(organizationId);
-      if (!idsResult.success || !idsResult.data) {
-        return fail("Failed to fetch organization student IDs");
-      }
-
-      const studentIds = idsResult.data;
-      if (studentIds.length === 0) {
-        return ok([]);
-      }
-
-      const BATCH_SIZE = 30;
-      const allProgress: LearningProgress[] = [];
-
-      for (let i = 0; i < studentIds.length; i += BATCH_SIZE) {
-        const batch = studentIds.slice(i, i + BATCH_SIZE);
-        const q = query(
-          collection(db, COLLECTION.LEARNING_PROGRESS),
-          where("userId", "in", batch),
-          where("courseId", "==", courseId)
-        );
-
-        const snapshot = await getDocs(q);
-        const progress = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            lastAccessed: data.lastAccessed?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
-          } as LearningProgress;
-        });
-
-        allProgress.push(...progress);
-      }
-
-      return ok(allProgress);
+      const raw = await this.authedGet<any[]>(
+        `/teacher/course-progress?courseId=${encodeURIComponent(courseId)}`
+      );
+      const progress = (raw ?? []).map((p) => ({
+        ...p,
+        lastAccessed: this.toDate(p.lastAccessed),
+        updatedAt: this.toDate(p.updatedAt),
+      })) as LearningProgress[];
+      return ok(progress);
     } catch (error) {
       logError("TeacherService.getOrganizationCourseProgress", error);
-      return fail("Failed to fetch organization course progress");
+      return fail(error instanceof Error ? error.message : "Failed to fetch organization course progress");
     }
   }
 
@@ -310,23 +320,9 @@ class TeacherService {
   async getAllOrganizationStudents(
     organizationId: string
   ): Promise<Result<User[]>> {
+    void organizationId; // org derived server-side from auth token
     try {
-      const usersRef = collection(db, COLLECTION.USERS);
-      const q = query(
-        usersRef,
-        where("organizationId", "==", organizationId),
-        where("role", "==", USER_ROLE.STUDENT)
-      );
-      const snapshot = await getDocs(q);
-      const students = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          ...data,
-          id: doc.id,
-          createdAt: data.createdAt?.toDate?.() || data.createdAt,
-          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
-        } as User;
-      });
+      const students = await this.fetchOrgStudents();
       return ok(students);
     } catch (error) {
       logError("TeacherService.getAllOrganizationStudents", error);
@@ -341,7 +337,8 @@ class TeacherService {
   async getProgressStatistics(
     studentIds: string[],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    courseId?: string
   ): Promise<
     Result<{
       totalLessonsCompleted: number;
@@ -366,28 +363,17 @@ class TeacherService {
         });
       }
 
-      const BATCH_SIZE = 30;
-      const allProgress: LearningProgress[] = [];
+      // Routed through the Worker: returns progress for org students restricted
+      // to courses the teacher can access. lessonHistory.completedAt arrives as
+      // ISO strings, handled below by the `new Date(...)` fallback.
+      const raw = await this.authedGet<any[]>("/teacher/progress");
+      let allProgress = (raw ?? []) as LearningProgress[];
 
-      for (let i = 0; i < studentIds.length; i += BATCH_SIZE) {
-        const batch = studentIds.slice(i, i + BATCH_SIZE);
-        const q = query(
-          collection(db, COLLECTION.LEARNING_PROGRESS),
-          where("userId", "in", batch)
-        );
-
-        const snapshot = await getDocs(q);
-        const progress = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            lastAccessed: data.lastAccessed?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
-          } as LearningProgress;
-        });
-
-        allProgress.push(...progress);
+      // Restrict the aggregation to the selected students + (optional) course.
+      const studentIdSet = new Set(studentIds);
+      allProgress = allProgress.filter((p) => studentIdSet.has(p.userId));
+      if (courseId) {
+        allProgress = allProgress.filter((p) => p.courseId === courseId);
       }
 
       const monthlyMap = new Map<string, number>();

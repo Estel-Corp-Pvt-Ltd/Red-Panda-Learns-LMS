@@ -1346,6 +1346,439 @@ app.post("/addKarma", async (c) => {
   return c.json({ success: true });
 });
 
+// ─── Teacher dashboard endpoints ────────────────────────────────────────────────
+//
+// Access model (enforced server-side, not just in the UI):
+//  - A teacher may only see students in their OWN organization.
+//  - A teacher may only see student course data (enrollments / progress) for
+//    courses the teacher is THEMSELVES enrolled in.
+//  - A teacher may only create/update/delete content locks for courses they are
+//    enrolled in, scoped to their own organization.
+// These run with the service account (bypassing Firestore rules), so the gate
+// here IS the security boundary.
+
+interface TeacherContext {
+  uid: string;
+  role: string;
+  organizationId: string;
+  enrolledCourseIds: Set<string>;
+}
+
+/**
+ * Load the teacher's organization + the set of courseIds they are enrolled in.
+ * Admins are allowed through with full access (no enrollment gate); they still
+ * carry an organizationId if present.
+ */
+async function teacherContext(firestore: Firestore, user: DecodedToken): Promise<TeacherContext> {
+  const userDoc = await firestore.getDoc(COLLECTION.USERS, user.uid);
+  if (!userDoc) {
+    throw new Error("User record not found");
+  }
+  const role = (userDoc.role as string) ?? user.role ?? "";
+  const organizationId = (userDoc.organizationId as string) ?? "";
+
+  const enrollments = await firestore.query(
+    COLLECTION.ENROLLMENTS,
+    [{ field: "userId", op: "==", value: user.uid }]
+  );
+  const enrolledCourseIds = new Set<string>(
+    enrollments.map((e) => e.data.courseId as string).filter(Boolean)
+  );
+
+  return { uid: user.uid, role, organizationId, enrolledCourseIds };
+}
+
+/** True if the caller is a TEACHER or ADMIN (both may use teacher endpoints). */
+function isTeacherOrAdmin(role: string): boolean {
+  return role === USER_ROLE.TEACHER || role === USER_ROLE.ADMIN;
+}
+
+/** Run a batched "userId IN (...)" query, chunked at 30 (Firestore IN limit). */
+async function queryByUserIds(
+  firestore: Firestore,
+  collection: string,
+  userIds: string[],
+  extraWhere: Array<{ field: string; op: string; value: unknown }> = []
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+  const out: Array<{ id: string; data: Record<string, unknown> }> = [];
+  for (let i = 0; i < userIds.length; i += 30) {
+    const batch = userIds.slice(i, i + 30);
+    if (batch.length === 0) continue;
+    const docs = await firestore.query(collection, [
+      { field: "userId", op: "in", value: batch },
+      ...extraWhere,
+    ]);
+    out.push(...docs);
+  }
+  return out;
+}
+
+/** Fetch all STUDENT users in an organization. */
+async function getOrgStudents(
+  firestore: Firestore,
+  organizationId: string
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+  if (!organizationId) return [];
+  return firestore.query(COLLECTION.USERS, [
+    { field: "organizationId", op: "==", value: organizationId },
+    { field: "role", op: "==", value: USER_ROLE.STUDENT },
+  ]);
+}
+
+// ── GET /teacher/my-courses ───────────────────────────────────────────────────
+// The teacher's own enrolled courses. This set defines what student data they
+// can subsequently access.
+
+app.get("/teacher/my-courses", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    const courses = await Promise.all(
+      Array.from(ctx.enrolledCourseIds).map(async (courseId) => {
+        const course = await getCourseById(firestore, courseId);
+        return course
+          ? { courseId, courseName: course.title, slug: course.slug }
+          : { courseId, courseName: courseId, slug: "" };
+      })
+    );
+
+    return c.json({ success: true, data: courses });
+  } catch (err: any) {
+    console.error("[teacher/my-courses]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to load courses" }, 500);
+  }
+});
+
+// ── GET /teacher/students ─────────────────────────────────────────────────────
+// All students in the teacher's organization (sanitized).
+
+app.get("/teacher/students", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+    if (!ctx.organizationId) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const students = await getOrgStudents(firestore, ctx.organizationId);
+    const data = students.map((s) => ({
+      id: s.id,
+      firstName: s.data.firstName ?? "",
+      middleName: s.data.middleName ?? "",
+      lastName: s.data.lastName ?? "",
+      email: s.data.email ?? "",
+      class: s.data.class ?? null,
+      division: s.data.division ?? null,
+      status: s.data.status ?? null,
+      organizationId: s.data.organizationId ?? null,
+      photoURL: s.data.photoURL ?? null,
+      createdAt: s.data.createdAt ?? null,
+      updatedAt: s.data.updatedAt ?? null,
+    }));
+
+    return c.json({ success: true, data });
+  } catch (err: any) {
+    console.error("[teacher/students]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to load students" }, 500);
+  }
+});
+
+// ── GET /teacher/enrollments?courseId= ────────────────────────────────────────
+// Enrollments for org students. If courseId is given, gated by teacher
+// enrollment in that course.
+
+app.get("/teacher/enrollments", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+  const courseId = c.req.query("courseId");
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+    if (!ctx.organizationId) {
+      return c.json({ success: true, data: [] });
+    }
+
+    // Course-enrollment gate (admins exempt)
+    if (courseId && ctx.role !== USER_ROLE.ADMIN && !ctx.enrolledCourseIds.has(courseId)) {
+      return c.json({ error: "You are not enrolled in this course" }, 403);
+    }
+
+    const students = await getOrgStudents(firestore, ctx.organizationId);
+    const studentIds = students.map((s) => s.id);
+    if (studentIds.length === 0) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const extra = courseId ? [{ field: "courseId", op: "==", value: courseId }] : [];
+    const enrollments = await queryByUserIds(firestore, COLLECTION.ENROLLMENTS, studentIds, extra);
+
+    const data = enrollments.map((e) => ({ id: e.id, ...e.data }));
+    return c.json({ success: true, data });
+  } catch (err: any) {
+    console.error("[teacher/enrollments]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to load enrollments" }, 500);
+  }
+});
+
+// ── GET /teacher/course-progress?courseId= ────────────────────────────────────
+// Learning progress for org students in a specific course. Always gated by
+// teacher enrollment in that course.
+
+app.get("/teacher/course-progress", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+  const courseId = c.req.query("courseId");
+
+  if (!courseId) {
+    return c.json({ error: "courseId is required" }, 400);
+  }
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+    if (ctx.role !== USER_ROLE.ADMIN && !ctx.enrolledCourseIds.has(courseId)) {
+      return c.json({ error: "You are not enrolled in this course" }, 403);
+    }
+    if (!ctx.organizationId) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const students = await getOrgStudents(firestore, ctx.organizationId);
+    const studentIds = students.map((s) => s.id);
+    if (studentIds.length === 0) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const progress = await queryByUserIds(firestore, COLLECTION.LEARNING_PROGRESS, studentIds, [
+      { field: "courseId", op: "==", value: courseId },
+    ]);
+
+    const data = progress.map((p) => ({ id: p.id, ...p.data }));
+    return c.json({ success: true, data });
+  } catch (err: any) {
+    console.error("[teacher/course-progress]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to load progress" }, 500);
+  }
+});
+
+// ── GET /teacher/progress ─────────────────────────────────────────────────────
+// All learning progress for org students, restricted to courses the teacher is
+// enrolled in. Used by the statistics page (aggregated client-side).
+
+app.get("/teacher/progress", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+    if (!ctx.organizationId) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const students = await getOrgStudents(firestore, ctx.organizationId);
+    const studentIds = students.map((s) => s.id);
+    if (studentIds.length === 0) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const progress = await queryByUserIds(firestore, COLLECTION.LEARNING_PROGRESS, studentIds);
+
+    // Restrict to courses the teacher can access (admins see all)
+    const filtered =
+      ctx.role === USER_ROLE.ADMIN
+        ? progress
+        : progress.filter((p) => ctx.enrolledCourseIds.has(p.data.courseId as string));
+
+    const data = filtered.map((p) => ({ id: p.id, ...p.data }));
+    return c.json({ success: true, data });
+  } catch (err: any) {
+    console.error("[teacher/progress]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to load progress" }, 500);
+  }
+});
+
+// ── Content lock management (teacher) ─────────────────────────────────────────
+// Teachers may only manage locks for courses they are enrolled in. The lock is
+// forced to the teacher's organization and may never apply to all users.
+
+/** Generate a content lock ID matching the frontend convention. */
+async function generateContentLockId(firestore: Firestore): Promise<string> {
+  let next = 100001;
+  await firestore.runTransaction(async (tx) => {
+    const snap = await tx.getDoc(COLLECTION.COUNTERS, "contentLockCounter");
+    const last = snap.exists ? ((snap.data.lastNumber as number) ?? 100000) : 100000;
+    next = last + 1;
+    tx.setDoc(COLLECTION.COUNTERS, "contentLockCounter", { lastNumber: next });
+  });
+  return `content_lock_${next}`;
+}
+
+app.post("/teacher/content-locks", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+
+  let body: {
+    courseId: string;
+    contentType: string;
+    contentId: string;
+    class?: string | null;
+    division?: string | null;
+    isLocked: boolean;
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const { courseId, contentType, contentId, isLocked } = body;
+  if (!courseId || !contentType || !contentId || typeof isLocked !== "boolean") {
+    return c.json({ error: "Missing required fields: courseId, contentType, contentId, isLocked" }, 400);
+  }
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+    if (ctx.role !== USER_ROLE.ADMIN && !ctx.enrolledCourseIds.has(courseId)) {
+      return c.json({ error: "You are not enrolled in this course" }, 403);
+    }
+    if (!ctx.organizationId) {
+      return c.json({ error: "Teacher has no organization assigned" }, 400);
+    }
+
+    const id = await generateContentLockId(firestore);
+    await firestore.setDoc(COLLECTION.CONTENT_LOCKS, id, {
+      id,
+      contentType,
+      contentId,
+      appliesToAllUsers: false,
+      organizationId: ctx.organizationId,
+      class: body.class ?? null,
+      division: body.division ?? null,
+      isLocked,
+      createdAt: SERVER_TIMESTAMP,
+      updatedAt: SERVER_TIMESTAMP,
+    });
+
+    return c.json({ success: true, id });
+  } catch (err: any) {
+    console.error("[teacher/content-locks:create]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to create lock" }, 500);
+  }
+});
+
+app.put("/teacher/content-locks/:id", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+  const lockId = c.req.param("id");
+
+  let body: { isLocked?: boolean; class?: string | null; division?: string | null };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    const lock = await firestore.getDoc(COLLECTION.CONTENT_LOCKS, lockId);
+    if (!lock) {
+      return c.json({ error: "Lock not found" }, 404);
+    }
+    // Teachers may only touch locks in their own organization
+    if (ctx.role !== USER_ROLE.ADMIN && lock.organizationId !== ctx.organizationId) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    const updates: Record<string, unknown> = { updatedAt: SERVER_TIMESTAMP };
+    if (typeof body.isLocked === "boolean") updates.isLocked = body.isLocked;
+    if (body.class !== undefined) updates.class = body.class;
+    if (body.division !== undefined) updates.division = body.division;
+
+    await firestore.updateDoc(COLLECTION.CONTENT_LOCKS, lockId, updates);
+    return c.json({ success: true });
+  } catch (err: any) {
+    console.error("[teacher/content-locks:update]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to update lock" }, 500);
+  }
+});
+
+app.delete("/teacher/content-locks/:id", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const firestore = db(c.env);
+  const lockId = c.req.param("id");
+
+  try {
+    const ctx = await teacherContext(firestore, user);
+    if (!isTeacherOrAdmin(ctx.role)) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    const lock = await firestore.getDoc(COLLECTION.CONTENT_LOCKS, lockId);
+    if (!lock) {
+      return c.json({ success: true }); // already gone — idempotent
+    }
+    if (ctx.role !== USER_ROLE.ADMIN && lock.organizationId !== ctx.organizationId) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    await firestore.deleteDoc(COLLECTION.CONTENT_LOCKS, lockId);
+    return c.json({ success: true });
+  } catch (err: any) {
+    console.error("[teacher/content-locks:delete]", err?.message ?? err);
+    return c.json({ error: err?.message ?? "Failed to delete lock" }, 500);
+  }
+});
+
 // ─── 404 fallback ─────────────────────────────────────────────────────────────
 
 app.all("*", (c) => c.json({ error: "Not found" }, 404));

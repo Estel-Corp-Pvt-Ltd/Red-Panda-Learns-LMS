@@ -9,7 +9,7 @@ import { contentLockService } from "@/services/contentLockService";
 import { ContentLock } from "@/types/content-lock";
 import { useAuth } from "@/contexts/AuthContext";
 import { USER_ROLE } from "@/constants";
-import { isContentLocked } from "@/utils/is-content-locked";
+import { isContentLocked, selectApplicableLock } from "@/utils/is-content-locked";
 
 /* ------------------------------------------------------------------ */
 /* Sketchy squiggly line SVG between topic nodes                       */
@@ -281,14 +281,27 @@ export function CourseNavigator({
         const allContentIds = [...topicIds, ...lessonIds];
         const res = await contentLockService.getLocksByContentIds(allContentIds);
 
+        // Group every lock by contentId, then select the lock that governs THIS
+        // user (org/class/division aware) rather than blindly taking the last one.
+        const locksByContent = new Map<string, ContentLock[]>();
+        if (res.success) {
+          res.data.forEach((lock) => {
+            const arr = locksByContent.get(lock.contentId) ?? [];
+            arr.push(lock);
+            locksByContent.set(lock.contentId, arr);
+          });
+        }
+
         const topicMap: Record<string, ContentLock | null> = {};
-        topicIds.forEach((id) => (topicMap[id] = null));
-        if (res.success) res.data.forEach((lock) => (topicMap[lock.contentId] = lock));
+        topicIds.forEach((id) => {
+          topicMap[id] = selectApplicableLock(locksByContent.get(id) ?? [], user);
+        });
         setTopicLocks(topicMap);
 
         const lessonMap: Record<string, ContentLock | null> = {};
-        lessonIds.forEach((id) => (lessonMap[id] = null));
-        if (res.success) res.data.forEach((lock) => (lessonMap[lock.contentId] = lock));
+        lessonIds.forEach((id) => {
+          lessonMap[id] = selectApplicableLock(locksByContent.get(id) ?? [], user);
+        });
         setLessonLocks(lessonMap);
       } catch (err) {
         console.error("Failed to fetch locks", err);
@@ -298,7 +311,7 @@ export function CourseNavigator({
     };
 
     fetchLocks();
-  }, [course?.topics]);
+  }, [course?.topics, user?.organizationId, user?.class, user?.division]);
 
   const visibleTopics = course.topics.filter((topic) => {
     const lock = topicLocks[topic.id];

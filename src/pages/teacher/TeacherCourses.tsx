@@ -198,10 +198,11 @@ const TeacherCourses = () => {
 
     setLoading(true);
     try {
-      const [coursesResult, enrollmentsResult, studentsResult] = await Promise.all([
+      const [coursesResult, enrollmentsResult, studentsResult, myCoursesResult] = await Promise.all([
         courseService.getPublishedCourses(),
         teacherService.getOrganizationEnrollments(user.organizationId),
         teacherService.getAllOrganizationStudents(user.organizationId),
+        teacherService.getMyCourses(),
       ]);
 
       if (studentsResult.success && studentsResult.data) {
@@ -212,13 +213,19 @@ const TeacherCourses = () => {
         const orgEnrollments = enrollmentsResult.success ? enrollmentsResult.data || [] : [];
         setAllEnrollments(orgEnrollments);
 
+        // Only courses the teacher is enrolled in are accessible.
+        const myCourseIds = new Set(
+          (myCoursesResult.success ? myCoursesResult.data || [] : []).map((c) => c.courseId)
+        );
+        const accessibleCourses = coursesResult.filter((course) => myCourseIds.has(course.id));
+
         const courseEnrollmentCounts: Record<string, number> = {};
         orgEnrollments.forEach((enrollment) => {
           const key = enrollment.courseId;
           courseEnrollmentCounts[key] = (courseEnrollmentCounts[key] || 0) + 1;
         });
 
-        const coursesWithStats = coursesResult.map((course) => ({
+        const coursesWithStats = accessibleCourses.map((course) => ({
           ...course,
           enrolledStudents: courseEnrollmentCounts[course.id] || 0,
         }));

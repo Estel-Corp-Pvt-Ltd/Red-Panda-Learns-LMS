@@ -150,6 +150,7 @@ const sidebarItems: SidebarItem[] = [
       icon: <Building2 className="h-5 w-5" />,
       items: [
         { name: "Organizations", path: "/admin/organizations", icon: <Building2 className="h-4 w-4" /> },
+        { name: "Organization Members", path: "/admin/organization-members", icon: <Users className="h-4 w-4" /> },
         { name: "Instructors", path: "/admin/instructors", icon: <UserPen className="h-4 w-4" /> },
         { name: "Karma Rules", path: "/admin/karmarules", icon: <Webhook className="h-4 w-4" /> },
       ],

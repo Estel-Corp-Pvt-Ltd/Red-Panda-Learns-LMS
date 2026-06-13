@@ -33,8 +33,15 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { teacherService } from "@/services/teacherService";
+import { teacherService, TeacherCourseRef } from "@/services/teacherService";
 import { User } from "@/types/user";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertTriangle,
   BarChart3,
@@ -100,6 +107,8 @@ const TeacherStatistics = () => {
   const [allStudents, setAllStudents] = useState<User[]>([]);
   const [statistics, setStatistics] = useState<ProgressStatistics | null>(null);
   const [studentsLoading, setStudentsLoading] = useState(true);
+  const [myCourses, setMyCourses] = useState<TeacherCourseRef[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const handleFilterChange = useCallback(
     (cls: string | null, div: string | null) => {
@@ -132,6 +141,15 @@ const TeacherStatistics = () => {
     fetchStudents();
   }, [user?.organizationId]);
 
+  // Fetch the teacher's enrolled courses for the course filter
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const result = await teacherService.getMyCourses();
+      if (result.success && result.data) setMyCourses(result.data);
+    };
+    fetchCourses();
+  }, []);
+
   // Filter students by class/division
   const filteredStudents = useMemo(() => {
     return allStudents.filter((student) => {
@@ -156,7 +174,8 @@ const TeacherStatistics = () => {
         const result = await teacherService.getProgressStatistics(
           studentIds,
           startDate,
-          endDate
+          endDate,
+          selectedCourseId ?? undefined
         );
 
         if (result.success && result.data) {
@@ -178,7 +197,7 @@ const TeacherStatistics = () => {
     if (!studentsLoading) {
       fetchStatistics();
     }
-  }, [user?.organizationId, filteredStudents, startDate, endDate, studentsLoading]);
+  }, [user?.organizationId, filteredStudents, startDate, endDate, studentsLoading, selectedCourseId]);
 
   // Handle date preset change
   const handlePresetChange = (preset: DatePreset) => {
@@ -275,6 +294,34 @@ const TeacherStatistics = () => {
             </div>
           </div>
         </div>
+
+        {/* Course Filter */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <CardTitle className="text-base">Course</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Select
+              value={selectedCourseId ?? "__ALL__"}
+              onValueChange={(v) => setSelectedCourseId(v === "__ALL__" ? null : v)}
+            >
+              <SelectTrigger className="w-full max-w-sm">
+                <SelectValue placeholder="All my courses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__ALL__">All my courses</SelectItem>
+                {myCourses.map((c) => (
+                  <SelectItem key={c.courseId} value={c.courseId}>
+                    {c.courseName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
 
         {/* Filters Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

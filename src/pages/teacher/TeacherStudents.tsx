@@ -30,7 +30,7 @@ import {
   Search,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const TeacherStudents = () => {
@@ -61,10 +61,8 @@ const TeacherStudents = () => {
         const result = await teacherService.getOrganizationStudents(user.organizationId, {
           limit: 100,
         });
-        console.log("API response for students:", result);
         if (result.success && result.data) {
           setStudents(result.data.data);
-          console.log("Fetched students:", result.data.data[1].class);
         } else {
           toast({ title: "Error", description: "Failed to load students", variant: "destructive" });
         }
@@ -234,9 +232,8 @@ const TeacherStudents = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredStudents.map((student) => (
-                      <>
+                      <React.Fragment key={student.id}>
                         <TableRow
-                          key={student.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => navigate(`/teacher/students/${student.id}`)}
                         >
@@ -268,7 +265,7 @@ const TeacherStudents = () => {
 
                         {/* Expanded enrollments */}
                         {expandedStudentId === student.id && (
-                          <TableRow key={`${student.id}-expand`}>
+                          <TableRow>
                             <TableCell colSpan={7} className="bg-muted/30 p-4">
                               {loadingEnrollments === student.id ? (
                                 <div className="flex items-center gap-2 py-2">
@@ -325,7 +322,7 @@ const TeacherStudents = () => {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
