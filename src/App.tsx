@@ -66,6 +66,8 @@ const TeacherComments = lazy(() => import("./pages/teacher/TeacherComments"));
 const TeacherBulkUpload = lazy(() => import("./pages/teacher/TeacherBulkUpload"));
 const TeacherStatistics = lazy(() => import("./pages/teacher/TeacherStatistics"));
 const TeacherStudentDetail = lazy(() => import("./pages/teacher/TeacherStudentDetail"));
+const TeacherMyCourses = lazy(() => import("./pages/teacher/TeacherMyCourses"));
+const TeacherContentManagement = lazy(() => import("./pages/teacher/TeacherContentManagement"));
 
 // Lazy load instructor pages
 const InstructorLayout = lazy(() => import("./components/InstructorLayout"));
@@ -706,6 +708,22 @@ const App = () => (
                           element={
                             <AuthGuard requireAuth requireTeacher>
                               <TeacherStatistics />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/my-courses"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherMyCourses />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/content-management"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherContentManagement />
                             </AuthGuard>
                           }
                         />
