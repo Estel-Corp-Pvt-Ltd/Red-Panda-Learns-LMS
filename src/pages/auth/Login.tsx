@@ -134,7 +134,7 @@ export default function Login() {
                 Through Interactive Learning
               </h1>
               <p className="auth-login-subtitle">
-                Hands-on courses, real projects, streaks, XP systems, and community learning.
+                Hands-on courses, real projects, and community learning.
               </p>
             </div>
 

@@ -2,12 +2,15 @@
 
 import { Header } from "@/components/Header";
 import { StudentSidebar } from "@/components/StudentSidebar";
-import { StatCards } from "@/components/dashboard/StatCards";
+// Gamification widgets (XP / streak / level / badges / quests / achievements)
+// are intentionally hidden until those features are fully released. Components
+// are kept in the codebase for reintroduction later.
+// import { StatCards } from "@/components/dashboard/StatCards";
 import { HeroContinueLearning, HeroContinueLearningEmpty } from "@/components/dashboard/HeroContinueLearning";
-import { DailyQuests } from "@/components/dashboard/DailyQuests";
-import { RecentAchievements } from "@/components/dashboard/RecentAchievements";
+// import { DailyQuests } from "@/components/dashboard/DailyQuests";
+// import { RecentAchievements } from "@/components/dashboard/RecentAchievements";
 // import { UpcomingAssignments } from "@/components/dashboard/UpcomingAssignments";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
+// import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -35,6 +38,19 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
 import Leaderboard from "@/components/Leaderboard";
+import CourseCard from "@/components/course/CourseCard";
+
+/* ═══════════════════════════════════════════════════════
+   Enrolled Course Card (grid) — wraps the standard CourseCard
+   so enrolled courses match course listings elsewhere.
+   ═══════════════════════════════════════════════════════ */
+
+function EnrolledCourseGridCard({ enrollment }: { enrollment: Enrollment }) {
+  const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
+  if (isLoading) return <div className="rounded-2xl h-72 bg-muted animate-pulse" />;
+  if (!course) return null;
+  return <CourseCard course={course} />;
+}
 
 /* ═══════════════════════════════════════════════════════
    Leaderboard Modal
@@ -474,100 +490,60 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ── Stat Cards ───────────────────────────────── */}
-            <StatCards gameState={gameState} totalEnrollments={enrollments.length} />
+            {/* ── Single-column layout ─────────────────────── */}
+            <div className="space-y-5 min-w-0">
 
-            {/* ── Two-column layout ────────────────────────── */}
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
+              {/* Hero continue learning */}
+              {isLoading ? (
+                <div className="rounded-2xl h-48 bg-muted animate-pulse" />
+              ) : firstEnrollment ? (
+                <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
+              ) : (
+                <HeroContinueLearningEmpty />
+              )}
 
-              {/* Left column */}
-              <div className="space-y-5 min-w-0">
+              {/* Banners */}
+              {!isBannersLoading && banners.length > 0 && (
+                <BannerSlider banners={banners} autoSlideInterval={5000} />
+              )}
 
-                {/* Hero continue learning */}
+              {/* Courses */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />Your Courses
+                  </h2>
+                  <Link to="/courses">
+                    <Button size="sm" variant="ghost" className="rounded-xl text-xs h-7">
+                      View All <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+                    </Button>
+                  </Link>
+                </div>
+
                 {isLoading ? (
-                  <div className="rounded-2xl h-48 bg-muted animate-pulse" />
-                ) : firstEnrollment ? (
-                  <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
-                ) : (
-                  <HeroContinueLearningEmpty />
-                )}
-
-                {/* Banners */}
-                {!isBannersLoading && banners.length > 0 && (
-                  <BannerSlider banners={banners} autoSlideInterval={5000} />
-                )}
-
-                {/* Courses */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-primary" />Your Courses
-                    </h2>
-                    <Link to="/courses">
-                      <Button size="sm" variant="ghost" className="rounded-xl text-xs h-7">
-                        View All <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
-                      </Button>
-                    </Link>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => <div key={i} className="rounded-2xl h-72 bg-muted animate-pulse" />)}
                   </div>
-
-                  {isLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2].map((i) => <div key={i} className="rounded-2xl h-36 bg-muted animate-pulse" />)}
+                ) : enrollments.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {enrollments.map((enrollment) => (
+                      <EnrolledCourseGridCard key={enrollment.id} enrollment={enrollment} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-card border border-border p-10 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <BookOpen className="h-8 w-8 text-primary" />
                     </div>
-                  ) : enrollments.length > 0 ? (
-                    <div className="space-y-3">
-                      {enrollments.map((enrollment) => (
-                        <EnrolledCourseCard
-                          key={enrollment.id}
-                          enrollment={enrollment}
-                          certificateStatus={certificateStatusMap[enrollment.courseId] ?? null}
-                          fetchEnrollmentsAndCertificateRequestStatuses={fetchEnrollmentsAndCertificateRequestStatuses}
-                          karma={karmaMap[enrollment.courseId] || 0}
-                          onViewLeaderboard={handleViewLeaderboard}
-                          hasLeaderboardData={leaderboardDataMap[enrollment.courseId] || false}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl bg-card border border-border p-10 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <BookOpen className="h-8 w-8 text-primary" />
-                      </div>
-                      <h3 className="text-base font-bold mb-1">No courses yet</h3>
-                      <p className="text-muted-foreground text-sm mb-5 max-w-xs mx-auto">
-                        Start your learning journey by enrolling in a course
-                      </p>
-                      <Button asChild className="rounded-xl shadow-sm shadow-primary/20">
-                        <Link to="/courses">Browse Courses</Link>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom row — show only if data exists */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Assignments: temporarily disabled
-                  <UpcomingAssignments assignments={[]} />
-                  */}
-                  {/* Activity: only show if there are entries */}
-                  {gameState.recentActivity.length > 0 && (
-                    <RecentActivity activities={gameState.recentActivity} />
-                  )}
-                </div>
-              </div>
-
-              {/* Right column */}
-              <div className="space-y-4">
-                {gameState.dailyQuests.length > 0 && (
-                  <DailyQuests quests={gameState.dailyQuests} />
+                    <h3 className="text-base font-bold mb-1">No courses yet</h3>
+                    <p className="text-muted-foreground text-sm mb-5 max-w-xs mx-auto">
+                      Start your learning journey by enrolling in a course
+                    </p>
+                    <Button asChild className="rounded-xl shadow-sm shadow-primary/20">
+                      <Link to="/courses">Browse Courses</Link>
+                    </Button>
+                  </div>
                 )}
-                {!gameState.dailyQuests.length && (isLoading || karmaLoading) && (
-                  <div className="rounded-2xl h-48 bg-muted animate-pulse" />
-                )}
-                {!gameState.dailyQuests.length && !isLoading && !karmaLoading && (
-                  <DailyQuests quests={[]} />
-                )}
-                <RecentAchievements achievements={gameState.achievements.filter((a) => a.earnedDate !== null)} />
               </div>
             </div>
           </div>

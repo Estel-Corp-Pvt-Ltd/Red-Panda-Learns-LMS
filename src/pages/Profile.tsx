@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
-import Sidebar, { UserSidebarMobileToggle } from "@/components/Sidebar";
+import { StudentSidebar } from "@/components/StudentSidebar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/userService";
-import { Mail, User as UserIcon, Calendar, Shield, Save, X } from "lucide-react";
+import { Mail, User as UserIcon, Calendar, Shield, Save, X, Loader2 } from "lucide-react";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { User } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
@@ -151,7 +151,7 @@ const Profile = () => {
       <div className="h-screen flex flex-col bg-background">
         <Header />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
+          <StudentSidebar />
           <div className="flex-1 p-6 max-w-2xl mx-auto w-full space-y-4">
             <LoadingSkeleton className="h-32" />
             <LoadingSkeleton className="h-48" />
@@ -165,12 +165,8 @@ const Profile = () => {
     <div className="h-screen flex flex-col bg-background">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        <StudentSidebar />
         <div className="flex-1 w-full mx-auto p-6 overflow-y-auto no-scrollbar::-webkit-scrollbar no-scrollbar">
-          <div className="flex items-center justify-between mb-4 md:hidden">
-            <h1 className="text-lg font-semibold">Dashboard</h1>
-            <UserSidebarMobileToggle />
-          </div>
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground">Profile</h1>
             <p className="text-muted-foreground mt-2">
