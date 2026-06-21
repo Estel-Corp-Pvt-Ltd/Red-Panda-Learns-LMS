@@ -115,8 +115,41 @@ class RazorpayProvider {
           contact: billingAddress.phone || "",
         },
         theme: { color: "#3b82f6" },
-        handler: () => {
-          onPaymentSuccess?.(orderId);
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          // Confirm the payment synchronously so the user isn't left waiting on
+          // the async webhook. The backend verifies the signature, marks the
+          // order completed, and enrolls the user.
+          try {
+            const idToken = await authService.getToken();
+            const verifyRes = await fetch(`${this.backendUrl}/verifyRazorpayPayment`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            if (!verifyRes.ok) {
+              const errData = await verifyRes.json().catch(() => ({}));
+              throw new Error(errData?.error || "Payment verification failed");
+            }
+
+            onPaymentSuccess?.(orderId);
+          } catch (err) {
+            console.error("RazorpayProvider - Payment verification failed:", err);
+            onPaymentFail?.(
+              err instanceof Error ? err.message : "Payment verification failed"
+            );
+          }
         },
         modal: {
           ondismiss: () => {

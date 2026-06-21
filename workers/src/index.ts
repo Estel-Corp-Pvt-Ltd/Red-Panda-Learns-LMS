@@ -261,7 +261,14 @@ async function enrollUser(
         status: ENROLLMENT_STATUS.ACTIVE,
         orderId,
         completionDate: null,
-        certification: null,
+        certification: {
+          issued: false,
+          issuedAt: null,
+          certificateId: null,
+          grade: null,
+          remark: null,
+          preferredName: null,
+        },
         createdAt: SERVER_TIMESTAMP,
         updatedAt: SERVER_TIMESTAMP,
       }));
@@ -289,7 +296,14 @@ async function enrollUser(
           status: ENROLLMENT_STATUS.ACTIVE,
           orderId,
           completionDate: null,
-          certification: null,
+          certification: {
+            issued: false,
+            issuedAt: null,
+            certificateId: null,
+            grade: null,
+            remark: null,
+            preferredName: null,
+          },
           createdAt: SERVER_TIMESTAMP,
           updatedAt: SERVER_TIMESTAMP,
         }));
@@ -309,13 +323,7 @@ function buildEnrollmentWrite(
   enrollmentId: string,
   data: Record<string, unknown>
 ): object {
-  const { SERVER_TIMESTAMP: _st, ...rest } = {} as any;
-  void _st; void rest;
-  // Delegate to firestore setDoc batch write format via a workaround
-  // We'll call setDoc separately since commit() takes raw writes
-  // For simplicity, return a raw write object
-  const baseUrl = (firestore as any).baseUrl as string;
-  const docPath = baseUrl.replace("https://firestore.googleapis.com/v1/", "");
+  const docPath = (firestore as any).docBasePath as string;
   const fields: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) {
     if (typeof v !== "object" || v === null || !("__type" in v)) {
@@ -341,8 +349,7 @@ function buildLPWrite(
   userId: string,
   courseId: string
 ): object {
-  const baseUrl = (firestore as any).baseUrl as string;
-  const docPath = baseUrl.replace("https://firestore.googleapis.com/v1/", "");
+  const docPath = (firestore as any).docBasePath as string;
   return {
     update: {
       name: `${docPath}/${COLLECTION.LEARNING_PROGRESS}/${lpId}`,
@@ -517,136 +524,195 @@ app.post("/createRazorpayOrder", async (c) => {
   if (authResult) return authResult;
 
   const user = c.get("user");
-  const body = await c.req.json<{
+
+  // Parse body safely
+  let body: {
     items: Array<{ itemType: string; itemId: string }>;
     selectedCurrency: string;
     promoCode?: string;
     billingAddress?: unknown;
-  }>();
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
 
   const idempotencyKey = c.req.header("Idempotency-Key");
   if (!idempotencyKey) {
-    return c.json({ error: "Missing Idempotency-Key" }, 400);
+    return c.json({ error: "Missing Idempotency-Key header" }, 400);
+  }
+
+  // Input validation
+  const { items, selectedCurrency, promoCode, billingAddress } = body;
+  if (!Array.isArray(items) || items.length === 0) {
+    return c.json({ error: "items must be a non-empty array" }, 400);
+  }
+  if (!selectedCurrency || typeof selectedCurrency !== "string") {
+    return c.json({ error: "selectedCurrency is required" }, 400);
   }
 
   const firestore = db(c.env);
 
-  // Idempotency check
+  // Idempotency: return cached success, surface previous failures
   const cached = await firestore.getDoc(COLLECTION.IDEMPOTENCY, idempotencyKey);
-  if (cached && cached.status === "completed" && cached.response) {
+  if (cached?.status === "completed" && cached.response) {
     return c.json(cached.response);
   }
+  if (cached?.status === "failed") {
+    return c.json({ error: "This request previously failed. Use a new Idempotency-Key to retry." }, 409);
+  }
 
-  // Mark as processing
+  // Mark as processing (creates the doc if it doesn't exist yet)
   await firestore.setDoc(COLLECTION.IDEMPOTENCY, idempotencyKey, {
     status: "processing",
     createdAt: SERVER_TIMESTAMP,
   });
 
-  const { items, selectedCurrency, promoCode, billingAddress } = body;
-  const { itemsDetails, originalAmount } = await getItemsDetails(firestore, items);
+  // Track whether the Firestore order was created so we can clean up on error
+  let orderId: string | null = null;
 
-  // Coupon discount
-  let discount = 0;
-  if (promoCode) {
-    const coupons = await firestore.query(COLLECTION.COUPONS, [
-      { field: "code", op: "==", value: promoCode },
-    ], undefined, 1);
+  console.log("[createRazorpayOrder] step:start user:", user.uid, "items:", JSON.stringify(items), "currency:", selectedCurrency);
+  console.log("[createRazorpayOrder] env check — RAZORPAY_KEY_ID present:", !!c.env.RAZORPAY_KEY_ID, "SECRET present:", !!c.env.RAZORPAY_KEY_SECRET, "PROJECT_ID:", c.env.FIREBASE_PROJECT_ID);
 
-    if (coupons.length > 0) {
-      const coupon = coupons[0];
-      const couponData = coupon.data;
-      const existingUsage = await firestore.query(COLLECTION.COUPON_USAGES, [
-        { field: "userId", op: "==", value: user.uid },
-        { field: "couponId", op: "==", value: coupon.id },
+  try {
+    const { itemsDetails, originalAmount } = await getItemsDetails(firestore, items);
+    console.log("[createRazorpayOrder] step:itemsDetails", JSON.stringify(itemsDetails), "originalAmount:", originalAmount);
+
+    if (itemsDetails.length === 0) {
+      throw new Error("None of the requested items could be found");
+    }
+
+    // Coupon discount
+    let discount = 0;
+    if (promoCode) {
+      const coupons = await firestore.query(COLLECTION.COUPONS, [
+        { field: "code", op: "==", value: promoCode },
       ], undefined, 1);
 
-      if (existingUsage.length === 0) {
-        const pct = (couponData.discountPercentage as number) ?? 0;
-        const linkedCourseIds = (couponData.linkedCourseIds as string[]) ?? [];
-        const linkedBundleIds = (couponData.linkedBundleIds as string[]) ?? [];
-        let restUsages = ((couponData.usageLimit as number) ?? 0) - ((couponData.totalUsed as number) ?? 0);
+      if (coupons.length > 0) {
+        const coupon = coupons[0];
+        const couponData = coupon.data;
+        const existingUsage = await firestore.query(COLLECTION.COUPON_USAGES, [
+          { field: "userId", op: "==", value: user.uid },
+          { field: "couponId", op: "==", value: coupon.id },
+        ], undefined, 1);
 
-        for (const item of itemsDetails) {
-          if (restUsages <= 0) break;
-          if (
-            (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE && linkedCourseIds.includes(item.itemId)) ||
-            (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE && linkedBundleIds.includes(item.itemId))
-          ) {
-            discount += item.amount * pct / 100;
-            restUsages--;
+        if (existingUsage.length === 0) {
+          const pct = (couponData.discountPercentage as number) ?? 0;
+          const linkedCourseIds = (couponData.linkedCourseIds as string[]) ?? [];
+          const linkedBundleIds = (couponData.linkedBundleIds as string[]) ?? [];
+          let restUsages = ((couponData.usageLimit as number) ?? 0) - ((couponData.totalUsed as number) ?? 0);
+
+          for (const item of itemsDetails) {
+            if (restUsages <= 0) break;
+            if (
+              (item.itemType === ENROLLED_PROGRAM_TYPE.COURSE && linkedCourseIds.includes(item.itemId)) ||
+              (item.itemType === ENROLLED_PROGRAM_TYPE.BUNDLE && linkedBundleIds.includes(item.itemId))
+            ) {
+              discount += item.amount * pct / 100;
+              restUsages--;
+            }
           }
         }
       }
     }
-  }
 
-  // Currency conversion (simple fallback — use INR if same, otherwise use exchange rate from Firestore config)
-  let convertedAmount = originalAmount - discount;
-  let exchangeRate = 1;
-  if (selectedCurrency !== "INR") {
-    const rateKey = `INR_${selectedCurrency}`;
-    const rateDoc = await firestore.getDoc("FallbackCurrencyRates", rateKey);
-    if (rateDoc && typeof rateDoc.rate === "number") {
-      exchangeRate = rateDoc.rate as number;
-      convertedAmount = (originalAmount - discount) * exchangeRate;
+    // Currency conversion
+    let convertedAmount = originalAmount - discount;
+    let exchangeRate = 1;
+    if (selectedCurrency !== "INR") {
+      const rateDoc = await firestore.getDoc("FallbackCurrencyRates", `INR_${selectedCurrency}`);
+      if (rateDoc && typeof rateDoc.rate === "number") {
+        exchangeRate = rateDoc.rate as number;
+        convertedAmount = (originalAmount - discount) * exchangeRate;
+      }
     }
+
+    const amountInPaise = Math.round(convertedAmount * 100);
+    console.log("[createRazorpayOrder] step:pricing discount:", discount, "convertedAmount:", convertedAmount, "amountInPaise:", amountInPaise);
+
+    if (amountInPaise <= 0) {
+      throw new Error("Order amount must be greater than zero");
+    }
+
+    // Create internal order
+    orderId = await generateOrderId(firestore);
+    console.log("[createRazorpayOrder] step:orderId generated:", orderId);
+
+    await firestore.setDoc(COLLECTION.ORDERS, orderId, {
+      orderId,
+      userId: user.uid,
+      userEmail: user.email ?? "",
+      userName: (user.name as string) ?? "",
+      items: itemsDetails,
+      status: ORDER_STATUS.PENDING,
+      originalAmount,
+      exchangeRate,
+      provider: PAYMENT_PROVIDER.RAZORPAY,
+      providerOrderId: "",
+      couponDiscount: discount,
+      amount: convertedAmount,
+      currency: selectedCurrency,
+      promoCode: promoCode ?? "",
+      metadata: {},
+      billingAddress: billingAddress ?? null,
+      completedAt: null,
+      createdAt: SERVER_TIMESTAMP,
+      updatedAt: SERVER_TIMESTAMP,
+    });
+    console.log("[createRazorpayOrder] step:order saved to Firestore");
+
+    // Create Razorpay order — this is the external call most likely to fail
+    console.log("[createRazorpayOrder] step:calling Razorpay API amount:", amountInPaise, "currency:", selectedCurrency);
+    const rp = new RazorpayClient(c.env.RAZORPAY_KEY_ID, c.env.RAZORPAY_KEY_SECRET);
+    const razorpayOrder = await rp.createOrder({
+      amount: amountInPaise,
+      currency: selectedCurrency,
+      receipt: orderId,
+    });
+    console.log("[createRazorpayOrder] step:razorpay order created:", razorpayOrder.id);
+
+    // Update internal order with the Razorpay order ID
+    await firestore.updateDoc(COLLECTION.ORDERS, orderId, {
+      providerOrderId: razorpayOrder.id,
+      updatedAt: SERVER_TIMESTAMP,
+    });
+
+    const response = {
+      success: true,
+      orderId,
+      razorpayOrder,
+      key_id: c.env.RAZORPAY_KEY_ID,
+    };
+
+    // Mark idempotency as completed and cache the response
+    await firestore.updateDoc(COLLECTION.IDEMPOTENCY, idempotencyKey, {
+      status: "completed",
+      response,
+    });
+
+    console.log("[createRazorpayOrder] step:done — success");
+    return c.json(response);
+
+  } catch (err: any) {
+    console.error("[createRazorpayOrder] FAILED at step above — error:", err?.message ?? err, err?.stack ?? "");
+
+    // Mark the internal order as FAILED so it doesn't stay PENDING indefinitely
+    if (orderId) {
+      await firestore.updateDoc(COLLECTION.ORDERS, orderId, {
+        status: ORDER_STATUS.FAILED,
+        updatedAt: SERVER_TIMESTAMP,
+      }).catch((e) => console.error("[createRazorpayOrder] could not mark order failed:", e));
+    }
+
+    // Mark idempotency as failed so the client knows to use a new key
+    await firestore.updateDoc(COLLECTION.IDEMPOTENCY, idempotencyKey, {
+      status: "failed",
+    }).catch(() => {});
+
+    return c.json({ error: err?.message ?? "Failed to create order. Please try again." }, 500);
   }
-
-  const amountInPaise = Math.round(convertedAmount * 100);
-
-  // Create internal order
-  const orderId = await generateOrderId(firestore);
-  await firestore.setDoc(COLLECTION.ORDERS, orderId, {
-    orderId,
-    userId: user.uid,
-    userEmail: user.email ?? "",
-    userName: (user.name as string) ?? "",
-    items: itemsDetails,
-    status: ORDER_STATUS.PENDING,
-    originalAmount,
-    exchangeRate,
-    provider: PAYMENT_PROVIDER.RAZORPAY,
-    providerOrderId: "",
-    couponDiscount: discount,
-    amount: convertedAmount,
-    currency: selectedCurrency,
-    promoCode: promoCode ?? "",
-    metadata: {},
-    billingAddress: billingAddress ?? null,
-    completedAt: null,
-    createdAt: SERVER_TIMESTAMP,
-    updatedAt: SERVER_TIMESTAMP,
-  });
-
-  // Create Razorpay order
-  const rp = new RazorpayClient(c.env.RAZORPAY_KEY_ID, c.env.RAZORPAY_KEY_SECRET);
-  const razorpayOrder = await rp.createOrder({
-    amount: amountInPaise,
-    currency: selectedCurrency,
-    receipt: orderId,
-  });
-
-  // Update order with provider ID
-  await firestore.updateDoc(COLLECTION.ORDERS, orderId, {
-    providerOrderId: razorpayOrder.id,
-    updatedAt: SERVER_TIMESTAMP,
-  });
-
-  const response = {
-    success: true,
-    orderId,
-    razorpayOrder,
-    key_id: c.env.RAZORPAY_KEY_ID,
-  };
-
-  // Cache response
-  await firestore.updateDoc(COLLECTION.IDEMPOTENCY, idempotencyKey, {
-    status: "completed",
-    response,
-  });
-
-  return c.json(response);
 });
 
 // ── POST /razorpayWebhook ─────────────────────────────────────────────────────
@@ -677,7 +743,7 @@ app.post("/razorpayWebhook", async (c) => {
         await handlePaymentCaptured(firestore, payload.payload.payment!.entity);
         break;
       case "payment.failed":
-        await handlePaymentFailed(firestore, payload.payload.payment!.entity);
+        await handlePaymentFailed(firestore, payload.payload.payment!.entity, c.env);
         break;
       case "order.paid":
         await handleOrderPaid(firestore, payload.payload.order!.entity, c.env);
@@ -693,6 +759,71 @@ app.post("/razorpayWebhook", async (c) => {
   }
 
   return c.json({ success: true });
+});
+
+// ── POST /verifyRazorpayPayment (Firebase auth) ───────────────────────────────
+//
+// Synchronous payment confirmation called from Razorpay checkout's `handler`
+// callback. Verifies the payment signature and fulfills the order immediately,
+// so the client isn't dependent on the (async, server-to-server) webhook.
+// The order.paid webhook remains as a reliability backup — both paths are
+// guarded by the already-completed check so fulfillment runs at most once.
+
+app.post("/verifyRazorpayPayment", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+
+  let body: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return c.json({ error: "Missing payment verification fields" }, 400);
+  }
+
+  // Razorpay payment signature = HMAC-SHA256("order_id|payment_id", KEY_SECRET)
+  const valid = await verifyRazorpaySignature(
+    `${razorpay_order_id}|${razorpay_payment_id}`,
+    razorpay_signature,
+    c.env.RAZORPAY_KEY_SECRET
+  );
+  if (!valid) {
+    return c.json({ error: "Invalid payment signature" }, 400);
+  }
+
+  const firestore = db(c.env);
+  const order = await getOrderByProviderId(firestore, razorpay_order_id);
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  // Ensure the order belongs to the authenticated user
+  if (order.data.userId !== user.uid) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  // Idempotent: if the webhook already fulfilled it, just report success
+  if (order.data.status === ORDER_STATUS.COMPLETED) {
+    return c.json({ success: true, status: "COMPLETED", alreadyCompleted: true });
+  }
+
+  try {
+    await fulfillOrder(firestore, order, c.env);
+    return c.json({ success: true, status: "COMPLETED" });
+  } catch (err: any) {
+    console.error("[verifyRazorpayPayment] fulfillment error:", err?.message ?? err);
+    return c.json({ error: "Failed to finalize order" }, 500);
+  }
 });
 
 async function getOrderByProviderId(
@@ -734,7 +865,7 @@ async function handlePaymentCaptured(firestore: Firestore, entity: any) {
   });
 }
 
-async function handlePaymentFailed(firestore: Firestore, entity: any) {
+async function handlePaymentFailed(firestore: Firestore, entity: any, env: Env) {
   const order = await getOrderByProviderId(firestore, entity.order_id);
   if (!order) return;
 
@@ -756,13 +887,42 @@ async function handlePaymentFailed(firestore: Firestore, entity: any) {
     createdAt: SERVER_TIMESTAMP,
     updatedAt: SERVER_TIMESTAMP,
   });
+
+  // Notify user of the failed payment
+  try {
+    const userData = await firestore.getDoc(COLLECTION.USERS, order.data.userId as string);
+    if (userData?.email) {
+      await sendPaymentFailedEmail(
+        {
+          email: userData.email as string,
+          name: `${userData.firstName ?? ""} ${userData.lastName ?? ""}`.trim(),
+        },
+        env.BREVO_API_KEY
+      );
+    }
+  } catch (err) {
+    console.error("[handlePaymentFailed] could not send failure email:", err);
+  }
 }
 
 async function handleOrderPaid(firestore: Firestore, entity: any, env: Env) {
   const order = await getOrderByProviderId(firestore, entity.id);
   if (!order) return;
   if (order.data.status === ORDER_STATUS.COMPLETED) return;
+  await fulfillOrder(firestore, order, env);
+}
 
+/**
+ * Fulfill a paid order: mark it COMPLETED, enroll the user, and send the
+ * confirmation email. Shared by the order.paid webhook and the synchronous
+ * /verifyRazorpayPayment endpoint. Caller is responsible for the
+ * already-completed guard (so this stays idempotent at the call site).
+ */
+async function fulfillOrder(
+  firestore: Firestore,
+  order: { id: string; data: Record<string, unknown> },
+  env: Env
+): Promise<void> {
   const orderId = (order.data.orderId as string) ?? order.id;
 
   // Update order status
@@ -833,37 +993,47 @@ app.post("/enrollStudent", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const body = await c.req.json<{
-    userEmail: string;
-    items: Array<{ itemType: string; itemId: string }>;
-  }>();
+  try {
+    let body: { userEmail: string; items: Array<{ itemType: string; itemId: string }> };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "Invalid JSON body" }, 400);
+    }
 
-  const { userEmail, items } = body;
-  if (!userEmail || !items?.length) {
-    return c.json({ error: "Missing required fields" }, 400);
+    const { userEmail, items } = body;
+    if (!userEmail || !items?.length) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+
+    const firestore = db(c.env);
+
+    const users = await firestore.query(
+      COLLECTION.USERS,
+      [{ field: "email", op: "==", value: userEmail }],
+      undefined,
+      1
+    );
+
+    if (!users.length) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const userData = users[0].data;
+    const userId = users[0].id;
+
+    const { itemsDetails } = await getItemsDetails(firestore, items);
+    if (!itemsDetails.length) {
+      return c.json({ error: "No valid courses or bundles found for the given items" }, 404);
+    }
+
+    await enrollUser(firestore, { id: userId, ...userData } as any, itemsDetails, "Admin Enrollment");
+
+    return c.json({ success: true, items: itemsDetails });
+  } catch (err: any) {
+    console.error("[enrollStudent]", err);
+    return c.json({ error: err?.message ?? "Internal server error" }, 500);
   }
-
-  const firestore = db(c.env);
-
-  // Find user by email in Firestore
-  const users = await firestore.query(
-    COLLECTION.USERS,
-    [{ field: "email", op: "==", value: userEmail }],
-    undefined,
-    1
-  );
-
-  if (!users.length) {
-    return c.json({ error: "User not found" }, 404);
-  }
-
-  const userData = users[0].data;
-  const userId = users[0].id;
-
-  const { itemsDetails } = await getItemsDetails(firestore, items);
-  await enrollUser(firestore, { id: userId, ...userData } as any, itemsDetails, "Admin Enrollment");
-
-  return c.json({ success: true, items: itemsDetails });
 });
 
 // ── POST /enrollFreeCourse (Firebase auth) ─────────────────────────────────────
@@ -951,8 +1121,8 @@ app.post("/enrollStudentsInBulk", async (c) => {
           uid = created.uid;
         }
 
-        // Upsert user in Firestore
-        await firestore.setDoc(COLLECTION.USERS, uid, {
+        // Upsert user in Firestore (merge=true preserves existing fields like karma, etc.)
+        const userDocData: Record<string, unknown> = {
           id: uid,
           email,
           firstName,
@@ -962,9 +1132,12 @@ app.post("/enrollStudentsInBulk", async (c) => {
           status: USER_STATUS.ACTIVE,
           organizationId: null,
           photoURL: null,
-          createdAt: SERVER_TIMESTAMP,
           updatedAt: SERVER_TIMESTAMP,
-        });
+        };
+        if (!existing) {
+          userDocData.createdAt = SERVER_TIMESTAMP;
+        }
+        await firestore.setDoc(COLLECTION.USERS, uid, userDocData, true);
 
         // Check if already enrolled
         const enrollmentId = `${uid}_${courseId}`;
@@ -1046,13 +1219,13 @@ app.post("/createCouponUsage", async (c) => {
   const couponId = coupons[0].id;
 
   const writes: object[] = [];
-  const baseUrl = (firestore as any).baseUrl as string;
+  const docBasePath = (firestore as any).docBasePath as string;
 
   for (const item of items) {
     const docId = firestore.newDocId();
     writes.push({
       update: {
-        name: `${baseUrl}/${COLLECTION.COUPON_USAGES}/${docId}`,
+        name: `${docBasePath}/${COLLECTION.COUPON_USAGES}/${docId}`,
         fields: {
           userId: { stringValue: user.uid },
           couponId: { stringValue: couponId },
@@ -1069,7 +1242,7 @@ app.post("/createCouponUsage", async (c) => {
   // Increment totalUsed
   writes.push({
     update: {
-      name: `${baseUrl}/${COLLECTION.COUPONS}/${couponId}`,
+      name: `${docBasePath}/${COLLECTION.COUPONS}/${couponId}`,
       fields: {},
     },
     updateMask: { fieldPaths: [] },

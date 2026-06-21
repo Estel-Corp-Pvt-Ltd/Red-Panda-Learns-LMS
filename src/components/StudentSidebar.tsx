@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, Compass, Users, Calendar, MessageSquare, Award,
   UserCircle, Settings, ChevronLeft, ChevronRight, LogOut, Zap, ClipboardList,
-  Flame, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,7 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Quizzes",      path: "/quizzes",       icon: <ClipboardList className="h-[18px] w-[18px]" /> },
   { label: "What's New",   path: "/whats-new",     icon: <Zap className="h-[18px] w-[18px]" /> },
   { label: "Community",    path: "/community",     icon: <Users className="h-[18px] w-[18px]" /> },
-  { label: "Messages",     path: "/messages",      icon: <MessageSquare className="h-[18px] w-[18px]" />, badge: 3 },
+  { label: "Messages",     path: "/messages",      icon: <MessageSquare className="h-[18px] w-[18px]" /> },
   { label: "Calendar",     path: "/calendar",      icon: <Calendar className="h-[18px] w-[18px]" /> },
   { label: "Certificates", path: "/submissions",   icon: <Award className="h-[18px] w-[18px]" /> },
 ];
@@ -32,8 +31,6 @@ const BOTTOM_ITEMS: NavItem[] = [
   { label: "Profile",  path: "/profile",  icon: <UserCircle className="h-[18px] w-[18px]" /> },
   { label: "Settings", path: "/settings", icon: <Settings className="h-[18px] w-[18px]" /> },
 ];
-
-const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function checkActive(path: string, currentPath: string) {
   if (path === "/dashboard") return currentPath === "/dashboard";
@@ -58,7 +55,6 @@ export function StudentSidebar({ streak = 0, activeDaysThisWeek }: StudentSideba
 
   const firstName = user?.firstName ?? "Learner";
   const initials = `${firstName.charAt(0)}${user?.lastName?.charAt(0) ?? ""}`.toUpperCase();
-  const days = activeDaysThisWeek ?? Array(7).fill(false);
 
   return (
     <>
@@ -126,44 +122,7 @@ export function StudentSidebar({ streak = 0, activeDaysThisWeek }: StudentSideba
           })}
         </nav>
 
-        {/* Streak widget — only expanded */}
-        {!collapsed && (
-          <div className="px-3 pb-2">
-            <div className="rounded-xl border border-border bg-muted/30 p-3">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Flame className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="text-xs font-bold text-foreground">
-                    {streak > 0 ? `${streak} day streak` : "Start your streak"}
-                  </span>
-                </div>
-                {streak > 0 && (
-                  <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 rounded-full px-1.5 py-0.5">
-                    {streak}d
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-1">
-                {DAY_LABELS.map((d, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className={cn(
-                      "w-full aspect-square rounded-md flex items-center justify-center transition-colors",
-                      days[i]
-                        ? "bg-orange-400 dark:bg-orange-500"
-                        : "bg-muted/70"
-                    )}>
-                      {days[i] && <Check className="h-2.5 w-2.5 text-white stroke-[3]" />}
-                    </div>
-                    <span className="text-[8px] font-medium text-muted-foreground leading-none">{d}</span>
-                  </div>
-                ))}
-              </div>
-              {streak === 0 && (
-                <p className="text-[10px] text-muted-foreground mt-2 text-center leading-relaxed">Complete a lesson to start</p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Streak widget hidden until streaks are officially released. */}
 
         {/* Bottom items */}
         <div className="px-2 pb-1 space-y-0.5">

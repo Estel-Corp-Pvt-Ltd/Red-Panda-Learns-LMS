@@ -145,7 +145,7 @@ export default function Signup() {
               </h1>
               <p className="auth-login-subtitle">
                 Create your learner account, verify your email, and jump into courses built around
-                projects, streaks, XP, and community practice.
+                real projects and community practice.
               </p>
             </div>
 
