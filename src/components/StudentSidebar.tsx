@@ -21,15 +21,10 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Explore",      path: "/free-courses",  icon: <Compass className="h-[18px] w-[18px]" /> },
   { label: "Quizzes",      path: "/quizzes",       icon: <ClipboardList className="h-[18px] w-[18px]" /> },
   { label: "What's New",   path: "/whats-new",     icon: <Zap className="h-[18px] w-[18px]" /> },
-  { label: "Community",    path: "/community",     icon: <Users className="h-[18px] w-[18px]" /> },
-  { label: "Messages",     path: "/messages",      icon: <MessageSquare className="h-[18px] w-[18px]" /> },
-  { label: "Calendar",     path: "/calendar",      icon: <Calendar className="h-[18px] w-[18px]" /> },
-  { label: "Certificates", path: "/submissions",   icon: <Award className="h-[18px] w-[18px]" /> },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
   { label: "Profile",  path: "/profile",  icon: <UserCircle className="h-[18px] w-[18px]" /> },
-  { label: "Settings", path: "/settings", icon: <Settings className="h-[18px] w-[18px]" /> },
 ];
 
 function checkActive(path: string, currentPath: string) {
