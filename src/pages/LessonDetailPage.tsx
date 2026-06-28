@@ -23,6 +23,7 @@ import { LessonContent } from "@/components/LessonContent";
 
 import { useCourseQuery } from "@/hooks/useCaching";
 import { useContentLock } from "@/utils/is-content-locked";
+import { useContentProtection } from "@/hooks/useContentProtection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 
@@ -49,6 +50,9 @@ export default function LessonDetailPage() {
 
   const isAdmin = user?.role === USER_ROLE.ADMIN;
   const isCourseInstructor = user?.role === USER_ROLE.INSTRUCTOR && course?.instructorId === user?.id;
+
+  // Deter dev-tools / view-source access to content URLs (skip for admins & instructors)
+  useContentProtection(!isAdmin && !isCourseInstructor);
 
   // Set courseId when course loads
   useEffect(() => {

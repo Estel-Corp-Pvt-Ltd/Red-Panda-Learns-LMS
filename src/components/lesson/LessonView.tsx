@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import VideoPlayer from "@/components/VideoPlayer";
 import { LESSON_TYPE, USER_ROLE } from "@/constants";
+import { useContentProtection } from "@/hooks/useContentProtection";
 import { toast } from "@/hooks/use-toast";
 import { lessonService } from "@/services/lessonService";
 import { Lesson /* , LessonAttachment */ } from "@/types/lesson";
@@ -146,6 +147,12 @@ export function LessonView({
   onNavigateToNext,
 }: LessonViewProps) {
   const { user } = useAuth();
+
+  // Deter dev-tools / view-source access to content URLs (skip for admins & instructors)
+  const isPrivilegedUser =
+    user?.role === USER_ROLE.ADMIN || user?.role === USER_ROLE.INSTRUCTOR;
+  useContentProtection(!isPrivilegedUser);
+
   const isAdminOrInstructor = user?.role === USER_ROLE.ADMIN || user?.role === USER_ROLE.INSTRUCTOR;
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
