@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Edit2,
   Eye,
+  FileQuestion,
   FolderClosed,
   FolderOpen,
   GripVertical,
@@ -55,6 +56,10 @@ import { ContentLockForm } from "./ContentLockForm";
 import { contentLockService } from "@/services/contentLockService";
 import { ContentLock } from "@/types/content-lock";
 import { log } from "@/utils/logger";
+import CreateTopicQuizModal from "./CreateTopicQuizModal";
+import EditTopicQuizModal from "./EditTopicQuizModal";
+import { topicQuizService } from "@/services/topicQuizService";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -73,7 +78,9 @@ type DraggableItem = {
 const isTopic = (item: DraggableItem) => item.type === LEARNING_UNIT.TOPIC;
 
 const isChild = (item: DraggableItem) =>
-  item.type === LEARNING_UNIT.LESSON || item.type === LEARNING_UNIT.ASSIGNMENT;
+  item.type === LEARNING_UNIT.LESSON ||
+  item.type === LEARNING_UNIT.ASSIGNMENT ||
+  item.type === LEARNING_UNIT.QUIZ;
 
 // ─── Drag & Drop Helpers ────────────────────────────────────────────────────
 //
@@ -217,12 +224,19 @@ function flattenCurriculum(courseData: Course): DraggableItem[] {
     });
 
     for (const item of topic.items || []) {
+      let itemType: LearningUnit;
+      if (item.type === LEARNING_UNIT.ASSIGNMENT) {
+        itemType = LEARNING_UNIT.ASSIGNMENT;
+      } else if (item.type === LEARNING_UNIT.QUIZ) {
+        itemType = LEARNING_UNIT.QUIZ;
+      } else {
+        itemType = LEARNING_UNIT.LESSON;
+      }
       result.push({
         id: item.id,
         refId: item.id,
         title: item.title,
-        type:
-          item.type === LEARNING_UNIT.ASSIGNMENT ? LEARNING_UNIT.ASSIGNMENT : LEARNING_UNIT.LESSON,
+        type: itemType,
         depth: 1,
         parentId: topic.id,
       });
@@ -252,6 +266,7 @@ function buildTopicsFromFlatList(items: DraggableItem[]): Topic[] {
       items: (childrenMap.get(item.id) || []).filter(isChild).map((child) => ({
         id: child.refId ?? child.id,
         title: child.title,
+        // LearningContentType now includes QUIZ via updated LEARNING_CONTENT constant
         type: child.type as LearningContentType,
       })),
     });
@@ -339,6 +354,7 @@ type CurriculumTabProps = {
 const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   const { toast } = useToast();
   const { showOverlay, hideOverlay } = useLoadingOverlay();
+  const { user } = useAuth();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -366,6 +382,10 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
   // const [isAssignmentEditModalOpen, setIsAssignmentEditModalOpen] = useState(false);
   const [isLessonEditModelOpen, setIsLessonEditModelOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+
+  // Topic quiz modal state
+  const [isCreateTopicQuizOpen, setIsCreateTopicQuizOpen] = useState(false);
+  const [isEditTopicQuizOpen, setIsEditTopicQuizOpen] = useState(false);
 
   // Lock state
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
@@ -591,6 +611,26 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
     setIsLessonSelectorModalOpen(false);
   };
 
+  const addQuizToParent = (quizId: string, quizTitle: string) => {
+    if (!activeParentId) return;
+
+    const insertIndex = findInsertIndexForParent(curriculum, activeParentId);
+    if (insertIndex === -1) return;
+
+    const newItem: DraggableItem = {
+      id: quizId,
+      refId: quizId,
+      title: quizTitle,
+      type: LEARNING_UNIT.QUIZ,
+      depth: 1,
+      parentId: activeParentId,
+    };
+
+    const updated = [...curriculum];
+    updated.splice(insertIndex, 0, newItem);
+    setCurriculum(updated);
+  };
+
   // const handleAssignmentSave = (assignment: Assignment) => {
   //   setCurriculum((prev) => {
   //     const exists = prev.some((i) => i.id === assignment.id);
@@ -719,6 +759,9 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                           {item.type === LEARNING_UNIT.ASSIGNMENT && (
                             <NotepadText className="h-6 w-6 text-blue-500" />
                           )}
+                          {item.type === LEARNING_UNIT.QUIZ && (
+                            <FileQuestion className="h-6 w-6 text-purple-500" />
+                          )}
 
                           {/* Title: editable for topics, link for lessons, plain for assignments */}
                           {isTopic(item) ? (
@@ -777,6 +820,18 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                                 title="Add Lesson"
                               >
                                 <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setActiveParentId(item.id);
+                                  setIsCreateTopicQuizOpen(true);
+                                }}
+                                className="opacity-0 group-hover:opacity-100"
+                                title="Add Quiz"
+                              >
+                                <FileQuestion className="h-4 w-4 text-purple-500" />
                               </Button>
                               {/* Add Assignment button — disabled
                               <Button
@@ -842,6 +897,8 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
                                   setEditingItemId(item.id);
                                   if (item.type === LEARNING_UNIT.LESSON) {
                                     setIsLessonEditModelOpen(true);
+                                  } else if (item.type === LEARNING_UNIT.QUIZ) {
+                                    setIsEditTopicQuizOpen(true);
                                   }
                                   // else { setIsAssignmentEditModalOpen(true); }
                                 }}
@@ -913,16 +970,21 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
             ? "topic"
             : editingItemType === LEARNING_UNIT.LESSON
               ? "lesson"
-              : "item"
+              : editingItemType === LEARNING_UNIT.QUIZ
+                ? "quiz"
+                : "item"
         }? This action cannot be undone.`}
         open={isConfirmDialogOpen}
         onCancel={() => {
           setIsConfirmDialogOpen(false);
           setEditingItemId(null);
         }}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (editingItemId && editingItemType) {
             deleteItem(editingItemId, editingItemType);
+            if (editingItemType === LEARNING_UNIT.QUIZ) {
+              await topicQuizService.deleteTopicQuiz(editingItemId);
+            }
           }
           setIsConfirmDialogOpen(false);
           setEditingItemId(null);
@@ -978,6 +1040,42 @@ const CurriculumTab = ({ course, initialItemId }: CurriculumTabProps) => {
           addLessonsToParent([lesson]);
           setIsCreateLessonOpen(false);
           setEditingItemId(null);
+        }}
+      />
+
+      {course && (
+        <CreateTopicQuizModal
+          open={isCreateTopicQuizOpen}
+          onClose={() => {
+            setIsCreateTopicQuizOpen(false);
+            setActiveParentId(null);
+          }}
+          createdBy={user?.id ?? ""}
+          courseId={course.id}
+          topicId={activeParentId ?? ""}
+          onCreated={(quizId, quizTitle) => {
+            addQuizToParent(quizId, quizTitle);
+            setIsCreateTopicQuizOpen(false);
+            setActiveParentId(null);
+          }}
+        />
+      )}
+
+      <EditTopicQuizModal
+        open={isEditTopicQuizOpen}
+        onClose={() => {
+          setIsEditTopicQuizOpen(false);
+          setEditingItemId(null);
+        }}
+        quizId={editingItemId}
+        onUpdated={(newTitle) => {
+          setCurriculum((prev) =>
+            prev.map((item) =>
+              item.id === editingItemId && item.type === LEARNING_UNIT.QUIZ
+                ? { ...item, title: newTitle }
+                : item
+            )
+          );
         }}
       />
 

@@ -153,6 +153,7 @@ export function LessonView({
     user?.role === USER_ROLE.ADMIN || user?.role === USER_ROLE.INSTRUCTOR;
   useContentProtection(!isPrivilegedUser);
 
+  const isAdminOrInstructor = user?.role === USER_ROLE.ADMIN || user?.role === USER_ROLE.INSTRUCTOR;
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +175,7 @@ export function LessonView({
     setIsCompleting(false);
     setVideoDuration(null);
     setVideoWatchedTime(0);
+    hasAutoCompleted.current = false;
   }, [completed, lessonId]);
 
   useEffect(() => {
@@ -202,6 +204,8 @@ export function LessonView({
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasShownInactivityToast = useRef<boolean>(false);
   const hasShownResumeToast = useRef<boolean>(false);
+  const hasAutoCompleted = useRef<boolean>(false);
+  const handleMarkCompleteRef = useRef<(() => void) | null>(null);
 
   // Constants
   const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
@@ -288,6 +292,35 @@ export function LessonView({
       setIsCompleting(false);
     }
   }, [isCompleting, localCompleted, onComplete, lesson, videoDuration, videoWatchedTime]);
+
+  // Keep ref updated so timers always call the latest version
+  useEffect(() => {
+    handleMarkCompleteRef.current = handleMarkComplete;
+  });
+
+  // Auto-complete video lesson when 90% watched
+  useEffect(() => {
+    if (localCompleted || completed || hasAutoCompleted.current) return;
+    if (!lesson || lesson.type !== LESSON_TYPE.VIDEO_LECTURE) return;
+    if (!videoDuration || videoDuration <= 0) return;
+    if (videoWatchedTime >= videoDuration * 0.9) {
+      hasAutoCompleted.current = true;
+      handleMarkComplete();
+    }
+  }, [videoWatchedTime, videoDuration, lesson, localCompleted, completed, handleMarkComplete]);
+
+  // Auto-complete text/doc/embed lessons after 60 seconds of engagement
+  useEffect(() => {
+    if (!lesson || lesson.type === LESSON_TYPE.VIDEO_LECTURE) return;
+    if (localCompleted || completed) return;
+    const timer = setTimeout(() => {
+      if (!hasAutoCompleted.current) {
+        hasAutoCompleted.current = true;
+        handleMarkCompleteRef.current?.();
+      }
+    }, 60_000);
+    return () => clearTimeout(timer);
+  }, [lesson?.id, lesson?.type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -849,7 +882,7 @@ export function LessonView({
           </div>
 
           <div className="flex gap-2">
-            {localCompleted ? (
+            {localCompleted && (
               <Button
                 variant="default"
                 size="sm"
@@ -858,7 +891,8 @@ export function LessonView({
               >
                 <CheckCircle className="h-4 w-4 mr-2" /> Completed
               </Button>
-            ) : (
+            )}
+            {!localCompleted && isAdminOrInstructor && (
               <Button
                 variant="outline"
                 size="sm"
@@ -987,8 +1021,8 @@ export function LessonView({
         {!shouldHideDetails && (
           <>
             {/* Lesson Description */}
-            <div className="flex flex-col md:flex-row gap-4">
-              <Card className="md:w-2/3 bg-muted/30">
+            <div className="flex flex-col gap-4">
+              <Card className="bg-muted/30">
                 <CardContent className="py-4">
                   <h2 className="text-lg font-semibold mb-2">Lesson Description</h2>
 

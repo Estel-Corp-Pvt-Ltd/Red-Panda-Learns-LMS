@@ -341,7 +341,8 @@ class TeacherService {
   async getProgressStatistics(
     studentIds: string[],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    courseId?: string
   ): Promise<
     Result<{
       totalLessonsCompleted: number;
@@ -390,6 +391,10 @@ class TeacherService {
         allProgress.push(...progress);
       }
 
+      const filteredProgress = courseId
+        ? allProgress.filter((p) => p.courseId === courseId)
+        : allProgress;
+
       const monthlyMap = new Map<string, number>();
       const studentProgressMap = new Map<
         string,
@@ -398,7 +403,7 @@ class TeacherService {
 
       let totalLessonsCompleted = 0;
 
-      allProgress.forEach((progress) => {
+      filteredProgress.forEach((progress) => {
         const lessons = Object.values(progress.lessonHistory || {});
         let studentLessons = 0;
         let studentTime = 0;
@@ -465,6 +470,27 @@ class TeacherService {
     } catch (error) {
       logError("TeacherService.getProgressStatistics", error);
       return fail("Failed to fetch progress statistics");
+    }
+  }
+
+  /**
+   * Get total XP earned by the teacher (sum of karmaEarned across all KarmaDaily docs).
+   */
+  async getTeacherXP(teacherId: string): Promise<Result<number>> {
+    try {
+      const q = query(
+        collection(db, COLLECTION.KARMA_DAILY),
+        where("userId", "==", teacherId)
+      );
+      const snap = await getDocs(q);
+      const total = snap.docs.reduce(
+        (sum, d) => sum + ((d.data().karmaEarned as number) ?? 0),
+        0
+      );
+      return ok(total);
+    } catch (error) {
+      logError("TeacherService.getTeacherXP", error);
+      return fail("Failed to fetch teacher XP");
     }
   }
 }
