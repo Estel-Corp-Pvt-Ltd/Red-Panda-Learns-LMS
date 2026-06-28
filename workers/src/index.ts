@@ -103,6 +103,18 @@ async function requireAuth(
   }
 }
 
+/**
+ * Resolve the role for an authenticated user.
+ * JWT custom claims are checked first (fast path); falls back to a Firestore
+ * read so admins whose role is only stored in Firestore (no custom claim set)
+ * are still recognised correctly.
+ */
+async function getUserRole(uid: string, tokenRole: string | undefined, firestore: Firestore): Promise<string | undefined> {
+  if (tokenRole) return tokenRole;
+  const userData = await firestore.getDoc(COLLECTION.USERS, uid);
+  return userData?.role as string | undefined;
+}
+
 /** Verify API key (Bearer token against API_SECRET_TOKEN). */
 async function requireApiKey(
   c: { req: any; env: Env },
@@ -990,7 +1002,10 @@ app.post("/enrollStudent", async (c) => {
   if (authResult) return authResult;
 
   const user = c.get("user");
-  if (user.role !== "ADMIN") {
+  const firestore = db(c.env);
+
+  const role = await getUserRole(user.uid, user.role, firestore);
+  if (role !== "ADMIN") {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -1006,8 +1021,6 @@ app.post("/enrollStudent", async (c) => {
     if (!userEmail || !items?.length) {
       return c.json({ error: "Missing required fields" }, 400);
     }
-
-    const firestore = db(c.env);
 
     const users = await firestore.query(
       COLLECTION.USERS,
@@ -1076,7 +1089,10 @@ app.post("/enrollStudentsInBulk", async (c) => {
   if (authResult) return authResult;
 
   const user = c.get("user");
-  if (user.role !== "ADMIN") {
+  const firestore = db(c.env);
+
+  const role = await getUserRole(user.uid, user.role, firestore);
+  if (role !== "ADMIN") {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -1093,8 +1109,6 @@ app.post("/enrollStudentsInBulk", async (c) => {
   if (!Array.isArray(students) || students.length === 0) {
     return c.json({ error: "No students provided" }, 400);
   }
-
-  const firestore = db(c.env);
 
   const results = await Promise.all(
     students.map(async (student) => {
