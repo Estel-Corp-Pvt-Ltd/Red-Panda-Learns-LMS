@@ -66,6 +66,8 @@ const TeacherComments = lazy(() => import("./pages/teacher/TeacherComments"));
 const TeacherBulkUpload = lazy(() => import("./pages/teacher/TeacherBulkUpload"));
 const TeacherStatistics = lazy(() => import("./pages/teacher/TeacherStatistics"));
 const TeacherStudentDetail = lazy(() => import("./pages/teacher/TeacherStudentDetail"));
+const TeacherMyCourses = lazy(() => import("./pages/teacher/TeacherMyCourses"));
+const TeacherContentManagement = lazy(() => import("./pages/teacher/TeacherContentManagement"));
 
 // Lazy load instructor pages
 const InstructorLayout = lazy(() => import("./components/InstructorLayout"));
@@ -91,6 +93,7 @@ const InvoicePage = lazy(() => import("./pages/InvoicePage"));
 const MyInvoicesPage = lazy(() => import("./pages/MyInvoices"));
 const Quizzes = lazy(() => import("./pages/Quizzes"));
 const AttemptQuiz = lazy(() => import("./pages/AttemptQuiz"));
+const AttemptTopicQuiz = lazy(() => import("./pages/AttemptTopicQuiz"));
 const FreeCourses = lazy(() => import("./pages/FreeCourses"));
 const UserComplaints = lazy(() => import("./pages/UserComplaints"));
 const Forum = lazy(() => import("./pages/Forum"));
@@ -223,6 +226,14 @@ const App = () => (
                           element={
                             <AuthGuard requireAuth requireStudent>
                               <AttemptQuiz />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/courses/:param/topic-quiz/:quizId"
+                          element={
+                            <AuthGuard requireAuth requireEnrollmentOrAdmin={true}>
+                              <AttemptTopicQuiz />
                             </AuthGuard>
                           }
                         />
@@ -697,6 +708,22 @@ const App = () => (
                           element={
                             <AuthGuard requireAuth requireTeacher>
                               <TeacherStatistics />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/my-courses"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherMyCourses />
+                            </AuthGuard>
+                          }
+                        />
+                        <Route
+                          path="/teacher/content-management"
+                          element={
+                            <AuthGuard requireAuth requireTeacher>
+                              <TeacherContentManagement />
                             </AuthGuard>
                           }
                         />

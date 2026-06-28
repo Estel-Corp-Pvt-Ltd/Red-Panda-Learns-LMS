@@ -14,6 +14,14 @@ service cloud.firestore {
       return signedIn() && request.auth.token.role == "ADMIN";
     }
 
+    function isTeacher() {
+      return signedIn() && request.auth.token.role == "TEACHER";
+    }
+
+    function isAdminOrTeacher() {
+      return isAdmin() || isTeacher();
+    }
+
     function hasOnlyKeys(keys) {
       return request.resource.data.keys().hasOnly(keys);
     }
@@ -103,8 +111,8 @@ service cloud.firestore {
     match /Users/{userId} {
       allow create: if isAdmin() || validSelfUserCreate(userId);
 
-      allow get: if isAdmin() || isSelf(userId);
-      allow list: if isAdmin();
+      allow get: if isAdmin() || isSelf(userId) || isTeacher();
+      allow list: if isAdminOrTeacher();
 
       allow update: if isAdmin()
         || (
@@ -127,6 +135,39 @@ service cloud.firestore {
         );
 
       allow delete: if isAdmin();
+    }
+
+    match /LearningProgress/{docId} {
+      allow read: if isAdminOrTeacher()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin()
+        || (signedIn() && request.resource.data.userId == request.auth.uid);
+    }
+
+    match /Comments/{docId} {
+      allow read: if isAdminOrTeacher()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn();
+      allow update, delete: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    match /Enrollments/{docId} {
+      allow read: if isAdminOrTeacher()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /ContentLocks/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdminOrTeacher();
+    }
+
+    match /KarmaDaily/{docId} {
+      allow read: if isAdminOrTeacher()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin()
+        || (signedIn() && request.resource.data.userId == request.auth.uid);
     }
 
     match /{document=**} {

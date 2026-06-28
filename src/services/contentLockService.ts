@@ -213,6 +213,39 @@ class ContentLockService {
       return fail('Error fetching content locks');
     }
   }
+
+  /**
+   * Fetch all content locks for a given organization, optionally filtered by class and division.
+   * Used by the teacher content management page.
+   */
+  async getLocksForOrganization(
+    organizationId: string,
+    className?: string,
+    division?: string
+  ): Promise<Result<ContentLock[]>> {
+    try {
+      const constraints: any[] = [where('organizationId', '==', organizationId)];
+      if (className) constraints.push(where('class', '==', className));
+      if (division) constraints.push(where('division', '==', division));
+
+      const q = query(collection(db, COLLECTION.CONTENT_LOCKS), ...constraints);
+      const snapshot = await getDocs(q);
+
+      const locks = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as ContentLock;
+      });
+
+      return ok(locks);
+    } catch (error) {
+      logError('ContentLockService - Error fetching org locks:', error);
+      return fail('Error fetching organization content locks');
+    }
+  }
 }
 
 export const contentLockService = new ContentLockService();

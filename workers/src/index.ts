@@ -17,6 +17,7 @@
  *   GET  /getOrderStats
  *   GET  /ordersHealthCheck
  *   POST /addKarma
+ *   POST /completeLesson
  */
 
 import { Hono } from "hono";
@@ -1341,6 +1342,81 @@ app.post("/addKarma", async (c) => {
         updatedAt: SERVER_TIMESTAMP,
       });
     }
+  });
+
+  return c.json({ success: true });
+});
+
+// ── POST /completeLesson (Firebase auth) ──────────────────────────────────────
+
+app.post("/completeLesson", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+
+  let body: { courseId: string; itemId: string; type: string; isCompleted: boolean };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const { courseId, itemId, type, isCompleted } = body;
+  if (!courseId || !itemId || !type || isCompleted === undefined) {
+    return c.json({ error: "Missing required fields: courseId, itemId, type, isCompleted" }, 400);
+  }
+
+  const firestore = db(c.env);
+
+  // Find the user's LearningProgress doc for this course
+  const docs = await firestore.query(
+    COLLECTION.LEARNING_PROGRESS,
+    [
+      { field: "userId", op: "==", value: user.uid },
+      { field: "courseId", op: "==", value: courseId },
+    ],
+    undefined,
+    1
+  );
+
+  let progressId: string;
+  let existingHistory: Record<string, unknown> = {};
+
+  if (docs.length === 0) {
+    // Create a fresh progress doc
+    progressId = firestore.newDocId();
+    await firestore.setDoc(COLLECTION.LEARNING_PROGRESS, progressId, {
+      id: progressId,
+      userId: user.uid,
+      courseId,
+      currentLessonId: itemId,
+      lastAccessed: SERVER_TIMESTAMP,
+      lessonHistory: {},
+      updatedAt: SERVER_TIMESTAMP,
+    });
+  } else {
+    progressId = docs[0].id;
+    existingHistory = (docs[0].data.lessonHistory as Record<string, unknown>) ?? {};
+  }
+
+  // Preserve existing timeSpent; update completion fields (idempotent)
+  const existingEntry = (existingHistory[itemId] as Record<string, unknown>) ?? {};
+  const updatedHistory: Record<string, unknown> = {
+    ...existingHistory,
+    [itemId]: {
+      timeSpent: (existingEntry.timeSpent as number) ?? 0,
+      markedAsComplete: isCompleted,
+      type,
+      completedAt: isCompleted ? new Date().toISOString() : null,
+    },
+  };
+
+  await firestore.updateDoc(COLLECTION.LEARNING_PROGRESS, progressId, {
+    currentLessonId: itemId,
+    lessonHistory: updatedHistory,
+    lastAccessed: SERVER_TIMESTAMP,
+    updatedAt: SERVER_TIMESTAMP,
   });
 
   return c.json({ success: true });

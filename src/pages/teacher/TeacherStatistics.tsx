@@ -34,10 +34,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { teacherService } from "@/services/teacherService";
+import { courseService } from "@/services/courseService";
 import { User } from "@/types/user";
+import { Course } from "@/types/course";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertTriangle,
   BarChart3,
+  BookOpen,
   Calendar as CalendarIcon,
   Loader2,
   TrendingUp,
@@ -89,6 +99,8 @@ const PRESET_LABELS: Record<DatePreset, string> = {
 
 const TeacherStatistics = () => {
   const { user } = useAuth();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("all");
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [datePreset, setDatePreset] = useState<DatePreset>("quarter");
@@ -108,6 +120,11 @@ const TeacherStatistics = () => {
     },
     []
   );
+
+  // Fetch courses for filter
+  useEffect(() => {
+    courseService.getPublishedCourses().then(setCourses);
+  }, []);
 
   // Fetch students
   useEffect(() => {
@@ -156,7 +173,8 @@ const TeacherStatistics = () => {
         const result = await teacherService.getProgressStatistics(
           studentIds,
           startDate,
-          endDate
+          endDate,
+          selectedCourseId !== "all" ? selectedCourseId : undefined
         );
 
         if (result.success && result.data) {
@@ -178,7 +196,7 @@ const TeacherStatistics = () => {
     if (!studentsLoading) {
       fetchStatistics();
     }
-  }, [user?.organizationId, filteredStudents, startDate, endDate, studentsLoading]);
+  }, [user?.organizationId, filteredStudents, startDate, endDate, studentsLoading, selectedCourseId]);
 
   // Handle date preset change
   const handlePresetChange = (preset: DatePreset) => {
@@ -277,7 +295,32 @@ const TeacherStatistics = () => {
         </div>
 
         {/* Filters Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Course Filter */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <CardTitle className="text-base">Course</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Courses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Courses</SelectItem>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
           {/* Class/Division Filter */}
           <ClassDivisionFilter
             organizationId={user.organizationId}
