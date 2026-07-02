@@ -3,12 +3,14 @@ import { ContentLock } from "@/types/content-lock";
 import { ContentLockedView } from "@/components/ContentLockedView";
 // import AssignmentView from "@/components/course/AssignmentView";
 import { LessonView } from "@/components/lesson/LessonView";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 interface LessonContentProps {
   selectedItem: TopicItem | null;
   courseName: string;
   isAdmin: boolean;
+  isLockLoading: boolean;
   isContentLocked: boolean;
   contentLock: ContentLock | null;
   timeRemaining: number | null;
@@ -21,6 +23,7 @@ export function LessonContent({
   selectedItem,
   courseName,
   isAdmin,
+  isLockLoading,
   isContentLocked,
   contentLock,
   timeRemaining,
@@ -38,6 +41,19 @@ export function LessonContent({
             Choose a lesson from the sidebar to begin.
           </p>
         </div>
+      </div>
+    );
+  }
+
+  // Localized loading while this lesson's lock state resolves. Keeps the page
+  // shell + CourseNavigator mounted (they live in LessonDetailPage) and avoids
+  // flashing content before we know whether it's locked.
+  if (isLockLoading) {
+    return (
+      <div className="w-full">
+        <LoadingSkeleton variant="text" lines={1} className="w-64 mb-3" />
+        <LoadingSkeleton variant="video" className="mb-6" />
+        <LoadingSkeleton variant="text" lines={5} />
       </div>
     );
   }
