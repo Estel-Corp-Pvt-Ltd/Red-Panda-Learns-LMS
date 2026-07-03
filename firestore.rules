@@ -170,6 +170,14 @@ service cloud.firestore {
         || (signedIn() && request.resource.data.userId == request.auth.uid);
     }
 
+    // Streak counters. Doc id == userId. Written ONLY by the backend worker
+    // (service account bypasses rules); clients can read their own, never write.
+    match /Streaks/{userId} {
+      allow read: if isAdminOrTeacher()
+        || (signedIn() && request.auth.uid == userId);
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

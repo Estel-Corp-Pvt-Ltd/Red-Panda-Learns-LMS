@@ -25,6 +25,7 @@ import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { bannerService } from "@/services/bannerService";
 import { fetchDailyKarmaService } from "@/services/karmaService/fetchkarmaDaily";
+import { streakService } from "@/services/streakService";
 import type { Enrollment } from "@/types/enrollment";
 import type { Banner } from "@/types/banner";
 import type { KarmaDaily } from "@/types/karma";
@@ -276,6 +277,7 @@ export default function DashboardPage() {
   const [karmaHistory, setKarmaHistory] = useState<KarmaDaily[]>([]);
   const [todayKarmaEntries, setTodayKarmaEntries] = useState<KarmaDaily[]>([]);
   const [karmaLoading, setKarmaLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
 
   // Derived game state — fully from real data
   const gameState = useGameState({
@@ -389,6 +391,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchEnrollmentsAndCertificateRequestStatuses();
+    streakService.getStreak().then((r) => {
+      if (r.success && r.data) setStreak(r.data.current);
+    });
   }, [user?.id]);
 
   const handleEnableNotifications = async () => {
@@ -473,8 +478,16 @@ export default function DashboardPage() {
                   </h1>
                 </div>
               </div>
-              <div className="hidden md:flex items-center gap-2 shrink-0">
-                <Button variant="ghost" size="sm" className="rounded-xl text-xs h-8"
+              <div className="flex items-center gap-2 shrink-0">
+                <div
+                  className="flex items-center gap-1.5 rounded-xl bg-primary/10 px-2.5 h-8"
+                  title={`${streak}-day streak — complete a lesson, quiz, or assignment each day to keep it going`}
+                >
+                  <Flame className={`h-4 w-4 ${streak > 0 ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs font-bold text-foreground">{streak}</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground">day streak</span>
+                </div>
+                <Button variant="ghost" size="sm" className="hidden md:inline-flex rounded-xl text-xs h-8"
                   onClick={handleEnableNotifications}
                   disabled={notificationPermission === "granted" || isEnablingNotifications}>
                   {notificationPermission === "granted"
@@ -482,7 +495,7 @@ export default function DashboardPage() {
                     : <BellOff className="h-4 w-4 mr-1.5" />}
                   {notificationPermission === "granted" ? "Notifications On" : "Enable Notifications"}
                 </Button>
-                <Link to="/courses">
+                <Link to="/courses" className="hidden md:block">
                   <Button className="rounded-xl text-xs h-8 shadow-sm shadow-primary/20">
                     <BookOpen className="h-4 w-4 mr-1.5" />Browse Courses
                   </Button>

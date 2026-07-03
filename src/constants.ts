@@ -285,6 +285,7 @@ export const COLLECTION = {
   CONTENT_LOCKS: "ContentLocks",
   KARMA_DAILY: "KarmaDaily",
   KARMA_RULES: "KarmaRules",
+  STREAKS: "Streaks",
 } as const;
 
 export const ATTRIBUTE_TYPE = {
