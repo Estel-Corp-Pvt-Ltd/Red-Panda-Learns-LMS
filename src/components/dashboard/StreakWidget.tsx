@@ -65,31 +65,31 @@ export function StreakWidget() {
   }
 
   return (
-    <div className="flex h-full flex-col justify-between overflow-hidden rounded-3xl border-none bg-gradient-to-br from-orange-400/10 to-orange-300/5 p-4 shadow-lg">
+    <div className="flex h-full flex-col gap-3 overflow-hidden rounded-3xl border-none bg-gradient-to-br from-orange-400/10 to-orange-300/5 p-4 shadow-lg">
       {/* Top: fire + stats */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-400/20 text-orange-500">
-            <Flame className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-xs font-medium text-orange-600 dark:text-orange-400">Streak</p>
-            <p className="text-2xl font-black text-orange-500">{streak.current}</p>
-          </div>
-          <div className="ml-auto text-right">
-            <p className="text-[10px] text-muted-foreground">Best</p>
-            <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{streak.longest}</p>
-          </div>
+      <div className="flex items-center gap-2">
+        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-400/20 text-orange-500">
+          <Flame className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-xs font-medium text-orange-600 dark:text-orange-400">Streak</p>
+          <p className="text-2xl font-black leading-none text-orange-500">{streak.current}</p>
         </div>
+        <div className="ml-auto text-right">
+          <p className="text-[10px] text-muted-foreground">Best</p>
+          <p className="text-lg font-bold leading-none text-orange-600 dark:text-orange-400">{streak.longest}</p>
+        </div>
+      </div>
 
-        {/* Heatmap grid — 12 weeks × 7 days */}
-        <div className="space-y-0.5">
+      {/* GitHub-style heatmap — week columns × 7 day rows, fills width */}
+      <div className="flex flex-1 items-center">
+        <div className="flex w-full justify-between gap-[3px]">
           {weeks.map((week, weekIdx) => (
-            <div key={weekIdx} className="flex gap-0.5">
+            <div key={weekIdx} className="flex flex-1 flex-col gap-[3px]">
               {week.map((day, dayIdx) => (
                 <div
                   key={`${weekIdx}-${dayIdx}`}
-                  className={`h-3 w-3 rounded-sm ${COLORS[day.intensity]} transition-opacity hover:opacity-75`}
+                  className={`aspect-square w-full rounded-[3px] ${COLORS[day.intensity]} transition-opacity hover:opacity-75`}
                   title={day.date.toLocaleDateString()}
                   aria-label={`${day.date.toLocaleDateString()}: ${day.intensity}`}
                 />
@@ -97,17 +97,17 @@ export function StreakWidget() {
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <span>Less</span>
-          <div className={`h-2 w-2 rounded-sm ${COLORS.empty}`} />
-          <div className={`h-2 w-2 rounded-sm ${COLORS.low}`} />
-          <div className={`h-2 w-2 rounded-sm ${COLORS.mid}`} />
-          <div className={`h-2 w-2 rounded-sm ${COLORS.high}`} />
-          <div className={`h-2 w-2 rounded-sm ${COLORS.max}`} />
-          <span>More</span>
-        </div>
+      {/* Legend */}
+      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <span>Less</span>
+        <div className={`h-2 w-2 rounded-sm ${COLORS.empty}`} />
+        <div className={`h-2 w-2 rounded-sm ${COLORS.low}`} />
+        <div className={`h-2 w-2 rounded-sm ${COLORS.mid}`} />
+        <div className={`h-2 w-2 rounded-sm ${COLORS.high}`} />
+        <div className={`h-2 w-2 rounded-sm ${COLORS.max}`} />
+        <span>More</span>
       </div>
     </div>
   );

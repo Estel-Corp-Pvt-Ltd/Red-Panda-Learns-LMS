@@ -509,22 +509,18 @@ export default function DashboardPage() {
             {/* ── Bento layout (responsive grid) ─────────────────────────────── */}
             <div className="space-y-5 min-w-0">
 
-              {/* Bento row 1: hero + game/streak (responsively sized) */}
-              {/* lg: hero 2/3 + right col 1/3 stacked (game+streak); md: hero full width then game+streak side; sm: all stack */}
-              <div className="grid items-stretch gap-4 lg:grid-cols-3 md:grid-cols-2">
-                <div className="lg:col-span-2 md:col-span-2">
+              {/* Bento row 1: hero (2/3) + daily game tile (1/3) */}
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
                   {isLoading ? (
-                    <div className="rounded-2xl h-48 bg-muted animate-pulse" />
+                    <div className="rounded-3xl h-full min-h-[13rem] bg-muted animate-pulse" />
                   ) : firstEnrollment ? (
                     <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
                   ) : (
                     <HeroContinueLearningEmpty />
                   )}
                 </div>
-                <div className="lg:col-span-1 md:col-span-1 flex flex-col gap-4">
-                  <DailyGameCard />
-                  <StreakWidget />
-                </div>
+                <DailyGameCard />
               </div>
 
               {/* Banners */}
@@ -532,12 +528,12 @@ export default function DashboardPage() {
                 <BannerSlider banners={banners} autoSlideInterval={5000} />
               )}
 
-              {/* Bento row 2: calendar + empty space (responsively sized) */}
-              <div className="grid items-stretch gap-4 lg:grid-cols-3 md:grid-cols-2">
-                <div className="lg:col-span-1 md:col-span-1">
-                  <UpcomingCalendar />
+              {/* Bento row 2: streak heatmap (1/3) + upcoming calendar (2/3) */}
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                <StreakWidget />
+                <div className="lg:col-span-2">
+                  <UpcomingCalendar enrollments={enrollments} userId={user?.id ?? ""} />
                 </div>
-                <div className="lg:col-span-2 md:col-span-1 hidden md:block" />
               </div>
 
               {/* Bento row 3: courses (full width, dynamic grid) */}
