@@ -17,6 +17,7 @@ export const COLLECTION = {
   KARMA_DAILY: "KarmaDaily",
   KARMA_RULES: "KarmaRules",
   IDEMPOTENCY: "Idempotency",
+  STREAKS: "Streaks",
 } as const;
 
 export const ORDER_STATUS = {

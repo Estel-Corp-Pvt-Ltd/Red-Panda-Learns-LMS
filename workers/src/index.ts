@@ -27,6 +27,7 @@ import { Firestore, SERVER_TIMESTAMP, increment } from "./lib/firestore";
 import { verifyIdToken, getAuthUserByEmail, createAuthUser, type DecodedToken } from "./lib/firebase-auth";
 import { RazorpayClient, verifyRazorpaySignature } from "./lib/razorpay";
 import { sendPaymentConfirmation, sendPaymentFailedEmail } from "./lib/email";
+import { updateUserStreak, getUserStreak } from "./lib/streak";
 import {
   COLLECTION,
   ORDER_STATUS,
@@ -1419,7 +1420,27 @@ app.post("/completeLesson", async (c) => {
     updatedAt: SERVER_TIMESTAMP,
   });
 
+  // Streak advances on any completion; failure here must not fail the completion.
+  if (isCompleted) {
+    try {
+      await updateUserStreak(firestore, user.uid, Date.now());
+    } catch (e) {
+      console.error("streak update failed", e);
+    }
+  }
+
   return c.json({ success: true });
+});
+
+// ── GET /getStreak (Firebase auth) ────────────────────────────────────────────
+
+app.get("/getStreak", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  const streak = await getUserStreak(db(c.env), user.uid);
+  return c.json({ success: true, data: streak });
 });
 
 // ─── 404 fallback ─────────────────────────────────────────────────────────────
