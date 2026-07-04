@@ -76,7 +76,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getDownloadURL } from "firebase/storage";
 import { fileService } from "@/services/fileService";
 import { logError } from "@/utils/logger";
 import { ok, Result } from "@/utils/response";
@@ -620,57 +619,25 @@ export default function EditBundlePage() {
       return;
     }
 
-    const uploadResult = fileService.startResumableUpload(
-      `/bundles/${bundleId}/thumbnail.png`,
-      selectedFile
-    );
+    setUploadingThumbnail(true);
+    setProgress(0);
+    const uploadResult = await fileService.uploadImage(selectedFile, setProgress);
+    setUploadingThumbnail(false);
     if (!uploadResult.success) {
       toast({
-        title: "Upload Failed",
-        description: "Unable to upload the file. Please try again.",
+        title: "Failed to upload thumbnail.",
+        description: "Something went wrong",
         variant: "destructive",
       });
       return;
     }
-
-    uploadResult.data.on(
-      "state_changed",
-      (snapshot) => {
-        setUploadingThumbnail(true);
-        // Calculate progress
-        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(Math.round(prog));
-      },
-      (error) => {
-        toast({
-          title: "Failed to upload thumbnail.",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-        console.error(error);
-        setUploadingThumbnail(false);
-      },
-      async () => {
-        try {
-          setProgress(100);
-          setUploadingThumbnail(false);
-          const url = await getDownloadURL(uploadResult.data.snapshot.ref);
-          setThumbnailUrl(url);
-          toast({
-            title: "Thumbnail Uploaded",
-            description: "Thumbnail has been successfully uploaded",
-            variant: "default",
-          });
-        } catch (error) {
-          toast({
-            title: "Thumbnail not uploaded",
-            description: "Something went wrong",
-            variant: "destructive",
-          });
-          logError("Error getting download URL:", error);
-        }
-      }
-    );
+    setProgress(100);
+    setThumbnailUrl(uploadResult.data);
+    toast({
+      title: "Thumbnail Uploaded",
+      description: "Thumbnail has been successfully uploaded",
+      variant: "default",
+    });
   };
 
   // Tag handlers
