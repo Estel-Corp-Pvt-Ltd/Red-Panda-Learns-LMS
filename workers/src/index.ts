@@ -27,9 +27,13 @@ import { Firestore, SERVER_TIMESTAMP, increment } from "./lib/firestore";
 import { verifyIdToken, getAuthUserByEmail, createAuthUser, type DecodedToken } from "./lib/firebase-auth";
 import { RazorpayClient, verifyRazorpaySignature } from "./lib/razorpay";
 import { sendPaymentConfirmation, sendPaymentFailedEmail } from "./lib/email";
+import { generateJson } from "./lib/gemini";
+import { buildPrompt, responseSchema, validateGame, type Engine, type Difficulty } from "./lib/game";
 import { updateUserStreak, getUserStreak } from "./lib/streak";
 import {
   COLLECTION,
+  GAME_KARMA_POINTS,
+  GAME_COURSE_ID,
   ORDER_STATUS,
   TRANSACTION_STATUS,
   TRANSACTION_TYPE,
@@ -55,6 +59,7 @@ interface Env {
   BREVO_API_KEY: string;
   API_SECRET_TOKEN: string;
   ALLOWED_ORIGINS: string;
+  GEMINI_API_KEY: string;
 }
 
 type Variables = { user: DecodedToken };
@@ -1444,6 +1449,142 @@ app.post("/completeLesson", async (c) => {
   }
 
   return c.json({ success: true });
+});
+
+// ── POST /generateGames (API key) — batch-generate a pool via Gemini ──────────
+
+app.post("/generateGames", async (c) => {
+  const authResult = await requireApiKey(c, async () => {});
+  if (authResult) return authResult;
+
+  let body: { engine?: string; difficulty?: string; count?: number };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const engine = body.engine as Engine;
+  if (!["grid", "graph", "timeline"].includes(engine)) {
+    return c.json({ error: "engine must be one of grid|graph|timeline" }, 400);
+  }
+  const difficulty = (["easy", "medium", "hard"].includes(body.difficulty as string) ? body.difficulty : "easy") as Difficulty;
+  const count = Math.min(Math.max(body.count ?? 5, 1), 10);
+
+  let raw: unknown;
+  try {
+    raw = await generateJson(c.env.GEMINI_API_KEY, buildPrompt(engine, difficulty, count), {
+      responseSchema: responseSchema(engine, count),
+    });
+  } catch (err: any) {
+    return c.json({ error: `Gemini generation failed: ${err.message}` }, 502);
+  }
+
+  const items = Array.isArray(raw) ? raw : [raw];
+  const firestore = db(c.env);
+  const rejected: string[] = [];
+  let generated = 0;
+
+  for (const item of items) {
+    const v = validateGame(item, engine);
+    if (!v.ok) {
+      rejected.push(v.reason);
+      continue;
+    }
+    const id = firestore.newDocId();
+    await firestore.setDoc(COLLECTION.GAMES, id, {
+      id,
+      engine,
+      difficulty,
+      active: true,
+      createdAt: SERVER_TIMESTAMP,
+      // Stored as a JSON string: Firestore can't represent nested arrays (grid walls/coins),
+      // and we never query inside it. Parsed back in /getGame.
+      game: JSON.stringify(v.game),
+    });
+    generated++;
+  }
+
+  return c.json({ requested: count, generated, rejected });
+});
+
+// ── GET /getGame (Firebase auth) — serve one game from the pool, rotating daily ──
+
+app.get("/getGame", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const firestore = db(c.env);
+  const where: Array<{ field: string; op: string; value: unknown }> = [{ field: "active", op: "==", value: true }];
+  const engine = c.req.query("engine");
+  if (engine) where.push({ field: "engine", op: "==", value: engine });
+
+  const docs = await firestore.query(COLLECTION.GAMES, where, undefined, 50);
+  if (!docs.length) return c.json({ error: "No games in pool. Run /generateGames first." }, 404);
+
+  // Deterministic per-day pick so the dashboard shows a stable "daily" game.
+  const dayNumber = Math.floor(Date.now() / 86_400_000);
+  const picked = docs[dayNumber % docs.length];
+
+  return c.json({ id: picked.id, ...JSON.parse(picked.data.game as string) });
+});
+
+// ── POST /completeGame (Firebase auth) — award karma once per user per day ──────
+
+app.post("/completeGame", async (c) => {
+  const authResult = await requireAuth(c as any, async () => {});
+  if (authResult) return authResult;
+
+  const user = c.get("user");
+  let body: { won?: boolean; userName?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+  if (!body.won) return c.json({ success: true, karmaAwarded: 0 }); // no karma unless the game was solved
+
+  const firestore = db(c.env);
+  const today = new Date().toISOString().slice(0, 10);
+  const playId = `${user.uid}_${today}`;
+
+  // Anti-farm: one award per user per day.
+  const existing = await firestore.getDoc(COLLECTION.GAME_PLAYS, playId);
+  if (existing) return c.json({ success: true, karmaAwarded: 0, alreadyClaimed: true });
+
+  await firestore.setDoc(COLLECTION.GAME_PLAYS, playId, {
+    id: playId,
+    userId: user.uid,
+    dayKey: today,
+    completedAt: SERVER_TIMESTAMP,
+  });
+
+  // Award karma into KarmaDaily (LEARNING breakdown, sentinel courseId).
+  // ponytail: fixed GAME_KARMA_POINTS; move to a KarmaRules lookup if admins need to tune it.
+  const docId = `${user.uid}_${GAME_COURSE_ID}_${today}`;
+  await firestore.runTransaction(async (tx) => {
+    const snap = await tx.getDoc(COLLECTION.KARMA_DAILY, docId);
+    if (!snap.exists) {
+      tx.setDoc(COLLECTION.KARMA_DAILY, docId, {
+        id: docId,
+        userId: user.uid,
+        courseId: GAME_COURSE_ID,
+        userName: body.userName ?? "",
+        dayKey: today,
+        date: new Date().toISOString(),
+        karmaEarned: GAME_KARMA_POINTS,
+        breakdown: { LEARNING: GAME_KARMA_POINTS, ASSIGNMENT: 0, QUIZ: 0, COMMUNITY: 0, SOCIAL: 0 },
+      });
+    } else {
+      tx.updateDoc(COLLECTION.KARMA_DAILY, docId, {
+        karmaEarned: increment(GAME_KARMA_POINTS),
+        "breakdown.LEARNING": increment(GAME_KARMA_POINTS),
+        updatedAt: SERVER_TIMESTAMP,
+      });
+    }
+  });
+
+  return c.json({ success: true, karmaAwarded: GAME_KARMA_POINTS });
 });
 
 // ── GET /getStreak (Firebase auth) ────────────────────────────────────────────

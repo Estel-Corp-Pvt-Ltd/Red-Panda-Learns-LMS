@@ -17,8 +17,16 @@ export const COLLECTION = {
   KARMA_DAILY: "KarmaDaily",
   KARMA_RULES: "KarmaRules",
   IDEMPOTENCY: "Idempotency",
+  GAMES: "Games",
+  GAME_PLAYS: "GamePlays",
   STREAKS: "Streaks",
 } as const;
+
+/** Karma awarded for completing the daily mini-game (once per user per day). */
+export const GAME_KARMA_POINTS = 15;
+/** Sentinel courseId for game karma — surfaces in daily-karma totals (queried without courseId),
+ *  but stays out of per-course leaderboards. */
+export const GAME_COURSE_ID = "daily-game";
 
 export const ORDER_STATUS = {
   PENDING: "PENDING",
