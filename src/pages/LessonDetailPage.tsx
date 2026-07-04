@@ -228,8 +228,10 @@ export default function LessonDetailPage() {
     }
   };
 
-  // Loading State
-  if (courseLoading || lockLoading) {
+  // Initial page loading state — only while the course itself is loading.
+  // Lesson-level lock loading is handled locally inside LessonContent so the
+  // page shell and CourseNavigator stay mounted during lesson-to-lesson navigation.
+  if (courseLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
@@ -375,6 +377,7 @@ export default function LessonDetailPage() {
               selectedItem={selectedItem}
               courseName={course.title}
               isAdmin={isAdmin}
+              isLockLoading={lockLoading}
               isContentLocked={isContentLocked}
               contentLock={contentLock}
               timeRemaining={timeRemaining}
