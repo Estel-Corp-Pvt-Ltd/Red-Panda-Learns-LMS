@@ -23,6 +23,7 @@ import { LessonContent } from "@/components/LessonContent";
 
 import { useCourseQuery } from "@/hooks/useCaching";
 import { useContentLock } from "@/utils/is-content-locked";
+import { useContentProtection } from "@/hooks/useContentProtection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnrollment } from "@/contexts/EnrollmentContext";
 
@@ -49,6 +50,9 @@ export default function LessonDetailPage() {
 
   const isAdmin = user?.role === USER_ROLE.ADMIN;
   const isCourseInstructor = user?.role === USER_ROLE.INSTRUCTOR && course?.instructorId === user?.id;
+
+  // Deter dev-tools / view-source access to content URLs (skip for admins & instructors)
+  useContentProtection(!isAdmin && !isCourseInstructor);
 
   // Set courseId when course loads
   useEffect(() => {
@@ -167,44 +171,37 @@ export default function LessonDetailPage() {
   const handleComplete = async (isCompleted: boolean) => {
     if (!user || !courseId || !selectedItem) return;
 
-    // const result = await learningProgressService.completeLesson(
-    //   courseId,
-    //   selectedItem.id,
-    //   selectedItem.type,
-    //   isCompleted
-    // );
-    console.warn("completeLesson cloud function is disabled");
+    const result = await learningProgressService.completeLesson(
+      courseId,
+      selectedItem.id,
+      selectedItem.type,
+      isCompleted
+    );
 
-    if (true) {
-      const now = Timestamp.now();
-      setUserProgress((prev) => {
-        if (!prev) return prev;
-
-        return {
-          ...prev,
-          lessonHistory: {
-            ...(typeof prev.lessonHistory === "object" && !Array.isArray(prev.lessonHistory)
-              ? prev.lessonHistory
-              : {}),
-            [selectedItem.id]: {
-              timeSpent: 0,
-              markedAsComplete: isCompleted,
-              completedAt: now,
-              type: selectedItem.type,
-            },
-          },
-        };
-      });
-
-      setLessonCompleted(isCompleted);
-
-      toast({
-        title: isCompleted ? "Completed!" : "Incomplete",
-        description: `${selectedItem.type === "LESSON" ? "Lesson" : "Assignment"} ${
-          isCompleted ? "marked as complete." : "is not marked as complete."
-        }`,
-      });
+    if (!result.success) {
+      throw new Error(result.error || "Failed to complete lesson");
     }
+
+    const now = Timestamp.now();
+    setUserProgress((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lessonHistory: {
+          ...(typeof prev.lessonHistory === "object" && !Array.isArray(prev.lessonHistory)
+            ? prev.lessonHistory
+            : {}),
+          [selectedItem.id]: {
+            timeSpent: 0,
+            markedAsComplete: isCompleted,
+            completedAt: now,
+            type: selectedItem.type,
+          },
+        },
+      };
+    });
+
+    setLessonCompleted(isCompleted);
   };
 
   const getNextItem = (): TopicItem | null => {
@@ -231,8 +228,10 @@ export default function LessonDetailPage() {
     }
   };
 
-  // Loading State
-  if (courseLoading || lockLoading) {
+  // Initial page loading state — only while the course itself is loading.
+  // Lesson-level lock loading is handled locally inside LessonContent so the
+  // page shell and CourseNavigator stay mounted during lesson-to-lesson navigation.
+  if (courseLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header showMenuButton onMenuClick={() => setSidebarOpen(true)} />
@@ -374,19 +373,18 @@ export default function LessonDetailPage() {
         {/* Main Content — claymorphic card container */}
         <main className="flex-1 min-w-0 overflow-y-auto bg-muted/20 dark:bg-muted/10">
           <div className="p-4 lg:p-6">
-            <div className="rounded-3xl bg-card/80 backdrop-blur-sm border border-border/30 shadow-[0_4px_24px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3),0_1px_4px_rgba(0,0,0,0.15)] p-4 lg:p-6">
-              <LessonContent
-                selectedItem={selectedItem}
-                courseName={course.title}
-                isAdmin={isAdmin}
-                isContentLocked={isContentLocked}
-                contentLock={contentLock}
-                timeRemaining={timeRemaining}
-                lessonCompleted={lessonCompleted}
-                onComplete={handleComplete}
-                onNavigateToNext={handleNavigateToNext}
-              />
-            </div>
+            <LessonContent
+              selectedItem={selectedItem}
+              courseName={course.title}
+              isAdmin={isAdmin}
+              isLockLoading={lockLoading}
+              isContentLocked={isContentLocked}
+              contentLock={contentLock}
+              timeRemaining={timeRemaining}
+              lessonCompleted={lessonCompleted}
+              onComplete={handleComplete}
+              onNavigateToNext={handleNavigateToNext}
+            />
           </div>
         </main>
       </div>

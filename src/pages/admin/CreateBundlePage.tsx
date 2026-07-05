@@ -43,7 +43,6 @@ import { useBundlePricingQuery } from "@/hooks/useBundleApi";
 import { Course } from "@/types/course";
 import { PricingModel, SortKey, AttributeType } from "@/types/general";
 import { Header } from "@/components/Header";
-import { getDownloadURL } from "firebase/storage";
 import {
   BUNDLE_STATUS,
   COURSE_MODE,
@@ -418,59 +417,25 @@ export default function CreateBundlePage() {
       });
       return;
     }
-    const tempId = crypto.randomUUID();
-    const uploadResult = fileService.startResumableUpload(
-      `/bundles/${tempId}/thumbnail.png`,
-      selectedFile
-    );
+    setUploadingThumbnail(true);
+    setProgress(0);
+    const uploadResult = await fileService.uploadImage(selectedFile, setProgress);
+    setUploadingThumbnail(false);
     if (!uploadResult.success) {
       toast({
-        title: "Upload Failed",
-        description: "Unable to upload the file. Please try again.",
+        title: "Failed to upload thumbnail.",
+        description: "Something went wrong",
         variant: "destructive",
       });
       return;
     }
-
-    uploadResult.data.on(
-      "state_changed",
-      (snapshot) => {
-        setUploadingThumbnail(true);
-        // Calculate progress
-        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(Math.round(prog));
-      },
-      (error) => {
-        toast({
-          title: "Failed to upload thumbnail.",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-        console.error(error);
-        setUploadingThumbnail(false);
-      },
-      async () => {
-        try {
-          setProgress(100);
-          setUploadingThumbnail(false);
-          const url = await getDownloadURL(uploadResult.data.snapshot.ref);
-          setThumbnailUrl(url);
-
-          toast({
-            title: "Thumbnail Uploaded",
-            description: "Thumbnail has been successfully uploaded",
-            variant: "default",
-          });
-        } catch (error) {
-          toast({
-            title: "Thumbnail not uploaded",
-            description: "Something went wrong",
-            variant: "destructive",
-          });
-          logError("Error getting download URL:", error);
-        }
-      }
-    );
+    setProgress(100);
+    setThumbnailUrl(uploadResult.data);
+    toast({
+      title: "Thumbnail Uploaded",
+      description: "Thumbnail has been successfully uploaded",
+      variant: "default",
+    });
   };
 
   const isProbablyHtml = (text?: string | null) => {

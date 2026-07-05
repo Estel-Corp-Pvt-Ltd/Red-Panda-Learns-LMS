@@ -16,5 +16,6 @@ ALLOWED_ORIGINS = "https://red-panda-learns-lms.vercel.app,https://red-panda-lea
 #  RAZORPAY_KEY_SECRET             Razorpay live/test key secret
 #  RAZORPAY_WEBHOOK_SECRET         Razorpay webhook secret
 #  BREVO_API_KEY                   Brevo (Sendinblue) API key
-#  API_SECRET_TOKEN                Bearer token for internal API calls (getOrders etc.)
+#  API_SECRET_TOKEN                Bearer token for internal API calls (getOrders, generateGames)
+#  GEMINI_API_KEY                  Google AI Studio key — powers /generateGames (mini-games)
 # ─────────────────────────────────────────────────────────────────────────────

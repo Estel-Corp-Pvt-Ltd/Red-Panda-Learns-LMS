@@ -7,7 +7,7 @@ import { organizationService } from "@/services/organizationService";
 import { teacherService } from "@/services/teacherService";
 import { courseService } from "@/services/courseService";
 import { User } from "@/types/user";
-import { AlertTriangle, BookOpen, HelpCircle, Loader2, MessageSquareText, NotepadText, Users } from "lucide-react";
+import { AlertTriangle, BookOpen, HelpCircle, Loader2, MessageSquareText, NotepadText, Star, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const TeacherDashboard = () => {
@@ -17,6 +17,7 @@ const TeacherDashboard = () => {
   const [allStudents, setAllStudents] = useState<User[]>([]);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
+  const [teacherXP, setTeacherXP] = useState(0);
   const [stats, setStats] = useState({
     totalStudents: 0,
     pendingSubmissions: 0,
@@ -49,11 +50,12 @@ const TeacherDashboard = () => {
       }
 
       try {
-        const [orgResult, statsResult, coursesResult, studentsResult] = await Promise.all([
+        const [orgResult, statsResult, coursesResult, studentsResult, xpResult] = await Promise.all([
           organizationService.getOrganizationById(user.organizationId),
           teacherService.getDashboardStats(user.organizationId),
           courseService.getPublishedCourses(),
           teacherService.getAllOrganizationStudents(user.organizationId),
+          teacherService.getTeacherXP(user.id),
         ]);
 
         if (orgResult.success && orgResult.data) {
@@ -71,6 +73,10 @@ const TeacherDashboard = () => {
             pendingSubmissions: statsResult.data.pendingSubmissions,
             pendingComments: statsResult.data.pendingComments,
           }));
+        }
+
+        if (xpResult.success && xpResult.data !== undefined) {
+          setTeacherXP(xpResult.data);
         }
 
         if (coursesResult.success && coursesResult.data) {
@@ -151,6 +157,15 @@ const TeacherDashboard = () => {
       color: "text-green-600",
       bg: "bg-green-50 dark:bg-green-950",
     },
+    {
+      title: "Your XP",
+      value: teacherXP,
+      icon: <Star className="h-6 w-6" />,
+      description: "Experience points earned",
+      tooltip: "Total XP earned through quizzes and learning activities",
+      color: "text-yellow-600",
+      bg: "bg-yellow-50 dark:bg-yellow-950",
+    },
   ];
 
   return (
@@ -175,7 +190,7 @@ const TeacherDashboard = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {statCards.map((card) => (
             <Card key={card.title} className="relative">
               <CardHeader className="flex flex-row items-center justify-between pb-2">

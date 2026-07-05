@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, BookOpen, Compass, Users, Calendar, MessageSquare, Award,
-  UserCircle, Settings, ChevronLeft, ChevronRight, LogOut, Zap, ClipboardList,
-  Flame, Check,
+  LayoutDashboard, BookOpen, Compass, UserCircle, LogOut, Zap, ClipboardList,
+  Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,31 +12,41 @@ interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
-  badge?: number;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard",    path: "/dashboard",    icon: <LayoutDashboard className="h-[18px] w-[18px]" /> },
-  { label: "Learn",        path: "/courses",       icon: <BookOpen className="h-[18px] w-[18px]" /> },
-  { label: "Explore",      path: "/free-courses",  icon: <Compass className="h-[18px] w-[18px]" /> },
-  { label: "Quizzes",      path: "/quizzes",       icon: <ClipboardList className="h-[18px] w-[18px]" /> },
-  { label: "What's New",   path: "/whats-new",     icon: <Zap className="h-[18px] w-[18px]" /> },
-  { label: "Community",    path: "/community",     icon: <Users className="h-[18px] w-[18px]" /> },
-  { label: "Messages",     path: "/messages",      icon: <MessageSquare className="h-[18px] w-[18px]" />, badge: 3 },
-  { label: "Calendar",     path: "/calendar",      icon: <Calendar className="h-[18px] w-[18px]" /> },
-  { label: "Certificates", path: "/submissions",   icon: <Award className="h-[18px] w-[18px]" /> },
+  { label: "Dashboard",  path: "/dashboard",    icon: <LayoutDashboard className="h-[18px] w-[18px]" /> },
+  { label: "Learn",      path: "/courses",      icon: <BookOpen className="h-[18px] w-[18px]" /> },
+  { label: "Explore",    path: "/free-courses", icon: <Compass className="h-[18px] w-[18px]" /> },
+  { label: "Quizzes",    path: "/quizzes",      icon: <ClipboardList className="h-[18px] w-[18px]" /> },
+  { label: "What's New", path: "/whats-new",    icon: <Zap className="h-[18px] w-[18px]" /> },
 ];
-
-const BOTTOM_ITEMS: NavItem[] = [
-  { label: "Profile",  path: "/profile",  icon: <UserCircle className="h-[18px] w-[18px]" /> },
-  { label: "Settings", path: "/settings", icon: <Settings className="h-[18px] w-[18px]" /> },
-];
-
-const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function checkActive(path: string, currentPath: string) {
   if (path === "/dashboard") return currentPath === "/dashboard";
   return currentPath.startsWith(path);
+}
+
+/** Circular rail button with a hover tooltip on the right. */
+function RailButton({ icon, label, active, onClick, to }: {
+  icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void; to?: string;
+}) {
+  const cls = cn(
+    "group relative grid h-11 w-11 place-items-center rounded-full transition-all duration-150",
+    active
+      ? "bg-foreground text-background shadow-md"
+      : "text-muted-foreground hover:bg-primary/20 hover:text-foreground"
+  );
+  const tooltip = (
+    <span className="pointer-events-none absolute left-full ml-3 z-50 hidden whitespace-nowrap rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-lg group-hover:block">
+      {label}
+    </span>
+  );
+  return to ? (
+    <Link to={to} className={cls} aria-label={label}>{icon}{tooltip}</Link>
+  ) : (
+    <button onClick={onClick} className={cls} aria-label={label}>{icon}{tooltip}</button>
+  );
 }
 
 export interface StudentSidebarProps {
@@ -45,12 +54,18 @@ export interface StudentSidebarProps {
   activeDaysThisWeek?: boolean[];
 }
 
-export function StudentSidebar({ streak = 0, activeDaysThisWeek }: StudentSidebarProps) {
+export function StudentSidebar(_props: StudentSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  const applyTheme = (dark: boolean) => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+    setIsDark(dark);
+  };
 
   const handleLogout = async () => {
     try { await logout(); localStorage.clear(); navigate("/"); } catch {}
@@ -58,165 +73,77 @@ export function StudentSidebar({ streak = 0, activeDaysThisWeek }: StudentSideba
 
   const firstName = user?.firstName ?? "Learner";
   const initials = `${firstName.charAt(0)}${user?.lastName?.charAt(0) ?? ""}`.toUpperCase();
-  const days = activeDaysThisWeek ?? Array(7).fill(false);
 
   return (
     <>
-      <aside className={cn(
-        "hidden md:flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out",
-        "bg-white dark:bg-[hsl(217,35%,8%)]",
-        "border-r border-border",
-        collapsed ? "w-[64px]" : "w-[232px]"
-      )}>
+      <aside className="hidden md:flex shrink-0 py-3 pl-3">
+        <div className="flex h-full flex-col items-center gap-2 rounded-[28px] border border-sidebar-border bg-sidebar-background px-2 py-3 shadow-lg">
 
-        {/* Logo / collapse */}
-        <div className={cn("flex items-center px-3 pt-3 pb-2", collapsed ? "justify-center" : "justify-between")}>
-          {!collapsed && (
-            <span className="text-sm font-black tracking-tight text-primary pl-1 select-none">
-              RedPanda<span className="text-foreground">Learns</span>
-            </span>
-          )}
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center border border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label={collapsed ? "Expand" : "Collapse"}
+          {/* Brand / home */}
+          <Link
+            to="/dashboard"
+            aria-label="RedPanda Learns — Home"
+            className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground font-black shadow-md"
           >
-            {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-          </button>
-        </div>
+            R
+          </Link>
 
-        {/* Main nav */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2 space-y-0.5 mt-1">
-          {NAV_ITEMS.map((item) => {
-            const active = checkActive(item.path, location.pathname);
-            return (
-              <Link
+          <div className="my-1 h-px w-6 bg-sidebar-border" />
+
+          {/* Main nav */}
+          <nav className="flex flex-col items-center gap-1.5">
+            {NAV_ITEMS.map((item) => (
+              <RailButton
                 key={item.path}
                 to={item.path}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 group relative",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />}
-                <span className={cn("shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")}>
-                  {item.icon}
-                </span>
-                {!collapsed && <span className="truncate leading-none flex-1">{item.label}</span>}
-                {!collapsed && item.badge != null && item.badge > 0 && (
-                  <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </span>
-                )}
-                {collapsed && (
-                  <div className="absolute left-full ml-2.5 z-50 pointer-events-none hidden group-hover:flex items-center">
-                    <div className="bg-popover text-popover-foreground text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-lg border border-border whitespace-nowrap">
-                      {item.label}
-                      {item.badge != null && item.badge > 0 && (
-                        <span className="ml-1.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full px-1 py-0.5">{item.badge}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+                icon={item.icon}
+                label={item.label}
+                active={checkActive(item.path, location.pathname)}
+              />
+            ))}
+          </nav>
 
-        {/* Streak widget — only expanded */}
-        {!collapsed && (
-          <div className="px-3 pb-2">
-            <div className="rounded-xl border border-border bg-muted/30 p-3">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Flame className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="text-xs font-bold text-foreground">
-                    {streak > 0 ? `${streak} day streak` : "Start your streak"}
-                  </span>
-                </div>
-                {streak > 0 && (
-                  <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 rounded-full px-1.5 py-0.5">
-                    {streak}d
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-1">
-                {DAY_LABELS.map((d, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className={cn(
-                      "w-full aspect-square rounded-md flex items-center justify-center transition-colors",
-                      days[i]
-                        ? "bg-orange-400 dark:bg-orange-500"
-                        : "bg-muted/70"
-                    )}>
-                      {days[i] && <Check className="h-2.5 w-2.5 text-white stroke-[3]" />}
-                    </div>
-                    <span className="text-[8px] font-medium text-muted-foreground leading-none">{d}</span>
-                  </div>
-                ))}
-              </div>
-              {streak === 0 && (
-                <p className="text-[10px] text-muted-foreground mt-2 text-center leading-relaxed">Complete a lesson to start</p>
-              )}
-            </div>
-          </div>
-        )}
+          <div className="flex-1" />
 
-        {/* Bottom items */}
-        <div className="px-2 pb-1 space-y-0.5">
-          {BOTTOM_ITEMS.map((item) => {
-            const active = checkActive(item.path, location.pathname);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 group relative",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />}
-                <span className={cn("shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")}>
-                  {item.icon}
-                </span>
-                {!collapsed && <span className="truncate leading-none">{item.label}</span>}
-                {collapsed && (
-                  <div className="absolute left-full ml-2.5 z-50 pointer-events-none hidden group-hover:flex items-center">
-                    <div className="bg-popover text-popover-foreground text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-lg border border-border whitespace-nowrap">{item.label}</div>
-                  </div>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+          {/* Profile + logout */}
+          <RailButton
+            to="/profile"
+            label="Profile"
+            active={checkActive("/profile", location.pathname)}
+            icon={<UserCircle className="h-[18px] w-[18px]" />}
+          />
+          <RailButton
+            label="Logout"
+            onClick={() => setShowLogoutDialog(true)}
+            icon={<LogOut className="h-[18px] w-[18px]" />}
+          />
 
-        {/* User strip */}
-        <div className="px-2 pb-3 pt-2 border-t border-border mt-1">
-          <div className={cn("flex items-center gap-2 rounded-lg p-2 cursor-pointer hover:bg-muted transition-colors", collapsed ? "justify-center" : "")}>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-[#82b6ff] flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {user?.photoURL
-                ? <img src={user.photoURL} alt={firstName} className="w-full h-full rounded-full object-cover" />
-                : initials
-              }
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate leading-tight">{firstName} {user?.lastName ?? ""}</p>
-                <p className="text-[10px] text-muted-foreground truncate mt-0.5">{user?.email ?? ""}</p>
-              </div>
-            )}
+          {/* User avatar */}
+          <Link to="/profile" aria-label="Profile" className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-primary/50 text-[11px] font-bold text-primary-foreground shadow">
+            {user?.photoURL
+              ? <img src={user.photoURL} alt={firstName} className="h-full w-full object-cover" />
+              : initials}
+          </Link>
+
+          <div className="my-1 h-px w-6 bg-sidebar-border" />
+
+          {/* Theme toggle (sun = light, moon = dark) */}
+          <div className="flex flex-col items-center gap-1 rounded-full bg-muted/60 p-1">
             <button
-              onClick={(e) => { e.preventDefault(); setShowLogoutDialog(true); }}
-              className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              title="Logout"
+              onClick={() => applyTheme(false)}
+              aria-label="Light mode"
+              className={cn("grid h-8 w-8 place-items-center rounded-full transition-all",
+                !isDark ? "bg-background text-primary shadow" : "text-muted-foreground hover:text-foreground")}
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <Sun className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => applyTheme(true)}
+              aria-label="Dark mode"
+              className={cn("grid h-8 w-8 place-items-center rounded-full transition-all",
+                isDark ? "bg-background text-primary shadow" : "text-muted-foreground hover:text-foreground")}
+            >
+              <Moon className="h-4 w-4" />
             </button>
           </div>
         </div>

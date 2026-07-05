@@ -9,6 +9,7 @@ export const USER_ROLE = {
 export const LEARNING_CONTENT = {
   LESSON: "LESSON",
   ASSIGNMENT: "ASSIGNMENT",
+  QUIZ: "QUIZ",
 } as const;
 
 export const LESSON_TYPE = {
@@ -132,6 +133,7 @@ export const LEARNING_UNIT = {
   ASSIGNMENT: "ASSIGNMENT",
   LESSON: "LESSON",
   TOPIC: "TOPIC",
+  QUIZ: "QUIZ",
 } as const;
 
 export const ENVIRONMENT = {
@@ -266,6 +268,8 @@ export const COLLECTION = {
   COURSE_ARRANGEMENTS: "CourseArrangements",
   QUIZZES: "Quizzes",
   QUIZ_SUBMISSIONS: "QuizSubmissions",
+  TOPIC_QUIZZES: "TopicQuizzes",
+  TOPIC_QUIZ_SUBMISSIONS: "TopicQuizSubmissions",
   ADMIN_ASSIGNED_STUDENTS: "AdminAssignedStudents",
   SUBMISSION_NOTIFICATION: "SubmissionNotification",
   COMPLAINTS: "Complaints",
@@ -281,6 +285,7 @@ export const COLLECTION = {
   CONTENT_LOCKS: "ContentLocks",
   KARMA_DAILY: "KarmaDaily",
   KARMA_RULES: "KarmaRules",
+  STREAKS: "Streaks",
 } as const;
 
 export const ATTRIBUTE_TYPE = {

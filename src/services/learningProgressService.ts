@@ -65,33 +65,36 @@ class LearningProgressService {
    * @param progressId - The ID of the LearningProgress document.
    * @param completedLessonId - The ID of the lesson that was just completed.
    */
-  // async completeLesson(
-  //   courseId: string,
-  //   itemId: string,
-  //   type: string,
-  //   isCompleted: boolean
-  // ): Promise<Result<null>> {
-  //   try {
-  //     const idToken = await authService.getToken();
-  //     await fetch(`${this.backendUrl}/completeLesson`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${idToken}`,
-  //       },
-  //       body: JSON.stringify({
-  //         courseId,
-  //         itemId,
-  //         type,
-  //         isCompleted,
-  //       }),
-  //     });
-  //     return ok(null);
-  //   } catch {
-  //     console.error("spendTimeOnLesson error");
-  //     return fail("Failed to update time spent.");
-  //   }
-  // }
+  async completeLesson(
+    courseId: string,
+    itemId: string,
+    type: string,
+    isCompleted: boolean
+  ): Promise<Result<null>> {
+    try {
+      const idToken = await authService.getToken();
+      const response = await fetch(`${this.backendUrl}/completeLesson`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          courseId,
+          itemId,
+          type,
+          isCompleted,
+        }),
+      });
+      if (!response.ok) {
+        return fail("Failed to complete lesson.");
+      }
+      return ok(null);
+    } catch {
+      console.error("completeLesson error");
+      return fail("Failed to complete lesson.");
+    }
+  }
 
   // async timeSpentOnLesson(
   //   courseId: string,

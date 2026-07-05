@@ -2,12 +2,15 @@
 
 import { Header } from "@/components/Header";
 import { StudentSidebar } from "@/components/StudentSidebar";
-import { StatCards } from "@/components/dashboard/StatCards";
+// Gamification widgets (XP / streak / level / badges / quests / achievements)
+// are intentionally hidden until those features are fully released. Components
+// are kept in the codebase for reintroduction later.
+// import { StatCards } from "@/components/dashboard/StatCards";
 import { HeroContinueLearning, HeroContinueLearningEmpty } from "@/components/dashboard/HeroContinueLearning";
-import { DailyQuests } from "@/components/dashboard/DailyQuests";
-import { RecentAchievements } from "@/components/dashboard/RecentAchievements";
+// import { DailyQuests } from "@/components/dashboard/DailyQuests";
+// import { RecentAchievements } from "@/components/dashboard/RecentAchievements";
 // import { UpcomingAssignments } from "@/components/dashboard/UpcomingAssignments";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
+// import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,6 +25,7 @@ import { enrollmentService } from "@/services/enrollmentService";
 import { learningProgressService } from "@/services/learningProgressService";
 import { bannerService } from "@/services/bannerService";
 import { fetchDailyKarmaService } from "@/services/karmaService/fetchkarmaDaily";
+import { streakService } from "@/services/streakService";
 import type { Enrollment } from "@/types/enrollment";
 import type { Banner } from "@/types/banner";
 import type { KarmaDaily } from "@/types/karma";
@@ -35,6 +39,22 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
 import Leaderboard from "@/components/Leaderboard";
+import CourseCard from "@/components/course/CourseCard";
+import { DailyGameCard } from "@/components/games/DailyGameCard";
+import { StreakWidget } from "@/components/dashboard/StreakWidget";
+import { UpcomingCalendar } from "@/components/dashboard/UpcomingCalendar";
+
+/* ═══════════════════════════════════════════════════════
+   Enrolled Course Card (grid) — wraps the standard CourseCard
+   so enrolled courses match course listings elsewhere.
+   ═══════════════════════════════════════════════════════ */
+
+function EnrolledCourseGridCard({ enrollment }: { enrollment: Enrollment }) {
+  const { data: course, isLoading } = useCourseQuery(enrollment.courseId);
+  if (isLoading) return <div className="rounded-2xl h-72 bg-muted animate-pulse" />;
+  if (!course) return null;
+  return <CourseCard course={course} />;
+}
 
 /* ═══════════════════════════════════════════════════════
    Leaderboard Modal
@@ -126,7 +146,7 @@ function EnrolledCourseCard({ enrollment, certificateStatus, fetchEnrollmentsAnd
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-[#82b6ff]/20 border border-border flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-[#CFC7F4]/20 border border-border flex items-center justify-center shrink-0">
               <BookOpen className="h-5 w-5 text-primary/70" />
             </div>
             <div className="min-w-0">
@@ -141,8 +161,8 @@ function EnrolledCourseCard({ enrollment, certificateStatus, fetchEnrollmentsAnd
           <div className="flex items-center gap-1.5 shrink-0">
             {karma > 0 && (
               <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-100 dark:bg-orange-900/20">
-                <Flame className="h-3.5 w-3.5 text-[#82b6ff]" />
-                <span className="text-xs font-bold text-[#82b6ff]">{karma}</span>
+                <Flame className="h-3.5 w-3.5 text-[#CFC7F4]" />
+                <span className="text-xs font-bold text-[#CFC7F4]">{karma}</span>
               </div>
             )}
             {showCertificateFeatures && (
@@ -260,6 +280,7 @@ export default function DashboardPage() {
   const [karmaHistory, setKarmaHistory] = useState<KarmaDaily[]>([]);
   const [todayKarmaEntries, setTodayKarmaEntries] = useState<KarmaDaily[]>([]);
   const [karmaLoading, setKarmaLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
 
   // Derived game state — fully from real data
   const gameState = useGameState({
@@ -373,6 +394,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchEnrollmentsAndCertificateRequestStatuses();
+    streakService.getStreak().then((r) => {
+      if (r.success && r.data) setStreak(r.data.current);
+    });
   }, [user?.id]);
 
   const handleEnableNotifications = async () => {
@@ -433,7 +457,7 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-y-auto">
           <div
             className="fixed inset-0 pointer-events-none -z-0"
-            style={{ background: "linear-gradient(135deg, rgba(61,142,240,0.05) 0%, rgba(130,182,255,0.07) 50%, transparent 100%)" }}
+            style={{ background: "linear-gradient(135deg, rgba(184,173,238,0.05) 0%, rgba(184,173,238,0.07) 50%, transparent 100%)" }}
           />
 
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 space-y-5">
@@ -441,7 +465,7 @@ export default function DashboardPage() {
             {/* ── Welcome row ──────────────────────────────── */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-[#82b6ff] flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-[#CFC7F4] flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
                   {user?.photoURL
                     ? <img src={user.photoURL} alt={firstName} className="w-full h-full rounded-xl object-cover" />
                     : `${firstName.charAt(0)}${user?.lastName?.charAt(0) ?? ""}`.toUpperCase()
@@ -457,8 +481,16 @@ export default function DashboardPage() {
                   </h1>
                 </div>
               </div>
-              <div className="hidden md:flex items-center gap-2 shrink-0">
-                <Button variant="ghost" size="sm" className="rounded-xl text-xs h-8"
+              <div className="flex items-center gap-2 shrink-0">
+                <div
+                  className="flex items-center gap-1.5 rounded-xl bg-primary/10 px-2.5 h-8"
+                  title={`${streak}-day streak — complete a lesson, quiz, or assignment each day to keep it going`}
+                >
+                  <Flame className={`h-4 w-4 ${streak > 0 ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs font-bold text-foreground">{streak}</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground">day streak</span>
+                </div>
+                <Button variant="ghost" size="sm" className="hidden md:inline-flex rounded-xl text-xs h-8"
                   onClick={handleEnableNotifications}
                   disabled={notificationPermission === "granted" || isEnablingNotifications}>
                   {notificationPermission === "granted"
@@ -466,7 +498,7 @@ export default function DashboardPage() {
                     : <BellOff className="h-4 w-4 mr-1.5" />}
                   {notificationPermission === "granted" ? "Notifications On" : "Enable Notifications"}
                 </Button>
-                <Link to="/courses">
+                <Link to="/courses" className="hidden md:block">
                   <Button className="rounded-xl text-xs h-8 shadow-sm shadow-primary/20">
                     <BookOpen className="h-4 w-4 mr-1.5" />Browse Courses
                   </Button>
@@ -474,100 +506,73 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ── Stat Cards ───────────────────────────────── */}
-            <StatCards gameState={gameState} totalEnrollments={enrollments.length} />
+            {/* ── Bento layout (responsive grid) ─────────────────────────────── */}
+            <div className="space-y-5 min-w-0">
 
-            {/* ── Two-column layout ────────────────────────── */}
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
-
-              {/* Left column */}
-              <div className="space-y-5 min-w-0">
-
-                {/* Hero continue learning */}
-                {isLoading ? (
-                  <div className="rounded-2xl h-48 bg-muted animate-pulse" />
-                ) : firstEnrollment ? (
-                  <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
-                ) : (
-                  <HeroContinueLearningEmpty />
-                )}
-
-                {/* Banners */}
-                {!isBannersLoading && banners.length > 0 && (
-                  <BannerSlider banners={banners} autoSlideInterval={5000} />
-                )}
-
-                {/* Courses */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-primary" />Your Courses
-                    </h2>
-                    <Link to="/courses">
-                      <Button size="sm" variant="ghost" className="rounded-xl text-xs h-7">
-                        View All <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
-                      </Button>
-                    </Link>
-                  </div>
-
+              {/* Bento row 1: hero (2/3) + daily game tile (1/3) */}
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
                   {isLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2].map((i) => <div key={i} className="rounded-2xl h-36 bg-muted animate-pulse" />)}
-                    </div>
-                  ) : enrollments.length > 0 ? (
-                    <div className="space-y-3">
-                      {enrollments.map((enrollment) => (
-                        <EnrolledCourseCard
-                          key={enrollment.id}
-                          enrollment={enrollment}
-                          certificateStatus={certificateStatusMap[enrollment.courseId] ?? null}
-                          fetchEnrollmentsAndCertificateRequestStatuses={fetchEnrollmentsAndCertificateRequestStatuses}
-                          karma={karmaMap[enrollment.courseId] || 0}
-                          onViewLeaderboard={handleViewLeaderboard}
-                          hasLeaderboardData={leaderboardDataMap[enrollment.courseId] || false}
-                        />
-                      ))}
-                    </div>
+                    <div className="rounded-3xl h-full min-h-[13rem] bg-muted animate-pulse" />
+                  ) : firstEnrollment ? (
+                    <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
                   ) : (
-                    <div className="rounded-2xl bg-card border border-border p-10 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <BookOpen className="h-8 w-8 text-primary" />
-                      </div>
-                      <h3 className="text-base font-bold mb-1">No courses yet</h3>
-                      <p className="text-muted-foreground text-sm mb-5 max-w-xs mx-auto">
-                        Start your learning journey by enrolling in a course
-                      </p>
-                      <Button asChild className="rounded-xl shadow-sm shadow-primary/20">
-                        <Link to="/courses">Browse Courses</Link>
-                      </Button>
-                    </div>
+                    <HeroContinueLearningEmpty />
                   )}
                 </div>
+                <DailyGameCard />
+              </div>
 
-                {/* Bottom row — show only if data exists */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Assignments: temporarily disabled
-                  <UpcomingAssignments assignments={[]} />
-                  */}
-                  {/* Activity: only show if there are entries */}
-                  {gameState.recentActivity.length > 0 && (
-                    <RecentActivity activities={gameState.recentActivity} />
-                  )}
+              {/* Banners */}
+              {!isBannersLoading && banners.length > 0 && (
+                <BannerSlider banners={banners} autoSlideInterval={5000} />
+              )}
+
+              {/* Bento row 2: streak heatmap (1/3) + upcoming calendar (2/3) */}
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                <StreakWidget />
+                <div className="lg:col-span-2">
+                  <UpcomingCalendar enrollments={enrollments} userId={user?.id ?? ""} />
                 </div>
               </div>
 
-              {/* Right column */}
-              <div className="space-y-4">
-                {gameState.dailyQuests.length > 0 && (
-                  <DailyQuests quests={gameState.dailyQuests} />
+              {/* Bento row 3: courses (full width, dynamic grid) */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />Your Courses
+                  </h2>
+                  <Link to="/courses">
+                    <Button size="sm" variant="ghost" className="rounded-xl text-xs h-7">
+                      View All <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => <div key={i} className="rounded-2xl h-72 bg-muted animate-pulse" />)}
+                  </div>
+                ) : enrollments.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {enrollments.map((enrollment) => (
+                      <EnrolledCourseGridCard key={enrollment.id} enrollment={enrollment} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-card border border-border p-10 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <BookOpen className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-base font-bold mb-1">No courses yet</h3>
+                    <p className="text-muted-foreground text-sm mb-5 max-w-xs mx-auto">
+                      Start your learning journey by enrolling in a course
+                    </p>
+                    <Button asChild className="rounded-xl shadow-sm shadow-primary/20">
+                      <Link to="/courses">Browse Courses</Link>
+                    </Button>
+                  </div>
                 )}
-                {!gameState.dailyQuests.length && (isLoading || karmaLoading) && (
-                  <div className="rounded-2xl h-48 bg-muted animate-pulse" />
-                )}
-                {!gameState.dailyQuests.length && !isLoading && !karmaLoading && (
-                  <DailyQuests quests={[]} />
-                )}
-                <RecentAchievements achievements={gameState.achievements.filter((a) => a.earnedDate !== null)} />
               </div>
             </div>
           </div>

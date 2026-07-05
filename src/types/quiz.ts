@@ -1,6 +1,42 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 import { QuizQuestionType, QuizStatus, QuizSubmissionStatus } from "./general";
 
+export interface TopicQuiz {
+  id: string;
+  courseId: string;
+  topicId: string;
+  title: string;
+  description?: string;
+  questions: Question[];
+  totalMarks: number;
+  passingPercentage: number;
+  durationMinutes: number;
+  enableFreeNavigation: boolean;
+  status: QuizStatus;
+  xpReward?: number;
+  createdBy: string;
+  createdAt: FieldValue | Timestamp;
+  updatedAt: FieldValue | Timestamp;
+}
+
+export interface TopicQuizSubmission {
+  id: string;
+  quizId: string;
+  courseId: string;
+  topicId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  startedAt: FieldValue | Timestamp;
+  submittedAt?: FieldValue | Timestamp;
+  lastSavedAt: FieldValue | Timestamp;
+  answers: SubmittedAnswer[];
+  totalScore?: number;
+  passed?: boolean;
+  status: QuizSubmissionStatus;
+  xpAwarded: boolean;
+}
+
 export interface Quiz {
   id: string;
   title: string;
