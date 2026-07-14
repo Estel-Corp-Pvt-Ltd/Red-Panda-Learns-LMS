@@ -1,6 +1,7 @@
 import type { Currency } from "@/types/general";
 import { Address } from "@/types/order";
 import { TransactionLineItem } from "@/types/transaction";
+import { BACKEND_URL } from "@/config";
 import { fail, ok, Result } from "@/utils/response";
 import { authService } from "../authService";
 
@@ -37,7 +38,9 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 class RazorpayProvider {
-  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+  private readonly backendUrl = BACKEND_URL;
+
+ 
 
   async createOrder(
     items: TransactionLineItem[],
@@ -48,7 +51,7 @@ class RazorpayProvider {
     try {
       const idToken = await authService.getToken();
       const idempotencyKey = `order_${Date.now()}_${crypto.randomUUID()}`;
-
+      console.log("bc url",this.backendUrl)
       const response = await fetch(`${this.backendUrl}/createRazorpayOrder`, {
         method: "POST",
         headers: {

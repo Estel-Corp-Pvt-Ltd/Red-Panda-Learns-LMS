@@ -31,10 +31,11 @@ import { Lesson, /* LessonAttachment, */ ZoomInfo } from "@/types/lesson";
 import { logError } from "@/utils/logger";
 import { PaginatedResult, PaginationOptions } from "@/utils/pagination";
 import { fail, ok, Result } from "@/utils/response";
+import { BACKEND_URL } from "@/config";
 import { authService } from "./authService";
 
 class LessonService {
-  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+  private readonly backendUrl = BACKEND_URL;
 
   // ───────────────────────────────────────────────
   private async generateLessonId(): Promise<string> {

@@ -147,7 +147,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ items, onPaymentSucce
     );
   };
 
-  const canProceed = agreed && isAddressValid() && !isProcessing;
+  const canProceed = true;
 
   useEffect(() => {
     if (!user) {

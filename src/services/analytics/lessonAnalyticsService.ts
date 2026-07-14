@@ -14,6 +14,7 @@ import {
   limit as firestoreLimit
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import { BACKEND_URL } from "@/config";
 import { logError } from "@/utils/logger";
 import { authService } from "../authService";
 
@@ -60,7 +61,7 @@ function formatSeconds(seconds: number): string {
 
 class LessonAnalyticsService {
   private collectionName = "LessonAnalytics";
-  private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+  private backendUrl = BACKEND_URL;
   /**
    * Get analytics document ID
    */

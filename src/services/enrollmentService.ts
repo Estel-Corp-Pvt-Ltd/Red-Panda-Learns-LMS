@@ -38,7 +38,7 @@ import { fail, ok, Result } from "@/utils/response";
 
 class EnrollmentService {
 
-  private readonly backendUrl = import.meta.env.VITE_BACKEND_URL;
+  private readonly backendUrl = BACKEND_URL;
   /**
    * Generates a unique enrollment ID in the format: <targetId>_<userId>
    */
