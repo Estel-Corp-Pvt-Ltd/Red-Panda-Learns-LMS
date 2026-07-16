@@ -1,8 +1,9 @@
 {
   "projects": {
-    "default": "ed-panda-learns-lms-dev",
-    "dev": "ed-panda-learns-lms-dev",
-    "prod": "ed-panda-learns-lms-dev"
+
+    "default": "red-panda-learns-lms-dev",
+    "dev": "red-panda-learns-lms-dev",
+    "prod": "red-panda-learns-lms"
   },
   "targets": {},
   "etags": {}

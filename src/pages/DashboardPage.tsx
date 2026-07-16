@@ -40,6 +40,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { BannerSlider } from "@/components/BannerSlider";
 import Leaderboard from "@/components/Leaderboard";
 import CourseCard from "@/components/course/CourseCard";
+import { DailyGameCard } from "@/components/games/DailyGameCard";
+import { StreakWidget } from "@/components/dashboard/StreakWidget";
+import { UpcomingCalendar } from "@/components/dashboard/UpcomingCalendar";
 
 /* ═══════════════════════════════════════════════════════
    Enrolled Course Card (grid) — wraps the standard CourseCard
@@ -143,7 +146,7 @@ function EnrolledCourseCard({ enrollment, certificateStatus, fetchEnrollmentsAnd
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-[#82b6ff]/20 border border-border flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-[#CFC7F4]/20 border border-border flex items-center justify-center shrink-0">
               <BookOpen className="h-5 w-5 text-primary/70" />
             </div>
             <div className="min-w-0">
@@ -158,8 +161,8 @@ function EnrolledCourseCard({ enrollment, certificateStatus, fetchEnrollmentsAnd
           <div className="flex items-center gap-1.5 shrink-0">
             {karma > 0 && (
               <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-100 dark:bg-orange-900/20">
-                <Flame className="h-3.5 w-3.5 text-[#82b6ff]" />
-                <span className="text-xs font-bold text-[#82b6ff]">{karma}</span>
+                <Flame className="h-3.5 w-3.5 text-[#CFC7F4]" />
+                <span className="text-xs font-bold text-[#CFC7F4]">{karma}</span>
               </div>
             )}
             {showCertificateFeatures && (
@@ -454,7 +457,7 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-y-auto">
           <div
             className="fixed inset-0 pointer-events-none -z-0"
-            style={{ background: "linear-gradient(135deg, rgba(61,142,240,0.05) 0%, rgba(130,182,255,0.07) 50%, transparent 100%)" }}
+            style={{ background: "linear-gradient(135deg, rgba(184,173,238,0.05) 0%, rgba(184,173,238,0.07) 50%, transparent 100%)" }}
           />
 
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 space-y-5">
@@ -462,7 +465,7 @@ export default function DashboardPage() {
             {/* ── Welcome row ──────────────────────────────── */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-[#82b6ff] flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-[#CFC7F4] flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
                   {user?.photoURL
                     ? <img src={user.photoURL} alt={firstName} className="w-full h-full rounded-xl object-cover" />
                     : `${firstName.charAt(0)}${user?.lastName?.charAt(0) ?? ""}`.toUpperCase()
@@ -503,24 +506,37 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ── Single-column layout ─────────────────────── */}
+            {/* ── Bento layout (responsive grid) ─────────────────────────────── */}
             <div className="space-y-5 min-w-0">
 
-              {/* Hero continue learning */}
-              {isLoading ? (
-                <div className="rounded-2xl h-48 bg-muted animate-pulse" />
-              ) : firstEnrollment ? (
-                <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
-              ) : (
-                <HeroContinueLearningEmpty />
-              )}
+              {/* Bento row 1: hero (2/3) + daily game tile (1/3) */}
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  {isLoading ? (
+                    <div className="rounded-3xl h-full min-h-[13rem] bg-muted animate-pulse" />
+                  ) : firstEnrollment ? (
+                    <HeroContinueLearning enrollment={firstEnrollment} userId={user?.id ?? ""} />
+                  ) : (
+                    <HeroContinueLearningEmpty />
+                  )}
+                </div>
+                <DailyGameCard />
+              </div>
 
               {/* Banners */}
               {!isBannersLoading && banners.length > 0 && (
                 <BannerSlider banners={banners} autoSlideInterval={5000} />
               )}
 
-              {/* Courses */}
+              {/* Bento row 2: streak heatmap (1/3) + upcoming calendar (2/3) */}
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                <StreakWidget />
+                <div className="lg:col-span-2">
+                  <UpcomingCalendar enrollments={enrollments} userId={user?.id ?? ""} />
+                </div>
+              </div>
+
+              {/* Bento row 3: courses (full width, dynamic grid) */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -534,11 +550,11 @@ export default function DashboardPage() {
                 </div>
 
                 {isLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map((i) => <div key={i} className="rounded-2xl h-72 bg-muted animate-pulse" />)}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => <div key={i} className="rounded-2xl h-72 bg-muted animate-pulse" />)}
                   </div>
                 ) : enrollments.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     {enrollments.map((enrollment) => (
                       <EnrolledCourseGridCard key={enrollment.id} enrollment={enrollment} />
                     ))}

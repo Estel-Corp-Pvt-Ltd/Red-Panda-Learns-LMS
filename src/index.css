@@ -4,7 +4,7 @@
 
 /* ═══════════════════════════════════════════════════
    RedPandaLearns — Neon Pastel Design System
-   Palette: #ff5994 · #ff9668 · #edff8f · #84ff9f · #82b6ff
+   Palette: #ff5994 · #ff9668 · #edff8f · #84ff9f · #CFC7F4
    ═══════════════════════════════════════════════════ */
 
 @layer base {
@@ -14,12 +14,12 @@
     --accent-orange: #ff9668;
     --accent-lime:   #edff8f;
     --accent-mint:   #84ff9f;
-    --accent-blue:   #82b6ff;
+    --accent-blue:   #CFC7F4;
 
     /* ── Legacy alias (keeps old references working) ── */
     --accent-yellow: #ff5994;
     --accent-coral:  #ff9668;
-    --accent-sky:    #82b6ff;
+    --accent-sky:    #CFC7F4;
     --accent-lav:    #ff5994;
 
     /* ── Paper & Ink ─────────────────────────── */
@@ -28,7 +28,7 @@
     --ink-muted: #6b6b9a;
     --ink-border: #d0d0e8;
     --paper-card: #ffffff;
-    --paper-shadow: rgba(130,182,255,0.08);
+    --paper-shadow: rgba(184,173,238,0.08);
 
     /* ── shadcn/ui tokens ─────────────────── */
     --background: 240 30% 98%;
@@ -40,36 +40,37 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 40% 12%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* Brand: #B8ADEE ≈ hsl(250 42% 81%). Dark foreground keeps text readable on the pastel. */
+    --primary: 250 42% 81%;
+    --primary-foreground: 250 45% 22%;
 
-    --secondary: 217 30% 93%;
-    --secondary-foreground: 217 40% 12%;
+    --secondary: 250 30% 93%;
+    --secondary-foreground: 250 40% 20%;
 
-    --muted: 217 20% 94%;
-    --muted-foreground: 217 15% 46%;
+    --muted: 250 20% 94%;
+    --muted-foreground: 250 12% 46%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 250 42% 81%;
+    --accent-foreground: 250 45% 22%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 20% 88%;
-    --input: 217 20% 88%;
-    --ring: 217 91% 60%;
+    --border: 250 25% 88%;
+    --input: 250 25% 88%;
+    --ring: 250 42% 74%;
 
     --radius: 0.75rem;
 
     /* ── Sidebar ────────── */
-    --sidebar-background: 217 25% 97%;
-    --sidebar-foreground: 217 40% 12%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 20% 93%;
-    --sidebar-accent-foreground: 217 40% 12%;
-    --sidebar-border: 217 20% 88%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 250 40% 97%;
+    --sidebar-foreground: 250 40% 20%;
+    --sidebar-primary: 250 42% 81%;
+    --sidebar-primary-foreground: 250 45% 22%;
+    --sidebar-accent: 250 30% 93%;
+    --sidebar-accent-foreground: 250 40% 20%;
+    --sidebar-border: 250 25% 88%;
+    --sidebar-ring: 250 42% 74%;
   }
 
   .dark {
@@ -77,11 +78,11 @@
     --accent-orange: #ff9668;
     --accent-lime:   #edff8f;
     --accent-mint:   #84ff9f;
-    --accent-blue:   #82b6ff;
+    --accent-blue:   #CFC7F4;
 
     --accent-yellow: #ff5994;
     --accent-coral:  #ff9668;
-    --accent-sky:    #82b6ff;
+    --accent-sky:    #CFC7F4;
     --accent-lav:    #ff5994;
 
     --bg: #0d0d1a;
@@ -89,7 +90,7 @@
     --ink-muted: #9090c0;
     --ink-border: #2a2a4a;
     --paper-card: #14142b;
-    --paper-shadow: rgba(130,182,255,0.15);
+    --paper-shadow: rgba(184,173,238,0.15);
 
     --background: 240 30% 7%;
     --foreground: 240 50% 94%;
@@ -100,33 +101,33 @@
     --popover: 240 30% 10%;
     --popover-foreground: 240 50% 94%;
 
-    --primary: 213 90% 68%;
-    --primary-foreground: 217 50% 8%;
+    --primary: 250 55% 78%;
+    --primary-foreground: 250 45% 12%;
 
-    --secondary: 217 20% 16%;
-    --secondary-foreground: 217 50% 94%;
+    --secondary: 250 20% 16%;
+    --secondary-foreground: 250 50% 94%;
 
-    --muted: 217 20% 16%;
-    --muted-foreground: 217 20% 60%;
+    --muted: 250 20% 16%;
+    --muted-foreground: 250 20% 62%;
 
-    --accent: 213 90% 68%;
-    --accent-foreground: 217 50% 8%;
+    --accent: 250 55% 78%;
+    --accent-foreground: 250 45% 12%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 20% 20%;
-    --input: 217 20% 20%;
-    --ring: 213 90% 68%;
+    --border: 250 20% 20%;
+    --input: 250 20% 20%;
+    --ring: 250 55% 78%;
 
-    --sidebar-background: 217 35% 8%;
-    --sidebar-foreground: 217 50% 94%;
-    --sidebar-primary: 213 90% 68%;
-    --sidebar-primary-foreground: 217 50% 8%;
-    --sidebar-accent: 217 20% 16%;
-    --sidebar-accent-foreground: 217 50% 94%;
-    --sidebar-border: 217 20% 18%;
-    --sidebar-ring: 213 90% 68%;
+    --sidebar-background: 250 35% 8%;
+    --sidebar-foreground: 250 50% 94%;
+    --sidebar-primary: 250 55% 78%;
+    --sidebar-primary-foreground: 250 45% 12%;
+    --sidebar-accent: 250 20% 16%;
+    --sidebar-accent-foreground: 250 50% 94%;
+    --sidebar-border: 250 20% 18%;
+    --sidebar-ring: 250 55% 78%;
   }
 }
 
@@ -151,25 +152,25 @@
 .notebook-grid {
   background-color: var(--bg);
   background-image:
-    linear-gradient(rgba(130,182,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(130,182,255,0.04) 1px, transparent 1px);
+    linear-gradient(rgba(184,173,238,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184,173,238,0.04) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 .dark .notebook-grid {
   background-image:
-    linear-gradient(rgba(130,182,255,0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(130,182,255,0.07) 1px, transparent 1px);
+    linear-gradient(rgba(184,173,238,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184,173,238,0.07) 1px, transparent 1px);
 }
 
 .notebook-dots {
   background-color: var(--bg);
-  background-image: radial-gradient(circle, rgba(130,182,255,0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(184,173,238,0.08) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
 .dark .notebook-dots {
-  background-image: radial-gradient(circle, rgba(130,182,255,0.1) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(184,173,238,0.1) 1px, transparent 1px);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -191,12 +192,12 @@
 }
 
 .dark .sketch-card {
-  border-color: rgba(130,182,255,0.25);
+  border-color: rgba(184,173,238,0.25);
   box-shadow: 4px 4px 0px rgba(255,89,148,0.12);
 }
 
 .dark .sketch-card:hover {
-  box-shadow: 6px 6px 0px rgba(130,182,255,0.22);
+  box-shadow: 6px 6px 0px rgba(184,173,238,0.22);
 }
 
 .btn-sketchy {
@@ -209,7 +210,7 @@
   font-weight: 800;
   font-size: 0.95rem;
   color: #fff;
-  background: #3d8ef0;
+  background: #B8ADEE;
   border: 2.5px solid var(--ink-border);
   border-radius: 10px 6px 12px 8px;
   box-shadow: 3px 3px 0px var(--ink-border);
@@ -221,7 +222,7 @@
 .btn-sketchy:hover {
   transform: translate(-1px, -1px);
   box-shadow: 4px 4px 0px var(--ink-border);
-  background: #2a7ee0;
+  background: #A99CE8;
 }
 
 .btn-sketchy:active {
@@ -264,7 +265,7 @@
   font-weight: 800;
   font-size: 0.95rem;
   color: #14142b;
-  background: #82b6ff;
+  background: #CFC7F4;
   border: 2.5px solid var(--ink-border);
   border-radius: 10px 6px 12px 8px;
   box-shadow: 3px 3px 0px var(--ink-border);
@@ -297,7 +298,7 @@
 }
 
 .btn-sketchy-outline:hover {
-  background: rgba(130,182,255,0.08);
+  background: rgba(184,173,238,0.08);
   border-style: solid;
 }
 
@@ -326,7 +327,7 @@
 .chalkboard {
   background: #0d0d1a;
   border-radius: 16px;
-  border: 6px solid #3d8ef0;
+  border: 6px solid #B8ADEE;
   position: relative;
 }
 
@@ -361,13 +362,13 @@
   background: linear-gradient(180deg, transparent 55%, rgba(255,150,104,0.35) 55%);
 }
 .marker-highlight-sky {
-  background: linear-gradient(180deg, transparent 55%, rgba(130,182,255,0.35) 55%);
+  background: linear-gradient(180deg, transparent 55%, rgba(184,173,238,0.35) 55%);
 }
 .marker-highlight-mint {
   background: linear-gradient(180deg, transparent 55%, rgba(132,255,159,0.35) 55%);
 }
 .marker-highlight-lav {
-  background: linear-gradient(180deg, transparent 55%, rgba(130,182,255,0.25) 55%);
+  background: linear-gradient(180deg, transparent 55%, rgba(184,173,238,0.25) 55%);
 }
 
 /* ── Handwritten label tag ───────────────── */
@@ -401,7 +402,7 @@
    GRADIENT TEXT
    ═══════════════════════════════════════════════════ */
 .gradient-text {
-  background: linear-gradient(135deg, #3d8ef0, #82b6ff);
+  background: linear-gradient(135deg, #B8ADEE, #CFC7F4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -426,7 +427,7 @@
 
 .word-rotator-pill {
   display: inline-block;
-  background: #3d8ef0;
+  background: #B8ADEE;
   color: #fff;
   padding: 0.05em 0.4em;
   border-radius: 12px 8px 14px 6px;
@@ -519,12 +520,12 @@
 }
 
 .markdown-editor-wrapper .editor-image.ProseMirror-selectednode {
-  outline: 2px solid #3d8ef0;
+  outline: 2px solid #B8ADEE;
   outline-offset: 2px;
 }
 
 .markdown-editor-wrapper .editor-link {
-  color: #3d8ef0;
+  color: #B8ADEE;
   text-decoration: underline;
   cursor: pointer;
 }
@@ -550,7 +551,7 @@
 .markdown-editor-wrapper code {
   background-color: #fff0f5;
   border-radius: 0.25rem;
-  color: #3d8ef0;
+  color: #B8ADEE;
   font-size: 0.875em;
   padding: 0.2em 0.4em;
 }
@@ -560,7 +561,7 @@
 }
 
 .markdown-editor-wrapper blockquote {
-  border-left: 4px solid #3d8ef0;
+  border-left: 4px solid #B8ADEE;
   margin: 1rem 0;
   padding-left: 1rem;
   color: #6b6b9a;

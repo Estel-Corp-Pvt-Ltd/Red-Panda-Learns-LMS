@@ -235,7 +235,7 @@ const EditUserPage = () => {
                     />
                   </div>
 
-                  {/* Email */}
+                  {/* Email (immutable) */}
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-muted-foreground">
                       Email
@@ -244,10 +244,14 @@ const EditUserPage = () => {
                       type="email"
                       placeholder="e.g. john.doe@example.com"
                       value={user.email}
-                      onChange={(e) =>
-                        handleFieldChange("email", e.target.value)
-                      }
+                      disabled
+                      readOnly
+                      aria-readonly="true"
+                      className="cursor-not-allowed"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Email address cannot be changed.
+                    </p>
                   </div>
 
                   {/* Role */}
