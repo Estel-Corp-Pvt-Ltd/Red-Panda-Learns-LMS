@@ -3,7 +3,7 @@
  *
  * Replaces all Firebase Cloud Functions with a single Hono app.
  * Routes mirror the original Cloud Function names 1:1 so the frontend
- * only needs to update VITE_FUNCTIONS_BASE_URL.
+ * only needs to update VITE_BACKEND_URL (or VITE_FUNCTIONS_BASE_URL).
  *
  * Active routes (matching functions/src/index.ts exports):
  *   POST /enrollStudent
@@ -1008,12 +1008,18 @@ app.post("/enrollStudent", async (c) => {
   if (authResult) return authResult;
 
   const user = c.get("user");
+
+  // if (user.role !== "ADMIN") {
+  //   return c.json({ error: "Unauthorized" }, 401);
+  // }
+
   const firestore = db(c.env);
 
   const role = await getUserRole(user.uid, user.role, firestore);
   if (role !== "ADMIN") {
     return c.json({ error: "Unauthorized" }, 401);
   }
+
 
   try {
     let body: { userEmail: string; items: Array<{ itemType: string; itemId: string }> };

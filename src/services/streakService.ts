@@ -1,4 +1,5 @@
 import { authService } from "./authService";
+import { BACKEND_URL } from "@/config";
 import { fail, ok, Result } from "@/utils/response";
 import { logError } from "@/utils/logger";
 
@@ -9,7 +10,7 @@ export interface Streak {
 }
 
 class StreakService {
-  private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+  private backendUrl = BACKEND_URL;
 
   /** Current + longest streak for the signed-in user (server-computed). */
   async getStreak(): Promise<Result<Streak>> {

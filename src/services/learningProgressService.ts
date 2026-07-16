@@ -21,10 +21,11 @@ import { formatDate } from "@/utils/date-time";
 import { lessonAnalyticsService } from "./analytics/lessonAnalyticsService";
 import { authService } from "./authService";
 import { lessonService } from "./lessonService";
+import { BACKEND_URL } from "@/config";
 import { Duration } from "@/types/general";
 
 class LearningProgressService {
-  private backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+  private backendUrl = BACKEND_URL;
   /**
    * Creates a new LearningProgress document for a course.
    *

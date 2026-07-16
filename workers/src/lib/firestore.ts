@@ -447,7 +447,7 @@ export class FirestoreTransaction {
     collection: string,
     docId: string
   ): Promise<{ exists: boolean; data: Record<string, unknown> }> {
-    const url = `${this.baseUrl}/${collection}/${encodeURIComponent(docId)}?transaction=${this.txId}`;
+    const url = `${this.baseUrl}/${collection}/${encodeURIComponent(docId)}?transaction=${encodeURIComponent(this.txId)}`;
     const resp = await fetch(url, { headers: this.headers });
 
     if (resp.status === 404) return { exists: false, data: {} };

@@ -4,6 +4,11 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+
 [vars]
 FIREBASE_PROJECT_ID = "red-panda-learns-lms-dev"
 ALLOWED_ORIGINS = "https://red-panda-learns-lms.vercel.app,https://red-panda-learns-lms-dev.web.app,https://red-panda-learns-lms-dev.firebaseapp.com,http://localhost:8080"
